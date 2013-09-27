@@ -1,16 +1,29 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 module ViperVM.Platform.Platform (
-   Memory(..), Buffer(..), Result(..),
+   Memory(..), Buffer(..),
    MemoryPeer(..), BufferPeer(..), AllocError(..),
    allocate, release
 ) where
 
-import Control.Applicative ( (<$>) )
+import Control.Applicative ( (<$>), pure )
 import Control.Concurrent.STM
+import Data.Traversable
+import Data.Foldable
+import Data.Monoid (mempty)
 import Data.List
 import Data.Word
 import Foreign.Ptr
 import Foreign.C.Types
+
+
+-- Should be in base: http://haskell.1045720.n5.nabble.com/Proposal-Add-the-missing-instances-for-Traversable-Either-b-and-Traversable-b-td5715398.html
+instance Foldable (Either e) where
+   foldMap f (Right m) = f m
+   foldMap _ (Left _) = mempty
+
+instance Traversable (Either e) where
+   traverse _ (Left e) = pure (Left e)
+   traverse f (Right x) = Right <$> f x
 
 type ID = Int
 
@@ -44,43 +57,24 @@ data BufferPeer =
 
 type BufferSize = Word64
 
-data Result a b = Success a | Error b
-
-onSuccess :: Result a b -> (a -> IO c) -> IO (Result c b)
-onSuccess (Success a) f = Success <$> f a
-onSuccess (Error b) _ = return (Error b)
-
 data AllocError = 
      ErrAllocOutOfMemory
    | ErrAllocUnknown
 
 -- | Allocate a buffer of the given size in the memory 
-allocate :: Word64 -> Memory -> IO (Result Buffer AllocError)
-allocate size mem = do
+allocate :: BufferSize -> Memory -> IO (Either AllocError Buffer)
+allocate size mem = allocPeer >>= traverse wrapStore
+   where
+      allocPeer = case memoryPeer mem of
+         HostMemory   -> allocateHost size mem
+         CUDAMemory   -> undefined
+         OpenCLMemory -> undefined
+         DiskMemory   -> undefined
 
-   bufPeer <- case (memoryPeer mem) of
-      HostMemory   -> allocateHost size mem
-      CUDAMemory   -> undefined
-      OpenCLMemory -> undefined
-      DiskMemory   -> undefined
-
-   onSuccess bufPeer $ \peer -> do
-      let buf = Buffer mem size peer
-      atomically $ do
-         bufs <- readTVar (memoryBuffers mem)
-         writeTVar (memoryBuffers mem) (buf:bufs)
-      return buf
-
-foreign import ccall unsafe "stdlib.h malloc"  malloc :: CSize -> IO (Ptr a)
-foreign import ccall unsafe "stdlib.h free"    free   :: Ptr a -> IO ()
-
--- | Allocate a buffer in host memory
-allocateHost :: Word64 -> Memory -> IO (Result BufferPeer AllocError)
-allocateHost size _ = do
-   ptr <- malloc (fromIntegral size)
-   return $ if ptr == nullPtr
-      then Error ErrAllocOutOfMemory
-      else Success (HostBuffer ptr)
+      wrapStore peer = do
+         let buf = Buffer mem size peer
+         atomically $ modifyTVar (memoryBuffers mem) ((:) buf)
+         return buf
 
 -- | Release a buffer
 release :: Buffer -> IO ()
@@ -95,3 +89,22 @@ release buf = do
       CUDABuffer     -> undefined
       OpenCLBuffer   -> undefined
       DiskBuffer     -> undefined
+
+--------------------------------------------------------
+-- Host
+--------------------------------------------------------
+
+foreign import ccall unsafe "stdlib.h malloc"  malloc :: CSize -> IO (Ptr a)
+foreign import ccall unsafe "stdlib.h free"    free   :: Ptr a -> IO ()
+
+-- | Allocate a buffer in host memory
+allocateHost :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
+allocateHost size _ = do
+   ptr <- malloc (fromIntegral size)
+   return $ if ptr == nullPtr
+      then Left ErrAllocOutOfMemory
+      else Right (HostBuffer ptr)
+
+--------------------------------------------------------
+-- OpenCL
+--------------------------------------------------------
