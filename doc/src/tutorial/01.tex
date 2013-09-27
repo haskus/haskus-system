@@ -310,3 +310,19 @@ We can test that it is quite working with the following GHCI session:
 > length <$> atomically (readTVar (memoryBuffers m))
 0
 \end{lstlisting}
+
+\summary{
+In this chapter we described \texttt{Memory} and \texttt{Buffer} entities. We
+provided two actions (\texttt{allocate} and \texttt{release}) that we
+implemented for the host driver (main memory).
+We showed the use of:
+\begin{itemize}
+   \item Algebraic data types (with and without field accessors)
+   \item Type class instances (explicit and automatically derived)
+   \item Pattern matching
+   \item IO Monad
+   \item Foreign Function Interface (FFI)
+   \item Software Transactional Memory (STM)
+   \item GHCI
+\end{itemize}
+}

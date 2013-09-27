@@ -9,6 +9,8 @@
 \usepackage{datetime}
 \usepackage{listings}
 \usepackage{fullpage}
+\usepackage{framed,color}
+\definecolor{shadecolor}{rgb}{0.9,0.9,0.9}
 
 \lstset{language=haskell,frame=single}
 
@@ -27,6 +29,13 @@
    linkcolor=blue,
    filecolor=blue,
    urlcolor=blue
+}
+
+\newcommand{\summary}[1]{%
+   \begin{shaded}
+      \noindent\textbf{\Large{}Summary}\\
+      \indent#1
+   \end{shaded}
 }
 
 \input{src/svg.tex}
