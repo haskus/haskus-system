@@ -1,0 +1,27 @@
+name:                ViperVM
+version:             0.3.0.0
+synopsis:            Runtime system for heterogeneous architectures
+-- description:         
+license:             LGPL-3
+license-file:        LICENSE
+author:              Sylvain HENRY
+maintainer:          hsyl20@gmail.com
+-- copyright:           
+category:            Control
+build-type:          Simple
+cabal-version:       >=1.8
+
+library
+  exposed-modules:     
+
+    ViperVM.Platform.Platform
+
+  build-depends:       
+    base ==4.6.*,
+    stm
+
+  build-tools: 
+
+  ghc-options: -Wall -threaded -O2
+
+  hs-source-dirs: lib
