@@ -1,0 +1,36 @@
+\chapter{Enters OpenCL}
+
+\epigraph{
+All different kinds with different ways\\
+It would take a lifetime to explain\\
+No one's exactly the same}
+{No Doubt, \textit{Different People}}
+
+In this chapter we will add support for OpenCL device memories.
+
+TODO: 
+\begin{itemize}
+   \item OpenCL platform model
+   \item Template Haskell
+   \item Dynamic Linking
+   \item Dynamic Linker Template
+   \item Platform Configuration (clEnableCPU, ...)
+   \item Hybrid Host/OpenCL\_CPU buffer
+   \begin{itemize}
+      \item Hybrid = HB HostBuffer | CLB OpenCLBuffer
+      \item Method to transform one into the other (CL\_MEM\_USE\_HOST\_PTR)
+      \item Should be cost-free...
+      \item Intel OpenCL: bad alignment = duplication
+   \end{itemize}
+   \item Region, Link
+   \item Synchronous data transfer / asynchronous?
+   \item Method to bench link speed (no NUMA support, nor NUIOA)
+\end{itemize}
+
+\summary{
+In this chapter we added support for dynamic linking with the OpenCL library and
+memory management (\texttt{allocate} and \texttt{release}) into OpenCL devices.
+We introduced \texttt{Link} and \texttt{Region} types, we added a method to list
+available memories in a platform and we provided a method to perform data
+transfers on links.
+}

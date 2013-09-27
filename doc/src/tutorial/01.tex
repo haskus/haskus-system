@@ -1,5 +1,8 @@
 \chapter{Architecture Model: Memory}
 
+\epigraph{Memory, all alone in the moonlight}{Barbra Streisand,
+\textit{Memory}}
+
 The first thing we need to decide is how the architecture will be represented
 into the environment. 
 
@@ -102,7 +105,7 @@ data AllocError =
 allocate :: Word64 -> Memory -> IO (Result Buffer AllocError)
 allocate size mem = do
 
-   bufPeer <- case (memoryPeer mem) of
+   bufPeer <- case memoryPeer mem of
       HostMemory   -> allocateHost size mem
       CUDAMemory   -> undefined
       OpenCLMemory -> undefined
@@ -140,6 +143,8 @@ allocateHost size _ = do
 
 To simplify the code a little bit, we introduce the \texttt{onSuccess} function
 and we replace the second \texttt{case} in \texttt{allocate} with a call to it.
+Basically, this function takes a \texttt{Result} and applies a given function
+(in the IO monad) to it if it is a success, otherwise the error is left as is.
 
 \begin{lstlisting}
 import Control.Applicative ( (<$>) )
@@ -255,7 +260,7 @@ data AllocError =
 allocate :: Word64 -> Memory -> IO (Result Buffer AllocError)
 allocate size mem = do
 
-   bufPeer <- case (memoryPeer mem) of
+   bufPeer <- case memoryPeer mem of
       HostMemory   -> allocateHost size mem
       CUDAMemory   -> undefined
       OpenCLMemory -> undefined
