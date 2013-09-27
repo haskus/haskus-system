@@ -1,0 +1,52 @@
+\documentclass[twoside,a4paper]{book}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{datetime}
+\usepackage{listings}
+\usepackage{fullpage}
+
+\lstset{language=haskell,frame=single}
+
+\usepackage {hyperref}
+\hypersetup{
+   pdftitle={ViperVM - Tutorial},
+   pdfauthor={Sylvain Henry},
+   unicode=true,
+   bookmarksnumbered=false,
+   bookmarksopen=false,
+   breaklinks=false,
+   pdfborder={0 0 0},
+   linktoc=all,
+   colorlinks=true,
+   citecolor=blue,
+   linkcolor=blue,
+   filecolor=blue,
+   urlcolor=blue
+}
+
+\input{src/svg.tex}
+
+\title{ViperVM - Tutorial}
+\author{Sylvain Henry}
+\date{\today{}\\\currenttime}
+
+\begin{document}
+\maketitle
+
+\frontmatter
+
+\tableofcontents{}
+
+\mainmatter
+
+\input{src/tutorial/00.tex}
+\input{src/tutorial/01.tex}
+
+\backmatter
+
+\end{document}

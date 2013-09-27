@@ -1,0 +1,312 @@
+\chapter{Architecture Model: Memory}
+
+The first thing we need to decide is how the architecture will be represented
+into the environment. 
+
+In the OpenCL specification, an architecture is composed of several platforms,
+themselves composed of several devices. Each device contains one memory and can
+execute kernels. Obviously, it is flawed: platforms make no sense and are not
+interoperable, device can contain several memories and processing units of
+different kinds, etc. We will try to do a better job at defining an architecture
+model.
+
+The first entity we define is \texttt{Memory}. Perhaps a better would be
+\texttt{Storage}. Each memory should be identifiable so we give them a unique
+identifier. In addition, as there are many kinds of memory units
+involved in architectures (hard disks, RAM, OpenCL device memory, etc.), we
+introduce the algebraic data type \texttt{MemoryPeer} to store driver
+specific details. We will add parameters to the constructor later for each
+driver.
+
+\begin{lstlisting}
+type ID = Int
+
+data Memory = Memory {
+   memoryId :: ID,
+   memoryPeer :: MemoryPeer
+}
+
+data MemoryPeer =
+     HostMemory
+   | CUDAMemory
+   | OpenCLMemory
+   | DiskMemory
+\end{lstlisting}
+
+Basically, the only thing a program can do with memory is to associate a region
+of it with an opaque identifier: this is called allocating and the result is
+called a buffer. Removing this association is called (buffer) releasing. Hence
+we define a Buffer entity. Depending on the kind of memory we consider, the
+low-level identifier will be different. For instance, for the host memory and
+CUDA we get a pointer, for OpenCL we get an opaque clMem entity, for a hard disk
+we get a file name\ldots These different identifiers are represented with the
+algebraic data type \texttt{BufferPeer}.
+
+\begin{lstlisting}
+import Foreign.Ptr
+
+data Buffer = Buffer {
+   bufferMemory :: Memory,
+   bufferPeer :: BufferPeer
+}
+
+data BufferPeer = 
+     HostBuffer (Ptr ())
+   | CUDABuffer
+   | OpenCLBuffer
+   | DiskBuffer
+\end{lstlisting}
+
+We would like to keep track of buffers that have been allocated in each memory.
+To do that, we add a mutable field to the Memory type. We want to use software
+transactional memory (STM) to manage future concurrent accesses to it, so we use
+a \texttt{TVar} type. Don't forget to add the \texttt{stm} package to the list
+of dependencies.
+
+\begin{lstlisting}
+import Control.Concurrent.STM
+
+data Memory = Memory {
+   ...
+   memoryBuffers :: TVar [Buffer]
+}
+\end{lstlisting}
+
+Now we can provide our first memory primitives: allocate and release. The code
+for each driver is different, but for now we only code it for the host memory.
+We use \texttt{undefined} to fill the blank and have a program that compiles
+anyway. An allocation is only parameterized by the size of the desired memory
+region and by the memory into which the allocation is performed. It returns
+either the allocated buffer or an error. We decide to store the allocation size
+in the buffer, hence the additional field. Finally, we set the type of a buffer
+size to be \texttt{Word64} so that it should be large enough on most
+architectures.
+
+\begin{lstlisting}
+import Data.Word
+
+data Buffer = Buffer {
+   ...
+   bufferSize :: BufferSize
+   ...
+}
+
+type BufferSize = Word64
+
+data Result a b = Success a | Error b
+
+data AllocError = 
+     ErrAllocOutOfMemory
+   | ErrAllocUnknown
+
+allocate :: Word64 -> Memory -> IO (Result Buffer AllocError)
+allocate size mem = do
+
+   bufPeer <- case (memoryPeer mem) of
+      HostMemory   -> allocateHost size mem
+      CUDAMemory   -> undefined
+      OpenCLMemory -> undefined
+      DiskMemory   -> undefined
+
+   case bufPeer of
+      Error err -> return (Error err)
+      Success peer -> do
+         let buf = Buffer mem size peer
+         atomically $ do
+            bufs <- readTVar (memoryBuffers mem)
+            writeTVar (memoryBuffers mem) (buf:bufs)
+         return (Success buf)
+\end{lstlisting}
+
+Finally the "host" specific code to allocate a buffer is:
+
+\begin{lstlisting}
+{-# LANGUAGE ForeignFunctionInterface #-}
+
+import Foreign.C.Types
+
+foreign import ccall unsafe "stdlib.h malloc"  malloc :: CSize -> IO (Ptr a)
+foreign import ccall unsafe "stdlib.h free"    free   :: Ptr a -> IO ()
+
+-- | Allocate a buffer in host memory
+allocateHost :: Word64 -> Memory -> IO (Result BufferPeer AllocError)
+allocateHost size _ = do
+   ptr <- malloc (fromIntegral size)
+   return $ if ptr == nullPtr
+      then Error ErrAllocOutOfMemory
+      else Success (HostBuffer ptr)
+\end{lstlisting}
+
+
+To simplify the code a little bit, we introduce the \texttt{onSuccess} function
+and we replace the second \texttt{case} in \texttt{allocate} with a call to it.
+
+\begin{lstlisting}
+import Control.Applicative ( (<$>) )
+
+onSuccess :: Result a b -> (a -> IO c) -> IO (Result c b)
+onSuccess (Success a) f = Success <$> f a
+onSuccess (Error b) _ = return (Error b)
+
+allocate size mem = do
+...
+   onSuccess bufPeer $ \peer -> do
+      let buf = Buffer mem size peer
+      atomically $ do
+         bufs <- readTVar (memoryBuffers mem)
+         writeTVar (memoryBuffers mem) (buf:bufs)
+      return buf
+\end{lstlisting}
+
+Finally we can add the \texttt{release} primitive. Before we need to remove the
+buffer from the list of allocated buffers of the memory it is allocated in.
+Hence, we need to be able to find the buffer in the list and to delete it. To do
+that, \texttt{Buffer} must be an instance of the \texttt{Eq} type class. We
+first create an instance of \texttt{Eq} for \texttt{Memory} as it is easy given
+there is a unique identifier field. Then we can automatically derive the
+\texttt{Eq} instances for \texttt{BufferPeer} and \texttt{Buffer}.
+
+\begin{lstlisting}
+import Data.List
+
+instance Eq Memory where
+   (==) a b = memoryId a == memoryId b
+
+data Buffer = Buffer {
+   ...
+} deriving (Eq)
+
+data BufferPeer = ... deriving (Eq)
+
+release :: Buffer -> IO ()
+release buf = do
+   atomically $ do
+      let bufsVar = memoryBuffers (bufferMemory buf)
+      bufs <- readTVar bufsVar
+      writeTVar bufsVar (delete buf bufs)
+
+   case bufferPeer buf of
+      HostBuffer ptr -> free ptr
+      CUDABuffer     -> undefined
+      OpenCLBuffer   -> undefined
+      DiskBuffer     -> undefined
+\end{lstlisting}
+
+Here is the full listing of our current \texttt{Platform} module.
+
+\begin{lstlisting}
+{-# LANGUAGE ForeignFunctionInterface #-}
+module ViperVM.Platform.Platform (
+   Memory(..), Buffer(..), Result(..),
+   MemoryPeer(..), BufferPeer(..), AllocError(..),
+   allocate, release
+) where
+
+import Control.Applicative ( (<$>) )
+import Control.Concurrent.STM
+import Data.List
+import Data.Word
+import Foreign.Ptr
+import Foreign.C.Types
+
+type ID = Int
+
+data Memory = Memory {
+   memoryId :: ID,
+   memoryPeer :: MemoryPeer,
+   memoryBuffers :: TVar [Buffer]
+}
+
+instance Eq Memory where
+   (==) a b = memoryId a == memoryId b
+
+data MemoryPeer =
+     HostMemory
+   | CUDAMemory
+   | OpenCLMemory
+   | DiskMemory
+
+data Buffer = Buffer {
+   bufferMemory :: Memory,
+   bufferSize :: BufferSize,
+   bufferPeer :: BufferPeer
+} deriving (Eq)
+
+data BufferPeer = 
+     HostBuffer (Ptr ())
+   | CUDABuffer
+   | OpenCLBuffer
+   | DiskBuffer
+   deriving (Eq)
+
+type BufferSize = Word64
+
+data Result a b = Success a | Error b
+
+onSuccess :: Result a b -> (a -> IO c) -> IO (Result c b)
+onSuccess (Success a) f = Success <$> f a
+onSuccess (Error b) _ = return (Error b)
+
+data AllocError = 
+     ErrAllocOutOfMemory
+   | ErrAllocUnknown
+
+-- | Allocate a buffer of the given size in the memory 
+allocate :: Word64 -> Memory -> IO (Result Buffer AllocError)
+allocate size mem = do
+
+   bufPeer <- case (memoryPeer mem) of
+      HostMemory   -> allocateHost size mem
+      CUDAMemory   -> undefined
+      OpenCLMemory -> undefined
+      DiskMemory   -> undefined
+
+   onSuccess bufPeer $ \peer -> do
+      let buf = Buffer mem size peer
+      atomically $ do
+         bufs <- readTVar (memoryBuffers mem)
+         writeTVar (memoryBuffers mem) (buf:bufs)
+      return buf
+
+foreign import ccall unsafe "stdlib.h malloc"  malloc :: CSize -> IO (Ptr a)
+foreign import ccall unsafe "stdlib.h free"    free   :: Ptr a -> IO ()
+
+-- | Allocate a buffer in host memory
+allocateHost :: Word64 -> Memory -> IO (Result BufferPeer AllocError)
+allocateHost size _ = do
+   ptr <- malloc (fromIntegral size)
+   return $ if ptr == nullPtr
+      then Error ErrAllocOutOfMemory
+      else Success (HostBuffer ptr)
+
+-- | Release a buffer
+release :: Buffer -> IO ()
+release buf = do
+   atomically $ do
+      let bufsVar = memoryBuffers (bufferMemory buf)
+      bufs <- readTVar bufsVar
+      writeTVar bufsVar (delete buf bufs)
+
+   case bufferPeer buf of
+      HostBuffer ptr -> free ptr
+      CUDABuffer     -> undefined
+      OpenCLBuffer   -> undefined
+      DiskBuffer     -> undefined
+\end{lstlisting}
+
+We can test that it is quite working with the following GHCI session:
+\begin{lstlisting}
+> import ViperVM.Platform.Platform
+> import Control.Concurrent.STM
+> import Control.Applicative
+> m <- Memory 1 HostMemory <$> atomically (newTVar [])
+> Success b <- allocate 10000 m
+> length <$> atomically (readTVar (memoryBuffers m))
+1
+> Error err <- allocate 100000000000000 m
+> length <$> atomically (readTVar (memoryBuffers m))
+1
+> release b
+> length <$> atomically (readTVar (memoryBuffers m))
+0
+\end{lstlisting}

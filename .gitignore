@@ -1,1 +1,7 @@
 dist
+*.swp
+*.out
+*.log
+*.aux
+*.toc
+*.pdf
