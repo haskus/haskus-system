@@ -15,6 +15,7 @@ import Data.Word
 import Foreign.Ptr
 import Foreign.C.Types
 
+import ViperVM.Platform.OpenCL
 
 -- Should be in base: http://haskell.1045720.n5.nabble.com/Proposal-Add-the-missing-instances-for-Traversable-Either-b-and-Traversable-b-td5715398.html
 instance Foldable (Either e) where
@@ -108,3 +109,4 @@ allocateHost size _ = do
 --------------------------------------------------------
 -- OpenCL
 --------------------------------------------------------
+

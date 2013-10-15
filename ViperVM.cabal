@@ -15,9 +15,12 @@ library
   exposed-modules:     
 
     ViperVM.Platform.Platform
+    ViperVM.Platform.OpenCL
 
   build-depends:       
     base ==4.6.*,
+    dynamic-linker-template,
+    unix,
     stm
 
   build-tools: 
@@ -25,3 +28,11 @@ library
   ghc-options: -Wall -threaded -O2
 
   hs-source-dirs: lib
+
+executable PlatformInfo
+  main-is: PlatformInfo.hs
+  hs-source-dirs: apps
+  ghc-options: -Wall
+  build-depends: 
+    base,
+    ViperVM
