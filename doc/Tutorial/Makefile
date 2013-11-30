@@ -1,4 +1,5 @@
 all: 
+	mkdir -p dist
 	pdflatex --output-directory dist -shell-escape Tutorial.tex
 
 clean:
