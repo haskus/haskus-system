@@ -1,0 +1,185 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Large Colored Title Article
+% LaTeX Template
+% Version 1.1 (25/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[DIV=calc, paper=a4, fontsize=11pt, twocolumn]{scrartcl}	 % A4 paper and 11pt font size
+
+\usepackage{datetime}
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage[protrusion=true,expansion=true]{microtype} % Better typography
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage[svgnames]{xcolor} % Enabling colors by their 'svgnames'
+\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage{booktabs} % Horizontal rules in tables
+\usepackage{fix-cm}	 % Custom font sizes - used for the initial letter in the document
+
+\usepackage{sectsty} % Enables custom section titles
+\allsectionsfont{\usefont{OT1}{phv}{b}{n}} % Change the font of all section commands
+
+\usepackage{fancyhdr} % Needed to define custom headers/footers
+\pagestyle{fancy} % Enables the custom headers/footers
+\usepackage{lastpage} % Used to determine the number of pages in the document (for "Page X of Total")
+
+% Headers - all currently empty
+\lhead{}
+\chead{}
+\rhead{}
+
+% Footers
+\lfoot{}
+\cfoot{}
+\rfoot{\footnotesize Page \thepage\ of \pageref{LastPage}} % "Page 1 of 2"
+
+\renewcommand{\headrulewidth}{0.0pt} % No header rule
+\renewcommand{\footrulewidth}{0.4pt} % Thin footer rule
+
+\usepackage{lettrine} % Package to accentuate the first letter of the text
+\newcommand{\initial}[1]{ % Defines the command and style for the first letter
+\lettrine[lines=3,lhang=0.3,nindent=0em]{
+\color{DarkGoldenrod}
+{\textsf{#1}}}{}}
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\usepackage{titling} % Allows custom title configuration
+
+\newcommand{\HorRule}{\color{DarkGoldenrod} \rule{\linewidth}{1pt}} % Defines the gold horizontal rule around the title
+
+\pretitle{\vspace{-30pt} \begin{flushleft} \HorRule \fontsize{50}{50} \usefont{OT1}{phv}{b}{n} \color{DarkRed} \selectfont} % Horizontal rule before the title
+
+\title{ViperVM - Proposal} % Your article title
+
+\posttitle{\par\end{flushleft}\vskip 0.5em} % Whitespace under the title
+
+\preauthor{\begin{flushleft}\large \lineskip 0.5em \usefont{OT1}{phv}{b}{sl} \color{DarkRed}} % Author font configuration
+
+%\author{Sylvain Henry} % Your name
+
+\postauthor{\footnotesize \usefont{OT1}{phv}{m}{sl} \color{Black} % Configuration for the institution name
+%University of California % Your institution
+
+\par\end{flushleft}\HorRule} % Horizontal rule after the title
+
+%\date{November 30th, 2013} % Add a date here if you would like one to appear underneath the title block
+\date{\today{} - \currenttime}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Print the title
+
+\thispagestyle{fancy} % Enabling the custom headers/footers for the first page 
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT
+%----------------------------------------------------------------------------------------
+
+% The first character should be within \initial{}
+\initial{H}\textbf{igh-performance computing (HPC) software is notoriously hard to
+write. With ViperVM we aim to provide a comprehensive HPC software stack
+(compilers, runtime system, etc.) to simplify the use of high-performance
+architectures (multi-core, GPUs, clusters, etc.).
+}
+
+%----------------------------------------------------------------------------------------
+%	ARTICLE CONTENTS
+%----------------------------------------------------------------------------------------
+
+\section{Introduction}
+
+TODO: 
+\begin{itemize}
+   \item HPC complex, many architectures and many frameworks/models/languages
+   (C/Fortran, SIMD, OpenMP, MPI, CUDA/OpenCL, Xeon Phi, CELL BE, etc.)
+   \item Higher-level approaches
+   \begin{itemize}
+      \item Actor model: Charm++, Erlang, Akka
+      \item Data-flow: StreamIt, BrookGPU
+      \item Task graph: StarPU, StarSS, Parsec
+      \item Partitioned Global Address Space (PGAS): X10, Chapel/ZPL
+      \item Data-parallel: Accelerate, Accelerator, ArBB
+      \item Parallel Functional Programming: Eden
+      \item Logic: Prolog
+   \end{itemize}
+   \item Aims of our project
+   \begin{itemize}
+      \item Common framework for every model
+      \item Easy to use and to extend
+      \item High-performance on every architecture
+      \item Free software
+   \end{itemize}
+\end{itemize}
+
+
+%------------------------------------------------
+
+\section{Themes}
+
+\subsection{Platform discovery}
+
+\begin{itemize}
+   \item Retrieve hardware capabilities and layout (memories, cores, networks).
+   \item Provide an abstract representation
+   \begin{itemize}
+      \item Provide abstract methods (memory allocation/release, communications, etc.)
+   \end{itemize}
+\end{itemize}
+
+\subsection{Computational kernels}
+
+\begin{itemize}
+   \item Computational kernel: code that only performs computations (no
+   syscall\ldots)
+   \item Provide efficient computational kernels for each architecture
+   \item Generation from high-level representations
+   \item Cost models
+   \item Auto-tuning and benchmarking
+\end{itemize}
+
+\subsection{High-level programming models}
+
+\begin{itemize}
+   \item Task graph
+   \item Parallel functional programming
+\end{itemize}
+
+\subsection{Kernel scheduling}
+
+\begin{itemize}
+   \item Cost models and heuristics
+   \item Prefetching strategies
+\end{itemize}
+
+\subsection{Fault-tolerance}
+
+\begin{itemize}
+   \item Check-pointing
+\end{itemize}
+
+\subsection{Debug and profiling}
+
+\begin{itemize}
+   \item Traces
+\end{itemize}
+
+\end{document}
