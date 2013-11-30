@@ -120,7 +120,7 @@ class (Bounded a, Enum a) => CLSet a where
       where f = shiftL 1 . fromIntegral . fromEnum
 
    fromCLSet :: (Bits b, Integral b) => b -> [a]
-   fromCLSet x = catMaybes (map f [0..maxBound])
+   fromCLSet x = mapMaybe f [0..maxBound]
       where f idx = if testBit x idx
                         then Just (toEnum (idx+1)) 
                         else Nothing
