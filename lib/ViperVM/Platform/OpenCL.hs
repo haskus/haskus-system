@@ -9,17 +9,17 @@ module ViperVM.Platform.OpenCL (
    getPlatformProfile, getPlatformProfile',
    getPlatformVersion, getPlatformVersion',
    getPlatformExtensions, getPlatformExtensions',
-   getPlatformInfos'
+   getPlatformInfos',
+   createBuffer, releaseBuffer
 ) where
 
 import Control.Applicative
-import Control.Monad
+import Control.Monad (void)
 import Control.Exception
 import Data.Typeable
 import Data.Bits
-import Data.Traversable
 import Data.Int
-import Data.List (foldl', stripPrefix)
+import Data.List (stripPrefix)
 import Data.Word
 import Data.Maybe
 import Foreign.C.String
@@ -740,3 +740,14 @@ getPlatformInfos' lib pf = PlatformInfo
    <*> getPlatformProfile' lib pf
    <*> getPlatformVersion' lib pf
    <*> getPlatformExtensions' lib pf
+
+createBuffer :: Library -> Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
+createBuffer lib _ ctx flags size = do
+   mem <- wrapPError (rawClCreateBuffer lib ctx (toCLSet flags) size nullPtr)
+   --FIXME: ensure buffer is allocated 
+   --  use clEnqueueMigrateMemObjects if available (OpenCL 1.1 or 1.2?)
+   --  perform a dummy operation on the buffer (OpenCL 1.0)
+   return mem
+
+releaseBuffer :: Library -> Mem -> IO ()
+releaseBuffer lib mem = void (rawClReleaseMemObject lib mem)
