@@ -1,4 +1,4 @@
-\chapter{Enters OpenCL}
+\chapter{Enter OpenCL}
 
 \epigraph{
 All different kinds with different ways\\
@@ -17,16 +17,20 @@ in fact, it is not that easy: you have to create a \texttt{Context} entity (with
 buffer that is associated to the context and not to the device.
 
 The first question that should come to mind is: how does the runtime system know
-onto which device of the context it has to allocate the buffer? It is trivial if
-there is only one device in the context, but otherwise it is impossible. So
-buffers are lazily allocated on appropriate devices when another command (kernel
-execution, etc.) requires them. As a consequence, out-of-capacity errors can be
-returned by commands that do not perform any allocation. As it is hardly
+onto which device of the context the buffer should be allocated. It is trivial
+if there is only one device in the context, otherwise it is impossible. 
+buffers are therefore lazily allocated on the appropriate device when another
+command (\eg kernel execution) requires them.
+As a consequence, out-of-capacity errors can be returned by commands that were
+not able to perform any allocation.
+As it is hardly
 manageable, we would like to force the allocation in the first place. Before
 OpenCL 1.2, you cannot easily do it: you have to execute a command such as a
 data transfer or a kernel execution involving the buffer and the device.
 Starting with OpenCL 1.2, a new \texttt{clEnqueueMigrateMemObjects} method let
-host code control where buffers have to be allocated. As for every OpenCL, this
+host code control where buffers have to be allocated.
+% As for every OpenCL what? Version ?
+As for every OpenCL, this
 one has to be submitted into a command queue (associated to a single device)
 created with \texttt{clCreateCommandQueue}.
 
