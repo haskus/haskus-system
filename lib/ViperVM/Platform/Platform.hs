@@ -1,23 +1,62 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, TupleSections #-}
 
 -- | Abstract platform
 module ViperVM.Platform.Platform (
-   Memory(..), Buffer(..),
-   MemoryPeer(..), BufferPeer(..), AllocError(..),
+   Platform(..), PlatformConfig(..),
+   Memory(..), MemoryPeer(..),
+   Buffer(..), BufferPeer(..), AllocError(..),
+   loadPlatform,
    allocate, release
 ) where
 
 import Control.Applicative ( (<$>), pure )
+import Control.Monad (forM)
 import Control.Concurrent.STM
-import Data.Traversable
-import Data.Foldable
+import Data.Traversable (Traversable, traverse)
+import Data.Foldable (Foldable, foldMap)
 import Data.Monoid (mempty)
 import Data.List
 import Data.Word
 import Foreign.Ptr
 import Foreign.C.Types
 
-import ViperVM.Platform.OpenCL as CL
+import qualified ViperVM.Platform.OpenCL as CL
+
+data PlatformConfig = PlatformConfig {
+   libraryOpenCL :: String
+}
+
+data Platform = Platform {
+   platformMemories :: [Memory]
+}
+
+-- | Load the platform
+loadPlatform :: PlatformConfig -> IO Platform
+loadPlatform config = do
+   -- Load OpenCL devices
+   lib <- CL.loadOpenCL (libraryOpenCL config)
+   clPlatforms <- CL.getPlatforms lib
+   clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices lib pf)
+   clContexts <- forM clDevices (\(pf,dev) -> CL.createContext lib pf [dev])
+   clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> do
+      case ctx of
+         Right ctx' -> wrapMemoryPeer 0 (OpenCLMemory lib dev ctx')
+         Left err -> error ("Invalid context: " ++ show err)
+
+   -- TODO: load other devices (CUDA, CPU...)
+   let cpuMemories = []
+
+   -- Assign valid IDs to memories
+   let
+      setMemoryId (m,i) = m {memoryId = i}
+      allMemories = cpuMemories ++ clMemories
+      memories = map setMemoryId (allMemories `zip` [0..])
+
+   return $ Platform {
+      platformMemories = memories
+   }
+
+
 
 -- Should be in base: http://haskell.1045720.n5.nabble.com/Proposal-Add-the-missing-instances-for-Traversable-Either-b-and-Traversable-b-td5715398.html
 instance Foldable (Either e) where
@@ -37,6 +76,9 @@ data Memory = Memory {
    memoryPeer :: MemoryPeer,
    memoryBuffers :: TVar [Buffer]
 }
+
+wrapMemoryPeer :: ID -> MemoryPeer -> IO Memory
+wrapMemoryPeer ident peer = Memory ident peer <$> newTVarIO []
 
 instance Eq Memory where
    (==) a b = memoryId a == memoryId b

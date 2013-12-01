@@ -1,20 +1,20 @@
 import Text.Printf
-import Data.Traversable
 
-import ViperVM.Platform.OpenCL
+import ViperVM.Platform.Platform
 
 main :: IO ()
 main = do
-   let libOpenCL = "libOpenCL.so"
+   let config = PlatformConfig {
+         libraryOpenCL = "libOpenCL.so"
+       }
 
-   putStrLn ("Loading OpenCL: " ++ libOpenCL)
-   cllib <- loadOpenCL libOpenCL
+   putStrLn "Loading Platform..."
+   pf <- loadPlatform config
 
-   platforms <- getPlatforms cllib
-   putStrLn $ printf "We found %d OpenCL platform(s):" (length platforms)
-
-   infos <- traverse (getPlatformInfos' cllib) platforms
-   mapM_ (putStrLn . show) infos
+   let memoriesStr x 
+         | x <= 1    = printf "%d memory found" x
+         | otherwise = printf "%d memories found" x
+   putStrLn . memoriesStr . length $ platformMemories pf
 
    putStrLn "Done."
 

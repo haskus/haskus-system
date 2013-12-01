@@ -4,12 +4,14 @@ module ViperVM.Platform.OpenCL (
    Event, Program, Kernel, Sampler, Library,
    loadOpenCL,
    getNumPlatforms, getPlatforms, 
+   getPlatformNumDevices, getPlatformDevices, 
    getPlatformName, getPlatformName', 
    getPlatformVendor, getPlatformVendor',
    getPlatformProfile, getPlatformProfile',
    getPlatformVersion, getPlatformVersion',
    getPlatformExtensions, getPlatformExtensions',
    getPlatformInfos',
+   createContext,
    createBuffer, releaseBuffer
 ) where
 
@@ -124,6 +126,18 @@ class (Bounded a, Enum a) => CLSet a where
       where f idx = if testBit x idx
                         then Just (toEnum (idx+1)) 
                         else Nothing
+
+data CLContextInfo = 
+     CL_CONTEXT_REFERENCE_COUNT
+   | CL_CONTEXT_DEVICES
+   | CL_CONTEXT_PROPERTIES
+   | CL_CONTEXT_NUM_DEVICES
+   | CL_CONTEXT_PLATFORM
+   deriving (Eq,Enum)
+
+instance CLConstant CLContextInfo where
+   toCL x = fromIntegral (0x1080 + fromEnum x)
+   fromCL x = toEnum (fromIntegral x - 0x1080)
 
 data CLChannelOrder =
      CL_R                         
@@ -299,13 +313,15 @@ data DeviceType =
    | CL_DEVICE_TYPE_GPU
    | CL_DEVICE_TYPE_ACCELERATOR
    | CL_DEVICE_TYPE_CUSTOM
-   | CL_DEVICE_TYPE_ALL --TODO: remove
    deriving (Show,Bounded,Enum)
 
-clDeviceTypeAll :: [DeviceType]
-clDeviceTypeAll = fromCLSet (0xFFFFFFFF :: Int)
-
 instance CLSet DeviceType
+
+clDeviceTypeAll :: [DeviceType]
+clDeviceTypeAll = [CL_DEVICE_TYPE_CPU,
+                   CL_DEVICE_TYPE_GPU,
+                   CL_DEVICE_TYPE_ACCELERATOR,
+                   CL_DEVICE_TYPE_CUSTOM]
 
 data CLCommandQueueProperty =
      CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
@@ -641,10 +657,10 @@ loadOpenCL lib = loadLibrary lib [RTLD_NOW,RTLD_LOCAL]
 
 -- | Return the number of available platforms
 getNumPlatforms :: Library -> IO Word32
-getNumPlatforms lib = alloca $ \num_platforms -> do 
-   err <- rawClGetPlatformIDs lib 0 nullPtr num_platforms
+getNumPlatforms lib = alloca $ \numPlatforms -> do 
+   err <- rawClGetPlatformIDs lib 0 nullPtr numPlatforms
    case fromCL err of
-      CL_SUCCESS -> peek num_platforms
+      CL_SUCCESS -> peek numPlatforms
       _ -> return 0 -- the ICD may return an error CL_PLATFORM_NOT_FOUND_KHR...
 
 -- | Get available platforms
@@ -657,6 +673,26 @@ getPlatforms lib = do
          err <- rawClGetPlatformIDs lib nplats plats nullPtr
          case fromCL err of
             CL_SUCCESS -> peekArray (fromIntegral nplats) plats
+            _ -> return []
+
+-- | Return the number of available devices
+getPlatformNumDevices :: Library -> Platform -> IO Word32
+getPlatformNumDevices lib pf = alloca $ \numDevices -> do 
+   err <- rawClGetDeviceIDs lib pf (toCLSet clDeviceTypeAll) 0 nullPtr numDevices
+   case fromCL err of
+      CL_SUCCESS -> peek numDevices
+      _ -> return 0
+
+-- | Get available platform devices
+getPlatformDevices :: Library -> Platform -> IO [Device]
+getPlatformDevices lib pf = do
+   nbDevices <- getPlatformNumDevices lib pf
+   if nbDevices == 0
+      then return []
+      else allocaArray (fromIntegral nbDevices) $ \devs -> do
+         err <- rawClGetDeviceIDs lib pf (toCLSet clDeviceTypeAll) nbDevices devs nullPtr
+         case fromCL err of
+            CL_SUCCESS -> peekArray (fromIntegral nbDevices) devs
             _ -> return []
 
 -- | Get platform info
@@ -740,6 +776,14 @@ getPlatformInfos' lib pf = PlatformInfo
    <*> getPlatformProfile' lib pf
    <*> getPlatformVersion' lib pf
    <*> getPlatformExtensions' lib pf
+
+createContext :: Library -> Platform -> [Device] -> IO (Either CLError Context)
+createContext lib pf devs = do
+   let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr pf, 0]
+       ndevs = fromIntegral (length devs)
+   withArray devs $ \devs' ->
+      withArray props $ \props' ->
+         wrapPError (rawClCreateContext lib props' ndevs devs' nullFunPtr nullPtr)
 
 createBuffer :: Library -> Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
 createBuffer lib _ ctx flags size = do
