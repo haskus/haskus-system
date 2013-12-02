@@ -6,7 +6,7 @@ module ViperVM.Platform.Platform (
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..), AllocError(..),
    loadPlatform,
-   allocate, release
+   allocateBuffer, releaseBuffer
 ) where
 
 import Control.Applicative ( (<$>), pure )
@@ -112,8 +112,8 @@ data AllocError =
    | ErrAllocUnknown
 
 -- | Allocate a buffer of the given size in the memory 
-allocate :: BufferSize -> Memory -> IO (Either AllocError Buffer)
-allocate size mem = allocPeer size mem >>= traverse wrapStore
+allocateBuffer :: BufferSize -> Memory -> IO (Either AllocError Buffer)
+allocateBuffer size mem = allocPeer size mem >>= traverse wrapStore
    where
       allocPeer = case memoryPeer mem of
          HostMemory      -> allocateHost
@@ -128,8 +128,8 @@ allocate size mem = allocPeer size mem >>= traverse wrapStore
          return buf
 
 -- | Release a buffer
-release :: Buffer -> IO ()
-release buf = do
+releaseBuffer :: Buffer -> IO ()
+releaseBuffer buf = do
    atomically $ do
       -- Remove buffer from memory buffer list
       let bufsVar = memoryBuffers (bufferMemory buf)
