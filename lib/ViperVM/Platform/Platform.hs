@@ -38,10 +38,9 @@ loadPlatform config = do
    clPlatforms <- CL.getPlatforms lib
    clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices lib pf)
    clContexts <- forM clDevices (\(pf,dev) -> CL.createContext lib pf [dev])
-   clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> do
-      case ctx of
-         Right ctx' -> wrapMemoryPeer 0 (OpenCLMemory lib dev ctx')
-         Left err -> error ("Invalid context: " ++ show err)
+   clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> case ctx of
+      Right ctx' -> wrapMemoryPeer 0 (OpenCLMemory lib dev ctx')
+      Left err -> error ("Invalid context: " ++ show err)
 
    -- TODO: load other devices (CUDA, CPU...)
    let cpuMemories = []
