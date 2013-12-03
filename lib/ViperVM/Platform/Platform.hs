@@ -27,19 +27,22 @@ data PlatformConfig = PlatformConfig {
 }
 
 data Platform = Platform {
-   platformMemories :: [Memory]
+   platformMemories :: [Memory],
+   -- OpenCL specific
+   platformOpenCLLibrary :: CL.Library,
+   platformOpenCLPlatforms :: [CL.Platform]
 }
 
 -- | Load the platform
 loadPlatform :: PlatformConfig -> IO Platform
 loadPlatform config = do
    -- Load OpenCL devices
-   lib <- CL.loadOpenCL (libraryOpenCL config)
-   clPlatforms <- CL.getPlatforms lib
-   clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices lib pf)
-   clContexts <- forM clDevices (\(pf,dev) -> CL.createContext lib pf [dev])
+   clLib <- CL.loadOpenCL (libraryOpenCL config)
+   clPlatforms <- CL.getPlatforms clLib
+   clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices clLib pf)
+   clContexts <- forM clDevices (\(pf,dev) -> CL.createContext clLib pf [dev])
    clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> case ctx of
-      Right ctx' -> wrapMemoryPeer 0 (OpenCLMemory lib dev ctx')
+      Right ctx' -> wrapMemoryPeer 0 (OpenCLMemory clLib dev ctx')
       Left err -> error ("Invalid context: " ++ show err)
 
    -- TODO: load other devices (CUDA, CPU...)
@@ -52,7 +55,9 @@ loadPlatform config = do
       memories = zipWith setMemoryId allMemories [0..]
 
    return Platform {
-      platformMemories = memories
+      platformMemories = memories,
+      platformOpenCLLibrary = clLib,
+      platformOpenCLPlatforms = clPlatforms
    }
 
 

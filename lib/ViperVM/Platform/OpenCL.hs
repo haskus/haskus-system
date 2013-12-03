@@ -754,19 +754,19 @@ getPlatformVersion' :: Library -> Platform -> IO String
 getPlatformVersion' = flip getPlatformInfo' CL_PLATFORM_VERSION
 
 -- | Get platform extensions
-getPlatformExtensions :: Library -> Platform -> IO (Either CLError String)
-getPlatformExtensions = flip getPlatformInfo CL_PLATFORM_EXTENSIONS
+getPlatformExtensions :: Library -> Platform -> IO (Either CLError [String])
+getPlatformExtensions lib pf = fmap words <$> getPlatformInfo lib CL_PLATFORM_EXTENSIONS pf
 
 -- | Get platform extensions (throw an exception if an error occurs)
-getPlatformExtensions' :: Library -> Platform -> IO String
-getPlatformExtensions' = flip getPlatformInfo' CL_PLATFORM_EXTENSIONS
+getPlatformExtensions' :: Library -> Platform -> IO [String]
+getPlatformExtensions' lib pf = words <$> getPlatformInfo' lib CL_PLATFORM_EXTENSIONS pf
 
 data PlatformInfo = PlatformInfo {
    platformName :: String,
    platformVendor :: String,
    platformProfile :: String,
    platformVersion :: String,
-   platformExtensions :: String
+   platformExtensions :: [String]
 } deriving (Show)
 
 -- | Get platform informations (throw an exception if an error occurs)
