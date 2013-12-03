@@ -47,11 +47,11 @@ loadPlatform config = do
 
    -- Assign valid IDs to memories
    let
-      setMemoryId (m,i) = m {memoryId = i}
+      setMemoryId m i = m {memoryId = i}
       allMemories = cpuMemories ++ clMemories
-      memories = map setMemoryId (allMemories `zip` [0..])
+      memories = zipWith setMemoryId allMemories [0..]
 
-   return $ Platform {
+   return Platform {
       platformMemories = memories
    }
 
