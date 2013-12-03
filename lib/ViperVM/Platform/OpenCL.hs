@@ -769,6 +769,7 @@ data PlatformInfo = PlatformInfo {
    platformExtensions :: String
 } deriving (Show)
 
+-- | Get platform informations (throw an exception if an error occurs)
 getPlatformInfos' :: Library -> Platform -> IO PlatformInfo
 getPlatformInfos' lib pf = PlatformInfo
    <$> getPlatformName' lib pf
@@ -777,6 +778,7 @@ getPlatformInfos' lib pf = PlatformInfo
    <*> getPlatformVersion' lib pf
    <*> getPlatformExtensions' lib pf
 
+-- | Create a context
 createContext :: Library -> Platform -> [Device] -> IO (Either CLError Context)
 createContext lib pf devs = do
    let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr pf, 0]
@@ -785,6 +787,7 @@ createContext lib pf devs = do
       withArray props $ \props' ->
          wrapPError (rawClCreateContext lib props' ndevs devs' nullFunPtr nullPtr)
 
+-- | Create a buffer
 createBuffer :: Library -> Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
 createBuffer lib _ ctx flags size = do
    mem <- wrapPError (rawClCreateBuffer lib ctx (toCLSet flags) size nullPtr)
@@ -793,5 +796,6 @@ createBuffer lib _ ctx flags size = do
    --  perform a dummy operation on the buffer (OpenCL 1.0)
    return mem
 
+-- | Release a buffer
 releaseBuffer :: Library -> Mem -> IO ()
 releaseBuffer lib mem = void (rawClReleaseMemObject lib mem)
