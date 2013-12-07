@@ -73,9 +73,6 @@ fromBool :: Bool -> CLbool
 fromBool False = CLbool 0
 fromBool True = CLbool 1
 
-toBool :: CLbool -> Bool
-toBool (CLbool x) = x /= 0
-
 type PlatformInfo_ = CLuint
 type DeviceType_ = CLbitfield
 type DeviceInfo_ = CLuint
@@ -295,9 +292,9 @@ wrapPError :: (Ptr CLint -> IO a) -> IO (Either CLError a)
 wrapPError f = alloca $ \perr -> do
   v <- f perr
   errcode <- fromCL <$> peek perr
-  if errcode == CL_SUCCESS
-    then return (Right v)
-    else return (Left errcode)
+  return $ if errcode == CL_SUCCESS
+    then Right v
+    else Left errcode
   
 wrapCheckSuccess :: IO CLint -> IO Bool
 wrapCheckSuccess f = f >>= return . (==CL_SUCCESS) . fromCL
@@ -842,11 +839,11 @@ enqueue f events = allocaArray nevents $ \pevents -> do
       cnevents = fromIntegral nevents
 
 -- | Transfer from device to host
-enqueueReadBuffer :: Library -> CommandQueue -> Mem -> CLbool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueReadBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueReadBuffer lib cq mem blocking off size ptr = 
-   enqueue (rawClEnqueueReadBuffer lib cq mem blocking off size ptr)
+   enqueue (rawClEnqueueReadBuffer lib cq mem (fromBool blocking) off size ptr)
 
 -- | Transfer from host to device
-enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> CLbool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueWriteBuffer lib cq mem blocking off size ptr = 
-   enqueue (rawClEnqueueWriteBuffer lib cq mem blocking off size ptr)
+   enqueue (rawClEnqueueWriteBuffer lib cq mem (fromBool blocking) off size ptr)
