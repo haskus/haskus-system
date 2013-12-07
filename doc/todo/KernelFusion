@@ -1,0 +1,9 @@
+= Kernel fusion =
+
+Suppose we have a chain of kernels: A -> B -> C -> D
+whose intermediate data are not used by any other kernel.
+Sometimes this can be replaced by a more efficient kernel that performs the whole operation.
+It avoids uncessary runtime system overhead between kernel executions (scheduling decisions, etc.)
+
+== Functional model ==
+* statically we can use rewrite rules to do it
