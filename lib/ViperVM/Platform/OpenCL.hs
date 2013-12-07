@@ -12,7 +12,8 @@ module ViperVM.Platform.OpenCL (
    getPlatformExtensions, getPlatformExtensions',
    getPlatformInfos',
    createContext,
-   createBuffer, releaseBuffer
+   createBuffer, releaseBuffer,
+   createCommandQueue, releaseCommandQueue
 ) where
 
 import Control.Applicative
@@ -335,12 +336,12 @@ clDeviceTypeAll = [CL_DEVICE_TYPE_CPU,
                    CL_DEVICE_TYPE_ACCELERATOR,
                    CL_DEVICE_TYPE_CUSTOM]
 
-data CLCommandQueueProperty =
+data CommandQueueProperty =
      CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
    | CL_QUEUE_PROFILING_ENABLE
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet CLCommandQueueProperty
+instance CLSet CommandQueueProperty
 
 data CLDeviceFPConfig =
      CL_FP_DENORM
@@ -811,3 +812,12 @@ createBuffer lib _ ctx flags size = do
 -- | Release a buffer
 releaseBuffer :: Library -> Mem -> IO ()
 releaseBuffer lib mem = void (rawClReleaseMemObject lib mem)
+
+-- | Create a command queue
+createCommandQueue :: Library -> Context -> Device -> [CommandQueueProperty] -> IO (Either CLError CommandQueue)
+createCommandQueue lib ctx dev props =
+   wrapPError (rawClCreateCommandQueue lib ctx dev (toCLSet props))
+
+-- | Release a command queue
+releaseCommandQueue :: Library -> CommandQueue -> IO ()
+releaseCommandQueue lib cq = void (rawClReleaseCommandQueue lib cq)
