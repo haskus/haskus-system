@@ -14,7 +14,8 @@ module ViperVM.Platform.OpenCL (
    getPlatformInfos',
    createContext,
    createBuffer, releaseBuffer,
-   createCommandQueue, releaseCommandQueue
+   createCommandQueue, releaseCommandQueue,
+   enqueueReadBuffer, enqueueWriteBuffer
 ) where
 
 import Control.Applicative
@@ -28,7 +29,7 @@ import Data.Word
 import Data.Maybe
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign (allocaArray,peekArray)
+import Foreign (allocaArray,peekArray, pokeArray)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr
@@ -65,8 +66,15 @@ instance Entity Sampler where unwrap (Sampler x) = x
 type CLint = Int32
 type CLuint = Word32
 type CLulong = Word64
-type CLbool = CLuint
+newtype CLbool = CLbool CLuint
 type CLbitfield = CLulong
+
+fromBool :: Bool -> CLbool
+fromBool False = CLbool 0
+fromBool True = CLbool 1
+
+toBool :: CLbool -> Bool
+toBool (CLbool x) = x /= 0
 
 type PlatformInfo_ = CLuint
 type DeviceType_ = CLbitfield
@@ -822,3 +830,23 @@ createCommandQueue lib ctx dev props =
 -- | Release a command queue
 releaseCommandQueue :: Library -> CommandQueue -> IO ()
 releaseCommandQueue lib cq = void (rawClReleaseCommandQueue lib cq)
+
+-- | Helper function to enqueue commands
+enqueue :: (CLuint -> Ptr Event -> Ptr Event -> IO CLint) -> [Event] -> IO (Either CLError Event)
+enqueue f [] = alloca $ \event -> whenSuccess (f 0 nullPtr event) (peek event)
+enqueue f events = allocaArray nevents $ \pevents -> do
+  pokeArray pevents events
+  alloca $ \event -> whenSuccess (f cnevents pevents event) (peek event)
+    where
+      nevents = length events
+      cnevents = fromIntegral nevents
+
+-- | Transfer from device to host
+enqueueReadBuffer :: Library -> CommandQueue -> Mem -> CLbool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueReadBuffer lib cq mem blocking off size ptr = 
+   enqueue (rawClEnqueueReadBuffer lib cq mem blocking off size ptr)
+
+-- | Transfer from host to device
+enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> CLbool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueWriteBuffer lib cq mem blocking off size ptr = 
+   enqueue (rawClEnqueueWriteBuffer lib cq mem blocking off size ptr)
