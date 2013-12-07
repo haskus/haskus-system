@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, TemplateHaskell, DeriveDataTypeable #-}
+{-# LANGUAGE ForeignFunctionInterface, TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module ViperVM.Platform.OpenCL (
    Platform, Device, Context, CommandQueue, Mem,
    Event, Program, Kernel, Sampler, Library,
@@ -38,15 +38,27 @@ import System.Posix.DynamicLinker.Template
 -- OpenCL types
 -----------------------------------------------------
 
-type Platform = Ptr ()
-type Device = Ptr ()
-type Context = Ptr ()
-type CommandQueue = Ptr ()
-type Mem = Ptr ()
-type Event = Ptr ()
-type Program = Ptr ()
-type Kernel = Ptr ()
-type Sampler = Ptr ()
+newtype Platform = Platform (Ptr ()) deriving (Eq,Storable)
+newtype Context = Context (Ptr ()) deriving (Eq,Storable)
+newtype Device = Device (Ptr ()) deriving (Eq,Storable)
+newtype CommandQueue = CommandQueue (Ptr ()) deriving (Eq,Storable)
+newtype Mem = Mem (Ptr ()) deriving (Eq,Storable)
+newtype Event = Event (Ptr ()) deriving (Eq,Storable)
+newtype Program = Program (Ptr ()) deriving (Eq,Storable)
+newtype Kernel = Kernel (Ptr ()) deriving (Eq,Storable)
+newtype Sampler = Sampler (Ptr ()) deriving (Eq,Storable)
+
+class Entity e where unwrap :: e -> Ptr ()
+instance Entity Platform where unwrap (Platform x) = x
+instance Entity Device where unwrap (Device x) = x
+instance Entity Context where unwrap (Context x) = x
+instance Entity CommandQueue where unwrap (CommandQueue x) = x
+instance Entity Mem where unwrap (Mem x) = x
+instance Entity Event where unwrap (Event x) = x
+instance Entity Program where unwrap (Program x) = x
+instance Entity Kernel where unwrap (Kernel x) = x
+instance Entity Sampler where unwrap (Sampler x) = x
+
 
 type CLint = Int32
 type CLuint = Word32
@@ -544,7 +556,7 @@ data Library = Library {
    rawClGetSamplerInfo    :: Sampler -> CLSamplerInfo_ -> CSize -> Ptr () -> Ptr CSize -> IO CLint,
  
    -- Context
-   rawClCreateContext     :: Ptr CLContextProperty_ -> CLuint -> Ptr Device -> 
+   rawClCreateContext     :: Ptr CLContextProperty_ -> CLuint -> Ptr Device ->
                            FunPtr ContextCallback -> Ptr () -> Ptr CLint -> IO Context,
    rawClCreateContextFromType :: Ptr CLContextProperty_ -> DeviceType_ -> FunPtr ContextCallback -> 
                            Ptr () -> Ptr CLint -> IO Context,
@@ -781,7 +793,7 @@ getPlatformInfos' lib pf = PlatformInfo
 -- | Create a context
 createContext :: Library -> Platform -> [Device] -> IO (Either CLError Context)
 createContext lib pf devs = do
-   let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr pf, 0]
+   let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
        ndevs = fromIntegral (length devs)
    withArray devs $ \devs' ->
       withArray props $ \props' ->
