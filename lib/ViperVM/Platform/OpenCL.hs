@@ -2,6 +2,7 @@
 module ViperVM.Platform.OpenCL (
    Platform, Device, Context, CommandQueue, Mem,
    Event, Program, Kernel, Sampler, Library,
+   PlatformInfo(..),
    loadOpenCL,
    getNumPlatforms, getPlatforms, 
    getPlatformNumDevices, getPlatformDevices, 
