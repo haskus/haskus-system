@@ -186,6 +186,8 @@ transferRegion link bufIn regIn bufOut regOut = do
       bufPeerIn = bufferPeer bufIn
       bufPeerOut = bufferPeer bufOut
       lnkPeer = linkPeer link
+      clTransfer _ (Left _) = return (Just ErrTransferUnknown)
+      clTransfer lib (Right ev) = CL.waitForEvents lib [ev] >> return Nothing
 
       -- 1D transfers
       transfer1D off1 off2 sz = case (lnkPeer,bufPeerIn,bufPeerOut) of
@@ -193,18 +195,12 @@ transferRegion link bufIn regIn bufOut regOut = do
          -- OpenCL 1D CL -> Host
          (OpenCLLink _ _ cq, OpenCLBuffer lib _ _ mem, HostBuffer ptr) -> do
             let ptr2 = ptr `plusPtr` (fromIntegral off2) -- TODO: unsafe coercion from CSize to Int
-            err <- CL.enqueueReadBuffer lib cq mem True off1 sz ptr2 []
-            case err of
-               Right ev -> CL.waitForEvents lib [ev] >> return Nothing
-               Left _ -> return (Just ErrTransferUnknown)
+            clTransfer lib =<< CL.enqueueReadBuffer lib cq mem True off1 sz ptr2 []
 
          -- OpenCL 1D Host -> CL
          (OpenCLLink _ _ cq, HostBuffer ptr, OpenCLBuffer lib _ _ mem) -> do
             let ptr2 = ptr `plusPtr` (fromIntegral off1) -- TODO: unsafe coercion from CSize to Int
-            err <- CL.enqueueWriteBuffer lib cq mem True off2 sz ptr2 []
-            case err of
-               Right ev -> CL.waitForEvents lib [ev] >> return Nothing
-               Left _ -> return (Just ErrTransferUnknown)
+            clTransfer lib =<< CL.enqueueWriteBuffer lib cq mem True off2 sz ptr2 []
 
          _ -> return (Just ErrTransferInvalid)
 
