@@ -15,7 +15,8 @@ module ViperVM.Platform.OpenCL (
    createContext,
    createBuffer, releaseBuffer,
    createCommandQueue, releaseCommandQueue,
-   enqueueReadBuffer, enqueueWriteBuffer
+   enqueueReadBuffer, enqueueWriteBuffer,
+   waitForEvents
 ) where
 
 import Control.Applicative
@@ -847,3 +848,8 @@ enqueueReadBuffer lib cq mem blocking off size ptr =
 enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueWriteBuffer lib cq mem blocking off size ptr = 
    enqueue (rawClEnqueueWriteBuffer lib cq mem (fromBool blocking) off size ptr)
+
+-- | Wait for events
+waitForEvents :: Library -> [Event] -> IO CLError
+waitForEvents lib evs = withArray evs $ \events -> do
+   fromCL <$> rawClWaitForEvents lib (fromIntegral $ length evs) events
