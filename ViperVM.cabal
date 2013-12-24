@@ -16,9 +16,11 @@ library
 
     ViperVM.Platform.Platform
     ViperVM.Platform.OpenCL
+    ViperVM.Platform.CPU
 
   build-depends:       
     base ==4.6.*,
+    directory,
     dynamic-linker-template,
     unix,
     stm
