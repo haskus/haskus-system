@@ -5,8 +5,12 @@ module ViperVM.Platform.Platform (
    Platform(..), PlatformConfig(..),
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..), AllocError(..),
+   Region(..),
+   Link(..), LinkPeer(..),
+   TransferError(..),
    loadPlatform,
-   allocateBuffer, releaseBuffer
+   allocateBuffer, releaseBuffer,
+   transferRegion
 ) where
 
 import Control.Applicative ( (<$>), pure )
@@ -111,10 +115,38 @@ data BufferPeer =
 
 type BufferSize = Word64
 
+type RegionOffset = CSize
+type RegionSize = CSize
+type RegionStride = Word
+
+-- | A region in a buffer
+data Region =
+     Region1D RegionOffset RegionSize
+   | Region2D RegionOffset Word64 RegionSize RegionStride
+
 -- | Buffer allocation error
 data AllocError = 
      ErrAllocOutOfMemory
    | ErrAllocUnknown
+
+-- | Region transfer error
+data TransferError =
+     ErrTransferIncompatibleRegions
+   | ErrTransferInvalid
+   | ErrTransferUnknown
+
+
+-- | A link between two memories
+data Link = Link {
+   linkId :: ID,
+   linkPeer :: LinkPeer
+}
+
+instance Eq Link where 
+   (==) a b = linkId a == linkId b
+
+data LinkPeer =
+     OpenCLLink CL.Library CL.Device CL.CommandQueue
 
 -- | Allocate a buffer of the given size in the memory 
 allocateBuffer :: BufferSize -> Memory -> IO (Either AllocError Buffer)
@@ -146,6 +178,48 @@ releaseBuffer buf = do
       CUDABuffer     -> undefined
       OpenCLBuffer lib _ _ mem -> CL.releaseBuffer lib mem
       DiskBuffer     -> undefined
+
+-- | Perform a synchronous region transfer
+transferRegion :: Link -> Buffer -> Region -> Buffer -> Region -> IO (Maybe TransferError)
+transferRegion link bufIn regIn bufOut regOut = do
+   let
+      bufPeerIn = bufferPeer bufIn
+      bufPeerOut = bufferPeer bufOut
+      lnkPeer = linkPeer link
+
+      -- 1D transfers
+      transfer1D off1 off2 sz = case (lnkPeer,bufPeerIn,bufPeerOut) of
+
+         -- OpenCL 1D CL -> Host
+         (OpenCLLink _ _ cq, OpenCLBuffer lib _ _ mem, HostBuffer ptr) -> do
+            let ptr2 = ptr `plusPtr` (fromIntegral off2) -- TODO: unsafe coercion from CSize to Int
+            err <- CL.enqueueReadBuffer lib cq mem True off1 sz ptr2 []
+            case err of
+               Right ev -> CL.waitForEvents lib [ev] >> return Nothing
+               Left _ -> return (Just ErrTransferUnknown)
+
+         -- OpenCL 1D Host -> CL
+         (OpenCLLink _ _ cq, HostBuffer ptr, OpenCLBuffer lib _ _ mem) -> do
+            let ptr2 = ptr `plusPtr` (fromIntegral off2) -- TODO: unsafe coercion from CSize to Int
+            err <- CL.enqueueWriteBuffer lib cq mem True off2 sz ptr2 []
+            case err of
+               Right ev -> CL.waitForEvents lib [ev] >> return Nothing
+               Left _ -> return (Just ErrTransferUnknown)
+
+         _ -> return (Just ErrTransferInvalid)
+
+      -- 2D transfers
+      transfer2D = undefined
+
+   -- TODO: check that link interconnects buffers
+
+   case (regIn,regOut) of
+      (Region1D off1 sz1, Region1D off2 sz2)
+         | sz1 == sz2 -> transfer1D off1 off2 sz1
+      (Region2D _ n1 sz1 _, Region2D _ n2 sz2 _)
+         | n1 == n2 && sz1 == sz2 -> transfer2D regIn regOut
+      _ -> return (Just ErrTransferIncompatibleRegions)
+
 
 --------------------------------------------------------
 -- Host
