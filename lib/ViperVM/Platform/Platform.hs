@@ -200,7 +200,7 @@ transferRegion link bufIn regIn bufOut regOut = do
 
          -- OpenCL 1D Host -> CL
          (OpenCLLink _ _ cq, HostBuffer ptr, OpenCLBuffer lib _ _ mem) -> do
-            let ptr2 = ptr `plusPtr` (fromIntegral off2) -- TODO: unsafe coercion from CSize to Int
+            let ptr2 = ptr `plusPtr` (fromIntegral off1) -- TODO: unsafe coercion from CSize to Int
             err <- CL.enqueueWriteBuffer lib cq mem True off2 sz ptr2 []
             case err of
                Right ev -> CL.waitForEvents lib [ev] >> return Nothing
