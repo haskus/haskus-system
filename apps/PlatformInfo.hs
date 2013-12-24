@@ -6,12 +6,8 @@ import ViperVM.Platform.OpenCL
 
 main :: IO ()
 main = do
-   let config = PlatformConfig {
-         libraryOpenCL = "libOpenCL.so"
-       }
-
    putStrLn "Loading Platform..."
-   pf <- loadPlatform config
+   pf <- loadPlatform defaultConfig
 
    let memoriesStr x 
          | x <= 1    = printf "%d memory found" x

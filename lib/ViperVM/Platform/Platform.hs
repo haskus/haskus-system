@@ -2,7 +2,7 @@
 
 -- | Abstract platform
 module ViperVM.Platform.Platform (
-   Platform(..), PlatformConfig(..),
+   Platform(..), PlatformConfig(..), defaultConfig,
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..), AllocError(..),
    Region(..),
@@ -27,7 +27,14 @@ import Foreign.C.Types
 import qualified ViperVM.Platform.OpenCL as CL
 
 data PlatformConfig = PlatformConfig {
-   libraryOpenCL :: String
+   libraryOpenCL :: String,
+   sysfsPath :: String
+}
+
+defaultConfig :: PlatformConfig
+defaultConfig = PlatformConfig {
+   libraryOpenCL = "libOpenCL.so",
+   sysfsPath = "/sys"
 }
 
 data Platform = Platform {
