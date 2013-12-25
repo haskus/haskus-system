@@ -21,6 +21,8 @@ library
   build-depends:       
     base ==4.6.*,
     directory,
+    parsec,
+    containers,
     dynamic-linker-template,
     unix,
     stm
