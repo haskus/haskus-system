@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface, DeriveDataTypeable, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
 module ViperVM.Platform.OpenCL (
    PlatformInfo(..),
-   -- Platforms
+   -- Platform
    getNumPlatforms, getPlatforms, 
    getPlatformNumDevices, getPlatformDevices, 
    getPlatformName, getPlatformName', 
@@ -16,11 +16,11 @@ module ViperVM.Platform.OpenCL (
    createContext, releaseContext,
    -- Buffers
    createBuffer, releaseBuffer,
-   -- Commands
-   createCommandQueue, releaseCommandQueue,
+   -- Transfers
+   enqueueReadBuffer, enqueueWriteBuffer, enqueueCopyBuffer,
+   -- Command queue
+   createCommandQueue, releaseCommandQueue, retainCommandQueue,
    flush, finish, enqueueBarrier,
-   enqueueReadBuffer, enqueueWriteBuffer,
-   -- Events
    waitForEvents,
    module X
 ) where
@@ -220,6 +220,10 @@ createCommandQueue lib ctx dev props =
 releaseCommandQueue :: Library -> CommandQueue -> IO ()
 releaseCommandQueue lib cq = void (rawClReleaseCommandQueue lib cq)
 
+-- | Retain a command queue
+retainCommandQueue :: Library -> CommandQueue -> IO ()
+retainCommandQueue lib cq = void (rawClRetainCommandQueue lib cq)
+
 -- | Helper function to enqueue commands
 enqueue :: (CLuint -> Ptr Event -> Ptr Event -> IO CLint) -> [Event] -> IO (Either CLError Event)
 enqueue f [] = alloca $ \event -> whenSuccess (f 0 nullPtr event) (peek event)
@@ -251,6 +255,11 @@ finish lib cq = fromCL <$> rawClFinish lib cq
 -- | Enqueue barrier
 enqueueBarrier :: Library -> CommandQueue -> IO CLError
 enqueueBarrier lib cq = fromCL <$> rawClEnqueueBarrier lib cq
+
+-- | Copy from one buffer to another
+enqueueCopyBuffer :: Library -> CommandQueue -> Mem -> Mem -> CSize -> CSize -> CSize -> [Event] -> IO (Either CLError Event)
+enqueueCopyBuffer lib cq src dst srcOffset dstOffset sz =
+   enqueue (rawClEnqueueCopyBuffer lib cq src dst srcOffset dstOffset sz)
 
 -- | Wait for events
 waitForEvents :: Library -> [Event] -> IO CLError
