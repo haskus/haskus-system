@@ -18,6 +18,12 @@ library
     ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU
 
+    ViperVM.STM.Common
+    ViperVM.STM.TIntSet
+    ViperVM.STM.TList
+    ViperVM.STM.TMap
+    ViperVM.STM.TSet
+
   build-depends:       
     base ==4.6.*,
     directory,
