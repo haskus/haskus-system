@@ -276,10 +276,15 @@ data CLError =
    | CL_INVALID_COMPILER_OPTIONS                 -- -66
    | CL_INVALID_LINKER_OPTIONS                   -- -67
    | CL_INVALID_DEVICE_PARTITION_COUNT           -- -68
+
+   | CL_PLATFORM_NOT_FOUND_KHR                   -- -1001
    deriving (Show, Eq, Enum, Typeable)
 
 instance CLConstant CLError where
+   toCL CL_PLATFORM_NOT_FOUND_KHR = -1001
    toCL x = fromIntegral (-1 * fromEnum x)
+
+   fromCL (-1001) = CL_PLATFORM_NOT_FOUND_KHR
    fromCL x = toEnum (-1 * fromIntegral x)
 
 instance Exception CLError where
