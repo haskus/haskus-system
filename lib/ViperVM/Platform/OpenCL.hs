@@ -19,6 +19,7 @@ module ViperVM.Platform.OpenCL (
    createBuffer, releaseBuffer,
    -- Commands
    createCommandQueue, releaseCommandQueue,
+   flush, finish, enqueueBarrier,
    enqueueReadBuffer, enqueueWriteBuffer,
    -- Events
    waitForEvents
@@ -863,6 +864,17 @@ enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -
 enqueueWriteBuffer lib cq mem blocking off size ptr = 
    enqueue (rawClEnqueueWriteBuffer lib cq mem (fromBool blocking) off size ptr)
 
+-- | Flush commands
+flush :: Library -> CommandQueue -> IO CLError
+flush lib cq = fromCL <$> rawClFlush lib cq
+
+-- | Finish commands
+finish :: Library -> CommandQueue -> IO CLError
+finish lib cq = fromCL <$> rawClFinish lib cq
+
+-- | Enqueue barrier
+enqueueBarrier :: Library -> CommandQueue -> IO CLError
+enqueueBarrier lib cq = fromCL <$> rawClEnqueueBarrier lib cq
 -- | Wait for events
 waitForEvents :: Library -> [Event] -> IO CLError
 waitForEvents lib evs = withArray evs $ \events -> do
