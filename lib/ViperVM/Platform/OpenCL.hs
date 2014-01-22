@@ -4,6 +4,7 @@ module ViperVM.Platform.OpenCL (
    Event, Program, Kernel, Sampler, Library,
    PlatformInfo(..),
    loadOpenCL,
+   -- Platforms
    getNumPlatforms, getPlatforms, 
    getPlatformNumDevices, getPlatformDevices, 
    getPlatformName, getPlatformName', 
@@ -12,10 +13,14 @@ module ViperVM.Platform.OpenCL (
    getPlatformVersion, getPlatformVersion',
    getPlatformExtensions, getPlatformExtensions',
    getPlatformInfos',
-   createContext,
+   -- Contexts
+   createContext, releaseContext,
+   -- Buffers
    createBuffer, releaseBuffer,
+   -- Commands
    createCommandQueue, releaseCommandQueue,
    enqueueReadBuffer, enqueueWriteBuffer,
+   -- Events
    waitForEvents
 ) where
 
@@ -811,6 +816,10 @@ createContext lib pf devs = do
    withArray devs $ \devs' ->
       withArray props $ \props' ->
          wrapPError (rawClCreateContext lib props' ndevs devs' nullFunPtr nullPtr)
+
+-- | Release a context
+releaseContext :: Library -> Context -> IO ()
+releaseContext lib ctx = void (rawClReleaseContext lib ctx)
 
 -- | Create a buffer
 createBuffer :: Library -> Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
