@@ -15,7 +15,9 @@ module ViperVM.Platform.OpenCL (
    -- Contexts
    createContext, releaseContext,
    -- Buffers
-   createBuffer, releaseBuffer,
+   createBuffer, releaseBuffer, retainBuffer,
+   -- Images
+   createImage2D,createImage3D,
    -- Transfers
    enqueueReadBuffer, enqueueWriteBuffer, enqueueCopyBuffer,
    -- Command queue
@@ -207,9 +209,23 @@ createBuffer lib _ ctx flags size = do
    --  perform a dummy operation on the buffer (OpenCL 1.0)
    return mem
 
+-- | Create 2D image
+createImage2D :: Library -> Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage2D lib ctx flags imgFormat width height rowPitch hostPtr =
+   wrapPError (rawClCreateImage2D lib ctx (toCLSet flags) imgFormat width height rowPitch hostPtr)
+
+-- | Create 3D image
+createImage3D :: Library -> Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage3D lib ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
+   wrapPError (rawClCreateImage3D lib ctx (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
+
 -- | Release a buffer
 releaseBuffer :: Library -> Mem -> IO ()
 releaseBuffer lib mem = void (rawClReleaseMemObject lib mem)
+
+-- | Retain a buffer
+retainBuffer :: Library -> Mem -> IO ()
+retainBuffer lib mem = void (rawClRetainMemObject lib mem)
 
 -- | Create a command queue
 createCommandQueue :: Library -> Context -> Device -> [CommandQueueProperty] -> IO (Either CLError CommandQueue)
@@ -263,5 +279,5 @@ enqueueCopyBuffer lib cq src dst srcOffset dstOffset sz =
 
 -- | Wait for events
 waitForEvents :: Library -> [Event] -> IO CLError
-waitForEvents lib evs = withArray evs $ \events -> do
+waitForEvents lib evs = withArray evs $ \events ->
    fromCL <$> rawClWaitForEvents lib (fromIntegral $ length evs) events
