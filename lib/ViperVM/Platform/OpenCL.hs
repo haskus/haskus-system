@@ -875,6 +875,7 @@ finish lib cq = fromCL <$> rawClFinish lib cq
 -- | Enqueue barrier
 enqueueBarrier :: Library -> CommandQueue -> IO CLError
 enqueueBarrier lib cq = fromCL <$> rawClEnqueueBarrier lib cq
+
 -- | Wait for events
 waitForEvents :: Library -> [Event] -> IO CLError
 waitForEvents lib evs = withArray evs $ \events -> do
