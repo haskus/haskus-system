@@ -66,7 +66,7 @@
 
 \pretitle{\vspace{-30pt} \begin{flushleft} \HorRule \fontsize{50}{50} \usefont{OT1}{phv}{b}{n} \color{DarkRed} \selectfont} % Horizontal rule before the title
 
-\title{ViperVM - Proposal} % Your article title
+\title{ViperVM} % Your article title
 
 \posttitle{\par\end{flushleft}\vskip 0.5em} % Whitespace under the title
 
@@ -107,31 +107,48 @@ architectures (multi-core, GPUs, clusters, etc.).
 
 \section{Introduction}
 
-TODO: 
-\begin{itemize}
-   \item HPC complex, many architectures and many frameworks/models/languages
-   (C/Fortran, SIMD, OpenMP, MPI, CUDA/OpenCL, Xeon Phi, CELL BE, etc.)
-   \item Higher-level approaches
-   \begin{itemize}
-      \item Actor model: Charm++, Erlang, Akka
-      \item Data-flow: StreamIt, BrookGPU
-      \item Task graph: StarPU, StarSS, Parsec
-      \item Partitioned Global Address Space (PGAS): X10, Chapel/ZPL
-      \item Data-parallel: Accelerate, Accelerator, ArBB
-      \item Parallel Functional Programming: Eden
-      \item Logic: Prolog
-   \end{itemize}
-   \item Aims of our project
-   \begin{itemize}
-      \item Common framework for every model
-      \item Easy to use and to extend
-      \item High-performance on every architecture
-      \item Free software
-   \end{itemize}
-\end{itemize}
+Let's imagine current high-performance computer architectures have just been
+invented and the only known way to program them is to use assembly languages
+specific to each of them: would we invent C/C++, PThread, OpenMP, MPI, CUDA,
+OpenCL? Obviously not, or at least not exactly in the same way. The purpose of
+our project is to experiment with programming models and languages in the
+context of high-performance computing without any prerequisite (integration into
+existing applications, support for standard models, etc.). ViperVM aims to be a
+fully integrated software with as few dependencies as possible that defines how
+user input is to be expressed and fully controls the use of the computing
+resources.
+
+
+%TODO: 
+%\begin{itemize}
+%   \item HPC complex, many architectures and many frameworks/models/languages
+%   (C/Fortran, SIMD, OpenMP, MPI, CUDA/OpenCL, Xeon Phi, CELL BE, etc.)
+%   \item Higher-level approaches
+%   \begin{itemize}
+%      \item Actor model: Charm++, Erlang, Akka
+%      \item Data-flow: StreamIt, BrookGPU
+%      \item Task graph: StarPU, StarSS, Parsec
+%      \item Partitioned Global Address Space (PGAS): X10, Chapel/ZPL
+%      \item Data-parallel: Accelerate, Accelerator, ArBB
+%      \item Parallel Functional Programming: Eden
+%      \item Logic: Prolog
+%   \end{itemize}
+%   \item Aims of our project
+%   \begin{itemize}
+%      \item Common framework for every model
+%      \item Easy to use and to extend
+%      \item High-performance on every architecture
+%      \item Free software
+%   \end{itemize}
+%\end{itemize}
 
 
 %------------------------------------------------
+
+\section{Overview}
+
+
+
 
 \section{Themes}
 
