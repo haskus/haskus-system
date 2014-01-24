@@ -88,3 +88,17 @@ It avoids uncessary runtime system overhead between kernel executions (schedulin
 ### Functional model ###
 
 * statically we can use rewrite rules to do it
+
+
+## Out-of-core ##
+
+Make ViperVM manage out-of-core memories such as disks.
+
+* Direct disk access (/dev/sd*)
+* Memory allocator
+* Manage transfers between memory and disks
+
+### Check-pointing ###
+
+Support automatic check-pointing by storing state (remaining computation and
+required buffers) in disk.
