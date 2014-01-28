@@ -17,8 +17,8 @@ Not very difficult to do.
 
 References:
 
-* [http://www.khronos.org/registry/cl/extensions/khr/cl_khr_icd.txt]
-* [https://forge.imag.fr/projects/ocl-icd/]
+* [ICD specification](http://www.khronos.org/registry/cl/extensions/khr/cl_khr_icd.txt)
+* [OCL-ICD project](https://forge.imag.fr/projects/ocl-icd/)
 
 ## CPU support ##
 
@@ -78,7 +78,7 @@ The convention to find kernel parameters can be arbitrarily defined for each
 kind of platform: registers (Pascal, x86-64), "stack" (C x86), structure
 address passed in a register, etc.
 
-## Kernel fusion ## 
+## Kernel fusion ##
 
 Suppose we have a chain of kernels: A -> B -> C -> D
 whose intermediate data are not used by any other kernel.
