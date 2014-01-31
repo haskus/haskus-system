@@ -18,6 +18,9 @@ library
     ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU
 
+    ViperVM.MMU.Region
+    ViperVM.MMU.Types
+
     ViperVM.STM.Common
     ViperVM.STM.TIntSet
     ViperVM.STM.TList
