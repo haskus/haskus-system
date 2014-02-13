@@ -22,6 +22,8 @@ library
     ViperVM.MMU.DataType
     ViperVM.MMU.Data
 
+    ViperVM.MMU.Matrix
+
     ViperVM.STM.Common
     ViperVM.STM.TIntSet
     ViperVM.STM.TList
