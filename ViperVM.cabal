@@ -19,7 +19,8 @@ library
     ViperVM.Platform.CPU
 
     ViperVM.MMU.Region
-    ViperVM.MMU.Types
+    ViperVM.MMU.DataType
+    ViperVM.MMU.Data
 
     ViperVM.STM.Common
     ViperVM.STM.TIntSet

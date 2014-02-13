@@ -1,8 +1,8 @@
-module ViperVM.MMU.Types (
-   Type(..), ScalarType(..), 
+module ViperVM.MMU.DataType (
+   DataType(..), ScalarType(..), 
    Endianness(..), Sign(..), IntBits(..),
    SizeOf,
-   coarseRegionFromType
+   coarseRegionFromDataType
 ) where
 
 import Data.Word
@@ -11,11 +11,11 @@ import ViperVM.MMU.Region
 
 type ArraySize = Word64
 
-data Type = 
+data DataType = 
      Scalar ScalarType
    | Padding Word64
-   | Array Type ArraySize
-   | Struct [Type]
+   | Array DataType ArraySize
+   | Struct [DataType]
 
 data Endianness = LittleEndian | BigEndian
 data Sign = Signed | Unsigned
@@ -38,7 +38,7 @@ instance SizeOf ScalarType where
    sizeOf (TFloat {})      = 4
    sizeOf (TDouble {})     = 8
 
-instance SizeOf Type where
+instance SizeOf DataType where
    sizeOf (Scalar x) = sizeOf x
    sizeOf (Padding n) = n
    sizeOf (Array t n) = n * sizeOf t
@@ -48,8 +48,8 @@ instance SizeOf Type where
 --
 -- Only the last padding bytes of structures in outermost arrays is deleted to
 -- build 2D regions
-coarseRegionFromType :: Type -> Offset -> Region
-coarseRegionFromType t off = case t of
+coarseRegionFromDataType :: DataType -> Offset -> Region
+coarseRegionFromDataType t off = case t of
    Scalar x  -> Region1D off (sizeOf x)
    Padding _ -> Region1D off 0
    Array (Struct []) _ -> Region1D off 0
@@ -63,7 +63,7 @@ coarseRegionFromType t off = case t of
 -- | Return (useful,padding) where `padding` is the number
 -- of padding bytes at the end of the structure and `useful`
 -- the number of remaining bytes (useful ones and other padding)
-stripStructPadding :: [Type] -> (Word64,Word64)
+stripStructPadding :: [DataType] -> (Word64,Word64)
 stripStructPadding ts = (useful,padding)
    where
       (useful,padding) = foldr f (0,0) ts
