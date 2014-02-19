@@ -1,13 +1,15 @@
 module ViperVM.MMU.DataType (
    DataType(..), ScalarType(..), 
-   Endianness(..), Sign(..), IntBits(..),
+   Sign(..), IntBits(..),
    SizeOf,
-   coarseRegionFromDataType
+   coarseRegionFromDataType,
+   coveringRegionFromDataType
 ) where
 
 import Data.Word
 import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
+import ViperVM.Platform.Endianness (Endianness)
 
 type ArraySize = Word64
 
@@ -17,7 +19,6 @@ data DataType =
    | Array DataType ArraySize
    | Struct [DataType]
 
-data Endianness = LittleEndian | BigEndian
 data Sign = Signed | Unsigned
 data IntBits = Bit8 | Bit16 | Bit32 | Bit64
 
@@ -47,7 +48,9 @@ instance SizeOf DataType where
 -- | Return coarse region containing effective data
 --
 -- Only the last padding bytes of structures in outermost arrays is deleted to
--- build 2D regions
+-- build 2D regions.
+--
+-- Useful for data transfers (especially if strided transfers are supported)
 coarseRegionFromDataType :: DataType -> Offset -> Region
 coarseRegionFromDataType t off = case t of
    Scalar x  -> Region1D off (sizeOf x)
@@ -59,6 +62,13 @@ coarseRegionFromDataType t off = case t of
          else Region2D off n useful padding
    Array t' n -> Region1D off (n * sizeOf t')
    Struct ts -> Region1D off (fst $ stripStructPadding ts)
+
+
+-- | Return covering 1D region from data type
+--
+-- Useful for buffer allocation from data type
+coveringRegionFromDataType :: DataType -> Offset -> Region
+coveringRegionFromDataType dt off = regionCover (coarseRegionFromDataType dt off)
 
 -- | Return (useful,padding) where `padding` is the number
 -- of padding bytes at the end of the structure and `useful`

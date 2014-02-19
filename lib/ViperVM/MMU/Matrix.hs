@@ -16,7 +16,9 @@ data MatrixCellType =
    | FFloat 
    | FDouble
 
-data MatrixInstance = MatrixInstance {
-   matrixInstanceData :: Data,
-   matrixInstanceDimOrder :: [Int]
-}
+data MatrixInstance = 
+   -- | A dense matrix instance is a nested array
+   DenseMatrixInstance {
+      denseMatrixInstanceData :: Data,
+      denseMatrixInstanceDimOrder :: [Int]
+   }

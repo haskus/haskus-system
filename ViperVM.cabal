@@ -17,6 +17,7 @@ library
     ViperVM.Platform.Platform
     ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU
+    ViperVM.Platform.Endianness
 
     ViperVM.MMU.Region
     ViperVM.MMU.DataType
@@ -47,6 +48,14 @@ library
 
 executable PlatformInfo
   main-is: PlatformInfo.hs
+  hs-source-dirs: apps
+  ghc-options: -Wall
+  build-depends: 
+    base,
+    ViperVM
+
+executable MMUTest
+  main-is: MMUTest.hs
   hs-source-dirs: apps
   ghc-options: -Wall
   build-depends: 

@@ -5,11 +5,11 @@ module ViperVM.Platform.Platform (
    Platform(..), PlatformConfig(..), defaultConfig,
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..), AllocError(..),
-   Region(..),
    Link(..), LinkPeer(..),
    TransferError(..),
    loadPlatform,
-   allocateBuffer, releaseBuffer,
+   memoryEndianness,
+   allocateBuffer, allocateBufferFromRegion, releaseBuffer,
    transferRegion
 ) where
 
@@ -25,6 +25,8 @@ import Foreign.Ptr
 import Foreign.C.Types
 
 import qualified ViperVM.Platform.OpenCL as CL
+import ViperVM.Platform.Endianness
+import ViperVM.MMU.Region (regionCover, Region(..))
 
 data PlatformConfig = PlatformConfig {
    libraryOpenCL :: String,
@@ -47,14 +49,23 @@ data Platform = Platform {
 -- | Load the platform
 loadPlatform :: PlatformConfig -> IO Platform
 loadPlatform config = do
+   
    -- Load OpenCL devices
    clLib <- CL.loadOpenCL (libraryOpenCL config)
    clPlatforms <- CL.getPlatforms clLib
    clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices clLib pf)
    clContexts <- forM clDevices (\(pf,dev) -> CL.createContext clLib pf [dev])
    clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> case ctx of
-      Right ctx' -> wrapMemoryPeer 0 (OpenCLMemory clLib dev ctx')
       Left err -> error ("Invalid context: " ++ show err)
+      Right ctx' -> do
+         endianness <- CL.getDeviceEndianness' clLib dev
+         let memPeer = OpenCLMemory {
+                  clMemLibrary = clLib,
+                  clMemDevice = dev,
+                  clMemContext = ctx',
+                  clMemEndianness = endianness
+               }
+         wrapMemoryPeer 0 memPeer
 
    -- TODO: load other devices (CUDA, CPU...)
    let cpuMemories = []
@@ -98,11 +109,24 @@ wrapMemoryPeer ident peer = Memory ident peer <$> newTVarIO []
 instance Eq Memory where
    (==) a b = memoryId a == memoryId b
 
+-- | Indicate the endianness of a memory
+memoryEndianness :: Memory -> Endianness
+memoryEndianness mem = case memoryPeer mem of
+   m@(OpenCLMemory {}) -> clMemEndianness m
+   m@(HostMemory {}) -> hostMemEndianness m
+
 -- | Backend specific memory fields
 data MemoryPeer =
-     HostMemory
+     HostMemory {
+         hostMemEndianness :: Endianness
+     }
+   | OpenCLMemory {
+         clMemLibrary :: CL.Library,
+         clMemDevice :: CL.Device,
+         clMemContext :: CL.Context,
+         clMemEndianness :: Endianness
+     }
    | CUDAMemory
-   | OpenCLMemory CL.Library CL.Device CL.Context
    | DiskMemory
 
 -- | Memory buffer
@@ -122,25 +146,18 @@ data BufferPeer =
 
 type BufferSize = Word64
 
-type RegionOffset = CSize
-type RegionSize = CSize
-type RegionStride = Word
-
--- | A region in a buffer
-data Region =
-     Region1D RegionOffset RegionSize
-   | Region2D RegionOffset Word64 RegionSize RegionStride
-
 -- | Buffer allocation error
 data AllocError = 
      ErrAllocOutOfMemory
    | ErrAllocUnknown
+   deriving (Show,Eq)
 
 -- | Region transfer error
 data TransferError =
      ErrTransferIncompatibleRegions
    | ErrTransferInvalid
    | ErrTransferUnknown
+   deriving (Show,Eq)
 
 
 -- | A link between two memories
@@ -160,7 +177,7 @@ allocateBuffer :: BufferSize -> Memory -> IO (Either AllocError Buffer)
 allocateBuffer size mem = allocPeer size mem >>= traverse wrapStore
    where
       allocPeer = case memoryPeer mem of
-         HostMemory      -> allocateHost
+         HostMemory {}   -> allocateHost
          CUDAMemory      -> undefined
          OpenCLMemory {} -> allocateOpenCL
          DiskMemory      -> undefined
@@ -170,6 +187,13 @@ allocateBuffer size mem = allocPeer size mem >>= traverse wrapStore
          -- Add allocated buffer to memory buffer list
          atomically $ modifyTVar (memoryBuffers mem) ((:) buf)
          return buf
+
+-- | Allocate a buffer able to contain the given region
+allocateBufferFromRegion :: Region -> Memory -> IO (Either AllocError Buffer)
+allocateBufferFromRegion reg mem = allocateBuffer bs mem
+   where
+      (Region1D off sz) = regionCover reg
+      bs = off + sz
 
 -- | Release a buffer
 releaseBuffer :: Buffer -> IO ()
@@ -218,7 +242,7 @@ transferRegion link bufIn regIn bufOut regOut = do
 
    case (regIn,regOut) of
       (Region1D off1 sz1, Region1D off2 sz2)
-         | sz1 == sz2 -> transfer1D off1 off2 sz1
+         | sz1 == sz2 -> transfer1D (fromIntegral off1) (fromIntegral off2) (fromIntegral sz1)
       (Region2D _ n1 sz1 _, Region2D _ n2 sz2 _)
          | n1 == n2 && sz1 == sz2 -> transfer2D regIn regOut
       _ -> return (Just ErrTransferIncompatibleRegions)
@@ -246,7 +270,10 @@ allocateHost size _ = do
 allocateOpenCL :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
 allocateOpenCL size mem = do
    let 
-      OpenCLMemory lib dev ctx = memoryPeer mem
+      peer = memoryPeer mem
+      lib = clMemLibrary peer
+      ctx = clMemContext peer
+      dev = clMemDevice peer
       flags = []
    buf <- CL.createBuffer lib dev ctx flags (fromIntegral size)
    

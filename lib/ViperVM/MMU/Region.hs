@@ -1,7 +1,8 @@
 -- | A region is the shape of a set of memory cells in a buffer with an offset
 module ViperVM.MMU.Region(
    Region(..), Offset,
-   regionOffset, regionsWithSameShape, overlapsAny, overlaps
+   regionOffset, regionsWithSameShape, overlapsAny, overlaps,
+   regionCover
 ) where
 
 import Data.Word
@@ -28,6 +29,11 @@ regionOffset :: Region -> Offset
 regionOffset (Region1D off _) = off
 regionOffset (Region2D off _ _ _) = off
 
+
+-- | Return covering 1D region
+regionCover :: Region -> Region
+regionCover r@(Region1D {}) = r
+regionCover (Region2D off nrows sz pad) = Region1D off (nrows * (sz+pad))
 
 -- | Retrieve regions that overlap with the given region
 overlapsAny :: Region -> [Region] -> [Region]
