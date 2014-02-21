@@ -9,7 +9,7 @@ module ViperVM.MMU.DataType (
 import Data.Word
 import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
-import ViperVM.Platform.Endianness (Endianness)
+import ViperVM.Platform.Types (Endianness)
 
 type ArraySize = Word64
 

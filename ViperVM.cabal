@@ -18,6 +18,15 @@ library
     ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU
     ViperVM.Platform.Endianness
+    ViperVM.Platform.AllocFree
+    ViperVM.Platform.Types
+
+    ViperVM.Platform.OpenCL.Bindings
+    ViperVM.Platform.OpenCL.Channel
+    ViperVM.Platform.OpenCL.Error
+    ViperVM.Platform.OpenCL.ImageFormat
+    ViperVM.Platform.OpenCL.Library
+    ViperVM.Platform.OpenCL.Types
 
     ViperVM.MMU.Region
     ViperVM.MMU.DataType

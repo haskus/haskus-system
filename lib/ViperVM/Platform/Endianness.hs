@@ -1,5 +1,6 @@
 module ViperVM.Platform.Endianness (
-   Endianness(..), getMemoryEndianness
+   getMemoryEndianness,
+   getOpenCLDeviceEndianness
 ) where
 
 import Foreign.Marshal.Alloc (alloca)
@@ -8,10 +9,11 @@ import Data.Bits ((.|.), shiftL)
 import Data.Word (Word8, Word32)
 import Foreign.Ptr (castPtr, Ptr)
 import Foreign.Storable (poke)
+import Control.Applicative ((<$>))
 
--- | Memory endianness
-data Endianness = LittleEndian | BigEndian
+import ViperVM.Platform.Types (Endianness(..))
 
+import qualified ViperVM.Platform.OpenCL as CL
 
 -- | Indicate the endianness of the host memory
 getMemoryEndianness :: IO Endianness
@@ -22,3 +24,11 @@ getMemoryEndianness = do
       poke p magic
       rs <- peekArray 4 (castPtr p :: Ptr Word8)
       return $ if rs == [1,2,3,4] then BigEndian else LittleEndian
+
+
+-- | Get endianness of an OpenCL device
+getOpenCLDeviceEndianness :: CL.Library -> CL.Device -> IO Endianness
+getOpenCLDeviceEndianness lib dev = toEndianness <$> CL.isDeviceLittleEndian' lib dev
+   where
+      toEndianness True = LittleEndian
+      toEndianness False = BigEndian

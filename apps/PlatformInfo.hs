@@ -1,6 +1,7 @@
 import Text.Printf
 import Control.Monad (forM_)
 
+import ViperVM.Platform.Types
 import ViperVM.Platform.Platform
 import ViperVM.Platform.OpenCL
 

@@ -5,7 +5,7 @@ module ViperVM.MMU.Data (
 
 import ViperVM.MMU.DataType
 import ViperVM.MMU.Region
-import ViperVM.Platform.Platform (Buffer)
+import ViperVM.Platform.Types (Buffer)
 
 -- | A data in a memory
 data Data = Data DataType Offset Buffer

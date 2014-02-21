@@ -1,12 +1,8 @@
-{-# LANGUAGE ForeignFunctionInterface, TupleSections #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | Abstract platform
 module ViperVM.Platform.Platform (
    Platform(..), PlatformConfig(..), defaultConfig,
-   Memory(..), MemoryPeer(..),
-   Buffer(..), BufferPeer(..), AllocError(..),
-   Link(..), LinkPeer(..),
-   TransferError(..),
    loadPlatform,
    memoryEndianness,
    allocateBuffer, allocateBufferFromRegion, releaseBuffer,
@@ -20,12 +16,12 @@ import Data.Traversable (Traversable, traverse)
 import Data.Foldable (Foldable, foldMap)
 import Data.Monoid (mempty)
 import Data.List
-import Data.Word
 import Foreign.Ptr
-import Foreign.C.Types
 
 import qualified ViperVM.Platform.OpenCL as CL
 import ViperVM.Platform.Endianness
+import ViperVM.Platform.AllocFree
+import ViperVM.Platform.Types
 import ViperVM.MMU.Region (regionCover, Region(..))
 
 data PlatformConfig = PlatformConfig {
@@ -58,7 +54,7 @@ loadPlatform config = do
    clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> case ctx of
       Left err -> error ("Invalid context: " ++ show err)
       Right ctx' -> do
-         endianness <- CL.getDeviceEndianness' clLib dev
+         endianness <- getOpenCLDeviceEndianness clLib dev
          let memPeer = OpenCLMemory {
                   clMemLibrary = clLib,
                   clMemDevice = dev,
@@ -93,21 +89,8 @@ instance Traversable (Either e) where
    traverse _ (Left e) = pure (Left e)
    traverse f (Right x) = Right <$> f x
 
--- | Unique identifier
-type ID = Int
-
--- | Memory
-data Memory = Memory {
-   memoryId :: ID,
-   memoryPeer :: MemoryPeer,
-   memoryBuffers :: TVar [Buffer]
-}
-
 wrapMemoryPeer :: ID -> MemoryPeer -> IO Memory
 wrapMemoryPeer ident peer = Memory ident peer <$> newTVarIO []
-
-instance Eq Memory where
-   (==) a b = memoryId a == memoryId b
 
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness
@@ -115,62 +98,6 @@ memoryEndianness mem = case memoryPeer mem of
    m@(OpenCLMemory {}) -> clMemEndianness m
    m@(HostMemory {}) -> hostMemEndianness m
 
--- | Backend specific memory fields
-data MemoryPeer =
-     HostMemory {
-         hostMemEndianness :: Endianness
-     }
-   | OpenCLMemory {
-         clMemLibrary :: CL.Library,
-         clMemDevice :: CL.Device,
-         clMemContext :: CL.Context,
-         clMemEndianness :: Endianness
-     }
-   | CUDAMemory
-   | DiskMemory
-
--- | Memory buffer
-data Buffer = Buffer {
-   bufferMemory :: Memory,
-   bufferSize :: BufferSize,
-   bufferPeer :: BufferPeer
-} deriving (Eq)
-
--- | Backend specific buffer fields
-data BufferPeer = 
-     HostBuffer (Ptr ())
-   | CUDABuffer
-   | OpenCLBuffer CL.Library CL.Device CL.Context CL.Mem
-   | DiskBuffer
-   deriving (Eq)
-
-type BufferSize = Word64
-
--- | Buffer allocation error
-data AllocError = 
-     ErrAllocOutOfMemory
-   | ErrAllocUnknown
-   deriving (Show,Eq)
-
--- | Region transfer error
-data TransferError =
-     ErrTransferIncompatibleRegions
-   | ErrTransferInvalid
-   | ErrTransferUnknown
-   deriving (Show,Eq)
-
-
--- | A link between two memories
-data Link = Link {
-   linkId :: ID,
-   linkPeer :: LinkPeer
-}
-
-instance Eq Link where 
-   (==) a b = linkId a == linkId b
-
-data LinkPeer =
-     OpenCLLink CL.Library CL.Device CL.CommandQueue
 
 -- | Allocate a buffer of the given size in the memory 
 allocateBuffer :: BufferSize -> Memory -> IO (Either AllocError Buffer)
@@ -248,35 +175,3 @@ transferRegion link bufIn regIn bufOut regOut = do
       _ -> return (Just ErrTransferIncompatibleRegions)
 
 
---------------------------------------------------------
--- Host
---------------------------------------------------------
-
-foreign import ccall unsafe "stdlib.h malloc"  malloc :: CSize -> IO (Ptr a)
-foreign import ccall unsafe "stdlib.h free"    free   :: Ptr a -> IO ()
-
--- | Allocate a buffer in host memory
-allocateHost :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
-allocateHost size _ = do
-   ptr <- malloc (fromIntegral size)
-   return $ if ptr == nullPtr
-      then Left ErrAllocOutOfMemory
-      else Right (HostBuffer ptr)
-
---------------------------------------------------------
--- OpenCL
---------------------------------------------------------
-
-allocateOpenCL :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
-allocateOpenCL size mem = do
-   let 
-      peer = memoryPeer mem
-      lib = clMemLibrary peer
-      ctx = clMemContext peer
-      dev = clMemDevice peer
-      flags = []
-   buf <- CL.createBuffer lib dev ctx flags (fromIntegral size)
-   
-   return $ case buf of
-      Right m -> Right (OpenCLBuffer lib dev ctx m)
-      Left _ -> Left ErrAllocUnknown -- FIXME: return appropriate error
