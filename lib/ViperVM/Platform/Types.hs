@@ -15,7 +15,7 @@ import Data.Word (Word64)
 import qualified ViperVM.Platform.OpenCL as CL
 
 -- | Memory endianness
-data Endianness = LittleEndian | BigEndian
+data Endianness = LittleEndian | BigEndian deriving (Show)
 
 -- | Unique identifier
 type ID = Int
@@ -33,13 +33,15 @@ instance Eq Memory where
 -- | Backend specific memory fields
 data MemoryPeer =
      HostMemory {
+         hostMemSize :: Word64,
          hostMemEndianness :: Endianness
      }
    | OpenCLMemory {
          clMemLibrary :: CL.Library,
          clMemDevice :: CL.Device,
          clMemContext :: CL.Context,
-         clMemEndianness :: Endianness
+         clMemEndianness :: Endianness,
+         clMemSize :: Word64
      }
    | CUDAMemory
    | DiskMemory

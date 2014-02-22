@@ -4,7 +4,7 @@
 module ViperVM.Platform.Platform (
    Platform(..), PlatformConfig(..), defaultConfig,
    loadPlatform,
-   memoryEndianness,
+   memoryEndianness, memorySize,
    allocateBuffer, allocateBufferFromRegion, releaseBuffer,
    transferRegion
 ) where
@@ -16,9 +16,11 @@ import Data.Traversable (Traversable, traverse)
 import Data.Foldable (Foldable, foldMap)
 import Data.Monoid (mempty)
 import Data.List
+import Data.Word (Word64)
 import Foreign.Ptr
 
 import qualified ViperVM.Platform.OpenCL as CL
+import qualified ViperVM.Platform.CPU as CPU
 import ViperVM.Platform.Endianness
 import ViperVM.Platform.AllocFree
 import ViperVM.Platform.Types
@@ -55,21 +57,34 @@ loadPlatform config = do
       Left err -> error ("Invalid context: " ++ show err)
       Right ctx' -> do
          endianness <- getOpenCLDeviceEndianness clLib dev
+         size <- CL.getDeviceGlobalMemSize' clLib dev
          let memPeer = OpenCLMemory {
                   clMemLibrary = clLib,
                   clMemDevice = dev,
                   clMemContext = ctx',
-                  clMemEndianness = endianness
+                  clMemEndianness = endianness,
+                  clMemSize = size
                }
          wrapMemoryPeer 0 memPeer
 
-   -- TODO: load other devices (CUDA, CPU...)
-   let cpuMemories = []
+   -- | Load host
+   numa <- CPU.loadNUMA (sysfsPath config)
+   hostEndianness <- getMemoryEndianness
+   hostMemories <- forM (CPU.numaNodes numa) $ \node -> do
+      let m = CPU.nodeMemory node
+      (total,_) <- CPU.nodeMemoryStatus m
+      let memPeer = HostMemory {
+         hostMemEndianness = hostEndianness,
+         hostMemSize = total
+      }
+      wrapMemoryPeer 0 memPeer
+
+   -- TODO: load other devices (CUDA...)
 
    -- Assign valid IDs to memories
    let
       setMemoryId m i = m {memoryId = i}
-      allMemories = cpuMemories ++ clMemories
+      allMemories = hostMemories ++ clMemories
       memories = zipWith setMemoryId allMemories [0..]
 
    return Platform {
@@ -98,6 +113,11 @@ memoryEndianness mem = case memoryPeer mem of
    m@(OpenCLMemory {}) -> clMemEndianness m
    m@(HostMemory {}) -> hostMemEndianness m
 
+-- | Return total memory size
+memorySize :: Memory -> Word64
+memorySize mem = case memoryPeer mem of
+   m@(OpenCLMemory {}) -> clMemSize m
+   m@(HostMemory {}) -> hostMemSize m
 
 -- | Allocate a buffer of the given size in the memory 
 allocateBuffer :: BufferSize -> Memory -> IO (Either AllocError Buffer)
@@ -117,7 +137,7 @@ allocateBuffer size mem = allocPeer size mem >>= traverse wrapStore
 
 -- | Allocate a buffer able to contain the given region
 allocateBufferFromRegion :: Region -> Memory -> IO (Either AllocError Buffer)
-allocateBufferFromRegion reg mem = allocateBuffer bs mem
+allocateBufferFromRegion reg = allocateBuffer bs
    where
       (Region1D off sz) = regionCover reg
       bs = off + sz

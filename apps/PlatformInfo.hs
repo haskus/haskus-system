@@ -1,7 +1,8 @@
 import Text.Printf
-import Control.Monad (forM_)
+import Control.Monad (forM_, (<=<))
+import Data.Foldable (traverse_)
 
-import ViperVM.Platform.Types
+import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Platform
 import ViperVM.Platform.OpenCL
 
@@ -14,6 +15,8 @@ main = do
          | x <= 1    = printf "%d memory found" x
          | otherwise = printf "%d memories found" x
    putStrLn . memoriesStr . length $ platformMemories pf
+
+   traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
 
    putStrLn "OpenCL platforms:"
    forM_ (platformOpenCLPlatforms pf) $ \clPf -> do

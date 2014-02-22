@@ -12,6 +12,7 @@ module ViperVM.Platform.OpenCL (
    getPlatformInfos',
    -- Device
    isDeviceLittleEndian, isDeviceLittleEndian',
+   getDeviceGlobalMemSize, getDeviceGlobalMemSize',
    -- Contexts
    createContext, releaseContext,
    -- Buffers
@@ -179,6 +180,14 @@ getDeviceInfoBool lib infoid dev = do
       (rawClGetDeviceInfo lib dev (toCL infoid) size (castPtr dat) nullPtr)
       (fromCLBool <$> peek dat)
 
+-- | Return a unsigned long device info
+getDeviceInfoWord64 :: Library -> DeviceInfoTag -> Device -> IO (Either CLError Word64)
+getDeviceInfoWord64 lib infoid dev = do
+   let size = fromIntegral $ sizeOf (0 :: Word64)
+   alloca $ \(dat :: Ptr Word64) -> whenSuccess 
+      (rawClGetDeviceInfo lib dev (toCL infoid) size (castPtr dat) nullPtr)
+      (peek dat)
+
 -- | Indicate if the device is little endian
 isDeviceLittleEndian :: Library -> Device -> IO (Either CLError Bool)
 isDeviceLittleEndian lib dev = getDeviceInfoBool lib CL_DEVICE_ENDIAN_LITTLE dev
@@ -186,6 +195,14 @@ isDeviceLittleEndian lib dev = getDeviceInfoBool lib CL_DEVICE_ENDIAN_LITTLE dev
 -- | Indicate if the device is little endian (throw an exception on error)
 isDeviceLittleEndian' :: Library -> Device -> IO Bool
 isDeviceLittleEndian' lib dev = toException <$> isDeviceLittleEndian lib dev
+
+-- | Size of global device memory in bytes
+getDeviceGlobalMemSize :: Library -> Device -> IO (Either CLError Word64)
+getDeviceGlobalMemSize lib = getDeviceInfoWord64 lib CL_DEVICE_GLOBAL_MEM_SIZE
+
+-- | Size of global device memory in bytes (throw an exception on error)
+getDeviceGlobalMemSize' :: Library -> Device -> IO Word64
+getDeviceGlobalMemSize' lib dev = toException <$> getDeviceGlobalMemSize lib dev
 
 -- | Create a context
 createContext :: Library -> Platform -> [Device] -> IO (Either CLError Context)

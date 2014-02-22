@@ -11,16 +11,20 @@ import Data.Word
 import qualified Data.Map as Map
 import Data.Map ((!))
 
-data Platform = Platform {
-   nodes :: [Node]
+data NUMA = NUMA {
+   numaNodes :: [Node]
 } deriving (Show)
 
-data Node = Node [FilePath] FilePath deriving (Show)
-newtype NodeMemory = NodeMemory FilePath
+data Node = Node {
+   nodeCPUs :: [FilePath],
+   nodeMemory :: NodeMemory
+} deriving (Show)
+
+newtype NodeMemory = NodeMemory FilePath deriving (Show)
 
 -- | Load platform from sysfs (Linux)
-loadPlatform :: FilePath -> IO Platform
-loadPlatform sysfsPath = do
+loadNUMA :: FilePath -> IO NUMA
+loadNUMA sysfsPath = do
    let nodePath = sysfsPath ++ "/devices/system/node/"
 
    nDirs <- filter ("node" `isPrefixOf`) <$> getDirectoryContents nodePath
@@ -30,9 +34,9 @@ loadPlatform sysfsPath = do
       let
          cpuDirs = filter ("cpu" `isPrefixOf`) contents
 
-      return $ Node cpuDirs (nodePath ++ nDir ++ "/meminfo")
+      return $ Node cpuDirs (NodeMemory $ nodePath ++ nDir ++ "/meminfo")
 
-   return $ Platform ndes
+   return $ NUMA ndes
 
 
 -- | Return (total,free) memory for the given node
@@ -44,7 +48,8 @@ nodeMemoryStatus (NodeMemory path) = do
       Left err -> error ("meminfo parsing error: " ++ show err)
       Right v -> return v
 
-   return (read $ infos ! "MemTotal", read $ infos ! "MemFree")
+   return ((*1024) . read $ infos ! "MemTotal", 
+           (*1024) . read $ infos ! "MemFree")
 
    where
       parseFile = many1 parseLine

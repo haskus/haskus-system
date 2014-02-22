@@ -15,6 +15,7 @@ library
   exposed-modules:     
 
     ViperVM.Platform.Platform
+    ViperVM.Platform.PlatformInfo
     ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU
     ViperVM.Platform.Endianness
