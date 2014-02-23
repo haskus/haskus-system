@@ -24,9 +24,19 @@ library
 
     ViperVM.Platform.OpenCL.Bindings
     ViperVM.Platform.OpenCL.Channel
+    ViperVM.Platform.OpenCL.CommandQueue
+    ViperVM.Platform.OpenCL.Context
+    ViperVM.Platform.OpenCL.Device
+    ViperVM.Platform.OpenCL.Entity
     ViperVM.Platform.OpenCL.Error
+    ViperVM.Platform.OpenCL.Event
     ViperVM.Platform.OpenCL.ImageFormat
+    ViperVM.Platform.OpenCL.Kernel
     ViperVM.Platform.OpenCL.Library
+    ViperVM.Platform.OpenCL.Mem
+    ViperVM.Platform.OpenCL.Platform
+    ViperVM.Platform.OpenCL.Program
+    ViperVM.Platform.OpenCL.Sampler
     ViperVM.Platform.OpenCL.Types
 
     ViperVM.MMU.Region

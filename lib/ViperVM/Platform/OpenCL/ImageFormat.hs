@@ -23,3 +23,24 @@ instance Storable CLImageFormat where
       pokeByteOff p 0 (toCL a :: Word32)
       pokeByteOff p 4 (toCL b :: Word32)
 
+data CLAddressingMode =
+     CL_ADDRESS_NONE
+   | CL_ADDRESS_CLAMP_TO_EDGE
+   | CL_ADDRESS_CLAMP
+   | CL_ADDRESS_REPEAT
+   | CL_ADDRESS_MIRRORED_REPEAT
+   deriving (Show,Enum)
+
+instance CLConstant CLAddressingMode where
+   toCL x = fromIntegral (fromEnum x + 0x1130)
+   fromCL x = toEnum (fromIntegral x - 0x1130)
+
+data CLFilterMode =
+     CL_FILTER_NEAREST
+   | CL_FILTER_LINEAR
+   deriving (Show,Enum)
+
+instance CLConstant CLFilterMode where
+   toCL x = fromIntegral (fromEnum x + 0x1140)
+   fromCL x = toEnum (fromIntegral x - 0x1140)
+
