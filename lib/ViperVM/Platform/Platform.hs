@@ -70,7 +70,7 @@ loadPlatform config = do
                }
          wrapMemoryPeer 0 memPeer
 
-   -- | Load host
+   -- Load host
    numa <- CPU.loadNUMA (sysfsPath config)
    hostEndianness <- getMemoryEndianness
    hostMemories <- forM (CPU.numaNodes numa) $ \node -> do

@@ -108,6 +108,7 @@ toException :: Either CLError a -> a
 toException (Right a) = a
 toException (Left a) = throw a
 
+-- | Wrap an OpenCL call taking an CLint error pointer as last parameter
 wrapPError :: (Ptr CLint -> IO a) -> IO (Either CLError a)
 wrapPError f = alloca $ \perr -> do
   v <- f perr
@@ -116,9 +117,11 @@ wrapPError f = alloca $ \perr -> do
     then Right v
     else Left errcode
   
+-- | Return True if the given OpenCL call returns CL_SUCCESS
 wrapCheckSuccess :: IO CLint -> IO Bool
-wrapCheckSuccess f = f >>= return . (==CL_SUCCESS) . fromCL
+wrapCheckSuccess f = (== CL_SUCCESS) . fromCL <$> f
 
+-- | Wrap an OpenCL call to get entity info
 wrapGetInfo :: Storable a => (Ptr a -> Ptr CSize -> IO CLint) -> (a -> b) -> IO (Either CLError b)
 wrapGetInfo fget fconvert= alloca $ \dat -> do
   errcode <- fget dat nullPtr
@@ -126,10 +129,10 @@ wrapGetInfo fget fconvert= alloca $ \dat -> do
     then Right . fconvert <$> peek dat
     else return (Left (fromCL errcode))
 
+-- | If the OpenCL call (first parameter) is successful, evaluate and return the second parameter, otherwise return the error
 whenSuccess :: IO CLint -> IO a -> IO (Either CLError a)
 whenSuccess fcheck fval = do
   errcode <- fcheck
   if errcode == toCL CL_SUCCESS
     then Right <$> fval
     else return $ Left (fromCL errcode)
-
