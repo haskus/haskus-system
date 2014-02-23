@@ -71,17 +71,18 @@ getPlatforms lib = do
             _ -> return []
 
 -- | Return the number of available devices
-getPlatformNumDevices :: Library -> Platform -> IO Word32
-getPlatformNumDevices lib pf = alloca $ \numDevices -> do 
-   err <- rawClGetDeviceIDs lib (unwrap pf) (toCLSet clDeviceTypeAll) 0 nullPtr numDevices
+getPlatformNumDevices :: Platform -> IO Word32
+getPlatformNumDevices pf = alloca $ \numDevices -> do 
+   err <- rawClGetDeviceIDs (cllib pf) (unwrap pf) (toCLSet clDeviceTypeAll) 0 nullPtr numDevices
    case fromCL err of
       CL_SUCCESS -> peek numDevices
       _ -> return 0
 
 -- | Get available platform devices
-getPlatformDevices :: Library -> Platform -> IO [Device]
-getPlatformDevices lib pf = do
-   nbDevices <- getPlatformNumDevices lib pf
+getPlatformDevices :: Platform -> IO [Device]
+getPlatformDevices pf = do
+   let lib = cllib pf
+   nbDevices <- getPlatformNumDevices pf
    if nbDevices == 0
       then return []
       else allocaArray (fromIntegral nbDevices) $ \devs -> do
@@ -91,9 +92,10 @@ getPlatformDevices lib pf = do
             _ -> return []
 
 -- | Get platform info
-getPlatformInfo :: Library -> PlatformInfoTag -> Platform -> IO (Either CLError String)
-getPlatformInfo lib infoid pf = getSize >>>= getInfo
+getPlatformInfo :: PlatformInfoTag -> Platform -> IO (Either CLError String)
+getPlatformInfo infoid pf = getSize >>>= getInfo
    where
+      lib = cllib pf
       (>>>=) f g = do
          t <- f
          case t of
@@ -113,48 +115,48 @@ getPlatformInfo lib infoid pf = getSize >>>= getInfo
          (peekCString buff)
 
 -- | Get platform info (throw an exception if an error occurs)
-getPlatformInfo' :: Library -> PlatformInfoTag -> Platform -> IO String
-getPlatformInfo' lib infoid platform = toException <$> getPlatformInfo lib infoid platform
+getPlatformInfo' :: PlatformInfoTag -> Platform -> IO String
+getPlatformInfo' infoid platform = toException <$> getPlatformInfo infoid platform
 
 -- | Get platform name
-getPlatformName :: Library -> Platform -> IO (Either CLError String)
-getPlatformName = flip getPlatformInfo CL_PLATFORM_NAME
+getPlatformName :: Platform -> IO (Either CLError String)
+getPlatformName = getPlatformInfo CL_PLATFORM_NAME
 
 -- | Get platform name (throw an exception if an error occurs)
-getPlatformName' :: Library -> Platform -> IO String
-getPlatformName' = flip getPlatformInfo' CL_PLATFORM_NAME
+getPlatformName' :: Platform -> IO String
+getPlatformName' = getPlatformInfo' CL_PLATFORM_NAME
 
 -- | Get platform vendor
-getPlatformVendor :: Library -> Platform -> IO (Either CLError String)
-getPlatformVendor = flip getPlatformInfo CL_PLATFORM_VENDOR
+getPlatformVendor :: Platform -> IO (Either CLError String)
+getPlatformVendor = getPlatformInfo CL_PLATFORM_VENDOR
 
 -- | Get platform vendor (throw an exception if an error occurs)
-getPlatformVendor' :: Library -> Platform -> IO String
-getPlatformVendor' = flip getPlatformInfo' CL_PLATFORM_VENDOR
+getPlatformVendor' :: Platform -> IO String
+getPlatformVendor' = getPlatformInfo' CL_PLATFORM_VENDOR
 
 -- | Get platform profile
-getPlatformProfile :: Library -> Platform -> IO (Either CLError String)
-getPlatformProfile = flip getPlatformInfo CL_PLATFORM_PROFILE
+getPlatformProfile :: Platform -> IO (Either CLError String)
+getPlatformProfile = getPlatformInfo CL_PLATFORM_PROFILE
 
 -- | Get platform profile (throw an exception if an error occurs)
-getPlatformProfile' :: Library -> Platform -> IO String
-getPlatformProfile' = flip getPlatformInfo' CL_PLATFORM_PROFILE
+getPlatformProfile' :: Platform -> IO String
+getPlatformProfile' = getPlatformInfo' CL_PLATFORM_PROFILE
 
 -- | Get platform version
-getPlatformVersion :: Library -> Platform -> IO (Either CLError String)
-getPlatformVersion = flip getPlatformInfo CL_PLATFORM_VERSION
+getPlatformVersion :: Platform -> IO (Either CLError String)
+getPlatformVersion = getPlatformInfo CL_PLATFORM_VERSION
 
 -- | Get platform version (throw an exception if an error occurs)
-getPlatformVersion' :: Library -> Platform -> IO String
-getPlatformVersion' = flip getPlatformInfo' CL_PLATFORM_VERSION
+getPlatformVersion' :: Platform -> IO String
+getPlatformVersion' = getPlatformInfo' CL_PLATFORM_VERSION
 
 -- | Get platform extensions
-getPlatformExtensions :: Library -> Platform -> IO (Either CLError [String])
-getPlatformExtensions lib pf = fmap words <$> getPlatformInfo lib CL_PLATFORM_EXTENSIONS pf
+getPlatformExtensions :: Platform -> IO (Either CLError [String])
+getPlatformExtensions pf = fmap words <$> getPlatformInfo CL_PLATFORM_EXTENSIONS pf
 
 -- | Get platform extensions (throw an exception if an error occurs)
-getPlatformExtensions' :: Library -> Platform -> IO [String]
-getPlatformExtensions' lib pf = words <$> getPlatformInfo' lib CL_PLATFORM_EXTENSIONS pf
+getPlatformExtensions' :: Platform -> IO [String]
+getPlatformExtensions' pf = words <$> getPlatformInfo' CL_PLATFORM_EXTENSIONS pf
 
 data PlatformInfo = PlatformInfo {
    platformName :: String,
@@ -165,70 +167,72 @@ data PlatformInfo = PlatformInfo {
 } deriving (Show)
 
 -- | Get platform informations (throw an exception if an error occurs)
-getPlatformInfos' :: Library -> Platform -> IO PlatformInfo
-getPlatformInfos' lib pf = PlatformInfo
-   <$> getPlatformName' lib pf
-   <*> getPlatformVendor' lib pf
-   <*> getPlatformProfile' lib pf
-   <*> getPlatformVersion' lib pf
-   <*> getPlatformExtensions' lib pf
+getPlatformInfos' :: Platform -> IO PlatformInfo
+getPlatformInfos' pf = PlatformInfo
+   <$> getPlatformName' pf
+   <*> getPlatformVendor' pf
+   <*> getPlatformProfile' pf
+   <*> getPlatformVersion' pf
+   <*> getPlatformExtensions' pf
  
 -- | Return a boolean device info
-getDeviceInfoBool :: Library -> DeviceInfoTag -> Device -> IO (Either CLError Bool)
-getDeviceInfoBool lib infoid dev = do
+getDeviceInfoBool :: DeviceInfoTag -> Device -> IO (Either CLError Bool)
+getDeviceInfoBool infoid dev = do
    let size = fromIntegral $ sizeOf (fromBool False)
    alloca $ \(dat :: Ptr CLbool) -> whenSuccess 
-      (rawClGetDeviceInfo lib (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
       (fromCLBool <$> peek dat)
 
 -- | Return a unsigned long device info
-getDeviceInfoWord64 :: Library -> DeviceInfoTag -> Device -> IO (Either CLError Word64)
-getDeviceInfoWord64 lib infoid dev = do
+getDeviceInfoWord64 :: DeviceInfoTag -> Device -> IO (Either CLError Word64)
+getDeviceInfoWord64 infoid dev = do
    let size = fromIntegral $ sizeOf (0 :: Word64)
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
-      (rawClGetDeviceInfo lib (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
       (peek dat)
 
 -- | Return OpenCL device type
-getDeviceType :: Library -> Device -> IO (Either CLError [DeviceType])
-getDeviceType lib dev = fmap fromCLSet <$> getDeviceInfoWord64 lib CL_DEVICE_TYPE dev
+getDeviceType :: Device -> IO (Either CLError [DeviceType])
+getDeviceType dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_TYPE dev
 
 -- | Return OpenCL device type (throw an exception on error)
-getDeviceType' :: Library -> Device -> IO [DeviceType]
-getDeviceType' lib dev = toException <$> getDeviceType lib dev
+getDeviceType' :: Device -> IO [DeviceType]
+getDeviceType' = fmap toException . getDeviceType
 
 -- | Indicate if the device is little endian
-isDeviceLittleEndian :: Library -> Device -> IO (Either CLError Bool)
-isDeviceLittleEndian lib dev = getDeviceInfoBool lib CL_DEVICE_ENDIAN_LITTLE dev
+isDeviceLittleEndian :: Device -> IO (Either CLError Bool)
+isDeviceLittleEndian = getDeviceInfoBool CL_DEVICE_ENDIAN_LITTLE
 
 -- | Indicate if the device is little endian (throw an exception on error)
-isDeviceLittleEndian' :: Library -> Device -> IO Bool
-isDeviceLittleEndian' lib dev = toException <$> isDeviceLittleEndian lib dev
+isDeviceLittleEndian' :: Device -> IO Bool
+isDeviceLittleEndian' = fmap toException . isDeviceLittleEndian
 
 -- | Size of global device memory in bytes
-getDeviceGlobalMemSize :: Library -> Device -> IO (Either CLError Word64)
-getDeviceGlobalMemSize lib = getDeviceInfoWord64 lib CL_DEVICE_GLOBAL_MEM_SIZE
+getDeviceGlobalMemSize :: Device -> IO (Either CLError Word64)
+getDeviceGlobalMemSize = getDeviceInfoWord64 CL_DEVICE_GLOBAL_MEM_SIZE
 
 -- | Size of global device memory in bytes (throw an exception on error)
-getDeviceGlobalMemSize' :: Library -> Device -> IO Word64
-getDeviceGlobalMemSize' lib dev = toException <$> getDeviceGlobalMemSize lib dev
+getDeviceGlobalMemSize' :: Device -> IO Word64
+getDeviceGlobalMemSize' = fmap toException . getDeviceGlobalMemSize
 
 -- | Create a context
-createContext :: Library -> Platform -> [Device] -> IO (Either CLError Context)
-createContext lib pf devs = do
+createContext :: Platform -> [Device] -> IO (Either CLError Context)
+createContext pf devs = do
    let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
        ndevs = fromIntegral (length devs)
+       lib = cllib pf
    withArray (fmap unwrap devs) $ \devs' ->
       withArray props $ \props' ->
          fmap (Context lib) <$> wrapPError (rawClCreateContext lib props' ndevs devs' nullFunPtr nullPtr)
 
 -- | Release a context
-releaseContext :: Library -> Context -> IO ()
-releaseContext lib ctx = void (rawClReleaseContext lib (unwrap ctx))
+releaseContext :: Context -> IO ()
+releaseContext ctx = void (rawClReleaseContext (cllib ctx) (unwrap ctx))
 
 -- | Create a buffer
-createBuffer :: Library -> Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
-createBuffer lib _ ctx flags size = do
+createBuffer :: Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
+createBuffer _ ctx flags size = do
+   let lib = cllib ctx
    mem <- fmap (Mem lib) <$> wrapPError (rawClCreateBuffer lib (unwrap ctx) (toCLSet flags) size nullPtr)
    --FIXME: ensure buffer is allocated 
    --  use clEnqueueMigrateMemObjects if available (OpenCL 1.1 or 1.2?)
@@ -236,35 +240,38 @@ createBuffer lib _ ctx flags size = do
    return mem
 
 -- | Create 2D image
-createImage2D :: Library -> Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
-createImage2D lib ctx flags imgFormat width height rowPitch hostPtr =
+createImage2D :: Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage2D ctx flags imgFormat width height rowPitch hostPtr =
    fmap (Mem lib) <$> wrapPError (rawClCreateImage2D lib (unwrap ctx) (toCLSet flags) imgFormat width height rowPitch hostPtr)
+   where lib = cllib ctx
 
 -- | Create 3D image
-createImage3D :: Library -> Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
-createImage3D lib ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
+createImage3D :: Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage3D ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
    fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
+   where lib = cllib ctx
 
 -- | Release a buffer
-releaseBuffer :: Library -> Mem -> IO ()
-releaseBuffer lib mem = void (rawClReleaseMemObject lib (unwrap mem))
+releaseBuffer :: Mem -> IO ()
+releaseBuffer mem = void (rawClReleaseMemObject (cllib mem) (unwrap mem))
 
 -- | Retain a buffer
-retainBuffer :: Library -> Mem -> IO ()
-retainBuffer lib mem = void (rawClRetainMemObject lib (unwrap mem))
+retainBuffer :: Mem -> IO ()
+retainBuffer mem = void (rawClRetainMemObject (cllib mem) (unwrap mem))
 
 -- | Create a command queue
-createCommandQueue :: Library -> Context -> Device -> [CommandQueueProperty] -> IO (Either CLError CommandQueue)
-createCommandQueue lib ctx dev props =
+createCommandQueue :: Context -> Device -> [CommandQueueProperty] -> IO (Either CLError CommandQueue)
+createCommandQueue ctx dev props =
    fmap (CommandQueue lib) <$> wrapPError (rawClCreateCommandQueue lib (unwrap ctx) (unwrap dev) (toCLSet props))
+   where lib = cllib ctx
 
 -- | Release a command queue
-releaseCommandQueue :: Library -> CommandQueue -> IO ()
-releaseCommandQueue lib cq = void (rawClReleaseCommandQueue lib (unwrap cq))
+releaseCommandQueue :: CommandQueue -> IO ()
+releaseCommandQueue cq = void (rawClReleaseCommandQueue (cllib cq) (unwrap cq))
 
 -- | Retain a command queue
-retainCommandQueue :: Library -> CommandQueue -> IO ()
-retainCommandQueue lib cq = void (rawClRetainCommandQueue lib (unwrap cq))
+retainCommandQueue :: CommandQueue -> IO ()
+retainCommandQueue cq = void (rawClRetainCommandQueue (cllib cq) (unwrap cq))
 
 -- | Helper function to enqueue commands
 enqueue :: Library -> (CLuint -> Ptr Event_ -> Ptr Event_ -> IO CLint) -> [Event] -> IO (Either CLError Event)
@@ -277,33 +284,38 @@ enqueue lib f events = allocaArray nevents $ \pevents -> do
       cnevents = fromIntegral nevents
 
 -- | Transfer from device to host
-enqueueReadBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
-enqueueReadBuffer lib cq mem blocking off size ptr = 
+enqueueReadBuffer :: CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueReadBuffer cq mem blocking off size ptr = 
    enqueue lib (rawClEnqueueReadBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) off size ptr)
+   where lib = cllib cq
 
 -- | Transfer from host to device
-enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
-enqueueWriteBuffer lib cq mem blocking off size ptr = 
+enqueueWriteBuffer :: CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueWriteBuffer cq mem blocking off size ptr = 
    enqueue lib (rawClEnqueueWriteBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) off size ptr)
+   where lib = cllib cq
 
 -- | Flush commands
-flush :: Library -> CommandQueue -> IO CLError
-flush lib cq = fromCL <$> rawClFlush lib (unwrap cq)
+flush :: CommandQueue -> IO CLError
+flush cq = fromCL <$> rawClFlush (cllib cq) (unwrap cq)
 
 -- | Finish commands
-finish :: Library -> CommandQueue -> IO CLError
-finish lib cq = fromCL <$> rawClFinish lib (unwrap cq)
+finish :: CommandQueue -> IO CLError
+finish cq = fromCL <$> rawClFinish (cllib cq) (unwrap cq)
 
 -- | Enqueue barrier
-enqueueBarrier :: Library -> CommandQueue -> IO CLError
-enqueueBarrier lib cq = fromCL <$> rawClEnqueueBarrier lib (unwrap cq)
+enqueueBarrier :: CommandQueue -> IO CLError
+enqueueBarrier cq = fromCL <$> rawClEnqueueBarrier (cllib cq) (unwrap cq)
 
 -- | Copy from one buffer to another
-enqueueCopyBuffer :: Library -> CommandQueue -> Mem -> Mem -> CSize -> CSize -> CSize -> [Event] -> IO (Either CLError Event)
-enqueueCopyBuffer lib cq src dst srcOffset dstOffset sz =
+enqueueCopyBuffer :: CommandQueue -> Mem -> Mem -> CSize -> CSize -> CSize -> [Event] -> IO (Either CLError Event)
+enqueueCopyBuffer cq src dst srcOffset dstOffset sz =
    enqueue lib (rawClEnqueueCopyBuffer lib (unwrap cq) (unwrap src) (unwrap dst) srcOffset dstOffset sz)
+   where lib = cllib cq
 
 -- | Wait for events
-waitForEvents :: Library -> [Event] -> IO CLError
-waitForEvents lib evs = withArray (fmap unwrap evs) $ \events ->
-   fromCL <$> rawClWaitForEvents lib (fromIntegral $ length evs) events
+waitForEvents :: [Event] -> IO CLError
+waitForEvents [] = return CL_SUCCESS
+waitForEvents evs@(e:_) = let lib = cllib e in
+   withArray (fmap unwrap evs) $ \events ->
+      fromCL <$> rawClWaitForEvents lib (fromIntegral $ length evs) events

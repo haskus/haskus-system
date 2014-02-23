@@ -70,7 +70,7 @@ data Buffer = Buffer {
 data BufferPeer = 
      HostBuffer (Ptr ())
    | CUDABuffer
-   | OpenCLBuffer CL.Library CL.Device CL.Context CL.Mem
+   | OpenCLBuffer CL.Device CL.Context CL.Mem
    | DiskBuffer
    deriving (Eq)
 

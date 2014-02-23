@@ -28,14 +28,14 @@ import ViperVM.MMU.Region (regionCover, Region(..))
 
 data PlatformConfig = PlatformConfig {
    libraryOpenCL :: String,
-   filterOpenCLDevices :: CL.Library -> CL.Device -> IO Bool,
+   filterOpenCLDevices :: CL.Device -> IO Bool,
    sysfsPath :: String
 }
 
 defaultConfig :: PlatformConfig
 defaultConfig = PlatformConfig {
    libraryOpenCL = "libOpenCL.so",
-   filterOpenCLDevices = \ _ _ -> return True,
+   filterOpenCLDevices = const (return True),
    sysfsPath = "/sys"
 }
 
@@ -53,14 +53,14 @@ loadPlatform config = do
    -- Load OpenCL devices
    clLib <- CL.loadOpenCL (libraryOpenCL config)
    clPlatforms <- CL.getPlatforms clLib
-   clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices clLib pf)
-   clDevices' <- filterM (\(_,dev) -> filterOpenCLDevices config clLib dev) clDevices
-   clContexts <- forM clDevices' (\(pf,dev) -> CL.createContext clLib pf [dev])
+   clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices pf)
+   clDevices' <- filterM (filterOpenCLDevices config . snd) clDevices
+   clContexts <- forM clDevices' (\(pf,dev) -> CL.createContext pf [dev])
    clMemories <- forM (clContexts `zip` clDevices') $ \(ctx,(_,dev)) -> case ctx of
       Left err -> error ("Invalid context: " ++ show err)
       Right ctx' -> do
-         endianness <- getOpenCLDeviceEndianness clLib dev
-         size <- CL.getDeviceGlobalMemSize' clLib dev
+         endianness <- getOpenCLDeviceEndianness dev
+         size <- CL.getDeviceGlobalMemSize' dev
          let memPeer = OpenCLMemory {
                   clMemLibrary = clLib,
                   clMemDevice = dev,
@@ -157,7 +157,7 @@ releaseBuffer buf = do
    case bufferPeer buf of
       HostBuffer ptr -> free ptr
       CUDABuffer     -> undefined
-      OpenCLBuffer lib _ _ mem -> CL.releaseBuffer lib mem
+      OpenCLBuffer _ _ mem -> CL.releaseBuffer mem
       DiskBuffer     -> undefined
 
 -- | Perform a synchronous region transfer
@@ -167,21 +167,21 @@ transferRegion link bufIn regIn bufOut regOut = do
       bufPeerIn = bufferPeer bufIn
       bufPeerOut = bufferPeer bufOut
       lnkPeer = linkPeer link
-      clTransfer _ (Left _) = return (Just ErrTransferUnknown)
-      clTransfer lib (Right ev) = CL.waitForEvents lib [ev] >> return Nothing
+      clTransfer (Left _) = return (Just ErrTransferUnknown)
+      clTransfer (Right ev) = CL.waitForEvents [ev] >> return Nothing
 
       -- 1D transfers
       transfer1D off1 off2 sz = case (lnkPeer,bufPeerIn,bufPeerOut) of
 
          -- OpenCL 1D CL -> Host
-         (OpenCLLink _ _ cq, OpenCLBuffer lib _ _ mem, HostBuffer ptr) -> do
-            let ptr2 = ptr `plusPtr` (fromIntegral off2) -- TODO: unsafe coercion from CSize to Int
-            clTransfer lib =<< CL.enqueueReadBuffer lib cq mem True off1 sz ptr2 []
+         (OpenCLLink _ _ cq, OpenCLBuffer _ _ mem, HostBuffer ptr) -> do
+            let ptr2 = ptr `plusPtr` fromIntegral off2 -- TODO: unsafe coercion from CSize to Int
+            clTransfer =<< CL.enqueueReadBuffer cq mem True off1 sz ptr2 []
 
          -- OpenCL 1D Host -> CL
-         (OpenCLLink _ _ cq, HostBuffer ptr, OpenCLBuffer lib _ _ mem) -> do
-            let ptr2 = ptr `plusPtr` (fromIntegral off1) -- TODO: unsafe coercion from CSize to Int
-            clTransfer lib =<< CL.enqueueWriteBuffer lib cq mem True off2 sz ptr2 []
+         (OpenCLLink _ _ cq, HostBuffer ptr, OpenCLBuffer _ _ mem) -> do
+            let ptr2 = ptr `plusPtr` fromIntegral off1 -- TODO: unsafe coercion from CSize to Int
+            clTransfer =<< CL.enqueueWriteBuffer cq mem True off2 sz ptr2 []
 
          _ -> return (Just ErrTransferInvalid)
 

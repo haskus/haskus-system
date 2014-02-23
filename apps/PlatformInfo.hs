@@ -1,7 +1,6 @@
 import Text.Printf
 import Control.Monad (forM_, (<=<))
 import Data.Foldable (traverse_)
-import Control.Applicative ((<$>))
 
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Platform
@@ -11,7 +10,7 @@ main :: IO ()
 main = do
    putStrLn "Loading Platform..."
    pf <- loadPlatform defaultConfig {
-      filterOpenCLDevices = \lib dev -> (notElem CL.CL_DEVICE_TYPE_CPU) <$> getDeviceType' lib dev
+      filterOpenCLDevices = fmap (notElem CL.CL_DEVICE_TYPE_CPU) . getDeviceType'
    }
 
    let memoriesStr x 
@@ -23,7 +22,7 @@ main = do
 
    putStrLn "OpenCL platforms:"
    forM_ (platformOpenCLPlatforms pf) $ \clPf -> do
-      infos <- getPlatformInfos' (platformOpenCLLibrary pf) clPf
+      infos <- getPlatformInfos' clPf
       putStrLn $ "  - " ++ (show infos)
 
    putStrLn "Done."

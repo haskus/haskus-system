@@ -27,8 +27,8 @@ getMemoryEndianness = do
 
 
 -- | Get endianness of an OpenCL device
-getOpenCLDeviceEndianness :: CL.Library -> CL.Device -> IO Endianness
-getOpenCLDeviceEndianness lib dev = toEndianness <$> CL.isDeviceLittleEndian' lib dev
+getOpenCLDeviceEndianness :: CL.Device -> IO Endianness
+getOpenCLDeviceEndianness dev = toEndianness <$> CL.isDeviceLittleEndian' dev
    where
       toEndianness True = LittleEndian
       toEndianness False = BigEndian

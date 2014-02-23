@@ -34,12 +34,11 @@ allocateOpenCL :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
 allocateOpenCL size mem = do
    let 
       peer = memoryPeer mem
-      lib = clMemLibrary peer
       ctx = clMemContext peer
       dev = clMemDevice peer
       flags = []
-   buf <- CL.createBuffer lib dev ctx flags (fromIntegral size)
+   buf <- CL.createBuffer dev ctx flags (fromIntegral size)
    
    return $ case buf of
-      Right m -> Right (OpenCLBuffer lib dev ctx m)
+      Right m -> Right (OpenCLBuffer dev ctx m)
       Left _ -> Left ErrAllocUnknown -- FIXME: return appropriate error
