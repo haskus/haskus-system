@@ -29,7 +29,7 @@ instance Entity Mem where
    unwrap (Mem _ x) = x
    cllib (Mem l _) = l
 
-data CLMemFlag =
+data MemFlag =
      CL_MEM_READ_WRITE        -- 1
    | CL_MEM_WRITE_ONLY        -- 2
    | CL_MEM_READ_ONLY         -- 4
@@ -42,17 +42,17 @@ data CLMemFlag =
    | CL_MEM_HOST_NO_ACCESS    -- 512
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet CLMemFlag
+instance CLSet MemFlag
 
-data CLMapFlag =
+data MapFlag =
      CL_MAP_READ
    | CL_MAP_WRITE
    | CL_MAP_WRITE_INVALIDATE_REGION
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet CLMapFlag
+instance CLSet MapFlag
 
-data CLMemObjectType =
+data MemObjectType =
      CL_MEM_OBJECT_BUFFER
    | CL_MEM_OBJECT_IMAGE2D
    | CL_MEM_OBJECT_IMAGE3D
@@ -62,13 +62,13 @@ data CLMemObjectType =
    | CL_MEM_OBJECT_IMAGE1D_BUFFER
    deriving (Show, Enum)
 
-instance CLConstant CLMemObjectType where
+instance CLConstant MemObjectType where
    toCL x = fromIntegral (fromEnum x + 0x10F0)
    fromCL x = toEnum (fromIntegral x - 0x10F0)
 
 
 -- | Create a buffer
-createBuffer :: Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
+createBuffer :: Device -> Context -> [MemFlag] -> CSize -> IO (Either CLError Mem)
 createBuffer _ ctx flags size = do
    let lib = cllib ctx
    mem <- fmap (Mem lib) <$> wrapPError (rawClCreateBuffer lib (unwrap ctx) (toCLSet flags) size nullPtr)
@@ -78,13 +78,13 @@ createBuffer _ ctx flags size = do
    return mem
 
 -- | Create 2D image
-createImage2D :: Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage2D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
 createImage2D ctx flags imgFormat width height rowPitch hostPtr =
    fmap (Mem lib) <$> wrapPError (rawClCreateImage2D lib (unwrap ctx) (toCLSet flags) imgFormat width height rowPitch hostPtr)
    where lib = cllib ctx
 
 -- | Create 3D image
-createImage3D :: Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage3D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
 createImage3D ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
    fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
    where lib = cllib ctx
