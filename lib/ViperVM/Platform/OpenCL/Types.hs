@@ -204,7 +204,7 @@ data DeviceType =
    | CL_DEVICE_TYPE_GPU
    | CL_DEVICE_TYPE_ACCELERATOR
    | CL_DEVICE_TYPE_CUSTOM
-   deriving (Show,Bounded,Enum)
+   deriving (Eq,Show,Bounded,Enum)
 
 instance CLSet DeviceType
 

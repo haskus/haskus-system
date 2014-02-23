@@ -10,7 +10,7 @@ module ViperVM.Platform.Platform (
 ) where
 
 import Control.Applicative ( (<$>), pure )
-import Control.Monad (forM)
+import Control.Monad (forM,filterM)
 import Control.Concurrent.STM
 import Data.Traversable (Traversable, traverse)
 import Data.Foldable (Foldable, foldMap)
@@ -28,12 +28,14 @@ import ViperVM.MMU.Region (regionCover, Region(..))
 
 data PlatformConfig = PlatformConfig {
    libraryOpenCL :: String,
+   filterOpenCLDevices :: CL.Library -> CL.Device -> IO Bool,
    sysfsPath :: String
 }
 
 defaultConfig :: PlatformConfig
 defaultConfig = PlatformConfig {
    libraryOpenCL = "libOpenCL.so",
+   filterOpenCLDevices = \ _ _ -> return True,
    sysfsPath = "/sys"
 }
 
@@ -52,8 +54,9 @@ loadPlatform config = do
    clLib <- CL.loadOpenCL (libraryOpenCL config)
    clPlatforms <- CL.getPlatforms clLib
    clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices clLib pf)
-   clContexts <- forM clDevices (\(pf,dev) -> CL.createContext clLib pf [dev])
-   clMemories <- forM (clContexts `zip` clDevices) $ \(ctx,(_,dev)) -> case ctx of
+   clDevices' <- filterM (\(_,dev) -> filterOpenCLDevices config clLib dev) clDevices
+   clContexts <- forM clDevices' (\(pf,dev) -> CL.createContext clLib pf [dev])
+   clMemories <- forM (clContexts `zip` clDevices') $ \(ctx,(_,dev)) -> case ctx of
       Left err -> error ("Invalid context: " ++ show err)
       Right ctx' -> do
          endianness <- getOpenCLDeviceEndianness clLib dev

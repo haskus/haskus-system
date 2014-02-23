@@ -13,6 +13,7 @@ module ViperVM.Platform.OpenCL (
    -- Device
    isDeviceLittleEndian, isDeviceLittleEndian',
    getDeviceGlobalMemSize, getDeviceGlobalMemSize',
+   getDeviceType, getDeviceType',
    -- Contexts
    createContext, releaseContext,
    -- Buffers
@@ -187,6 +188,14 @@ getDeviceInfoWord64 lib infoid dev = do
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
       (rawClGetDeviceInfo lib dev (toCL infoid) size (castPtr dat) nullPtr)
       (peek dat)
+
+-- | Return OpenCL device type
+getDeviceType :: Library -> Device -> IO (Either CLError [DeviceType])
+getDeviceType lib dev = fmap fromCLSet <$> getDeviceInfoWord64 lib CL_DEVICE_TYPE dev
+
+-- | Return OpenCL device type (throw an exception on error)
+getDeviceType' :: Library -> Device -> IO [DeviceType]
+getDeviceType' lib dev = toException <$> getDeviceType lib dev
 
 -- | Indicate if the device is little endian
 isDeviceLittleEndian :: Library -> Device -> IO (Either CLError Bool)
