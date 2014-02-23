@@ -67,13 +67,13 @@ getPlatforms lib = do
       else allocaArray (fromIntegral nplats) $ \plats -> do
          err <- rawClGetPlatformIDs lib nplats plats nullPtr
          case fromCL err of
-            CL_SUCCESS -> peekArray (fromIntegral nplats) plats
+            CL_SUCCESS -> fmap (Platform lib) <$> peekArray (fromIntegral nplats) plats
             _ -> return []
 
 -- | Return the number of available devices
 getPlatformNumDevices :: Library -> Platform -> IO Word32
 getPlatformNumDevices lib pf = alloca $ \numDevices -> do 
-   err <- rawClGetDeviceIDs lib pf (toCLSet clDeviceTypeAll) 0 nullPtr numDevices
+   err <- rawClGetDeviceIDs lib (unwrap pf) (toCLSet clDeviceTypeAll) 0 nullPtr numDevices
    case fromCL err of
       CL_SUCCESS -> peek numDevices
       _ -> return 0
@@ -85,14 +85,14 @@ getPlatformDevices lib pf = do
    if nbDevices == 0
       then return []
       else allocaArray (fromIntegral nbDevices) $ \devs -> do
-         err <- rawClGetDeviceIDs lib pf (toCLSet clDeviceTypeAll) nbDevices devs nullPtr
+         err <- rawClGetDeviceIDs lib (unwrap pf) (toCLSet clDeviceTypeAll) nbDevices devs nullPtr
          case fromCL err of
-            CL_SUCCESS -> peekArray (fromIntegral nbDevices) devs
+            CL_SUCCESS -> fmap (Device lib) <$> peekArray (fromIntegral nbDevices) devs
             _ -> return []
 
 -- | Get platform info
 getPlatformInfo :: Library -> PlatformInfoTag -> Platform -> IO (Either CLError String)
-getPlatformInfo lib infoid platform = getSize >>>= getInfo
+getPlatformInfo lib infoid pf = getSize >>>= getInfo
    where
       (>>>=) f g = do
          t <- f
@@ -103,13 +103,13 @@ getPlatformInfo lib infoid platform = getSize >>>= getInfo
       -- Get output size
       getSize :: IO (Either CLError CSize)
       getSize = alloca $ \sz -> whenSuccess 
-         (rawClGetPlatformInfo lib platform (toCL infoid) 0 nullPtr sz) 
+         (rawClGetPlatformInfo lib (unwrap pf) (toCL infoid) 0 nullPtr sz) 
          (peek sz)
 
       -- Get info
       getInfo :: CSize -> IO (Either CLError String)
       getInfo size = allocaArray (fromIntegral size) $ \buff -> whenSuccess 
-         (rawClGetPlatformInfo lib platform (toCL infoid) size (castPtr buff) nullPtr)
+         (rawClGetPlatformInfo lib (unwrap pf) (toCL infoid) size (castPtr buff) nullPtr)
          (peekCString buff)
 
 -- | Get platform info (throw an exception if an error occurs)
@@ -178,7 +178,7 @@ getDeviceInfoBool :: Library -> DeviceInfoTag -> Device -> IO (Either CLError Bo
 getDeviceInfoBool lib infoid dev = do
    let size = fromIntegral $ sizeOf (fromBool False)
    alloca $ \(dat :: Ptr CLbool) -> whenSuccess 
-      (rawClGetDeviceInfo lib dev (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo lib (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
       (fromCLBool <$> peek dat)
 
 -- | Return a unsigned long device info
@@ -186,7 +186,7 @@ getDeviceInfoWord64 :: Library -> DeviceInfoTag -> Device -> IO (Either CLError 
 getDeviceInfoWord64 lib infoid dev = do
    let size = fromIntegral $ sizeOf (0 :: Word64)
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
-      (rawClGetDeviceInfo lib dev (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo lib (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
       (peek dat)
 
 -- | Return OpenCL device type
@@ -218,18 +218,18 @@ createContext :: Library -> Platform -> [Device] -> IO (Either CLError Context)
 createContext lib pf devs = do
    let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
        ndevs = fromIntegral (length devs)
-   withArray devs $ \devs' ->
+   withArray (fmap unwrap devs) $ \devs' ->
       withArray props $ \props' ->
-         wrapPError (rawClCreateContext lib props' ndevs devs' nullFunPtr nullPtr)
+         fmap (Context lib) <$> wrapPError (rawClCreateContext lib props' ndevs devs' nullFunPtr nullPtr)
 
 -- | Release a context
 releaseContext :: Library -> Context -> IO ()
-releaseContext lib ctx = void (rawClReleaseContext lib ctx)
+releaseContext lib ctx = void (rawClReleaseContext lib (unwrap ctx))
 
 -- | Create a buffer
 createBuffer :: Library -> Device -> Context -> [CLMemFlag] -> CSize -> IO (Either CLError Mem)
 createBuffer lib _ ctx flags size = do
-   mem <- wrapPError (rawClCreateBuffer lib ctx (toCLSet flags) size nullPtr)
+   mem <- fmap (Mem lib) <$> wrapPError (rawClCreateBuffer lib (unwrap ctx) (toCLSet flags) size nullPtr)
    --FIXME: ensure buffer is allocated 
    --  use clEnqueueMigrateMemObjects if available (OpenCL 1.1 or 1.2?)
    --  perform a dummy operation on the buffer (OpenCL 1.0)
@@ -238,40 +238,40 @@ createBuffer lib _ ctx flags size = do
 -- | Create 2D image
 createImage2D :: Library -> Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
 createImage2D lib ctx flags imgFormat width height rowPitch hostPtr =
-   wrapPError (rawClCreateImage2D lib ctx (toCLSet flags) imgFormat width height rowPitch hostPtr)
+   fmap (Mem lib) <$> wrapPError (rawClCreateImage2D lib (unwrap ctx) (toCLSet flags) imgFormat width height rowPitch hostPtr)
 
 -- | Create 3D image
 createImage3D :: Library -> Context -> [CLMemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
 createImage3D lib ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
-   wrapPError (rawClCreateImage3D lib ctx (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
+   fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
 
 -- | Release a buffer
 releaseBuffer :: Library -> Mem -> IO ()
-releaseBuffer lib mem = void (rawClReleaseMemObject lib mem)
+releaseBuffer lib mem = void (rawClReleaseMemObject lib (unwrap mem))
 
 -- | Retain a buffer
 retainBuffer :: Library -> Mem -> IO ()
-retainBuffer lib mem = void (rawClRetainMemObject lib mem)
+retainBuffer lib mem = void (rawClRetainMemObject lib (unwrap mem))
 
 -- | Create a command queue
 createCommandQueue :: Library -> Context -> Device -> [CommandQueueProperty] -> IO (Either CLError CommandQueue)
 createCommandQueue lib ctx dev props =
-   wrapPError (rawClCreateCommandQueue lib ctx dev (toCLSet props))
+   fmap (CommandQueue lib) <$> wrapPError (rawClCreateCommandQueue lib (unwrap ctx) (unwrap dev) (toCLSet props))
 
 -- | Release a command queue
 releaseCommandQueue :: Library -> CommandQueue -> IO ()
-releaseCommandQueue lib cq = void (rawClReleaseCommandQueue lib cq)
+releaseCommandQueue lib cq = void (rawClReleaseCommandQueue lib (unwrap cq))
 
 -- | Retain a command queue
 retainCommandQueue :: Library -> CommandQueue -> IO ()
-retainCommandQueue lib cq = void (rawClRetainCommandQueue lib cq)
+retainCommandQueue lib cq = void (rawClRetainCommandQueue lib (unwrap cq))
 
 -- | Helper function to enqueue commands
-enqueue :: (CLuint -> Ptr Event -> Ptr Event -> IO CLint) -> [Event] -> IO (Either CLError Event)
-enqueue f [] = alloca $ \event -> whenSuccess (f 0 nullPtr event) (peek event)
-enqueue f events = allocaArray nevents $ \pevents -> do
-  pokeArray pevents events
-  alloca $ \event -> whenSuccess (f cnevents pevents event) (peek event)
+enqueue :: Library -> (CLuint -> Ptr Event_ -> Ptr Event_ -> IO CLint) -> [Event] -> IO (Either CLError Event)
+enqueue lib f [] = alloca $ \event -> whenSuccess (f 0 nullPtr event) (Event lib <$> peek event)
+enqueue lib f events = allocaArray nevents $ \pevents -> do
+  pokeArray pevents (fmap unwrap events)
+  alloca $ \event -> whenSuccess (f cnevents pevents event) (Event lib <$> peek event)
     where
       nevents = length events
       cnevents = fromIntegral nevents
@@ -279,31 +279,31 @@ enqueue f events = allocaArray nevents $ \pevents -> do
 -- | Transfer from device to host
 enqueueReadBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueReadBuffer lib cq mem blocking off size ptr = 
-   enqueue (rawClEnqueueReadBuffer lib cq mem (fromBool blocking) off size ptr)
+   enqueue lib (rawClEnqueueReadBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) off size ptr)
 
 -- | Transfer from host to device
 enqueueWriteBuffer :: Library -> CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueWriteBuffer lib cq mem blocking off size ptr = 
-   enqueue (rawClEnqueueWriteBuffer lib cq mem (fromBool blocking) off size ptr)
+   enqueue lib (rawClEnqueueWriteBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) off size ptr)
 
 -- | Flush commands
 flush :: Library -> CommandQueue -> IO CLError
-flush lib cq = fromCL <$> rawClFlush lib cq
+flush lib cq = fromCL <$> rawClFlush lib (unwrap cq)
 
 -- | Finish commands
 finish :: Library -> CommandQueue -> IO CLError
-finish lib cq = fromCL <$> rawClFinish lib cq
+finish lib cq = fromCL <$> rawClFinish lib (unwrap cq)
 
 -- | Enqueue barrier
 enqueueBarrier :: Library -> CommandQueue -> IO CLError
-enqueueBarrier lib cq = fromCL <$> rawClEnqueueBarrier lib cq
+enqueueBarrier lib cq = fromCL <$> rawClEnqueueBarrier lib (unwrap cq)
 
 -- | Copy from one buffer to another
 enqueueCopyBuffer :: Library -> CommandQueue -> Mem -> Mem -> CSize -> CSize -> CSize -> [Event] -> IO (Either CLError Event)
 enqueueCopyBuffer lib cq src dst srcOffset dstOffset sz =
-   enqueue (rawClEnqueueCopyBuffer lib cq src dst srcOffset dstOffset sz)
+   enqueue lib (rawClEnqueueCopyBuffer lib (unwrap cq) (unwrap src) (unwrap dst) srcOffset dstOffset sz)
 
 -- | Wait for events
 waitForEvents :: Library -> [Event] -> IO CLError
-waitForEvents lib evs = withArray evs $ \events ->
+waitForEvents lib evs = withArray (fmap unwrap evs) $ \events ->
    fromCL <$> rawClWaitForEvents lib (fromIntegral $ length evs) events
