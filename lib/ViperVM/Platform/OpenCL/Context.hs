@@ -1,6 +1,6 @@
 module ViperVM.Platform.OpenCL.Context (
    Context,
-   createContext, releaseContext
+   createContext
 ) where
 
 import ViperVM.Platform.OpenCL.Types
@@ -21,6 +21,8 @@ data Context = Context Library Context_ deriving (Eq)
 instance Entity Context where 
    unwrap (Context _ x) = x
    cllib (Context l _) = l
+   retain = retainContext
+   release = releaseContext
 
 data CLContextInfo = 
      CL_CONTEXT_REFERENCE_COUNT
@@ -47,3 +49,7 @@ createContext pf devs = do
 -- | Release a context
 releaseContext :: Context -> IO ()
 releaseContext ctx = void (rawClReleaseContext (cllib ctx) (unwrap ctx))
+
+-- | Retain a context
+retainContext :: Context -> IO ()
+retainContext ctx = void (rawClRetainContext (cllib ctx) (unwrap ctx))

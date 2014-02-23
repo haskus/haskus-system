@@ -1,7 +1,6 @@
 module ViperVM.Platform.OpenCL.Mem (
-   Mem,
+   Mem(..),
    createBuffer, createImage2D, createImage3D,
-   releaseBuffer, retainBuffer,
    enqueueReadBuffer, enqueueWriteBuffer, enqueueCopyBuffer
 ) where
 
@@ -28,6 +27,8 @@ data Mem = Mem Library Mem_ deriving (Eq)
 instance Entity Mem where 
    unwrap (Mem _ x) = x
    cllib (Mem l _) = l
+   retain = retainMem
+   release = releaseMem
 
 data MemFlag =
      CL_MEM_READ_WRITE        -- 1
@@ -89,13 +90,13 @@ createImage3D ctx flags imgFormat width height depth rowPitch slicePitch hostPtr
    fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
    where lib = cllib ctx
 
--- | Release a buffer
-releaseBuffer :: Mem -> IO ()
-releaseBuffer mem = void (rawClReleaseMemObject (cllib mem) (unwrap mem))
+-- | Release a mem object
+releaseMem :: Mem -> IO ()
+releaseMem mem = void (rawClReleaseMemObject (cllib mem) (unwrap mem))
 
--- | Retain a buffer
-retainBuffer :: Mem -> IO ()
-retainBuffer mem = void (rawClRetainMemObject (cllib mem) (unwrap mem))
+-- | Retain a mem object
+retainMem :: Mem -> IO ()
+retainMem mem = void (rawClRetainMemObject (cllib mem) (unwrap mem))
 
 -- | Helper function to enqueue commands
 enqueue :: Library -> (CLuint -> Ptr Event_ -> Ptr Event_ -> IO CLint) -> [Event] -> IO (Either CLError Event)

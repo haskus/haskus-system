@@ -8,11 +8,15 @@ import ViperVM.Platform.OpenCL.Entity
 import ViperVM.Platform.OpenCL.Library
 import ViperVM.Platform.OpenCL.Bindings
 
+import Control.Monad (void)
+
 data Program = Program Library Program_ deriving (Eq)
 
 instance Entity Program where 
    unwrap (Program _ x) = x
    cllib (Program l _) = l
+   retain = retainProgram
+   release = releaseProgram
 
 data ProgramBuildStatus = 
      CL_BUILD_SUCCESS
@@ -25,3 +29,10 @@ instance CLConstant ProgramBuildStatus where
    toCL x = fromIntegral (fromEnum x * (-1))
    fromCL x = toEnum (fromIntegral x * (-1))
 
+-- | Release a program
+releaseProgram :: Program -> IO ()
+releaseProgram ctx = void (rawClReleaseProgram (cllib ctx) (unwrap ctx))
+
+-- | Retain a program
+retainProgram :: Program -> IO ()
+retainProgram ctx = void (rawClRetainProgram (cllib ctx) (unwrap ctx))

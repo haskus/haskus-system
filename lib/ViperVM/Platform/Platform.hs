@@ -157,7 +157,7 @@ releaseBuffer buf = do
    case bufferPeer buf of
       HostBuffer ptr -> free ptr
       CUDABuffer     -> undefined
-      OpenCLBuffer _ _ mem -> CL.releaseBuffer mem
+      OpenCLBuffer _ _ mem -> CL.release mem
       DiskBuffer     -> undefined
 
 -- | Perform a synchronous region transfer

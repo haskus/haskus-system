@@ -26,6 +26,8 @@ data Device = Device Library Device_ deriving (Eq)
 instance Entity Device where 
    unwrap (Device _ x) = x
    cllib (Device l _) = l
+   retain _ = return ()
+   release _ = return ()
 
 data DeviceInfoTag =
      CL_DEVICE_TYPE

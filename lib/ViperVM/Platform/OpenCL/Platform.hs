@@ -32,6 +32,8 @@ data Platform = Platform Library Platform_ deriving (Eq)
 instance Entity Platform where 
    unwrap (Platform _ x) = x
    cllib (Platform l _) = l
+   retain _ = return ()
+   release _ = return ()
 
 data PlatformInfoTag =
      CL_PLATFORM_PROFILE

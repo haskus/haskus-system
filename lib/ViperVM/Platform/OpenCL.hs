@@ -14,3 +14,4 @@ import ViperVM.Platform.OpenCL.Program as X
 import ViperVM.Platform.OpenCL.Kernel as X
 import ViperVM.Platform.OpenCL.CommandQueue as X
 import ViperVM.Platform.OpenCL.Event as X
+import ViperVM.Platform.OpenCL.Entity as X

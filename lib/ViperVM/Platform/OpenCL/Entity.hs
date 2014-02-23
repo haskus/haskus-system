@@ -6,3 +6,5 @@ import ViperVM.Platform.OpenCL.Library
 class Entity e where 
    unwrap :: e -> Ptr ()
    cllib :: e -> Library
+   retain :: e -> IO ()
+   release :: e -> IO ()

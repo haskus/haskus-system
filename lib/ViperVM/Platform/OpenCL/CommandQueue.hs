@@ -3,7 +3,6 @@ module ViperVM.Platform.OpenCL.CommandQueue (
    CommandType, CommandExecutionStatus,
    ProfilingInfo, CommandQueueInfo,
    createCommandQueue,
-   releaseCommandQueue, retainCommandQueue,
    flush, finish, enqueueBarrier
 ) where
 
@@ -23,6 +22,8 @@ data CommandQueue = CommandQueue Library CommandQueue_ deriving (Eq)
 instance Entity CommandQueue where 
    unwrap (CommandQueue _ x) = x
    cllib (CommandQueue l _) = l
+   retain = retainCommandQueue
+   release = releaseCommandQueue
 
 data CommandQueueProperty =
      CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
