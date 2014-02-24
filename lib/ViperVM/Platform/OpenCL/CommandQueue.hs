@@ -1,3 +1,4 @@
+-- | OpenCL command queue module
 module ViperVM.Platform.OpenCL.CommandQueue (
    CommandQueue, CommandQueueProperty(..),
    CommandType, CommandExecutionStatus,
@@ -17,6 +18,7 @@ import ViperVM.Platform.OpenCL.Device
 import Control.Applicative ((<$>))
 import Control.Monad (void)
 
+-- | Command queue
 data CommandQueue = CommandQueue Library CommandQueue_ deriving (Eq)
 
 instance Entity CommandQueue where 
@@ -25,6 +27,7 @@ instance Entity CommandQueue where
    retain = retainCommandQueue
    release = releaseCommandQueue
 
+-- | Command queue properties
 data CommandQueueProperty =
      CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
    | CL_QUEUE_PROFILING_ENABLE
@@ -32,6 +35,7 @@ data CommandQueueProperty =
 
 instance CLSet CommandQueueProperty
 
+-- | Command type
 data CommandType =
      CL_COMMAND_NDRANGE_KERNEL      
    | CL_COMMAND_TASK                
@@ -64,6 +68,7 @@ instance CLConstant CommandType where
    toCL x = fromIntegral (fromEnum x + 0x11F0)
    fromCL x = toEnum (fromIntegral x - 0x11F0)
 
+-- | Command execution status
 data CommandExecutionStatus =
      CL_EXEC_ERROR   -- -1
    | CL_COMPLETE     -- 0
@@ -76,6 +81,7 @@ instance CLConstant CommandExecutionStatus where
    toCL x = fromIntegral (fromEnum x - 1)
    fromCL x = toEnum (fromIntegral x + 1)
 
+-- | Command profiling information
 data ProfilingInfo =
      CL_PROFILING_COMMAND_QUEUED
    | CL_PROFILING_COMMAND_SUBMIT
@@ -87,6 +93,7 @@ instance CLConstant ProfilingInfo where
    toCL x = fromIntegral (fromEnum x + 0x1280)
    fromCL x = toEnum (fromIntegral x - 0x1280)
 
+-- | Command queue information
 data CommandQueueInfo = 
      CL_QUEUE_CONTEXT 
    | CL_QUEUE_DEVICE

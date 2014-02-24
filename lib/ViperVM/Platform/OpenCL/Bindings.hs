@@ -1,12 +1,15 @@
+-- | Helpers for OpenCL bindings
 module ViperVM.Platform.OpenCL.Bindings where
 
 import Data.Bits
 import Data.Maybe
 
+-- | Data convertible from and to an OpenCL constant value
 class Enum a => CLConstant a where
    toCL :: Integral b => a -> b
    fromCL :: Integral b => b -> a
 
+-- | Data convertible from and to an OpenCL bitset
 class Enum a => CLSet a where
    toCLSet :: (Bits b, Integral b) => [a] -> b
    toCLSet = sum . map f

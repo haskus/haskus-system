@@ -23,7 +23,6 @@ library
     ViperVM.Platform.Types
 
     ViperVM.Platform.OpenCL.Bindings
-    ViperVM.Platform.OpenCL.Channel
     ViperVM.Platform.OpenCL.CommandQueue
     ViperVM.Platform.OpenCL.Context
     ViperVM.Platform.OpenCL.Device

@@ -151,5 +151,6 @@ myMod x = fromJust $ ("c" ++) <$> stripPrefix "rawC" x
 
 $(makeDynamicLinker ''Library CCall 'myMod)
 
+-- | Load OpenCL library from path
 loadOpenCL :: String -> IO Library
 loadOpenCL lib = loadLibrary lib [RTLD_NOW,RTLD_LOCAL]

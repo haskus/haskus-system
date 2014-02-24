@@ -1,3 +1,4 @@
+-- | Platform types
 module ViperVM.Platform.Types (
    ID,
    Endianness(..),
@@ -57,6 +58,7 @@ data Link = Link {
 instance Eq Link where 
    (==) a b = linkId a == linkId b
 
+-- | Backend specific link
 data LinkPeer =
      OpenCLLink CL.Library CL.Device CL.CommandQueue
 
@@ -76,7 +78,7 @@ data BufferPeer =
    | DiskBuffer
    deriving (Eq)
 
-type BufferSize = Word64
+type BufferSize = Word64  -- ^ Size of a buffer in bytes
 
 -- | Region transfer error
 data TransferError =

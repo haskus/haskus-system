@@ -1,3 +1,4 @@
+-- | SysFS (Linux) management module
 module ViperVM.Platform.CPU where
 
 import Control.Applicative ((<$>))
@@ -9,15 +10,18 @@ import Data.Map ((!))
 
 import ViperVM.Platform.Host.SysFS (readMemInfo)
 
+-- | A set of NUMA nodes
 data NUMA = NUMA {
    numaNodes :: [Node]
 } deriving (Show)
 
+-- | A NUMA node
 data Node = Node {
    nodeCPUs :: [FilePath],
    nodeMemory :: NodeMemory
 } deriving (Show)
 
+-- | A memory node
 newtype NodeMemory = NodeMemory FilePath deriving (Show)
 
 -- | Load platform from sysfs (Linux)

@@ -1,3 +1,4 @@
+-- | OpenCL event module
 module ViperVM.Platform.OpenCL.Event (
    Event(..),
    waitForEvents,
@@ -13,6 +14,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Foreign.Marshal.Array (withArray)
 
+-- | OpenCL event
 data Event = Event Library Event_ deriving (Eq)
 
 instance Entity Event where 

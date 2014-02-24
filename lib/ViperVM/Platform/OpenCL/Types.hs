@@ -1,6 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface,
              DeriveDataTypeable, 
              GeneralizedNewtypeDeriving #-}
+
+-- | OpenCL basic types
 module ViperVM.Platform.OpenCL.Types where
 
 import Foreign.Storable (Storable(..))
@@ -62,7 +64,7 @@ type CLKernelWorkGroupInfo_ = CLuint
 type CLFilterMode_ = CLuint
 type CLSamplerInfo_ = CLuint
 type CLAddressingMode_ = CLuint
-type CLImageFormat_p = Ptr CLImageFormat
+type CLImageFormat_p = Ptr ImageFormat
 
 type BuildCallback = Program_ -> Ptr () -> IO ()
 type ContextCallback = CString -> Ptr () -> CSize -> Ptr () -> IO ()

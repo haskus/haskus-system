@@ -1,3 +1,4 @@
+-- | Endianness related functions
 module ViperVM.Platform.Endianness (
    getMemoryEndianness,
    getOpenCLDeviceEndianness

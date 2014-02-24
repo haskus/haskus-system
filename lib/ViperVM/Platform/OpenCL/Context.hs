@@ -1,3 +1,4 @@
+-- | OpenCL context module
 module ViperVM.Platform.OpenCL.Context (
    Context,
    createContext
@@ -16,6 +17,8 @@ import Control.Monad (void)
 import Foreign.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
 import Foreign.Marshal.Array (withArray)
 
+-- | Context
+-- A context is a group of devices
 data Context = Context Library Context_ deriving (Eq)
 
 instance Entity Context where 
@@ -24,6 +27,7 @@ instance Entity Context where
    retain = retainContext
    release = releaseContext
 
+-- | Context information
 data CLContextInfo = 
      CL_CONTEXT_REFERENCE_COUNT
    | CL_CONTEXT_DEVICES

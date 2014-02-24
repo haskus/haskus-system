@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveDataTypeable, 
-             GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+
+-- | OpenCL error management module
 module ViperVM.Platform.OpenCL.Error (
    CLError(..),
    toException, wrapPError,

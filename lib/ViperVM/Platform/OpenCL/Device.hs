@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+
+-- | OpenCL device module
 module ViperVM.Platform.OpenCL.Device (
-   Device(..), DeviceInfoTag(..), DeviceType(..),
+   Device(..), DeviceInfo(..), DeviceType(..),
    DeviceFPConfig(..), DeviceExecCapability(..),
    DeviceMemCacheType(..), DeviceLocalMemType(..),
    isDeviceLittleEndian, isDeviceLittleEndian',
@@ -21,6 +23,7 @@ import Foreign.Ptr (Ptr, castPtr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (peek, sizeOf)
 
+-- | Device
 data Device = Device Library Device_ deriving (Eq)
 
 instance Entity Device where 
@@ -29,7 +32,8 @@ instance Entity Device where
    retain _ = return ()
    release _ = return ()
 
-data DeviceInfoTag =
+-- | Device information
+data DeviceInfo =
      CL_DEVICE_TYPE
    | CL_DEVICE_VENDOR_ID
    | CL_DEVICE_MAX_COMPUTE_UNITS
@@ -108,10 +112,11 @@ data DeviceInfoTag =
    | CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT
    deriving (Enum)
 
-instance CLConstant DeviceInfoTag where
+instance CLConstant DeviceInfo where
    toCL x = fromIntegral (0x1000 + fromEnum x)
    fromCL x = toEnum (fromIntegral x - 0x1000)
 
+-- | Device type
 data DeviceType = 
      CL_DEVICE_TYPE_DEFAULT
    | CL_DEVICE_TYPE_CPU
@@ -122,6 +127,7 @@ data DeviceType =
 
 instance CLSet DeviceType
 
+-- | List of all device types
 allDeviceTypes :: [DeviceType]
 allDeviceTypes = [
       CL_DEVICE_TYPE_CPU, 
@@ -130,6 +136,7 @@ allDeviceTypes = [
       CL_DEVICE_TYPE_CUSTOM
    ]
 
+-- | Device floating-point unit configuration
 data DeviceFPConfig =
      CL_FP_DENORM
    | CL_FP_INF_NAN
@@ -143,6 +150,7 @@ data DeviceFPConfig =
 
 instance CLSet DeviceFPConfig
 
+-- | Device execution capabilities
 data DeviceExecCapability =
      CL_EXEC_KERNEL
    | CL_EXEC_NATIVE_KERNEL
@@ -150,6 +158,7 @@ data DeviceExecCapability =
 
 instance CLSet DeviceExecCapability
 
+-- | Device cache memory type
 data DeviceMemCacheType =
      CL_NONE
    | CL_READ_ONLY_CACHE
@@ -160,6 +169,7 @@ instance CLConstant DeviceMemCacheType where
    toCL x = fromIntegral (fromEnum x)
    fromCL x = toEnum (fromIntegral x)
 
+-- | Device local memory type
 data DeviceLocalMemType =
      CL_LOCAL
    | CL_GLOBAL
@@ -171,7 +181,7 @@ instance CLConstant DeviceLocalMemType where
 
 
 -- | Return a boolean device info
-getDeviceInfoBool :: DeviceInfoTag -> Device -> IO (Either CLError Bool)
+getDeviceInfoBool :: DeviceInfo -> Device -> IO (Either CLError Bool)
 getDeviceInfoBool infoid dev = do
    let size = fromIntegral $ sizeOf (fromBool False)
    alloca $ \(dat :: Ptr CLbool) -> whenSuccess 
@@ -179,7 +189,7 @@ getDeviceInfoBool infoid dev = do
       (fromCLBool <$> peek dat)
 
 -- | Return a unsigned long device info
-getDeviceInfoWord64 :: DeviceInfoTag -> Device -> IO (Either CLError Word64)
+getDeviceInfoWord64 :: DeviceInfo -> Device -> IO (Either CLError Word64)
 getDeviceInfoWord64 infoid dev = do
    let size = fromIntegral $ sizeOf (0 :: Word64)
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 

@@ -1,3 +1,4 @@
+-- | OpenCL kernel module
 module ViperVM.Platform.OpenCL.Kernel (
    Kernel(..)
 ) where
@@ -8,6 +9,7 @@ import ViperVM.Platform.OpenCL.Library
 
 import Control.Monad (void)
 
+-- | Kernel
 data Kernel = Kernel Library Kernel_ deriving (Eq)
 
 instance Entity Kernel where 

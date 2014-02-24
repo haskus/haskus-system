@@ -1,3 +1,4 @@
+-- | SysFS (Linux) management module
 module ViperVM.Platform.Host.SysFS (
    readMemInfo
 ) where

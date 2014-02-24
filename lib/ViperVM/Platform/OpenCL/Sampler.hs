@@ -1,3 +1,4 @@
+-- | OpenCL sampler module
 module ViperVM.Platform.OpenCL.Sampler (
    Sampler(..)
 ) where
@@ -8,6 +9,7 @@ import ViperVM.Platform.OpenCL.Library
 
 import Control.Monad (void)
 
+-- | Sampler
 data Sampler = Sampler Library Sampler_ deriving (Eq)
 
 instance Entity Sampler where 

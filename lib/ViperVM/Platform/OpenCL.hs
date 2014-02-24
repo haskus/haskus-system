@@ -1,3 +1,4 @@
+-- | OpenCL module
 module ViperVM.Platform.OpenCL (
    module X
 ) where

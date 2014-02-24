@@ -1,3 +1,4 @@
+-- | Low-level data types
 module ViperVM.MMU.DataType (
    DataType(..), ScalarType(..), 
    Sign(..), IntBits(..),
@@ -11,23 +12,26 @@ import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
 import ViperVM.Platform.Types (Endianness)
 
-type ArraySize = Word64
-
+-- | A deterministic low-level data-type
+--
+-- Deterministic because we do not support unions or other data-dependent types
 data DataType = 
      Scalar ScalarType
    | Padding Word64
    | Array DataType ArraySize
    | Struct [DataType]
 
-data Sign = Signed | Unsigned
-data IntBits = Bit8 | Bit16 | Bit32 | Bit64
+type ArraySize = Word64                      -- ^ Size of an array in cells
+data Sign = Signed | Unsigned                -- ^ Sign of an integer
+data IntBits = Bit8 | Bit16 | Bit32 | Bit64  -- ^ Number of bits representing an integer
 
+-- | Scalar type
 data ScalarType =
      TInt Sign IntBits Endianness
    | TFloat Endianness
    | TDouble Endianness
 
-
+-- | Data type with a fixed number of bytes to represent it
 class SizeOf t where
    sizeOf :: t -> Word64
 

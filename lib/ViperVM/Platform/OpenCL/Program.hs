@@ -1,3 +1,4 @@
+-- | OpenCL program module
 module ViperVM.Platform.OpenCL.Program (
    Program(..),
    ProgramBuildStatus(..)
@@ -10,6 +11,7 @@ import ViperVM.Platform.OpenCL.Bindings
 
 import Control.Monad (void)
 
+-- | Program
 data Program = Program Library Program_ deriving (Eq)
 
 instance Entity Program where 
@@ -18,6 +20,7 @@ instance Entity Program where
    retain = retainProgram
    release = releaseProgram
 
+-- | Program build status
 data ProgramBuildStatus = 
      CL_BUILD_SUCCESS
    | CL_BUILD_NONE

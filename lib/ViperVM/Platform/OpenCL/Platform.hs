@@ -1,5 +1,6 @@
+-- | OpenCL platform module
 module ViperVM.Platform.OpenCL.Platform (
-   Platform, PlatformInfo(..),
+   Platform, PlatformInfo(..), PlatformInfos(..),
    getNumPlatforms, getPlatforms, 
    getPlatformNumDevices, getPlatformDevices,
    getPlatformInfo, getPlatformInfo',
@@ -27,6 +28,7 @@ import Foreign (allocaArray,peekArray)
 import Foreign.Storable (peek)
 import Foreign.Ptr (nullPtr,castPtr)
 
+-- | Platform
 data Platform = Platform Library Platform_ deriving (Eq)
 
 instance Entity Platform where 
@@ -35,7 +37,8 @@ instance Entity Platform where
    retain _ = return ()
    release _ = return ()
 
-data PlatformInfoTag =
+-- | Platform information
+data PlatformInfo =
      CL_PLATFORM_PROFILE
    | CL_PLATFORM_VERSION
    | CL_PLATFORM_NAME
@@ -43,7 +46,7 @@ data PlatformInfoTag =
    | CL_PLATFORM_EXTENSIONS
    deriving (Show,Enum)
 
-instance CLConstant PlatformInfoTag where
+instance CLConstant PlatformInfo where
    toCL x = fromIntegral (0x0900 + fromEnum x)
    fromCL x = toEnum (fromIntegral x - 0x0900)
 
@@ -89,7 +92,7 @@ getPlatformDevices pf = do
             _ -> return []
 
 -- | Get platform info
-getPlatformInfo :: PlatformInfoTag -> Platform -> IO (Either CLError String)
+getPlatformInfo :: PlatformInfo -> Platform -> IO (Either CLError String)
 getPlatformInfo infoid pf = getSize >>>= getInfo
    where
       lib = cllib pf
@@ -112,7 +115,7 @@ getPlatformInfo infoid pf = getSize >>>= getInfo
          (peekCString buff)
 
 -- | Get platform info (throw an exception if an error occurs)
-getPlatformInfo' :: PlatformInfoTag -> Platform -> IO String
+getPlatformInfo' :: PlatformInfo -> Platform -> IO String
 getPlatformInfo' infoid platform = toException <$> getPlatformInfo infoid platform
 
 -- | Get platform name
@@ -155,7 +158,8 @@ getPlatformExtensions pf = fmap words <$> getPlatformInfo CL_PLATFORM_EXTENSIONS
 getPlatformExtensions' :: Platform -> IO [String]
 getPlatformExtensions' pf = words <$> getPlatformInfo' CL_PLATFORM_EXTENSIONS pf
 
-data PlatformInfo = PlatformInfo {
+-- | Aggregation of platform informations
+data PlatformInfos = PlatformInfos {
    platformName :: String,
    platformVendor :: String,
    platformProfile :: String,
@@ -164,8 +168,8 @@ data PlatformInfo = PlatformInfo {
 } deriving (Show)
 
 -- | Get platform informations (throw an exception if an error occurs)
-getPlatformInfos' :: Platform -> IO PlatformInfo
-getPlatformInfos' pf = PlatformInfo
+getPlatformInfos' :: Platform -> IO PlatformInfos
+getPlatformInfos' pf = PlatformInfos
    <$> getPlatformName' pf
    <*> getPlatformVendor' pf
    <*> getPlatformProfile' pf

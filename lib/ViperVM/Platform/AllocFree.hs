@@ -1,7 +1,9 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 -- | Buffer allocation
-module ViperVM.Platform.AllocFree where
+module ViperVM.Platform.AllocFree (
+   allocateHost, allocateOpenCL
+) where
 
 import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.C.Types (CSize(..))
@@ -30,6 +32,7 @@ allocateHost size _ = do
 -- OpenCL
 --------------------------------------------------------
 
+-- | Allocate a buffer in OpenCL memory
 allocateOpenCL :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
 allocateOpenCL size mem = do
    let 

@@ -1,3 +1,4 @@
+-- | OpenCL memory object (buffer, image) module
 module ViperVM.Platform.OpenCL.Mem (
    Mem(..),
    createBuffer, createImage2D, createImage3D,
@@ -22,6 +23,7 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,pokeArray)
 import Foreign.Storable (peek)
 
+-- | Memory object (buffer, image)
 data Mem = Mem Library Mem_ deriving (Eq)
 
 instance Entity Mem where 
@@ -30,6 +32,7 @@ instance Entity Mem where
    retain = retainMem
    release = releaseMem
 
+-- | Memory object flags
 data MemFlag =
      CL_MEM_READ_WRITE        -- 1
    | CL_MEM_WRITE_ONLY        -- 2
@@ -45,6 +48,7 @@ data MemFlag =
 
 instance CLSet MemFlag
 
+-- | Memory object mapping flags
 data MapFlag =
      CL_MAP_READ
    | CL_MAP_WRITE
@@ -53,6 +57,7 @@ data MapFlag =
 
 instance CLSet MapFlag
 
+-- | Memory object type
 data MemObjectType =
      CL_MEM_OBJECT_BUFFER
    | CL_MEM_OBJECT_IMAGE2D
