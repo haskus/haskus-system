@@ -1,4 +1,6 @@
-module ViperVM.Platform.PlatformInfo where
+module ViperVM.Platform.PlatformInfo (
+   memoryInfo, procInfo
+) where
 
 import Control.Concurrent.STM (atomically, readTVar)
 
@@ -24,5 +26,17 @@ memoryInfo mem = do
          HostMemory {} -> "Host"
          CUDAMemory {} -> "CUDA"
          DiskMemory {} -> "Disk"
+
+   return str
+
+procInfo :: Proc -> IO String
+procInfo proc = do
+   let
+      fmt = "Proc %d - %s"
+      str = printf fmt pid typ
+      pid = procId proc
+      typ = case procPeer proc of
+         OpenCLProc {} -> "OpenCL"
+         CPUProc {} -> "CPU"
 
    return str

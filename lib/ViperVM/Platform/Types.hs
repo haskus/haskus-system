@@ -96,7 +96,7 @@ data AllocError =
 
 -- | A processor
 data Proc = Proc {
-   procID :: ID,
+   procId :: ID,
    procPeer :: ProcPeer
 }
 

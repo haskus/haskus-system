@@ -91,8 +91,8 @@ registerMemory procs peer = do
 -- | Register a new proc
 registerProc :: ProcPeer -> StateT LoadState IO Proc
 registerProc peer = do
-   procId <- newProcId
-   proc <- lift $ wrapProcPeer procId peer
+   pId <- newProcId
+   proc <- lift $ wrapProcPeer pId peer
    curr <- get
    put (curr { currentProcs = proc : currentProcs curr})
    return proc

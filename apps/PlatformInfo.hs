@@ -20,6 +20,13 @@ main = do
 
    traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
 
+   let procsStr x 
+         | x <= 1    = printf "%d processor found" x
+         | otherwise = printf "%d processors found" x
+   putStrLn . procsStr . length $ platformProcs pf
+
+   traverse_ (putStrLn <=< procInfo) (platformProcs pf)
+
    putStrLn "OpenCL platforms:"
    forM_ (platformOpenCLPlatforms pf) $ \clPf -> do
       infos <- getPlatformInfos' clPf
