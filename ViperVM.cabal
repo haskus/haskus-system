@@ -59,6 +59,7 @@ library
     parsec,
     containers,
     dynamic-linker-template,
+    transformers,
     unix,
     stm
 

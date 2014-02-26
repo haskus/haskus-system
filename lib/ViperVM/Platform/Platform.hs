@@ -10,10 +10,12 @@ module ViperVM.Platform.Platform (
 ) where
 
 import Control.Applicative ( (<$>), pure )
-import Control.Monad (forM,filterM)
+import Control.Monad (forM,filterM,void)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 import Control.Concurrent.STM
 import Data.Traversable (Traversable, traverse)
-import Data.Foldable (Foldable, foldMap)
+import Data.Foldable (Foldable, foldMap, forM_)
 import Data.Monoid (mempty)
 import Data.List
 import Data.Word (Word64)
@@ -41,28 +43,77 @@ defaultConfig = PlatformConfig {
 
 data Platform = Platform {
    platformMemories :: [Memory],
+   platformProcs :: [Proc],
    -- OpenCL specific
-   platformOpenCLLibrary :: CL.Library,
    platformOpenCLPlatforms :: [CL.Platform]
 }
 
--- | Load the platform
-loadPlatform :: PlatformConfig -> IO Platform
-loadPlatform config = do
-   
+-- | State used during platform loading
+data LoadState = LoadState {
+   currentProcID :: ID,
+   currentMemID :: ID,
+   currentMemories :: [Memory],
+   currentProcs :: [Proc]
+}
 
-   -- Load OpenCL devices
-   putStrLn "Loading OpenCL..."
-   clLib <- CL.loadOpenCL (libraryOpenCL config)
-   clPlatforms <- CL.getPlatforms clLib
-   clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices pf)
-   clDevices' <- filterM (filterOpenCLDevices config . snd) clDevices
-   clContexts <- forM clDevices' (\(pf,dev) -> CL.createContext pf [dev])
-   clMemories <- forM (clContexts `zip` clDevices') $ \(ctx,(_,dev)) -> case ctx of
+-- | Initial loading state
+initLoadState :: LoadState
+initLoadState = LoadState {
+   currentProcID = 0,
+   currentMemID = 0,
+   currentMemories = [],
+   currentProcs = []
+}
+
+-- | Get new Proc ID
+newProcId :: Monad m => StateT LoadState m ID
+newProcId = do
+   curr <- get
+   let x = currentProcID curr
+   put (curr { currentProcID = x+1 })
+   return x
+
+-- | Get new Mem ID
+newMemId :: Monad m => StateT LoadState m ID
+newMemId = do
+   curr <- get
+   let x = currentMemID curr
+   put (curr { currentMemID = x+1 })
+   return x
+
+-- | Register a new memory
+registerMemory :: [Proc] -> MemoryPeer -> StateT LoadState IO Memory
+registerMemory procs peer = do
+   memId <- newMemId
+   mem <- lift $ wrapMemoryPeer memId procs peer
+   curr <- get
+   put (curr { currentMemories = mem : currentMemories curr})
+   return mem
+
+-- | Register a new proc
+registerProc :: ProcPeer -> StateT LoadState IO Proc
+registerProc peer = do
+   procId <- newProcId
+   proc <- lift $ wrapProcPeer procId peer
+   curr <- get
+   put (curr { currentProcs = proc : currentProcs curr})
+   return proc
+
+
+
+-- | Load OpenCL platform
+loadOpenCLPlatform :: PlatformConfig -> StateT LoadState IO [CL.Platform]
+loadOpenCLPlatform config = do
+   clLib <- lift $ CL.loadOpenCL (libraryOpenCL config)
+   clPlatforms <- lift $ CL.getPlatforms clLib
+   clDevices <- lift $ concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices pf)
+   clDevices' <- lift $ filterM (filterOpenCLDevices config . snd) clDevices
+   clContexts <- lift $ forM clDevices' (\(pf,dev) -> CL.createContext pf [dev])
+   forM_ (clContexts `zip` clDevices') $ \(ctx,(_,dev)) -> case ctx of
       Left err -> error ("Invalid context: " ++ show err)
       Right ctx' -> do
-         endianness <- getOpenCLDeviceEndianness dev
-         size <- CL.getDeviceGlobalMemSize' dev
+         endianness <- lift $ getOpenCLDeviceEndianness dev
+         size <- lift $ CL.getDeviceGlobalMemSize' dev
          let memPeer = OpenCLMemory {
                   clMemLibrary = clLib,
                   clMemDevice = dev,
@@ -70,34 +121,52 @@ loadPlatform config = do
                   clMemEndianness = endianness,
                   clMemSize = size
                }
-         wrapMemoryPeer 0 memPeer
+             prcPeer = OpenCLProc {
+                  clProcDevice = dev,
+                  clProcContext = ctx'
+               }
+         proc <- registerProc prcPeer
+         void (registerMemory [proc] memPeer)
 
-   -- Load host
-   putStrLn "Loading Host..."
-   numa <- CPU.loadNUMA (sysfsPath config)
-   hostEndianness <- getMemoryEndianness
-   hostMemories <- forM (CPU.numaNodes numa) $ \node -> do
+   return clPlatforms
+
+
+-- | Load host platform
+loadHostPlatform :: PlatformConfig -> StateT LoadState IO ()
+loadHostPlatform config = do
+   numa <- lift $ CPU.loadNUMA (sysfsPath config)
+   hostEndianness <- lift $ getMemoryEndianness
+   forM_ (CPU.numaNodes numa) $ \node -> do
       let m = CPU.nodeMemory node
-      (total,_) <- CPU.nodeMemoryStatus m
+      (total,_) <- lift $ CPU.nodeMemoryStatus m
       let memPeer = HostMemory {
-         hostMemEndianness = hostEndianness,
-         hostMemSize = total
-      }
-      wrapMemoryPeer 0 memPeer
+            hostMemEndianness = hostEndianness,
+            hostMemSize = total
+          }
+          procs = []
+      void (registerMemory procs memPeer)
 
-   -- TODO: load other devices (CUDA...)
 
-   -- Assign valid IDs to memories
-   let
-      setMemoryId m i = m {memoryId = i}
-      allMemories = hostMemories ++ clMemories
-      memories = zipWith setMemoryId allMemories [0..]
+-- | Load the platform
+loadPlatform :: PlatformConfig -> IO Platform
+loadPlatform config = evalStateT loadPlatform_ initLoadState
+   where
+      loadPlatform_ :: StateT LoadState IO Platform
+      loadPlatform_ = do
+         
+         loadHostPlatform config
+         clPlatforms <- loadOpenCLPlatform config
 
-   return Platform {
-      platformMemories = memories,
-      platformOpenCLLibrary = clLib,
-      platformOpenCLPlatforms = clPlatforms
-   }
+         -- TODO: load other devices (CUDA...)
+         
+         memories <- reverse . currentMemories <$> get
+         procs <- reverse . currentProcs <$> get
+
+         return Platform {
+            platformMemories = memories,
+            platformProcs = procs,
+            platformOpenCLPlatforms = clPlatforms
+         }
 
 
 
@@ -110,8 +179,13 @@ instance Traversable (Either e) where
    traverse _ (Left e) = pure (Left e)
    traverse f (Right x) = Right <$> f x
 
-wrapMemoryPeer :: ID -> MemoryPeer -> IO Memory
-wrapMemoryPeer ident peer = Memory ident peer <$> newTVarIO []
+-- | Wrap a memory peer into a memory object
+wrapMemoryPeer :: ID -> [Proc] -> MemoryPeer -> IO Memory
+wrapMemoryPeer ident procs peer = Memory ident procs peer <$> newTVarIO []
+
+-- | Wrap a proc peer into a proc object
+wrapProcPeer :: ID -> ProcPeer -> IO Proc
+wrapProcPeer ident peer = return (Proc ident peer)
 
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness

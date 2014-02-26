@@ -5,7 +5,8 @@ module ViperVM.Platform.Types (
    Buffer(..), BufferPeer(..),
    BufferSize,
    Link(..), LinkPeer(..),
-   AllocError(..), TransferError(..)
+   AllocError(..), TransferError(..),
+   Proc(..), ProcPeer(..)
 ) where
 
 import Control.Concurrent.STM (TVar)
@@ -23,6 +24,7 @@ type ID = Int
 -- | Memory
 data Memory = Memory {
    memoryId :: ID,
+   memoryProcs :: [Proc],
    memoryPeer :: MemoryPeer,
    memoryBuffers :: TVar [Buffer]
 }
@@ -89,3 +91,17 @@ data AllocError =
    | ErrAllocUnknown
    deriving (Show,Eq)
 
+
+-- | A processor
+data Proc = Proc {
+   procID :: ID,
+   procPeer :: ProcPeer
+}
+
+-- | Backend specific processor fields
+data ProcPeer =
+     CPUProc
+   | OpenCLProc {
+         clProcDevice :: CL.Device,
+         clProcContext :: CL.Context
+     }
