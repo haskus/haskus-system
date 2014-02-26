@@ -2,7 +2,8 @@
 
 -- | Buffer allocation
 module ViperVM.Platform.AllocFree (
-   allocateHost, allocateOpenCL
+   allocateHost, allocateOpenCL,
+   free
 ) where
 
 import Foreign.Ptr (Ptr,nullPtr)
