@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 -- | Abstract platform
 module ViperVM.Platform.Platform (
    Platform(..), PlatformConfig(..), defaultConfig,
@@ -10,7 +8,7 @@ module ViperVM.Platform.Platform (
 ) where
 
 import Control.Applicative ( (<$>), pure )
-import Control.Monad (forM,filterM,void)
+import Control.Monad (filterM,void)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 import Control.Concurrent.STM
@@ -104,31 +102,34 @@ registerProc peer = do
 -- | Load OpenCL platform
 loadOpenCLPlatform :: PlatformConfig -> StateT LoadState IO [CL.Platform]
 loadOpenCLPlatform config = do
-   clLib <- lift $ CL.loadOpenCL (libraryOpenCL config)
-   clPlatforms <- lift $ CL.getPlatforms clLib
-   clDevices <- lift $ concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices pf)
-   clDevices' <- lift $ filterM (filterOpenCLDevices config . snd) clDevices
-   clContexts <- lift $ forM clDevices' (\(pf,dev) -> CL.createContext pf [dev])
-   forM_ (clContexts `zip` clDevices') $ \(ctx,(_,dev)) -> case ctx of
-      Left err -> error ("Invalid context: " ++ show err)
-      Right ctx' -> do
-         endianness <- lift $ getOpenCLDeviceEndianness dev
-         size <- lift $ CL.getDeviceGlobalMemSize' dev
-         let memPeer = OpenCLMemory {
-                  clMemLibrary = clLib,
-                  clMemDevice = dev,
-                  clMemContext = ctx',
-                  clMemEndianness = endianness,
-                  clMemSize = size
-               }
-             prcPeer = OpenCLProc {
-                  clProcDevice = dev,
-                  clProcContext = ctx'
-               }
-         proc <- registerProc prcPeer
-         void (registerMemory [proc] memPeer)
+   lib <- lift $ CL.loadOpenCL (libraryOpenCL config)
+   platforms <- lift $ CL.getPlatforms lib
 
-   return clPlatforms
+   forM_ platforms $ \pf -> do
+      devices <- lift $ filterM (filterOpenCLDevices config) =<< CL.getPlatformDevices pf
+      forM_ devices $ \dev -> do
+         context <- lift $ CL.createContext pf [dev]
+
+         case context of
+            Left err -> error ("Invalid context: " ++ show err)
+            Right ctx' -> do
+               endianness <- lift $ getOpenCLDeviceEndianness dev
+               size <- lift $ CL.getDeviceGlobalMemSize' dev
+               let memPeer = OpenCLMemory {
+                        clMemLibrary = lib,
+                        clMemDevice = dev,
+                        clMemContext = ctx',
+                        clMemEndianness = endianness,
+                        clMemSize = size
+                     }
+                   prcPeer = OpenCLProc {
+                        clProcDevice = dev,
+                        clProcContext = ctx'
+                     }
+               proc <- registerProc prcPeer
+               void (registerMemory [proc] memPeer)
+
+   return platforms
 
 
 -- | Load host platform
