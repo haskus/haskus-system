@@ -21,6 +21,7 @@ library
     ViperVM.Platform.Endianness
     ViperVM.Platform.AllocFree
     ViperVM.Platform.Types
+    ViperVM.Platform.Memory
 
     ViperVM.Platform.OpenCL.Bindings
     ViperVM.Platform.OpenCL.CommandQueue
@@ -39,6 +40,8 @@ library
     ViperVM.Platform.OpenCL.Types
 
     ViperVM.Platform.Host.SysFS
+
+    ViperVM.Platform.Network.PPPTransfer
 
     ViperVM.MMU.Region
     ViperVM.MMU.DataType

@@ -5,7 +5,7 @@ module ViperVM.Platform.Types (
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..),
    BufferSize,
-   Link(..), LinkPeer(..),
+   Network(..), PPPLinkPeer(..), Duplex(..),
    AllocError(..), TransferError(..),
    Proc(..), ProcPeer(..)
 ) where
@@ -16,11 +16,12 @@ import Data.Word (Word64)
 
 import qualified ViperVM.Platform.OpenCL as CL
 
--- | Memory endianness
-data Endianness = LittleEndian | BigEndian deriving (Eq,Show)
-
 -- | Unique identifier
 type ID = Int
+
+--------------------------------------------------------------
+-- Memories
+--------------------------------------------------------------
 
 -- | Memory
 data Memory = Memory {
@@ -49,19 +50,8 @@ data MemoryPeer =
    | CUDAMemory
    | DiskMemory
 
--- | A link between two memories
-data Link = Link {
-   linkId :: ID,
-   linkPeer :: LinkPeer
-}
-
-instance Eq Link where 
-   (==) a b = linkId a == linkId b
-
--- | Backend specific link
-data LinkPeer =
-     OpenCLLink CL.Library CL.Device CL.CommandQueue
-
+-- | Memory endianness
+data Endianness = LittleEndian | BigEndian deriving (Eq,Show)
 
 -- | Memory buffer
 data Buffer = Buffer {
@@ -80,19 +70,9 @@ data BufferPeer =
 
 type BufferSize = Word64  -- ^ Size of a buffer in bytes
 
--- | Region transfer error
-data TransferError =
-     ErrTransferIncompatibleRegions
-   | ErrTransferInvalid
-   | ErrTransferUnknown
-   deriving (Show,Eq)
-
--- | Buffer allocation error
-data AllocError = 
-     ErrAllocOutOfMemory
-   | ErrAllocUnknown
-   deriving (Show,Eq)
-
+--------------------------------------------------------------
+-- Processors
+--------------------------------------------------------------
 
 -- | A processor
 data Proc = Proc {
@@ -107,3 +87,47 @@ data ProcPeer =
          clProcDevice :: CL.Device,
          clProcContext :: CL.Context
      }
+
+--------------------------------------------------------------
+-- Networking / interconnexion networks
+--------------------------------------------------------------
+
+-- | Network link direction
+data Duplex = Simplex | HalfDuplex | FullDuplex
+
+-- | Networks interconnecting memories
+data Network =
+   -- | Point-to-point link
+   PPPLink {
+      pppLinkId :: ID,
+      pppLinkSource :: Memory,
+      pppLinkTarget :: Memory,
+      pppLinkDuplex :: Duplex,
+      pppLinkPeer :: PPPLinkPeer
+   }
+
+-- | Backend specific fields for point-to-point links
+data PPPLinkPeer = 
+     OpenCLLink {
+         clLinkDevice :: CL.Device,
+         clLinkContext :: CL.Context,
+         clLinkQueue :: CL.CommandQueue
+     }
+
+--------------------------------------------------------------
+-- Errors
+--------------------------------------------------------------
+
+-- | Region transfer error
+data TransferError =
+     ErrTransferIncompatibleRegions
+   | ErrTransferInvalid
+   | ErrTransferUnknown
+   deriving (Show,Eq)
+
+-- | Buffer allocation error
+data AllocError = 
+     ErrAllocOutOfMemory
+   | ErrAllocUnknown
+   deriving (Show,Eq)
+
