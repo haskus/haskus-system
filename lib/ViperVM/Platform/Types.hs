@@ -15,7 +15,7 @@ import Data.Word (Word64)
 import qualified ViperVM.Platform.OpenCL as CL
 
 -- | Memory endianness
-data Endianness = LittleEndian | BigEndian deriving (Show)
+data Endianness = LittleEndian | BigEndian deriving (Eq,Show)
 
 -- | Unique identifier
 type ID = Int
