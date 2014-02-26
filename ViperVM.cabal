@@ -39,6 +39,8 @@ library
     ViperVM.Platform.OpenCL.Sampler
     ViperVM.Platform.OpenCL.Types
 
+    ViperVM.Platform.Host.SysFS
+
     ViperVM.MMU.Region
     ViperVM.MMU.DataType
     ViperVM.MMU.Data

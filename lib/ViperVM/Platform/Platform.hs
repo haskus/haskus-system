@@ -50,7 +50,9 @@ data Platform = Platform {
 loadPlatform :: PlatformConfig -> IO Platform
 loadPlatform config = do
    
+
    -- Load OpenCL devices
+   putStrLn "Loading OpenCL..."
    clLib <- CL.loadOpenCL (libraryOpenCL config)
    clPlatforms <- CL.getPlatforms clLib
    clDevices <- concat <$> forM clPlatforms (\pf -> map (pf,) <$> CL.getPlatformDevices pf)
@@ -71,6 +73,7 @@ loadPlatform config = do
          wrapMemoryPeer 0 memPeer
 
    -- Load host
+   putStrLn "Loading Host..."
    numa <- CPU.loadNUMA (sysfsPath config)
    hostEndianness <- getMemoryEndianness
    hostMemories <- forM (CPU.numaNodes numa) $ \node -> do
