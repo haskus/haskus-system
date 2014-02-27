@@ -3,7 +3,7 @@ module ViperVM.Platform.OpenCL.CommandQueue (
    CommandQueue, CommandQueueProperty(..),
    CommandType, CommandExecutionStatus,
    ProfilingInfo, CommandQueueInfo,
-   createCommandQueue,
+   createCommandQueue, createCommandQueue',
    flush, finish, enqueueBarrier
 ) where
 
@@ -29,8 +29,8 @@ instance Entity CommandQueue where
 
 -- | Command queue properties
 data CommandQueueProperty =
-     CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
-   | CL_QUEUE_PROFILING_ENABLE
+     CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE'
+   | CL_QUEUE_PROFILING    -- ^ Replace "CL_QUEUE_PROFILING_ENABLE"
    deriving (Show, Bounded, Eq, Ord, Enum)
 
 instance CLSet CommandQueueProperty
@@ -111,6 +111,10 @@ createCommandQueue :: Context -> Device -> [CommandQueueProperty] -> IO (Either 
 createCommandQueue ctx dev props =
    fmap (CommandQueue lib) <$> wrapPError (rawClCreateCommandQueue lib (unwrap ctx) (unwrap dev) (toCLSet props))
    where lib = cllib ctx
+
+-- | Create a command queue (throw an exception on error)
+createCommandQueue' :: Context -> Device -> [CommandQueueProperty] -> IO CommandQueue
+createCommandQueue' ctx dev props = toException <$> createCommandQueue ctx dev props
 
 -- | Release a command queue
 releaseCommandQueue :: CommandQueue -> IO ()

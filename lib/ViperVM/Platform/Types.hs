@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 -- | Platform types
 module ViperVM.Platform.Types (
    ID,
@@ -7,7 +9,8 @@ module ViperVM.Platform.Types (
    BufferSize,
    Network(..), PPPLinkPeer(..), Duplex(..),
    AllocError(..), TransferError(..),
-   Proc(..), ProcPeer(..)
+   Proc(..), ProcPeer(..),
+   isHostMemory, networkId
 ) where
 
 import Control.Concurrent.STM (TVar)
@@ -49,6 +52,12 @@ data MemoryPeer =
      }
    | CUDAMemory
    | DiskMemory
+
+-- | Indicate if a memory is an host memory
+isHostMemory :: Memory -> Bool
+isHostMemory m = case memoryPeer m of
+   HostMemory {} -> True
+   _ -> False
 
 -- | Memory endianness
 data Endianness = LittleEndian | BigEndian deriving (Eq,Show)
@@ -113,6 +122,9 @@ data PPPLinkPeer =
          clLinkContext :: CL.Context,
          clLinkQueue :: CL.CommandQueue
      }
+
+networkId :: Network -> ID
+networkId (PPPLink {..}) = pppLinkId
 
 --------------------------------------------------------------
 -- Errors

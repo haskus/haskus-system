@@ -27,6 +27,13 @@ main = do
 
    traverse_ (putStrLn <=< procInfo) (platformProcs pf)
 
+   let netsStr x 
+         | x <= 1    = printf "%d network found" x
+         | otherwise = printf "%d networks found" x
+   putStrLn . netsStr . length $ platformNetworks pf
+
+   traverse_ (putStrLn <=< networkInfo) (platformNetworks pf)
+
    putStrLn "OpenCL platforms:"
    forM_ (platformOpenCLPlatforms pf) $ \clPf -> do
       infos <- getPlatformInfos' clPf
