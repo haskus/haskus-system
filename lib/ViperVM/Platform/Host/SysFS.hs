@@ -1,19 +1,25 @@
 -- | SysFS (Linux) management module
 module ViperVM.Platform.Host.SysFS (
-   readMemInfo
+   readMemInfo,
+   CPUMap(..), readCPUMap, member
 ) where
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*))
 import Control.Monad (void)
+import Text.ParserCombinators.Parsec.Number
 import Text.Parsec.Combinator
 import Text.Parsec.Char
 import Text.Parsec
 import Data.Word
+import Data.Bits
 import Data.Maybe (isJust)
-import Data.Map as Map
+import qualified Data.Map as Map
+import qualified Data.Vector as V
 
--- | Read
-readMemInfo :: FilePath -> IO (Map String Word64)
+data CPUMap = CPUMap (V.Vector Word32)
+
+-- | Read meminfo files
+readMemInfo :: FilePath -> IO (Map.Map String Word64)
 readMemInfo path = do
    meminfo <- readFile path
 
@@ -34,3 +40,22 @@ readMemInfo path = do
          void (void newline <|> eof)
          let f x = if isJust kb then x * 1024 else x
          return (lbl, f value)
+
+
+-- | Read cpumap files
+readCPUMap :: FilePath -> IO CPUMap
+readCPUMap path = do
+   f <- readFile path
+
+   CPUMap . V.fromList . reverse . dropWhile (== 0) <$> case parse parseFile "" f of
+      Left err -> error ("cpumap parsing error: " ++ show err)
+      Right v -> return v
+
+   where
+      parseFile = sepBy1 hexnum (char ',') <* newline <* eof
+
+-- | Check that a CPU belongs to a CPU Map
+member :: Word -> CPUMap -> Bool
+member idx (CPUMap v) = q < V.length v && testBit (v V.! q) r
+   where
+      (q,r) = fromIntegral idx `quotRem` 32
