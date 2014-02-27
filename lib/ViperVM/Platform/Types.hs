@@ -15,7 +15,7 @@ module ViperVM.Platform.Types (
 
 import Control.Concurrent.STM (TVar)
 import Foreign.Ptr (Ptr)
-import Data.Word (Word64)
+import Data.Word (Word,Word64)
 
 import qualified ViperVM.Platform.OpenCL as CL
 
@@ -91,7 +91,9 @@ data Proc = Proc {
 
 -- | Backend specific processor fields
 data ProcPeer =
-     CPUProc
+     CPUProc {
+         cpuIndex :: Word
+     }
    | OpenCLProc {
          clProcDevice :: CL.Device,
          clProcContext :: CL.Context

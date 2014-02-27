@@ -1,7 +1,7 @@
 -- | SysFS (Linux) management module
 module ViperVM.Platform.Host.SysFS (
    readMemInfo,
-   CPUMap(..), readCPUMap, member
+   CPUMap(..), readCPUMap, member, toList
 ) where
 
 import Control.Applicative ((<$>), (<*))
@@ -12,11 +12,11 @@ import Text.Parsec.Char
 import Text.Parsec
 import Data.Word
 import Data.Bits
-import Data.Maybe (isJust)
+import Data.Maybe (isJust,mapMaybe)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 
-data CPUMap = CPUMap (V.Vector Word32)
+data CPUMap = CPUMap (V.Vector Word32) deriving (Show)
 
 -- | Read meminfo files
 readMemInfo :: FilePath -> IO (Map.Map String Word64)
@@ -59,3 +59,11 @@ member :: Word -> CPUMap -> Bool
 member idx (CPUMap v) = q < V.length v && testBit (v V.! q) r
    where
       (q,r) = fromIntegral idx `quotRem` 32
+
+
+toList :: CPUMap -> [Word]
+toList (CPUMap v) = go 0 (V.toList v)
+   where
+      go _ [] = []
+      go n (x:xs) = mapMaybe (f x n) [0..31] ++ go (n+1) xs
+      f x n idx = if testBit x idx then Just (n * 32 + fromIntegral idx) else Nothing

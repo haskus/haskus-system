@@ -11,6 +11,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 import Control.Concurrent.STM
 import Data.Foldable (forM_)
+import Data.Traversable (forM)
 
 import qualified ViperVM.Platform.OpenCL as CL
 import qualified ViperVM.Platform.CPU as CPU
@@ -19,6 +20,8 @@ import ViperVM.Platform.Types
 
 import ViperVM.Platform.AllocFree as X
 import ViperVM.Platform.Memory as X
+
+import qualified ViperVM.Platform.Host.SysFS as SysFS
 
 -- | Platform configuration
 data PlatformConfig = PlatformConfig {
@@ -178,8 +181,9 @@ loadHostPlatform config = do
             hostMemEndianness = hostEndianness,
             hostMemSize = total
           }
-          procs = []
-      void (registerMemory procs memPeer)
+          procs = fmap CPUProc (SysFS.toList (CPU.nodeCPUs node))
+      procs' <- forM procs registerProc
+      void (registerMemory procs' memPeer)
 
 
 -- | Load the platform

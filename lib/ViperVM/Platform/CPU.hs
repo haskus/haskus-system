@@ -8,7 +8,7 @@ import Control.Monad (forM)
 import Data.Word
 import Data.Map ((!))
 
-import ViperVM.Platform.Host.SysFS (readMemInfo)
+import qualified ViperVM.Platform.Host.SysFS as SysFS
 
 -- | A set of NUMA nodes
 data NUMA = NUMA {
@@ -17,7 +17,7 @@ data NUMA = NUMA {
 
 -- | A NUMA node
 data Node = Node {
-   nodeCPUs :: [FilePath],
+   nodeCPUs :: SysFS.CPUMap,
    nodeMemory :: NodeMemory
 } deriving (Show)
 
@@ -32,11 +32,8 @@ loadNUMA sysfsPath = do
    nDirs <- filter ("node" `isPrefixOf`) <$> getDirectoryContents nodePath
 
    ndes <- forM nDirs $ \nDir -> do
-      contents <- getDirectoryContents (nodePath ++ nDir)
-      let
-         cpuDirs = filter ("cpu" `isPrefixOf`) contents
-
-      return $ Node cpuDirs (NodeMemory $ nodePath ++ nDir ++ "/meminfo")
+      cpus <- SysFS.readCPUMap (nodePath ++ nDir ++ "/cpumap")
+      return $ Node cpus (NodeMemory $ nodePath ++ nDir ++ "/meminfo")
 
    return $ NUMA ndes
 
@@ -44,6 +41,6 @@ loadNUMA sysfsPath = do
 -- | Return (total,free) memory for the given node
 nodeMemoryStatus :: NodeMemory -> IO (Word64,Word64)
 nodeMemoryStatus (NodeMemory path) = do
-   infos <- readMemInfo path
+   infos <- SysFS.readMemInfo path
 
    return (infos ! "MemTotal", infos ! "MemFree")
