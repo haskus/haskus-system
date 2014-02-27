@@ -50,8 +50,6 @@ data MemoryPeer =
          clMemEndianness :: Endianness,
          clMemSize :: Word64
      }
-   | CUDAMemory
-   | DiskMemory
 
 -- | Indicate if a memory is an host memory
 isHostMemory :: Memory -> Bool

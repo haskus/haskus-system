@@ -28,8 +28,6 @@ memoryInfo mem = do
       typ = case memoryPeer mem of
          OpenCLMemory {} -> "OpenCL"
          HostMemory {} -> "Host"
-         CUDAMemory {} -> "CUDA"
-         DiskMemory {} -> "Disk"
    return str
 
 -- | Return proc info string

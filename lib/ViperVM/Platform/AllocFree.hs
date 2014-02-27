@@ -40,9 +40,7 @@ allocateBuffer size mem = allocPeer size mem >>= traverse wrapStore
    where
       allocPeer = case memoryPeer mem of
          HostMemory {}   -> allocateHost
-         CUDAMemory      -> undefined
          OpenCLMemory {} -> allocateOpenCL
-         DiskMemory      -> undefined
 
       wrapStore peer = do
          let buf = Buffer mem size peer
