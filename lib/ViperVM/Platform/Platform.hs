@@ -11,7 +11,6 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 import Control.Concurrent.STM
 import Data.Foldable (forM_)
-import Data.Word (Word64)
 
 import qualified ViperVM.Platform.OpenCL as CL
 import qualified ViperVM.Platform.CPU as CPU
@@ -21,12 +20,14 @@ import ViperVM.Platform.Types
 import ViperVM.Platform.AllocFree as X
 import ViperVM.Platform.Memory as X
 
+-- | Platform configuration
 data PlatformConfig = PlatformConfig {
-   libraryOpenCL :: String,
-   filterOpenCLDevices :: CL.Device -> IO Bool,
-   sysfsPath :: String
+   libraryOpenCL :: String,                        -- ^ OpenCL library to use
+   filterOpenCLDevices :: CL.Device -> IO Bool,    -- ^ Function to filter out OpenCL devices
+   sysfsPath :: String                             -- ^ Path to SysFS mount point
 }
 
+-- | Default platform configuration
 defaultConfig :: PlatformConfig
 defaultConfig = PlatformConfig {
    libraryOpenCL = "libOpenCL.so",
@@ -34,6 +35,7 @@ defaultConfig = PlatformConfig {
    sysfsPath = "/sys"
 }
 
+-- | Platform
 data Platform = Platform {
    platformMemories :: [Memory],
    platformProcs :: [Proc],
@@ -78,7 +80,7 @@ newMemId = do
 registerMemory :: [Proc] -> MemoryPeer -> StateT LoadState IO Memory
 registerMemory procs peer = do
    memId <- newMemId
-   mem <- lift $ wrapMemoryPeer memId procs peer
+   mem <- lift $ Memory memId procs peer <$> newTVarIO []
    curr <- get
    put (curr { currentMemories = mem : currentMemories curr})
    return mem
@@ -87,7 +89,7 @@ registerMemory procs peer = do
 registerProc :: ProcPeer -> StateT LoadState IO Proc
 registerProc peer = do
    pId <- newProcId
-   proc <- lift $ wrapProcPeer pId peer
+   let proc = Proc pId peer
    curr <- get
    put (curr { currentProcs = proc : currentProcs curr})
    return proc
@@ -165,12 +167,4 @@ loadPlatform config = evalStateT loadPlatform_ initLoadState
          }
 
 
-
--- | Wrap a memory peer into a memory object
-wrapMemoryPeer :: ID -> [Proc] -> MemoryPeer -> IO Memory
-wrapMemoryPeer ident procs peer = Memory ident procs peer <$> newTVarIO []
-
--- | Wrap a proc peer into a proc object
-wrapProcPeer :: ID -> ProcPeer -> IO Proc
-wrapProcPeer ident peer = return (Proc ident peer)
 
