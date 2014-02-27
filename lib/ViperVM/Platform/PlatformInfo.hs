@@ -18,8 +18,8 @@ memoryInfo :: Memory -> IO String
 memoryInfo mem = do
    buffers <- atomically $ readTVar (memoryBuffers mem)
    let
-      str = printf fmt mid sizeGB typ endian nbuffers
-      fmt = "Memory %d - %.2f GB - %s - %s - %d buffer(s)"
+      str = printf fmt mid typ sizeGB endian nbuffers
+      fmt = "Memory %d - %s - %.2f GB - %s - %d buffer(s)"
       endian = if memoryEndianness mem == LittleEndian then "Little endian" else "Big endian"
       mid = memoryId mem
       size = fromIntegral (memorySize mem) :: Double
