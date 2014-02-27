@@ -2,7 +2,7 @@
 module ViperVM.MMU.DataType (
    DataType(..), ScalarType(..), 
    Sign(..), IntBits(..),
-   SizeOf,
+   SizeOf, packedSizeOf, fieldType,
    coarseRegionFromDataType,
    coveringRegionFromDataType
 ) where
@@ -20,16 +20,20 @@ data DataType =
    | Padding Word64
    | Array DataType ArraySize
    | Struct [DataType]
+   deriving (Show)
 
 type ArraySize = Word64                      -- ^ Size of an array in cells
 data Sign = Signed | Unsigned                -- ^ Sign of an integer
+            deriving (Show)
 data IntBits = Bit8 | Bit16 | Bit32 | Bit64  -- ^ Number of bits representing an integer
+               deriving (Show)
 
 -- | Scalar type
 data ScalarType =
      TInt Sign IntBits Endianness
    | TFloat Endianness
    | TDouble Endianness
+   deriving (Show)
 
 -- | Data type with a fixed number of bytes to represent it
 class SizeOf t where
@@ -48,6 +52,27 @@ instance SizeOf DataType where
    sizeOf (Padding n) = n
    sizeOf (Array t n) = n * sizeOf t
    sizeOf (Struct ts) = foldl(+) 0 (sizeOf <$> ts)
+
+-- | Return the field type according to the given field path
+--
+-- Field index into array are not taken into account,
+-- i.e. fieldType [0,m] (Struct [Array X n]) will return X for any (n,m)
+--
+fieldType :: [Int] -> DataType -> DataType
+fieldType [] dt = dt
+fieldType (x:xs) dt = case dt of
+   Struct fs -> fieldType xs (fs !! x)
+   Array ct _ -> fieldType xs ct
+   _ -> error "Invalid field path"
+
+-- | Return the size of a data type without padding bytes
+packedSizeOf :: DataType -> Word64
+packedSizeOf dt = case dt of
+   s@(Scalar {}) -> sizeOf s
+   Padding _ -> 0
+   Array dt' n -> n * packedSizeOf dt'
+   Struct dts -> sum (fmap packedSizeOf dts)
+
 
 -- | Return coarse region containing effective data
 --

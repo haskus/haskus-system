@@ -9,7 +9,11 @@ import ViperVM.MMU.Region
 import ViperVM.Platform.Types (Buffer)
 
 -- | A data in a buffer
-data Data = Data DataType Offset Buffer
+data Data = Data {
+   dataType :: DataType,
+   dataOffset :: Offset,
+   dataBuffer :: Buffer
+}
 
 -- | Return a coarse region encompassing the data
 coarseRegionFromData :: Data -> Region
