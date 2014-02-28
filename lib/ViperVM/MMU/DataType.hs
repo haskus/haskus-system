@@ -2,12 +2,15 @@
 module ViperVM.MMU.DataType (
    DataType(..), ScalarType(..), 
    Sign(..), IntBits(..),
-   SizeOf, packedSizeOf, fieldType,
+   SizeOf, packedSizeOf, fieldType, fieldOffset,
    coarseRegionFromDataType,
    coveringRegionFromDataType
 ) where
 
+import Prelude hiding (sum)
 import Data.Word
+import Data.Foldable (sum)
+import qualified Data.Vector as V
 import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
 import ViperVM.Platform.Types (Endianness)
@@ -16,10 +19,10 @@ import ViperVM.Platform.Types (Endianness)
 --
 -- Deterministic because we do not support unions or other data-dependent types
 data DataType = 
-     Scalar ScalarType
-   | Padding Word64
-   | Array DataType ArraySize
-   | Struct [DataType]
+     Scalar ScalarType           -- ^ Scalar value
+   | Array DataType ArraySize    -- ^ Array with determined size
+   | Struct (V.Vector DataType)           -- ^ Regular structure; the order of the list of fields matters
+   | Padding Word64              -- ^ Padding bytes (they have no sense for this data)
    deriving (Show)
 
 type ArraySize = Word64                      -- ^ Size of an array in cells
@@ -51,19 +54,32 @@ instance SizeOf DataType where
    sizeOf (Scalar x) = sizeOf x
    sizeOf (Padding n) = n
    sizeOf (Array t n) = n * sizeOf t
-   sizeOf (Struct ts) = foldl(+) 0 (sizeOf <$> ts)
+   sizeOf (Struct ts) = sum $ sizeOf <$> ts
 
 -- | Return the field type according to the given field path
 --
 -- Field index into array are not taken into account,
 -- i.e. fieldType [0,m] (Struct [Array X n]) will return X for any (n,m)
 --
-fieldType :: [Int] -> DataType -> DataType
+fieldType :: [Word64] -> DataType -> DataType
 fieldType [] dt = dt
 fieldType (x:xs) dt = case dt of
-   Struct fs -> fieldType xs (fs !! x)
+   Struct fs -> fieldType xs (fs V.! fromIntegral x)
    Array ct _ -> fieldType xs ct
    _ -> error "Invalid field path"
+
+-- | Return field offset for the given path
+fieldOffset :: [Word64] -> DataType -> Offset
+fieldOffset = go 0
+   where
+      go off [] _ = off
+      go off (x:xs) dt = case dt of
+         Struct fs -> go off' xs (fs V.! fromIntegral x)
+            where off' = off + (sum . fmap sizeOf . V.take (fromIntegral x + 1) $ fs)
+         Array ct n 
+            | x < n -> go (off + x*sizeOf ct) xs ct
+            | otherwise -> error "Invalid array indexing"
+         _ -> error "Invalid field path"
 
 -- | Return the size of a data type without padding bytes
 packedSizeOf :: DataType -> Word64
@@ -82,15 +98,20 @@ packedSizeOf dt = case dt of
 -- Useful for data transfers (especially if strided transfers are supported)
 coarseRegionFromDataType :: DataType -> Offset -> Region
 coarseRegionFromDataType t off = case t of
+
    Scalar x  -> Region1D off (sizeOf x)
+
    Padding _ -> Region1D off 0
-   Array (Struct []) _ -> Region1D off 0
-   Array (Struct ts) n -> let (useful,padding) = stripStructPadding ts in
-      if padding == 0 
+
+   Array (Struct fs) n -> reg where
+      (useful,padding) = stripStructPadding (V.toList fs)
+      reg = if padding == 0
          then Region1D off (n * useful)
          else Region2D off n useful padding
+
    Array t' n -> Region1D off (n * sizeOf t')
-   Struct ts -> Region1D off (fst $ stripStructPadding ts)
+
+   Struct ts -> Region1D off (fst $ stripStructPadding (V.toList ts))
 
 
 -- | Return covering 1D region from data type
