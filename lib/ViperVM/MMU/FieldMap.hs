@@ -1,10 +1,8 @@
 -- | Field mapping into memory
 module ViperVM.MMU.FieldMap (
    FieldMap(..), FieldPath(..), ScalarField(..), 
-   Sign(..), IntBits(..),
-   SizeOf, packedSizeOf, lookupPath, fieldOffset,
-   englobingCoarseRegion,
-   coveringRegion
+   Sign(..), IntBits(..), 
+   SizeOf(..), packedSizeOf, lookupPath, fieldOffset
 ) where
 
 import Prelude hiding (sum)
@@ -75,7 +73,7 @@ lookupPath (FieldPath path) = go path
          Array ct _ -> go xs ct
          _ -> error "Invalid field path"
 
--- | Return field offset for the given path
+-- | Return field offset for the given path in the given field map
 fieldOffset :: FieldPath -> FieldMap -> Offset
 fieldOffset (FieldPath path) = go 0 path
    where
@@ -95,44 +93,3 @@ packedSizeOf dt = case dt of
    Padding _ -> 0
    Array dt' n -> n * packedSizeOf dt'
    Struct dts -> sum (fmap packedSizeOf dts)
-
-
--- | Return coarse region englobing the field map
---
--- Only the last padding bytes of structures in outermost arrays is deleted to
--- build 2D regions.
---
--- Useful for data transfers (especially if strided transfers are supported)
-englobingCoarseRegion :: FieldMap -> Offset -> Region
-englobingCoarseRegion t off = case t of
-
-   Scalar x  -> Region1D off (sizeOf x)
-
-   Padding _ -> Region1D off 0
-
-   Array (Struct fs) n -> reg where
-      (useful,padding) = stripStructPadding (V.toList fs)
-      reg = if padding == 0
-         then Region1D off (n * useful)
-         else Region2D off n useful padding
-
-   Array t' n -> Region1D off (n * sizeOf t')
-
-   Struct ts -> Region1D off (fst $ stripStructPadding (V.toList ts))
-
-
--- | Return covering 1D region from data type
---
--- Useful for buffer allocation from data type
-coveringRegion :: FieldMap -> Offset -> Region
-coveringRegion dt off = regionCover (englobingCoarseRegion dt off)
-
--- | Return (useful,padding) where `padding` is the number
--- of padding bytes at the end of the structure and `useful`
--- the number of remaining bytes (useful ones and other padding)
-stripStructPadding :: [FieldMap] -> (Word64,Word64)
-stripStructPadding ts = (useful,padding)
-   where
-      (useful,padding) = foldr f (0,0) ts
-      f (Padding p') (0,p) = (0,p'+p)
-      f t (u,p) = (u+sizeOf t, p)
