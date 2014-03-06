@@ -2,7 +2,7 @@ import Text.Printf
 import Control.Monad (forM)
 
 import ViperVM.Platform.Platform
-import ViperVM.MMU.DataType
+import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Data
 
 main :: IO ()
@@ -14,9 +14,9 @@ main = do
    datas <- forM (platformMemories pf) $ \mem -> do
       let 
          endian = memoryEndianness mem
-         dt = Array (Scalar (TDouble endian)) 128
+         dt = Array (Scalar (DoubleField endian)) 128
          off = 0
-         region = coveringRegionFromDataType dt off
+         region = coveringRegion dt off
       
       buf <- allocateBufferFromRegion region mem
       case buf of

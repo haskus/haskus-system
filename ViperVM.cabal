@@ -46,7 +46,7 @@ library
     ViperVM.Platform.Network.PPPTransfer
 
     ViperVM.MMU.Region
-    ViperVM.MMU.DataType
+    ViperVM.MMU.FieldMap
     ViperVM.MMU.Data
 
     ViperVM.MMU.Matrix

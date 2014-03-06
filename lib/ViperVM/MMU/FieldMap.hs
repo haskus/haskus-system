@@ -1,10 +1,10 @@
--- | Low-level data types
-module ViperVM.MMU.DataType (
-   DataType(..), ScalarType(..), 
+-- | Field mapping into memory
+module ViperVM.MMU.FieldMap (
+   FieldMap(..), ScalarField(..), 
    Sign(..), IntBits(..),
-   SizeOf, packedSizeOf, fieldType, fieldOffset,
-   coarseRegionFromDataType,
-   coveringRegionFromDataType
+   SizeOf, packedSizeOf, lookupPath, fieldOffset,
+   englobingCoarseRegion,
+   coveringRegion
 ) where
 
 import Prelude hiding (sum)
@@ -15,13 +15,13 @@ import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
 import ViperVM.Platform.Types (Endianness)
 
--- | A deterministic low-level data-type
+-- | A deterministic map of fields in memory
 --
 -- Deterministic because we do not support unions or other data-dependent types
-data DataType = 
-     Scalar ScalarType           -- ^ Scalar value
-   | Array DataType ArraySize    -- ^ Array with determined size
-   | Struct (V.Vector DataType)           -- ^ Regular structure; the order of the list of fields matters
+data FieldMap = 
+     Scalar ScalarField          -- ^ Scalar field
+   | Array FieldMap ArraySize    -- ^ Array with determined size
+   | Struct (V.Vector FieldMap)  -- ^ Regular structure; the order of the list of fields matters
    | Padding Word64              -- ^ Padding bytes (they have no sense for this data)
    deriving (Show)
 
@@ -31,45 +31,45 @@ data Sign = Signed | Unsigned                -- ^ Sign of an integer
 data IntBits = Bit8 | Bit16 | Bit32 | Bit64  -- ^ Number of bits representing an integer
                deriving (Show)
 
--- | Scalar type
-data ScalarType =
-     TInt Sign IntBits Endianness
-   | TFloat Endianness
-   | TDouble Endianness
+-- | Scalar field
+data ScalarField =
+     IntField Sign IntBits Endianness
+   | FloatField Endianness
+   | DoubleField Endianness
    deriving (Show)
 
 -- | Data type with a fixed number of bytes to represent it
 class SizeOf t where
    sizeOf :: t -> Word64
 
-instance SizeOf ScalarType where
-   sizeOf (TInt _ Bit8  _) = 1
-   sizeOf (TInt _ Bit16 _) = 2
-   sizeOf (TInt _ Bit32 _) = 4
-   sizeOf (TInt _ Bit64 _) = 8
-   sizeOf (TFloat {})      = 4
-   sizeOf (TDouble {})     = 8
+instance SizeOf ScalarField where
+   sizeOf (IntField _ Bit8  _) = 1
+   sizeOf (IntField _ Bit16 _) = 2
+   sizeOf (IntField _ Bit32 _) = 4
+   sizeOf (IntField _ Bit64 _) = 8
+   sizeOf (FloatField {})      = 4
+   sizeOf (DoubleField {})     = 8
 
-instance SizeOf DataType where
+instance SizeOf FieldMap where
    sizeOf (Scalar x) = sizeOf x
    sizeOf (Padding n) = n
    sizeOf (Array t n) = n * sizeOf t
    sizeOf (Struct ts) = sum $ sizeOf <$> ts
 
--- | Return the field type according to the given field path
+-- | Lookup sub field map according to the given field path
 --
 -- Field index into array are not taken into account,
--- i.e. fieldType [0,m] (Struct [Array X n]) will return X for any (n,m)
+-- i.e. lookupPath [0,m] (Struct [Array X n]) will return X for any (n,m)
 --
-fieldType :: [Word64] -> DataType -> DataType
-fieldType [] dt = dt
-fieldType (x:xs) dt = case dt of
-   Struct fs -> fieldType xs (fs V.! fromIntegral x)
-   Array ct _ -> fieldType xs ct
+lookupPath :: [Word64] -> FieldMap -> FieldMap
+lookupPath [] dt = dt
+lookupPath (x:xs) dt = case dt of
+   Struct fs -> lookupPath xs (fs V.! fromIntegral x)
+   Array ct _ -> lookupPath xs ct
    _ -> error "Invalid field path"
 
 -- | Return field offset for the given path
-fieldOffset :: [Word64] -> DataType -> Offset
+fieldOffset :: [Word64] -> FieldMap -> Offset
 fieldOffset = go 0
    where
       go off [] _ = off
@@ -81,8 +81,8 @@ fieldOffset = go 0
             | otherwise -> error "Invalid array indexing"
          _ -> error "Invalid field path"
 
--- | Return the size of a data type without padding bytes
-packedSizeOf :: DataType -> Word64
+-- | Return the size of a field map without padding bytes
+packedSizeOf :: FieldMap -> Word64
 packedSizeOf dt = case dt of
    s@(Scalar {}) -> sizeOf s
    Padding _ -> 0
@@ -90,14 +90,14 @@ packedSizeOf dt = case dt of
    Struct dts -> sum (fmap packedSizeOf dts)
 
 
--- | Return coarse region containing effective data
+-- | Return coarse region englobing the field map
 --
 -- Only the last padding bytes of structures in outermost arrays is deleted to
 -- build 2D regions.
 --
 -- Useful for data transfers (especially if strided transfers are supported)
-coarseRegionFromDataType :: DataType -> Offset -> Region
-coarseRegionFromDataType t off = case t of
+englobingCoarseRegion :: FieldMap -> Offset -> Region
+englobingCoarseRegion t off = case t of
 
    Scalar x  -> Region1D off (sizeOf x)
 
@@ -117,13 +117,13 @@ coarseRegionFromDataType t off = case t of
 -- | Return covering 1D region from data type
 --
 -- Useful for buffer allocation from data type
-coveringRegionFromDataType :: DataType -> Offset -> Region
-coveringRegionFromDataType dt off = regionCover (coarseRegionFromDataType dt off)
+coveringRegion :: FieldMap -> Offset -> Region
+coveringRegion dt off = regionCover (englobingCoarseRegion dt off)
 
 -- | Return (useful,padding) where `padding` is the number
 -- of padding bytes at the end of the structure and `useful`
 -- the number of remaining bytes (useful ones and other padding)
-stripStructPadding :: [DataType] -> (Word64,Word64)
+stripStructPadding :: [FieldMap] -> (Word64,Word64)
 stripStructPadding ts = (useful,padding)
    where
       (useful,padding) = foldr f (0,0) ts

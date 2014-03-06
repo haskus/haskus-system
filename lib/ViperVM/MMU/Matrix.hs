@@ -2,7 +2,7 @@
 module ViperVM.MMU.Matrix where
 
 import ViperVM.MMU.Data
-import ViperVM.MMU.DataType
+import ViperVM.MMU.FieldMap
 import ViperVM.STM.TList
 import Data.Word
 

@@ -4,17 +4,17 @@ module ViperVM.MMU.Data (
    coarseRegionFromData
 ) where
 
-import ViperVM.MMU.DataType
+import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Region
 import ViperVM.Platform.Types (Buffer)
 
 -- | A data in a buffer
 data Data = Data {
-   dataType :: DataType,
+   dataType :: FieldMap,
    dataOffset :: Offset,
    dataBuffer :: Buffer
 }
 
 -- | Return a coarse region encompassing the data
 coarseRegionFromData :: Data -> Region
-coarseRegionFromData (Data typ off _) = coarseRegionFromDataType typ off
+coarseRegionFromData (Data typ off _) = englobingCoarseRegion typ off
