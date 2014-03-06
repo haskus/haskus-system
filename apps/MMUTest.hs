@@ -1,6 +1,7 @@
 import Text.Printf
 import Control.Monad (forM)
 import Control.Monad ((<=<))
+import Control.Applicative ((<$>))
 import Data.Foldable (traverse_)
 
 import ViperVM.Platform.PlatformInfo
@@ -18,14 +19,10 @@ main = do
    putStrLn "\nAllocating data in each memory"
    datas <- forM (platformMemories pf) $ \mem -> do
       let 
-         endian = memoryEndianness mem
-         dt = Array (Scalar (DoubleField endian)) 128
-         off = 0
+         dt = \endian -> Array (Scalar (DoubleField endian)) 128
+         f = either (error . ("Allocation error: " ++) . show) id
       
-      buf <- allocateBuffer (sizeOf dt) mem
-      case buf of
-         Left err -> error ("Allocation error: " ++ show err)
-         Right b -> return $ Data dt off b
+      f <$> allocateDataWithEndianness dt mem
 
    traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
 

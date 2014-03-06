@@ -1,15 +1,19 @@
 -- | Low-level data
 module ViperVM.MMU.Data (
    Data(..),
-   coveringRegion, coveringRegion1D
+   coveringRegion, coveringRegion1D,
+   allocateData, allocateDataWithEndianness
 ) where
 
-import Data.Word
+import Data.Word (Word64)
 import qualified Data.Vector as V
+import Control.Applicative ((<$>))
 
 import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Region
-import ViperVM.Platform.Types (Buffer)
+import ViperVM.Platform.Platform (
+   Buffer, Memory, AllocError, Endianness, 
+   allocateBuffer, memoryEndianness)
 
 -- | A data in a buffer
 data Data = Data {
@@ -58,3 +62,14 @@ stripStructPadding (Struct ts) = (useful,padding)
       f (Padding p') (0,p) = (0,p'+p)
       f t (u,p) = (u+sizeOf t, p)
 stripStructPadding t = (sizeOf t, 0)
+
+
+-- | Allocate a data in a memory
+allocateData :: FieldMap -> Memory -> IO (Either AllocError Data)
+allocateData fm mem = fmap (Data fm 0) <$> allocateBuffer (sizeOf fm) mem
+
+-- | Allocate a data in a memory, passing endianness as a parameter for field map construction
+allocateDataWithEndianness :: (Endianness -> FieldMap) -> Memory -> IO (Either AllocError Data)
+allocateDataWithEndianness f mem = fmap (Data fm 0) <$> allocateBuffer (sizeOf fm) mem
+   where
+      fm = f (memoryEndianness mem)
