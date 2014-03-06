@@ -1,6 +1,6 @@
 -- | Field mapping into memory
 module ViperVM.MMU.FieldMap (
-   FieldMap(..), ScalarField(..), 
+   FieldMap(..), FieldPath(..), ScalarField(..), 
    Sign(..), IntBits(..),
    SizeOf, packedSizeOf, lookupPath, fieldOffset,
    englobingCoarseRegion,
@@ -15,27 +15,32 @@ import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
 import ViperVM.Platform.Types (Endianness)
 
--- | A deterministic map of fields in memory
+-- | A deterministic hierarchic map of fields in memory
 --
--- Deterministic because we do not support unions or other data-dependent types
+-- We say it is deterministic because we do not support unions or other
+-- data-dependent types, contrary to C structures for examples.
 data FieldMap = 
      Scalar ScalarField          -- ^ Scalar field
    | Array FieldMap ArraySize    -- ^ Array with determined size
    | Struct (V.Vector FieldMap)  -- ^ Regular structure; the order of the list of fields matters
-   | Padding Word64              -- ^ Padding bytes (they have no sense for this data)
+   | Padding Word64              -- ^ Padding bytes (i.e. interleaved bytes that have no meaning 
+                                 --   for the considered data)
    deriving (Show)
+
+-- | Path to select a field in a field map
+newtype FieldPath = FieldPath [Word64]
 
 type ArraySize = Word64                      -- ^ Size of an array in cells
 data Sign = Signed | Unsigned                -- ^ Sign of an integer
             deriving (Show)
-data IntBits = Bit8 | Bit16 | Bit32 | Bit64  -- ^ Number of bits representing an integer
+data IntBits = Bit8 | Bit16 | Bit32 | Bit64  -- ^ Number of bits representing an integral field
                deriving (Show)
 
 -- | Scalar field
 data ScalarField =
-     IntField Sign IntBits Endianness
-   | FloatField Endianness
-   | DoubleField Endianness
+     IntField Sign IntBits Endianness  -- ^ Numeric integral field (signed or not)
+   | FloatField Endianness             -- ^ Single precision floating-point field (IEEE 754)
+   | DoubleField Endianness            -- ^ Double precision floating-point field (IEEE 754)
    deriving (Show)
 
 -- | Data type with a fixed number of bytes to represent it
@@ -61,16 +66,18 @@ instance SizeOf FieldMap where
 -- Field index into array are not taken into account,
 -- i.e. lookupPath [0,m] (Struct [Array X n]) will return X for any (n,m)
 --
-lookupPath :: [Word64] -> FieldMap -> FieldMap
-lookupPath [] dt = dt
-lookupPath (x:xs) dt = case dt of
-   Struct fs -> lookupPath xs (fs V.! fromIntegral x)
-   Array ct _ -> lookupPath xs ct
-   _ -> error "Invalid field path"
+lookupPath :: FieldPath -> FieldMap -> FieldMap
+lookupPath (FieldPath path) = go path
+   where
+      go [] dt = dt
+      go (x:xs) dt = case dt of
+         Struct fs -> go xs (fs V.! fromIntegral x)
+         Array ct _ -> go xs ct
+         _ -> error "Invalid field path"
 
 -- | Return field offset for the given path
-fieldOffset :: [Word64] -> FieldMap -> Offset
-fieldOffset = go 0
+fieldOffset :: FieldPath -> FieldMap -> Offset
+fieldOffset (FieldPath path) = go 0 path
    where
       go off [] _ = off
       go off (x:xs) dt = case dt of
