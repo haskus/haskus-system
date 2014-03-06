@@ -1,5 +1,5 @@
 name:                ViperVM
-version:             0.3.0.0
+version:             0.2.0.0
 synopsis:            Runtime system for heterogeneous architectures
 -- description:         
 license:             LGPL-3
@@ -22,6 +22,8 @@ library
     ViperVM.Platform.AllocFree
     ViperVM.Platform.Types
     ViperVM.Platform.Memory
+    ViperVM.Platform.Loading
+    ViperVM.Platform.Config
 
     ViperVM.Platform.OpenCL.Bindings
     ViperVM.Platform.OpenCL.CommandQueue
