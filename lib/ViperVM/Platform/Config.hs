@@ -1,10 +1,9 @@
 -- | Platform configuration
 module ViperVM.Platform.Config (
-   Platform(..), PlatformConfig(..), defaultConfig
+   PlatformConfig(..), defaultConfig
 ) where
 
 import qualified ViperVM.Platform.OpenCL as CL
-import ViperVM.Platform.Types
 
 -- | Platform configuration
 data PlatformConfig = PlatformConfig {
@@ -19,14 +18,5 @@ defaultConfig = PlatformConfig {
    libraryOpenCL = "libOpenCL.so",
    filterOpenCLDevices = const (return True),
    sysfsPath = "/sys"
-}
-
--- | Platform
-data Platform = Platform {
-   platformMemories :: [Memory],
-   platformNetworks :: [Network],
-   platformProcs :: [Proc],
-   -- OpenCL specific
-   platformOpenCLPlatforms :: [CL.Platform]
 }
 

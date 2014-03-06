@@ -2,7 +2,7 @@
 
 -- | Platform types
 module ViperVM.Platform.Types (
-   ID,
+   Platform(..), ID,
    Endianness(..),
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..),
@@ -18,6 +18,16 @@ import Foreign.Ptr (Ptr)
 import Data.Word (Word,Word64)
 
 import qualified ViperVM.Platform.OpenCL as CL
+
+-- | Platform
+data Platform = Platform {
+   platformMemories :: [Memory],
+   platformNetworks :: [Network],
+   platformProcs :: [Proc],
+   -- OpenCL specific
+   platformOpenCLPlatforms :: [CL.Platform]
+}
+
 
 -- | Unique identifier
 type ID = Int
