@@ -165,7 +165,9 @@ loadPlatform config = evalStateT loadPlatform_ initLoadState
       loadPlatform_ = do
          
          loadHostPlatform config
-         clPlatforms <- loadOpenCLPlatform config
+         clPlatforms <- if enableOpenCL config 
+            then loadOpenCLPlatform config
+            else return []
 
          -- TODO: load other devices (CUDA...)
          
