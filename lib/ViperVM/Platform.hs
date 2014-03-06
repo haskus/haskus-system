@@ -1,5 +1,5 @@
 -- | Platform module
-module ViperVM.Platform.Platform (
+module ViperVM.Platform (
    module X
 ) where
 

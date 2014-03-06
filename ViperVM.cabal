@@ -14,7 +14,7 @@ cabal-version:       >=1.8
 library
   exposed-modules:     
 
-    ViperVM.Platform.Platform
+    ViperVM.Platform
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU

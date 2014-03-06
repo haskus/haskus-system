@@ -11,7 +11,7 @@ import Control.Applicative ((<$>))
 
 import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Region
-import ViperVM.Platform.Platform (
+import ViperVM.Platform (
    Buffer, Memory, AllocError, Endianness, 
    allocateBuffer, memoryEndianness)
 

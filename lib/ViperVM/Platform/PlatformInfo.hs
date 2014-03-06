@@ -8,7 +8,7 @@ module ViperVM.Platform.PlatformInfo (
 import Control.Concurrent.STM (atomically, readTVar)
 
 import ViperVM.Platform.Types
-import ViperVM.Platform.Platform
+import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
 import Data.Word (Word64)
 import Text.Printf

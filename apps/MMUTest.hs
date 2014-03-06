@@ -5,7 +5,7 @@ import Control.Applicative ((<$>))
 import Data.Foldable (traverse_)
 
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Platform.Platform
+import ViperVM.Platform
 import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Data
 
