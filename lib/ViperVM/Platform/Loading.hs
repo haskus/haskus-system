@@ -194,6 +194,3 @@ loadPlatform config = evalStateT loadPlatform_ initLoadState
             platformProcs = procs,
             platformOpenCLPlatforms = clPlatforms
          }
-
-
-
