@@ -41,7 +41,8 @@ data Memory = Memory {
    memoryId :: ID,
    memoryProcs :: [Proc],
    memoryPeer :: MemoryPeer,
-   memoryBuffers :: TVar [Buffer]
+   memoryBuffers :: TVar [Buffer],
+   memoryNetworks :: TVar [Network]
 }
 
 instance Eq Memory where

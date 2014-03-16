@@ -18,4 +18,3 @@ memorySize :: Memory -> Word64
 memorySize mem = case memoryPeer mem of
    m@(OpenCLMemory {}) -> clMemSize m
    m@(HostMemory {}) -> hostMemSize m
-

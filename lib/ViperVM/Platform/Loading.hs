@@ -5,7 +5,7 @@ module ViperVM.Platform.Loading (
 
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>))
 import Control.Monad (filterM,void)
 import Control.Concurrent.STM
 import Data.Foldable (forM_)
@@ -16,6 +16,7 @@ import qualified ViperVM.Platform.CPU as CPU
 import ViperVM.Platform.Endianness
 import ViperVM.Platform.Types
 import ViperVM.Platform.Config
+import ViperVM.Platform.Network
 import qualified ViperVM.Platform.Host.SysFS as SysFS
 
 -- | State used during platform loading
@@ -67,7 +68,7 @@ newNetworkId = do
 registerMemory :: [Proc] -> MemoryPeer -> StateT LoadState IO Memory
 registerMemory procs peer = do
    memId <- newMemId
-   mem <- lift $ Memory memId procs peer <$> newTVarIO []
+   mem <- lift $ Memory memId procs peer <$> newTVarIO [] <*> newTVarIO []
    curr <- get
    put (curr { currentMemories = mem : currentMemories curr})
    return mem
@@ -90,6 +91,16 @@ registerProc peer = do
    put (curr { currentProcs = proc : currentProcs curr})
    return proc
 
+
+-- | Associate networks to memories
+associateNetworksToMemories :: StateT LoadState IO ()
+associateNetworksToMemories = do
+   nets <- currentNetworks <$> get
+
+   forM_ nets $ \net ->
+      forM_ (networkMemories net) $ \mem ->
+         lift $ atomically $ modifyTVar (memoryNetworks mem) (net:)
+      
 
 
 -- | Load OpenCL platform
@@ -170,6 +181,8 @@ loadPlatform config = evalStateT loadPlatform_ initLoadState
             else return []
 
          -- TODO: load other devices (CUDA...)
+
+         associateNetworksToMemories
          
          memories <- reverse . currentMemories <$> get
          procs <- reverse . currentProcs <$> get

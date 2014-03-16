@@ -24,6 +24,7 @@ library
     ViperVM.Platform.Memory
     ViperVM.Platform.Loading
     ViperVM.Platform.Config
+    ViperVM.Platform.Network
 
     ViperVM.Platform.OpenCL.Bindings
     ViperVM.Platform.OpenCL.CommandQueue
