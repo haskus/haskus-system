@@ -48,6 +48,9 @@ data Memory = Memory {
 instance Eq Memory where
    (==) a b = memoryId a == memoryId b
 
+instance Ord Memory where
+   compare a b = compare (memoryId a) (memoryId b)
+
 -- | Backend specific memory fields
 data MemoryPeer =
      HostMemory {
