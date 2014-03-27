@@ -17,7 +17,7 @@ newtype FileDescriptor = FileDescriptor Word
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
-sysRead :: FileDescriptor -> Ptr a -> Word64 -> IO (Either ErrorCode Word64)
+sysRead :: FileDescriptor -> Ptr a -> Word64 -> SysRet Word64
 sysRead (FileDescriptor fd) buf count = do
    ret <- syscall3 0 fd buf count
    return $ if ret < 0 
@@ -27,7 +27,7 @@ sysRead (FileDescriptor fd) buf count = do
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
-sysWrite :: FileDescriptor -> Ptr a -> Word64 -> IO (Either ErrorCode Word64)
+sysWrite :: FileDescriptor -> Ptr a -> Word64 -> SysRet Word64
 sysWrite (FileDescriptor fd) buf count = do
    ret <- syscall3 1 fd buf count
    return $ if ret < 0 
@@ -36,22 +36,27 @@ sysWrite (FileDescriptor fd) buf count = do
 
 
 
-sysOpenCString :: CString -> [OpenFlag] -> [FilePermission] -> IO (Either ErrorCode FileDescriptor)
+sysOpenCString :: CString -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
 sysOpenCString path flags mode = do
    ret <- syscall3 2 path (toSet flags :: Int) (toSet mode :: Int)
    return $ if ret < 0 
       then toLeftErrorCode ret
       else Right . FileDescriptor $ fromIntegral ret
 
-sysOpen :: String -> [OpenFlag] -> [FilePermission] -> IO (Either ErrorCode FileDescriptor)
+-- | Open a file
+sysOpen :: String -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
 sysOpen path flags mode = withCString path (\path' -> sysOpenCString path' flags mode)
 
-sysClose :: FileDescriptor -> IO (Either ErrorCode ())
+
+-- | Close a file descriptor
+sysClose :: FileDescriptor -> SysRet ()
 sysClose (FileDescriptor fd) = do
    ret <- syscall1 3 fd
    return $ if ret /= 0
       then toLeftErrorCode ret
       else Right ()
+
+
 -- | Flags for "open" syscall
 data OpenFlag =
      OpenReadOnly

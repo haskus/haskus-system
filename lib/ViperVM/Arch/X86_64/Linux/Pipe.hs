@@ -10,6 +10,7 @@ import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.FileSystem
 
+-- | Create a pipe
 sysPipe :: SysRet (FileDescriptor, FileDescriptor)
 sysPipe =
    allocaArray 2 $ \ptr -> do
