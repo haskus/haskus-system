@@ -6,6 +6,7 @@ import ViperVM.Arch.X86_64.Linux.ErrorCode
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Control.Applicative ((<$>))
+import Text.Printf
 
 check :: Either ErrorCode a -> a
 check (Right a) = a
@@ -25,6 +26,10 @@ main = do
    
    putStrLn "Closing file"
    check <$> sysClose fd
+
+   putStrLn "Retrieving current CPU and NUMA node"
+   (cpu,node) <- check <$> sysGetCPU
+   putStrLn (printf "  - CPU %d, NODE %d" cpu node)
 
    putStrLn "Now exiting with code 15"
    sysExit 15
