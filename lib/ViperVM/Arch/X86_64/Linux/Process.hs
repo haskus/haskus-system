@@ -1,6 +1,7 @@
 module ViperVM.Arch.X86_64.Linux.Process (
-   ProcessID(..),
-   sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID
+   ProcessID(..), UserID(..),
+   sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID,
+   sysGetRealUserID, sysGetEffectiveUserID
 ) where
 
 import Control.Monad (void)
@@ -15,6 +16,7 @@ import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
 
 newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord)
+newtype UserID = UserID Word32 deriving (Show,Eq,Ord)
 
 -- | Exit the current process with the given return value
 -- This syscall does not return.
@@ -38,3 +40,11 @@ sysGetProcessID = ProcessID . fromIntegral <$> syscall0 39
 -- | Return parent process ID
 sysGetParentProcessID :: IO ProcessID
 sysGetParentProcessID = ProcessID . fromIntegral <$> syscall0 110
+
+-- | Get real user ID of the calling process
+sysGetRealUserID :: IO UserID
+sysGetRealUserID = UserID . fromIntegral <$> syscall0 102
+
+-- | Get effective user ID of the calling process
+sysGetEffectiveUserID :: IO UserID
+sysGetEffectiveUserID = UserID . fromIntegral <$> syscall0 107

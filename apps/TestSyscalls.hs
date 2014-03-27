@@ -28,17 +28,20 @@ main = do
    putStrLn "Closing file"
    check <$> sysClose fd
 
-   putStrLn "Retrieving process ID"
    sysGetProcessID >>= \(ProcessID pid) -> 
-      putStrLn (printf "  - PID %d" pid)
+      putStrLn (printf " - Process ID: %d" pid)
 
-   putStrLn "Retrieving parent process ID"
    sysGetParentProcessID >>= \(ProcessID pid) -> 
-      putStrLn (printf "  - PID %d" pid)
+      putStrLn (printf " - Parent process ID: %d" pid)
 
-   putStrLn "Retrieving current CPU and NUMA node"
-   (cpu,node) <- check <$> sysGetCPU
-   putStrLn (printf "  - CPU %d, NODE %d" cpu node)
+   sysGetRealUserID >>= \(UserID uid) -> 
+      putStrLn (printf " - Real user ID: %d" uid)
+
+   sysGetEffectiveUserID >>= \(UserID uid) -> 
+      putStrLn (printf " - Effective user ID: %d" uid)
+
+   check <$> sysGetCPU >>= \(cpu,node) ->
+      putStrLn (printf " - CPU %d, NUMA node %d" cpu node)
 
    putStrLn "Retrieving current program break (brk)"
    brk <- sysBrkGet

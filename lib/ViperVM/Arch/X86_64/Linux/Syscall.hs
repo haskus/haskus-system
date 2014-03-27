@@ -153,12 +153,10 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 99	common	sysinfo			sys_sysinfo
 100	common	times			sys_times
 101	64	ptrace			sys_ptrace
-102	common	getuid			sys_getuid
 103	common	syslog			sys_syslog
 104	common	getgid			sys_getgid
 105	common	setuid			sys_setuid
 106	common	setgid			sys_setgid
-107	common	geteuid			sys_geteuid
 108	common	getegid			sys_getegid
 109	common	setpgid			sys_setpgid
 111	common	getpgrp			sys_getpgrp
