@@ -161,7 +161,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 107	common	geteuid			sys_geteuid
 108	common	getegid			sys_getegid
 109	common	setpgid			sys_setpgid
-110	common	getppid			sys_getppid
 111	common	getpgrp			sys_getpgrp
 112	common	setsid			sys_setsid
 113	common	setreuid		sys_setreuid

@@ -32,6 +32,10 @@ main = do
    sysGetProcessID >>= \(ProcessID pid) -> 
       putStrLn (printf "  - PID %d" pid)
 
+   putStrLn "Retrieving parent process ID"
+   sysGetParentProcessID >>= \(ProcessID pid) -> 
+      putStrLn (printf "  - PID %d" pid)
+
    putStrLn "Retrieving current CPU and NUMA node"
    (cpu,node) <- check <$> sysGetCPU
    putStrLn (printf "  - CPU %d, NODE %d" cpu node)

@@ -1,6 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Process (
    ProcessID(..),
-   sysExit, sysGetCPU, sysGetProcessID
+   sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID
 ) where
 
 import Control.Monad (void)
@@ -34,3 +34,7 @@ sysGetCPU =
 -- | Return process ID
 sysGetProcessID :: IO ProcessID
 sysGetProcessID = ProcessID . fromIntegral <$> syscall0 39
+
+-- | Return parent process ID
+sysGetParentProcessID :: IO ProcessID
+sysGetParentProcessID = ProcessID . fromIntegral <$> syscall0 110
