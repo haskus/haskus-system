@@ -362,7 +362,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 306	common	syncfs			sys_syncfs
 307	64	sendmmsg		sys_sendmmsg
 308	common	setns			sys_setns
-309	common	getcpu			sys_getcpu
 310	64	process_vm_readv	sys_process_vm_readv
 311	64	process_vm_writev	sys_process_vm_writev
 312	common	kcmp			sys_kcmp
