@@ -40,6 +40,12 @@ main = do
    sysGetEffectiveUserID >>= \(UserID uid) -> 
       putStrLn (printf " - Effective user ID: %d" uid)
 
+   sysGetRealGroupID >>= \(GroupID uid) -> 
+      putStrLn (printf " - Real group ID: %d" uid)
+
+   sysGetEffectiveGroupID >>= \(GroupID uid) -> 
+      putStrLn (printf " - Effective group ID: %d" uid)
+
    check <$> sysGetCPU >>= \(cpu,node) ->
       putStrLn (printf " - CPU %d, NUMA node %d" cpu node)
 

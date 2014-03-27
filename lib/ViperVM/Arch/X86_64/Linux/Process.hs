@@ -1,7 +1,8 @@
 module ViperVM.Arch.X86_64.Linux.Process (
-   ProcessID(..), UserID(..),
+   ProcessID(..), UserID(..), GroupID(..),
    sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID,
-   sysGetRealUserID, sysGetEffectiveUserID
+   sysGetRealUserID, sysGetEffectiveUserID,
+   sysGetRealGroupID, sysGetEffectiveGroupID
 ) where
 
 import Control.Monad (void)
@@ -17,6 +18,7 @@ import ViperVM.Arch.X86_64.Linux.ErrorCode
 
 newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord)
 newtype UserID = UserID Word32 deriving (Show,Eq,Ord)
+newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord)
 
 -- | Exit the current process with the given return value
 -- This syscall does not return.
@@ -48,3 +50,11 @@ sysGetRealUserID = UserID . fromIntegral <$> syscall0 102
 -- | Get effective user ID of the calling process
 sysGetEffectiveUserID :: IO UserID
 sysGetEffectiveUserID = UserID . fromIntegral <$> syscall0 107
+
+-- | Get real group ID of the calling process
+sysGetRealGroupID :: IO GroupID
+sysGetRealGroupID = GroupID . fromIntegral <$> syscall0 104
+
+-- | Get effective group ID of the calling process
+sysGetEffectiveGroupID :: IO GroupID
+sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall0 108
