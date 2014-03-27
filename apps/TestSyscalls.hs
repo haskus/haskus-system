@@ -28,6 +28,10 @@ main = do
    putStrLn "Closing file"
    check <$> sysClose fd
 
+   putStrLn "Retrieving process ID"
+   sysGetProcessID >>= \(ProcessID pid) -> 
+      putStrLn (printf "  - PID %d" pid)
+
    putStrLn "Retrieving current CPU and NUMA node"
    (cpu,node) <- check <$> sysGetCPU
    putStrLn (printf "  - CPU %d, NODE %d" cpu node)

@@ -1,10 +1,11 @@
 module ViperVM.Arch.X86_64.Linux.Process (
-   sysExit, sysGetCPU
+   ProcessID(..),
+   sysExit, sysGetCPU, sysGetProcessID
 ) where
 
 import Control.Monad (void)
 import Data.Int (Int64)
-import Data.Word (Word)
+import Data.Word (Word, Word32)
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (peek)
@@ -12,6 +13,8 @@ import Control.Applicative ((<$>), (<*>))
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
+
+newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord)
 
 -- | Exit the current process with the given return value
 -- This syscall does not return.
@@ -27,3 +30,7 @@ sysGetCPU =
          if ret < 0 
             then return (toLeftErrorCode ret)
             else fmap Right . (,) <$> peek cpu <*> peek node
+
+-- | Return process ID
+sysGetProcessID :: IO ProcessID
+sysGetProcessID = ProcessID . fromIntegral <$> syscall0 39

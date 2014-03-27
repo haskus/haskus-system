@@ -67,7 +67,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 9	common	mmap			sys_mmap
 10	common	mprotect		sys_mprotect
 11	common	munmap			sys_munmap
-12	common	brk			sys_brk
 13	64	rt_sigaction		sys_rt_sigaction
 14	common	rt_sigprocmask		sys_rt_sigprocmask
 15	64	rt_sigreturn		stub_rt_sigreturn
@@ -93,7 +92,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 36	common	getitimer		sys_getitimer
 37	common	alarm			sys_alarm
 38	common	setitimer		sys_setitimer
-39	common	getpid			sys_getpid
 40	common	sendfile		sys_sendfile64
 41	common	socket			sys_socket
 42	common	connect			sys_connect
