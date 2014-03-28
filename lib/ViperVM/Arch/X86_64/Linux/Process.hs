@@ -1,8 +1,9 @@
 module ViperVM.Arch.X86_64.Linux.Process (
-   ProcessID(..), UserID(..), GroupID(..),
+   ProcessID(..), ThreadID(..), UserID(..), GroupID(..),
    sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID,
    sysGetRealUserID, sysGetEffectiveUserID,
-   sysGetRealGroupID, sysGetEffectiveGroupID
+   sysGetRealGroupID, sysGetEffectiveGroupID,
+   sysGetThreadID
 ) where
 
 import Control.Monad (void)
@@ -17,6 +18,7 @@ import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
 
 newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord)
+newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord)
 newtype UserID = UserID Word32 deriving (Show,Eq,Ord)
 newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord)
 
@@ -38,6 +40,10 @@ sysGetCPU =
 -- | Return process ID
 sysGetProcessID :: IO ProcessID
 sysGetProcessID = ProcessID . fromIntegral <$> syscall0 39
+
+-- | Return thread ID
+sysGetThreadID :: IO ThreadID
+sysGetThreadID = ThreadID . fromIntegral <$> syscall0 186
 
 -- | Return parent process ID
 sysGetParentProcessID :: IO ProcessID

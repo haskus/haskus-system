@@ -31,6 +31,9 @@ main = do
    sysGetProcessID >>= \(ProcessID pid) -> 
       putStrLn (printf " - Process ID: %d" pid)
 
+   sysGetThreadID >>= \(ThreadID pid) -> 
+      putStrLn (printf " - Thread ID: %d" pid)
+
    sysGetParentProcessID >>= \(ProcessID pid) -> 
       putStrLn (printf " - Parent process ID: %d" pid)
 

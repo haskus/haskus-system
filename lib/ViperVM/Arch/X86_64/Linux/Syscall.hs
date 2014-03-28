@@ -232,7 +232,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 183	common	afs_syscall
 184	common	tuxcall
 185	common	security
-186	common	gettid			sys_gettid
 187	common	readahead		sys_readahead
 188	common	setxattr		sys_setxattr
 189	common	lsetxattr		sys_lsetxattr
