@@ -63,7 +63,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 5	common	fstat			sys_newfstat
 6	common	lstat			sys_newlstat
 7	common	poll			sys_poll
-8	common	lseek			sys_lseek
 9	common	mmap			sys_mmap
 10	common	mprotect		sys_mprotect
 11	common	munmap			sys_munmap

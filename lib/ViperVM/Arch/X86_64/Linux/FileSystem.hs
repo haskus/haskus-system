@@ -1,12 +1,14 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem (
    FileDescriptor(..), FilePermission(..), OpenFlag(..), 
    sysRead, sysWrite,
-   sysOpen, sysClose
+   sysOpen, sysClose,
+   SeekWhence(..), sysSeek
 ) where
 
 import Foreign.Ptr (Ptr)
 import Data.Word (Word,Word64)
 import Foreign.C.String (CString, withCString)
+import Data.Int (Int64)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
@@ -160,4 +162,18 @@ instance Enum FilePermission where
       0o001 -> PermOtherExecute
       _ -> error "Unrecognized file permission"
 
+data SeekWhence = 
+     SeekSet 
+   | SeekCurrent 
+   | SeekEnd 
+   | SeekData
+   | SeekHole
+   deriving (Enum,Eq,Show)
 
+-- | Reposition read/write file offset
+sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
+sysSeek (FileDescriptor fd) off whence = do
+   ret <- syscall3 8 fd off (fromEnum whence)
+   return $ if ret < 0 
+      then toLeftErrorCode ret
+      else Right ret
