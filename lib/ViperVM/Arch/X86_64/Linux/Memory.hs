@@ -1,6 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Memory (
    sysBrk, sysBrkGet, sysBrkSet, sysMmap,
-   MapProtect(..), MapFlag(..)
+   MapProtect(..), MapFlag(..), sysMunmap
 ) where
 
 import Data.Word (Word8,Word64)
@@ -113,3 +113,11 @@ sysMmap addr len prot flags source = do
    return $ if ret < 0
       then toLeftErrorCode ret
       else Right . intPtrToPtr . fromIntegral $ ret
+
+-- | Unmap memory
+sysMunmap :: Ptr () -> Word64 -> SysRet ()
+sysMunmap addr len = do
+   ret <- syscall2 11 addr len
+   return $ if ret < 0
+      then toLeftErrorCode ret
+      else Right ()
