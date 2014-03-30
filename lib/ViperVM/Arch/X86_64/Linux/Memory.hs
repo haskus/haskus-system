@@ -1,6 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Memory (
    sysBrk, sysBrkGet, sysBrkSet, sysMmap,
-   MapProtect(..), MapFlag(..), sysMunmap
+   MemProtect(..), MapFlag(..), sysMunmap, sysMemProtect
 ) where
 
 import Data.Word (Word8,Word64)
@@ -32,7 +32,7 @@ sysBrkGet = sysBrk 0
 sysBrkSet :: Word64 -> IO Bool
 sysBrkSet addr = (==addr) <$> sysBrk addr
 
-data MapProtect =
+data MemProtect =
      ProtExec
    | ProtRead
    | ProtWrite
@@ -41,7 +41,7 @@ data MapProtect =
    | ProtGrowsUp
    deriving (Eq,Show)
 
-instance Enum MapProtect where
+instance Enum MemProtect where
    fromEnum x = case x of
       ProtExec       -> 0x04
       ProtRead       -> 0x01
@@ -101,7 +101,7 @@ instance Enum MapFlag where
    toEnum = undefined
 
 -- | Map files or devices into memory
-sysMmap :: Maybe (Ptr ()) -> Word64 -> [MapProtect] -> [MapFlag] -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
+sysMmap :: Maybe (Ptr ()) -> Word64 -> [MemProtect] -> [MapFlag] -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
 sysMmap addr len prot flags source = do
    let 
       (fd,off) = fromMaybe (-1,0) ((\(FileDescriptor fd', x) -> (fd',x)) <$> source)
@@ -118,6 +118,15 @@ sysMmap addr len prot flags source = do
 sysMunmap :: Ptr () -> Word64 -> SysRet ()
 sysMunmap addr len = do
    ret <- syscall2 11 addr len
+   return $ if ret < 0
+      then toLeftErrorCode ret
+      else Right ()
+
+-- | Set protection of a region of memory
+sysMemProtect :: Ptr () -> Word64 -> [MemProtect] -> SysRet ()
+sysMemProtect addr len prot = do
+   let prot' = toSet prot :: Int64
+   ret <- syscall3 10 addr len prot'
    return $ if ret < 0
       then toLeftErrorCode ret
       else Right ()
