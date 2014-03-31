@@ -31,11 +31,9 @@ sysExit n = void (syscall1 60 n)
 sysGetCPU :: SysRet (Word,Word)
 sysGetCPU =
    alloca $ \cpu ->
-      alloca $ \node -> do
-         ret <- syscall3 309 (cpu :: Ptr Word) (node :: Ptr Word) nullPtr
-         if ret < 0 
-            then return (toLeftErrorCode ret)
-            else fmap Right . (,) <$> peek cpu <*> peek node
+      alloca $ \node ->
+         onSuccessIO (syscall3 309 (cpu :: Ptr Word) (node :: Ptr Word) nullPtr)
+            (const ((,) <$> peek cpu <*> peek node))
 
 -- | Return process ID
 sysGetProcessID :: IO ProcessID

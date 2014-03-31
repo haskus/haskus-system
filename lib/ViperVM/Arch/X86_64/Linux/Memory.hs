@@ -109,24 +109,15 @@ sysMemMap addr len prot flags source = do
       prot' = toSet prot :: Int64
       addr' = fromMaybe nullPtr addr
    
-   ret <- syscall6 9 addr' len prot' flags' fd off
-   return $ if ret < 0
-      then toLeftErrorCode ret
-      else Right . intPtrToPtr . fromIntegral $ ret
+   onSuccess (syscall6 9 addr' len prot' flags' fd off) (intPtrToPtr . fromIntegral)
 
 -- | Unmap memory
 sysMemUnmap :: Ptr () -> Word64 -> SysRet ()
-sysMemUnmap addr len = do
-   ret <- syscall2 11 addr len
-   return $ if ret < 0
-      then toLeftErrorCode ret
-      else Right ()
+sysMemUnmap addr len =
+   onSuccess (syscall2 11 addr len) (const ())
 
 -- | Set protection of a region of memory
 sysMemProtect :: Ptr () -> Word64 -> [MemProtect] -> SysRet ()
 sysMemProtect addr len prot = do
    let prot' = toSet prot :: Int64
-   ret <- syscall3 10 addr len prot'
-   return $ if ret < 0
-      then toLeftErrorCode ret
-      else Right ()
+   onSuccess (syscall3 10 addr len prot') (const ())

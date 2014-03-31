@@ -1,12 +1,27 @@
 module ViperVM.Arch.X86_64.Linux.ErrorCode where
 
 import Data.Int (Int64)
+import Control.Applicative ((<$>))
+
+type SysRet a = IO (Either ErrorCode a)
+
 
 toErrorCode :: Int64 -> ErrorCode
 toErrorCode = toEnum . fromIntegral . (*(-1))
 
-toLeftErrorCode :: Int64 -> Either ErrorCode a
-toLeftErrorCode = Left . toErrorCode
+onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
+onSuccessIO sc f = do
+   ret <- sc
+   if ret < 0
+      then return (Left (toErrorCode ret))
+      else Right <$> f ret
+
+onSuccess :: IO Int64 -> (Int64 -> a) -> SysRet a
+onSuccess sc f = do
+   ret <- sc
+   return $ if ret < 0
+      then Left (toErrorCode ret)
+      else Right . f $ ret
 
 data ErrorCode =
      EPERM     -- ^ Operation not permitted

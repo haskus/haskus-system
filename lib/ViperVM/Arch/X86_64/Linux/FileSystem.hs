@@ -2,7 +2,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    FileDescriptor(..), FilePermission(..), OpenFlag(..), 
    sysRead, sysWrite,
    sysOpen, sysClose,
-   SeekWhence(..), sysSeek
+   SeekWhence(..), sysSeek, sysReadAt, sysWriteAt
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -20,30 +20,21 @@ newtype FileDescriptor = FileDescriptor Word
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
 sysRead :: FileDescriptor -> Ptr a -> Word64 -> SysRet Word64
-sysRead (FileDescriptor fd) buf count = do
-   ret <- syscall3 0 fd buf count
-   return $ if ret < 0 
-      then toLeftErrorCode ret
-      else Right (fromIntegral ret)
+sysRead (FileDescriptor fd) buf count =
+   onSuccess (syscall3 0 fd buf count) fromIntegral
 
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
 sysWrite :: FileDescriptor -> Ptr a -> Word64 -> SysRet Word64
-sysWrite (FileDescriptor fd) buf count = do
-   ret <- syscall3 1 fd buf count
-   return $ if ret < 0 
-      then toLeftErrorCode ret
-      else Right (fromIntegral ret)
-
+sysWrite (FileDescriptor fd) buf count =
+   onSuccess (syscall3 1 fd buf count) fromIntegral
 
 
 sysOpenCString :: CString -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
-sysOpenCString path flags mode = do
-   ret <- syscall3 2 path (toSet flags :: Int) (toSet mode :: Int)
-   return $ if ret < 0 
-      then toLeftErrorCode ret
-      else Right . FileDescriptor $ fromIntegral ret
+sysOpenCString path flags mode =
+   onSuccess (syscall3 2 path (toSet flags :: Int) (toSet mode :: Int))
+      (FileDescriptor . fromIntegral)
 
 -- | Open a file
 sysOpen :: String -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
@@ -52,11 +43,8 @@ sysOpen path flags mode = withCString path (\path' -> sysOpenCString path' flags
 
 -- | Close a file descriptor
 sysClose :: FileDescriptor -> SysRet ()
-sysClose (FileDescriptor fd) = do
-   ret <- syscall1 3 fd
-   return $ if ret /= 0
-      then toLeftErrorCode ret
-      else Right ()
+sysClose (FileDescriptor fd) =
+   onSuccess (syscall1 3 fd) (const ())
 
 
 -- | Flags for "open" syscall
@@ -172,8 +160,15 @@ data SeekWhence =
 
 -- | Reposition read/write file offset
 sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
-sysSeek (FileDescriptor fd) off whence = do
-   ret <- syscall3 8 fd off (fromEnum whence)
-   return $ if ret < 0 
-      then toLeftErrorCode ret
-      else Right ret
+sysSeek (FileDescriptor fd) off whence =
+   onSuccess (syscall3 8 fd off (fromEnum whence)) id
+
+-- | Read a file descriptor at a given position
+sysReadAt :: FileDescriptor -> Ptr () -> Word64 -> Word64 -> SysRet Word64
+sysReadAt (FileDescriptor fd) buf count offset =
+   onSuccess (syscall4 17 fd buf count offset) fromIntegral
+
+-- | Write a file descriptor at a given position
+sysWriteAt :: FileDescriptor -> Ptr () -> Word64 -> Word64 -> SysRet Word64
+sysWriteAt (FileDescriptor fd) buf count offset =
+   onSuccess (syscall4 18 fd buf count offset) fromIntegral

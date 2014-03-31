@@ -1,17 +1,13 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 module ViperVM.Arch.X86_64.Linux.Syscall (
    syscall0, syscall1, syscall2, syscall3, syscall4, syscall5, syscall6,
-   toSet, SysRet
+   toSet
 ) where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.Int (Int64)
 import Data.Word (Word,Word64)
 import Data.Bits (Bits, (.|.))
-
-import ViperVM.Arch.X86_64.Linux.ErrorCode
-
-type SysRet a = IO (Either ErrorCode a)
 
 -- | Perform a Linux system call
 -- As we cannot use inline assembly in GHC (yet), we rely on a
@@ -67,8 +63,6 @@ toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
 14	common	rt_sigprocmask		sys_rt_sigprocmask
 15	64	rt_sigreturn		stub_rt_sigreturn
 16	64	ioctl			sys_ioctl
-17	common	pread64			sys_pread64
-18	common	pwrite64		sys_pwrite64
 19	64	readv			sys_readv
 20	64	writev			sys_writev
 21	common	access			sys_access

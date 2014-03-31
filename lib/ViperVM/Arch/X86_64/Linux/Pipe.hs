@@ -13,11 +13,9 @@ import ViperVM.Arch.X86_64.Linux.FileSystem
 -- | Create a pipe
 sysPipe :: SysRet (FileDescriptor, FileDescriptor)
 sysPipe =
-   allocaArray 2 $ \ptr -> do
-      ret <- syscall1 22 (ptr :: Ptr Word)
-      if ret < 0 
-         then return (toLeftErrorCode ret)
-         else fmap Right . (,)
+   allocaArray 2 $ \ptr ->
+      onSuccessIO (syscall1 22 (ptr :: Ptr Word)) 
+         (const ((,)
             <$> (FileDescriptor <$> peekElemOff ptr 0)
-            <*> (FileDescriptor <$> peekElemOff ptr 1)
+            <*> (FileDescriptor <$> peekElemOff ptr 1)))
       
