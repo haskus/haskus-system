@@ -1,6 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Memory (
-   sysBrk, sysBrkGet, sysBrkSet, sysMmap,
-   MemProtect(..), MapFlag(..), sysMunmap, sysMemProtect
+   sysBrk, sysBrkGet, sysBrkSet, sysMemMap,
+   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect
 ) where
 
 import Data.Word (Word8,Word64)
@@ -101,8 +101,8 @@ instance Enum MapFlag where
    toEnum = undefined
 
 -- | Map files or devices into memory
-sysMmap :: Maybe (Ptr ()) -> Word64 -> [MemProtect] -> [MapFlag] -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
-sysMmap addr len prot flags source = do
+sysMemMap :: Maybe (Ptr ()) -> Word64 -> [MemProtect] -> [MapFlag] -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
+sysMemMap addr len prot flags source = do
    let 
       (fd,off) = fromMaybe (-1,0) ((\(FileDescriptor fd', x) -> (fd',x)) <$> source)
       flags' = toSet flags :: Int64
@@ -115,8 +115,8 @@ sysMmap addr len prot flags source = do
       else Right . intPtrToPtr . fromIntegral $ ret
 
 -- | Unmap memory
-sysMunmap :: Ptr () -> Word64 -> SysRet ()
-sysMunmap addr len = do
+sysMemUnmap :: Ptr () -> Word64 -> SysRet ()
+sysMemUnmap addr len = do
    ret <- syscall2 11 addr len
    return $ if ret < 0
       then toLeftErrorCode ret
