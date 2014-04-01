@@ -125,3 +125,21 @@ int64_t x86_64_linux_syscall0(int64_t n) {
 
    return ret;
 }
+
+void x86_64_linux_syscall_stg6() {
+
+   asm volatile (
+      "movq %%rbx, %%rax\n\t"
+      "movq %%rdi, %%rdx\n\t"
+      "movq %%r14, %%rdi\n\t"
+      "movq %%r8,  %%r10\n\t"
+      "movq %%r9,  %%r8\n\t"
+      "movq 8(%%rbp),%%r9\n\t"
+      "syscall\n\t"
+      "movq %%rax, %%rbx\n\t"
+      "addq 8, %%rbp\n\t"
+      "jmp * -8(%%rbp)\n\t"
+      ::: 
+   );
+
+}
