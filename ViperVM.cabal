@@ -80,6 +80,7 @@ library
     dynamic-linker-template,
     transformers,
     unix,
+    ghc-prim,
     stm
 
   build-tools: 
