@@ -2,22 +2,19 @@
 
 
 #ifdef __GLASGOW_HASKELL__
-{-# LANGUAGE ForeignFunctionInterface, 
-             GHCForeignImportPrim, 
+{-# LANGUAGE GHCForeignImportPrim, 
              MagicHash, 
              UnboxedTuples,
-             UnliftedFFITypes,
-             CPP #-}
+             UnliftedFFITypes #-}
 #endif
 
 module ViperVM.Arch.X86_64.Linux.Syscall (
-   syscall0, syscall1, syscall2, syscall3, syscall4, syscall5, syscall6,
-   toSet
+   syscall0, syscall1, syscall2, syscall3, 
+   syscall4, syscall5, syscall6
 ) where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.Word (Word64)
-import Data.Bits (Bits, (.|.))
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -114,13 +111,9 @@ syscall0 :: Int64 -> IO Int64
 syscall0 = syscall0_
 
 
--- | Convert a list of enum to set (i.e. perform a OR)
-toSet :: (Enum a, Num b, Bits b) => [a] -> b
-toSet xs = foldr (.|.) 0 (fmap (fromIntegral . fromEnum) xs)
-
-
-
 {-
+ - Remaining syscalls to wrap
+ -
 4	common	stat			sys_newstat
 5	common	fstat			sys_newfstat
 6	common	lstat			sys_newlstat

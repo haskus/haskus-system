@@ -12,6 +12,7 @@ import Data.Int (Int64)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
+import ViperVM.Arch.X86_64.Linux.Utils (toSet)
 
 -- | File descriptor
 newtype FileDescriptor = FileDescriptor Word

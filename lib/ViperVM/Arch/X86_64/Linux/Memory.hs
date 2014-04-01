@@ -11,6 +11,7 @@ import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.X86_64.Linux.Utils (toSet)
 import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.FileSystem (FileDescriptor(..))
 

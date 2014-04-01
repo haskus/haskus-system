@@ -20,6 +20,7 @@ library
     ViperVM.Arch.X86_64.Linux.Process
     ViperVM.Arch.X86_64.Linux.Pipe
     ViperVM.Arch.X86_64.Linux.Memory
+    ViperVM.Arch.X86_64.Linux.Utils
 
     ViperVM.Platform
     ViperVM.Platform.PlatformInfo
