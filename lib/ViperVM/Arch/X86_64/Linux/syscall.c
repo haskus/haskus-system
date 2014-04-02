@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 /*************************************************
  * Convertion between x86-64 calling convention
  * and Linux (64 bits) system call convention
