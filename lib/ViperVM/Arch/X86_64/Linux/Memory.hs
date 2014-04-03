@@ -1,6 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Memory (
    sysBrk, sysBrkGet, sysBrkSet, sysMemMap,
-   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect, sysMemAdvise
+   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect, sysMemAdvise, sysMemSync
 ) where
 
 import Data.Word (Word8,Word64)
@@ -184,4 +184,23 @@ instance Enum MemAdvice where
 sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> SysRet ()
 sysMemAdvise addr len adv = 
    onSuccess (syscall3 28 addr len (fromEnum adv)) 
+      (const ())
+
+data MemSync =
+     MemSync
+   | MemAsync
+   | MemInvalidate
+
+instance Enum MemSync where
+   fromEnum x = case x of
+      MemSync        -> 4
+      MemAsync       -> 1
+      MemInvalidate  -> 2
+
+   toEnum = undefined
+
+
+sysMemSync :: Ptr () -> Word64 -> [MemSync] -> SysRet ()
+sysMemSync addr len flag = 
+   onSuccess (syscall3 26 addr len (toSet flag :: Int64))
       (const ())

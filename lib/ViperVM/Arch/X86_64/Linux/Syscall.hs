@@ -128,7 +128,6 @@ syscall0 = syscall0_
 23	common	select			sys_select
 24	common	sched_yield		sys_sched_yield
 25	common	mremap			sys_mremap
-26	common	msync			sys_msync
 27	common	mincore			sys_mincore
 29	common	shmget			sys_shmget
 30	common	shmat			sys_shmat
