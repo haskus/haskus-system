@@ -1,6 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Memory (
    sysBrk, sysBrkGet, sysBrkSet, sysMemMap,
-   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect
+   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect, sysMemAdvise
 ) where
 
 import Data.Word (Word8,Word64)
@@ -122,3 +122,66 @@ sysMemProtect :: Ptr () -> Word64 -> [MemProtect] -> SysRet ()
 sysMemProtect addr len prot = do
    let prot' = toSet prot :: Int64
    onSuccess (syscall3 10 addr len prot') (const ())
+
+
+data MemAdvice =
+     MemAdviceNormal
+   | MemAdviceRandom
+   | MemAdviceSequential
+   | MemAdviceWillNeed
+   | MemAdviceDontNeed
+   | MemAdviceRemove
+   | MemAdviceDontFork
+   | MemAdviceDoFork
+   | MemAdviceHwPoison
+   | MemAdviceSoftOffline
+   | MemAdviceMergeable
+   | MemAdviceUnmergeable
+   | MemAdviceHugePage
+   | MemAdviceNoHugePage
+   | MemAdviceDontDump
+   | MemAdviceDoDump
+
+instance Enum MemAdvice where
+   fromEnum x = case x of
+      MemAdviceNormal      -> 0
+      MemAdviceRandom      -> 1
+      MemAdviceSequential  -> 2
+      MemAdviceWillNeed    -> 3
+      MemAdviceDontNeed    -> 4
+      MemAdviceRemove      -> 9
+      MemAdviceDontFork    -> 10
+      MemAdviceDoFork      -> 11
+      MemAdviceHwPoison    -> 100
+      MemAdviceSoftOffline -> 101
+      MemAdviceMergeable   -> 12
+      MemAdviceUnmergeable -> 13
+      MemAdviceHugePage    -> 14
+      MemAdviceNoHugePage  -> 15
+      MemAdviceDontDump    -> 16
+      MemAdviceDoDump      -> 17
+
+   toEnum x = case x of
+      0   -> MemAdviceNormal      
+      1   -> MemAdviceRandom      
+      2   -> MemAdviceSequential  
+      3   -> MemAdviceWillNeed    
+      4   -> MemAdviceDontNeed    
+      9   -> MemAdviceRemove      
+      10  -> MemAdviceDontFork    
+      11  -> MemAdviceDoFork      
+      100 -> MemAdviceHwPoison    
+      101 -> MemAdviceSoftOffline 
+      12  -> MemAdviceMergeable   
+      13  -> MemAdviceUnmergeable 
+      14  -> MemAdviceHugePage    
+      15  -> MemAdviceNoHugePage  
+      16  -> MemAdviceDontDump    
+      17  -> MemAdviceDoDump      
+      _   -> error "Unknown mem advice code"
+
+
+sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> SysRet ()
+sysMemAdvise addr len adv = 
+   onSuccess (syscall3 28 addr len (fromEnum adv)) 
+      (const ())

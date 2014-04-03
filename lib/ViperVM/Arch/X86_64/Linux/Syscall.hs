@@ -130,7 +130,6 @@ syscall0 = syscall0_
 25	common	mremap			sys_mremap
 26	common	msync			sys_msync
 27	common	mincore			sys_mincore
-28	common	madvise			sys_madvise
 29	common	shmget			sys_shmget
 30	common	shmat			sys_shmat
 31	common	shmctl			sys_shmctl

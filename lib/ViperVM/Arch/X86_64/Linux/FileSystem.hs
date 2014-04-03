@@ -1,8 +1,9 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem (
    FileDescriptor(..), FilePermission(..), OpenFlag(..), 
+   SeekWhence(..), 
    sysRead, sysWrite,
    sysOpen, sysClose,
-   SeekWhence(..), sysSeek, sysReadAt, sysWriteAt
+   sysSeek, sysReadAt, sysWriteAt
 ) where
 
 import Foreign.Ptr (Ptr)
