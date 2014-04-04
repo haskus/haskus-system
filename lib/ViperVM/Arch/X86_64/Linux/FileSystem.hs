@@ -1,9 +1,10 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem (
    FileDescriptor(..), FilePermission(..), OpenFlag(..), 
-   SeekWhence(..), 
+   SeekWhence(..), AccessMode(..),
    sysRead, sysWrite,
    sysOpen, sysClose,
-   sysSeek, sysReadAt, sysWriteAt
+   sysSeek, sysReadAt, sysWriteAt,
+   sysAccess
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -174,3 +175,18 @@ sysReadAt (FileDescriptor fd) buf count offset =
 sysWriteAt :: FileDescriptor -> Ptr () -> Word64 -> Word64 -> SysRet Word64
 sysWriteAt (FileDescriptor fd) buf count offset =
    onSuccess (syscall4 18 fd buf count offset) fromIntegral
+
+data AccessMode = AccessExist | AccessRead | AccessWrite | AccessExecute
+
+instance Enum AccessMode where
+   fromEnum x = case x of
+      AccessExist    -> 0
+      AccessRead     -> 4
+      AccessWrite    -> 2
+      AccessExecute  -> 1
+
+   toEnum = undefined
+
+sysAccess :: FilePath -> [AccessMode] -> SysRet ()
+sysAccess path mode = withCString path $ \path' ->
+   onSuccess (syscall2 21 path' (toSet mode :: Int64)) (const ())

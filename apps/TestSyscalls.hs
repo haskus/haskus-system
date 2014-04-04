@@ -15,18 +15,30 @@ check (Left err) = error ("syscall error code " ++ show err)
 
 main :: IO ()
 main = do
-   putStrLn "Opening dummy.result file"
-   fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] [PermUserWrite,PermUserRead]
-
-   let str = "Hello Linux!"
-   putStrLn (printf "Writing \"%s\" in it" str)
-   withCString str $ \str' -> do
-      n <- check <$> sysWrite fd str' (fromIntegral $ length str)
-      unless (n == fromIntegral (length str)) $
-         error "The full string has not been written"
    
-   putStrLn "Closing file"
-   check <$> sysClose fd
+   putStrLn "Checking for access to dumy.result file"
+   fExist <- sysAccess "dummy.result" [AccessExist]
+   fWrite <- sysAccess "dummy.result" [AccessWrite]
+   case (fExist,fWrite) of
+      (Right _, Right _) -> putStrLn " - File exists and is writeable"
+      (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"
+      (Left _, _) -> putStrLn " - File does not exist"
+
+   case fWrite of
+      Right _ -> do
+         putStrLn "Opening dummy.result file"
+         fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] [PermUserWrite,PermUserRead]
+
+         let str = "Hello Linux!"
+         putStrLn (printf "Writing \"%s\" in it" str)
+         withCString str $ \str' -> do
+            n <- check <$> sysWrite fd str' (fromIntegral $ length str)
+            unless (n == fromIntegral (length str)) $
+               error "The full string has not been written"
+         
+         putStrLn "Closing file"
+         check <$> sysClose fd
+      _ -> return ()
 
    sysGetProcessID >>= \(ProcessID pid) -> 
       putStrLn (printf " - Process ID: %d" pid)

@@ -124,7 +124,6 @@ syscall0 = syscall0_
 16	64	ioctl			sys_ioctl
 19	64	readv			sys_readv
 20	64	writev			sys_writev
-21	common	access			sys_access
 23	common	select			sys_select
 24	common	sched_yield		sys_sched_yield
 25	common	mremap			sys_mremap
