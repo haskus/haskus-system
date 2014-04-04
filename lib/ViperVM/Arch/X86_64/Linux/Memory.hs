@@ -1,12 +1,14 @@
 module ViperVM.Arch.X86_64.Linux.Memory (
    sysBrk, sysBrkGet, sysBrkSet, sysMemMap,
-   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect, sysMemAdvise, sysMemSync
+   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect, sysMemAdvise, sysMemSync,
+   sysMemInCore
 ) where
 
 import Data.Word (Word8,Word64)
 import Data.Int (Int64)
 import Control.Applicative ((<$>))
 import Foreign.Ptr (Ptr, nullPtr, intPtrToPtr)
+import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
@@ -204,3 +206,11 @@ sysMemSync :: Ptr () -> Word64 -> [MemSync] -> SysRet ()
 sysMemSync addr len flag = 
    onSuccess (syscall3 26 addr len (toSet flag :: Int64))
       (const ())
+
+sysMemInCore :: Ptr () -> Word64 -> SysRet [Bool]
+sysMemInCore addr len = do
+   -- On x86-64, page size is at least 4k
+   let n = fromIntegral $ (len + 4095) `div` 4096
+   allocaArray n $ \arr ->
+      onSuccessIO (syscall3 27 addr len (arr :: Ptr Word8))
+         (const $ (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
