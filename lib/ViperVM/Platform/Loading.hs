@@ -12,8 +12,8 @@ import Data.Foldable (forM_)
 import Data.Traversable (forM)
 
 import qualified ViperVM.Arch.OpenCL as CL
+import qualified ViperVM.Arch.GenericHost as Generic
 import qualified ViperVM.Platform.CPU as CPU
-import ViperVM.Platform.Endianness
 import ViperVM.Platform.Types
 import ViperVM.Platform.Config
 import ViperVM.Platform.Network
@@ -155,7 +155,7 @@ loadOpenCLPlatform config = do
 loadHostPlatform :: PlatformConfig -> StateT LoadState IO ()
 loadHostPlatform config = do
    numa <- lift $ CPU.loadNUMA (sysfsPath config)
-   hostEndianness <- lift $ getMemoryEndianness
+   hostEndianness <- lift $ Generic.getMemoryEndianness
    forM_ (CPU.numaNodes numa) $ \node -> do
       let m = CPU.nodeMemory node
       (total,_) <- lift $ CPU.nodeMemoryStatus m

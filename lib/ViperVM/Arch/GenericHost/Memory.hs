@@ -1,5 +1,5 @@
--- | Endianness related functions
-module ViperVM.Platform.Endianness (
+-- | Generic host memory-related functions
+module ViperVM.Arch.GenericHost.Memory (
    getMemoryEndianness
 ) where
 

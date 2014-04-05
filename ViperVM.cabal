@@ -16,6 +16,9 @@ library
 
     ViperVM.Arch.Common.Endianness
 
+    ViperVM.Arch.GenericHost
+    ViperVM.Arch.GenericHost.Memory
+
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.ErrorCode
     ViperVM.Arch.X86_64.Linux.FileSystem
@@ -24,6 +27,7 @@ library
     ViperVM.Arch.X86_64.Linux.Memory
     ViperVM.Arch.X86_64.Linux.Utils
 
+    ViperVM.Arch.OpenCL
     ViperVM.Arch.OpenCL.Bindings
     ViperVM.Arch.OpenCL.CommandQueue
     ViperVM.Arch.OpenCL.Context
@@ -39,12 +43,10 @@ library
     ViperVM.Arch.OpenCL.Program
     ViperVM.Arch.OpenCL.Sampler
     ViperVM.Arch.OpenCL.Types
-    ViperVM.Arch.OpenCL
 
     ViperVM.Platform
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.CPU
-    ViperVM.Platform.Endianness
     ViperVM.Platform.AllocFree
     ViperVM.Platform.Types
     ViperVM.Platform.Memory
