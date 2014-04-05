@@ -1,5 +1,5 @@
--- | Buffer allocation
-module ViperVM.Platform.AllocFree (
+-- | Buffer management
+module ViperVM.Platform.Buffer (
    allocateBuffer, allocateBufferFromRegion, releaseBuffer
 ) where
 
@@ -36,7 +36,7 @@ allocateBuffer :: BufferSize -> Memory -> IO (Either AllocError Buffer)
 allocateBuffer size mem = allocPeer size mem >>= traverse wrapStore
    where
       allocPeer = case memoryPeer mem of
-         HostMemory {}   -> allocateHost
+         HostMemory {}   -> allocatePosix
          OpenCLMemory {} -> allocateOpenCL
 
       wrapStore peer = do
@@ -72,8 +72,8 @@ releaseBuffer buf = do
 --------------------------------------------------------
 
 -- | Allocate a buffer in host memory
-allocateHost :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
-allocateHost size _ = do
+allocatePosix :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
+allocatePosix size _ = do
    ptr <- Posix.malloc (fromIntegral size)
    return $ if ptr == nullPtr
       then Left ErrAllocOutOfMemory

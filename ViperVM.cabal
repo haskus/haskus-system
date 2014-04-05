@@ -52,7 +52,7 @@ library
 
     ViperVM.Platform
     ViperVM.Platform.PlatformInfo
-    ViperVM.Platform.AllocFree
+    ViperVM.Platform.Buffer
     ViperVM.Platform.Types
     ViperVM.Platform.Memory
     ViperVM.Platform.Loading
