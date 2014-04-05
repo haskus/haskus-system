@@ -13,6 +13,7 @@ import Data.List (delete)
 
 import qualified ViperVM.Arch.OpenCL as CL
 import qualified ViperVM.Arch.Posix as Posix
+import ViperVM.Arch.Common.Errors
 
 import ViperVM.Platform.Types
 import ViperVM.MMU.Region (regionCover, Region(..))
@@ -67,21 +68,9 @@ releaseBuffer buf = do
       OpenCLBuffer _ _ mem -> CL.release mem
       DiskBuffer     -> undefined
 
---------------------------------------------------------
--- Host
---------------------------------------------------------
-
 -- | Allocate a buffer in host memory
 allocatePosix :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
-allocatePosix size _ = do
-   ptr <- Posix.malloc (fromIntegral size)
-   return $ if ptr == nullPtr
-      then Left ErrAllocOutOfMemory
-      else Right (HostBuffer ptr)
-
---------------------------------------------------------
--- OpenCL
---------------------------------------------------------
+allocatePosix size _ = fmap HostBuffer <$> Posix.malloc (fromIntegral size)
 
 -- | Allocate a buffer in OpenCL memory
 allocateOpenCL :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
@@ -95,4 +84,4 @@ allocateOpenCL size mem = do
    
    return $ case buf of
       Right m -> Right (OpenCLBuffer dev ctx m)
-      Left _ -> Left ErrAllocUnknown -- FIXME: return appropriate error
+      Left _ -> Left AllocUnknownError -- FIXME: return appropriate error

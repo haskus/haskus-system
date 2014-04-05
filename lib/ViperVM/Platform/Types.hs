@@ -7,7 +7,7 @@ module ViperVM.Platform.Types (
    Buffer(..), BufferPeer(..),
    BufferSize,
    Network(..), PPPLinkPeer(..), Duplex(..),
-   AllocError(..), TransferError(..),
+   TransferError(..),
    Proc(..), ProcPeer(..),
    isHostMemory, networkId
 ) where
@@ -148,10 +148,3 @@ data TransferError =
    | ErrTransferInvalid
    | ErrTransferUnknown
    deriving (Show,Eq)
-
--- | Buffer allocation error
-data AllocError = 
-     ErrAllocOutOfMemory
-   | ErrAllocUnknown
-   deriving (Show,Eq)
-

@@ -15,6 +15,7 @@ library
   exposed-modules:
 
     ViperVM.Arch.Common.Endianness
+    ViperVM.Arch.Common.Errors
 
     ViperVM.Arch.GenericHost
     ViperVM.Arch.GenericHost.Memory
