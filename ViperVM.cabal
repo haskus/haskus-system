@@ -47,6 +47,9 @@ library
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
 
+    ViperVM.Arch.Posix
+    ViperVM.Arch.Posix.Malloc
+
     ViperVM.Platform
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.AllocFree

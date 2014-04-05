@@ -1,14 +1,9 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-
 -- | Buffer allocation
 module ViperVM.Platform.AllocFree (
-   allocateBuffer, allocateBufferFromRegion, releaseBuffer,
-   allocateHost, free,
-   allocateOpenCL,
+   allocateBuffer, allocateBufferFromRegion, releaseBuffer
 ) where
 
-import Foreign.Ptr (Ptr,nullPtr)
-import Foreign.C.Types (CSize(..))
+import Foreign.Ptr (nullPtr)
 import Control.Applicative ((<$>), pure)
 import Data.Monoid (mempty)
 import Data.Traversable (Traversable, traverse)
@@ -17,6 +12,8 @@ import Control.Concurrent.STM (atomically, readTVar, writeTVar, modifyTVar)
 import Data.List (delete)
 
 import qualified ViperVM.Arch.OpenCL as CL
+import qualified ViperVM.Arch.Posix as Posix
+
 import ViperVM.Platform.Types
 import ViperVM.MMU.Region (regionCover, Region(..))
 
@@ -65,7 +62,7 @@ releaseBuffer buf = do
       writeTVar bufsVar (delete buf bufs)
 
    case bufferPeer buf of
-      HostBuffer ptr -> free ptr
+      HostBuffer ptr -> Posix.free ptr
       CUDABuffer     -> undefined
       OpenCLBuffer _ _ mem -> CL.release mem
       DiskBuffer     -> undefined
@@ -74,13 +71,10 @@ releaseBuffer buf = do
 -- Host
 --------------------------------------------------------
 
-foreign import ccall unsafe "stdlib.h malloc"  malloc :: CSize -> IO (Ptr a)
-foreign import ccall unsafe "stdlib.h free"    free   :: Ptr a -> IO ()
-
 -- | Allocate a buffer in host memory
 allocateHost :: BufferSize -> Memory -> IO (Either AllocError BufferPeer)
 allocateHost size _ = do
-   ptr <- malloc (fromIntegral size)
+   ptr <- Posix.malloc (fromIntegral size)
    return $ if ptr == nullPtr
       then Left ErrAllocOutOfMemory
       else Right (HostBuffer ptr)
