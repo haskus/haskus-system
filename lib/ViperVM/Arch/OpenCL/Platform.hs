@@ -1,5 +1,5 @@
 -- | OpenCL platform module
-module ViperVM.Platform.OpenCL.Platform (
+module ViperVM.Arch.OpenCL.Platform (
    Platform, PlatformInfo(..), PlatformInfos(..),
    getNumPlatforms, getPlatforms, 
    getPlatformNumDevices, getPlatformDevices,
@@ -12,12 +12,12 @@ module ViperVM.Platform.OpenCL.Platform (
    getPlatformInfos',
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Error
-import ViperVM.Platform.OpenCL.Device
-import ViperVM.Platform.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Error
+import ViperVM.Arch.OpenCL.Device
+import ViperVM.Arch.OpenCL.Bindings
 
 import Foreign.C.Types (CSize)
 import Foreign.C.String (peekCString)

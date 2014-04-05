@@ -3,7 +3,7 @@ module ViperVM.Platform.Config (
    PlatformConfig(..), defaultConfig
 ) where
 
-import qualified ViperVM.Platform.OpenCL as CL
+import qualified ViperVM.Arch.OpenCL as CL
 
 -- | Platform configuration
 data PlatformConfig = PlatformConfig {

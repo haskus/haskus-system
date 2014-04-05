@@ -11,7 +11,7 @@ import Control.Concurrent.STM
 import Data.Foldable (forM_)
 import Data.Traversable (forM)
 
-import qualified ViperVM.Platform.OpenCL as CL
+import qualified ViperVM.Arch.OpenCL as CL
 import qualified ViperVM.Platform.CPU as CPU
 import ViperVM.Platform.Endianness
 import ViperVM.Platform.Types
@@ -117,7 +117,7 @@ loadOpenCLPlatform config = do
          case context of
             Left err -> error ("Invalid context: " ++ show err)
             Right ctx' -> do
-               endianness <- lift $ getOpenCLDeviceEndianness dev
+               endianness <- lift $ CL.getDeviceEndianness dev
                size <- lift $ CL.getDeviceGlobalMemSize' dev
 
                -- FIXME: some implementations do not support profiling or out-of-order.

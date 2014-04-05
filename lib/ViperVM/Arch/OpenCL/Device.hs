@@ -1,21 +1,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | OpenCL device module
-module ViperVM.Platform.OpenCL.Device (
+module ViperVM.Arch.OpenCL.Device (
    Device(..), DeviceInfo(..), DeviceType(..),
    DeviceFPConfig(..), DeviceExecCapability(..),
    DeviceMemCacheType(..), DeviceLocalMemType(..),
    isDeviceLittleEndian, isDeviceLittleEndian',
    getDeviceGlobalMemSize, getDeviceGlobalMemSize',
    getDeviceType, getDeviceType',
-   allDeviceTypes
+   allDeviceTypes, getDeviceEndianness
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Error
-import ViperVM.Platform.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Error
+import ViperVM.Arch.OpenCL.Bindings
+
+import ViperVM.Arch.Common.Endianness
 
 import Data.Word (Word64)
 import Control.Applicative ((<$>))
@@ -220,3 +222,9 @@ getDeviceGlobalMemSize = getDeviceInfoWord64 CL_DEVICE_GLOBAL_MEM_SIZE
 getDeviceGlobalMemSize' :: Device -> IO Word64
 getDeviceGlobalMemSize' = fmap toException . getDeviceGlobalMemSize
 
+-- | Get endianness of an OpenCL device
+getDeviceEndianness :: Device -> IO Endianness
+getDeviceEndianness dev = toEndianness <$> isDeviceLittleEndian' dev
+   where
+      toEndianness True = LittleEndian
+      toEndianness False = BigEndian

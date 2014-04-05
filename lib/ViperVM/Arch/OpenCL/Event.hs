@@ -1,14 +1,14 @@
 -- | OpenCL event module
-module ViperVM.Platform.OpenCL.Event (
+module ViperVM.Arch.OpenCL.Event (
    Event(..),
    waitForEvents,
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Bindings
-import ViperVM.Platform.OpenCL.Error
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Error
 
 import Control.Applicative ((<$>))
 import Control.Monad (void)

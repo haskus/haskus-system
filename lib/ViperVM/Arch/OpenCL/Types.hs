@@ -3,7 +3,7 @@
              GeneralizedNewtypeDeriving #-}
 
 -- | OpenCL basic types
-module ViperVM.Platform.OpenCL.Types where
+module ViperVM.Arch.OpenCL.Types where
 
 import Foreign.Storable (Storable(..))
 import Data.Word (Word32,Word64)
@@ -12,7 +12,7 @@ import Foreign.Ptr (Ptr,FunPtr,IntPtr)
 import Foreign.C.Types (CSize(..))
 import Foreign.C.String (CString)
 
-import ViperVM.Platform.OpenCL.ImageFormat
+import ViperVM.Arch.OpenCL.ImageFormat
 
 type Platform_ = Ptr ()
 type Device_ = Ptr ()

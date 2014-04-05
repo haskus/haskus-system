@@ -1,5 +1,5 @@
 -- | OpenCL imaging API
-module ViperVM.Platform.OpenCL.ImageFormat (
+module ViperVM.Arch.OpenCL.ImageFormat (
    ImageFormat(..), AddressingMode(..),
    FilterMode(..), ChannelOrder(..), ChannelType(..)
 ) where
@@ -8,7 +8,7 @@ import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble)
 import Data.Word (Word32)
 
-import ViperVM.Platform.OpenCL.Bindings (CLConstant(..))
+import ViperVM.Arch.OpenCL.Bindings (CLConstant(..))
 
 -- | Image storage format
 data ImageFormat = ImageFormat {

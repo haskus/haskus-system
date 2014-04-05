@@ -9,10 +9,11 @@ import Data.Word (Word64)
 import qualified Data.Vector as V
 import Control.Applicative ((<$>))
 
+import ViperVM.Arch.Common.Endianness
 import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Region
 import ViperVM.Platform (
-   Buffer, Memory, AllocError, Endianness, 
+   Buffer, Memory, AllocError, 
    allocateBuffer, memoryEndianness)
 
 -- | A data in a buffer

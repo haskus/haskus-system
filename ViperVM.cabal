@@ -14,6 +14,8 @@ cabal-version:       >=1.10
 library
   exposed-modules:
 
+    ViperVM.Arch.Common.Endianness
+
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.ErrorCode
     ViperVM.Arch.X86_64.Linux.FileSystem
@@ -22,9 +24,25 @@ library
     ViperVM.Arch.X86_64.Linux.Memory
     ViperVM.Arch.X86_64.Linux.Utils
 
+    ViperVM.Arch.OpenCL.Bindings
+    ViperVM.Arch.OpenCL.CommandQueue
+    ViperVM.Arch.OpenCL.Context
+    ViperVM.Arch.OpenCL.Device
+    ViperVM.Arch.OpenCL.Entity
+    ViperVM.Arch.OpenCL.Error
+    ViperVM.Arch.OpenCL.Event
+    ViperVM.Arch.OpenCL.ImageFormat
+    ViperVM.Arch.OpenCL.Kernel
+    ViperVM.Arch.OpenCL.Library
+    ViperVM.Arch.OpenCL.Mem
+    ViperVM.Arch.OpenCL.Platform
+    ViperVM.Arch.OpenCL.Program
+    ViperVM.Arch.OpenCL.Sampler
+    ViperVM.Arch.OpenCL.Types
+    ViperVM.Arch.OpenCL
+
     ViperVM.Platform
     ViperVM.Platform.PlatformInfo
-    ViperVM.Platform.OpenCL
     ViperVM.Platform.CPU
     ViperVM.Platform.Endianness
     ViperVM.Platform.AllocFree
@@ -34,21 +52,6 @@ library
     ViperVM.Platform.Config
     ViperVM.Platform.Network
 
-    ViperVM.Platform.OpenCL.Bindings
-    ViperVM.Platform.OpenCL.CommandQueue
-    ViperVM.Platform.OpenCL.Context
-    ViperVM.Platform.OpenCL.Device
-    ViperVM.Platform.OpenCL.Entity
-    ViperVM.Platform.OpenCL.Error
-    ViperVM.Platform.OpenCL.Event
-    ViperVM.Platform.OpenCL.ImageFormat
-    ViperVM.Platform.OpenCL.Kernel
-    ViperVM.Platform.OpenCL.Library
-    ViperVM.Platform.OpenCL.Mem
-    ViperVM.Platform.OpenCL.Platform
-    ViperVM.Platform.OpenCL.Program
-    ViperVM.Platform.OpenCL.Sampler
-    ViperVM.Platform.OpenCL.Types
 
     ViperVM.Platform.Host.SysFS
 

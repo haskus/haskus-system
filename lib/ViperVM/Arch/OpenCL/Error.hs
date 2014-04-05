@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 
 -- | OpenCL error management module
-module ViperVM.Platform.OpenCL.Error (
+module ViperVM.Arch.OpenCL.Error (
    CLError(..),
    toException, wrapPError,
    wrapCheckSuccess, whenSuccess, wrapGetInfo
@@ -15,8 +15,8 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable, peek)
 import Foreign.C.Types (CSize)
 
-import ViperVM.Platform.OpenCL.Bindings
-import ViperVM.Platform.OpenCL.Types
+import ViperVM.Arch.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Types
 
 -- | An OpenCL error code
 data CLError =

@@ -16,7 +16,7 @@ import Data.Foldable (Foldable, foldMap)
 import Control.Concurrent.STM (atomically, readTVar, writeTVar, modifyTVar)
 import Data.List (delete)
 
-import qualified ViperVM.Platform.OpenCL as CL
+import qualified ViperVM.Arch.OpenCL as CL
 import ViperVM.Platform.Types
 import ViperVM.MMU.Region (regionCover, Region(..))
 

@@ -11,7 +11,7 @@ import Data.Foldable (sum)
 import qualified Data.Vector as V
 import Control.Applicative ((<$>))
 import ViperVM.MMU.Region
-import ViperVM.Platform.Types (Endianness)
+import ViperVM.Arch.Common.Endianness
 
 -- | A deterministic hierarchic map of fields in memory
 --

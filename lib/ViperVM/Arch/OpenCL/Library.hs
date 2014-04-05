@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface, TemplateHaskell #-}
-module ViperVM.Platform.OpenCL.Library (
+module ViperVM.Arch.OpenCL.Library (
    Library(..), loadOpenCL
 ) where
 
@@ -13,7 +13,7 @@ import Control.Applicative ((<$>))
 import Data.Maybe (fromJust)
 import Data.Word (Word8)
 
-import ViperVM.Platform.OpenCL.Types
+import ViperVM.Arch.OpenCL.Types
 
 -- | An OpenCL library
 data Library = Library {

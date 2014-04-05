@@ -1,5 +1,5 @@
 -- | OpenCL command queue module
-module ViperVM.Platform.OpenCL.CommandQueue (
+module ViperVM.Arch.OpenCL.CommandQueue (
    CommandQueue, CommandQueueProperty(..),
    CommandType, CommandExecutionStatus,
    ProfilingInfo, CommandQueueInfo,
@@ -7,13 +7,13 @@ module ViperVM.Platform.OpenCL.CommandQueue (
    flush, finish, enqueueBarrier
 ) where
 
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Bindings
-import ViperVM.Platform.OpenCL.Error
-import ViperVM.Platform.OpenCL.Context
-import ViperVM.Platform.OpenCL.Device
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Error
+import ViperVM.Arch.OpenCL.Context
+import ViperVM.Arch.OpenCL.Device
 
 import Control.Applicative ((<$>))
 import Control.Monad (void)

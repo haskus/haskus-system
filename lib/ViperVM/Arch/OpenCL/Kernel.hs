@@ -1,11 +1,11 @@
 -- | OpenCL kernel module
-module ViperVM.Platform.OpenCL.Kernel (
+module ViperVM.Arch.OpenCL.Kernel (
    Kernel(..)
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
 
 import Control.Monad (void)
 

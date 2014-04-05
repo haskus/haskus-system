@@ -3,7 +3,6 @@
 -- | Platform types
 module ViperVM.Platform.Types (
    Platform(..), ID,
-   Endianness(..),
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..),
    BufferSize,
@@ -17,7 +16,8 @@ import Control.Concurrent.STM (TVar)
 import Foreign.Ptr (Ptr)
 import Data.Word (Word,Word64)
 
-import qualified ViperVM.Platform.OpenCL as CL
+import qualified ViperVM.Arch.OpenCL as CL
+import ViperVM.Arch.Common.Endianness
 
 -- | Platform
 data Platform = Platform {
@@ -71,8 +71,6 @@ isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
 
--- | Memory endianness
-data Endianness = LittleEndian | BigEndian deriving (Eq,Show)
 
 -- | Memory buffer
 data Buffer = Buffer {

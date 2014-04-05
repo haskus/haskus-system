@@ -1,19 +1,19 @@
 -- | OpenCL memory object (buffer, image) module
-module ViperVM.Platform.OpenCL.Mem (
+module ViperVM.Arch.OpenCL.Mem (
    Mem(..),
    createBuffer, createImage2D, createImage3D,
    enqueueReadBuffer, enqueueWriteBuffer, enqueueCopyBuffer
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Error
-import ViperVM.Platform.OpenCL.Event
-import ViperVM.Platform.OpenCL.CommandQueue
-import ViperVM.Platform.OpenCL.Context
-import ViperVM.Platform.OpenCL.Device
-import ViperVM.Platform.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Error
+import ViperVM.Arch.OpenCL.Event
+import ViperVM.Arch.OpenCL.CommandQueue
+import ViperVM.Arch.OpenCL.Context
+import ViperVM.Arch.OpenCL.Device
+import ViperVM.Arch.OpenCL.Bindings
 
 import Foreign.C.Types (CSize)
 import Control.Applicative ((<$>))

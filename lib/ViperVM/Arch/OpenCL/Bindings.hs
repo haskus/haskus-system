@@ -1,5 +1,5 @@
 -- | Helpers for OpenCL bindings
-module ViperVM.Platform.OpenCL.Bindings where
+module ViperVM.Arch.OpenCL.Bindings where
 
 import Data.Bits
 import Data.Maybe

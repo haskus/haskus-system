@@ -1,16 +1,16 @@
 -- | OpenCL context module
-module ViperVM.Platform.OpenCL.Context (
+module ViperVM.Arch.OpenCL.Context (
    Context,
    createContext
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Platform
-import ViperVM.Platform.OpenCL.Device
-import ViperVM.Platform.OpenCL.Error
-import ViperVM.Platform.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Platform
+import ViperVM.Arch.OpenCL.Device
+import ViperVM.Arch.OpenCL.Error
+import ViperVM.Arch.OpenCL.Bindings
 
 import Control.Applicative ((<$>))
 import Control.Monad (void)

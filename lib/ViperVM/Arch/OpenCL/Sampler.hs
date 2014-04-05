@@ -1,11 +1,11 @@
 -- | OpenCL sampler module
-module ViperVM.Platform.OpenCL.Sampler (
+module ViperVM.Arch.OpenCL.Sampler (
    Sampler(..)
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
 
 import Control.Monad (void)
 

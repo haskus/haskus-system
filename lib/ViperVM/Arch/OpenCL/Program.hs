@@ -1,13 +1,13 @@
 -- | OpenCL program module
-module ViperVM.Platform.OpenCL.Program (
+module ViperVM.Arch.OpenCL.Program (
    Program(..),
    ProgramBuildStatus(..)
 ) where
 
-import ViperVM.Platform.OpenCL.Types
-import ViperVM.Platform.OpenCL.Entity
-import ViperVM.Platform.OpenCL.Library
-import ViperVM.Platform.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Types
+import ViperVM.Arch.OpenCL.Entity
+import ViperVM.Arch.OpenCL.Library
+import ViperVM.Arch.OpenCL.Bindings
 
 import Control.Monad (void)
 

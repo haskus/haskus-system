@@ -1,8 +1,8 @@
 -- | OpenCL entity module
-module ViperVM.Platform.OpenCL.Entity where
+module ViperVM.Arch.OpenCL.Entity where
 
 import Foreign.Ptr (Ptr)
-import ViperVM.Platform.OpenCL.Library
+import ViperVM.Arch.OpenCL.Library
 
 -- | Wrapped OpenCL entity
 class Entity e where 

@@ -4,7 +4,7 @@ import Data.Foldable (traverse_)
 
 import ViperVM.Platform
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Platform.OpenCL as CL
+import ViperVM.Arch.OpenCL as CL
 
 main :: IO ()
 main = do

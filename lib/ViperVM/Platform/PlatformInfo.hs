@@ -7,6 +7,7 @@ module ViperVM.Platform.PlatformInfo (
 
 import Control.Concurrent.STM (atomically, readTVar)
 
+import ViperVM.Arch.Common.Endianness
 import ViperVM.Platform.Types
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
