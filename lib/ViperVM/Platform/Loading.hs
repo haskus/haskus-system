@@ -13,11 +13,14 @@ import Data.Traversable (forM)
 
 import qualified ViperVM.Arch.OpenCL as CL
 import qualified ViperVM.Arch.GenericHost as Generic
-import qualified ViperVM.Platform.CPU as CPU
+import qualified ViperVM.Arch.Linux.Numa as Linux
+
 import ViperVM.Platform.Types
 import ViperVM.Platform.Config
 import ViperVM.Platform.Network
-import qualified ViperVM.Platform.Host.SysFS as SysFS
+
+type L m a = StateT LoadState m a
+type LIO a = L IO a
 
 -- | State used during platform loading
 data LoadState = LoadState {
@@ -41,7 +44,7 @@ initLoadState = LoadState {
 }
 
 -- | Get new Proc ID
-newProcId :: Monad m => StateT LoadState m ID
+newProcId :: Monad m => L m ID
 newProcId = do
    curr <- get
    let x = currentProcID curr
@@ -49,7 +52,7 @@ newProcId = do
    return x
 
 -- | Get new Mem ID
-newMemId :: Monad m => StateT LoadState m ID
+newMemId :: Monad m => L m ID
 newMemId = do
    curr <- get
    let x = currentMemID curr
@@ -57,7 +60,7 @@ newMemId = do
    return x
 
 -- | Get new network ID
-newNetworkId :: Monad m => StateT LoadState m ID
+newNetworkId :: Monad m => L m ID
 newNetworkId = do
    curr <- get
    let x = currentNetworkID curr
@@ -65,7 +68,7 @@ newNetworkId = do
    return x
 
 -- | Register a new memory
-registerMemory :: [Proc] -> MemoryPeer -> StateT LoadState IO Memory
+registerMemory :: [Proc] -> MemoryPeer -> LIO Memory
 registerMemory procs peer = do
    memId <- newMemId
    mem <- lift $ Memory memId procs peer <$> newTVarIO [] <*> newTVarIO []
@@ -74,7 +77,7 @@ registerMemory procs peer = do
    return mem
 
 -- | Register a new point-to-point link
-registerPPPLink :: Memory -> Memory -> Duplex -> PPPLinkPeer -> StateT LoadState IO Network
+registerPPPLink :: Memory -> Memory -> Duplex -> PPPLinkPeer -> LIO Network
 registerPPPLink src dst duplex peer = do
    netId <- newNetworkId
    let net = PPPLink netId src dst duplex peer
@@ -83,7 +86,7 @@ registerPPPLink src dst duplex peer = do
    return net
 
 -- | Register a new proc
-registerProc :: ProcPeer -> StateT LoadState IO Proc
+registerProc :: ProcPeer -> LIO Proc
 registerProc peer = do
    pId <- newProcId
    let proc = Proc pId peer
@@ -93,7 +96,7 @@ registerProc peer = do
 
 
 -- | Associate networks to memories
-associateNetworksToMemories :: StateT LoadState IO ()
+associateNetworksToMemories :: LIO ()
 associateNetworksToMemories = do
    nets <- currentNetworks <$> get
 
@@ -104,7 +107,7 @@ associateNetworksToMemories = do
 
 
 -- | Load OpenCL platform
-loadOpenCLPlatform :: PlatformConfig -> StateT LoadState IO [CL.Platform]
+loadOpenCLPlatform :: PlatformConfig -> LIO [CL.Platform]
 loadOpenCLPlatform config = do
    lib <- lift $ CL.loadOpenCL (libraryOpenCL config)
    platforms <- lift $ CL.getPlatforms lib
@@ -152,18 +155,18 @@ loadOpenCLPlatform config = do
 
 
 -- | Load host platform
-loadHostPlatform :: PlatformConfig -> StateT LoadState IO ()
+loadHostPlatform :: PlatformConfig -> LIO ()
 loadHostPlatform config = do
-   numa <- lift $ CPU.loadNUMA (sysfsPath config)
+   numa <- lift $ Linux.loadNUMA (sysfsPath config)
    hostEndianness <- lift $ Generic.getMemoryEndianness
-   forM_ (CPU.numaNodes numa) $ \node -> do
-      let m = CPU.nodeMemory node
-      (total,_) <- lift $ CPU.nodeMemoryStatus m
+   forM_ (Linux.numaNodes numa) $ \node -> do
+      let m = Linux.nodeMemory node
+      (total,_) <- lift $ Linux.nodeMemoryStatus m
       let memPeer = HostMemory {
             hostMemEndianness = hostEndianness,
             hostMemSize = total
           }
-          procs = fmap CPUProc (SysFS.toList (CPU.nodeCPUs node))
+          procs = fmap CPUProc (Linux.nodeCPUs node)
       procs' <- forM procs registerProc
       void (registerMemory procs' memPeer)
 

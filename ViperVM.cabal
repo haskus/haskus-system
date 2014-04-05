@@ -44,18 +44,17 @@ library
     ViperVM.Arch.OpenCL.Sampler
     ViperVM.Arch.OpenCL.Types
 
+    ViperVM.Arch.Linux.Numa
+    ViperVM.Arch.Linux.SysFS
+
     ViperVM.Platform
     ViperVM.Platform.PlatformInfo
-    ViperVM.Platform.CPU
     ViperVM.Platform.AllocFree
     ViperVM.Platform.Types
     ViperVM.Platform.Memory
     ViperVM.Platform.Loading
     ViperVM.Platform.Config
     ViperVM.Platform.Network
-
-
-    ViperVM.Platform.Host.SysFS
 
     ViperVM.Platform.Network.PPPTransfer
 

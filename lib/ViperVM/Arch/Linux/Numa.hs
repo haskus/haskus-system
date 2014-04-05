@@ -1,5 +1,5 @@
--- | SysFS (Linux) management module
-module ViperVM.Platform.CPU where
+-- | Linux NUMA management
+module ViperVM.Arch.Linux.Numa where
 
 import Control.Applicative ((<$>))
 import System.Directory
@@ -8,7 +8,7 @@ import Control.Monad (forM)
 import Data.Word
 import Data.Map ((!))
 
-import qualified ViperVM.Platform.Host.SysFS as SysFS
+import qualified ViperVM.Arch.Linux.SysFS as SysFS
 
 -- | A set of NUMA nodes
 data NUMA = NUMA {
@@ -17,7 +17,7 @@ data NUMA = NUMA {
 
 -- | A NUMA node
 data Node = Node {
-   nodeCPUs :: SysFS.CPUMap,
+   nodeCPUMap :: SysFS.CPUMap,
    nodeMemory :: NodeMemory
 } deriving (Show)
 
@@ -44,3 +44,7 @@ nodeMemoryStatus (NodeMemory path) = do
    infos <- SysFS.readMemInfo path
 
    return (infos ! "MemTotal", infos ! "MemFree")
+
+-- | Return a list of CPU numbers from a map in a node
+nodeCPUs :: Node -> [Word]
+nodeCPUs = SysFS.toList . nodeCPUMap

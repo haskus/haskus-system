@@ -1,5 +1,5 @@
 -- | SysFS (Linux) management module
-module ViperVM.Platform.Host.SysFS (
+module ViperVM.Arch.Linux.SysFS (
    readMemInfo,
    CPUMap(..), readCPUMap, member, toList
 ) where
