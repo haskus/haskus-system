@@ -3,7 +3,7 @@ module ViperVM.Arch.X86_64.Linux.Process (
    sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID,
    sysGetRealUserID, sysGetEffectiveUserID,
    sysGetRealGroupID, sysGetEffectiveGroupID,
-   sysGetThreadID, sysFork
+   sysGetThreadID, sysFork, sysVFork
 ) where
 
 import Control.Monad (void)
@@ -66,3 +66,7 @@ sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall0 108
 -- | Create a child process
 sysFork :: SysRet ProcessID
 sysFork = onSuccess (syscall0 57) (ProcessID . fromIntegral)
+
+-- | Create a child process and block parent
+sysVFork :: SysRet ProcessID
+sysVFork = onSuccess (syscall0 58) (ProcessID . fromIntegral)

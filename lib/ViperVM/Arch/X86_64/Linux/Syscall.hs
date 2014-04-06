@@ -149,7 +149,6 @@ syscall0 = syscall0_
 54	64	setsockopt		sys_setsockopt
 55	64	getsockopt		sys_getsockopt
 56	common	clone			stub_clone
-58	common	vfork			stub_vfork
 59	64	execve			stub_execve
 61	common	wait4			sys_wait4
 62	common	kill			sys_kill
@@ -169,9 +168,6 @@ syscall0 = syscall0_
 76	common	truncate		sys_truncate
 77	common	ftruncate		sys_ftruncate
 78	common	getdents		sys_getdents
-79	common	getcwd			sys_getcwd
-80	common	chdir			sys_chdir
-81	common	fchdir			sys_fchdir
 82	common	rename			sys_rename
 83	common	mkdir			sys_mkdir
 84	common	rmdir			sys_rmdir

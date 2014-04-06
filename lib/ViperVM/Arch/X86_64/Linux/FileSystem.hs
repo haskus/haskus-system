@@ -4,12 +4,15 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    sysRead, sysWrite,
    sysOpen, sysClose,
    sysSeek, sysReadAt, sysWriteAt,
-   sysAccess, sysDup, sysDup2
+   sysAccess, sysDup, sysDup2,
+   sysSetCurrentDirectory, sysSetCurrentDirectoryPath,
+   sysGetCurrentDirectory
 ) where
 
 import Foreign.Ptr (Ptr)
+import Foreign.Marshal.Array (allocaArray)
 import Data.Word (Word,Word64)
-import Foreign.C.String (CString, withCString)
+import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
@@ -199,3 +202,20 @@ sysDup (FileDescriptor oldfd) =
 sysDup2 :: FileDescriptor -> FileDescriptor -> SysRet FileDescriptor
 sysDup2 (FileDescriptor oldfd) (FileDescriptor newfd) = 
    onSuccess (syscall2 33 oldfd newfd) (FileDescriptor . fromIntegral)
+
+sysSetCurrentDirectoryPath :: FilePath -> SysRet ()
+sysSetCurrentDirectoryPath path = withCString path $ \path' ->
+   onSuccess (syscall1 80 path') (const ())
+
+sysSetCurrentDirectory :: FileDescriptor -> SysRet ()
+sysSetCurrentDirectory (FileDescriptor fd) = 
+   onSuccess (syscall1 81 fd) (const ())
+
+sysGetCurrentDirectory :: SysRet FilePath
+sysGetCurrentDirectory = go 128
+   where
+      go n = allocaArray n $ \ptr -> do
+         ret <- onSuccessIO (syscall2 79 (ptr :: CString) n) (const (peekCString ptr))
+         case ret of
+            Left ERANGE -> go (2 * n)
+            _ -> return ret

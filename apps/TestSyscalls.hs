@@ -85,6 +85,15 @@ main = do
          putStrLn (printf "Child process created with PID %d" n)
       Left _ -> error "Error while forking"
 
+   sysGetCurrentDirectory >>= \(Right cwd) -> 
+      putStrLn (printf "Current directory is: %s" cwd)
+
+   let ncwd = "/usr/bin"
+   putStrLn (printf "Setting current directory to: %s" ncwd)
+   Right _ <- sysSetCurrentDirectoryPath ncwd
+
+   sysGetCurrentDirectory >>= \(Right cwd) -> 
+      putStrLn (printf "Current directory is: %s" cwd)
    putStrLn "Now exiting with code 15"
    sysExit 15
    putStrLn "Will not be displayed!"
