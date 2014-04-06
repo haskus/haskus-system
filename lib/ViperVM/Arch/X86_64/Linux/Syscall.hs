@@ -168,9 +168,7 @@ syscall0 = syscall0_
 76	common	truncate		sys_truncate
 77	common	ftruncate		sys_ftruncate
 78	common	getdents		sys_getdents
-82	common	rename			sys_rename
 83	common	mkdir			sys_mkdir
-84	common	rmdir			sys_rmdir
 85	common	creat			sys_creat
 86	common	link			sys_link
 87	common	unlink			sys_unlink

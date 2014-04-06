@@ -6,7 +6,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    sysSeek, sysReadAt, sysWriteAt,
    sysAccess, sysDup, sysDup2,
    sysSetCurrentDirectory, sysSetCurrentDirectoryPath,
-   sysGetCurrentDirectory
+   sysGetCurrentDirectory, sysRename, sysRemoveDirectory
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -219,3 +219,13 @@ sysGetCurrentDirectory = go 128
          case ret of
             Left ERANGE -> go (2 * n)
             _ -> return ret
+
+sysRename :: FilePath -> FilePath -> SysRet ()
+sysRename oldPath newPath =
+   withCString oldPath $ \old' ->
+      withCString newPath $ \new' ->
+         onSuccess (syscall2 82 old' new') (const ())
+
+sysRemoveDirectory :: FilePath -> SysRet ()
+sysRemoveDirectory path = withCString path $ \path' ->
+   onSuccess (syscall1 84 path') (const ())
