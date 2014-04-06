@@ -4,7 +4,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    sysRead, sysWrite,
    sysOpen, sysClose,
    sysSeek, sysReadAt, sysWriteAt,
-   sysAccess
+   sysAccess, sysDup, sysDup2
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -190,3 +190,12 @@ instance Enum AccessMode where
 sysAccess :: FilePath -> [AccessMode] -> SysRet ()
 sysAccess path mode = withCString path $ \path' ->
    onSuccess (syscall2 21 path' (toSet mode :: Int64)) (const ())
+
+
+sysDup :: FileDescriptor -> SysRet FileDescriptor
+sysDup (FileDescriptor oldfd) = 
+   onSuccess (syscall1 32 oldfd) (FileDescriptor . fromIntegral)
+
+sysDup2 :: FileDescriptor -> FileDescriptor -> SysRet FileDescriptor
+sysDup2 (FileDescriptor oldfd) (FileDescriptor newfd) = 
+   onSuccess (syscall2 33 oldfd newfd) (FileDescriptor . fromIntegral)
