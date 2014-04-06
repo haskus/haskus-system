@@ -149,7 +149,6 @@ syscall0 = syscall0_
 54	64	setsockopt		sys_setsockopt
 55	64	getsockopt		sys_getsockopt
 56	common	clone			stub_clone
-57	common	fork			stub_fork
 58	common	vfork			stub_vfork
 59	64	execve			stub_execve
 61	common	wait4			sys_wait4

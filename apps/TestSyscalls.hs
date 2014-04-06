@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
@@ -74,6 +75,15 @@ main = do
    sysBrkGet >>= \brk' -> 
       putStrLn (printf"  - BRK 0x%x" brk')
 
+
+   putStrLn "Now forking"
+   sysFork >>= \case
+      Right (ProcessID 0) -> do
+         putStrLn "I'm the child process!"
+         sysExit 0
+      Right (ProcessID n) -> do
+         putStrLn (printf "Child process created with PID %d" n)
+      Left _ -> error "Error while forking"
 
    putStrLn "Now exiting with code 15"
    sysExit 15
