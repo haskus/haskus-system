@@ -166,7 +166,6 @@ syscall0 = syscall0_
 78	common	getdents		sys_getdents
 83	common	mkdir			sys_mkdir
 89	common	readlink		sys_readlink
-95	common	umask			sys_umask
 96	common	gettimeofday		sys_gettimeofday
 97	common	getrlimit		sys_getrlimit
 98	common	getrusage		sys_getrusage

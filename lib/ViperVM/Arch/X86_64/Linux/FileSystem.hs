@@ -11,7 +11,8 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    sysTruncate, sysTruncatePath, 
    sysLink, sysSymlink, sysUnlink,
    sysChangePermission, sysChangePermissionPath,
-   sysChangeOwnership, sysChangeOwnershipPath, sysChangeLinkOwnershipPath
+   sysChangeOwnership, sysChangeOwnershipPath, sysChangeLinkOwnershipPath,
+   sysSetProcessUMask
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -19,8 +20,8 @@ import Foreign.Marshal.Array (allocaArray)
 import Data.Word (Word,Word64)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
-import Data.Bits ((.|.))
-import Data.Maybe (fromMaybe)
+import Data.Bits (Bits, (.|.), (.&.))
+import Data.Maybe (fromMaybe,catMaybes)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
@@ -145,6 +146,7 @@ data FilePermission =
    | PermOtherRead
    | PermOtherWrite
    | PermOtherExecute
+   deriving (Show)
 
 instance Enum FilePermission where
    fromEnum x = case x of
@@ -169,6 +171,21 @@ instance Enum FilePermission where
       0o002 -> PermOtherWrite
       0o001 -> PermOtherExecute
       _ -> error "Unrecognized file permission"
+
+toPermission :: (Num a, Bits a) => a -> [FilePermission]
+toPermission n = catMaybes (fmap f vs)
+   where
+      f (v,e) = if n .&. v /= 0 then Just e else Nothing
+      vs = [
+         (0o400, PermUserRead),
+         (0o200, PermUserWrite),
+         (0o100, PermUserExecute),
+         (0o040, PermGroupRead),
+         (0o020, PermGroupWrite),
+         (0o010, PermGroupExecute),
+         (0o004, PermOtherRead),
+         (0o002, PermOtherWrite),
+         (0o001, PermOtherExecute)]
 
 data SeekWhence = 
      SeekSet 
@@ -329,3 +346,8 @@ sysChangeOwnership (FileDescriptor fd) uid gid = do
       uid' = fromMaybe (-1) (fmap fuid uid)
       gid' = fromMaybe (-1) (fmap fgid gid)
    onSuccess (syscall3 93 fd uid' gid') (const ())
+
+-- | umask
+sysSetProcessUMask :: [FilePermission] -> SysRet [FilePermission]
+sysSetProcessUMask mode =
+   onSuccess (syscall1 95 (toSet mode :: Int)) toPermission

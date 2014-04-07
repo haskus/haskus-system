@@ -17,16 +17,7 @@ check (Left err) = error ("syscall error code " ++ show err)
 main :: IO ()
 main = do
    
-   putStrLn "Checking for access to dumy.result file"
-   fExist <- sysAccess "dummy.result" [AccessExist]
-   fWrite <- sysAccess "dummy.result" [AccessWrite]
-   case (fExist,fWrite) of
-      (Right _, Right _) -> putStrLn " - File exists and is writeable"
-      (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"
-      (Left _, _) -> putStrLn " - File does not exist"
-
-   case fWrite of
-      Right _ -> do
+   let writeDummyFile = do
          putStrLn "Opening dummy.result file"
          fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] [PermUserWrite,PermUserRead]
 
@@ -39,7 +30,15 @@ main = do
          
          putStrLn "Closing file"
          check <$> sysClose fd
-      _ -> return ()
+
+   putStrLn "Checking for access to dummy.result file"
+   fExist <- sysAccess "dummy.result" [AccessExist]
+   fWrite <- sysAccess "dummy.result" [AccessWrite]
+   case (fExist,fWrite) of
+      (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"
+      (Right _, Right _) -> putStrLn " - File exists and is writeable" >> writeDummyFile
+      (Left _, _) -> putStrLn " - File does not exist" >> writeDummyFile
+
 
    sysGetProcessID >>= \(ProcessID pid) -> 
       putStrLn (printf " - Process ID: %d" pid)
@@ -94,6 +93,12 @@ main = do
 
    sysGetCurrentDirectory >>= \(Right cwd) -> 
       putStrLn (printf "Current directory is: %s" cwd)
+
+   Right perm <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
+   putStrLn $ "Previous umask: " ++ show perm
+   Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
+   putStrLn $ "New umask: " ++ show perm2
+
    putStrLn "Now exiting with code 15"
    sysExit 15
    putStrLn "Will not be displayed!"
