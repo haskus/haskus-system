@@ -1,12 +1,13 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem (
    FileDescriptor(..), FilePermission(..), OpenFlag(..), 
-   SeekWhence(..), AccessMode(..),
+   SeekWhence(..), AccessMode(..), FileLock(..),
    sysRead, sysWrite,
    sysOpen, sysClose,
    sysSeek, sysReadAt, sysWriteAt,
    sysAccess, sysDup, sysDup2,
    sysSetCurrentDirectory, sysSetCurrentDirectoryPath,
-   sysGetCurrentDirectory, sysRename, sysRemoveDirectory
+   sysGetCurrentDirectory, sysRename, sysRemoveDirectory,
+   sysFileLock
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -14,6 +15,7 @@ import Foreign.Marshal.Array (allocaArray)
 import Data.Word (Word,Word64)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
+import Data.Bits ((.|.))
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
@@ -229,3 +231,20 @@ sysRename oldPath newPath =
 sysRemoveDirectory :: FilePath -> SysRet ()
 sysRemoveDirectory path = withCString path $ \path' ->
    onSuccess (syscall1 84 path') (const ())
+
+data FileLock =
+     SharedLock
+   | ExclusiveLock
+   | RemoveLock
+
+sysFileLock :: FileDescriptor -> FileLock -> Bool -> SysRet ()
+sysFileLock (FileDescriptor fd) mode nonBlocking = do
+   let
+      mode' = case mode of
+         SharedLock     -> 1
+         ExclusiveLock  -> 2
+         RemoveLock     -> 8
+
+      nb = if nonBlocking then 4 else 0
+
+   onSuccess (syscall2 73 fd (mode' .|. nb :: Int64)) (const ())

@@ -162,7 +162,6 @@ syscall0 = syscall0_
 70	common	msgrcv			sys_msgrcv
 71	common	msgctl			sys_msgctl
 72	common	fcntl			sys_fcntl
-73	common	flock			sys_flock
 74	common	fsync			sys_fsync
 75	common	fdatasync		sys_fdatasync
 76	common	truncate		sys_truncate
