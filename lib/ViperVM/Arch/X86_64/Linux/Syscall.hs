@@ -14,7 +14,7 @@ module ViperVM.Arch.X86_64.Linux.Syscall (
 ) where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)
-import Data.Word (Word64)
+import Data.Word (Word64,Word32)
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -87,6 +87,7 @@ instance Arg Int where toArg = fromIntegral
 instance Arg Int64 where toArg = id
 instance Arg Word where toArg = fromIntegral
 instance Arg Word64 where toArg = fromIntegral
+instance Arg Word32 where toArg = fromIntegral
 instance Arg (Ptr a) where toArg = fromIntegral . ptrToIntPtr
 
 syscall6 :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64
@@ -164,16 +165,7 @@ syscall0 = syscall0_
 72	common	fcntl			sys_fcntl
 78	common	getdents		sys_getdents
 83	common	mkdir			sys_mkdir
-85	common	creat			sys_creat
-86	common	link			sys_link
-87	common	unlink			sys_unlink
-88	common	symlink			sys_symlink
 89	common	readlink		sys_readlink
-90	common	chmod			sys_chmod
-91	common	fchmod			sys_fchmod
-92	common	chown			sys_chown
-93	common	fchown			sys_fchown
-94	common	lchown			sys_lchown
 95	common	umask			sys_umask
 96	common	gettimeofday		sys_gettimeofday
 97	common	getrlimit		sys_getrlimit

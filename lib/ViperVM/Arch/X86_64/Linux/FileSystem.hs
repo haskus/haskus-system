@@ -2,13 +2,16 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    FileDescriptor(..), FilePermission(..), OpenFlag(..), 
    SeekWhence(..), AccessMode(..), FileLock(..),
    sysRead, sysWrite,
-   sysOpen, sysClose,
+   sysOpen, sysCreate, sysClose,
    sysSeek, sysReadAt, sysWriteAt,
    sysAccess, sysDup, sysDup2,
    sysSetCurrentDirectory, sysSetCurrentDirectoryPath,
    sysGetCurrentDirectory, sysRename, sysRemoveDirectory,
    sysFileLock, sysFileSync, sysFileDataSync,
-   sysTruncate, sysTruncatePath
+   sysTruncate, sysTruncatePath, 
+   sysLink, sysSymlink, sysUnlink,
+   sysChangePermission, sysChangePermissionPath,
+   sysChangeOwnership, sysChangeOwnershipPath, sysChangeLinkOwnershipPath
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -17,10 +20,12 @@ import Data.Word (Word,Word64)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Bits ((.|.))
+import Data.Maybe (fromMaybe)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
+import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
 
 -- | File descriptor
 newtype FileDescriptor = FileDescriptor Word
@@ -49,6 +54,12 @@ sysOpenCString path flags mode =
 sysOpen :: String -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
 sysOpen path flags mode = withCString path (\path' -> sysOpenCString path' flags mode)
 
+sysCreateCString :: CString -> [FilePermission] -> SysRet FileDescriptor
+sysCreateCString path mode = 
+   onSuccess (syscall2 85 path (toSet mode :: Int)) (FileDescriptor . fromIntegral)
+
+sysCreate :: String -> [FilePermission] -> SysRet FileDescriptor
+sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 
 -- | Close a file descriptor
 sysClose :: FileDescriptor -> SysRet ()
@@ -264,3 +275,57 @@ sysTruncatePath path size = withCString path $ \path' ->
 sysTruncate :: FileDescriptor -> Word64 -> SysRet ()
 sysTruncate (FileDescriptor fd) size =
    onSuccess (syscall2 77 fd size) (const ())
+
+sysLink :: FilePath -> FilePath -> SysRet ()
+sysLink src dest =
+   withCString src $ \src' ->
+      withCString dest $ \dest' ->
+         onSuccess (syscall2 86 src' dest') (const ())
+
+sysSymlink :: FilePath -> FilePath -> SysRet ()
+sysSymlink src dest =
+   withCString src $ \src' ->
+      withCString dest $ \dest' ->
+         onSuccess (syscall2 88 src' dest') (const ())
+
+sysUnlink :: FilePath -> SysRet ()
+sysUnlink path = withCString path $ \path' ->
+   onSuccess (syscall1 87 path') (const ())
+
+sysChangePermissionPath :: FilePath -> [FilePermission] -> SysRet ()
+sysChangePermissionPath path mode = withCString path $ \path' ->
+   onSuccess (syscall2 90 path' (toSet mode :: Int)) (const ())
+
+sysChangePermission :: FileDescriptor -> [FilePermission] -> SysRet ()
+sysChangePermission (FileDescriptor fd) mode = 
+   onSuccess (syscall2 91 fd (toSet mode :: Int)) (const ())
+
+-- | chown
+sysChangeOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
+sysChangeOwnershipPath path uid gid = withCString path $ \path' -> do
+   let
+      fuid (UserID x) = x
+      fgid (GroupID x) = x
+      uid' = fromMaybe (-1) (fmap fuid uid)
+      gid' = fromMaybe (-1) (fmap fgid gid)
+   onSuccess (syscall3 92 path' uid' gid') (const ())
+
+-- | lchown
+sysChangeLinkOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
+sysChangeLinkOwnershipPath path uid gid = withCString path $ \path' -> do
+   let
+      fuid (UserID x) = x
+      fgid (GroupID x) = x
+      uid' = fromMaybe (-1) (fmap fuid uid)
+      gid' = fromMaybe (-1) (fmap fgid gid)
+   onSuccess (syscall3 94 path' uid' gid') (const ())
+
+-- | fchown
+sysChangeOwnership :: FileDescriptor -> Maybe UserID -> Maybe GroupID -> SysRet ()
+sysChangeOwnership (FileDescriptor fd) uid gid = do
+   let
+      fuid (UserID x) = x
+      fgid (GroupID x) = x
+      uid' = fromMaybe (-1) (fmap fuid uid)
+      gid' = fromMaybe (-1) (fmap fgid gid)
+   onSuccess (syscall3 93 fd uid' gid') (const ())
