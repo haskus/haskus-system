@@ -7,7 +7,8 @@ module ViperVM.Arch.X86_64.Linux.FileSystem (
    sysAccess, sysDup, sysDup2,
    sysSetCurrentDirectory, sysSetCurrentDirectoryPath,
    sysGetCurrentDirectory, sysRename, sysRemoveDirectory,
-   sysFileLock
+   sysFileLock, sysFileSync, sysFileDataSync,
+   sysTruncate, sysTruncatePath
 ) where
 
 import Foreign.Ptr (Ptr)
@@ -248,3 +249,18 @@ sysFileLock (FileDescriptor fd) mode nonBlocking = do
       nb = if nonBlocking then 4 else 0
 
    onSuccess (syscall2 73 fd (mode' .|. nb :: Int64)) (const ())
+
+
+sysFileSync :: FileDescriptor -> SysRet ()
+sysFileSync (FileDescriptor fd) = onSuccess (syscall1 74 fd) (const ())
+
+sysFileDataSync :: FileDescriptor -> SysRet ()
+sysFileDataSync (FileDescriptor fd) = onSuccess (syscall1 75 fd) (const ())
+
+sysTruncatePath :: FilePath -> Word64 -> SysRet ()
+sysTruncatePath path size = withCString path $ \path' ->
+   onSuccess (syscall2 76 path' size) (const ())
+
+sysTruncate :: FileDescriptor -> Word64 -> SysRet ()
+sysTruncate (FileDescriptor fd) size =
+   onSuccess (syscall2 77 fd size) (const ())
