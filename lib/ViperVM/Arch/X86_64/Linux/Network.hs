@@ -1,5 +1,5 @@
-module ViperVM.Arch.X86_64.Linux.Socket (
-   sysSendFile, sysSendFileWithOffset
+module ViperVM.Arch.X86_64.Linux.Network (
+   sysShutdown, sysSendFile, sysSendFileWithOffset
 ) where
 
 import Foreign.Ptr (nullPtr)
@@ -9,7 +9,18 @@ import Data.Word
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.FileSystem
+import ViperVM.Arch.X86_64.Linux.FileSystem (FileDescriptor(..))
+
+data ShutFlag =
+     ShutRead
+   | ShutWrite
+   | ShutReadWrite
+   deriving (Enum,Show)
+
+-- | Shut down part of a full-duplex connection
+sysShutdown :: FileDescriptor -> ShutFlag -> SysRet ()
+sysShutdown (FileDescriptor fd) flag =
+   onSuccess (syscall2 48 fd (fromEnum flag)) (const ())
 
 -- | Call sendfile using implicit file cursor for input
 sysSendFile :: FileDescriptor -> FileDescriptor -> Word64 -> SysRet Word64
