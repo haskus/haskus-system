@@ -70,3 +70,4 @@ sysFork = onSuccess (syscall0 57) (ProcessID . fromIntegral)
 -- | Create a child process and block parent
 sysVFork :: SysRet ProcessID
 sysVFork = onSuccess (syscall0 58) (ProcessID . fromIntegral)
+
