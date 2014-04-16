@@ -151,7 +151,6 @@ syscall0 = syscall0_
 56	common	clone			stub_clone
 59	64	execve			stub_execve
 61	common	wait4			sys_wait4
-63	common	uname			sys_newuname
 64	common	semget			sys_semget
 65	common	semop			sys_semop
 66	common	semctl			sys_semctl

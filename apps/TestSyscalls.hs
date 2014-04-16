@@ -4,6 +4,7 @@ module Main where
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
+import ViperVM.Arch.X86_64.Linux.Info
 import ViperVM.Arch.X86_64.Linux.ErrorCode
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
@@ -98,6 +99,9 @@ main = do
    putStrLn $ "Previous umask: " ++ show perm
    Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "New umask: " ++ show perm2
+
+   Right info <- sysSystemInfo
+   putStrLn (show info)
 
    putStrLn "Now exiting with code 15"
    sysExit 15
