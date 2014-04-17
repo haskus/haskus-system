@@ -29,6 +29,8 @@ library
     ViperVM.Arch.X86_64.Linux.Signal
     ViperVM.Arch.X86_64.Linux.Network
     ViperVM.Arch.X86_64.Linux.Info
+    ViperVM.Arch.X86_64.Linux.Futex
+    ViperVM.Arch.X86_64.Linux.Time
     ViperVM.Arch.X86_64.Linux.Utils
 
     ViperVM.Arch.OpenCL

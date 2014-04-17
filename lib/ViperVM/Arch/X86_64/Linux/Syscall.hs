@@ -263,7 +263,6 @@ syscall0 = syscall0_
 199	common	fremovexattr		sys_fremovexattr
 200	common	tkill			sys_tkill
 201	common	time			sys_time
-202	common	futex			sys_futex
 203	common	sched_setaffinity	sys_sched_setaffinity
 204	common	sched_getaffinity	sys_sched_getaffinity
 205	64	set_thread_area

@@ -5,10 +5,13 @@ import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.X86_64.Linux.Info
+import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.X86_64.Linux.ErrorCode
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Control.Applicative ((<$>))
+import Foreign.Marshal.Alloc
+import Foreign.Storable (poke)
 import Text.Printf
 
 check :: Either ErrorCode a -> a
@@ -102,6 +105,13 @@ main = do
 
    Right info <- sysSystemInfo
    putStrLn (show info)
+
+   -- Use strace to see that syscall is correctly called
+   _ <- alloca $ \p -> do
+      alloca $ \p2 -> do
+         poke p 10
+         poke p2 12
+         sysFutexCmpRequeue p 10 15 p2
 
    putStrLn "Now exiting with code 15"
    sysExit 15
