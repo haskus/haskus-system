@@ -117,7 +117,7 @@ void x86_64_linux_syscall_primop6() {
       "movq %%r14, %%rdi\n\t"
       "movq %%r8,  %%r10\n\t"
       "movq %%r9,  %%r8\n\t"
-      "movq 8(%%rbp),%%r9\n\t"
+      "movq 0x30(%%r13),%%r9\n\t"
       "syscall\n\t"
       "movq %%rax, %%rbx\n\t"
       "jmp * (%%rbp)\n\t"
