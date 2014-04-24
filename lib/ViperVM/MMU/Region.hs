@@ -1,6 +1,13 @@
--- | A region is the shape of a set of memory cells in a buffer with an offset
+-- | A region is a set of memory cells in a buffer with an offset.
+--
+-- Currently we support two region shapes:
+--
+-- * Region1D: region without hole (contiguous set of cells)
+--
+-- * Region2D: rectangular set of cells (e.g. sub-array), that is with a
+-- constant number of padding bytes after each row
 module ViperVM.MMU.Region(
-   Region(..), Offset,
+   Region(..), Offset, Size, Padding, RowCount,
    regionOffset, regionsWithSameShape, overlapsAny, overlaps,
    regionCover
 ) where
