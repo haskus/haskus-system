@@ -14,9 +14,9 @@ import ViperVM.Arch.Common.Errors
 
 import ViperVM.Platform.Memory.FieldMap
 import ViperVM.Platform.Memory.Region
-import ViperVM.Platform.All (
-   Buffer, Memory,
-   allocateBuffer, memoryEndianness)
+import ViperVM.Platform.Memory.Buffer
+import ViperVM.Platform.Memory
+import ViperVM.Platform.Types
 
 -- | A data in a buffer
 data Data = Data {

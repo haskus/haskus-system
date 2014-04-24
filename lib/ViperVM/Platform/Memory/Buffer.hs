@@ -1,5 +1,5 @@
 -- | Buffer management
-module ViperVM.Platform.Buffer (
+module ViperVM.Platform.Memory.Buffer (
    allocateBuffer, allocateBufferFromRegion, releaseBuffer
 ) where
 

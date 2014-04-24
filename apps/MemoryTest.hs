@@ -5,7 +5,10 @@ import Control.Applicative ((<$>))
 import Data.Foldable (traverse_)
 
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Platform.All
+import ViperVM.Platform.Types
+import ViperVM.Platform.Config
+import ViperVM.Platform.Loading
+import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Memory.FieldMap
 import ViperVM.Platform.Memory.Data
 

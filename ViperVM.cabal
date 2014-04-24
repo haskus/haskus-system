@@ -56,9 +56,7 @@ library
     ViperVM.Arch.Posix.All
     ViperVM.Arch.Posix.Malloc
 
-    ViperVM.Platform.All
     ViperVM.Platform.PlatformInfo
-    ViperVM.Platform.Buffer
     ViperVM.Platform.Types
     ViperVM.Platform.Memory
     ViperVM.Platform.Loading
@@ -70,6 +68,7 @@ library
     ViperVM.Platform.Memory.Region
     ViperVM.Platform.Memory.FieldMap
     ViperVM.Platform.Memory.Data
+    ViperVM.Platform.Memory.Buffer
 
     ViperVM.Platform.Memory.Matrix
 
