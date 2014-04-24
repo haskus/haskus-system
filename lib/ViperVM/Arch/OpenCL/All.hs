@@ -1,5 +1,5 @@
 -- | OpenCL module
-module ViperVM.Arch.OpenCL (
+module ViperVM.Arch.OpenCL.All (
    module X
 ) where
 

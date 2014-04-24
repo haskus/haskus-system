@@ -1,4 +1,4 @@
-module ViperVM.Arch.GenericHost (
+module ViperVM.Arch.GenericHost.All (
    module X
 ) where
 

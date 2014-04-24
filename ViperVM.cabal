@@ -17,7 +17,7 @@ library
     ViperVM.Arch.Common.Endianness
     ViperVM.Arch.Common.Errors
 
-    ViperVM.Arch.GenericHost
+    ViperVM.Arch.GenericHost.All
     ViperVM.Arch.GenericHost.Memory
 
     ViperVM.Arch.X86_64.Linux.Syscall
@@ -33,7 +33,7 @@ library
     ViperVM.Arch.X86_64.Linux.Time
     ViperVM.Arch.X86_64.Linux.Utils
 
-    ViperVM.Arch.OpenCL
+    ViperVM.Arch.OpenCL.All
     ViperVM.Arch.OpenCL.Bindings
     ViperVM.Arch.OpenCL.CommandQueue
     ViperVM.Arch.OpenCL.Context
@@ -53,10 +53,10 @@ library
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
 
-    ViperVM.Arch.Posix
+    ViperVM.Arch.Posix.All
     ViperVM.Arch.Posix.Malloc
 
-    ViperVM.Platform
+    ViperVM.Platform.All
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Buffer
     ViperVM.Platform.Types

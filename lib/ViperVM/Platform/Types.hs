@@ -16,7 +16,7 @@ import Control.Concurrent.STM (TVar)
 import Foreign.Ptr (Ptr)
 import Data.Word (Word,Word64)
 
-import qualified ViperVM.Arch.OpenCL as CL
+import qualified ViperVM.Arch.OpenCL.All as CL
 import ViperVM.Arch.Common.Endianness
 
 -- | Platform

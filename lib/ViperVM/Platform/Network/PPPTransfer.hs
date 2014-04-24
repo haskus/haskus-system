@@ -6,7 +6,7 @@ import Foreign.Ptr (plusPtr)
 
 import ViperVM.Platform.Types
 import ViperVM.MMU.Region
-import qualified ViperVM.Arch.OpenCL as CL
+import qualified ViperVM.Arch.OpenCL.All as CL
 
 -- | Perform a synchronous region transfer
 transferRegion :: Network -> Buffer -> Region -> Buffer -> Region -> IO (Maybe TransferError)

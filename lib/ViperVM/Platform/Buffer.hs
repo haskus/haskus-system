@@ -11,8 +11,8 @@ import Data.Foldable (Foldable, foldMap)
 import Control.Concurrent.STM (atomically, readTVar, writeTVar, modifyTVar)
 import Data.List (delete)
 
-import qualified ViperVM.Arch.OpenCL as CL
-import qualified ViperVM.Arch.Posix as Posix
+import qualified ViperVM.Arch.OpenCL.All as CL
+import qualified ViperVM.Arch.Posix.All as Posix
 import ViperVM.Arch.Common.Errors
 
 import ViperVM.Platform.Types

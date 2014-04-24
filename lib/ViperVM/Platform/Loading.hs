@@ -11,8 +11,8 @@ import Control.Concurrent.STM
 import Data.Foldable (forM_)
 import Data.Traversable (forM)
 
-import qualified ViperVM.Arch.OpenCL as CL
-import qualified ViperVM.Arch.GenericHost as Generic
+import qualified ViperVM.Arch.OpenCL.All as CL
+import qualified ViperVM.Arch.GenericHost.All as Generic
 import qualified ViperVM.Arch.Linux.Numa as Linux
 
 import ViperVM.Platform.Types

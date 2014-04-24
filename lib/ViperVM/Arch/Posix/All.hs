@@ -1,4 +1,4 @@
-module ViperVM.Arch.Posix (
+module ViperVM.Arch.Posix.All (
    module X
 ) where
 

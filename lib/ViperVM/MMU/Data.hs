@@ -14,7 +14,7 @@ import ViperVM.Arch.Common.Errors
 
 import ViperVM.MMU.FieldMap
 import ViperVM.MMU.Region
-import ViperVM.Platform (
+import ViperVM.Platform.All (
    Buffer, Memory,
    allocateBuffer, memoryEndianness)
 
