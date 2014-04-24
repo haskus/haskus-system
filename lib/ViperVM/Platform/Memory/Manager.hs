@@ -1,6 +1,7 @@
 -- | Data allocator
 --
--- For now,  we use a very simple policy where a buffer is allocated for each allocated data and released when all of its data are freed
+-- For now,  we use a very simple policy where a buffer is allocated for each
+-- allocated data and released when all of its data are freed
 module ViperVM.Platform.Memory.Manager (
    ManagerConfig(..), Manager(..), DataRef,
    initManager, defaultManagerConfig,
@@ -23,6 +24,7 @@ import ViperVM.STM.TMap (TMap)
 import qualified Data.Map as Map
 import Control.Concurrent.STM
 import Control.Applicative ((<$>), (<*>))
+import Data.Foldable (traverse_)
 
 type DataRef = Word64
 
@@ -88,7 +90,4 @@ releaseData m ref = do
       TMap.delete ref ds
       return d
 
-   case d' of
-      Nothing -> return ()
-      Just bd -> do
-         releaseBuffer (bufferDataBuffer bd)
+   traverse_ (releaseBuffer . bufferDataBuffer) d'
