@@ -21,7 +21,7 @@ import ViperVM.Platform.All (
 -- | A data in a buffer
 data Data = Data {
    dataType :: FieldMap,
-   dataOffset :: Offset,
+   dataOffset :: Word64,
    dataBuffer :: Buffer
 }
 
@@ -30,29 +30,29 @@ coveringRegion1D :: Data -> Region
 coveringRegion1D = regionCover . coveringRegion
 
 
--- | Return the smallest covering region (or 1D region if it is the best solution)
---
--- Only the last padding bytes of structures in outermost arrays is deleted to
--- build 2D regions.
+-- | Return the smallest covering region
 coveringRegion :: Data -> Region
-coveringRegion d = 
-   let 
-      off = dataOffset d 
-   in 
-      case dataType d of
-         Scalar x  -> Region1D off (sizeOf x)
+coveringRegion d = Region (dataOffset d) (coveringShape d)
 
-         Padding _ -> Region1D off 0
+-- | Return the smallest covering shape (or 1D region if it is the best solution)
+--
+-- For now, only the last padding bytes of structures in outermost arrays is
+-- deleted to build 2D shapes.
+coveringShape :: Data -> Shape
+coveringShape d = case dataType d of
+   Scalar x  -> Shape1D (sizeOf x)
 
-         Array s@(Struct {}) n -> reg where
-            (useful,padding) = stripStructPadding s
-            reg = if padding == 0
-               then Region1D off (n * useful)
-               else Region2D off n useful padding
+   Padding _ -> Shape1D 0
 
-         Array t' n -> Region1D off (n * sizeOf t')
+   Array s@(Struct {}) n -> reg where
+      (useful,padding) = stripStructPadding s
+      reg = if padding == 0
+         then Shape1D (n * useful)
+         else Shape2D n useful padding
 
-         t@(Struct {}) -> Region1D off (fst $ stripStructPadding t)
+   Array t' n -> Shape1D (n * sizeOf t')
+
+   t@(Struct {}) -> Shape1D (fst $ stripStructPadding t)
 
 
 -- | Return (useful,padding) where `padding` is the number

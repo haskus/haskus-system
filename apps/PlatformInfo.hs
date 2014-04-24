@@ -2,9 +2,9 @@ import Text.Printf
 import Control.Monad ((<=<))
 import Data.Foldable (traverse_)
 
-import ViperVM.Platform
+import ViperVM.Platform.All
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Arch.OpenCL as CL
+import ViperVM.Arch.OpenCL.All as CL
 
 main :: IO ()
 main = do

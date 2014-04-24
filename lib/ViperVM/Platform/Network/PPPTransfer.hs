@@ -41,9 +41,9 @@ transferRegion link@(PPPLink {}) bufIn regIn bufOut regOut = do
    -- TODO: check that link interconnects buffers
 
    case (regIn,regOut) of
-      (Region1D off1 sz1, Region1D off2 sz2)
+      (Region off1 (Shape1D sz1), Region off2 (Shape1D sz2))
          | sz1 == sz2 -> transfer1D (fromIntegral off1) (fromIntegral off2) (fromIntegral sz1)
-      (Region2D _ n1 sz1 _, Region2D _ n2 sz2 _)
+      (Region _ (Shape2D n1 sz1 _), Region _ (Shape2D n2 sz2 _))
          | n1 == n2 && sz1 == sz2 -> transfer2D regIn regOut
       _ -> return (Just ErrTransferIncompatibleRegions)
 

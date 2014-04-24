@@ -10,7 +10,6 @@ import Data.Word
 import Data.Foldable (sum)
 import qualified Data.Vector as V
 import Control.Applicative ((<$>))
-import ViperVM.MMU.Region
 import ViperVM.Arch.Common.Endianness
 
 -- | A deterministic hierarchic map of fields in memory
@@ -74,7 +73,7 @@ lookupPath (FieldPath path) = go path
          _ -> error "Invalid field path"
 
 -- | Return field offset for the given path in the given field map
-fieldOffset :: FieldPath -> FieldMap -> Offset
+fieldOffset :: FieldPath -> FieldMap -> Word64
 fieldOffset (FieldPath path) = go 0 path
    where
       go off [] _ = off
