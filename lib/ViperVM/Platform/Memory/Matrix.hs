@@ -1,8 +1,8 @@
 -- | Matrix module
-module ViperVM.MMU.Matrix where
+module ViperVM.Platform.Memory.Matrix where
 
-import ViperVM.MMU.Data
-import ViperVM.MMU.FieldMap
+import ViperVM.Platform.Memory.Data
+import ViperVM.Platform.Memory.FieldMap
 import ViperVM.STM.TList
 import Data.Word
 

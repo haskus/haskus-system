@@ -1,5 +1,5 @@
 -- | Low-level data
-module ViperVM.MMU.Data (
+module ViperVM.Platform.Memory.Data (
    Data(..),
    coveringRegion, coveringRegion1D,
    allocateData, allocateDataWithEndianness
@@ -12,8 +12,8 @@ import Control.Applicative ((<$>))
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 
-import ViperVM.MMU.FieldMap
-import ViperVM.MMU.Region
+import ViperVM.Platform.Memory.FieldMap
+import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.All (
    Buffer, Memory,
    allocateBuffer, memoryEndianness)

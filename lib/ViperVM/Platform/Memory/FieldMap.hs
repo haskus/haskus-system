@@ -1,5 +1,5 @@
 -- | Field mapping into memory
-module ViperVM.MMU.FieldMap (
+module ViperVM.Platform.Memory.FieldMap (
    FieldMap(..), FieldPath(..), ScalarField(..), 
    Sign(..), IntBits(..), 
    SizeOf(..), packedSizeOf, lookupPath, fieldOffset

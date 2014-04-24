@@ -6,7 +6,7 @@
 --
 -- * Shape2D: rectangular set of cells (e.g. sub-array), that is with a
 -- constant number of padding bytes after each row
-module ViperVM.MMU.Region(
+module ViperVM.Platform.Memory.Region(
    -- * Shapes
    Shape(..), Size, Padding, RowCount,
    shapeSimplify, shapeCover, isHomomorphicWith,

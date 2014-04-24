@@ -15,7 +15,7 @@ import qualified ViperVM.Arch.Posix.All as Posix
 import ViperVM.Arch.Common.Errors
 
 import ViperVM.Platform.Types
-import ViperVM.MMU.Region (regionCover, Region(..), Shape(..))
+import ViperVM.Platform.Memory.Region (regionCover, Region(..), Shape(..))
 
 -- Should be in base: http://haskell.1045720.n5.nabble.com/Proposal-Add-the-missing-instances-for-Traversable-Either-b-and-Traversable-b-td5715398.html
 instance Foldable (Either e) where

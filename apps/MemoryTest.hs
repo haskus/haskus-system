@@ -6,8 +6,8 @@ import Data.Foldable (traverse_)
 
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.All
-import ViperVM.MMU.FieldMap
-import ViperVM.MMU.Data
+import ViperVM.Platform.Memory.FieldMap
+import ViperVM.Platform.Memory.Data
 
 main :: IO ()
 main = do

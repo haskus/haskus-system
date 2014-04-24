@@ -67,11 +67,11 @@ library
 
     ViperVM.Platform.Network.PPPTransfer
 
-    ViperVM.MMU.Region
-    ViperVM.MMU.FieldMap
-    ViperVM.MMU.Data
+    ViperVM.Platform.Memory.Region
+    ViperVM.Platform.Memory.FieldMap
+    ViperVM.Platform.Memory.Data
 
-    ViperVM.MMU.Matrix
+    ViperVM.Platform.Memory.Matrix
 
     ViperVM.STM.Common
     ViperVM.STM.TIntSet
@@ -113,8 +113,8 @@ executable PlatformInfo
     base,
     ViperVM
 
-executable MMUTest
-  main-is: MMUTest.hs
+executable MemoryTest
+  main-is: MemoryTest.hs
   hs-source-dirs: apps
   ghc-options: -Wall
   default-language:    Haskell2010
