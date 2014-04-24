@@ -69,6 +69,7 @@ library
     ViperVM.Platform.Memory.Layout
     ViperVM.Platform.Memory.Data
     ViperVM.Platform.Memory.Buffer
+    ViperVM.Platform.Memory.Manager
 
     ViperVM.Platform.Memory.Matrix
 
