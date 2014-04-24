@@ -9,7 +9,7 @@ import ViperVM.Platform.Types
 import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Memory.Buffer
-import ViperVM.Platform.Memory.FieldMap
+import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Data
 
 main :: IO ()
@@ -25,12 +25,12 @@ main = do
          dt = \endian -> Array (Scalar (DoubleField endian)) 128
          f = either (error . ("Allocation error: " ++) . show) id
       
-      f <$> allocateDataWithEndianness dt mem
+      f <$> allocateBufferDataWithEndianness dt mem
 
    traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
 
    putStrLn "\nReleasing data in each memory"
-   traverse_ (releaseBuffer . dataBuffer) datas
+   traverse_ (releaseBuffer . bufferDataBuffer) datas
 
    traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
 

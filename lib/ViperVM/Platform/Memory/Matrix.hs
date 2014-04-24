@@ -2,7 +2,7 @@
 module ViperVM.Platform.Memory.Matrix where
 
 import ViperVM.Platform.Memory.Data
-import ViperVM.Platform.Memory.FieldMap
+import ViperVM.Platform.Memory.Layout
 import ViperVM.STM.TList
 import Data.Word
 

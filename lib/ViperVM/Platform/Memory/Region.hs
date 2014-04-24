@@ -13,7 +13,7 @@ module ViperVM.Platform.Memory.Region(
    -- * Regions
    Region(..),
    overlapsAny, overlaps,
-   regionCover
+   regionCover1D
 ) where
 
 -- TODO: provide and use pattern synonyms 
@@ -59,8 +59,8 @@ shapeCover r@(Shape1D {}) = r
 shapeCover (Shape2D nrows sz pad) = Shape1D (nrows * (sz+pad))
 
 -- | Return covering 1D region
-regionCover :: Region -> Region
-regionCover (Region off shape) = Region off (shapeCover shape)
+regionCover1D :: Region -> Region
+regionCover1D (Region off shape) = Region off (shapeCover shape)
 
 -- | Retrieve regions that overlap with the given region
 overlapsAny :: Region -> [Region] -> [Region]

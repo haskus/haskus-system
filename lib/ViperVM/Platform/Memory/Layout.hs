@@ -1,8 +1,9 @@
 -- | Field mapping into memory
-module ViperVM.Platform.Memory.FieldMap (
-   FieldMap(..), FieldPath(..), ScalarField(..), 
+module ViperVM.Platform.Memory.Layout (
+   Layout(..), FieldPath(..), ScalarField(..), 
    Sign(..), IntBits(..), 
-   SizeOf(..), packedSizeOf, lookupPath, fieldOffset
+   SizeOf(..), packedSizeOf, lookupPath, fieldOffset,
+   layoutCoveringShape
 ) where
 
 import Prelude hiding (sum)
@@ -11,15 +12,16 @@ import Data.Foldable (sum)
 import qualified Data.Vector as V
 import Control.Applicative ((<$>))
 import ViperVM.Arch.Common.Endianness
+import ViperVM.Platform.Memory.Region
 
 -- | A deterministic hierarchic map of fields in memory
 --
 -- We say it is deterministic because we do not support unions or other
 -- data-dependent types, contrary to C structures for examples.
-data FieldMap = 
+data Layout = 
      Scalar ScalarField          -- ^ Scalar field
-   | Array FieldMap ArraySize    -- ^ Array with determined size
-   | Struct (V.Vector FieldMap)  -- ^ Regular structure; the order of the list of fields matters
+   | Array Layout ArraySize      -- ^ Array with determined size
+   | Struct (V.Vector Layout)    -- ^ Regular structure; the order of the list of fields matters
    | Padding Word64              -- ^ Padding bytes (i.e. interleaved bytes that have no meaning 
                                  --   for the considered data)
    deriving (Show)
@@ -52,7 +54,7 @@ instance SizeOf ScalarField where
    sizeOf (FloatField {})      = 4
    sizeOf (DoubleField {})     = 8
 
-instance SizeOf FieldMap where
+instance SizeOf Layout where
    sizeOf (Scalar x) = sizeOf x
    sizeOf (Padding n) = n
    sizeOf (Array t n) = n * sizeOf t
@@ -63,7 +65,7 @@ instance SizeOf FieldMap where
 -- Field index into array are not taken into account,
 -- i.e. lookupPath [0,m] (Struct [Array X n]) will return X for any (n,m)
 --
-lookupPath :: FieldPath -> FieldMap -> FieldMap
+lookupPath :: FieldPath -> Layout -> Layout
 lookupPath (FieldPath path) = go path
    where
       go [] dt = dt
@@ -73,7 +75,7 @@ lookupPath (FieldPath path) = go path
          _ -> error "Invalid field path"
 
 -- | Return field offset for the given path in the given field map
-fieldOffset :: FieldPath -> FieldMap -> Word64
+fieldOffset :: FieldPath -> Layout -> Word64
 fieldOffset (FieldPath path) = go 0 path
    where
       go off [] _ = off
@@ -86,9 +88,41 @@ fieldOffset (FieldPath path) = go 0 path
          _ -> error "Invalid field path"
 
 -- | Return the size of a field map without padding bytes
-packedSizeOf :: FieldMap -> Word64
+packedSizeOf :: Layout -> Word64
 packedSizeOf dt = case dt of
    s@(Scalar {}) -> sizeOf s
    Padding _ -> 0
    Array dt' n -> n * packedSizeOf dt'
    Struct dts -> sum (fmap packedSizeOf dts)
+
+
+-- | Return the smallest covering shape (or 1D region if it is the best solution)
+--
+-- For now, only the last padding bytes of structures in outermost arrays is
+-- deleted to build 2D shapes.
+layoutCoveringShape :: Layout -> Shape
+layoutCoveringShape d = case d of
+   Scalar x  -> Shape1D (sizeOf x)
+
+   Padding _ -> Shape1D 0
+
+   Array s@(Struct {}) n -> reg where
+      (useful,padding) = layoutStripStructPadding s
+      reg = if padding == 0
+         then Shape1D (n * useful)
+         else Shape2D n useful padding
+
+   Array t' n -> Shape1D (n * sizeOf t')
+
+   t@(Struct {}) -> Shape1D (fst $ layoutStripStructPadding t)
+
+-- | Return (useful,padding) where `padding` is the number
+-- of padding bytes at the end of the structure and `useful`
+-- the number of remaining bytes (useful ones and other padding)
+layoutStripStructPadding :: Layout -> (Word64,Word64)
+layoutStripStructPadding (Struct ts) = (useful,padding)
+   where
+      (useful,padding) = V.foldr f (0,0) ts
+      f (Padding p') (0,p) = (0,p'+p)
+      f t (u,p) = (u+sizeOf t, p)
+layoutStripStructPadding t = (sizeOf t, 0)
