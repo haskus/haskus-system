@@ -18,6 +18,7 @@ body {
   max-width: 780px;
   margin:auto;
   border: solid 1px lightgray;
+  padding:0;
 }
 
 ul, ol {
@@ -179,8 +180,9 @@ pre {
 /* @group Page Structure */
 
 #content {
-  margin: 0 auto;
-  padding: 0 2em 6em;
+  margin: 0;
+  margin-bottom:6em; /* required because of the footer absolute position */
+  padding:0;
 }
 
 #package-header {
@@ -211,6 +213,8 @@ pre {
   color: rgb(78,98,114);
   font-weight: bold;
   border-bottom: 1px solid #ddd;
+  margin-left: 1em;
+  margin-right: 1em;
 }
 
 table.info {
@@ -311,6 +315,10 @@ div#style-menu-holder {
   display: none;
 }
 
+#description h1 {
+   text-align:center;
+}
+
 #synopsis {
   display: none;
 }
@@ -375,11 +383,17 @@ div#style-menu-holder {
 
 #interface div.top { 
    margin: 2em 0;
-   margin-left:-2em;;
-   margin-right:-2em;;
    border-bottom: solid 1px lightgray;
    padding-bottom: 0.6em;
 }
+
+#interface h1 {
+   background: rgb(177,202,225);
+   color:white;
+   text-shadow: 1px 1px gray;
+   padding-left: 1em;
+}
+
 #interface h1 + div.top,
 #interface h2 + div.top,
 #interface h3 + div.top,
@@ -439,9 +453,9 @@ div#style-menu-holder {
    background-color: #FFFFFF;
 }
 
-#interface div.doc p {
-   margin-top: 0.3em;
-   margin-bottom: 0.3em;
+div.doc p {
+   margin-top: 0.5em;
+   margin-bottom: 0.5em;
 }
 
 .subs dt {
