@@ -22,9 +22,14 @@ module ViperVM.Platform.Memory.Region(
 
 import Data.Word
 
-type Size = Word64      -- ^ Size in bytes
-type Padding = Word64   -- ^ Padding (may be changed to a smaller type in the future)
-type RowCount = Word64  -- ^ Number of rows
+-- | Size in bytes
+type Size = Word64      
+   
+-- | Padding (may be changed to a smaller type in the future)
+type Padding = Word64
+
+-- | Number of rows
+type RowCount = Word64
 
 -- | Shape of a set of memory cells at a given offset
 data Shape = 

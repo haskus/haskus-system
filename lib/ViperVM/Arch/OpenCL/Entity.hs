@@ -6,7 +6,11 @@ import ViperVM.Arch.OpenCL.Library
 
 -- | Wrapped OpenCL entity
 class Entity e where 
-   unwrap :: e -> Ptr ()   -- ^ Get entity pointer
-   cllib :: e -> Library   -- ^ Get library associated with the entity
-   retain :: e -> IO ()    -- ^ Retain (increment) entity reference counter (if any)
-   release :: e -> IO ()   -- ^ Decrement entity reference counter (if any) and release the entity if 0 is reached
+   -- | Get entity pointer
+   unwrap :: e -> Ptr ()
+   -- | Get library associated with the entity
+   cllib :: e -> Library
+   -- | Retain (increment) entity reference counter (if any)
+   retain :: e -> IO ()
+   -- | Decrement entity reference counter (if any) and release the entity if 0 is reached
+   release :: e -> IO ()

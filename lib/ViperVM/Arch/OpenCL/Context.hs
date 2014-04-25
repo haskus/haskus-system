@@ -17,8 +17,7 @@ import Control.Monad (void)
 import Foreign.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
 import Foreign.Marshal.Array (withArray)
 
--- | Context
--- A context is a group of devices
+-- | A context is basically a group of devices sharing entities
 data Context = Context Library Context_ deriving (Eq)
 
 instance Entity Context where 

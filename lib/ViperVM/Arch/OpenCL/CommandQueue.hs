@@ -29,8 +29,8 @@ instance Entity CommandQueue where
 
 -- | Command queue properties
 data CommandQueueProperty =
-     CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE'
-   | CL_QUEUE_PROFILING    -- ^ Replace "CL_QUEUE_PROFILING_ENABLE"
+     CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+   | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
    deriving (Show, Bounded, Eq, Ord, Enum)
 
 instance CLSet CommandQueueProperty
