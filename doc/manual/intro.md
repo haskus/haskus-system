@@ -2,7 +2,7 @@
 
 ViperVM stands for Very High PERformance Virtual Machine. Our aim with this
 project is to provide a fully integrated environment to exploit current
-architectures, especially high-performance ones (e.g. so caleld heterogeneous
+architectures, especially high-performance ones (e.g. so called heterogeneous
 architectures with GPUs or other accelerators, NUMA architectures, etc.).
 
 We start from the ground up (bare metal) and build abstraction layers on top of
@@ -16,4 +16,9 @@ computer architecture concerns).
 
 Note that this software is still in early development.
 
-[Abstract architecture](abstract_architecture.md)
+## Outline of the documentation
+
+* [Abstract architecture](abstract_architecture.md): presents the abstract
+representation of computer architectures
+
+
