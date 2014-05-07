@@ -17,16 +17,6 @@ import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Types
 import ViperVM.Platform.Memory.Region (regionCover1D, Region(..), Shape(..))
 
--- Should be in base: http://haskell.1045720.n5.nabble.com/Proposal-Add-the-missing-instances-for-Traversable-Either-b-and-Traversable-b-td5715398.html
-instance Foldable (Either e) where
-   foldMap f (Right m) = f m
-   foldMap _ (Left _) = mempty
-
-instance Traversable (Either e) where
-   traverse _ (Left e) = pure (Left e)
-   traverse f (Right x) = Right <$> f x
-
-
 --------------------------------------------------------
 -- Generic
 --------------------------------------------------------
