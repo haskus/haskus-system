@@ -9,7 +9,7 @@ short) and edges are links between them. To each memory node, we associate
 "processors" that are able to transform data contained in memories they are
 attached to.
 
-![Abstract architecture](images/abstract_architecture1.svg)
+![Abstract architecture](images/abstract_architecture1.png)
 
 Some links between memory nodes share the same physical network. For instance a
 bus or a physical link between two network cards. Hence, we add the notion of
