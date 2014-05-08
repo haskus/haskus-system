@@ -6,3 +6,5 @@ dist
 *.toc
 *.pdf
 *.swo
+cabal.sandbox.config
+.cabal-sandbox
