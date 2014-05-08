@@ -5,7 +5,7 @@ module ViperVM.Platform.Topology (
    Memory(..), Proc(..),
    Buffer(..), BufferSize,
    Network(..), Duplex(..),
-   isHostMemory, networkId,
+   isHostMemory,
    ID
 ) where
 
@@ -38,7 +38,6 @@ data Proc = Proc {
 data Network =
    -- | Point-to-point link
    PPPLink {
-      pppLinkId :: ID,
       pppLinkSource :: Memory,
       pppLinkTarget :: Memory,
       pppLinkDuplex :: Duplex,
@@ -75,8 +74,3 @@ isHostMemory :: Memory -> Bool
 isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
-
-
--- | Retrieve network identifier
-networkId :: Network -> ID
-networkId (PPPLink {..}) = pppLinkId

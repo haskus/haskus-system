@@ -46,10 +46,9 @@ procInfo proc = return (printf fmt pid typ)
 
 -- | Return network info string
 networkInfo :: Network -> IO String
-networkInfo net = return (printf fmt nid desc)
+networkInfo net = return (printf fmt desc)
    where
-      fmt = "Network %d - %s"
-      nid = networkId net
+      fmt = "Network - %s"
       desc :: String
       desc = case net of
          PPPLink {..} -> printf "%s PPPLink (%d %s %d)" typ src duplex dst where

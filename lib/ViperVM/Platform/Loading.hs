@@ -30,7 +30,6 @@ type LIO a = L IO a
 data LoadState = LoadState {
    currentProcID :: ID,
    currentMemID :: ID,
-   currentNetworkID :: ID,
    currentMemories :: [Memory],
    currentNetworks :: [Network],
    currentProcs :: [Proc]
@@ -40,7 +39,6 @@ data LoadState = LoadState {
 initLoadState :: LoadState
 initLoadState = LoadState {
    currentProcID = 0,
-   currentNetworkID = 0,
    currentMemID = 0,
    currentMemories = [],
    currentNetworks = [],
@@ -63,14 +61,6 @@ newMemId = do
    put (curr { currentMemID = x+1 })
    return x
 
--- | Get new network ID
-newNetworkId :: Monad m => L m ID
-newNetworkId = do
-   curr <- get
-   let x = currentNetworkID curr
-   put (curr { currentNetworkID = x+1 })
-   return x
-
 -- | Register a new memory
 registerMemory :: [Proc] -> MemoryPeer -> LIO Memory
 registerMemory procs peer = do
@@ -83,8 +73,7 @@ registerMemory procs peer = do
 -- | Register a new point-to-point link
 registerPPPLink :: Memory -> Memory -> Duplex -> PPPLinkPeer -> LIO Network
 registerPPPLink src dst duplex peer = do
-   netId <- newNetworkId
-   let net = PPPLink netId src dst duplex peer
+   let net = PPPLink src dst duplex peer
    curr <- get
    put (curr { currentNetworks = net : currentNetworks curr})
    return net
