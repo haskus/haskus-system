@@ -11,7 +11,7 @@ module ViperVM.Platform.Memory.Manager (
 
 import ViperVM.Platform.Memory
 import ViperVM.Platform.Memory.Data
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Layout

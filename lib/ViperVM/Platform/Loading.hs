@@ -15,7 +15,7 @@ import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.All as Generic
 import qualified ViperVM.Arch.Linux.Numa as Linux
 
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
 import ViperVM.Platform.Network
 

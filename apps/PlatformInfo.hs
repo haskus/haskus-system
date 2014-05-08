@@ -3,7 +3,7 @@ import Control.Monad ((<=<))
 import Data.Foldable (traverse_)
 
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
 import ViperVM.Arch.OpenCL.All as CL

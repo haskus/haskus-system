@@ -8,7 +8,7 @@ import Data.Word (Word64)
 
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Region
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 
 -- | A data physically stored in memory with the given layout
 data Data = Data {

@@ -3,10 +3,8 @@ module ViperVM.Platform.Memory.Buffer (
    allocateBuffer, allocateBufferFromRegion, releaseBuffer
 ) where
 
-import Control.Applicative ((<$>), pure)
-import Data.Monoid (mempty)
-import Data.Traversable (Traversable, traverse)
-import Data.Foldable (Foldable, foldMap)
+import Control.Applicative ((<$>))
+import Data.Traversable (traverse)
 import Control.Concurrent.STM (atomically, readTVar, writeTVar, modifyTVar)
 import Data.List (delete)
 
@@ -14,7 +12,7 @@ import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.Posix.Malloc as Posix
 import ViperVM.Arch.Common.Errors
 
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 import ViperVM.Platform.Memory.Region (regionCover1D, Region(..), Shape(..))
 
 --------------------------------------------------------

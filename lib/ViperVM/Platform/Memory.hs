@@ -6,7 +6,7 @@ module ViperVM.Platform.Memory (
 import Data.Word (Word64)
 
 import ViperVM.Arch.Common.Endianness
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness

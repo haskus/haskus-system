@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
--- | Platform types
-module ViperVM.Platform.Types (
+-- | Platform topology
+module ViperVM.Platform.Topology (
    Platform(..), ID,
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..),

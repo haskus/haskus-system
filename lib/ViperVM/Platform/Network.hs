@@ -5,7 +5,7 @@ module ViperVM.Platform.Network (
    networkMemories, memoryNeighbors
 ) where
 
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Control.Concurrent.STM

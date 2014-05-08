@@ -1,11 +1,10 @@
-import Text.Printf
 import Control.Monad (forM)
 import Control.Monad ((<=<))
 import Control.Applicative ((<$>))
 import Data.Foldable (traverse_)
 
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Platform.Types
+import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Memory.Layout
