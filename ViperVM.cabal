@@ -55,6 +55,7 @@ library
 
     ViperVM.Arch.Posix.Malloc
 
+    ViperVM.Platform.Platform
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Topology
     ViperVM.Platform.Memory

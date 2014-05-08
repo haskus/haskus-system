@@ -2,7 +2,7 @@
 
 -- | Platform topology
 module ViperVM.Platform.Topology (
-   Platform(..), ID,
+   ID,
    Memory(..), MemoryPeer(..),
    Buffer(..), BufferPeer(..),
    BufferSize,
@@ -18,15 +18,6 @@ import Data.Word (Word,Word64)
 
 import qualified ViperVM.Arch.OpenCL.All as CL
 import ViperVM.Arch.Common.Endianness
-
--- | Platform
-data Platform = Platform {
-   platformMemories :: [Memory],
-   platformNetworks :: [Network],
-   platformProcs :: [Proc],
-   -- OpenCL specific
-   platformOpenCLPlatforms :: [CL.Platform]
-}
 
 
 -- | Unique identifier
