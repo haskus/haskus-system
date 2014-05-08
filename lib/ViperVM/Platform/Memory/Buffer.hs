@@ -13,6 +13,8 @@ import qualified ViperVM.Arch.Posix.Malloc as Posix
 import ViperVM.Arch.Common.Errors
 
 import ViperVM.Platform.Topology
+import ViperVM.Platform.MemoryPeer
+import ViperVM.Platform.BufferPeer
 import ViperVM.Platform.Memory.Region (regionCover1D, Region(..), Shape(..))
 
 --------------------------------------------------------

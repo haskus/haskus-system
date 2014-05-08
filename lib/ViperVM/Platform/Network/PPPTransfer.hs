@@ -5,6 +5,9 @@ module ViperVM.Platform.Network.PPPTransfer (
 import Foreign.Ptr (plusPtr)
 
 import ViperVM.Platform.Topology
+import ViperVM.Platform.NetworkPeer
+import ViperVM.Platform.BufferPeer
+import ViperVM.Platform.Transfer
 import ViperVM.Platform.Memory.Region
 import qualified ViperVM.Arch.OpenCL.All as CL
 

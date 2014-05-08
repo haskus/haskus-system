@@ -9,6 +9,9 @@ import Control.Concurrent.STM (atomically, readTVar)
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Platform.Topology
+import ViperVM.Platform.MemoryPeer
+import ViperVM.Platform.ProcPeer
+import ViperVM.Platform.NetworkPeer
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
 import Data.Word (Word64)

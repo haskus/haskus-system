@@ -2,30 +2,20 @@
 
 -- | Platform topology
 module ViperVM.Platform.Topology (
-   ID,
-   Memory(..), MemoryPeer(..),
-   Buffer(..), BufferPeer(..),
-   BufferSize,
-   Network(..), PPPLinkPeer(..), Duplex(..),
-   TransferError(..),
-   Proc(..), ProcPeer(..),
-   isHostMemory, networkId
+   Memory(..), Proc(..),
+   Buffer(..), BufferSize,
+   Network(..), Duplex(..),
+   isHostMemory, networkId,
+   ID
 ) where
 
 import Control.Concurrent.STM (TVar)
-import Foreign.Ptr (Ptr)
-import Data.Word (Word,Word64)
+import Data.Word (Word64)
 
-import qualified ViperVM.Arch.OpenCL.All as CL
-import ViperVM.Arch.Common.Endianness
-
-
--- | Unique identifier
-type ID = Int
-
---------------------------------------------------------------
--- Memories
---------------------------------------------------------------
+import ViperVM.Platform.MemoryPeer
+import ViperVM.Platform.ProcPeer
+import ViperVM.Platform.NetworkPeer
+import ViperVM.Platform.BufferPeer
 
 -- | Memory
 data Memory = Memory {
@@ -36,53 +26,6 @@ data Memory = Memory {
    memoryNetworks :: TVar [Network]
 }
 
-instance Eq Memory where
-   (==) a b = memoryId a == memoryId b
-
-instance Ord Memory where
-   compare a b = compare (memoryId a) (memoryId b)
-
--- | Backend specific memory fields
-data MemoryPeer =
-     HostMemory {
-         hostMemSize :: Word64,
-         hostMemEndianness :: Endianness
-     }
-   | OpenCLMemory {
-         clMemLibrary :: CL.Library,
-         clMemDevice :: CL.Device,
-         clMemContext :: CL.Context,
-         clMemEndianness :: Endianness,
-         clMemSize :: Word64
-     }
-
--- | Indicate if a memory is an host memory
-isHostMemory :: Memory -> Bool
-isHostMemory m = case memoryPeer m of
-   HostMemory {} -> True
-   _ -> False
-
-
--- | Memory buffer
-data Buffer = Buffer {
-   bufferMemory :: Memory,
-   bufferSize :: BufferSize,
-   bufferPeer :: BufferPeer
-} deriving (Eq)
-
--- | Backend specific buffer fields
-data BufferPeer = 
-     HostBuffer (Ptr ())
-   | CUDABuffer
-   | OpenCLBuffer CL.Device CL.Context CL.Mem
-   | DiskBuffer
-   deriving (Eq)
-
-type BufferSize = Word64  -- ^ Size of a buffer in bytes
-
---------------------------------------------------------------
--- Processors
---------------------------------------------------------------
 
 -- | A processor
 data Proc = Proc {
@@ -90,22 +33,6 @@ data Proc = Proc {
    procPeer :: ProcPeer
 }
 
--- | Backend specific processor fields
-data ProcPeer =
-     CPUProc {
-         cpuIndex :: Word
-     }
-   | OpenCLProc {
-         clProcDevice :: CL.Device,
-         clProcContext :: CL.Context
-     }
-
---------------------------------------------------------------
--- Networking / interconnexion networks
---------------------------------------------------------------
-
--- | Network link direction
-data Duplex = Simplex | HalfDuplex | FullDuplex
 
 -- | Networks interconnecting memories
 data Network =
@@ -118,24 +45,38 @@ data Network =
       pppLinkPeer :: PPPLinkPeer
    }
 
--- | Backend specific fields for point-to-point links
-data PPPLinkPeer = 
-     OpenCLLink {
-         clLinkDevice :: CL.Device,
-         clLinkContext :: CL.Context,
-         clLinkQueue :: CL.CommandQueue
-     }
 
+-- | Memory buffer
+data Buffer = Buffer {
+   bufferMemory :: Memory,
+   bufferSize :: BufferSize,
+   bufferPeer :: BufferPeer
+} deriving (Eq)
+
+
+-- | Unique identifier
+type ID = Int
+
+instance Eq Memory where
+   (==) a b = memoryId a == memoryId b
+
+instance Ord Memory where
+   compare a b = compare (memoryId a) (memoryId b)
+  
+
+-- | Size of a buffer in bytes
+type BufferSize = Word64
+
+-- | Network link direction
+data Duplex = Simplex | HalfDuplex | FullDuplex
+
+-- | Indicate if a memory is an host memory
+isHostMemory :: Memory -> Bool
+isHostMemory m = case memoryPeer m of
+   HostMemory {} -> True
+   _ -> False
+
+
+-- | Retrieve network identifier
 networkId :: Network -> ID
 networkId (PPPLink {..}) = pppLinkId
-
---------------------------------------------------------------
--- Errors
---------------------------------------------------------------
-
--- | Region transfer error
-data TransferError =
-     ErrTransferIncompatibleRegions
-   | ErrTransferInvalid
-   | ErrTransferUnknown
-   deriving (Show,Eq)

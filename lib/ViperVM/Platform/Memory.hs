@@ -7,6 +7,7 @@ import Data.Word (Word64)
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Platform.Topology
+import ViperVM.Platform.MemoryPeer
 
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness

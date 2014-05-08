@@ -17,6 +17,9 @@ import qualified ViperVM.Arch.Linux.Numa as Linux
 
 import ViperVM.Platform.Platform
 import ViperVM.Platform.Topology
+import ViperVM.Platform.MemoryPeer
+import ViperVM.Platform.ProcPeer
+import ViperVM.Platform.NetworkPeer
 import ViperVM.Platform.Config
 import ViperVM.Platform.Network
 

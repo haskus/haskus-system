@@ -3,8 +3,8 @@ import Control.Monad ((<=<))
 import Control.Applicative ((<$>))
 import Data.Foldable (traverse_)
 
+import ViperVM.Platform.Platform
 import ViperVM.Platform.PlatformInfo
-import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Memory.Layout
