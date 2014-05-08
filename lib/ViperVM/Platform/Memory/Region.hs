@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 -- | A region is a set of memory cells in a buffer with an offset.
 --
 -- Currently we support two region shapes:
@@ -11,14 +13,10 @@ module ViperVM.Platform.Memory.Region(
    Shape(..), Size, Padding, RowCount,
    shapeSimplify, shapeCover, isHomomorphicWith,
    -- * Regions
-   Region(..),
+   Region(..), pattern Region1D, pattern Region2D,
    overlapsAny, overlaps,
    regionCover1D
 ) where
-
--- TODO: provide and use pattern synonyms 
--- pattern Region1D off sz = Region off (Shape1D sz)
--- pattern Region2D off rowCount sz padding = Region off (Shape2D rowCount sz padding)
 
 import Data.Word
 
@@ -37,6 +35,19 @@ data Shape =
    | Shape2D RowCount Size Padding   -- ^ Rectangular set of cells
    deriving (Eq,Ord,Show)
 
+-- | Positioned region (i.e. region shape with an offset)
+data Region = Region {
+   regionOffset :: Word64,
+   regionShape  :: Shape
+}
+
+-- | Pattern synonym for region with 1D shape
+pattern Region1D off sz = Region off (Shape1D sz)
+
+-- | Pattern synonym for region with 2D shape
+pattern Region2D off nrows sz padding = Region off (Shape2D nrows sz padding)
+
+
 -- | Check if two regions have the same shape (discarding padding)
 isHomomorphicWith :: Shape -> Shape -> Bool
 isHomomorphicWith r1 r2 = case (shapeSimplify r1, shapeSimplify r2) of
@@ -49,14 +60,6 @@ shapeSimplify :: Shape -> Shape
 shapeSimplify (Shape2D idx s 0) = Shape1D (idx*s)
 shapeSimplify (Shape2D 1 s _)   = Shape1D s
 shapeSimplify r                 = r
-
-
-
--- | Positioned region (i.e. region shape with an offset)
-data Region = Region {
-   regionOffset :: Word64,
-   regionShape  :: Shape
-}
 
 -- | Return covering 1D shape
 shapeCover :: Shape -> Shape
@@ -73,17 +76,17 @@ overlapsAny reg = filter (overlaps reg)
 
 -- | Indicate if two regions overlap (may return false positive)
 overlaps :: Region -> Region -> Bool
-overlaps (Region off1 (Shape1D sz1)) (Region off2 (Shape1D sz2)) = not (left1 >= right2 || left2 >= right1)
+overlaps (Region1D off1 sz1) (Region1D off2 sz2) = not (left1 >= right2 || left2 >= right1)
    where
       left1 = off1
       left2 = off2
       right1 = off1+sz1
       right2 = off2+sz2
 
-overlaps (Region off (Shape1D sz)) r2 = overlaps (Region off (Shape2D 1 sz 0)) r2
-overlaps r2 (Region off (Shape1D sz)) = overlaps r2 (Region off (Shape2D 1 sz 0))
+overlaps (Region1D off sz) r2 = overlaps (Region2D off 1 sz 0) r2
+overlaps r2 (Region1D off sz) = overlaps r2 (Region2D off 1 sz 0)
 
-overlaps (Region off1 (Shape2D rc1 sz1 pad1)) (Region off2 (Shape2D rc2 sz2 pad2)) 
+overlaps (Region2D off1 rc1 sz1 pad1) (Region2D off2 rc2 sz2 pad2) 
       | sz1+pad1 == sz2+pad2 = not ( left1 >= right2 || left2 >= right1 || top1 >= bottom2 || top2 >= bottom1 )
    where
       width = sz1+pad1
