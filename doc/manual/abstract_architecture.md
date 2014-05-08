@@ -19,7 +19,9 @@ deal with and how data transfers interact with each other.
 To each memory node, we associate "processors" that are able to transform data
 contained in memories they are attached to. Some memory nodes may not have any
 processor attached (e.g. disks). What exactly a processor is depends on the
-hardware.
+hardware. For instance some of them can be massively parallel (SIMD), some of
+them can support interleaving of instructions from different flows
+(simultaneous multithreading, SMT), etc.
 
 ![Graph of memories with processors](images/abstract_architecture3.png)
 
