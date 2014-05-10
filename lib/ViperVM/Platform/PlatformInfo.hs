@@ -9,9 +9,7 @@ import Control.Concurrent.STM (atomically, readTVar)
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Platform.Topology
-import ViperVM.Platform.MemoryPeer
-import ViperVM.Platform.ProcPeer
-import ViperVM.Platform.NetworkPeer
+import ViperVM.Platform.Drivers
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
 import Data.Word (Word64)
@@ -42,7 +40,7 @@ procInfo proc = return (printf fmt pid typ)
       pid = procId proc
       typ = case procPeer proc of
          OpenCLProc {} -> "OpenCL"
-         CPUProc {} -> "CPU"
+         HostProc {} -> "CPU"
 
 -- | Return network info string
 networkInfo :: Network -> IO String
@@ -59,4 +57,4 @@ networkInfo net = return (printf fmt desc)
                HalfDuplex -> "<->"
                FullDuplex -> "<=>"
             typ = case pppLinkPeer of
-               OpenCLLink {} -> "OpenCL"
+               OpenCLNetwork {} -> "OpenCL"

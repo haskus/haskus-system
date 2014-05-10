@@ -15,13 +15,13 @@ import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.All as Generic
 import qualified ViperVM.Arch.Linux.Numa as Linux
 
+import ViperVM.Platform.Drivers
+import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
+import qualified ViperVM.Platform.Drivers.Host as Host
+
 import ViperVM.Platform.Platform
 import ViperVM.Platform.Topology
-import ViperVM.Platform.MemoryPeer
-import ViperVM.Platform.ProcPeer
-import ViperVM.Platform.NetworkPeer
 import ViperVM.Platform.Config
-import ViperVM.Platform.Network
 
 type L m a = StateT LoadState m a
 type LIO a = L IO a
@@ -71,7 +71,7 @@ registerMemory procs peer = do
    return mem
 
 -- | Register a new point-to-point link
-registerPPPLink :: Memory -> Memory -> Duplex -> PPPLinkPeer -> LIO Network
+registerPPPLink :: Memory -> Memory -> Duplex -> NetworkPeer -> LIO Network
 registerPPPLink src dst duplex peer = do
    let net = PPPLink src dst duplex peer
    curr <- get
@@ -121,21 +121,21 @@ loadOpenCLPlatform config = do
                let props = [CL.CL_QUEUE_OUT_OF_ORDER, CL.CL_QUEUE_PROFILING]
                linkQueue <- lift $ CL.createCommandQueue' ctx' dev props
 
-               let memPeer = OpenCLMemory {
-                        clMemLibrary = lib,
-                        clMemDevice = dev,
-                        clMemContext = ctx',
-                        clMemEndianness = endianness,
-                        clMemSize = size
+               let memPeer = OpenCLMemory $ OpenCL.Memory {
+                        OpenCL.clMemLibrary = lib,
+                        OpenCL.clMemDevice = dev,
+                        OpenCL.clMemContext = ctx',
+                        OpenCL.clMemEndianness = endianness,
+                        OpenCL.clMemSize = size
                      }
-                   prcPeer = OpenCLProc {
-                        clProcDevice = dev,
-                        clProcContext = ctx'
+                   prcPeer = OpenCLProc $ OpenCL.Proc {
+                        OpenCL.clProcDevice = dev,
+                        OpenCL.clProcContext = ctx'
                      }
-                   linkPeer = OpenCLLink {
-                        clLinkDevice = dev,
-                        clLinkContext = ctx',
-                        clLinkQueue = linkQueue
+                   linkPeer = OpenCLNetwork $ OpenCL.Network {
+                        OpenCL.clLinkDevice = dev,
+                        OpenCL.clLinkContext = ctx',
+                        OpenCL.clLinkQueue = linkQueue
                      }
                proc <- registerProc prcPeer
                clMem <- registerMemory [proc] memPeer
@@ -155,11 +155,11 @@ loadHostPlatform config = do
    forM_ (Linux.numaNodes numa) $ \node -> do
       let m = Linux.nodeMemory node
       (total,_) <- lift $ Linux.nodeMemoryStatus m
-      let memPeer = HostMemory {
-            hostMemEndianness = hostEndianness,
-            hostMemSize = total
+      let memPeer = HostMemory $ Host.Memory {
+            Host.hostMemEndianness = hostEndianness,
+            Host.hostMemSize = total
           }
-          procs = fmap CPUProc (Linux.nodeCPUs node)
+          procs = fmap (HostProc . Host.Proc) (Linux.nodeCPUs node)
       procs' <- forM procs registerProc
       void (registerMemory procs' memPeer)
 

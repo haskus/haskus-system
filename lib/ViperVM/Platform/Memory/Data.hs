@@ -8,7 +8,7 @@ import Data.Word (Word64)
 
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Region
-import ViperVM.Platform.Topology
+import ViperVM.Platform.MemoryBuffer
 
 -- | A data physically stored in memory with the given layout
 data Data = Data {
@@ -18,7 +18,7 @@ data Data = Data {
 
 -- | A data associated with its buffer
 data BufferData = BufferData {
-   bufferDataBuffer :: Buffer,
+   bufferDataBuffer :: MemoryBuffer,
    bufferDataData :: Data
 }
 

@@ -55,18 +55,17 @@ library
 
     ViperVM.Arch.Posix.Malloc
 
-    ViperVM.Platform.MemoryPeer
-    ViperVM.Platform.ProcPeer
-    ViperVM.Platform.NetworkPeer
-    ViperVM.Platform.BufferPeer
+    ViperVM.Platform.Drivers
+    ViperVM.Platform.Drivers.OpenCL
+    ViperVM.Platform.Drivers.Host
 
     ViperVM.Platform.Platform
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Topology
     ViperVM.Platform.Memory
+    ViperVM.Platform.MemoryBuffer
     ViperVM.Platform.Loading
     ViperVM.Platform.Config
-    ViperVM.Platform.Network
     ViperVM.Platform.Transfer
 
     ViperVM.Platform.Network.PPPTransfer

@@ -15,7 +15,6 @@ import ViperVM.Platform.Topology
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Layout
-import ViperVM.Platform.Memory.Buffer
 
 
 import Data.Word

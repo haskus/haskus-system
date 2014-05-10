@@ -3,19 +3,18 @@
 -- | Platform topology
 module ViperVM.Platform.Topology (
    Memory(..), Proc(..),
-   Buffer(..), BufferSize,
    Network(..), Duplex(..),
    isHostMemory,
+   networkMemories, memoryNeighbors,
    ID
 ) where
 
-import Control.Concurrent.STM (TVar)
-import Data.Word (Word64)
+import Control.Concurrent.STM
+import qualified Data.Map as Map
+import Data.Map (Map)
 
-import ViperVM.Platform.MemoryPeer
-import ViperVM.Platform.ProcPeer
-import ViperVM.Platform.NetworkPeer
-import ViperVM.Platform.BufferPeer
+import ViperVM.Platform.Memory.Buffer (Buffer)
+import ViperVM.Platform.Drivers
 
 -- | Memory
 data Memory = Memory {
@@ -35,23 +34,12 @@ data Proc = Proc {
 
 
 -- | Networks interconnecting memories
-data Network =
-   -- | Point-to-point link
-   PPPLink {
-      pppLinkSource :: Memory,
-      pppLinkTarget :: Memory,
-      pppLinkDuplex :: Duplex,
-      pppLinkPeer :: PPPLinkPeer
-   }
-
-
--- | Memory buffer
-data Buffer = Buffer {
-   bufferMemory :: Memory,
-   bufferSize :: BufferSize,
-   bufferPeer :: BufferPeer
-} deriving (Eq)
-
+data Network = PPPLink {
+   pppLinkSource :: Memory,
+   pppLinkTarget :: Memory,
+   pppLinkDuplex :: Duplex,
+   pppLinkPeer :: NetworkPeer
+}
 
 -- | Unique identifier
 type ID = Int
@@ -63,9 +51,6 @@ instance Ord Memory where
    compare a b = compare (memoryId a) (memoryId b)
   
 
--- | Size of a buffer in bytes
-type BufferSize = Word64
-
 -- | Network link direction
 data Duplex = Simplex | HalfDuplex | FullDuplex
 
@@ -74,3 +59,16 @@ isHostMemory :: Memory -> Bool
 isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
+
+-- | Retrieve memories interconnected by the network
+networkMemories :: Network -> [Memory]
+networkMemories net = case net of
+   PPPLink {..} -> [pppLinkSource, pppLinkTarget]
+
+-- | Return memories directly reachable through a network
+memoryNeighbors :: Memory -> IO (Map Memory [Network])
+memoryNeighbors source = do
+   nets <- readTVarIO (memoryNetworks source)
+   return $ Map.fromListWith (++) [(mem,[net]) | net <- nets, 
+                                      mem <- networkMemories net, 
+                                      mem /= source]
