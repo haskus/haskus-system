@@ -4,11 +4,12 @@
 module ViperVM.Platform.Topology (
    Memory(..), Proc(..),
    Network(..), Duplex(..), NetworkType(..),
-   isHostMemory,
+   isHostMemory, memoryNeighbors,
    ID
 ) where
 
 import Control.Concurrent.STM
+import Data.Traversable(forM)
 
 import ViperVM.Platform.Memory.Buffer (Buffer)
 import ViperVM.Platform.Drivers
@@ -58,3 +59,9 @@ isHostMemory :: Memory -> Bool
 isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
+
+memoryNeighbors :: Memory -> STM [Memory]
+memoryNeighbors mem = do
+   nets <- readTVar (memoryNetworks mem)
+   mems <- forM nets $ \net -> networkNeighbors net mem
+   return (concat mems)

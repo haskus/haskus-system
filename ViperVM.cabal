@@ -116,7 +116,8 @@ executable PlatformInfo
   default-language:    Haskell2010
   build-depends: 
     base,
-    ViperVM
+    ViperVM,
+    stm
 
 executable MemoryTest
   main-is: MemoryTest.hs
