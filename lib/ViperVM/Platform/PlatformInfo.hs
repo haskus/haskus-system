@@ -48,13 +48,7 @@ networkInfo net = return (printf fmt desc)
    where
       fmt = "Network - %s"
       desc :: String
-      desc = case net of
-         PPPLink {..} -> printf "%s PPPLink (%d %s %d)" typ src duplex dst where
-            src = memoryId pppLinkSource
-            dst = memoryId pppLinkTarget
-            duplex = case pppLinkDuplex of
-               Simplex -> "->"
-               HalfDuplex -> "<->"
-               FullDuplex -> "<=>"
-            typ = case pppLinkPeer of
+      desc = printf "%s (%s)" drv (show (networkType net))
+         where
+            drv = case networkPeer net of
                OpenCLNetwork {} -> "OpenCL"

@@ -71,9 +71,9 @@ registerMemory procs peer = do
    return mem
 
 -- | Register a new point-to-point link
-registerPPPLink :: Memory -> Memory -> Duplex -> NetworkPeer -> LIO Network
-registerPPPLink src dst duplex peer = do
-   let net = PPPLink src dst duplex peer
+registerNetwork :: NetworkType -> (Memory -> STM [Memory]) -> NetworkPeer -> LIO Network
+registerNetwork typ neighbors peer = do
+   let net = Network typ neighbors peer
    curr <- get
    put (curr { currentNetworks = net : currentNetworks curr})
    return net
@@ -86,17 +86,6 @@ registerProc peer = do
    curr <- get
    put (curr { currentProcs = proc : currentProcs curr})
    return proc
-
-
--- | Associate networks to memories
-associateNetworksToMemories :: LIO ()
-associateNetworksToMemories = do
-   nets <- currentNetworks <$> get
-
-   forM_ nets $ \net ->
-      forM_ (networkMemories net) $ \mem ->
-         lift $ atomically $ modifyTVar (memoryNetworks mem) (net:)
-      
 
 
 -- | Load OpenCL platform
@@ -142,7 +131,14 @@ loadOpenCLPlatform config = do
                
                -- Add link to every registered host memory
                hostMems <- filter isHostMemory . currentMemories <$> get
-               forM_ hostMems $ \hostMem -> registerPPPLink clMem hostMem FullDuplex linkPeer
+               let neighbors m 
+                     | m == clMem        = return hostMems
+                     | m `elem` hostMems = return [clMem]
+                     | otherwise         = return []
+
+               net <- registerNetwork (NetworkPPP FullDuplex) neighbors linkPeer
+               forM_ (clMem:hostMems) $ \m -> 
+                  lift $ atomically $ modifyTVar (memoryNetworks m) (net:)
 
    return platforms
 
@@ -178,8 +174,6 @@ loadPlatform config = evalStateT loadPlatform_ initLoadState
 
          -- TODO: load other devices (CUDA...)
 
-         associateNetworksToMemories
-         
          memories <- reverse . currentMemories <$> get
          procs <- reverse . currentProcs <$> get
          networks <- reverse . currentNetworks <$> get

@@ -3,15 +3,12 @@
 -- | Platform topology
 module ViperVM.Platform.Topology (
    Memory(..), Proc(..),
-   Network(..), Duplex(..),
+   Network(..), Duplex(..), NetworkType(..),
    isHostMemory,
-   networkMemories, memoryNeighbors,
    ID
 ) where
 
 import Control.Concurrent.STM
-import qualified Data.Map as Map
-import Data.Map (Map)
 
 import ViperVM.Platform.Memory.Buffer (Buffer)
 import ViperVM.Platform.Drivers
@@ -34,11 +31,10 @@ data Proc = Proc {
 
 
 -- | Networks interconnecting memories
-data Network = PPPLink {
-   pppLinkSource :: Memory,
-   pppLinkTarget :: Memory,
-   pppLinkDuplex :: Duplex,
-   pppLinkPeer :: NetworkPeer
+data Network = Network {
+   networkType :: NetworkType,
+   networkNeighbors :: Memory -> STM [Memory],
+   networkPeer :: NetworkPeer
 }
 
 -- | Unique identifier
@@ -52,23 +48,13 @@ instance Ord Memory where
   
 
 -- | Network link direction
-data Duplex = Simplex | HalfDuplex | FullDuplex
+data Duplex = Simplex | HalfDuplex | FullDuplex deriving (Show)
+
+-- | Network type
+data NetworkType = NetworkPPP Duplex deriving (Show)
 
 -- | Indicate if a memory is an host memory
 isHostMemory :: Memory -> Bool
 isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
-
--- | Retrieve memories interconnected by the network
-networkMemories :: Network -> [Memory]
-networkMemories net = case net of
-   PPPLink {..} -> [pppLinkSource, pppLinkTarget]
-
--- | Return memories directly reachable through a network
-memoryNeighbors :: Memory -> IO (Map Memory [Network])
-memoryNeighbors source = do
-   nets <- readTVarIO (memoryNetworks source)
-   return $ Map.fromListWith (++) [(mem,[net]) | net <- nets, 
-                                      mem <- networkMemories net, 
-                                      mem /= source]
