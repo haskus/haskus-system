@@ -19,6 +19,7 @@ import Foreign.C.Types (CSize)
 import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Data.Ord (comparing)
+import Data.Word (Word64)
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,pokeArray)
@@ -118,20 +119,20 @@ enqueue lib f events = allocaArray nevents $ \pevents -> do
       cnevents = fromIntegral nevents
 
 -- | Transfer from device to host
-enqueueReadBuffer :: CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueReadBuffer :: CommandQueue -> Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueReadBuffer cq mem blocking off size ptr = 
-   enqueue lib (rawClEnqueueReadBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) off size ptr)
+   enqueue lib (rawClEnqueueReadBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) (fromIntegral off) (fromIntegral size) ptr)
    where lib = cllib cq
 
 -- | Transfer from host to device
-enqueueWriteBuffer :: CommandQueue -> Mem -> Bool -> CSize -> CSize -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueWriteBuffer :: CommandQueue -> Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [Event] -> IO (Either CLError Event)
 enqueueWriteBuffer cq mem blocking off size ptr = 
-   enqueue lib (rawClEnqueueWriteBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) off size ptr)
+   enqueue lib (rawClEnqueueWriteBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) (fromIntegral off) (fromIntegral size) ptr)
    where lib = cllib cq
 
 -- | Copy from one buffer to another
-enqueueCopyBuffer :: CommandQueue -> Mem -> Mem -> CSize -> CSize -> CSize -> [Event] -> IO (Either CLError Event)
+enqueueCopyBuffer :: CommandQueue -> Mem -> Mem -> Word64 -> Word64 -> Word64 -> [Event] -> IO (Either CLError Event)
 enqueueCopyBuffer cq src dst srcOffset dstOffset sz =
-   enqueue lib (rawClEnqueueCopyBuffer lib (unwrap cq) (unwrap src) (unwrap dst) srcOffset dstOffset sz)
+   enqueue lib (rawClEnqueueCopyBuffer lib (unwrap cq) (unwrap src) (unwrap dst) (fromIntegral srcOffset) (fromIntegral dstOffset) (fromIntegral sz))
    where lib = cllib cq
 

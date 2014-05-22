@@ -1,13 +1,16 @@
 module ViperVM.Platform.Drivers (
    MemoryPeer(..), BufferPeer(..),
    ProcPeer(..), NetworkPeer(..),
-   allocateBuffer, releaseBuffer
+   allocateBuffer, releaseBuffer,
+   transferRegion
 ) where
 
 import Control.Applicative ((<$>))
 import Data.Word (Word64)
 
 import ViperVM.Arch.Common.Errors
+import ViperVM.Platform.TransferResult
+import ViperVM.Platform.Memory.Region
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
@@ -36,9 +39,9 @@ data NetworkPeer =
    deriving (Eq,Ord)
 
 
-data Driver m b = Driver {
-   driverAllocateBuffer :: Word64 -> m -> IO (Either AllocError b),
-   driverReleaseBuffer :: m -> b -> IO ()
+data Driver mem buf = Driver {
+   driverAllocateBuffer :: Word64 -> mem -> IO (Either AllocError buf),
+   driverReleaseBuffer :: mem -> buf -> IO ()
 }
 
 openclDriver :: Driver OpenCL.Memory OpenCL.Buffer
@@ -62,3 +65,18 @@ releaseBuffer :: MemoryPeer -> BufferPeer -> IO ()
 releaseBuffer (HostMemory m) (HostBuffer b) = driverReleaseBuffer hostDriver m b
 releaseBuffer (OpenCLMemory m) (OpenCLBuffer b) = driverReleaseBuffer openclDriver m b
 releaseBuffer _ _ = error "Trying to release a buffer from an invalid memory"
+
+-- | Transfer a region
+transferRegion :: NetworkPeer -> (BufferPeer,Region) -> (BufferPeer,Region) -> IO TransferResult
+transferRegion net (srcBuffer,srcRegion) (dstBuffer,dstRegion) =
+
+   case (net,srcBuffer,dstBuffer) of
+
+      (OpenCLNetwork net', OpenCLBuffer buf, HostBuffer hbuf) ->
+         OpenCL.transferDeviceToHost net' (buf,srcRegion) (Host.hostBufferPtr hbuf, dstRegion)
+
+      (OpenCLNetwork net', HostBuffer hbuf, OpenCLBuffer buf) ->
+         OpenCL.transferHostToDevice net' (Host.hostBufferPtr hbuf, srcRegion) (buf,dstRegion) 
+
+
+      _ -> return (TransferError ErrTransferInvalid)

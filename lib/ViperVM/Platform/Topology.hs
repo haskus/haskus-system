@@ -4,8 +4,8 @@
 module ViperVM.Platform.Topology (
    Memory(..), Proc(..),
    Network(..), Duplex(..), NetworkType(..),
-   isHostMemory, memoryNeighbors,
-   ID
+   BufferData(..), MemoryBuffer(..),
+   isHostMemory, memoryNeighbors
 ) where
 
 import Control.Concurrent.STM
@@ -16,6 +16,7 @@ import Data.Traversable (traverse)
 import qualified Data.Set as Set
 
 import ViperVM.Platform.Memory.Buffer (Buffer)
+import ViperVM.Platform.Memory.Data (Data)
 import ViperVM.Platform.Drivers
 import ViperVM.STM.TSet
 
@@ -49,9 +50,9 @@ instance Ord Proc where
 
 -- | Networks interconnecting memories
 data Network = Network {
+   networkPeer :: NetworkPeer,
    networkType :: NetworkType,
-   networkNeighbors :: Memory -> STM (Set Memory),
-   networkPeer :: NetworkPeer
+   networkNeighbors :: Memory -> STM (Set Memory)
 }
 
 instance Eq Network where
@@ -60,11 +61,15 @@ instance Eq Network where
 instance Ord Network where
    compare = comparing networkPeer
 
--- | Unique identifier
-type ID = Int
+-- | A data associated with its buffer
+data BufferData = BufferData {
+   bufferDataBuffer :: MemoryBuffer,
+   bufferDataData :: Data
+}
 
+-- | Memory buffer
+data MemoryBuffer = MemoryBuffer Memory Buffer deriving (Eq)
   
-
 -- | Network link direction
 data Duplex = Simplex | HalfDuplex | FullDuplex deriving (Show)
 

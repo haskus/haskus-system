@@ -1,13 +1,17 @@
 module ViperVM.Platform.Drivers.OpenCL (
    Memory(..), Buffer(..), Network(..), Proc(..),
-   allocateBuffer, releaseBuffer
+   allocateBuffer, releaseBuffer,
+   transferHostToDevice, transferDeviceToHost
 ) where
 
 import Data.Word (Word64)
 import Data.Ord (comparing)
+import Foreign.Ptr (Ptr,plusPtr)
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
+import ViperVM.Platform.Memory.Region
+import ViperVM.Platform.TransferResult
 import qualified ViperVM.Arch.OpenCL.All as CL
 
 data Memory = Memory {
@@ -72,3 +76,34 @@ allocateBuffer size mem = do
 -- | Release a buffer in OpenCL memory
 releaseBuffer :: Memory -> Buffer -> IO ()
 releaseBuffer _ buf = CL.release (clBufferPeer buf)
+
+type CLTransfer = CL.CommandQueue -> CL.Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [CL.Event] -> IO (Either CL.CLError CL.Event)
+
+transfer :: Network -> CLTransfer -> (Ptr (), Region) -> (Buffer,Region) -> IO TransferResult
+transfer net f (hostPtr,Region off1 sh1) (buffer,Region off2 sh2) = do
+
+   let
+      cq = clLinkQueue net
+      mem = clBufferPeer buffer
+
+      clTransfer (Left _) = return (TransferError ErrTransferUnknown)
+      clTransfer (Right ev) = CL.waitForEvents [ev] >> return TransferSuccess
+      
+      -- FIXME: unsafe coercion from CSize to Int
+      ptr = hostPtr `plusPtr` fromIntegral off1
+
+   case (sh1,sh2) of
+
+      (Shape1D sz1, Shape1D sz2) 
+         | sz1 == sz2 -> clTransfer =<< f cq mem True off2 sz1 ptr []
+         | otherwise  -> return (TransferError ErrTransferIncompatibleRegions)
+
+      -- TODO: 2D transfers
+
+
+
+transferHostToDevice :: Network -> (Ptr (),Region) -> (Buffer,Region) -> IO TransferResult
+transferHostToDevice net = transfer net CL.enqueueWriteBuffer 
+
+transferDeviceToHost :: Network -> (Buffer,Region) -> (Ptr (),Region) -> IO TransferResult
+transferDeviceToHost net = flip (transfer net CL.enqueueReadBuffer)

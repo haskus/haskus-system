@@ -18,7 +18,6 @@ import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Memory.Buffer
-import ViperVM.Platform.MemoryBuffer
 
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness

@@ -23,16 +23,16 @@ import ViperVM.Platform.Platform
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
 
--- | Register a new memory
+-- | Init a memory
 memoryInit :: MemoryPeer -> IO Memory
 memoryInit peer = Memory peer 
    <$> newTVarIO Set.empty 
    <*> newTVarIO Set.empty
    <*> newTVarIO Set.empty
 
--- | Register a new network 
+-- | Init a network
 networkInit :: NetworkType -> (Memory -> STM (Set Memory)) -> NetworkPeer -> IO Network
-networkInit typ neighbors peer = return (Network typ neighbors peer)
+networkInit typ neighbors peer = return (Network peer typ neighbors)
 
 -- | Init a processor
 procInit :: ProcPeer -> IO Proc
