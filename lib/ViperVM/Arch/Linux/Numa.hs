@@ -3,9 +3,10 @@ module ViperVM.Arch.Linux.Numa where
 
 import Control.Applicative ((<$>))
 import System.Directory
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf,stripPrefix)
 import Control.Monad (forM)
 import Data.Word
+import Data.Maybe (fromJust)
 import Data.Map ((!))
 
 import qualified ViperVM.Arch.Linux.SysFS as SysFS
@@ -17,6 +18,7 @@ data NUMA = NUMA {
 
 -- | A NUMA node
 data Node = Node {
+   nodeId :: Word,
    nodeCPUMap :: SysFS.CPUMap,
    nodeMemory :: NodeMemory
 } deriving (Show)
@@ -32,8 +34,9 @@ loadNUMA sysfsPath = do
    nDirs <- filter ("node" `isPrefixOf`) <$> getDirectoryContents nodePath
 
    ndes <- forM nDirs $ \nDir -> do
+      let nid = read (fromJust $ stripPrefix "node" nDir)
       cpus <- SysFS.readCPUMap (nodePath ++ nDir ++ "/cpumap")
-      return $ Node cpus (NodeMemory $ nodePath ++ nDir ++ "/meminfo")
+      return $ Node nid cpus (NodeMemory $ nodePath ++ nDir ++ "/meminfo")
 
    return $ NUMA ndes
 

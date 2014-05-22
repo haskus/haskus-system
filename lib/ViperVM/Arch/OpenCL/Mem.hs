@@ -18,6 +18,7 @@ import ViperVM.Arch.OpenCL.Bindings
 import Foreign.C.Types (CSize)
 import Control.Applicative ((<$>))
 import Control.Monad (void)
+import Data.Ord (comparing)
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,pokeArray)
@@ -25,6 +26,9 @@ import Foreign.Storable (peek)
 
 -- | Memory object (buffer, image)
 data Mem = Mem Library Mem_ deriving (Eq)
+
+instance Ord Mem where
+   compare = comparing unwrap
 
 instance Entity Mem where 
    unwrap (Mem _ x) = x

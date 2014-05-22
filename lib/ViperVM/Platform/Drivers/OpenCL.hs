@@ -4,6 +4,7 @@ module ViperVM.Platform.Drivers.OpenCL (
 ) where
 
 import Data.Word (Word64)
+import Data.Ord (comparing)
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
@@ -17,11 +18,20 @@ data Memory = Memory {
    clMemSize :: Word64
 }
 
+instance Eq Memory where
+   (==) a b = clMemDevice a == clMemDevice b
+
+instance Ord Memory where
+   compare = comparing clMemDevice
+
 data Buffer = Buffer {
    clBufferDevice :: CL.Device,
    clBufferContext :: CL.Context,
    clBufferPeer :: CL.Mem
 } deriving (Eq)
+
+instance Ord Buffer where
+   compare = comparing clBufferPeer
 
 data Network = Network {
    clLinkDevice :: CL.Device,
@@ -29,10 +39,22 @@ data Network = Network {
    clLinkQueue :: CL.CommandQueue
 }
 
+instance Eq Network where
+   (==) a b = clLinkDevice a == clLinkDevice b
+
+instance Ord Network where
+   compare = comparing clLinkDevice
+
 data Proc = Proc {
    clProcDevice :: CL.Device,
    clProcContext :: CL.Context
 }
+
+instance Eq Proc where
+   (==) a b = clProcDevice a == clProcDevice b
+
+instance Ord Proc where
+   compare = comparing clProcDevice
 
 -- | Allocate a buffer in OpenCL memory
 allocateBuffer :: Word64 -> Memory -> IO (Either AllocError Buffer)

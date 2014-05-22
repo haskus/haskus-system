@@ -20,6 +20,7 @@ import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.Common.Endianness
 
 import Data.Word (Word64)
+import Data.Ord (comparing)
 import Control.Applicative ((<$>))
 import Foreign.Ptr (Ptr, castPtr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
@@ -27,6 +28,9 @@ import Foreign.Storable (peek, sizeOf)
 
 -- | Device
 data Device = Device Library Device_ deriving (Eq)
+
+instance Ord Device where
+   compare = comparing unwrap
 
 instance Entity Device where 
    unwrap (Device _ x) = x

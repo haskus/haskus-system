@@ -1,8 +1,10 @@
 import Text.Printf
 import Control.Monad ((<=<))
 import Data.Foldable (traverse_)
-import Data.List (intersperse)
+--import Data.List (intersperse)
 import Control.Concurrent.STM
+import Control.Applicative ((<$>))
+import qualified Data.Set as Set
 
 import ViperVM.Platform.Platform
 import ViperVM.Platform.PlatformInfo
@@ -31,17 +33,24 @@ main = do
          | x <= 1    = printf "%d network found" x
          | otherwise = printf "%d networks found" x
 
-      linkTo m mis = putStrLn $ "  - " ++ show (memoryId m) ++ " -> " ++ concat (intersperse ", " (fmap (show . memoryId) mis))
+      --linkTo m mis = putStrLn $ "  - " ++ show (memoryId m) ++ " -> " ++ concat (intersperse ", " (fmap (show . memoryId) mis))
 
+      extractMem xs x = return (x:xs)
 
-   putStrLn . memoriesStr . length $ platformMemories pf
-   traverse_ (showInfo <=< memoryInfo) (platformMemories pf)
+   mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
 
-   putStrLn . procsStr . length $ platformProcs pf
-   traverse_ (showInfo <=< procInfo) (platformProcs pf)
+   putStrLn . memoriesStr . length $ mems
+   traverse_ (showInfo <=< memoryInfo) mems
 
-   putStrLn . netsStr . length $ platformNetworks pf
-   traverse_ (showInfo <=< networkInfo) (platformNetworks pf)
+   procs <- Set.unions <$> atomically (mapM (readTVar . memoryProcs) mems)
 
-   putStrLn "Links"
-   traverse_ (\m -> linkTo m =<< atomically (memoryNeighbors m)) (platformMemories pf)
+   putStrLn . procsStr . Set.size $ procs
+   traverse_ (showInfo <=< procInfo) procs
+
+   nets <- Set.unions <$> atomically (mapM (readTVar . memoryNetworks) mems)
+
+   putStrLn . netsStr . Set.size $ nets
+   traverse_ (showInfo <=< networkInfo) nets
+
+   --putStrLn "Links"
+   --traverse_ (\m -> linkTo m =<< atomically (memoryNeighbors m)) (platformMemories pf)

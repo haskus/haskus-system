@@ -13,6 +13,7 @@ import ViperVM.Platform.Drivers
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
 import Data.Word (Word64)
+import qualified Data.Set as Set
 import Text.Printf
 
 -- | Return memory info string
@@ -20,13 +21,12 @@ memoryInfo :: Memory -> IO String
 memoryInfo mem = do
    buffers <- atomically $ readTVar (memoryBuffers mem)
    let
-      str = printf fmt mid typ sizeGB endian nbuffers
-      fmt = "Memory %d - %s - %.2f GB - %s - %d buffer(s)"
+      str = printf fmt typ sizeGB endian nbuffers
+      fmt = "Memory - %s - %.2f GB - %s - %d buffer(s)"
       endian = if memoryEndianness mem == LittleEndian then "Little endian" else "Big endian"
-      mid = memoryId mem
       size = fromIntegral (memorySize mem) :: Double
       sizeGB = size / fromIntegral (1024*1024*1024 :: Word64)
-      nbuffers = length buffers
+      nbuffers = Set.size buffers
       typ = case memoryPeer mem of
          OpenCLMemory {} -> "OpenCL"
          HostMemory {} -> "Host"
@@ -34,10 +34,9 @@ memoryInfo mem = do
 
 -- | Return proc info string
 procInfo :: Proc -> IO String
-procInfo proc = return (printf fmt pid typ)
+procInfo proc = return (printf fmt typ)
    where
-      fmt = "Proc %d - %s"
-      pid = procId proc
+      fmt = "Proc - %s"
       typ = case procPeer proc of
          OpenCLProc {} -> "OpenCL"
          HostProc {} -> "CPU"

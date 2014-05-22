@@ -15,22 +15,25 @@ import qualified ViperVM.Platform.Drivers.Host as Host
 data MemoryPeer = 
      HostMemory Host.Memory
    | OpenCLMemory OpenCL.Memory
+   deriving (Eq,Ord)
 
 
 -- | Backend specific buffer fields
 data BufferPeer = 
      HostBuffer Host.Buffer
    | OpenCLBuffer OpenCL.Buffer
-   deriving (Eq)
+   deriving (Eq,Ord)
 
 
 -- | Backend specific processor fields
 data ProcPeer =
      HostProc Host.Proc
    | OpenCLProc OpenCL.Proc
+   deriving (Eq,Ord)
 
 data NetworkPeer =
      OpenCLNetwork OpenCL.Network
+   deriving (Eq,Ord)
 
 
 data Driver m b = Driver {

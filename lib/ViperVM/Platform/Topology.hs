@@ -9,43 +9,60 @@ module ViperVM.Platform.Topology (
 ) where
 
 import Control.Concurrent.STM
-import Data.Traversable(forM)
+import Control.Applicative ((<$>))
+import Data.Set (Set)
+import Data.Ord (comparing)
+import Data.Traversable (traverse)
+import qualified Data.Set as Set
 
 import ViperVM.Platform.Memory.Buffer (Buffer)
 import ViperVM.Platform.Drivers
+import ViperVM.STM.TSet
+
 
 -- | Memory
 data Memory = Memory {
-   memoryId :: ID,
-   memoryProcs :: [Proc],
    memoryPeer :: MemoryPeer,
-   memoryBuffers :: TVar [Buffer],
-   memoryNetworks :: TVar [Network]
+   memoryProcs :: TSet Proc,
+   memoryBuffers :: TSet Buffer,
+   memoryNetworks :: TSet Network
 }
+
+instance Eq Memory where
+   (==) a b = memoryPeer a == memoryPeer b
+
+instance Ord Memory where
+   compare = comparing memoryPeer
 
 
 -- | A processor
 data Proc = Proc {
-   procId :: ID,
    procPeer :: ProcPeer
 }
+
+instance Eq Proc where
+   (==) a b = procPeer a == procPeer b
+
+instance Ord Proc where
+   compare = comparing procPeer
 
 
 -- | Networks interconnecting memories
 data Network = Network {
    networkType :: NetworkType,
-   networkNeighbors :: Memory -> STM [Memory],
+   networkNeighbors :: Memory -> STM (Set Memory),
    networkPeer :: NetworkPeer
 }
+
+instance Eq Network where
+   (==) a b = networkPeer a == networkPeer b
+
+instance Ord Network where
+   compare = comparing networkPeer
 
 -- | Unique identifier
 type ID = Int
 
-instance Eq Memory where
-   (==) a b = memoryId a == memoryId b
-
-instance Ord Memory where
-   compare a b = compare (memoryId a) (memoryId b)
   
 
 -- | Network link direction
@@ -60,8 +77,7 @@ isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
 
-memoryNeighbors :: Memory -> STM [Memory]
+memoryNeighbors :: Memory -> STM (Set Memory)
 memoryNeighbors mem = do
-   nets <- readTVar (memoryNetworks mem)
-   mems <- forM nets $ \net -> networkNeighbors net mem
-   return (concat mems)
+   nets <- Set.toList <$> readTVar (memoryNetworks mem)
+   Set.unions <$> traverse (`networkNeighbors` mem) nets

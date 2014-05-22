@@ -1,6 +1,7 @@
 import Control.Monad (forM)
 import Control.Monad ((<=<))
 import Control.Applicative ((<$>))
+import Control.Concurrent.STM
 import Data.Foldable (traverse_)
 
 import ViperVM.Platform.Platform
@@ -15,10 +16,13 @@ main = do
    putStrLn "Loading Platform..."
    pf <- loadPlatform defaultConfig
 
-   traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
+   let extractMem xs x = return (x:xs)
+   mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
+
+   traverse_ (putStrLn <=< memoryInfo) mems
 
    putStrLn "\nCreate basic memory manager for each memory"
-   mgrs <- forM (platformMemories pf) (initManager defaultManagerConfig)
+   mgrs <- forM mems (initManager defaultManagerConfig)
 
    putStrLn "\nAllocating data in each memory"
    datas <- forM mgrs $ \mgr -> do
@@ -28,12 +32,12 @@ main = do
       
       f <$> allocateDataWithEndianness dt mgr
 
-   traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
+   traverse_ (putStrLn <=< memoryInfo) mems
 
    putStrLn "\nReleasing data in each memory"
    traverse_ (uncurry releaseData) (mgrs `zip` datas)
 
-   traverse_ (putStrLn <=< memoryInfo) (platformMemories pf)
+   traverse_ (putStrLn <=< memoryInfo) mems
 
    putStrLn "Done."
 
