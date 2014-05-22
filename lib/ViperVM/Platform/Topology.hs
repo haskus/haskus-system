@@ -1,10 +1,11 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, PatternSynonyms #-}
 
 -- | Platform topology
 module ViperVM.Platform.Topology (
    Memory(..), Proc(..),
    Network(..), Duplex(..), NetworkType(..),
    BufferData(..), MemoryBuffer(..),
+   pattern MemoryBufferData,
    isHostMemory, memoryNeighbors
 ) where
 
@@ -66,6 +67,8 @@ data BufferData = BufferData {
    bufferDataBuffer :: MemoryBuffer,
    bufferDataData :: Data
 }
+
+pattern MemoryBufferData a b c = BufferData (MemoryBuffer a b) c
 
 -- | Memory buffer
 data MemoryBuffer = MemoryBuffer Memory Buffer deriving (Eq)
