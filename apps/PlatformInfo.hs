@@ -6,7 +6,7 @@ import Control.Concurrent.STM
 import Control.Applicative ((<$>))
 import qualified Data.Set as Set
 
-import ViperVM.Platform.Platform
+import ViperVM.Platform.Host
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config

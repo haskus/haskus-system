@@ -59,7 +59,7 @@ library
     ViperVM.Platform.Drivers.OpenCL
     ViperVM.Platform.Drivers.Host
 
-    ViperVM.Platform.Platform
+    ViperVM.Platform.Host
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Topology
     ViperVM.Platform.Memory

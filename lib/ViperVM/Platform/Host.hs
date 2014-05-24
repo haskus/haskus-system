@@ -1,5 +1,5 @@
-module ViperVM.Platform.Platform (
-   Platform(..), foldMemories,
+module ViperVM.Platform.Host (
+   Host(..), foldMemories,
    traverseHostMemories
 ) where
 
@@ -14,18 +14,18 @@ import Control.Monad (foldM)
 import Control.Concurrent.STM
 
 -- | Platform
-data Platform = Platform {
+data Host = Host {
    -- | Host memories
-   platformHostMemories :: TSet Memory
+   hostMemories :: TSet Memory
 }
 
 -- | Traverse platform memories
-traverseHostMemories :: Platform -> (Memory -> STM a) -> STM [a]
-traverseHostMemories pf f = traverse f =<< TSet.toList (platformHostMemories pf)
+traverseHostMemories :: Host -> (Memory -> STM a) -> STM [a]
+traverseHostMemories host f = traverse f =<< TSet.toList (hostMemories host)
 
 -- | Traverse all memories (breadth-first search)
-foldMemories :: Platform -> a -> (a -> Memory -> STM a) -> STM a
-foldMemories pf ini f = go ini Set.empty =<< readTVar (platformHostMemories pf)
+foldMemories :: Host -> a -> (a -> Memory -> STM a) -> STM a
+foldMemories host ini f = go ini Set.empty =<< readTVar (hostMemories host)
    where
       go ret visited toVisit
          | Set.null toVisit = return ret

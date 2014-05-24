@@ -17,7 +17,7 @@
    version="1.1"
    inkscape:version="0.48.4 r9939"
    sodipodi:docname="abstract_architecture3.svg"
-   inkscape:export-filename="/home/hsyl20/travail/ViperVM/doc/manual/images/abstract_architecture3.png"
+   inkscape:export-filename="/home/hsyl20/travail/code/ViperVM/doc/manual/images/abstract_architecture3.png"
    inkscape:export-xdpi="140"
    inkscape:export-ydpi="140">
   <defs
@@ -112,14 +112,14 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.979899"
-     inkscape:cx="438.80291"
-     inkscape:cy="638.00221"
+     inkscape:zoom="3.959798"
+     inkscape:cx="393.49548"
+     inkscape:cy="661.29822"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1066"
+     inkscape:window-width="1188"
+     inkscape:window-height="1064"
      inkscape:window-x="0"
      inkscape:window-y="14"
      inkscape:window-maximized="0" />
@@ -252,23 +252,23 @@
     <rect
        style="fill:#dedede;fill-opacity:1;stroke:#000000;stroke-width:0.99999994;stroke-opacity:1"
        id="rect5496-5"
-       width="86.873123"
+       width="132.10156"
        height="17.17259"
-       x="359.27087"
+       x="336.77087"
        y="442.79279"
-       rx="3"
+       rx="4.5618792"
        ry="3" />
     <text
        xml:space="preserve"
        style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       x="361.64493"
+       x="337.26993"
        y="454.50507"
        id="text3009"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3011"
-         x="361.64493"
-         y="454.50507">Host memory</tspan></text>
+         x="337.26993"
+         y="454.50507">Remote host memory</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"

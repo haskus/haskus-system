@@ -26,6 +26,12 @@ them can support interleaving of instructions from different flows
 ![Graph of memories with processors](images/abstract_architecture3.png)
 
 
+## Representation
+
+In ViperVM, this graph of memories is represented using shared transactional
+memory so that nodes can be connected or disconnected. The basic data type is
+`Host` which contains a set of host memories.
+
 ## Memories
 
 TODO: peers, buffers, regions

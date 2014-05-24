@@ -19,7 +19,7 @@ import ViperVM.Platform.Drivers
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
-import ViperVM.Platform.Platform
+import ViperVM.Platform.Host
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
 
@@ -40,8 +40,8 @@ procInit peer = return (Proc peer)
 
 
 -- | Load OpenCL platform
-loadOpenCLPlatform :: PlatformConfig -> Platform -> IO ()
-loadOpenCLPlatform config pf = do
+loadOpenCLPlatform :: PlatformConfig -> Host -> IO ()
+loadOpenCLPlatform config host = do
    lib <- CL.loadOpenCL (libraryOpenCL config)
    platforms <- CL.getPlatforms lib
 
@@ -84,7 +84,7 @@ loadOpenCLPlatform config pf = do
                atomically $ writeTVar (memoryProcs clMem) (Set.singleton proc)
                
                -- Add link to every registered host memory
-               hostMems <- atomically $ readTVar (platformHostMemories pf)
+               hostMems <- atomically $ readTVar (hostMemories host)
                let neighbors m 
                      | m == clMem              = hostMems
                      | m `Set.member` hostMems = Set.singleton clMem
@@ -98,8 +98,8 @@ loadOpenCLPlatform config pf = do
 
 
 -- | Load host platform
-loadHostPlatform :: PlatformConfig -> Platform -> IO ()
-loadHostPlatform config pf = do
+loadHostPlatform :: PlatformConfig -> Host -> IO ()
+loadHostPlatform config host = do
    numa <- Linux.loadNUMA (sysfsPath config)
    hostEndianness <- Generic.getMemoryEndianness
 
@@ -124,21 +124,21 @@ loadHostPlatform config pf = do
       return mem
          
    -- Init platform host memories
-   atomically $ writeTVar (platformHostMemories pf) (Set.fromList mems)
+   atomically $ writeTVar (hostMemories host) (Set.fromList mems)
          
 
 
 -- | Load the platform
-loadPlatform :: PlatformConfig -> IO Platform
+loadPlatform :: PlatformConfig -> IO Host
 loadPlatform config = do
    
-   pf <- Platform <$> newTVarIO Set.empty
+   host <- Host <$> newTVarIO Set.empty
 
-   loadHostPlatform config pf
+   loadHostPlatform config host
          
    when (enableOpenCL config) $
-      loadOpenCLPlatform config pf
+      loadOpenCLPlatform config host
 
    -- TODO: load other devices (CUDA...)
 
-   return pf
+   return host

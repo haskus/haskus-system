@@ -4,7 +4,7 @@ import Control.Applicative ((<$>))
 import Control.Concurrent.STM
 import Data.Foldable (traverse_)
 
-import ViperVM.Platform.Platform
+import ViperVM.Platform.Host
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
