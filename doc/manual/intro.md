@@ -20,5 +20,5 @@ Note that this software is still in early development.
 
 * [Abstract architecture](abstract_architecture.md): presents the abstract
 representation of computer architectures
-
+* [Memory (low-level)](memory.md): low-level memory management
 

@@ -1,6 +1,6 @@
 # Abstract architecture
 
-## The big picture
+## Platform graph
 
 Recent multi-core architectures are composed of several memory nodes
 interconnected through networks with complex topologies. We can basically
@@ -30,8 +30,6 @@ them can support interleaving of instructions from different flows
 
 In ViperVM, this graph of memories is represented using shared transactional
 memory so that nodes can be connected or disconnected. The basic data type is
-`Host` which contains a set of host memories.
-
-## Memories
-
-TODO: peers, buffers, regions
+`Host` which contains a set of host memories. Each memory knows the networks it
+is connected to and the memory nodes accessible through it, hence it possible
+to obtain the full graph by traversing memory nodes and networks.
