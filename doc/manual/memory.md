@@ -23,7 +23,10 @@ Allocating memory consists in reserving a set of pages and considering them as
 consecutive when their cells are addressed. In ViperVM, a `Buffer` entity
 represents a memory allocation. It is only defined by its size (the sum of the
 sizes of the reserved pages) and the memory it is allocated in, other fields
-are architecture specific.
+are architecture specific. 
+
+An allocation can fail if the number of free pages left is too small
+considering the requested allocation size.
 
 A buffer can be released, meaning that its reserved pages can be reused for
 another allocation.
