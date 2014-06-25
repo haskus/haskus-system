@@ -16,9 +16,21 @@ computer architecture concerns).
 
 Note that this software is still in early development.
 
-## Outline of the documentation
+## Architecture models
+
+We need to be able to describe architectures (ISA, cores, networks, etc.) in
+order to work with them.
 
 * [Abstract architecture](abstract_architecture.md): presents the abstract
 representation of computer architectures
 * [Memory (low-level)](memory.md): low-level memory management
 
+## Programming models and compilation
+
+We need to be able to write codes that can be executed on the different
+processing units.
+
+## Runtime system
+
+We need to provide a unified software layer that gives access to hardware
+capabilities.
