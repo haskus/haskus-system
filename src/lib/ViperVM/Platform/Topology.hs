@@ -1,12 +1,17 @@
 {-# LANGUAGE RecordWildCards, PatternSynonyms #-}
 
 -- | Platform topology
-module ViperVM.Platform.Topology (
-   Memory(..), Proc(..),
-   Network(..), Duplex(..), NetworkType(..),
-   BufferData(..), MemoryBuffer(..),
-   pattern MemoryBufferData,
-   isHostMemory, memoryNeighbors
+module ViperVM.Platform.Topology 
+   ( Memory(..)
+   , Proc(..)
+   , Network(..)
+   , Duplex(..)
+   , NetworkType(..)
+   , BufferData(..)
+   , MemoryBuffer(..)
+   , pattern MemoryBufferData
+   , isHostMemory
+   , memoryNeighbors
 ) where
 
 import Control.Concurrent.STM
@@ -23,12 +28,12 @@ import ViperVM.STM.TSet
 
 
 -- | Memory
-data Memory = Memory {
-   memoryPeer :: MemoryPeer,
-   memoryProcs :: TSet Proc,
-   memoryBuffers :: TSet Buffer,
-   memoryNetworks :: TSet Network
-}
+data Memory = Memory 
+  { memoryPeer       :: MemoryPeer
+  , memoryProcs      :: TSet Proc
+  , memoryBuffers    :: TSet Buffer
+  , memoryNetworks   :: TSet Network
+  }
 
 instance Eq Memory where
    (==) a b = memoryPeer a == memoryPeer b
@@ -38,9 +43,9 @@ instance Ord Memory where
 
 
 -- | A processor
-data Proc = Proc {
-   procPeer :: ProcPeer
-}
+data Proc = Proc 
+  { procPeer :: ProcPeer
+  }
 
 instance Eq Proc where
    (==) a b = procPeer a == procPeer b
@@ -50,11 +55,11 @@ instance Ord Proc where
 
 
 -- | Networks interconnecting memories
-data Network = Network {
-   networkPeer :: NetworkPeer,
-   networkType :: NetworkType,
-   networkNeighbors :: Memory -> STM (Set Memory)
-}
+data Network = Network 
+  { networkPeer :: NetworkPeer
+  , networkType :: NetworkType
+  , networkNeighbors :: Memory -> STM (Set Memory)
+  }
 
 instance Eq Network where
    (==) a b = networkPeer a == networkPeer b
@@ -63,10 +68,10 @@ instance Ord Network where
    compare = comparing networkPeer
 
 -- | A data associated with its buffer
-data BufferData = BufferData {
-   bufferDataBuffer :: MemoryBuffer,
-   bufferDataData :: Data
-}
+data BufferData = BufferData 
+   { bufferDataBuffer :: MemoryBuffer
+   , bufferDataData :: Data
+   }
 
 pattern MemoryBufferData a b c = BufferData (MemoryBuffer a b) c
 
