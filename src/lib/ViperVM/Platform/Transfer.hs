@@ -17,10 +17,12 @@ import ViperVM.Platform.Memory.Data
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Drivers (transferRegion)
 
+-- | A transfer
 data Transfer = Transfer 
    { transferResult :: TMVar TransferResult
    }
 
+-- | Asynchronously transfer a data
 networkTransferData :: Network -> BufferData -> BufferData -> IO Transfer
 networkTransferData net src dst = do
    let
@@ -32,7 +34,7 @@ networkTransferData net src dst = do
 
    networkTransferRegion net (b1,r1) (b2,r2)
 
-
+-- | Asynchronously transfer a region
 networkTransferRegion :: Network -> (Buffer,Region) -> (Buffer,Region) -> IO Transfer
 networkTransferRegion net (b1,r1) (b2,r2) = do
    let
