@@ -1,7 +1,9 @@
 -- | Memory related module
-module ViperVM.Platform.Memory (
-   memoryEndianness, memorySize,
-   allocateBuffer, releaseBuffer
+module ViperVM.Platform.Memory
+   ( memoryEndianness
+   , memorySize
+   , allocateBuffer
+   , releaseBuffer
 ) where
 
 import Data.Word (Word64)

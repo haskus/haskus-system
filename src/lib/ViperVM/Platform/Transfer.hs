@@ -1,9 +1,9 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module ViperVM.Platform.Transfer (
-   Transfer(..),
-   networkTransferData,
-   networkTransferRegion
+module ViperVM.Platform.Transfer 
+   ( Transfer(..)
+   , networkTransferData
+   , networkTransferRegion
 ) where
 
 import Control.Monad (void)
@@ -17,9 +17,9 @@ import ViperVM.Platform.Memory.Data
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Drivers (transferRegion)
 
-data Transfer = Transfer {
-   transferResult :: TMVar TransferResult
-}
+data Transfer = Transfer 
+   { transferResult :: TMVar TransferResult
+   }
 
 networkTransferData :: Network -> BufferData -> BufferData -> IO Transfer
 networkTransferData net src dst = do

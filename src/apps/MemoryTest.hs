@@ -2,7 +2,8 @@ import Control.Monad (forM)
 import Control.Monad ((<=<))
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM
-import Data.Foldable (traverse_)
+import Data.Foldable (traverse_,forM_)
+import qualified Data.Map as Map
 
 import ViperVM.Platform.Host
 import ViperVM.Platform.PlatformInfo
@@ -10,6 +11,9 @@ import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Manager
+import ViperVM.Platform.Topology
+import ViperVM.Platform.Transfer
+import ViperVM.STM.TMap as TMap
 
 main :: IO ()
 main = do
@@ -23,6 +27,10 @@ main = do
 
    putStrLn "\nCreate basic memory manager for each memory"
    mgrs <- forM mems (initManager defaultManagerConfig)
+   let memManagers = Map.fromList (mems `zip` mgrs)
+
+   putStrLn "============================================"
+   putStrLn "Testing allocation/release..."
 
    putStrLn "\nAllocating data in each memory"
    datas <- forM mgrs $ \mgr -> do
@@ -39,5 +47,34 @@ main = do
 
    traverse_ (putStrLn <=< memoryInfo) mems
 
+
+   putStrLn "============================================"
+   putStrLn "Testing transfers..."
+
+   putStrLn "\nTransferring data between each directly connected memory"
+   forM_ mems $ \m1 -> do
+      ms <- atomically $ memoryNetNeighbors m1
+      forM_ ms $ \(net,m2) -> do
+         putStrLn "\n  - Allocating data in 2 memories"
+         let 
+            dt = \endian -> Array (Scalar (DoubleField endian)) 128
+            mgr1 = memManagers Map.! m1
+            mgr2 = memManagers Map.! m2
+            f = either (error . ("Allocation error: " ++) . show) id
+         d1 <- allocateDataWithEndianness dt mgr1
+         d2 <- allocateDataWithEndianness dt mgr2
+         b1 <- atomically $ managerData mgr1 TMap.! f d1
+         b2 <- atomically $ managerData mgr2 TMap.! f d2
+
+         putStrLn "  - Transferring between memories..."
+         tr <- networkTransferData net b1 b2
+         putStrLn "  - Waiting for transfer to end..."
+         res <- atomically $ takeTMVar (transferResult tr)
+         putStrLn ("  - Transfer result: " ++ show res)
+
+         putStrLn "  - Releasing data"
+         releaseData mgr1 (f d1)
+         releaseData mgr2 (f d2)
+   
    putStrLn "Done."
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards, PatternSynonyms, TupleSections #-}
 
 -- | Platform topology
 module ViperVM.Platform.Topology 
@@ -12,13 +12,14 @@ module ViperVM.Platform.Topology
    , pattern MemoryBufferData
    , isHostMemory
    , memoryNeighbors
+   , memoryNetNeighbors
 ) where
 
 import Control.Concurrent.STM
 import Control.Applicative ((<$>))
 import Data.Set (Set)
 import Data.Ord (comparing)
-import Data.Traversable (traverse)
+import Data.Traversable (traverse,forM)
 import qualified Data.Set as Set
 
 import ViperVM.Platform.Memory.Buffer (Buffer)
@@ -90,7 +91,17 @@ isHostMemory m = case memoryPeer m of
    HostMemory {} -> True
    _ -> False
 
+-- | Memory neighbor memory nodes
 memoryNeighbors :: Memory -> STM (Set Memory)
 memoryNeighbors mem = do
    nets <- Set.toList <$> readTVar (memoryNetworks mem)
    Set.unions <$> traverse (`networkNeighbors` mem) nets
+
+-- | Memory neighbor memory nodes + interconnecting network
+memoryNetNeighbors :: Memory -> STM (Set (Network,Memory))
+memoryNetNeighbors mem = do
+   nets <- Set.toList <$> readTVar (memoryNetworks mem)
+   ss <- forM nets $ \net -> do
+      ms <- networkNeighbors net mem
+      return . Set.fromList . fmap (net,) . Set.toList $ ms
+   return $ Set.unions ss

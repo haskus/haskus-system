@@ -93,7 +93,7 @@ library
     directory,
     parsec,
     parsec-numbers,
-    containers,
+    containers == 0.5.*,
     dynamic-linker-template,
     transformers,
     unix,
@@ -126,7 +126,9 @@ executable MemoryTest
   build-depends: 
     base,
     ViperVM,
-    stm
+    stm,
+    containers == 0.5.*
+
 executable TestSyscalls
   main-is: TestSyscalls.hs
   hs-source-dirs: src/apps

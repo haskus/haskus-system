@@ -32,11 +32,11 @@ import Data.Foldable (traverse_)
 type DataRef = Word64
 
 -- | Memory manager
-data Manager = Manager {
-   managerMemory :: Memory,
-   managerData :: TMap DataRef BufferData,
-   managerLastRef :: TVar DataRef
-}
+data Manager = Manager 
+   { managerMemory   :: Memory
+   , managerData     :: TMap DataRef BufferData
+   , managerLastRef  :: TVar DataRef
+   }
 
 -- | Memory manager configuration
 data ManagerConfig = ManagerConfig
