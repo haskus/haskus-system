@@ -44,7 +44,12 @@ networkTransferRegion net (b1,r1) (b2,r2) = do
    result <- newEmptyTMVarIO
    
    void $ forkIO $ do
-      res <- transferRegion (networkPeer net) (srcBufferPeer,r1) (dstBufferPeer,r2)
+      -- perform transfer (synchronous)
+      res <- transferRegion 
+         (networkPeer net)
+         (srcBufferPeer, r1)
+         (dstBufferPeer, r2)
+      -- set result
       atomically $ putTMVar result res
 
    return (Transfer result)

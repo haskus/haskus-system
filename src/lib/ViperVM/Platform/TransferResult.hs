@@ -1,5 +1,6 @@
 module ViperVM.Platform.TransferResult where
 
+-- | Result of a transfer
 data TransferResult = 
      TransferError TransferError
    | TransferSuccess
