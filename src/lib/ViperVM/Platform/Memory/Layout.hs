@@ -1,10 +1,17 @@
 -- | Field mapping into memory
-module ViperVM.Platform.Memory.Layout (
-   Layout(..), FieldPath(..), ScalarField(..), 
-   Sign(..), IntBits(..), 
-   SizeOf(..), packedSizeOf, lookupPath, fieldOffset,
-   layoutCoveringShape
-) where
+module ViperVM.Platform.Memory.Layout
+   ( Layout(..)
+   , FieldPath(..)
+   , ScalarField(..)
+   , Sign(..)
+   , IntBits(..)
+   , SizeOf(..)
+   , packedSizeOf
+   , lookupPath
+   , fieldOffset
+   , layoutCoveringShape
+   )
+where
 
 import Prelude hiding (sum)
 import Data.Word
@@ -29,11 +36,22 @@ data Layout =
 -- | Path to select a field in a field map
 newtype FieldPath = FieldPath [Word64]
 
-type ArraySize = Word64                      -- ^ Size of an array in cells
-data Sign = Signed | Unsigned                -- ^ Sign of an integer
-            deriving (Show)
-data IntBits = Bit8 | Bit16 | Bit32 | Bit64  -- ^ Number of bits representing an integral field
-               deriving (Show)
+-- | Size of an array in cells
+type ArraySize = Word64
+
+-- | Sign of an integer
+data Sign
+   = Signed 
+   | Unsigned
+   deriving (Show)
+
+-- | Number of bits representing an integral field
+data IntBits
+   = Bit8 
+   | Bit16 
+   | Bit32 
+   | Bit64
+   deriving (Show)
 
 -- | Scalar field
 data ScalarField =

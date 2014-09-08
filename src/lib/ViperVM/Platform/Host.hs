@@ -1,7 +1,9 @@
-module ViperVM.Platform.Host (
-   Host(..), foldMemories,
-   traverseHostMemories
-) where
+module ViperVM.Platform.Host
+   ( Host(..)
+   , foldMemories
+   , traverseHostMemories
+   )
+where
 
 import ViperVM.Platform.Topology
 import ViperVM.STM.TSet (TSet)
@@ -14,10 +16,11 @@ import Control.Monad (foldM)
 import Control.Concurrent.STM
 
 -- | Platform
-data Host = Host {
+data Host = Host
+   {
    -- | Host memories
    hostMemories :: TSet Memory
-}
+   }
 
 -- | Traverse platform memories
 traverseHostMemories :: Host -> (Memory -> STM a) -> STM [a]

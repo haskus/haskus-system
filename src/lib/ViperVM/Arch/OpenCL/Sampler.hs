@@ -1,7 +1,8 @@
 -- | OpenCL sampler module
-module ViperVM.Arch.OpenCL.Sampler (
-   Sampler(..)
-) where
+module ViperVM.Arch.OpenCL.Sampler
+   ( Sampler(..)
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity

@@ -1,8 +1,15 @@
-module ViperVM.Platform.Drivers.OpenCL (
-   Memory(..), Buffer(..), Network(..), Proc(..),
-   allocateBuffer, releaseBuffer,
-   transferHostToDevice, transferDeviceToHost
-) where
+-- | OpenCL driver
+module ViperVM.Platform.Drivers.OpenCL
+   ( Memory(..)
+   , Buffer(..)
+   , Network(..)
+   , Proc(..)
+   , allocateBuffer
+   , releaseBuffer
+   , transferHostToDevice
+   , transferDeviceToHost
+   )
+where
 
 import Data.Word (Word64)
 import Data.Ord (comparing)
@@ -14,13 +21,13 @@ import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.TransferResult
 import qualified ViperVM.Arch.OpenCL.All as CL
 
-data Memory = Memory {
-   clMemLibrary :: CL.Library,
-   clMemDevice :: CL.Device,
-   clMemContext :: CL.Context,
-   clMemEndianness :: Endianness,
-   clMemSize :: Word64
-}
+data Memory = Memory
+   { clMemLibrary    :: CL.Library
+   , clMemDevice     :: CL.Device
+   , clMemContext    :: CL.Context
+   , clMemEndianness :: Endianness
+   , clMemSize       :: Word64
+   }
 
 instance Eq Memory where
    (==) a b = clMemDevice a == clMemDevice b
@@ -28,20 +35,20 @@ instance Eq Memory where
 instance Ord Memory where
    compare = comparing clMemDevice
 
-data Buffer = Buffer {
-   clBufferDevice :: CL.Device,
-   clBufferContext :: CL.Context,
-   clBufferPeer :: CL.Mem
-} deriving (Eq)
+data Buffer = Buffer
+   { clBufferDevice  :: CL.Device
+   , clBufferContext :: CL.Context
+   , clBufferPeer    :: CL.Mem
+   } deriving (Eq)
 
 instance Ord Buffer where
    compare = comparing clBufferPeer
 
-data Network = Network {
-   clLinkDevice :: CL.Device,
-   clLinkContext :: CL.Context,
-   clLinkQueue :: CL.CommandQueue
-}
+data Network = Network
+   { clLinkDevice    :: CL.Device
+   , clLinkContext   :: CL.Context
+   , clLinkQueue     :: CL.CommandQueue
+   }
 
 instance Eq Network where
    (==) a b = clLinkDevice a == clLinkDevice b
@@ -49,10 +56,10 @@ instance Eq Network where
 instance Ord Network where
    compare = comparing clLinkDevice
 
-data Proc = Proc {
-   clProcDevice :: CL.Device,
-   clProcContext :: CL.Context
-}
+data Proc = Proc 
+   { clProcDevice    :: CL.Device
+   , clProcContext   :: CL.Context
+   }
 
 instance Eq Proc where
    (==) a b = clProcDevice a == clProcDevice b

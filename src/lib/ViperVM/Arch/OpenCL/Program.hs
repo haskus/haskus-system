@@ -1,8 +1,9 @@
 -- | OpenCL program module
-module ViperVM.Arch.OpenCL.Program (
-   Program(..),
-   ProgramBuildStatus(..)
-) where
+module ViperVM.Arch.OpenCL.Program
+   ( Program(..)
+   , ProgramBuildStatus(..)
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -21,8 +22,8 @@ instance Entity Program where
    release = releaseProgram
 
 -- | Program build status
-data ProgramBuildStatus = 
-     CL_BUILD_SUCCESS
+data ProgramBuildStatus
+   = CL_BUILD_SUCCESS
    | CL_BUILD_NONE
    | CL_BUILD_ERROR
    | CL_BUILD_IN_PROGRESS

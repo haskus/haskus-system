@@ -1,8 +1,12 @@
 -- | OpenCL imaging API
-module ViperVM.Arch.OpenCL.ImageFormat (
-   ImageFormat(..), AddressingMode(..),
-   FilterMode(..), ChannelOrder(..), ChannelType(..)
-) where
+module ViperVM.Arch.OpenCL.ImageFormat
+   ( ImageFormat(..)
+   , AddressingMode(..)
+   , FilterMode(..)
+   , ChannelOrder(..)
+   , ChannelType(..)
+   )
+where
 
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble)
@@ -11,10 +15,10 @@ import Data.Word (Word32)
 import ViperVM.Arch.OpenCL.Bindings (CLConstant(..))
 
 -- | Image storage format
-data ImageFormat = ImageFormat {
-   imageChannelOrder :: !ChannelOrder,
-   imageChannelType :: !ChannelType
-} deriving (Show)
+data ImageFormat = ImageFormat
+   { imageChannelOrder :: !ChannelOrder
+   , imageChannelType  :: !ChannelType
+   } deriving (Show)
 
 instance Storable ImageFormat where
    alignment _ = alignment (undefined :: CDouble)
@@ -28,8 +32,8 @@ instance Storable ImageFormat where
       pokeByteOff p 4 (toCL b :: Word32)
 
 -- | Image addressing mode
-data AddressingMode =
-     CL_ADDRESS_NONE
+data AddressingMode
+   = CL_ADDRESS_NONE
    | CL_ADDRESS_CLAMP_TO_EDGE
    | CL_ADDRESS_CLAMP
    | CL_ADDRESS_REPEAT
@@ -51,22 +55,22 @@ instance CLConstant FilterMode where
    fromCL x = toEnum (fromIntegral x - 0x1140)
 
 -- | Image channel order
-data ChannelOrder =
-     CL_R                         
-   | CL_A                         
-   | CL_RG                        
-   | CL_RA                        
-   | CL_RGB                       
-   | CL_RGBA                      
-   | CL_BGRA                      
-   | CL_ARGB                      
-   | CL_INTENSITY                 
-   | CL_LUMINANCE                 
-   | CL_Rx                        
-   | CL_RGx                       
-   | CL_RGBx                      
-   | CL_DEPTH                     
-   | CL_DEPTH_STENCIL             
+data ChannelOrder
+   = CL_R
+   | CL_A
+   | CL_RG
+   | CL_RA
+   | CL_RGB
+   | CL_RGBA
+   | CL_BGRA
+   | CL_ARGB
+   | CL_INTENSITY
+   | CL_LUMINANCE
+   | CL_Rx
+   | CL_RGx
+   | CL_RGBx
+   | CL_DEPTH
+   | CL_DEPTH_STENCIL
    deriving (Show,Enum)
 
 instance CLConstant ChannelOrder where
@@ -74,23 +78,23 @@ instance CLConstant ChannelOrder where
    fromCL x = toEnum (fromIntegral x - 0x10B0)
 
 -- | Image channel type
-data ChannelType = 
-     CL_SNORM_INT8                 
-   | CL_SNORM_INT16                
-   | CL_UNORM_INT8                 
-   | CL_UNORM_INT16                
-   | CL_UNORM_SHORT_565            
-   | CL_UNORM_SHORT_555            
-   | CL_UNORM_INT_101010           
-   | CL_SIGNED_INT8                
-   | CL_SIGNED_INT16               
-   | CL_SIGNED_INT32               
-   | CL_UNSIGNED_INT8              
-   | CL_UNSIGNED_INT16             
-   | CL_UNSIGNED_INT32             
-   | CL_HALF_FLOAT                 
-   | CL_FLOAT                      
-   | CL_UNORM_INT24                
+data ChannelType
+   = CL_SNORM_INT8
+   | CL_SNORM_INT16
+   | CL_UNORM_INT8
+   | CL_UNORM_INT16
+   | CL_UNORM_SHORT_565
+   | CL_UNORM_SHORT_555
+   | CL_UNORM_INT_101010
+   | CL_SIGNED_INT8
+   | CL_SIGNED_INT16
+   | CL_SIGNED_INT32
+   | CL_UNSIGNED_INT8
+   | CL_UNSIGNED_INT16
+   | CL_UNSIGNED_INT32
+   | CL_HALF_FLOAT
+   | CL_FLOAT
+   | CL_UNORM_INT24
    deriving (Show,Enum)
 
 instance CLConstant ChannelType where

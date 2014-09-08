@@ -1,9 +1,12 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Module to get info strings from platform objects
-module ViperVM.Platform.PlatformInfo (
-   memoryInfo, procInfo, networkInfo
-) where
+module ViperVM.Platform.PlatformInfo
+   ( memoryInfo
+   , procInfo
+   , networkInfo
+   )
+where
 
 import Control.Concurrent.STM (atomically, readTVar)
 
@@ -29,7 +32,7 @@ memoryInfo mem = do
       nbuffers = Set.size buffers
       typ = case memoryPeer mem of
          OpenCLMemory {} -> "OpenCL"
-         HostMemory {} -> "Host"
+         HostMemory {}   -> "Host"
    return str
 
 -- | Return proc info string
@@ -39,7 +42,7 @@ procInfo proc = return (printf fmt typ)
       fmt = "Proc - %s"
       typ = case procPeer proc of
          OpenCLProc {} -> "OpenCL"
-         HostProc {} -> "CPU"
+         HostProc {}   -> "CPU"
 
 -- | Return network info string
 networkInfo :: Network -> IO String

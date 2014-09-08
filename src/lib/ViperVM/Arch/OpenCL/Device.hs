@@ -1,15 +1,24 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | OpenCL device module
-module ViperVM.Arch.OpenCL.Device (
-   Device(..), DeviceInfo(..), DeviceType(..),
-   DeviceFPConfig(..), DeviceExecCapability(..),
-   DeviceMemCacheType(..), DeviceLocalMemType(..),
-   isDeviceLittleEndian, isDeviceLittleEndian',
-   getDeviceGlobalMemSize, getDeviceGlobalMemSize',
-   getDeviceType, getDeviceType',
-   allDeviceTypes, getDeviceEndianness
-) where
+module ViperVM.Arch.OpenCL.Device
+   ( Device(..)
+   , DeviceInfo(..)
+   , DeviceType(..)
+   , DeviceFPConfig(..)
+   , DeviceExecCapability(..)
+   , DeviceMemCacheType(..)
+   , DeviceLocalMemType(..)
+   , isDeviceLittleEndian
+   , isDeviceLittleEndian'
+   , getDeviceGlobalMemSize
+   , getDeviceGlobalMemSize'
+   , getDeviceType
+   , getDeviceType'
+   , allDeviceTypes
+   , getDeviceEndianness
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -39,8 +48,8 @@ instance Entity Device where
    release _ = return ()
 
 -- | Device information
-data DeviceInfo =
-     CL_DEVICE_TYPE
+data DeviceInfo
+   = CL_DEVICE_TYPE
    | CL_DEVICE_VENDOR_ID
    | CL_DEVICE_MAX_COMPUTE_UNITS
    | CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS
@@ -123,8 +132,8 @@ instance CLConstant DeviceInfo where
    fromCL x = toEnum (fromIntegral x - 0x1000)
 
 -- | Device type
-data DeviceType = 
-     CL_DEVICE_TYPE_DEFAULT
+data DeviceType
+   = CL_DEVICE_TYPE_DEFAULT
    | CL_DEVICE_TYPE_CPU
    | CL_DEVICE_TYPE_GPU
    | CL_DEVICE_TYPE_ACCELERATOR
@@ -135,16 +144,16 @@ instance CLSet DeviceType
 
 -- | List of all device types
 allDeviceTypes :: [DeviceType]
-allDeviceTypes = [
-      CL_DEVICE_TYPE_CPU, 
-      CL_DEVICE_TYPE_GPU,
-      CL_DEVICE_TYPE_ACCELERATOR,
-      CL_DEVICE_TYPE_CUSTOM
+allDeviceTypes = 
+   [ CL_DEVICE_TYPE_CPU 
+   , CL_DEVICE_TYPE_GPU
+   , CL_DEVICE_TYPE_ACCELERATOR
+   , CL_DEVICE_TYPE_CUSTOM
    ]
 
 -- | Device floating-point unit configuration
-data DeviceFPConfig =
-     CL_FP_DENORM
+data DeviceFPConfig
+   = CL_FP_DENORM
    | CL_FP_INF_NAN
    | CL_FP_ROUND_TO_NEAREST
    | CL_FP_ROUND_TO_ZERO
@@ -157,16 +166,16 @@ data DeviceFPConfig =
 instance CLSet DeviceFPConfig
 
 -- | Device execution capabilities
-data DeviceExecCapability =
-     CL_EXEC_KERNEL
+data DeviceExecCapability
+   = CL_EXEC_KERNEL
    | CL_EXEC_NATIVE_KERNEL
    deriving (Show, Bounded, Eq, Ord, Enum)
 
 instance CLSet DeviceExecCapability
 
 -- | Device cache memory type
-data DeviceMemCacheType =
-     CL_NONE
+data DeviceMemCacheType
+   = CL_NONE
    | CL_READ_ONLY_CACHE
    | CL_READ_WRITE_CACHE
    deriving (Show,Enum)
@@ -176,8 +185,8 @@ instance CLConstant DeviceMemCacheType where
    fromCL x = toEnum (fromIntegral x)
 
 -- | Device local memory type
-data DeviceLocalMemType =
-     CL_LOCAL
+data DeviceLocalMemType
+   = CL_LOCAL
    | CL_GLOBAL
    deriving (Show,Enum)
 

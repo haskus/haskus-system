@@ -1,8 +1,9 @@
 -- | OpenCL event module
-module ViperVM.Arch.OpenCL.Event (
-   Event(..),
-   waitForEvents,
-) where
+module ViperVM.Arch.OpenCL.Event
+   ( Event(..)
+   , waitForEvents
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity

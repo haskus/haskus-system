@@ -1,9 +1,13 @@
-module ViperVM.Platform.Drivers (
-   MemoryPeer(..), BufferPeer(..),
-   ProcPeer(..), NetworkPeer(..),
-   allocateBuffer, releaseBuffer,
-   transferRegion
-) where
+module ViperVM.Platform.Drivers
+   ( MemoryPeer(..)
+   , BufferPeer(..)
+   , ProcPeer(..)
+   , NetworkPeer(..)
+   , allocateBuffer
+   , releaseBuffer
+   , transferRegion
+   )
+where
 
 import Control.Applicative ((<$>))
 import Data.Word (Word64)
@@ -39,10 +43,10 @@ data NetworkPeer =
    deriving (Eq,Ord)
 
 
-data Driver mem buf = Driver {
-   driverAllocateBuffer :: Word64 -> mem -> IO (Either AllocError buf),
-   driverReleaseBuffer :: mem -> buf -> IO ()
-}
+data Driver mem buf = Driver 
+   { driverAllocateBuffer :: Word64 -> mem -> IO (Either AllocError buf)
+   , driverReleaseBuffer :: mem -> buf -> IO ()
+   }
 
 openclDriver :: Driver OpenCL.Memory OpenCL.Buffer
 openclDriver = Driver

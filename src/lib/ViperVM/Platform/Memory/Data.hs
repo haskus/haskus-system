@@ -3,7 +3,8 @@ module ViperVM.Platform.Memory.Data
    ( Data(..)
    , dataCoveringRegion
    , dataCoveringRegion1D
-) where
+   )
+where
 
 import Data.Word (Word64)
 

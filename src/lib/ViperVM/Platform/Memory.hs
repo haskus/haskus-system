@@ -4,7 +4,8 @@ module ViperVM.Platform.Memory
    , memorySize
    , allocateBuffer
    , releaseBuffer
-) where
+   )
+where
 
 import Data.Word (Word64)
 import qualified Data.Set as Set

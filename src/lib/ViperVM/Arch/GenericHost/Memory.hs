@@ -1,7 +1,8 @@
 -- | Generic host memory-related functions
-module ViperVM.Arch.GenericHost.Memory (
-   getMemoryEndianness
-) where
+module ViperVM.Arch.GenericHost.Memory
+   ( getMemoryEndianness
+   )
+where
 
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (peekArray)

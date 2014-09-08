@@ -8,15 +8,25 @@
 --
 -- * Shape2D: rectangular set of cells (e.g. sub-array), that is with a
 -- constant number of padding bytes after each row
-module ViperVM.Platform.Memory.Region(
+module ViperVM.Platform.Memory.Region
+   (
    -- * Shapes
-   Shape(..), Size, Padding, RowCount,
-   shapeSimplify, shapeCover, isHomomorphicWith,
+     Shape(..)
+   , Size
+   , Padding
+   , RowCount
+   , shapeSimplify
+   , shapeCover
+   , isHomomorphicWith
    -- * Regions
-   Region(..), pattern Region1D, pattern Region2D,
-   overlapsAny, overlaps,
-   regionCover1D
-) where
+   , Region(..)
+   , pattern Region1D
+   , pattern Region2D
+   , overlapsAny
+   , overlaps
+   , regionCover1D
+   )
+where
 
 import Data.Word
 
@@ -30,16 +40,16 @@ type Padding = Word64
 type RowCount = Word64
 
 -- | Shape of a set of memory cells at a given offset
-data Shape = 
-     Shape1D Size                    -- ^ Contiguous set of cells
+data Shape
+   = Shape1D Size                    -- ^ Contiguous set of cells
    | Shape2D RowCount Size Padding   -- ^ Rectangular set of cells
    deriving (Eq,Ord,Show)
 
 -- | Positioned region (i.e. region shape with an offset)
-data Region = Region {
-   regionOffset :: Word64,
-   regionShape  :: Shape
-}
+data Region = Region
+   { regionOffset :: Word64
+   , regionShape  :: Shape
+   }
 
 -- | Pattern synonym for region with 1D shape
 pattern Region1D off sz = Region off (Shape1D sz)

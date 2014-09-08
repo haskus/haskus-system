@@ -1,11 +1,18 @@
 -- | OpenCL command queue module
-module ViperVM.Arch.OpenCL.CommandQueue (
-   CommandQueue, CommandQueueProperty(..),
-   CommandType, CommandExecutionStatus,
-   ProfilingInfo, CommandQueueInfo,
-   createCommandQueue, createCommandQueue',
-   flush, finish, enqueueBarrier
-) where
+module ViperVM.Arch.OpenCL.CommandQueue
+   ( CommandQueue
+   , CommandQueueProperty(..)
+   , CommandType
+   , CommandExecutionStatus
+   , ProfilingInfo
+   , CommandQueueInfo
+   , createCommandQueue
+   , createCommandQueue'
+   , flush
+   , finish
+   , enqueueBarrier
+   )
+where
 
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
@@ -28,16 +35,16 @@ instance Entity CommandQueue where
    release = releaseCommandQueue
 
 -- | Command queue properties
-data CommandQueueProperty =
-     CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+data CommandQueueProperty
+   = CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
    | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
    deriving (Show, Bounded, Eq, Ord, Enum)
 
 instance CLSet CommandQueueProperty
 
 -- | Command type
-data CommandType =
-     CL_COMMAND_NDRANGE_KERNEL      
+data CommandType
+   = CL_COMMAND_NDRANGE_KERNEL      
    | CL_COMMAND_TASK                
    | CL_COMMAND_NATIVE_KERNEL       
    | CL_COMMAND_READ_BUFFER         
@@ -69,8 +76,8 @@ instance CLConstant CommandType where
    fromCL x = toEnum (fromIntegral x - 0x11F0)
 
 -- | Command execution status
-data CommandExecutionStatus =
-     CL_EXEC_ERROR   -- -1
+data CommandExecutionStatus
+   = CL_EXEC_ERROR   -- -1
    | CL_COMPLETE     -- 0
    | CL_RUNNING      -- 1
    | CL_SUBMITTED    -- 2
@@ -82,8 +89,8 @@ instance CLConstant CommandExecutionStatus where
    fromCL x = toEnum (fromIntegral x + 1)
 
 -- | Command profiling information
-data ProfilingInfo =
-     CL_PROFILING_COMMAND_QUEUED
+data ProfilingInfo
+   = CL_PROFILING_COMMAND_QUEUED
    | CL_PROFILING_COMMAND_SUBMIT
    | CL_PROFILING_COMMAND_START
    | CL_PROFILING_COMMAND_END
@@ -94,8 +101,8 @@ instance CLConstant ProfilingInfo where
    fromCL x = toEnum (fromIntegral x - 0x1280)
 
 -- | Command queue information
-data CommandQueueInfo = 
-     CL_QUEUE_CONTEXT 
+data CommandQueueInfo
+   = CL_QUEUE_CONTEXT 
    | CL_QUEUE_DEVICE
    | CL_QUEUE_REFERENCE_COUNT
    | CL_QUEUE_PROPERTIES

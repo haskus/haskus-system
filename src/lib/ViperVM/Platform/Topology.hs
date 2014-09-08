@@ -13,7 +13,8 @@ module ViperVM.Platform.Topology
    , isHostMemory
    , memoryNeighbors
    , memoryNetNeighbors
-) where
+   )
+where
 
 import Control.Concurrent.STM
 import Control.Applicative ((<$>))
@@ -80,7 +81,11 @@ pattern MemoryBufferData a b c = BufferData (MemoryBuffer a b) c
 data MemoryBuffer = MemoryBuffer Memory Buffer deriving (Eq)
   
 -- | Network link direction
-data Duplex = Simplex | HalfDuplex | FullDuplex deriving (Show)
+data Duplex
+   = Simplex 
+   | HalfDuplex 
+   | FullDuplex 
+   deriving (Show)
 
 -- | Network type
 data NetworkType = NetworkPPP Duplex deriving (Show)

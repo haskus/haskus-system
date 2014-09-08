@@ -1,7 +1,8 @@
 -- | OpenCL module
-module ViperVM.Arch.OpenCL.All (
-   module X
-) where
+module ViperVM.Arch.OpenCL.All
+   ( module X
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types as X
 import ViperVM.Arch.OpenCL.Error as X

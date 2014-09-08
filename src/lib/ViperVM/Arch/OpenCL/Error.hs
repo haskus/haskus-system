@@ -1,11 +1,15 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 
 -- | OpenCL error management module
-module ViperVM.Arch.OpenCL.Error (
-   CLError(..),
-   toException, wrapPError,
-   wrapCheckSuccess, whenSuccess, wrapGetInfo
-) where
+module ViperVM.Arch.OpenCL.Error
+   ( CLError(..)
+   , toException
+   , wrapPError
+   , wrapCheckSuccess
+   , whenSuccess
+   , wrapGetInfo
+   )
+where
 
 import Control.Exception (Exception, throw)
 import Data.Typeable (Typeable)
@@ -19,8 +23,8 @@ import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.OpenCL.Types
 
 -- | An OpenCL error code
-data CLError =
-     CL_SUCCESS                                  -- 0
+data CLError
+   = CL_SUCCESS                                  -- 0
    | CL_DEVICE_NOT_FOUND                         -- -1
    | CL_DEVICE_NOT_AVAILABLE                     -- -2
    | CL_COMPILER_NOT_AVAILABLE                   -- -3

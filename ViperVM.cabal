@@ -17,7 +17,6 @@ library
     ViperVM.Arch.Common.Endianness
     ViperVM.Arch.Common.Errors
 
-    ViperVM.Arch.GenericHost.All
     ViperVM.Arch.GenericHost.Memory
 
     ViperVM.Arch.X86_64.Linux.Syscall

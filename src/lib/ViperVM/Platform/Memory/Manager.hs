@@ -3,15 +3,16 @@
 -- For now,  we use a very simple policy where a buffer is allocated for each
 -- allocated data and released when all of its data are freed
 module ViperVM.Platform.Memory.Manager
-  ( ManagerConfig(..)
-  , Manager(..)
-  , DataRef
-  , initManager
-  , defaultManagerConfig
-  , allocateData
-  , allocateDataWithEndianness
-  , releaseData
-) where
+   ( ManagerConfig(..)
+   , Manager(..)
+   , DataRef
+   , initManager
+   , defaultManagerConfig
+   , allocateData
+   , allocateDataWithEndianness
+   , releaseData
+   )
+where
 
 import ViperVM.Platform.Memory
 import ViperVM.Platform.Memory.Data

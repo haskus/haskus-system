@@ -1,7 +1,10 @@
-module ViperVM.Arch.Common.Errors where
+module ViperVM.Arch.Common.Errors
+   ( AllocError(..)
+   )
+where
 
 -- | Buffer allocation error
-data AllocError = 
-     AllocOutOfMemory
+data AllocError
+   = AllocOutOfMemory
    | AllocUnknownError
    deriving (Show,Eq)

@@ -4,7 +4,8 @@ module ViperVM.Platform.Transfer
    ( Transfer(..)
    , networkTransferData
    , networkTransferRegion
-) where
+   )
+where
 
 import Control.Monad (void)
 import Control.Concurrent (forkIO)

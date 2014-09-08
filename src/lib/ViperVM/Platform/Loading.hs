@@ -1,7 +1,8 @@
 -- | Platform loading module
-module ViperVM.Platform.Loading (
-   loadPlatform
-) where
+module ViperVM.Platform.Loading
+   ( loadPlatform
+   ) 
+where
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (filterM,when)
@@ -12,7 +13,7 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 
 import qualified ViperVM.Arch.OpenCL.All as CL
-import qualified ViperVM.Arch.GenericHost.All as Generic
+import qualified ViperVM.Arch.GenericHost.Memory as Generic
 import qualified ViperVM.Arch.Linux.Numa as Linux
 
 import ViperVM.Platform.Drivers

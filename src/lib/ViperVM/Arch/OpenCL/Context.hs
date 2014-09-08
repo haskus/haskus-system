@@ -1,8 +1,9 @@
 -- | OpenCL context module
-module ViperVM.Arch.OpenCL.Context (
-   Context,
-   createContext
-) where
+module ViperVM.Arch.OpenCL.Context
+   ( Context
+   , createContext
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -27,8 +28,8 @@ instance Entity Context where
    release = releaseContext
 
 -- | Context information
-data CLContextInfo = 
-     CL_CONTEXT_REFERENCE_COUNT
+data CLContextInfo
+   = CL_CONTEXT_REFERENCE_COUNT
    | CL_CONTEXT_DEVICES
    | CL_CONTEXT_PROPERTIES
    | CL_CONTEXT_NUM_DEVICES

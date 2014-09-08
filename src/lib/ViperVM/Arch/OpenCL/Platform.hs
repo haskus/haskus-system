@@ -1,16 +1,27 @@
 -- | OpenCL platform module
-module ViperVM.Arch.OpenCL.Platform (
-   Platform, PlatformInfo(..), PlatformInfos(..),
-   getNumPlatforms, getPlatforms, 
-   getPlatformNumDevices, getPlatformDevices,
-   getPlatformInfo, getPlatformInfo',
-   getPlatformName, getPlatformName',
-   getPlatformVendor, getPlatformVendor',
-   getPlatformProfile, getPlatformProfile',
-   getPlatformVersion, getPlatformVersion',
-   getPlatformExtensions, getPlatformExtensions',
-   getPlatformInfos',
-) where
+module ViperVM.Arch.OpenCL.Platform
+   ( Platform
+   , PlatformInfo(..)
+   , PlatformInfos(..)
+   , getNumPlatforms
+   , getPlatforms
+   , getPlatformNumDevices
+   , getPlatformDevices
+   , getPlatformInfo
+   , getPlatformInfo'
+   , getPlatformName
+   , getPlatformName'
+   , getPlatformVendor
+   , getPlatformVendor'
+   , getPlatformProfile
+   , getPlatformProfile'
+   , getPlatformVersion
+   , getPlatformVersion'
+   , getPlatformExtensions
+   , getPlatformExtensions'
+   , getPlatformInfos'
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -38,8 +49,8 @@ instance Entity Platform where
    release _ = return ()
 
 -- | Platform information
-data PlatformInfo =
-     CL_PLATFORM_PROFILE
+data PlatformInfo
+   = CL_PLATFORM_PROFILE
    | CL_PLATFORM_VERSION
    | CL_PLATFORM_NAME
    | CL_PLATFORM_VENDOR
@@ -159,13 +170,13 @@ getPlatformExtensions' :: Platform -> IO [String]
 getPlatformExtensions' pf = words <$> getPlatformInfo' CL_PLATFORM_EXTENSIONS pf
 
 -- | Aggregation of platform informations
-data PlatformInfos = PlatformInfos {
-   platformName :: String,
-   platformVendor :: String,
-   platformProfile :: String,
-   platformVersion :: String,
-   platformExtensions :: [String]
-} deriving (Show)
+data PlatformInfos = PlatformInfos
+   { platformName       :: String
+   , platformVendor     :: String
+   , platformProfile    :: String
+   , platformVersion    :: String
+   , platformExtensions :: [String]
+   } deriving (Show)
 
 -- | Get platform informations (throw an exception if an error occurs)
 getPlatformInfos' :: Platform -> IO PlatformInfos

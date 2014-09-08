@@ -1,7 +1,8 @@
 -- | OpenCL kernel module
-module ViperVM.Arch.OpenCL.Kernel (
-   Kernel(..)
-) where
+module ViperVM.Arch.OpenCL.Kernel
+   ( Kernel(..)
+   )
+where
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity

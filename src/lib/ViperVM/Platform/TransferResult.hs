@@ -1,4 +1,8 @@
-module ViperVM.Platform.TransferResult where
+module ViperVM.Platform.TransferResult
+   ( TransferResult(..)
+   , TransferError(..)
+   )
+where
 
 -- | Result of a transfer
 data TransferResult = 
