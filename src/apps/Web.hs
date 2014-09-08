@@ -89,7 +89,8 @@ appTemplate pf bdy = docTypeHtml $ do
              ! A.content "text/html;charset=utf-8"
       css
    H.body $ do
-      H.h1 "ViperVM Web Interface"
+      H.div "ViperVM Web Interface"
+         ! A.class_ "headtitle"
       bdy
 
 showWelcome :: Html
@@ -128,8 +129,15 @@ css :: Html
 css = do
    H.style $ "\
       \  body {\n\
-      \     font-family:monospace;\n\
-      \     background-color: white;\n\
+      \     font-family:cursive;\n\
+      \     background-color: #F0F0F0;\n\
+      \     font-color: #B9B9B9;\n\
+      \  }\n\
+      \  .headtitle {\n\
+      \     border: solid 1px rgb(0,0,0);\n\
+      \     text-align:center;\n\
+      \     font-size:3em;\n\
+      \     color: #303030;\n\
       \  }\n\
       \  h1 {\n\
       \     text-align:center;\n\    
