@@ -75,21 +75,21 @@ server conf pf = do
                   procs <- Set.toList . Set.unions <$> mapM (readTVar . memoryProcs) mems
                   nets <- Set.toList . Set.unions <$> mapM (readTVar . memoryNetworks) mems
                   return (mems,procs,nets)
-               ok . toResponse . appTemplate pf $ showPlatform pf mems procs nets
+               ok . toResponse . appTemplate pf "Platform" $ showPlatform pf mems procs nets
 
            -- Show welcome screen
-         , nullDir >> (ok . toResponse . appTemplate pf $ showWelcome)
+         , nullDir >> (ok . toResponse . appTemplate pf "Welcome" $ showWelcome)
       ]
 
-appTemplate :: V.Host -> Html -> Html
-appTemplate pf bdy = docTypeHtml $ do
+appTemplate :: V.Host -> String -> Html -> Html
+appTemplate pf title bdy = docTypeHtml $ do
    H.head $ do
       H.title "ViperVM Web Interface"
       H.meta ! A.httpEquiv "Content-Type"
              ! A.content "text/html;charset=utf-8"
       css
    H.body $ do
-      H.div "ViperVM Web Interface"
+      H.div (toHtml $ "ViperVM / " ++ title)
          ! A.class_ "headtitle"
       bdy
 
@@ -134,10 +134,16 @@ css = do
       \     font-color: #B9B9B9;\n\
       \  }\n\
       \  .headtitle {\n\
-      \     border: solid 1px rgb(0,0,0);\n\
-      \     text-align:center;\n\
-      \     font-size:3em;\n\
-      \     color: #303030;\n\
+      \     border: solid 1px #404040;\n\
+      \     border-radius: 5px;\n\
+      \     box-shadow: 10px 10px 5px #888888;\n\
+      \     text-align:left;\n\
+      \     padding-left: 5px;\n\
+      \     font-size:2em;\n\
+      \     color: #D0D0D0;\n\
+      \     background-color: #404040;\n\
+      \     font-family:serif;\n\
+      \     font-style:italic;\n\
       \  }\n\
       \  h1 {\n\
       \     text-align:center;\n\    
