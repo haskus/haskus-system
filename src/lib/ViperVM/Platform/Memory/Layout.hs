@@ -25,12 +25,19 @@ import ViperVM.Platform.Memory.Region
 --
 -- We say it is deterministic because we do not support unions or other
 -- data-dependent types, contrary to C structures for examples.
+--
+-- Valid vs invalid padding: it is sometimes useful to know if padding bytes
+-- can be overwritten or not. For instance while doing a data copy, if there
+-- are a few padding bytes, they can be copied and overwrite target's INVALID
+-- padding bytes but not target's VALID padding bytes.
 data Layout = 
      Scalar ScalarField          -- ^ Scalar field
    | Array Layout ArraySize      -- ^ Array with determined size
    | Struct (V.Vector Layout)    -- ^ Regular structure; the order of the list of fields matters
-   | Padding Word64              -- ^ Padding bytes (i.e. interleaved bytes that have no meaning 
-                                 --   for the considered data)
+   | ValidPadding Word64         -- ^ Padding bytes (i.e. interleaved bytes that have no meaning 
+                                 --   for the considered data, but that may have for another)
+   | InvalidPadding Word64       -- ^ Padding bytes (i.e. interleaved bytes that have no meaning 
+                                 --   for ANY data)
    deriving (Show)
 
 -- | Path to select a field in a field map
@@ -74,7 +81,8 @@ instance SizeOf ScalarField where
 
 instance SizeOf Layout where
    sizeOf (Scalar x) = sizeOf x
-   sizeOf (Padding n) = n
+   sizeOf (ValidPadding n) = n
+   sizeOf (InvalidPadding n) = n
    sizeOf (Array t n) = n * sizeOf t
    sizeOf (Struct ts) = sum $ sizeOf <$> ts
 
@@ -109,7 +117,8 @@ fieldOffset (FieldPath path) = go 0 path
 packedSizeOf :: Layout -> Word64
 packedSizeOf dt = case dt of
    s@(Scalar {}) -> sizeOf s
-   Padding _ -> 0
+   InvalidPadding _ -> 0
+   ValidPadding _ -> 0
    Array dt' n -> n * packedSizeOf dt'
    Struct dts -> sum (fmap packedSizeOf dts)
 
@@ -122,7 +131,8 @@ layoutCoveringShape :: Layout -> Shape
 layoutCoveringShape d = case d of
    Scalar x  -> Shape1D (sizeOf x)
 
-   Padding _ -> Shape1D 0
+   InvalidPadding _ -> Shape1D 0
+   ValidPadding _ -> Shape1D 0
 
    Array s@(Struct {}) n -> reg where
       (useful,padding) = layoutStripStructPadding s
@@ -141,6 +151,7 @@ layoutStripStructPadding :: Layout -> (Word64,Word64)
 layoutStripStructPadding (Struct ts) = (useful,padding)
    where
       (useful,padding) = V.foldr f (0,0) ts
-      f (Padding p') (0,p) = (0,p'+p)
+      f (InvalidPadding p') (0,p) = (0,p'+p)
+      f (ValidPadding p') (0,p) = (0,p'+p)
       f t (u,p) = (u+sizeOf t, p)
 layoutStripStructPadding t = (sizeOf t, 0)
