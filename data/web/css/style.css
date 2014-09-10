@@ -25,3 +25,7 @@ h1 {
 #buffer_alloc_size {
    width: 6em;
 }
+
+.buffer_release_form {
+   display:inline;
+}

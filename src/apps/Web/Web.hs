@@ -16,7 +16,6 @@ import Data.Version
 
 import Control.Concurrent.STM
 import qualified Data.Set as Set
-import Data.Word
 
 import Control.Applicative ((<$>))
 import Control.Monad (msum, forM_, guard, mzero)
@@ -127,10 +126,10 @@ showMemory pf uid = do
    guard (isJust mem)
    let Just m = mem
 
-   (nbuffers,bufferSizes) <- lift $ atomically $ do
+   (nbuffers,buffers) <- lift $ atomically $ do
       n <- memoryBufferCount m
-      szs <- fmap bufferSize <$> (TSet.toList $ memoryBuffers m)
-      return (n,szs)
+      bufs <- TSet.toList $ memoryBuffers m
+      return (n,bufs)
 
    uri <- rqUri <$> askRq
    
@@ -152,9 +151,22 @@ showMemory pf uid = do
 
       H.h2 (toHtml (printf "Buffers (%d)" nbuffers :: String))
 
-      H.ul $ forM_ bufferSizes $ \sz -> do
-         let sizeMB = (fromIntegral sz / (1024.0 * 1024.0) :: Float)
-         H.li . toHtml $ (printf "Buffer - %f MB" sizeMB :: String)
+      H.ul $ forM_ buffers $ \buf -> do
+         let
+            sz = bufferSize buf
+            sizeMB = (fromIntegral sz / (1024.0 * 1024.0) :: Float)
+         H.li $ do
+            toHtml $ (printf "Buffer - %f MB" sizeMB :: String)
+            H.preEscapedToMarkup ("&nbsp;" :: String)
+            H.form 
+               ! A.action (H.toValue uri)
+               ! A.class_ "buffer_release_form"
+               ! A.enctype "multipart/form-data" 
+               ! A.method "POST" $ do 
+                  H.input ! A.type_ "hidden" ! A.name "action" ! A.value "release"
+                  H.input ! A.type_ "hidden" ! A.name "buid" ! A.value (H.toValue (bufferUID buf))
+                  H.input ! A.type_ "submit" ! A.value "Release"
+
 
 
 -- | Perform a memory action
@@ -170,11 +182,11 @@ memoryAction pf uid = do
    let Just m = mem
 
    decodeBody (defaultBodyPolicy "/tmp/" 4096 4096 4096)
-   bsize <- lookRead "buffer_alloc_size"
    action <- lookRead "action"
 
    case (action :: String) of
       "alloc" -> do
+         bsize <- lookRead "buffer_alloc_size"
          res <- lift $ memoryBufferAllocate bsize m
          case res of
             Left err -> 
@@ -185,5 +197,18 @@ memoryAction pf uid = do
             Right _ ->
                ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
                   H.p (toHtml $ "Buffer (" ++ show bsize ++ " KB) successfully allocated")
+
+      "release" -> do
+         buid <- lookRead "buid"
+         buf <- lift $ atomically $ do
+            bufs <- TSet.toList (memoryBuffers m)
+            return $ listToMaybe [b | b <- bufs, bufferUID b == buid]
+         
+         guard (isJust buf)
+         let Just b = buf
+
+         lift $ memoryBufferRelease (MemoryBuffer m b)
+         ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+            H.p "Buffer released"
 
       _ -> mzero
