@@ -1,0 +1,22 @@
+body {
+   font-family:cursive;
+   background-color: #F0F0F0;
+   font-color: #B9B9B9;
+}
+
+.headtitle {
+   border: solid 1px #404040;
+   border-radius: 5px;
+   box-shadow: 10px 10px 5px #888888;
+   text-align:left;
+   padding-left: 5px;
+   font-size:2em;
+   color: #D0D0D0;
+   background-color: #404040;
+   font-family:serif;
+   font-style:italic;
+}
+
+h1 {
+   text-align:center;    
+}
