@@ -131,6 +131,9 @@ showMemory pf uid = do
    
    ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
       H.h2 (toHtml $ "Memory" ++ uid)
+
+      H.ul $ H.li $ toHtml (memoryInfo m)
+
       H.h2 (toHtml (printf "Buffers (%d)" nbuffers :: String))
 
       H.ul $ forM_ bufferSizes $ \sz -> do
