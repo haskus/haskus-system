@@ -147,18 +147,8 @@ executable ViperWeb
     containers ==0.5.*,
     happstack-server == 7.3.*,
     blaze-html == 0.7.*,
-    blaze-svg == 0.3.*,
     blaze-markup == 0.6.*,
-    diagrams == 1.2.*,
-    diagrams-lib == 1.2.*,
-    diagrams-core == 1.2.*,
-    diagrams-svg == 1.1.*,
-    graphviz == 2999.17.*,
-    text == 1.1.*,
-    bytestring == 0.10.*,
     transformers == 0.4.*,
-    HTTP == 4000.2.*,
-    fgl == 5.5.*,
     network == 2.5.*
 
 executable TestSyscalls
