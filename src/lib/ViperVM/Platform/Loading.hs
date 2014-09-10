@@ -47,7 +47,14 @@ loadOpenCLPlatform config host = do
    platforms <- CL.getPlatforms lib
 
    forM_ platforms $ \clpf -> do
-      devices <- filterM (filterOpenCLDevices config) =<< CL.getPlatformDevices clpf
+      -- Filter OpenCL devices
+      let cpuFilter = if enableOpenCLCPUs config
+            then const (return True)
+            else fmap (notElem CL.CL_DEVICE_TYPE_CPU) . CL.getDeviceType'
+
+      devices <- filterM (filterOpenCLDevices config) =<< filterM cpuFilter =<< CL.getPlatformDevices clpf
+
+      -- Load devices
       forM_ devices $ \dev -> do
          context <- CL.createContext clpf [dev]
 

@@ -10,14 +10,11 @@ import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
 import ViperVM.Platform.Topology
-import ViperVM.Arch.OpenCL.All as CL
 
 main :: IO ()
 main = do
    putStrLn "Loading Platform..."
-   pf <- loadPlatform defaultConfig {
-      filterOpenCLDevices = fmap (notElem CL.CL_DEVICE_TYPE_CPU) . getDeviceType'
-   }
+   pf <- loadPlatform defaultConfig
 
    let 
       showInfo x = putStrLn $ "  - " ++ x

@@ -13,6 +13,7 @@ data PlatformConfig = PlatformConfig
    -- OpenCL Configuration
      enableOpenCL :: Bool                           -- ^ Enable OpenCL backend
    , libraryOpenCL :: String                        -- ^ OpenCL library to use
+   , enableOpenCLCPUs :: Bool                       -- ^ Enable OpenCL CPUs
    , filterOpenCLDevices :: CL.Device -> IO Bool    -- ^ Function to filter out OpenCL devices
 
    -- Host configuration
@@ -26,6 +27,7 @@ defaultConfig = PlatformConfig
    -- OpenCL Configuration
      enableOpenCL = True
    , libraryOpenCL = "libOpenCL.so"
+   , enableOpenCLCPUs = False
    , filterOpenCLDevices = const (return True)
 
    -- Host configuration

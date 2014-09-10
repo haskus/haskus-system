@@ -8,7 +8,6 @@ import ViperVM.Platform.Config
 import ViperVM.Platform.Memory
 import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Topology as V
-import ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.STM.TSet as TSet
 
 import Paths_ViperVM
@@ -36,7 +35,7 @@ main = withSocketsDo $ do
 
    -- Loading platform
    pf <- loadPlatform defaultConfig {
-      filterOpenCLDevices = fmap (notElem CL.CL_DEVICE_TYPE_CPU) . getDeviceType'
+      enableOpenCLCPUs = False
    }
 
    getArgs >>= \case
