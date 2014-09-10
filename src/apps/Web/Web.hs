@@ -51,14 +51,7 @@ server conf pf = do
          serveFile (asContentType "text/css") cssPath
 
         -- Show platform information
-      , dir "platform" $ do
-         (mems,procs,nets) <- lift . atomically $ do
-            let extractMem xs x = return (x:xs)
-            mems <- reverse <$> foldMemories pf [] extractMem
-            procs <- Set.toList . Set.unions <$> mapM (readTVar . memoryProcs) mems
-            nets <- Set.toList . Set.unions <$> mapM (readTVar . memoryNetworks) mems
-            return (mems,procs,nets)
-         ok . toResponse . appTemplate pf "Platform" $ showPlatform pf mems procs nets
+      , dir "platform" $ showPlatform pf
 
         -- Show welcome screen
       , nullDir >> (ok . toResponse . appTemplate pf "Welcome" $ showWelcome)
@@ -83,16 +76,25 @@ showWelcome = do
    H.p "Welcome to ViperVM Web Interface"
    H.a "Platform information" ! A.href "/platform"
 
-showPlatform :: V.Host -> [Memory] -> [Proc] -> [V.Network] -> Html
-showPlatform _ mems procs nets= do
-   H.h2 "Memories"
-   H.ul $ forM_ mems $ \mem -> do
-      H.li . toHtml $ (unsafePerformIO $ memoryInfo mem)
+showPlatform :: V.Host -> ServerPartT IO Response
+showPlatform pf = do
 
-   H.h2 "Processors"
-   H.ul $ forM_ procs $ \p -> do
-      H.li . toHtml $ (unsafePerformIO $ procInfo p)
+   (mems,procs,nets) <- lift . atomically $ do
+      let extractMem xs x = return (x:xs)
+      mems <- reverse <$> foldMemories pf [] extractMem
+      procs <- Set.toList . Set.unions <$> mapM (readTVar . memoryProcs) mems
+      nets <- Set.toList . Set.unions <$> mapM (readTVar . memoryNetworks) mems
+      return (mems,procs,nets)
 
-   H.h2 "Networks"
-   H.ul $ forM_ nets $ \p -> do
-      H.li . toHtml $ (unsafePerformIO $ networkInfo p)
+   ok . toResponse . appTemplate pf "Platform" $ do
+      H.h2 "Memories"
+      H.ul $ forM_ mems $ \mem -> do
+         H.li . toHtml $ (unsafePerformIO $ memoryInfo mem)
+
+      H.h2 "Processors"
+      H.ul $ forM_ procs $ \p -> do
+         H.li . toHtml $ (unsafePerformIO $ procInfo p)
+
+      H.h2 "Networks"
+      H.ul $ forM_ nets $ \p -> do
+         H.li . toHtml $ (unsafePerformIO $ networkInfo p)
