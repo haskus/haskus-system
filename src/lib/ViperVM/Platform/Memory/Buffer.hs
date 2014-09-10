@@ -1,4 +1,4 @@
--- | Buffer management
+-- | Buffer
 module ViperVM.Platform.Memory.Buffer
    ( Buffer(..)
    )

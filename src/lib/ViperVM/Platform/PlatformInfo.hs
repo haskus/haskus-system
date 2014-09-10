@@ -20,24 +20,21 @@ import qualified Data.Set as Set
 import Text.Printf
 
 -- | Return memory info string
-memoryInfo :: Memory -> IO String
-memoryInfo mem = do
-   buffers <- atomically $ readTVar (memoryBuffers mem)
-   let
-      str = printf fmt typ sizeGB endian nbuffers
-      fmt = "Memory - %s - %.2f GB - %s - %d buffer(s)"
+memoryInfo :: Memory -> String
+memoryInfo mem = str
+   where
+      str = printf fmt typ sizeGB endian
+      fmt = "Memory - %s - %.2f GB - %s"
       endian = if memoryEndianness mem == LittleEndian then "Little endian" else "Big endian"
       size = fromIntegral (memorySize mem) :: Double
       sizeGB = size / fromIntegral (1024*1024*1024 :: Word64)
-      nbuffers = Set.size buffers
       typ = case memoryPeer mem of
          OpenCLMemory {} -> "OpenCL"
          HostMemory {}   -> "Host"
-   return str
 
 -- | Return proc info string
-procInfo :: Proc -> IO String
-procInfo proc = return (printf fmt typ)
+procInfo :: Proc -> String
+procInfo proc = printf fmt typ
    where
       fmt = "Proc - %s"
       typ = case procPeer proc of
@@ -45,8 +42,8 @@ procInfo proc = return (printf fmt typ)
          HostProc {}   -> "CPU"
 
 -- | Return network info string
-networkInfo :: Network -> IO String
-networkInfo net = return (printf fmt desc)
+networkInfo :: Network -> String
+networkInfo net = printf fmt desc
    where
       fmt = "Network - %s"
       desc :: String

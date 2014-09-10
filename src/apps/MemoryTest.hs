@@ -23,8 +23,6 @@ main = do
    let extractMem xs x = return (x:xs)
    mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
 
-   traverse_ (putStrLn <=< memoryInfo) mems
-
    putStrLn "\nCreate basic memory manager for each memory"
    mgrs <- forM mems (initManager defaultManagerConfig)
    let memManagers = Map.fromList (mems `zip` mgrs)
@@ -40,12 +38,8 @@ main = do
       
       f <$> allocateDataWithEndianness dt mgr
 
-   traverse_ (putStrLn <=< memoryInfo) mems
-
    putStrLn "\nReleasing data in each memory"
    traverse_ (uncurry releaseData) (mgrs `zip` datas)
-
-   traverse_ (putStrLn <=< memoryInfo) mems
 
 
    putStrLn "============================================"

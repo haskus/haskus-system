@@ -13,8 +13,6 @@ import Data.Version
 
 import Control.Concurrent.STM
 import qualified Data.Set as Set
--- FIXME: remove unsafe parts
-import System.IO.Unsafe (unsafePerformIO)
 
 import Control.Applicative ((<$>))
 import Control.Monad (msum, forM_)
@@ -90,12 +88,12 @@ showPlatform pf = do
    ok . toResponse . appTemplate pf "Platform" $ do
       H.h2 "Memories"
       H.ul $ forM_ mems $ \mem -> do
-         H.li . toHtml $ (unsafePerformIO $ memoryInfo mem)
+         H.li . toHtml $ memoryInfo mem
 
       H.h2 "Processors"
       H.ul $ forM_ procs $ \p -> do
-         H.li . toHtml $ (unsafePerformIO $ procInfo p)
+         H.li . toHtml $ procInfo p
 
       H.h2 "Networks"
       H.ul $ forM_ nets $ \p -> do
-         H.li . toHtml $ (unsafePerformIO $ networkInfo p)
+         H.li . toHtml $ networkInfo p

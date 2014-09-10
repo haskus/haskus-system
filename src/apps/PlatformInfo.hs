@@ -1,5 +1,4 @@
 import Text.Printf
-import Control.Monad ((<=<))
 import Data.Foldable (traverse_)
 --import Data.List (intersperse)
 import Control.Concurrent.STM
@@ -40,17 +39,17 @@ main = do
    mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
 
    putStrLn . memoriesStr . length $ mems
-   traverse_ (showInfo <=< memoryInfo) mems
+   traverse_ (showInfo . memoryInfo) mems
 
    procs <- Set.unions <$> atomically (mapM (readTVar . memoryProcs) mems)
 
    putStrLn . procsStr . Set.size $ procs
-   traverse_ (showInfo <=< procInfo) procs
+   traverse_ (showInfo . procInfo) procs
 
    nets <- Set.unions <$> atomically (mapM (readTVar . memoryNetworks) mems)
 
    putStrLn . netsStr . Set.size $ nets
-   traverse_ (showInfo <=< networkInfo) nets
+   traverse_ (showInfo . networkInfo) nets
 
    --putStrLn "Links"
    --traverse_ (\m -> linkTo m =<< atomically (memoryNeighbors m)) (platformMemories pf)
