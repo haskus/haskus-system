@@ -42,9 +42,9 @@ data Manager = Manager
 -- | Memory manager configuration
 data ManagerConfig = ManagerConfig
 
+-- | Default manager configuration
 defaultManagerConfig :: ManagerConfig
 defaultManagerConfig = ManagerConfig
-
 
 -- | Initialize a memory manager
 initManager :: ManagerConfig -> Memory -> IO Manager
@@ -74,7 +74,7 @@ storeBufferData m d = atomically $ do
 allocateData :: Layout -> Manager -> IO (Either AllocError DataRef)
 allocateData fm m = do
    let mem = managerMemory m
-   buf <- allocateBuffer (sizeOf fm) mem
+   buf <- memoryBufferAllocate (sizeOf fm) mem
    case buf of
       Left err -> return (Left err)
       Right b  -> Right <$> storeBufferData m (BufferData b (Data 0 fm))
@@ -94,4 +94,4 @@ releaseData m ref = do
       TMap.delete ref ds
       return d
 
-   traverse_ (releaseBuffer . bufferDataBuffer) d'
+   traverse_ (memoryBufferRelease . bufferDataBuffer) d'
