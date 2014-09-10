@@ -16,9 +16,10 @@ import Data.Version
 
 import Control.Concurrent.STM
 import qualified Data.Set as Set
+import Data.Word
 
 import Control.Applicative ((<$>))
-import Control.Monad (msum, forM_, guard)
+import Control.Monad (msum, forM_, guard, mzero)
 import Control.Monad.Trans.Class (lift)
 import System.Environment
 import Text.Printf
@@ -56,8 +57,11 @@ server conf pf = do
          cssPath <- lift $ getDataFileName "data/web/css/style.css"
          serveFile (asContentType "text/css") cssPath
 
-        -- Show platform information
+        -- Show memory information
       , dir "localhost" $ dir "memory" $ path $ \uid -> showMemory pf uid
+
+        -- Perform memory action
+      , dir "localhost" $ dir "memory" $ path $ \uid -> memoryAction pf uid
 
         -- Show platform information
       , dir "localhost" $ showHost pf
@@ -114,27 +118,72 @@ showHost pf = do
 -- | Show a memory
 showMemory :: V.Host -> String -> ServerPartT IO Response
 showMemory pf uid = do
-   let extractMem xs x = return (x:xs)
-   mems <- lift $ atomically (foldMemories pf [] extractMem)
-
-   let mem = listToMaybe [x | x <- mems, memoryUID x == uid]
+   method GET
 
    -- check that the memory with the given identifier exists
+   let extractMem xs x = return (x:xs)
+   mems <- lift $ atomically (foldMemories pf [] extractMem)
+   let mem = listToMaybe [x | x <- mems, memoryUID x == uid]
    guard (isJust mem)
-
    let Just m = mem
+
    (nbuffers,bufferSizes) <- lift $ atomically $ do
       n <- memoryBufferCount m
       szs <- fmap bufferSize <$> (TSet.toList $ memoryBuffers m)
       return (n,szs)
+
+   uri <- rqUri <$> askRq
    
    ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
       H.h2 (toHtml $ "Memory - " ++ uid)
 
-      H.ul $ H.li $ toHtml (memoryInfo m)
+      H.ul $ do
+         H.li $ toHtml (memoryInfo m)
+         H.li $ H.form 
+            ! A.action (H.toValue uri)
+            ! A.enctype "multipart/form-data" 
+            ! A.method "POST" $ do 
+               H.input ! A.type_ "hidden" ! A.name "action" ! A.value "alloc"
+               H.label ! A.for "buffer_alloc_size" $ "Buffer size (in KB) " 
+               H.input ! A.type_ "number" ! A.id "buffer_alloc_size" 
+                  ! A.name "buffer_alloc_size" ! A.value "1024"
+                  ! A.pattern "\\d*"
+               H.input ! A.type_ "submit" ! A.value "Allocate buffer"
 
       H.h2 (toHtml (printf "Buffers (%d)" nbuffers :: String))
 
       H.ul $ forM_ bufferSizes $ \sz -> do
          let sizeMB = (fromIntegral sz / (1024.0 * 1024.0) :: Float)
          H.li . toHtml $ (printf "Buffer - %f MB" sizeMB :: String)
+
+
+-- | Perform a memory action
+memoryAction :: V.Host -> String -> ServerPartT IO Response
+memoryAction pf uid = do
+   method POST
+
+   -- check that the memory with the given identifier exists
+   let extractMem xs x = return (x:xs)
+   mems <- lift $ atomically (foldMemories pf [] extractMem)
+   let mem = listToMaybe [x | x <- mems, memoryUID x == uid]
+   guard (isJust mem)
+   let Just m = mem
+
+   decodeBody (defaultBodyPolicy "/tmp/" 4096 4096 4096)
+   bsize <- lookRead "buffer_alloc_size"
+   action <- lookRead "action"
+
+   case (action :: String) of
+      "alloc" -> do
+         res <- lift $ memoryBufferAllocate bsize m
+         case res of
+            Left err -> 
+               ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+                  H.p (toHtml $ "Cannot allocate buffer of size" ++ show bsize ++ " KB")
+                  H.p (toHtml $ "Error: " ++ show err)
+
+            Right _ ->
+               ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+                  H.p (toHtml $ "Buffer (" ++ show bsize ++ " KB) successfully allocated")
+
+      _ -> mzero
