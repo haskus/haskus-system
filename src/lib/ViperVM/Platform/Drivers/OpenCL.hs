@@ -9,6 +9,7 @@ module ViperVM.Platform.Drivers.OpenCL
    , transferHostToDevice
    , transferDeviceToHost
    , clMemUID
+   , clBufferUID
    )
 where
 
@@ -72,6 +73,10 @@ instance Ord Proc where
 -- | Unique memory ID
 clMemUID :: Memory -> String
 clMemUID mem = printf "OpenCL Memory %s" (show . CL.unwrap . clMemDevice $ mem)
+
+-- | Unique buffer ID
+clBufferUID :: Buffer -> String
+clBufferUID buf = printf "OpenCL Buffer %s %s" (show . CL.unwrap . clBufferDevice $ buf) (show . CL.unwrap . clBufferPeer $ buf)
 
 
 -- | Allocate a buffer in OpenCL memory

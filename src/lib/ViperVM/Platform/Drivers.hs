@@ -6,6 +6,7 @@ module ViperVM.Platform.Drivers
    , allocateBuffer
    , releaseBuffer
    , transferRegion
+   , bufferUID
    )
 where
 
@@ -84,3 +85,9 @@ transferRegion net (srcBuffer,srcRegion) (dstBuffer,dstRegion) =
 
 
       _ -> return (TransferError ErrTransferInvalid)
+
+-- | Buffer unique identifier
+bufferUID :: BufferPeer -> String
+bufferUID buf = case buf of
+   OpenCLBuffer b -> OpenCL.clBufferUID b
+   HostBuffer b -> Host.hostBufferUID b

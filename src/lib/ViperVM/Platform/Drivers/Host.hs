@@ -6,6 +6,7 @@ module ViperVM.Platform.Drivers.Host
    , allocateBuffer
    , releaseBuffer
    , hostMemUID
+   , hostBufferUID
    )
 where
 
@@ -13,6 +14,7 @@ import Foreign.Ptr (Ptr)
 import Data.Word (Word,Word64)
 import Data.Ord (comparing)
 import Control.Applicative ((<$>))
+import Text.Printf
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
@@ -42,6 +44,10 @@ data Proc = Proc
 -- | Unique memory ID
 hostMemUID :: Memory -> String
 hostMemUID _ = "Host Memory"
+
+-- | Unique buffer ID
+hostBufferUID :: Buffer -> String
+hostBufferUID buf = printf "Host Buffer %s" (show . hostBufferPtr $ buf)
 
 -- | Allocate a buffer in host memory
 allocateBuffer :: Word64 -> Memory -> IO (Either AllocError Buffer)
