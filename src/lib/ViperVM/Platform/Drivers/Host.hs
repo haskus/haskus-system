@@ -5,6 +5,7 @@ module ViperVM.Platform.Drivers.Host
    , Proc(..)
    , allocateBuffer
    , releaseBuffer
+   , hostMemUID
    )
 where
 
@@ -37,6 +38,10 @@ data Proc = Proc
    { hostProcNode :: Word
    , hostProcIndex :: Word
    } deriving (Eq,Ord)
+
+-- | Unique memory ID
+hostMemUID :: Memory -> String
+hostMemUID _ = "Host Memory"
 
 -- | Allocate a buffer in host memory
 allocateBuffer :: Word64 -> Memory -> IO (Either AllocError Buffer)

@@ -8,12 +8,14 @@ module ViperVM.Platform.Drivers.OpenCL
    , releaseBuffer
    , transferHostToDevice
    , transferDeviceToHost
+   , clMemUID
    )
 where
 
 import Data.Word (Word64)
 import Data.Ord (comparing)
 import Foreign.Ptr (Ptr,plusPtr)
+import Text.Printf
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
@@ -66,6 +68,11 @@ instance Eq Proc where
 
 instance Ord Proc where
    compare = comparing clProcDevice
+
+-- | Unique memory ID
+clMemUID :: Memory -> String
+clMemUID mem = printf "OpenCL Memory %s" (show . CL.unwrap . clMemDevice $ mem)
+
 
 -- | Allocate a buffer in OpenCL memory
 allocateBuffer :: Word64 -> Memory -> IO (Either AllocError Buffer)

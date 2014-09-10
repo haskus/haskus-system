@@ -5,6 +5,7 @@ module ViperVM.Platform.Memory
    , memoryBufferCount
    , memoryBufferAllocate
    , memoryBufferRelease
+   , memoryUID
    )
 where
 
@@ -35,6 +36,13 @@ memorySize :: Memory -> Word64
 memorySize mem = case memoryPeer mem of
    Peer.OpenCLMemory m -> OpenCL.clMemSize m
    Peer.HostMemory m -> Host.hostMemSize m
+
+-- | Memory unique identifier (not stable between different program executions)
+memoryUID :: Memory -> String
+memoryUID mem = case memoryPeer mem of
+   Peer.OpenCLMemory m -> OpenCL.clMemUID m
+   Peer.HostMemory m -> Host.hostMemUID m
+
 
 -- | Get the number of buffers allocated in the given memory
 memoryBufferCount :: Memory -> STM Int
