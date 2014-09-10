@@ -9,6 +9,7 @@ import ViperVM.Platform.Topology as V
 import ViperVM.Arch.OpenCL.All as CL
 
 import Paths_ViperVM
+import Data.Version
 
 import Control.Concurrent.STM
 import qualified Data.Set as Set
@@ -67,7 +68,7 @@ appTemplate _ title bdy = docTypeHtml $ do
              ! A.type_ "text/css" 
              ! A.href "/css/style.css"
    H.body $ do
-      H.div (toHtml $ "ViperVM / " ++ title)
+      H.div (toHtml $ "ViperVM " ++ showVersion version ++ " / " ++ title)
          ! A.class_ "headtitle"
       bdy
 
