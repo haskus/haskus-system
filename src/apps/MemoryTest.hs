@@ -1,12 +1,10 @@
 import Control.Monad (forM)
-import Control.Monad ((<=<))
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM
 import Data.Foldable (traverse_,forM_)
 import qualified Data.Map as Map
 
 import ViperVM.Platform.Host
-import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Memory.Layout
