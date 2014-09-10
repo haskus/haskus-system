@@ -8,15 +8,12 @@ module ViperVM.Platform.PlatformInfo
    )
 where
 
-import Control.Concurrent.STM (atomically, readTVar)
-
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Drivers
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
 import Data.Word (Word64)
-import qualified Data.Set as Set
 import Text.Printf
 
 -- | Return memory info string
