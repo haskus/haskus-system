@@ -57,10 +57,10 @@ server conf pf = do
          serveFile (asContentType "text/css") cssPath
 
         -- Show platform information
-      , dir "platform" $ dir "memory" $ path $ \uid -> showMemory pf uid
+      , dir "localhost" $ dir "memory" $ path $ \uid -> showMemory pf uid
 
         -- Show platform information
-      , dir "platform" $ showHost pf
+      , dir "localhost" $ showHost pf
 
         -- Show welcome screen
       , nullDir >> (ok . toResponse . appTemplate pf "Welcome" $ showWelcome)
@@ -84,8 +84,7 @@ appTemplate _ title bdy = docTypeHtml $ do
 -- | Welcoming screen
 showWelcome :: Html
 showWelcome = do
-   H.p "Welcome to ViperVM Web Interface"
-   H.a "Platform information" ! A.href "/platform"
+   H.a "Local host information" ! A.href "/localhost"
 
 -- | Show the host
 showHost :: V.Host -> ServerPartT IO Response
@@ -98,11 +97,11 @@ showHost pf = do
       nets <- Set.toList . Set.unions <$> mapM (readTVar . memoryNetworks) mems
       return (mems,procs,nets)
 
-   ok . toResponse . appTemplate pf "Platform" $ do
+   ok . toResponse . appTemplate pf "Local host" $ do
       H.h2 "Memories"
       H.ul $ forM_ mems $ \mem -> H.li $ do
          H.a (toHtml $ memoryInfo mem)
-            ! A.href (H.toValue $ "/platform/memory/" ++ memoryUID mem)
+            ! A.href (H.toValue $ "/localhost/memory/" ++ memoryUID mem)
 
       H.h2 "Processors"
       H.ul $ forM_ procs $ \p -> do
@@ -130,7 +129,7 @@ showMemory pf uid = do
       return (n,szs)
    
    ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
-      H.h2 (toHtml $ "Memory" ++ uid)
+      H.h2 (toHtml $ "Memory - " ++ uid)
 
       H.ul $ H.li $ toHtml (memoryInfo m)
 
