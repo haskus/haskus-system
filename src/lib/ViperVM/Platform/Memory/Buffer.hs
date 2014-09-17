@@ -1,4 +1,13 @@
--- | Buffer
+-- | A /buffer/ is the most basic region of contiguous memory cells. It can be
+-- virtual or it can correspond to a physical memory space.
+-- 
+-- We can have buffers of the following kinds:
+--   * Flat (non-virtual) memory: a contiguous region of the memory
+--   * Virtual memory: a contiguous region in the virtual memory address space
+--   (e.g. a malloc-ed memory region in POSIX systems)
+--   * Hard disk: a set of contiguous segments
+--   * File system: a file
+
 module ViperVM.Platform.Memory.Buffer
    ( Buffer(..)
    , bufferUID
@@ -10,14 +19,15 @@ import Data.Ord (comparing)
 
 import qualified ViperVM.Platform.Drivers as Peer
 
--- | Allocated memory area
+-- | A buffer
 data Buffer = Buffer
-   { bufferSize :: Word64
-   , bufferPeer :: Peer.BufferPeer
+   { bufferSize :: Word64           -- ^ Size of the buffer
+   , bufferPeer :: Peer.BufferPeer  -- ^ Buffer peer
    } deriving (Eq)
 
 instance Ord Buffer where
    compare = comparing bufferPeer
 
+-- | Return a unique identifier for the buffer
 bufferUID :: Buffer -> String
 bufferUID = Peer.bufferUID . bufferPeer

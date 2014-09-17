@@ -1,13 +1,17 @@
 {-# LANGUAGE PatternSynonyms #-}
 
--- | A region is a set of memory cells in a buffer with an offset.
+-- | A region represents a set of memory cells in a buffer.
 --
--- Currently we support two region shapes:
+-- Each region has an offset (the offset of the first cell in the buffer) and a
+-- /shape/ that describes which cells are part of the region. The aim is to
+-- have a lightweight representation of the set of memory cells that can be
+-- used to perform transfers between memories.
 --
--- * Shape1D: region without hole (contiguous set of cells)
+-- Currently two region shapes are supported:
+--    * Shape1D: region without hole (contiguous set of cells)
+--    * Shape2D: rectangular set of cells (e.g. sub-array), that is with a
+--    constant number of padding bytes after each row
 --
--- * Shape2D: rectangular set of cells (e.g. sub-array), that is with a
--- constant number of padding bytes after each row
 module ViperVM.Platform.Memory.Region
    (
    -- * Shapes
@@ -47,8 +51,8 @@ data Shape
 
 -- | Positioned region (i.e. region shape with an offset)
 data Region = Region
-   { regionOffset :: Word64
-   , regionShape  :: Shape
+   { regionOffset :: Word64          -- ^ Offset of the first cell
+   , regionShape  :: Shape           -- ^ Shape of the region
    }
 
 -- | Pattern synonym for region with 1D shape
@@ -86,27 +90,34 @@ overlapsAny reg = filter (overlaps reg)
 
 -- | Indicate if two regions overlap (may return false positive)
 overlaps :: Region -> Region -> Bool
-overlaps (Region1D off1 sz1) (Region1D off2 sz2) = not (left1 >= right2 || left2 >= right1)
-   where
-      left1 = off1
-      left2 = off2
-      right1 = off1+sz1
-      right2 = off2+sz2
+overlaps r1 r2 =
+   case (r1,r2) of
+      -- Two 1D regions
+      (Region1D off1 sz1, Region1D off2 sz2) -> not (left1 >= right2 || left2 >= right1)
+            where 
+               left1 = off1
+               left2 = off2
+               right1 = off1+sz1
+               right2 = off2+sz2
 
-overlaps (Region1D off sz) r2 = overlaps (Region2D off 1 sz 0) r2
-overlaps r2 (Region1D off sz) = overlaps r2 (Region2D off 1 sz 0)
+      -- Try with covering 1D regions, if they do not overlap, r1 and r2 neither do
+      _ | not (overlaps (regionCover1D r1) (regionCover1D r2)) -> False
 
-overlaps (Region2D off1 rc1 sz1 pad1) (Region2D off2 rc2 sz2 pad2) 
-      | sz1+pad1 == sz2+pad2 = not ( left1 >= right2 || left2 >= right1 || top1 >= bottom2 || top2 >= bottom1 )
-   where
-      width = sz1+pad1
-      (top1,left1) = divMod off1 width
-      (top2,left2) = divMod off2 width
-      right1 = left1 + sz1
-      right2 = left2 + sz2
-      bottom1 = top1 + rc1
-      bottom2 = top2 + rc2
+      -- Transform the 1D region into a 2D one
+      (Region1D off sz,_)     -> overlaps (Region2D off 1 sz 0) r2
+      (_, Region1D off sz)    -> overlaps r1 (Region2D off 1 sz 0)
 
--- FIXME: by default we say that 2 regions Shape2D overlap if they don't have the same padding.
--- Maybe we could improve this if we find a fast algorithm
-overlaps _ _ = True
+      (Region2D off1 rc1 sz1 pad1, Region2D off2 rc2 sz2 pad2) | sz1+pad1 == sz2+pad2 -> 
+         not ( left1 >= right2 || left2 >= right1 || top1 >= bottom2 || top2 >= bottom1 )
+            where
+               width = sz1+pad1
+               (top1,left1) = divMod off1 width
+               (top2,left2) = divMod off2 width
+               right1 = left1 + sz1
+               right2 = left2 + sz2
+               bottom1 = top1 + rc1
+               bottom2 = top2 + rc2
+
+      -- FIXME: by default we say that 2 regions Shape2D overlap if they don't have the same padding.
+      -- Maybe we could improve this if we find a fast algorithm
+      _ -> True
