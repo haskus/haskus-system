@@ -132,6 +132,8 @@ overlaps r1 r2 =
             d1 = o1 `mod` w
             d2 = o2 `mod` w
             -- Couple of 1D regions per row in each cycle
+            -- FIXME: as we shift (cf d1,d2), we need to wrap rows at the beginning
+            -- potentially splitting w1/w2 of the first/last row
             rs = [(Region1D (d1+d1') w1, Region1D (d2+d2') w2)
                      | t1 <- [0..m1-1]
                      , t2 <- [0..m2-1]
