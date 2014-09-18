@@ -107,17 +107,33 @@ overlaps r1 r2 =
       (Region1D off sz,_)     -> overlaps (Region2D off 1 sz 0) r2
       (_, Region1D off sz)    -> overlaps r1 (Region2D off 1 sz 0)
 
-      (Region2D off1 rc1 sz1 pad1, Region2D off2 rc2 sz2 pad2) | sz1+pad1 == sz2+pad2 -> 
+      -- Simple 2D case: rectangular regions
+      (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) | w1+p1 == w2+p2 -> 
          not ( left1 >= right2 || left2 >= right1 || top1 >= bottom2 || top2 >= bottom1 )
             where
-               width = sz1+pad1
-               (top1,left1) = divMod off1 width
-               (top2,left2) = divMod off2 width
-               right1 = left1 + sz1
-               right2 = left2 + sz2
-               bottom1 = top1 + rc1
-               bottom2 = top2 + rc2
+               width = w1+p1
+               (top1,left1) = divMod o1 width
+               (top2,left2) = divMod o2 width
+               right1 = left1 + w1
+               right2 = left2 + w2
+               bottom1 = top1 + h1
+               bottom2 = top2 + h2
 
-      -- FIXME: by default we say that 2 regions Shape2D overlap if they don't have the same padding.
-      -- Maybe we could improve this if we find a fast algorithm
-      _ -> True
+      -- General case
+      -- FIXME: add test on h1,h2,o1,o2 if any (uncurry overlaps) rs is true
+      -- In some cases, it is a flase positive
+      (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) -> any (uncurry overlaps) rs
+         where
+            -- w == m1 * (w1+p1) == m2 * (w2+p2)
+            w = lcm (w1+p1) (w2+p2)
+            m1 = w `div` (w1+p1)
+            m2 = w `div` (w2+p2)
+            -- offsets in Z/Zw
+            d1 = o1 `mod` w
+            d2 = o2 `mod` w
+            -- Couple of 1D regions per row in each cycle
+            rs = [(Region1D (d1+d1') w1, Region1D (d2+d2') w2)
+                     | t1 <- [0..m1-1]
+                     , t2 <- [0..m2-1]
+                     , let d1' = t1 * (w1+p1)
+                     , let d2' = t2 * (w2+p2)]
