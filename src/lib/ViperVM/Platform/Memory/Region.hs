@@ -121,7 +121,7 @@ overlaps r1 r2 =
 
       -- General case
       -- FIXME: add test on h1,h2,o1,o2 if any (uncurry overlaps) rs is true
-      -- In some cases, it is a flase positive
+      -- In some cases, it is a false positive
       (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) -> any (uncurry overlaps) rs
          where
             -- w == m1 * (w1+p1) == m2 * (w2+p2)
