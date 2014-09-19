@@ -35,6 +35,7 @@ where
 
 import Data.Word
 import Control.Applicative ((<$>), (<*>))
+import Data.Maybe (isNothing)
 
 -- | Size in bytes
 type Size = Word64      
@@ -109,7 +110,7 @@ overlaps r1 r2 =
       (Region1D off1 sz1, Region1D off2 sz2) -> not (off1 >= off2+sz2 || off2 >= off1+sz1)
 
       -- Try with covering 1D regions, if they do not overlap, r1 and r2 neither do
-      _ | not (overlaps (regionCover1D r1) (regionCover1D r2)) -> False
+      _ | isNothing (regionCoverIntersection r1 r2) -> False
 
       -- Transform the 1D region into a 2D one
       (Region1D off sz,_)     -> overlaps (Region2D off 1 sz 0) r2
@@ -121,6 +122,15 @@ overlaps r1 r2 =
       (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) -> any (uncurry overlaps) rs
          where
             period = lcm (w1+p1) (w2+p2)
+
+            -- We create a mask for the period (mask = invalid cells in period)
+            Just (Region1D interOff interSize) = regionCoverIntersection r1 r2
+            (maskStart,maskWidth) = 
+               if interSize >= period 
+                  -- The intersection covers a whole period
+                  then (0,0)
+                  -- Otherwise
+                  else  ((interOff + interSize) `mod` period, period-interSize)
 
             -- all combinations of lines from r1 and r2 in a period
             rs = (,) <$> wrap o1 w1 p1 period <*> wrap o2 w2 p2 period
