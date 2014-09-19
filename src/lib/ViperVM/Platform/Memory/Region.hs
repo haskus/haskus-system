@@ -108,19 +108,7 @@ overlaps r1 r2 =
       (Region1D off sz,_)     -> overlaps (Region2D off 1 sz 0) r2
       (_, Region1D off sz)    -> overlaps r1 (Region2D off 1 sz 0)
 
-      -- Simple 2D case: rectangular regions
-      (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) | w1+p1 == w2+p2 -> 
-         not ( left1 >= right2 || left2 >= right1 || top1 >= bottom2 || top2 >= bottom1 )
-            where
-               width = w1+p1
-               (top1,left1) = divMod o1 width
-               (top2,left2) = divMod o2 width
-               right1 = left1 + w1
-               right2 = left2 + w2
-               bottom1 = top1 + h1
-               bottom2 = top2 + h2
-
-      -- General case
+      -- 2D regions case
       -- FIXME: add test on h1,h2,o1,o2 if any (uncurry overlaps) rs is true
       -- In some cases, it is a false positive
       (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) -> any (uncurry overlaps) rs
@@ -143,7 +131,7 @@ overlaps r1 r2 =
                   wr = d `mod` (w+p)
                   wl = w + p - wr
                   -- First line
-                  fl = if wr > p then [Region1D 0 (w+p-wr)] else []
+                  fl = if wr > p then [Region1D 0 (wr-p)] else []
                   -- Last line
                   ll = if wl > 0 then [Region1D (s-wl) (min wl w)] else []
                   -- 1D regions for each row
