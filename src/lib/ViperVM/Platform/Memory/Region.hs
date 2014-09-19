@@ -29,6 +29,7 @@ module ViperVM.Platform.Memory.Region
    , overlapsAny
    , overlaps
    , regionCover1D
+   , regionCoverIntersection
    )
 where
 
@@ -84,6 +85,17 @@ shapeCover (Shape2D nrows sz pad) = Shape1D (nrows * (sz+pad))
 -- | Return covering 1D region
 regionCover1D :: Region -> Region
 regionCover1D (Region off shape) = Region off (shapeCover shape)
+
+-- | Return intersection of both covering regions, if any
+regionCoverIntersection :: Region -> Region -> Maybe Region
+regionCoverIntersection r1 r2 = 
+   if not (overlaps c1 c2)
+      then Nothing
+      else Just (Region1D (max o1 o2) (min (o1+w1) (o2+w2)))
+   where
+      c1@(Region1D o1 w1) = regionCover1D r1
+      c2@(Region1D o2 w2) = regionCover1D r2
+
 
 -- | Retrieve regions that overlap with the given region
 overlapsAny :: Region -> [Region] -> [Region]
