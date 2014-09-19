@@ -94,12 +94,7 @@ overlaps :: Region -> Region -> Bool
 overlaps r1 r2 =
    case (r1,r2) of
       -- Two 1D regions
-      (Region1D off1 sz1, Region1D off2 sz2) -> not (left1 >= right2 || left2 >= right1)
-            where 
-               left1 = off1
-               left2 = off2
-               right1 = off1+sz1
-               right2 = off2+sz2
+      (Region1D off1 sz1, Region1D off2 sz2) -> not (off1 >= off2+sz2 || off2 >= off1+sz1)
 
       -- Try with covering 1D regions, if they do not overlap, r1 and r2 neither do
       _ | not (overlaps (regionCover1D r1) (regionCover1D r2)) -> False
