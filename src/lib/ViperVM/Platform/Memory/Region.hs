@@ -33,6 +33,7 @@ module ViperVM.Platform.Memory.Region
 where
 
 import Data.Word
+import Control.Applicative ((<$>), (<*>))
 
 -- | Size in bytes
 type Size = Word64      
@@ -131,11 +132,20 @@ overlaps r1 r2 =
             -- offsets in Z/Zw
             d1 = o1 `mod` w
             d2 = o2 `mod` w
+            -- Line truncation:
+            --   * wrN last bytes of the first line
+            --   * wlN first bytes of the last line
+            wr1 = d1 `mod` (w1+p1)
+            wr2 = d2 `mod` (w2+p2)
+            wl1 = w1 + p1 - wr1
+            wl2 = w2 + p2 - wr2
+            -- First lines
+            fl1 = if wr1 > p1 then [Region1D 0 (w1+p1-wr1)] else []
+            fl2 = if wr2 > p2 then [Region1D 0 (w2+p2-wr2)] else []
+            -- Last lines
+            ll1 = if wl1 > 0 then [Region1D (w-wl1) (min wl1 w1)] else []
+            ll2 = if wl2 > 0 then [Region1D (w-wl2) (min wl2 w2)] else []
             -- Couple of 1D regions per row in each cycle
-            -- FIXME: as we shift (cf d1,d2), we need to wrap rows at the beginning
-            -- potentially splitting w1/w2 of the first/last row
-            rs = [(Region1D (d1+d1') w1, Region1D (d2+d2') w2)
-                     | t1 <- [0..m1-1]
-                     , t2 <- [0..m2-1]
-                     , let d1' = t1 * (w1+p1)
-                     , let d2' = t2 * (w2+p2)]
+            rs1 = fl1 ++ ll1 ++ [Region1D (wr1+d1') w1 | t1 <- [0..m1-1], let d1' = t1 * (w1+p1)]
+            rs2 = fl2 ++ ll2 ++ [Region1D (wr2+d2') w2 | t2 <- [0..m2-1], let d2' = t2 * (w2+p2)]
+            rs = (,) <$> rs1 <*> rs2
