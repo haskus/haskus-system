@@ -125,27 +125,26 @@ overlaps r1 r2 =
       -- In some cases, it is a false positive
       (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) -> any (uncurry overlaps) rs
          where
-            -- w == m1 * (w1+p1) == m2 * (w2+p2)
-            w = lcm (w1+p1) (w2+p2)
-            m1 = w `div` (w1+p1)
-            m2 = w `div` (w2+p2)
-            -- offsets in Z/Zw
-            d1 = o1 `mod` w
-            d2 = o2 `mod` w
-            -- Line truncation:
-            --   * wrN last bytes of the first line
-            --   * wlN first bytes of the last line
-            wr1 = d1 `mod` (w1+p1)
-            wr2 = d2 `mod` (w2+p2)
-            wl1 = w1 + p1 - wr1
-            wl2 = w2 + p2 - wr2
-            -- First lines
-            fl1 = if wr1 > p1 then [Region1D 0 (w1+p1-wr1)] else []
-            fl2 = if wr2 > p2 then [Region1D 0 (w2+p2-wr2)] else []
-            -- Last lines
-            ll1 = if wl1 > 0 then [Region1D (w-wl1) (min wl1 w1)] else []
-            ll2 = if wl2 > 0 then [Region1D (w-wl2) (min wl2 w2)] else []
-            -- Couple of 1D regions per row in each cycle
-            rs1 = fl1 ++ ll1 ++ [Region1D (wr1+d1') w1 | t1 <- [0..m1-1], let d1' = t1 * (w1+p1)]
-            rs2 = fl2 ++ ll2 ++ [Region1D (wr2+d2') w2 | t2 <- [0..m2-1], let d2' = t2 * (w2+p2)]
-            rs = (,) <$> rs1 <*> rs2
+            period = lcm (w1+p1) (w2+p2)
+
+            -- all combinations of lines from r1 and r2 in a period
+            rs = (,) <$> wrap o1 w1 p1 period <*> wrap o2 w2 p2 period
+
+            -- Fill a space of size s with 1D regions from each line of the given region.
+            -- s must be a multiple of w+p
+            wrap o w p s = regs
+               where
+                  m = s `div` (w+p)
+                  -- offset in Z/Zs
+                  d = o `mod` s
+                  -- Line truncation:
+                  --   * wr last bytes of the first line
+                  --   * wl first bytes of the last line
+                  wr = d `mod` (w+p)
+                  wl = w + p - wr
+                  -- First line
+                  fl = if wr > p then [Region1D 0 (w+p-wr)] else []
+                  -- Last line
+                  ll = if wl > 0 then [Region1D (s-wl) (min wl w)] else []
+                  -- 1D regions for each row
+                  regs = fl ++ ll ++ [Region1D (wr+d') w | t <- [0..m-1], let d' = t * (w+p)]
