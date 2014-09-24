@@ -91,10 +91,8 @@ cw &=& \textrm{lcm} (w1+p1,w2+p2) \\
 \]
 
 Then, for each region we need to compute \textbf{ro} The relative offset
-(alignment) of the region in $\mathbb{Z}/\mathbb{Z}cw$ and in
-$\mathbb{Z}/\mathbb{Z}(w+p)$.
+(alignment) of the region in $\mathbb{Z}/\mathbb{Z}(w+p)$.
 
-\[ roc = o\ \textrm{mod}\ cw \]
 \[ ro  = o\ \textrm{mod}\ w + p \]
 
 Finally we can compute the lines of the cycles. $fs$ is the first truncated line
@@ -116,7 +114,7 @@ os &=& \{(ro+k\times (w+p), w), k \in [0,m-1]\}
 \[
 \begin{array}{rcl}
 fs &=& \{(0, ro-p)\}\\
-ls &=& \{(cw-ro, w+p-ro)\}\\
+ls &=& \{(cw-(w+p)+ro, w+p-ro)\}\\
 os &=& \{(ro+k\times (w+p), w), k \in [0,m-2]\}
 \end{array}
 \]
@@ -127,8 +125,9 @@ For a region, the lines in the cycle are:
 If we test each couple of lines from two regions, we need at most $(m1+1) \times
 (m2+1)$ tests. The problem is now that these tests may return false positives
 because we don't check if the overlapping part of the cycle exists in practice.
-Indeed the cycle can be larger than the real regions as we don't take the
-numbers of lines nor the offsets to build it. 
+Indeed the cycle can be larger than the real regions because we don't use the
+numbers of lines nor the offsets to restrict it when we build it. We do it in
+the next section.
 
 \subsubsection{Filtering}
 
@@ -167,7 +166,8 @@ There are two cases:
    the range ]c2,c1[ of the cycle is \textbf{invalid}
 \end{enumerate}
 
-These predicates have to be used to filter out lines during cycle test.
+These predicates have to be used to filter out lines during the overlapping
+tests for each couple of lines in the cycle.
 
 
 \section{Conclusion}
