@@ -1,0 +1,181 @@
+\documentclass[twocolumn]{article}
+
+\usepackage[xcolor]{rvdtx}
+
+%\usepackage[fontsize=8pt,baseline=9.6pt,lines=50]{grid}
+%\usepackage[fontsize=9pt,baseline=10.8pt]{grid}
+\usepackage[fontsize=10pt,baseline=12pt,lines=53]{grid}
+%\usepackage[fontsize=11pt,baseline=13.2pt]{grid}
+%\usepackage[fontsize=12pt,baseline=14.4pt]{grid}
+%\usepackage[fontsize=20pt,baseline=24pt,lines=20]{grid}
+
+\newcommand{\ip}[2]{(#1, #2)}
+\columnsep=20pt
+\begin{document}
+
+\title{ViperVM -- 2D Region Intersection}
+\author{Sylvain HENRY}
+\contact{hsyl20@gmail.com}
+\version{1.0}
+\date{2014/09/24}
+%\keywords{\LaTeX, grid typesetting}
+
+
+\maketitle
+
+\section{Introduction}
+
+In ViperVM, we need to know if two given memory regions overlap in order to
+perform data transfers and kernel executions concurrently. The difficulty is to
+detect overlapping for 2D regions (e.g. matrices with padding), hence it is the
+topic of this paper.
+
+\subsection{Definitions}
+
+In ViperVM, 1D and 2D regions are defined as:
+\begin{itemize}
+   \item Region1D(o,w)
+   \item Region2D(o,w,h,p)
+\end{itemize}
+where
+\begin{description}
+   \item[o] stands for "offset"
+   \item[w] stands for "width", i.e. the number of cells (number of cells in a line in the 2D case)
+   \item[h] stands for "height", i.e. the number of lines
+   \item[p] stands for "padding", the number of cells between two lines in the 2D
+   case
+\end{description}
+
+\section{Intersections}
+
+We want to know if two regions have at least one cell in common. The easy case
+is when both regions are 1D regions. Otherwise, if one of the region is 1D, it
+can be converted into a 2D region (with h = 1 and p = 0) and the algorithm to
+detect the intersection of two 2D regions is used.
+
+\subsection{1D regions}
+
+Two 1D regions r1(o1,w1) and r2(o2,w2) do not overlap iff 
+\[ o1 > o2+w2 \] or \[o2 > o1 + w1 \]
+
+\subsection{2D regions}
+
+Suppose we want to know if two 2D regions r1(o1,w1,h1,p1) and r2(o2,w2,h2,p2)
+overlap.
+
+First we can check if their covering 1D regions overlap or not. If they do not,
+then the 2D regions neither do. The covering 1D region for $r_{2d}(o,w,h,p)$ is:
+
+\[ \textrm{cover}(r_{2d}) = r_{1d}(o, h \times (w + p) - p) \]
+
+Otherwise, we need to find if there is an overlap of two lines from the two
+regions. The naive way to do it would imply $h1 \times h2$ 1D region overlap
+tests (one for each couples of lines from r1 and r2) so we need to do something
+more clever.
+
+\subsubsection{Cycle}
+
+The first thing to do is to find a \emph{cycle}, that is a range of lines in r1
+and r2 that are repeated. If we find there is no overlapping on the cycle, there
+won't be any in the whole regions. To find the cycle, we need to count the number
+of lines of r1 and the number of lines of r2 before the relative offsets between
+the two line beginnings is the same. Hence we use the least common multiple
+(lcm) to find the width of a cycle:
+
+\[
+\begin{array}{rcl}
+cw &=& \textrm{lcm} (w1+p1,w2+p2) \\
+   &=& m1 \times (w1 + p1) \\ 
+   &=& m2 \times (w2 + p2) \\
+\end{array}
+\]
+
+Then, for each region we need to compute \textbf{ro} The relative offset
+(alignment) of the region in $\mathbb{Z}/\mathbb{Z}cw$ and in
+$\mathbb{Z}/\mathbb{Z}(w+p)$.
+
+\[ roc = o\ \textrm{mod}\ cw \]
+\[ ro  = o\ \textrm{mod}\ w + p \]
+
+Finally we can compute the lines of the cycles. $fs$ is the first truncated line
+(if any) and $ls$ is the last truncated line (if any). $os$ are the other
+full lines.
+
+\noindent If $ro \leq p$ then
+
+\[
+\begin{array}{rcl}
+fs &=& \varnothing\\
+ls &=& \varnothing\\
+os &=& \{(ro+k\times (w+p), w), k \in [0,m-1]\}
+\end{array}
+\]
+
+\noindent else ($ro > p$)
+
+\[
+\begin{array}{rcl}
+fs &=& \{(0, ro-p)\}\\
+ls &=& \{(cw-ro, w+p-ro)\}\\
+os &=& \{(ro+k\times (w+p), w), k \in [0,m-2]\}
+\end{array}
+\]
+
+For a region, the lines in the cycle are:
+\[ lines = fs \cup ls \cup os \]
+
+If we test each couple of lines from two regions, we need at most $(m1+1) \times
+(m2+1)$ tests. The problem is now that these tests may return false positives
+because we don't check if the overlapping part of the cycle exists in practice.
+Indeed the cycle can be larger than the real regions as we don't take the
+numbers of lines nor the offsets to build it. 
+
+\subsubsection{Filtering}
+
+To remove false positives, we need to filter out parts of the cycle that don't
+exist in the real case.
+
+We need to consider the intersection of the covering 1D regions.
+
+\[
+\begin{array}{rcl}
+c1               &=& \textrm{max}\ o1\ o2 \\
+c2               &=& (-1) + \textrm{min}\ (o1+w1)\ (o2+w2)\\
+\| r1 \cap r2 \| &=& c2 - c1 + 1\\
+r1 \cap r2       &=& r_{1d}(c1, \| r1 \cap r2 \|)
+\end{array}
+\]
+
+First, if the width of the intersection of the covering 1D regions ($\| r1 \cap
+r2 \|$) is larger or equal to the cycle width, then the whole cycle has to be
+taken into account.
+
+Otherwise, we compute the offsets of the covering region beginning (c1) and end
+(c2) in $\mathbb{Z}/\mathbb{Z}cw$ (respectively rc1 and rc2).
+\[
+\begin{array}{rcl}
+rc1 &=& c1 \textrm{ mod } cw \\
+rc2 &=& c2 \textrm{ mod } cw
+\end{array}
+\]
+
+There are two cases:
+\begin{enumerate}
+   \item $c1 < c2$ it means that the covering region is included into the cycle:
+   only the range [c1,c2] of the cycle is \textbf{valid}
+   \item $c1 > c2$ it means that the covering region overlaps the cycle border:
+   the range ]c2,c1[ of the cycle is \textbf{invalid}
+\end{enumerate}
+
+These predicates have to be used to filter out lines during cycle test.
+
+
+\section{Conclusion}
+
+We have provided an algorithm to detect 2D region intersection. While it may
+seem computationally heavy, in practice we expect most regions to be of similar
+shapes (power of two, etc.) hence leading to a reduced cost.
+
+\end{document}  
+
+% End of document.
