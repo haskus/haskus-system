@@ -81,7 +81,7 @@ shapeSimplify r                 = r
 -- | Return covering 1D shape
 shapeCover :: Shape -> Shape
 shapeCover r@(Shape1D {}) = r
-shapeCover (Shape2D nrows sz pad) = Shape1D (nrows * (sz+pad))
+shapeCover (Shape2D h w p) = Shape1D (h * (w+p) - p)
 
 -- | Return covering 1D region
 regionCover1D :: Region -> Region
