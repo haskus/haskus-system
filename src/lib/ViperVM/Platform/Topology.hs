@@ -78,7 +78,10 @@ data BufferData = BufferData
 pattern MemoryBufferData a b c = BufferData (MemoryBuffer a b) c
 
 -- | Memory buffer
-data MemoryBuffer = MemoryBuffer Memory Buffer deriving (Eq)
+data MemoryBuffer = MemoryBuffer 
+   { memoryBufferMemory :: Memory
+   , memoryBufferBuffer :: Buffer
+   } deriving (Eq)
   
 -- | Network link direction
 data Duplex
