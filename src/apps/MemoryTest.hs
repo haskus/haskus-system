@@ -11,12 +11,15 @@ import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Manager
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Transfer
+import ViperVM.Platform.TransferBench
 import ViperVM.STM.TMap as TMap
 
 main :: IO ()
 main = do
    putStrLn "Loading Platform..."
-   pf <- loadPlatform defaultConfig
+   pf <- loadPlatform defaultConfig {
+            enableOpenCLCPUs = True
+         }
 
    let extractMem xs x = return (x:xs)
    mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
@@ -31,7 +34,7 @@ main = do
    putStrLn "\nAllocating data in each memory"
    datas <- forM mgrs $ \mgr -> do
       let 
-         dt = \endian -> Array (Scalar (DoubleField endian)) 128
+         dt = \endian -> Array (Scalar (DoubleField endian)) (200*1024*1024)
          f = either (error . ("Allocation error: " ++) . show) id
       
       f <$> allocateDataWithEndianness dt mgr
@@ -59,10 +62,10 @@ main = do
          b2 <- atomically $ managerData mgr2 TMap.! f d2
 
          putStrLn "  - Transferring between memories..."
-         tr <- networkTransferData net b1 b2
+         (tr,duration) <- benchStr $ networkTransferData net b1 b2
          putStrLn "  - Waiting for transfer to end..."
          res <- atomically $ takeTMVar (transferResult tr)
-         putStrLn ("  - Transfer result: " ++ show res)
+         putStrLn ("  - Transfer result: " ++ show res ++ " duration: " ++ duration ++ " secs")
 
          putStrLn "  - Releasing data"
          releaseData mgr1 (f d1)

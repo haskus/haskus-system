@@ -14,7 +14,9 @@ import ViperVM.Platform.Topology
 main :: IO ()
 main = do
    putStrLn "Loading Platform..."
-   pf <- loadPlatform defaultConfig
+   pf <- loadPlatform defaultConfig {
+            enableOpenCLCPUs = True
+         }
 
    let 
       showInfo x = putStrLn $ "  - " ++ x

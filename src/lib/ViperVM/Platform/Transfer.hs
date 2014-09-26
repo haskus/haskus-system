@@ -4,6 +4,8 @@ module ViperVM.Platform.Transfer
    ( Transfer(..)
    , networkTransferData
    , networkTransferRegion
+   , networkTransferRegionAsync
+   , networkTransferRegionSync
    )
 where
 
@@ -33,18 +35,20 @@ networkTransferData net src dst = do
       r1 = dataCoveringRegion d1
       r2 = dataCoveringRegion d2
 
-   networkTransferRegion net (b1,r1) (b2,r2)
+   networkTransferRegionAsync net (b1,r1) (b2,r2)
 
--- | Asynchronously transfer a region
-networkTransferRegion :: Network -> (Buffer,Region) -> (Buffer,Region) -> IO Transfer
-networkTransferRegion net (b1,r1) (b2,r2) = do
+-- | Transfer a region
+networkTransferRegion :: Bool -> Network -> (Buffer,Region) -> (Buffer,Region) -> IO Transfer
+networkTransferRegion sync net (b1,r1) (b2,r2) = do
    let
       srcBufferPeer = bufferPeer b1
       dstBufferPeer = bufferPeer b2
 
    result <- newEmptyTMVarIO
    
-   void $ forkIO $ do
+   let f = if sync then void else void . forkIO
+
+   f $ do
       -- perform transfer (synchronous)
       res <- transferRegion 
          (networkPeer net)
@@ -54,3 +58,11 @@ networkTransferRegion net (b1,r1) (b2,r2) = do
       atomically $ putTMVar result res
 
    return (Transfer result)
+
+-- | Asynchronously transfer a region
+networkTransferRegionAsync :: Network -> (Buffer,Region) -> (Buffer,Region) -> IO Transfer
+networkTransferRegionAsync = networkTransferRegion False
+
+-- | Synchronously transfer a region
+networkTransferRegionSync :: Network -> (Buffer,Region) -> (Buffer,Region) -> IO Transfer
+networkTransferRegionSync = networkTransferRegion True

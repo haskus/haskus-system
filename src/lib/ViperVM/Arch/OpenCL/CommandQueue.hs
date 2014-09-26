@@ -34,14 +34,6 @@ instance Entity CommandQueue where
    retain = retainCommandQueue
    release = releaseCommandQueue
 
--- | Command queue properties
-data CommandQueueProperty
-   = CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
-   | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
-   deriving (Show, Bounded, Eq, Ord, Enum)
-
-instance CLSet CommandQueueProperty
-
 -- | Command type
 data CommandType
    = CL_COMMAND_NDRANGE_KERNEL      
@@ -142,4 +134,3 @@ finish cq = fromCL <$> rawClFinish (cllib cq) (unwrap cq)
 -- | Enqueue barrier
 enqueueBarrier :: CommandQueue -> IO CLError
 enqueueBarrier cq = fromCL <$> rawClEnqueueBarrier (cllib cq) (unwrap cq)
-

@@ -9,6 +9,7 @@ module ViperVM.Arch.OpenCL.Device
    , DeviceExecCapability(..)
    , DeviceMemCacheType(..)
    , DeviceLocalMemType(..)
+   , CommandQueueProperty(..)
    , isDeviceLittleEndian
    , isDeviceLittleEndian'
    , getDeviceGlobalMemSize
@@ -17,6 +18,8 @@ module ViperVM.Arch.OpenCL.Device
    , getDeviceType'
    , allDeviceTypes
    , getDeviceEndianness
+   , getDeviceQueueProperties
+   , getDeviceQueueProperties'
    )
 where
 
@@ -194,6 +197,14 @@ instance CLConstant DeviceLocalMemType where
    toCL x = fromIntegral (fromEnum x + 1)
    fromCL x = toEnum (fromIntegral x - 1)
 
+-- | Command queue properties
+data CommandQueueProperty
+   = CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+   | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
+   deriving (Show, Bounded, Eq, Ord, Enum)
+
+instance CLSet CommandQueueProperty
+
 
 -- | Return a boolean device info
 getDeviceInfoBool :: DeviceInfo -> Device -> IO (Either CLError Bool)
@@ -241,3 +252,11 @@ getDeviceEndianness dev = toEndianness <$> isDeviceLittleEndian' dev
    where
       toEndianness True = LittleEndian
       toEndianness False = BigEndian
+
+-- | Return OpenCL device queue properties
+getDeviceQueueProperties :: Device -> IO (Either CLError [CommandQueueProperty])
+getDeviceQueueProperties dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_QUEUE_PROPERTIES dev
+
+-- | Return OpenCL device queue properties (throw an exception on error)
+getDeviceQueueProperties' :: Device -> IO [CommandQueueProperty]
+getDeviceQueueProperties' = fmap toException . getDeviceQueueProperties

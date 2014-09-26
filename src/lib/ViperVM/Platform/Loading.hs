@@ -64,10 +64,12 @@ loadOpenCLPlatform config host = do
                endianness <- CL.getDeviceEndianness dev
                size <- CL.getDeviceGlobalMemSize' dev
 
-               -- FIXME: some implementations do not support profiling or out-of-order.
-               -- We should avoid crashing here
-               let props = [CL.CL_QUEUE_OUT_OF_ORDER, CL.CL_QUEUE_PROFILING]
-               linkQueue <- CL.createCommandQueue' ctx' dev props
+               -- some implementations do not support profiling or out-of-order
+               supportedProps <- CL.getDeviceQueueProperties' dev
+               let
+                   props      = [CL.CL_QUEUE_OUT_OF_ORDER , CL.CL_QUEUE_PROFILING]
+                   validProps = filter (`elem` supportedProps) props
+               linkQueue <- CL.createCommandQueue' ctx' dev validProps
 
                let memPeer = OpenCLMemory $ OpenCL.Memory {
                         OpenCL.clMemLibrary = lib,
