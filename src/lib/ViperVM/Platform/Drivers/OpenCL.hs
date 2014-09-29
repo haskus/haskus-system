@@ -8,6 +8,7 @@ module ViperVM.Platform.Drivers.OpenCL
    , releaseBuffer
    , transferHostToDevice
    , transferDeviceToHost
+   , clNetUID
    , clMemUID
    , clBufferUID
    )
@@ -69,6 +70,10 @@ instance Eq Proc where
 
 instance Ord Proc where
    compare = comparing clProcDevice
+
+-- | Unique network ID
+clNetUID :: Network -> String
+clNetUID net = printf "OpenCL Network %s" (show . CL.unwrap . clLinkDevice $ net)
 
 -- | Unique memory ID
 clMemUID :: Memory -> String

@@ -6,6 +6,7 @@ import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
 import ViperVM.Platform.Memory
+import ViperVM.Platform.Network
 import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Topology as V
 import qualified ViperVM.STM.TSet as TSet
@@ -61,6 +62,9 @@ server conf pf = do
         -- Perform memory action
       , dir "localhost" $ dir "memory" $ path $ \uid -> memoryAction pf uid
 
+        -- Show network information
+      , dir "localhost" $ dir "network" $ path $ \uid -> showNetwork pf uid
+
         -- Show platform information
       , dir "localhost" $ showHost pf
 
@@ -110,8 +114,9 @@ showHost pf = do
          H.li . toHtml $ procInfo p
 
       H.h2 "Networks"
-      H.ul $ forM_ nets $ \p -> do
-         H.li . toHtml $ networkInfo p
+      H.ul $ forM_ nets $ \net -> H.li $ do
+         H.a (toHtml $ networkInfo net)
+            ! A.href (H.toValue $ "/localhost/network/" ++ networkUID net)
 
 -- | Show a memory
 showMemory :: V.Host -> String -> ServerPartT IO Response
@@ -211,3 +216,21 @@ memoryAction pf uid = do
             H.p "Buffer released"
 
       _ -> mzero
+
+-- | Show a network
+showNetwork :: V.Host -> String -> ServerPartT IO Response
+showNetwork pf uid = do
+   method GET
+
+   -- check that the memory with the given identifier exists
+   -- let extractMem xs x = return (x:xs)
+   -- mems <- lift $ atomically (foldMemories pf [] extractMem)
+   -- let mem = listToMaybe [x | x <- mems, memoryUID x == uid]
+   -- guard (isJust mem)
+   -- let Just m = mem
+
+   ok . toResponse . appTemplate pf ("Network - " ++ uid) $ do
+      H.h2 (toHtml $ "Network - " ++ uid)
+
+      -- H.ul $ do
+      --    H.li $ toHtml (networkInfo m)

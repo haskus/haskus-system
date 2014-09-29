@@ -24,6 +24,8 @@ import ViperVM.Platform.Host
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
 
+import qualified ViperVM.STM.TMap as TMap
+
 -- | Init a memory
 memoryInit :: MemoryPeer -> IO Memory
 memoryInit peer = Memory peer 
@@ -33,7 +35,7 @@ memoryInit peer = Memory peer
 
 -- | Init a network
 networkInit :: NetworkType -> (Memory -> STM (Set Memory)) -> NetworkPeer -> IO Network
-networkInit typ neighbors peer = return (Network peer typ neighbors)
+networkInit typ neighbors peer = Network peer typ neighbors <$> atomically TMap.empty
 
 -- | Init a processor
 procInit :: ProcPeer -> IO Proc

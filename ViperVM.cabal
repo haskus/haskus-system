@@ -66,11 +66,13 @@ library
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Topology
     ViperVM.Platform.Memory
+    ViperVM.Platform.Network
     ViperVM.Platform.Loading
     ViperVM.Platform.Config
     ViperVM.Platform.Transfer
     ViperVM.Platform.TransferResult
     ViperVM.Platform.TransferBench
+    ViperVM.Platform.NetworkBench
 
     ViperVM.Platform.Memory.Region
     ViperVM.Platform.Memory.Layout

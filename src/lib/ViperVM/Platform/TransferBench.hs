@@ -1,36 +1,42 @@
 module ViperVM.Platform.TransferBench
-   ( BenchResult(..)
-   , NetworkBenchResult(..)
-   , bench
+   ( bench
    , benchStr
    , transferBench
    , networkBench
+   , networkBenchStore
    )
 where
 
 import ViperVM.Platform.Transfer
+import ViperVM.Platform.NetworkBench
 import ViperVM.Platform.TransferResult
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Memory
 
+import qualified ViperVM.STM.TMap as TMap
+import qualified ViperVM.STM.TSet as TSet
+
 import Control.Concurrent.STM
 import Data.Traversable (forM)
 import Criterion.Measurement
-import Data.Word
-import Data.Map (Map)
 import qualified Data.Map as Map
 
-data BenchResult
-   = BenchFailed
-   | BenchSuccess Double
-   deriving (Eq,Show)
+-- | Bench network and store results
+networkBenchStore :: Network -> Memory -> Memory -> IO ()
+networkBenchStore net m1 m2 = do
+   res <- networkBench net m1 m2
+   
+   atomically $ do
+      let benchs = networkBenchs net
+      bs <- TMap.lookup (m1,m2) benchs
+      case bs of
+         Nothing -> do
+            s <- TSet.singleton res
+            TMap.insert (m1,m2) s benchs
+         Just rs -> TSet.insert res rs
 
-
-data NetworkBenchResult = NetworkBenchResult
-   { netBench1D :: Map Word64 BenchResult
-   } deriving (Show)
 
 -- | Bench a link between two memories
 --

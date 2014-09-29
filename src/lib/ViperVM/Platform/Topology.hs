@@ -26,7 +26,9 @@ import qualified Data.Set as Set
 import ViperVM.Platform.Memory.Buffer (Buffer)
 import ViperVM.Platform.Memory.Data (Data)
 import ViperVM.Platform.Drivers
+import ViperVM.Platform.NetworkBench
 import ViperVM.STM.TSet
+import ViperVM.STM.TMap
 
 
 -- | Memory
@@ -61,6 +63,7 @@ data Network = Network
   { networkPeer :: NetworkPeer
   , networkType :: NetworkType
   , networkNeighbors :: Memory -> STM (Set Memory)
+  , networkBenchs :: TMap (Memory,Memory) (TSet NetworkBenchResult)
   }
 
 instance Eq Network where
