@@ -47,7 +47,7 @@ foldMemories host ini f = go ini Set.empty =<< readTVar (hostMemories host)
 
 
 -- | Find a memory by UID
-findMemoryByUID :: Host -> String -> STM (Maybe Memory)
+findMemoryByUID :: Host -> MemoryUID -> STM (Maybe Memory)
 findMemoryByUID host uid = do
    let extractMem xs x = return (x:xs)
    mems <- foldMemories host [] extractMem

@@ -107,7 +107,7 @@ showHost pf = do
       H.h2 "Memories"
       H.ul $ forM_ mems $ \mem -> H.li $ do
          H.a (toHtml $ memoryInfo mem)
-            ! A.href (H.toValue $ "/localhost/memory/" ++ memoryUID mem)
+            ! A.href (H.toValue $ "/localhost/memory/" ++ show (memoryUID mem))
 
       H.h2 "Processors"
       H.ul $ forM_ procs $ \p -> do
@@ -116,7 +116,7 @@ showHost pf = do
       H.h2 "Networks"
       H.ul $ forM_ nets $ \net -> H.li $ do
          H.a (toHtml $ networkInfo net)
-            ! A.href (H.toValue $ "/localhost/network/" ++ networkUID net)
+            ! A.href (H.toValue $ "/localhost/network/" ++ show (networkUID net))
 
 -- | Show a memory
 showMemory :: V.Host -> String -> ServerPartT IO Response
@@ -124,7 +124,7 @@ showMemory pf uid = do
    method GET
 
    -- check that the memory with the given identifier exists
-   mem <- lift . atomically $ findMemoryByUID pf uid
+   mem <- lift . atomically $ findMemoryByUID pf (read uid)
    guard (isJust mem)
    let Just m = mem
 
@@ -179,7 +179,7 @@ memoryAction pf uid = do
    -- check that the memory with the given identifier exists
    let extractMem xs x = return (x:xs)
    mems <- lift $ atomically (foldMemories pf [] extractMem)
-   let mem = listToMaybe [x | x <- mems, memoryUID x == uid]
+   let mem = listToMaybe [x | x <- mems, memoryUID x == read uid]
    guard (isJust mem)
    let Just m = mem
 
