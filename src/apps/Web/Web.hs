@@ -124,9 +124,7 @@ showMemory pf uid = do
    method GET
 
    -- check that the memory with the given identifier exists
-   let extractMem xs x = return (x:xs)
-   mems <- lift $ atomically (foldMemories pf [] extractMem)
-   let mem = listToMaybe [x | x <- mems, memoryUID x == uid]
+   mem <- lift . atomically $ findMemoryByUID pf uid
    guard (isJust mem)
    let Just m = mem
 

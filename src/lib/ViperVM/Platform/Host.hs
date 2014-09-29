@@ -2,10 +2,12 @@ module ViperVM.Platform.Host
    ( Host(..)
    , foldMemories
    , traverseHostMemories
+   , findMemoryByUID
    )
 where
 
 import ViperVM.Platform.Topology
+import ViperVM.Platform.Memory
 import ViperVM.STM.TSet (TSet)
 import qualified ViperVM.STM.TSet as TSet
 
@@ -14,6 +16,7 @@ import qualified Data.Set as Set
 import Control.Applicative ((<$>))
 import Control.Monad (foldM)
 import Control.Concurrent.STM
+import Data.Maybe (listToMaybe)
 
 -- | Platform
 data Host = Host
@@ -41,3 +44,11 @@ foldMemories host ini f = go ini Set.empty =<< readTVar (hostMemories host)
                let visited' = Set.union visited toVisit
                    toVisit' = Set.difference neighbors visited'
                go r visited' toVisit'
+
+
+-- | Find a memory by UID
+findMemoryByUID :: Host -> String -> STM (Maybe Memory)
+findMemoryByUID host uid = do
+   let extractMem xs x = return (x:xs)
+   mems <- foldMemories host [] extractMem
+   return $ listToMaybe [x | x <- mems, memoryUID x == uid]
