@@ -10,6 +10,7 @@
 
 module ViperVM.Platform.Memory.Buffer
    ( Buffer(..)
+   , BufferID
    , bufferUID
    )
 where
@@ -28,6 +29,9 @@ data Buffer = Buffer
 instance Ord Buffer where
    compare = comparing bufferPeer
 
+-- | Buffer uniue identifier
+newtype BufferID = BufferID String deriving (Eq,Ord,Show,Read)
+
 -- | Return a unique identifier for the buffer
-bufferUID :: Buffer -> String
-bufferUID = Peer.bufferUID . bufferPeer
+bufferUID :: Buffer -> BufferID
+bufferUID = BufferID . Peer.bufferUID . bufferPeer

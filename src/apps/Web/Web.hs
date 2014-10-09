@@ -166,7 +166,7 @@ showMemory pf uid = do
                ! A.enctype "multipart/form-data" 
                ! A.method "POST" $ do 
                   H.input ! A.type_ "hidden" ! A.name "action" ! A.value "release"
-                  H.input ! A.type_ "hidden" ! A.name "buid" ! A.value (H.toValue (bufferUID buf))
+                  H.input ! A.type_ "hidden" ! A.name "buid" ! A.value (H.toValue (show $ bufferUID buf))
                   H.input ! A.type_ "submit" ! A.value "Release"
 
 
@@ -201,7 +201,7 @@ memoryAction pf uid = do
                   H.p (toHtml $ "Buffer (" ++ show bsize ++ " KB) successfully allocated")
 
       "release" -> do
-         buid <- lookRead "buid"
+         buid <- read <$> lookRead "buid"
          buf <- lift $ atomically $ do
             bufs <- TSet.toList (memoryBuffers m)
             return $ listToMaybe [b | b <- bufs, bufferUID b == buid]
