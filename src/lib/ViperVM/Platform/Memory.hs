@@ -1,12 +1,10 @@
 -- | Memory related module
 module ViperVM.Platform.Memory
-   ( MemoryUID
-   , memoryEndianness
+   ( memoryEndianness
    , memorySize
    , memoryBufferCount
    , memoryBufferAllocate
    , memoryBufferRelease
-   , memoryUID
    )
 where
 
@@ -26,8 +24,6 @@ import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Memory.Buffer
 
-newtype MemoryUID = MemoryUID String deriving (Read, Show, Eq,Ord)
-
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness
 memoryEndianness mem = case memoryPeer mem of
@@ -39,13 +35,6 @@ memorySize :: Memory -> Word64
 memorySize mem = case memoryPeer mem of
    Peer.OpenCLMemory m -> OpenCL.clMemSize m
    Peer.HostMemory m -> Host.hostMemSize m
-
--- | Memory unique identifier (not stable between different program executions)
-memoryUID :: Memory -> MemoryUID
-memoryUID mem = MemoryUID $ case memoryPeer mem of
-   Peer.OpenCLMemory m -> OpenCL.clMemUID m
-   Peer.HostMemory m -> Host.hostMemUID m
-
 
 -- | Get the number of buffers allocated in the given memory
 memoryBufferCount :: Memory -> STM Int

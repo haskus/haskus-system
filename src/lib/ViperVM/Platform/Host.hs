@@ -7,7 +7,6 @@ module ViperVM.Platform.Host
 where
 
 import ViperVM.Platform.Topology
-import ViperVM.Platform.Memory
 import ViperVM.STM.TSet (TSet)
 import qualified ViperVM.STM.TSet as TSet
 

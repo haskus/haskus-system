@@ -1,60 +1,75 @@
-module ViperVM.STM.TMap where
+{-# LANGUAGE ConstraintKinds #-}
+module ViperVM.STM.TMap
+   ( TMap
+   , null
+   , size
+   , lookup
+   , member
+   , notMember
+   , empty
+   , singleton
+   , insert
+   , delete
+   , elems
+   , keys
+   , (!)
+   )
+where
+
+import Prelude hiding (lookup,null)
 
 import Control.Concurrent.STM
-import qualified Data.Map as Map
-import Data.Map (Map)
-import ViperVM.STM.Common
+import qualified STMContainers.Map as SMAP
+import STMContainers.Map (Key)
+import ListT (fold)
+import qualified ListT
+
+import Data.Maybe (fromJust,isJust,isNothing)
 import Control.Applicative ( (<$>) )
 
-type TMap a b = TVar (Map a b)
+type TMap a b = SMAP.Map a b
 
 null :: TMap a b -> STM Bool
-null = readTVar >=$> Map.null
+null = SMAP.null
 
 size :: TMap a b -> STM Int
-size = readTVar >=$> Map.size
+size = fold f 0 . SMAP.stream
+   where 
+      f n _ = return (n+1)
 
-member :: Ord a => a -> TMap a b -> STM Bool
-member v = readTVar >=$> Map.member v
+lookup :: Key k => k -> TMap k a -> STM (Maybe a)
+lookup = SMAP.lookup
 
-notMember :: Ord a => a -> TMap a b -> STM Bool
-notMember v = readTVar >=$> Map.notMember v
+member :: Key k => k -> TMap k b -> STM Bool
+member k m = isJust <$> lookup k m
 
-lookup :: Ord k => k -> TMap k a -> STM (Maybe a)
-lookup key m = Map.lookup key <$> readTVar m
+notMember :: Key k => k -> TMap k b -> STM Bool
+notMember k m = isNothing <$> lookup k m
+
 
 empty :: STM (TMap a b)
-empty = newTVar Map.empty
+empty = SMAP.new
 
-singleton :: a -> b -> STM (TMap a b)
-singleton k v = newTVar (Map.singleton k v)
+singleton :: Key k => k -> v -> STM (TMap k v)
+singleton k v = do
+   m <- empty
+   insert k v m
+   return m
 
-insert :: Ord a => a -> b -> TMap a b -> STM ()
-insert k v = withTVar (Map.insert k v)
+insert :: Key k => k -> v -> TMap k v -> STM ()
+insert k v = SMAP.insert v k
 
-insert_ :: Ord a => TMap a b -> a -> b -> STM ()
-insert_ m k v = insert k v m
-
-delete :: Ord a => a -> TMap a b -> STM ()
-delete v = withTVar (Map.delete v)
-
-filter :: (b -> Bool) -> TMap a b -> STM ()
-filter f = withTVar (Map.filter f)
-
-foldr :: (b -> b -> b) -> b -> TMap a b -> STM b
-foldr f x = readTVar >=$> Map.foldr f x
-
-foldl :: (a -> b -> a) -> a -> TMap c b -> STM a
-foldl f x = readTVar >=$> Map.foldl f x
-
-elems :: TMap a b -> STM [b]
-elems = readTVar >=$> Map.elems
-
-keys :: TMap a b -> STM [a]
-keys= readTVar >=$> Map.keys
+delete :: Key k => k -> TMap k v -> STM ()
+delete = SMAP.delete
 
 toList :: TMap a b -> STM [(a,b)]
-toList = readTVar >=$> Map.toList
+toList = ListT.toList . SMAP.stream
 
-(!) :: Ord a => TMap a b -> a -> STM b
-(!) m k = (Map.! k) <$> readTVar m
+elems :: TMap a b -> STM [b]
+elems = fmap (fmap snd) . toList
+
+keys :: TMap a b -> STM [a]
+keys = fmap (fmap fst) . toList
+
+(!) :: Key k => TMap k v -> k -> STM v
+(!) m k = fromJust <$> lookup k m

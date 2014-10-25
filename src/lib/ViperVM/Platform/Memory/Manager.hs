@@ -25,7 +25,6 @@ import ViperVM.Platform.Memory.Layout
 import Data.Word
 import qualified ViperVM.STM.TMap as TMap
 import ViperVM.STM.TMap (TMap)
-import qualified Data.Map as Map
 import Control.Concurrent.STM
 import Control.Applicative ((<$>), (<*>))
 import Data.Foldable (traverse_)
@@ -49,7 +48,7 @@ defaultManagerConfig = ManagerConfig
 -- | Initialize a memory manager
 initManager :: ManagerConfig -> Memory -> IO Manager
 initManager _ mem = Manager mem 
-   <$> newTVarIO Map.empty
+   <$> atomically (TMap.empty)
    <*> newTVarIO 0
 
 -- | Store a buffer data and return a new data reference

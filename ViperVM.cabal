@@ -95,11 +95,14 @@ library
 
   build-depends:       
     base >= 4.7,
+    containers == 0.5.*,
+    list-t == 0.2.*,
+    stm-containers == 0.2.*,
+    hashable == 1.2.*,
     vector,
     directory,
     parsec,
     parsec-numbers,
-    containers == 0.5.*,
     dynamic-linker-template,
     transformers,
     unix,

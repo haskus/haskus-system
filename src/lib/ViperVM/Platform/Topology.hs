@@ -1,8 +1,13 @@
-{-# LANGUAGE RecordWildCards, PatternSynonyms, TupleSections #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Platform topology
 module ViperVM.Platform.Topology 
    ( Memory(..)
+   , MemoryUID
+   , memoryUID
    , Proc(..)
    , Network(..)
    , Duplex(..)
@@ -21,7 +26,12 @@ import Control.Applicative ((<$>))
 import Data.Set (Set)
 import Data.Ord (comparing)
 import Data.Traversable (traverse,forM)
+import Data.Hashable
 import qualified Data.Set as Set
+
+import qualified ViperVM.Platform.Drivers as Peer
+import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
+import qualified ViperVM.Platform.Drivers.Host as Host
 
 import ViperVM.Platform.Memory.Buffer (Buffer)
 import ViperVM.Platform.Memory.Data (Data)
@@ -44,6 +54,17 @@ instance Eq Memory where
 
 instance Ord Memory where
    compare = comparing memoryPeer
+
+newtype MemoryUID = MemoryUID String deriving (Read, Show, Eq, Ord, Hashable)
+
+-- | Memory unique identifier (not stable between different program executions)
+memoryUID :: Memory -> MemoryUID
+memoryUID mem = MemoryUID $ case memoryPeer mem of
+   Peer.OpenCLMemory m -> OpenCL.clMemUID m
+   Peer.HostMemory m -> Host.hostMemUID m
+
+instance Hashable Memory where
+   hashWithSalt salt m = hashWithSalt salt (memoryUID m)
 
 
 -- | A processor
