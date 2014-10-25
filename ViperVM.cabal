@@ -83,6 +83,7 @@ library
 
     ViperVM.STM.TMap
     ViperVM.STM.TSet
+    ViperVM.STM.TGraph
 
   c-sources: 
     src/lib/ViperVM/Arch/X86_64/Linux/syscall.c
