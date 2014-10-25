@@ -6,10 +6,15 @@ module ViperVM.STM.TGraph
 where
 
 import qualified Data.Set as Set
-import Control.Monad (foldM, foldM_)
+import Control.Monad (foldM, foldM_, when)
 
 
 -- | Deep-first graph traversal
+--
+-- before is executed when the node is entered
+-- after is executed when the node is leaved
+-- children gets node's children
+--
 deepFirst :: (Monad m, Ord a, Eq a) => (a -> m ()) -> (a -> m ()) -> (a -> m [a]) -> [a] -> m ()
 deepFirst before after children xs = foldM_ go Set.empty xs
    where
@@ -24,13 +29,18 @@ deepFirst before after children xs = foldM_ go Set.empty xs
             return visited''
 
 -- | Breadth-first graph traversal
-breadthFirst :: (Monad m, Ord a, Eq a) => (a -> m ()) -> (a -> m [a]) -> [a] -> m ()
+--
+-- visit is executed when the node is entered. If False is returned, the traversal ends
+-- children gets node's children
+--
+breadthFirst :: (Monad m, Ord a, Eq a) => (a -> m Bool) -> (a -> m [a]) -> [a] -> m ()
 breadthFirst visit children = go Set.empty
    where
       go _ [] = return ()
       go visited (x:xs) 
          | Set.member x visited = go visited xs
          | otherwise = do
-            visit x
-            cs <- children x
-            go (Set.insert x visited) (xs ++ cs)
+            b <- visit x
+            when b $ do
+               cs <- children x
+               go (Set.insert x visited) (xs ++ cs)

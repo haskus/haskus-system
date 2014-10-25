@@ -4,6 +4,7 @@ module ViperVM.Platform.Host
    , deepFirstMemories
    , breadthFirstMemories
    , traverseHostMemories
+   , findMemory
    , findMemoryByUID
    )
 where
@@ -17,7 +18,6 @@ import Control.Monad.Trans.State
 import Control.Monad.Trans.Class
 import Data.Traversable (traverse)
 import Control.Concurrent.STM
-import Data.Maybe (listToMaybe)
 
 -- | Platform
 data Host = Host
@@ -42,8 +42,6 @@ deepFirstMemories host ini f = do
          put v'
 
       after _ = return ()
-
-      children :: Memory -> StateT a STM [Memory]
       children m = lift (TSet.toList =<< memoryNeighbors m)
 
 -- | Traverse all memories (breadth-first search)
@@ -56,14 +54,27 @@ breadthFirstMemories host ini f = do
          v <- get
          v' <- lift (f v m)
          put v'
-
-      children :: Memory -> StateT a STM [Memory]
+         return True
       children m = lift (TSet.toList =<< memoryNeighbors m)
 
 
+-- | Try to find a memory matching the predicate (breadth-first search)
+findMemory :: Host -> (Memory -> STM Bool) -> STM (Maybe Memory)
+findMemory host f = do
+      mems <- TSet.toList (hostMemories host)
+      execStateT (breadthFirst visit children mems) Nothing
+   where
+      visit m = do
+         b <- lift $ f m
+         if b
+            then do
+               put (Just m) -- return found memory (in state)
+               return False -- stop the traversal
+            else return True
+
+      children m = lift (TSet.toList =<< memoryNeighbors m)
+
 -- | Find a memory by UID
 findMemoryByUID :: Host -> MemoryUID -> STM (Maybe Memory)
-findMemoryByUID host uid = do
-   let extractMem xs x = return (x:xs)
-   mems <- breadthFirstMemories host [] extractMem
-   return $ listToMaybe [x | x <- mems, memoryUID x == uid]
+findMemoryByUID host uid = 
+   findMemory host (return . (== uid) . memoryUID)
