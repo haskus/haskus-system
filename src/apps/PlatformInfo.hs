@@ -35,7 +35,7 @@ main = do
 
       extractMem xs x = return (x:xs)
 
-   mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
+   mems <- reverse <$> (atomically $ breadthFirstMemories pf [] extractMem)
 
    putStrLn . memoriesStr . length $ mems
    traverse_ (showInfo . memoryInfo) mems

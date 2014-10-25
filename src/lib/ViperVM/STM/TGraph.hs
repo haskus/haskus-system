@@ -1,6 +1,7 @@
 -- | Transactionnal graph
 module ViperVM.STM.TGraph
    ( deepFirst
+   , breadthFirst
    )
 where
 
@@ -21,3 +22,15 @@ deepFirst before after children xs = foldM_ go Set.empty xs
             visited'' <- foldM go visited' cs
             after x
             return visited''
+
+-- | Breadth-first graph traversal
+breadthFirst :: (Monad m, Ord a, Eq a) => (a -> m ()) -> (a -> m [a]) -> [a] -> m ()
+breadthFirst visit children = go Set.empty
+   where
+      go _ [] = return ()
+      go visited (x:xs) 
+         | Set.member x visited = go visited xs
+         | otherwise = do
+            visit x
+            cs <- children x
+            go (Set.insert x visited) (xs ++ cs)

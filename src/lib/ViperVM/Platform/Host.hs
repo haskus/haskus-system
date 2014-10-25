@@ -1,7 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module ViperVM.Platform.Host
    ( Host(..)
-   , foldMemories
+   , deepFirstMemories
+   , breadthFirstMemories
    , traverseHostMemories
    , findMemoryByUID
    )
@@ -10,7 +11,7 @@ where
 import ViperVM.Platform.Topology
 import ViperVM.STM.TSet (TSet)
 import qualified ViperVM.STM.TSet as TSet
-import ViperVM.STM.TGraph (deepFirst)
+import ViperVM.STM.TGraph (deepFirst,breadthFirst)
 
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Class
@@ -30,8 +31,8 @@ traverseHostMemories :: Host -> (Memory -> STM a) -> STM [a]
 traverseHostMemories host f = traverse f =<< TSet.toList (hostMemories host)
 
 -- | Traverse all memories (deep-first search)
-foldMemories :: Host -> a -> (a -> Memory -> STM a) -> STM a
-foldMemories host ini f = do
+deepFirstMemories :: Host -> a -> (a -> Memory -> STM a) -> STM a
+deepFirstMemories host ini f = do
       mems <- TSet.toList (hostMemories host)
       execStateT (deepFirst before after children mems) ini
    where
@@ -45,10 +46,24 @@ foldMemories host ini f = do
       children :: Memory -> StateT a STM [Memory]
       children m = lift (TSet.toList =<< memoryNeighbors m)
 
+-- | Traverse all memories (breadth-first search)
+breadthFirstMemories :: Host -> a -> (a -> Memory -> STM a) -> STM a
+breadthFirstMemories host ini f = do
+      mems <- TSet.toList (hostMemories host)
+      execStateT (breadthFirst visit children mems) ini
+   where
+      visit m = do
+         v <- get
+         v' <- lift (f v m)
+         put v'
+
+      children :: Memory -> StateT a STM [Memory]
+      children m = lift (TSet.toList =<< memoryNeighbors m)
+
 
 -- | Find a memory by UID
 findMemoryByUID :: Host -> MemoryUID -> STM (Maybe Memory)
 findMemoryByUID host uid = do
    let extractMem xs x = return (x:xs)
-   mems <- foldMemories host [] extractMem
+   mems <- breadthFirstMemories host [] extractMem
    return $ listToMaybe [x | x <- mems, memoryUID x == uid]

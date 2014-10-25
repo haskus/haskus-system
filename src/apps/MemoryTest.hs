@@ -23,7 +23,7 @@ main = do
          }
 
    let extractMem xs x = return (x:xs)
-   mems <- reverse <$> (atomically $ foldMemories pf [] extractMem)
+   mems <- reverse <$> (atomically $ breadthFirstMemories pf [] extractMem)
 
    putStrLn "\nCreate basic memory manager for each memory"
    mgrs <- forM mems (initManager defaultManagerConfig)

@@ -96,7 +96,7 @@ showHost pf = do
 
    (mems,procs,nets) <- lift . atomically $ do
       let extractMem xs x = return (x:xs)
-      mems <- reverse <$> foldMemories pf [] extractMem
+      mems <- reverse <$> breadthFirstMemories pf [] extractMem
       procs <- TSet.toList =<< TSet.unions (map memoryProcs mems)
       nets <- TSet.toList =<< TSet.unions (map memoryNetworks mems)
       return (mems,procs,nets)
@@ -176,7 +176,7 @@ memoryAction pf uid = do
 
    -- check that the memory with the given identifier exists
    let extractMem xs x = return (x:xs)
-   mems <- lift $ atomically (foldMemories pf [] extractMem)
+   mems <- lift $ atomically (breadthFirstMemories pf [] extractMem)
    let mem = listToMaybe [x | x <- mems, memoryUID x == read uid]
    guard (isJust mem)
    let Just m = mem
