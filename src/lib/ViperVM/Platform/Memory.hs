@@ -9,7 +9,6 @@ module ViperVM.Platform.Memory
 where
 
 import Data.Word (Word64)
-import qualified Data.Set as Set
 import Control.Concurrent.STM
 import Data.Foldable (forM_)
 import Control.Applicative ((<$>))
@@ -47,7 +46,7 @@ memoryBufferAllocate sz mem = do
 
    forM_ b $ \b' ->
       -- Add allocated buffer to memory buffer list
-      atomically $ modifyTVar (memoryBuffers mem) (Set.insert b')
+      atomically $ TSet.insert b' (memoryBuffers mem)
 
    return (MemoryBuffer mem <$> b)
 
@@ -55,6 +54,6 @@ memoryBufferAllocate sz mem = do
 memoryBufferRelease :: MemoryBuffer -> IO ()
 memoryBufferRelease (MemoryBuffer mem buf) = do
    -- Remove buffer from memory buffer list
-   atomically $ modifyTVar (memoryBuffers mem) (Set.delete buf)
+   atomically $ TSet.delete buf (memoryBuffers mem)
 
    Peer.releaseBuffer (memoryPeer mem) (bufferPeer buf)

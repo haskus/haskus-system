@@ -6,6 +6,7 @@ module ViperVM.Platform.Drivers.Host
    , allocateBuffer
    , releaseBuffer
    , hostMemUID
+   , hostProcUID
    , hostBufferUID
    )
 where
@@ -44,6 +45,10 @@ data Proc = Proc
 -- | Unique memory ID
 hostMemUID :: Memory -> String
 hostMemUID _ = "Host Memory"
+
+-- | Unique proc ID
+hostProcUID :: Proc -> String
+hostProcUID p = printf "Host Proc %d:%d" (hostProcNode p) (hostProcIndex p)
 
 -- | Unique buffer ID
 hostBufferUID :: Buffer -> String

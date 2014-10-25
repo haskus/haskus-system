@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | A /buffer/ is the most basic region of contiguous memory cells. It can be
 -- virtual or it can correspond to a physical memory space.
 -- 
@@ -17,6 +19,7 @@ where
 
 import Data.Word (Word64)
 import Data.Ord (comparing)
+import Data.Hashable
 
 import qualified ViperVM.Platform.Drivers as Peer
 
@@ -30,8 +33,11 @@ instance Ord Buffer where
    compare = comparing bufferPeer
 
 -- | Buffer uniue identifier
-newtype BufferID = BufferID String deriving (Eq,Ord,Show,Read)
+newtype BufferID = BufferID String deriving (Eq,Ord,Show,Read,Hashable)
 
 -- | Return a unique identifier for the buffer
 bufferUID :: Buffer -> BufferID
 bufferUID = BufferID . Peer.bufferUID . bufferPeer
+
+instance Hashable Buffer where
+   hashWithSalt salt m = hashWithSalt salt (bufferUID m)

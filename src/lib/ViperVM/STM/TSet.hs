@@ -1,57 +1,91 @@
-module ViperVM.STM.TSet where
+{-# LANGUAGE ConstraintKinds #-}
+module ViperVM.STM.TSet
+   ( TSet
+   , null
+   , size
+   , member
+   , notMember
+   , empty
+   , singleton
+   , insert
+   , delete
+   , toList
+   , fromList
+   , elems
+   , stream
+   , unions
+   , map
+   )
+where
+
+import Prelude hiding (lookup,null,map)
 
 import Control.Concurrent.STM
-import qualified Data.Set as Set
-import Data.Set (Set)
-import ViperVM.STM.Common
-import Control.Applicative ( (<$>) )
+import qualified STMContainers.Set as SSET
+import STMContainers.Set (Element)
+import ListT (ListT, fold)
+import qualified ListT
 
-type TSet a = TVar (Set a)
+import Data.Foldable (forM_)
+
+type TSet a = SSET.Set a
 
 null :: TSet a -> STM Bool
-null = readTVar >=$> Set.null
+null = SSET.null
 
 size :: TSet a -> STM Int
-size = readTVar >=$> Set.size
+size = fold f 0 . SSET.stream
+   where 
+      f n _ = return (n+1)
 
-member :: Ord a => a -> TSet a -> STM Bool
-member v = readTVar >=$> Set.member v
+member :: Element e => e -> TSet e -> STM Bool
+member = SSET.lookup
 
-notMember :: Ord a => a -> TSet a -> STM Bool
-notMember v = readTVar >=$> Set.notMember v
+notMember :: Element e => e -> TSet e -> STM Bool
+notMember = fmap (fmap not) . member
 
-empty :: STM (TSet a)
-empty = newTVar Set.empty
+empty :: STM (TSet e)
+empty = SSET.new
 
-singleton :: a -> STM (TSet a)
-singleton v = newTVar (Set.singleton v)
+singleton :: Element e => e -> STM (TSet e)
+singleton e = do
+   m <- empty
+   insert e m
+   return m
 
-insert :: Ord a => a -> TSet a -> STM ()
-insert v = withTVar (Set.insert v)
+insert :: Element e => e -> TSet e -> STM ()
+insert = SSET.insert
 
-delete :: Ord a => a -> TSet a -> STM ()
-delete v = withTVar (Set.delete v)
+delete :: Element e => e -> TSet e -> STM ()
+delete = SSET.delete
 
-filter :: (a -> Bool) -> TSet a -> STM ()
-filter f = withTVar (Set.filter f)
+toList :: TSet e -> STM [e]
+toList = ListT.toList . SSET.stream
 
-foldr :: (a -> b -> b) -> b -> TSet a -> STM b
-foldr f x = readTVar >=$> Set.foldr f x
+fromList :: Element e => [e] -> STM (TSet e)
+fromList xs = do
+   s <- empty
+   forM_ xs (`insert` s)
+   return s
 
-foldl :: (a -> b -> a) -> a -> TSet b -> STM a
-foldl f x = readTVar >=$> Set.foldl f x
+elems :: TSet e -> STM [e]
+elems = toList
 
-elems :: TSet a -> STM [a]
-elems = readTVar >=$> Set.elems
+stream :: TSet e -> ListT STM e
+stream = SSET.stream
 
-toList :: TSet a -> STM [a]
-toList = readTVar >=$> Set.toList
+unions :: Element e => [TSet e] -> STM (TSet e)
+unions ss = do
+   ret <- empty
+   forM_ ss $ \s -> 
+      ListT.traverse_ (`insert` ret) (stream s)
+   return ret
 
-toSet :: TSet a -> STM (Set a)
-toSet = readTVar
+map :: (Element a, Element b) => (a -> b) -> TSet a -> STM (TSet b)
+map f m = do
+   r <- empty
+   ListT.traverse_ (\x -> insert (f x) r) (stream m)
+   return r
 
-pop :: Ord a => TSet a -> STM a
-pop xs = do
-   x <- head <$> toList xs
-   delete x xs
-   return x
+--filter :: (a -> Bool) -> TSet a -> STM ()
+--filter f = withTVar (Set.filter f)

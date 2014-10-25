@@ -6,7 +6,6 @@ import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
 import ViperVM.Platform.Memory
-import ViperVM.Platform.Network
 import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Topology as V
 import qualified ViperVM.STM.TSet as TSet
@@ -15,7 +14,6 @@ import Paths_ViperVM
 import Data.Version
 
 import Control.Concurrent.STM
-import qualified Data.Set as Set
 
 import Control.Applicative ((<$>))
 import Control.Monad (msum, forM_, guard, mzero)
@@ -99,8 +97,8 @@ showHost pf = do
    (mems,procs,nets) <- lift . atomically $ do
       let extractMem xs x = return (x:xs)
       mems <- reverse <$> foldMemories pf [] extractMem
-      procs <- Set.toList . Set.unions <$> mapM (readTVar . memoryProcs) mems
-      nets <- Set.toList . Set.unions <$> mapM (readTVar . memoryNetworks) mems
+      procs <- TSet.toList =<< TSet.unions (map memoryProcs mems)
+      nets <- TSet.toList =<< TSet.unions (map memoryNetworks mems)
       return (mems,procs,nets)
 
    ok . toResponse . appTemplate pf "Local host" $ do

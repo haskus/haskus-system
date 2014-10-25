@@ -13,6 +13,7 @@ import ViperVM.Platform.Topology
 import ViperVM.Platform.Transfer
 import ViperVM.Platform.TransferBench
 import ViperVM.STM.TMap as TMap
+import qualified ViperVM.STM.TSet as TSet
 
 main :: IO ()
 main = do
@@ -48,7 +49,7 @@ main = do
 
    putStrLn "\nTransferring data between each directly connected memory"
    forM_ mems $ \m1 -> do
-      ms <- atomically $ memoryNetNeighbors m1
+      ms <- atomically $ (TSet.toList =<< memoryNetNeighbors m1)
       forM_ ms $ \(net,m2) -> do
          putStrLn "\n  - Allocating data in 2 memories"
          let 

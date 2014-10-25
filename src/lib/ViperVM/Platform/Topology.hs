@@ -10,6 +10,8 @@ module ViperVM.Platform.Topology
    , memoryUID
    , Proc(..)
    , Network(..)
+   , NetworkUID
+   , networkUID
    , Duplex(..)
    , NetworkType(..)
    , BufferData(..)
@@ -22,12 +24,9 @@ module ViperVM.Platform.Topology
 where
 
 import Control.Concurrent.STM
-import Control.Applicative ((<$>))
-import Data.Set (Set)
 import Data.Ord (comparing)
 import Data.Traversable (traverse,forM)
 import Data.Hashable
-import qualified Data.Set as Set
 
 import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
@@ -37,7 +36,7 @@ import ViperVM.Platform.Memory.Buffer (Buffer)
 import ViperVM.Platform.Memory.Data (Data)
 import ViperVM.Platform.Drivers
 import ViperVM.Platform.NetworkBench
-import ViperVM.STM.TSet
+import ViperVM.STM.TSet as TSet
 import ViperVM.STM.TMap
 
 
@@ -78,12 +77,23 @@ instance Eq Proc where
 instance Ord Proc where
    compare = comparing procPeer
 
+newtype ProcUID = ProcUID String deriving (Read, Show, Eq, Ord, Hashable)
+
+-- | Processor unique identifier (not stable between different program executions)
+procUID :: Proc -> ProcUID
+procUID mem = ProcUID $ case procPeer mem of
+   Peer.OpenCLProc m -> OpenCL.clProcUID m
+   Peer.HostProc m -> Host.hostProcUID m
+
+
+instance Hashable Proc where
+   hashWithSalt salt p = hashWithSalt salt (procUID p)
 
 -- | Networks interconnecting memories
 data Network = Network 
   { networkPeer :: NetworkPeer
   , networkType :: NetworkType
-  , networkNeighbors :: Memory -> STM (Set Memory)
+  , networkNeighbors :: Memory -> STM (TSet Memory)
   , networkBenchs :: TMap (Memory,Memory) (TSet NetworkBenchResult)
   }
 
@@ -92,6 +102,16 @@ instance Eq Network where
 
 instance Ord Network where
    compare = comparing networkPeer
+
+newtype NetworkUID = NetworkUID String deriving (Read, Show, Eq, Ord,Hashable)
+
+-- | Network unique identifier (not stable between different program executions)
+networkUID :: Network -> NetworkUID
+networkUID mem = NetworkUID $ case networkPeer mem of
+   Peer.OpenCLNetwork m -> OpenCL.clNetUID m
+
+instance Hashable Network where
+   hashWithSalt salt n = hashWithSalt salt (networkUID n)
 
 -- | A data associated with its buffer
 data BufferData = BufferData 
@@ -124,16 +144,16 @@ isHostMemory m = case memoryPeer m of
    _ -> False
 
 -- | Memory neighbor memory nodes
-memoryNeighbors :: Memory -> STM (Set Memory)
+memoryNeighbors :: Memory -> STM (TSet Memory)
 memoryNeighbors mem = do
-   nets <- Set.toList <$> readTVar (memoryNetworks mem)
-   Set.unions <$> traverse (`networkNeighbors` mem) nets
+   nets <- TSet.toList (memoryNetworks mem)
+   TSet.unions =<< traverse (`networkNeighbors` mem) nets
 
 -- | Memory neighbor memory nodes + interconnecting network
-memoryNetNeighbors :: Memory -> STM (Set (Network,Memory))
+memoryNetNeighbors :: Memory -> STM (TSet (Network,Memory))
 memoryNetNeighbors mem = do
-   nets <- Set.toList <$> readTVar (memoryNetworks mem)
+   nets <- TSet.toList (memoryNetworks mem)
    ss <- forM nets $ \net -> do
       ms <- networkNeighbors net mem
-      return . Set.fromList . fmap (net,) . Set.toList $ ms
-   return $ Set.unions ss
+      TSet.map (net,) ms
+   TSet.unions ss

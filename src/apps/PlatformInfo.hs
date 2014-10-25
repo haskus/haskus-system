@@ -3,13 +3,13 @@ import Data.Foldable (traverse_)
 --import Data.List (intersperse)
 import Control.Concurrent.STM
 import Control.Applicative ((<$>))
-import qualified Data.Set as Set
 
 import ViperVM.Platform.Host
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
 import ViperVM.Platform.Topology
+import qualified ViperVM.STM.TSet as TSet
 
 main :: IO ()
 main = do
@@ -40,14 +40,14 @@ main = do
    putStrLn . memoriesStr . length $ mems
    traverse_ (showInfo . memoryInfo) mems
 
-   procs <- Set.unions <$> atomically (mapM (readTVar . memoryProcs) mems)
+   procs <- atomically $ (TSet.toList =<< TSet.unions (map memoryProcs mems))
 
-   putStrLn . procsStr . Set.size $ procs
+   putStrLn . procsStr $ length procs
    traverse_ (showInfo . procInfo) procs
 
-   nets <- Set.unions <$> atomically (mapM (readTVar . memoryNetworks) mems)
+   nets <- atomically $ (TSet.toList =<< TSet.unions (map memoryNetworks mems))
 
-   putStrLn . netsStr . Set.size $ nets
+   putStrLn . netsStr $ length nets
    traverse_ (showInfo . networkInfo) nets
 
    --putStrLn "Links"

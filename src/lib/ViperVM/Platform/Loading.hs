@@ -9,8 +9,7 @@ import Control.Monad (filterM,when)
 import Control.Concurrent.STM
 import Data.Foldable (forM_)
 import Data.Traversable (forM)
-import qualified Data.Set as Set
-import Data.Set (Set)
+import qualified ListT
 
 import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.Memory as Generic
@@ -23,18 +22,19 @@ import qualified ViperVM.Platform.Drivers.Host as Host
 import ViperVM.Platform.Host
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Config
-
+import ViperVM.STM.TSet (TSet)
+import qualified ViperVM.STM.TSet as TSet
 import qualified ViperVM.STM.TMap as TMap
 
 -- | Init a memory
 memoryInit :: MemoryPeer -> IO Memory
 memoryInit peer = Memory peer 
-   <$> newTVarIO Set.empty 
-   <*> newTVarIO Set.empty
-   <*> newTVarIO Set.empty
+   <$> atomically TSet.empty 
+   <*> atomically TSet.empty
+   <*> atomically TSet.empty
 
 -- | Init a network
-networkInit :: NetworkType -> (Memory -> STM (Set Memory)) -> NetworkPeer -> IO Network
+networkInit :: NetworkType -> (Memory -> STM (TSet Memory)) -> NetworkPeer -> IO Network
 networkInit typ neighbors peer = Network peer typ neighbors <$> atomically TMap.empty
 
 -- | Init a processor
@@ -93,19 +93,24 @@ loadOpenCLPlatform config host = do
                proc <- procInit prcPeer
 
                -- Associate processor to memory
-               atomically $ writeTVar (memoryProcs clMem) (Set.singleton proc)
+               atomically $ TSet.insert proc (memoryProcs clMem)
                
                -- Add link to every registered host memory
-               hostMems <- atomically $ readTVar (hostMemories host)
-               let neighbors m 
-                     | m == clMem              = hostMems
-                     | m `Set.member` hostMems = Set.singleton clMem
-                     | otherwise               = Set.empty
-                   neighbors' = return . neighbors
+               let hostMems = hostMemories host
 
-               net <- networkInit (NetworkPPP FullDuplex) neighbors' linkPeer
-               atomically $ forM_ (Set.insert clMem hostMems) $ \m -> 
-                  modifyTVar (memoryNetworks m) (Set.insert net)
+               let neighbors m = do
+                     if m == clMem
+                        then return hostMems
+                        else do
+                           tst <- TSet.member m hostMems
+                           if tst
+                              then TSet.singleton clMem
+                              else TSet.empty
+
+               net <- networkInit (NetworkPPP FullDuplex) neighbors linkPeer
+               atomically $ do
+                  ListT.traverse_ (TSet.insert net . memoryNetworks) (TSet.stream hostMems)
+                  TSet.insert net (memoryNetworks clMem)
 
 
 
@@ -128,15 +133,15 @@ loadHostPlatform config host = do
           procPeers = fmap (HostProc . Host.Proc nid) (Linux.nodeCPUs node)
 
       mem <- memoryInit memPeer
-      procs <- Set.fromList <$> mapM procInit procPeers
+      procs <- mapM procInit procPeers
 
       -- Associate processors to memory
-      atomically (writeTVar (memoryProcs mem) procs)
+      atomically $ forM_ procs $ \p -> TSet.insert p (memoryProcs mem)
 
       return mem
          
    -- Init platform host memories
-   atomically $ writeTVar (hostMemories host) (Set.fromList mems)
+   atomically $ forM_ mems (`TSet.insert` hostMemories host)
          
 
 
@@ -144,7 +149,7 @@ loadHostPlatform config host = do
 loadPlatform :: PlatformConfig -> IO Host
 loadPlatform config = do
    
-   host <- Host <$> newTVarIO Set.empty
+   host <- Host <$> atomically TSet.empty
 
    loadHostPlatform config host
          

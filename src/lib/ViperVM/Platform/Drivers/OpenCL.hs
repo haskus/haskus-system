@@ -10,6 +10,7 @@ module ViperVM.Platform.Drivers.OpenCL
    , transferDeviceToHost
    , clNetUID
    , clMemUID
+   , clProcUID
    , clBufferUID
    )
 where
@@ -78,6 +79,10 @@ clNetUID net = printf "OpenCL Network %s" (show . CL.unwrap . clLinkDevice $ net
 -- | Unique memory ID
 clMemUID :: Memory -> String
 clMemUID mem = printf "OpenCL Memory %s" (show . CL.unwrap . clMemDevice $ mem)
+
+-- | Unique memory ID
+clProcUID :: Proc -> String
+clProcUID proc = printf "OpenCL Proc %s" (show . CL.unwrap . clProcDevice $ proc)
 
 -- | Unique buffer ID
 clBufferUID :: Buffer -> String

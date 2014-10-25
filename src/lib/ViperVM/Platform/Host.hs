@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module ViperVM.Platform.Host
    ( Host(..)
    , foldMemories
@@ -11,11 +12,9 @@ import ViperVM.STM.TSet (TSet)
 import qualified ViperVM.STM.TSet as TSet
 
 import Data.Traversable (traverse)
-import qualified Data.Set as Set
-import Control.Applicative ((<$>))
-import Control.Monad (foldM)
 import Control.Concurrent.STM
 import Data.Maybe (listToMaybe)
+import ListT (fold)
 
 -- | Platform
 data Host = Host
@@ -28,21 +27,26 @@ data Host = Host
 traverseHostMemories :: Host -> (Memory -> STM a) -> STM [a]
 traverseHostMemories host f = traverse f =<< TSet.toList (hostMemories host)
 
--- | Traverse all memories (breadth-first search)
+-- | Traverse all memories (deep-first search)
 foldMemories :: Host -> a -> (a -> Memory -> STM a) -> STM a
-foldMemories host ini f = go ini Set.empty =<< readTVar (hostMemories host)
+foldMemories host ini f = do
+      visited <- TSet.empty
+      fold (visit visited) ini (TSet.stream (hostMemories host))
    where
-      go ret visited toVisit
-         | Set.null toVisit = return ret
-         | otherwise = do
-               let ms = Set.toList toVisit
-               r <- foldM f ret ms
-
-               neighbors <- Set.unions <$> mapM memoryNeighbors ms
-
-               let visited' = Set.union visited toVisit
-                   toVisit' = Set.difference neighbors visited'
-               go r visited' toVisit'
+      -- Visit a memory
+      visit visited ret m =
+         -- check that we haven't already visited the node
+         TSet.member m visited >>= \case
+            True  -> return ret
+            False -> do
+               -- Perform action
+               r <- f ret m
+               -- indicate that the node is visited
+               TSet.insert m visited
+               -- visit neighbours
+               ns <- memoryNeighbors m
+               fold (visit visited) r (TSet.stream ns)
+               
 
 
 -- | Find a memory by UID

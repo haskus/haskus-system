@@ -66,7 +66,6 @@ library
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Topology
     ViperVM.Platform.Memory
-    ViperVM.Platform.Network
     ViperVM.Platform.Loading
     ViperVM.Platform.Config
     ViperVM.Platform.Transfer
@@ -124,7 +123,6 @@ executable PlatformInfo
   build-depends: 
     base,
     ViperVM,
-    containers,
     stm
   hs-source-dirs: src/apps
 
