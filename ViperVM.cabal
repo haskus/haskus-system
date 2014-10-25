@@ -81,9 +81,6 @@ library
 
     ViperVM.Platform.Memory.Matrix
 
-    ViperVM.STM.Common
-    ViperVM.STM.TIntSet
-    ViperVM.STM.TList
     ViperVM.STM.TMap
     ViperVM.STM.TSet
 

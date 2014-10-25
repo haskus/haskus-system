@@ -3,14 +3,13 @@ module ViperVM.Platform.Memory.Matrix where
 
 import ViperVM.Platform.Memory.Data
 import ViperVM.Platform.Memory.Layout
-import ViperVM.STM.TList
 import Data.Word
 
 -- | Matrix
 data Matrix = Matrix {
    matrixCellType :: MatrixCellType,
-   matrixDims :: [Word64],
-   matrixInstances :: TList MatrixInstance
+   matrixDims :: [Word64]
+--   matrixInstances :: TSet MatrixInstance
 }
 
 -- | Matrix cell type
