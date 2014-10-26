@@ -34,8 +34,7 @@ module ViperVM.Platform.Memory.Region
 where
 
 import Data.Word
-import Control.Applicative ((<$>), (<*>))
-import Data.Maybe (isNothing)
+import Data.Maybe (isJust,mapMaybe)
 
 -- | Width in bytes
 type Width = Word64      
@@ -49,7 +48,7 @@ type Padding = Word64
 
 -- | Shape of a set of memory cells at a given offset
 data Shape
-   = Shape1D Width                    -- ^ Contiguous set of cells
+   = Shape1D Width                  -- ^ Contiguous set of cells
    | Shape2D Height Width Padding   -- ^ Rectangular set of cells
    deriving (Eq,Ord,Show)
 
@@ -57,7 +56,7 @@ data Shape
 data Region = Region
    { regionOffset :: Word64          -- ^ Offset of the first cell
    , regionShape  :: Shape           -- ^ Shape of the region
-   }
+   } deriving (Show)
 
 -- | Pattern synonym for region with 1D shape
 pattern Region1D o w = Region o (Shape1D w)
@@ -93,7 +92,7 @@ regionCoverIntersection :: Region -> Region -> Maybe Region
 regionCoverIntersection r1 r2 = 
    if not (overlaps c1 c2)
       then Nothing
-      else Just (Region1D (max o1 o2) (min (o1+w1) (o2+w2)))
+      else let o = max o1 o2 in Just (Region1D o (min (o1+w1) (o2+w2) - o))
    where
       c1@(Region1D o1 w1) = regionCover1D r1
       c2@(Region1D o2 w2) = regionCover1D r2
@@ -105,52 +104,63 @@ overlapsAny reg = filter (overlaps reg)
 
 -- | Indicate if two regions overlap (may return false positive)
 overlaps :: Region -> Region -> Bool
-overlaps r1 r2 =
-   case (r1,r2) of
-      -- Two 1D regions
-      (Region1D o1 w1, Region1D o2 w2) -> not (o1 >= o2+w2 || o2 >= o1+w1)
 
-      -- Try with covering 1D regions, if they do not overlap, r1 and r2 neither do
-      _ | isNothing (regionCoverIntersection r1 r2) -> False
+-- Two 1D regions
+overlaps (Region1D o1 w1) (Region1D o2 w2) = not (o1 >= o2+w2 || o2 >= o1+w1)
 
-      -- Transform the 1D region into a 2D one
-      (Region1D o w,_)     -> overlaps (Region2D o 1 w 0) r2
-      (_, Region1D o w)    -> overlaps r1 (Region2D o 1 w 0)
+-- Transform the 1D region into a 2D one
+overlaps (Region1D o w) r2 = overlaps (Region2D o 1 w 0) r2
+overlaps r1 (Region1D o w) = overlaps r1 (Region2D o 1 w 0)
+      
+-- 2D regions case
+overlaps r1@(Region2D o1 _ w1 p1) r2@(Region2D o2 _ w2 p2) = 
+   -- Try with covering 1D regions, if they do not overlap, r1 and r2
+   -- neither do
+    isJust (regionCoverIntersection r1 r2) && not (null inters)
+   where
+      -- cycle-width
+      cw = lcm (w1+p1) (w2+p2)
 
-      -- 2D regions case
-      -- FIXME: add test on h1,h2,o1,o2 if any (uncurry overlaps) rs is true
-      -- In some cases, it is a false positive
-      (Region2D o1 h1 w1 p1, Region2D o2 h2 w2 p2) -> any (uncurry overlaps) rs
-         where
-            period = lcm (w1+p1) (w2+p2)
+      -- number of lines in the cycle
+      m1 = cw `div` (w1+p1)
+      m2 = cw `div` (w2+p2)
 
-            -- We create a mask for the period (mask = invalid cells in period)
-            Just (Region1D interOff interSize) = regionCoverIntersection r1 r2
-            (maskStart,maskWidth) = 
-               if interSize >= period 
-                  -- The intersection covers a whole period
-                  then (0,0)
-                  -- Otherwise
-                  else  ((interOff + interSize) `mod` period, period-interSize)
+      -- relative offset 
+      ro1 = o1 `mod` (w1+p1)
+      ro2 = o2 `mod` (w2+p2)
 
-            -- all combinations of lines from r1 and r2 in a period
-            rs = (,) <$> wrap o1 w1 p1 period <*> wrap o2 w2 p2 period
+      -- compute the line of a cycle
+      regionLines m w p ro
+         | ro <= p    = [Region1D (ro + k * (w+p)) w | k <- [0..m-1]]
+         | otherwise  = fs : ls : os
+            where
+               fs = Region1D 0 (ro-p)
+               ls = Region1D (cw-(w+p)+ro) (w+p-ro)
+               os = [Region1D (ro + k * (w+p)) w | k <- [0..m-2]]
 
-            -- Fill a space of size s with 1D regions from each line of the given region.
-            -- s must be a multiple of w+p
-            wrap o w p s = regs
-               where
-                  m = s `div` (w+p)
-                  -- offset in Z/Zs
-                  d = o `mod` s
-                  -- Line truncation:
-                  --   * wr last bytes of the first line
-                  --   * wl first bytes of the last line
-                  wr = d `mod` (w+p)
-                  wl = w + p - wr
-                  -- First line
-                  fl = if wr > p then [Region1D 0 (wr-p)] else []
-                  -- Last line
-                  ll = if wl > 0 then [Region1D (s-wl) (min wl w)] else []
-                  -- 1D regions for each row
-                  regs = fl ++ ll ++ [Region1D (wr+d') w | t <- [0..m-1], let d' = t * (w+p)]
+      lines1 = regionLines m1 w1 p1 ro1
+      lines2 = regionLines m2 w2 p2 ro2
+
+      -- now we need to filter false positives
+      Just (Region1D c1 icw) = regionCoverIntersection r1 r2
+      c2 = icw + c1 - 1
+
+      rc1 = c1 `mod` cw
+      rc2 = c2 `mod` cw
+
+      -- line-filter
+      ff = case (icw >= cw, rc1 <= rc2) of
+         (True, _)    -> id
+         (False,True) -> mapMaybe (regionCoverIntersection (Region1D rc1 icw))
+         (False,False) -> \ls -> k vz1 ls ++ k vz2 ls
+            where 
+               k x = mapMaybe (regionCoverIntersection x)
+               vz1 = Region1D 0 rc2
+               vz2 = Region1D rc1 (cw-rc1)
+                       
+      -- couple of lines intersecting
+      inters = [(x,y) | x <- ff lines1, y <- ff lines2, overlaps x y]
+
+-- In theory I think we handle all of the cases, but GHC complains the "_ _"
+-- case is missing...
+overlaps _ _ = undefined
