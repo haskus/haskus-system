@@ -16,8 +16,8 @@
 \title{ViperVM -- 2D Region Intersection}
 \author{Sylvain HENRY}
 \contact{hsyl20@gmail.com}
-\version{1.0}
-\date{2014/09/24}
+\version{1.1}
+\date{2014/10/26}
 %\keywords{\LaTeX, grid typesetting}
 
 
@@ -27,8 +27,7 @@
 
 In ViperVM, we need to know if two given memory regions overlap in order to
 perform data transfers and kernel executions concurrently. The difficulty is to
-detect overlapping for 2D regions (e.g. matrices with padding), hence it is the
-topic of this paper.
+detect overlapping for 2D regions (e.g. matrices with padding).
 
 \subsection{Definitions}
 
@@ -56,7 +55,7 @@ detect the intersection of two 2D regions is used.
 \subsection{1D regions}
 
 Two 1D regions r1(o1,w1) and r2(o2,w2) do not overlap iff 
-\[ o1 > o2+w2 \] or \[o2 > o1 + w1 \]
+\[ o1 \ge o2+w2 \] or \[o2 \ge o1 + w1 \]
 
 \subsection{2D regions}
 
@@ -91,9 +90,9 @@ cw &=& \textrm{lcm} (w1+p1,w2+p2) \\
 \]
 
 Then, for each region we need to compute \textbf{ro}, the relative offset
-(alignment) of the region in $\mathbb{Z}/\mathbb{Z}(w+p)$.
+(alignment) of the region in $\mathbb{Z}/\mathbb{Z}cw$.
 
-\[ ro  = o\ \textrm{mod}\ w + p \]
+\[ ro_i  = o_i\ \textrm{mod}\ (w_i + p_i) \]
 
 Finally we can compute the lines of the cycles. $fs$ is the first truncated line
 (if any) and $ls$ is the last truncated line (if any). $os$ are the other
@@ -134,19 +133,19 @@ the next section.
 To remove false positives, we need to filter out parts of the cycle that don't
 exist in the real case.
 
-We need to consider the intersection of the covering 1D regions.
+We need to consider the intersection of the covering 1D regions:.
 
 \[
 \begin{array}{rcl}
 c1               &=& \textrm{max}\ o1\ o2 \\
-c2               &=& (-1) + \textrm{min}\ (o1+w1)\ (o2+w2)\\
-\| r1 \cap r2 \| &=& c2 - c1 + 1\\
-r1 \cap r2       &=& r_{1d}(c1, \| r1 \cap r2 \|)
+c2               &=& (\textrm{min}\ (o1+w1)\ (o2+w2)) - 1\\
+icw              &=& c2 - c1 + 1\\
+r1 \cap r2       &=& r_{1d}(c1, icw)
 \end{array}
 \]
 
-First, if the width of the intersection of the covering 1D regions ($\| r1 \cap
-r2 \|$) is larger or equal to the cycle width, then the whole cycle has to be
+First, if the width of the intersection of the covering 1D regions $icw$
+is larger or equal to the cycle width, then the whole cycle has to be
 taken into account.
 
 Otherwise, we compute the offsets of the covering region beginning (c1) and end
@@ -160,10 +159,10 @@ rc2 &=& c2 \textrm{ mod } cw
 
 There are two cases:
 \begin{enumerate}
-   \item $c1 < c2$ it means that the covering region is included into the cycle:
-   only the range [c1,c2] of the cycle is \textbf{valid}
-   \item $c1 > c2$ it means that the covering region overlaps the cycle border:
-   the range ]c2,c1[ of the cycle is \textbf{invalid}
+   \item $rc1 \le rc2$ it means that the covering region is included into the cycle:
+   only the range [rc1,rc2] of the cycle is \textbf{valid}
+   \item $rc1 > rc2$ it means that the covering region overlaps the cycle border:
+   the range ]rc2,rc1[ of the cycle is \textbf{invalid}
 \end{enumerate}
 
 These predicates have to be used to filter out lines during the overlapping
