@@ -83,6 +83,7 @@ library
 
     ViperVM.STM.TMap
     ViperVM.STM.TSet
+    ViperVM.STM.TList
     ViperVM.STM.TGraph
 
   c-sources: 
@@ -95,6 +96,7 @@ library
     containers == 0.5.*,
     list-t == 0.2.*,
     stm-containers == 0.2.*,
+    stm-linkedlist == 0.1.*,
     hashable == 1.2.*,
     vector,
     directory,
