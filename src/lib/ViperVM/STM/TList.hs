@@ -102,7 +102,7 @@ insertAfter :: a -> TNode a -> STM (TNode a)
 insertAfter = LL.insertAfter
 
 -- | Convert into a list
-toList :: TList a -> STM ([a])
+toList :: TList a -> STM [a]
 toList = LL.toList
 
 -- | Create from a list

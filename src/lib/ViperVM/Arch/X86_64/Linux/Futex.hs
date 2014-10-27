@@ -6,6 +6,7 @@ module ViperVM.Arch.X86_64.Linux.Futex (
 import Foreign.Ptr
 import Data.Int
 import Control.Applicative
+import Control.Monad (void)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
@@ -29,7 +30,7 @@ sysFutex uaddr op val timeout uaddr2 val3 =
 sysFutexWait :: Ptr Int64 -> Int64 -> Maybe TimeSpec -> SysRet ()
 sysFutexWait addr val timeout =
    withMaybeOrNull timeout $ \timeout' ->
-      fmap (const ()) <$> sysFutex addr FutexWait val timeout' nullPtr 0
+      void <$> sysFutex addr FutexWait val timeout' nullPtr 0
 
 -- | Wake `count` processes waiting on the futex
 --  Return the number of processes woken up

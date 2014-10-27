@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface,
-             DeriveDataTypeable, 
              GeneralizedNewtypeDeriving #-}
 
 -- | OpenCL basic types

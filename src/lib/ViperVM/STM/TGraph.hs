@@ -23,7 +23,7 @@ import qualified ViperVM.STM.TList as TList
 -- children gets node's children
 --
 deepFirst :: (Monad m, Ord a, Eq a) => (a -> m ()) -> (a -> m ()) -> (a -> m [a]) -> [a] -> m ()
-deepFirst before after children xs = foldM_ go Set.empty xs
+deepFirst before after children = foldM_ go Set.empty
    where
       go visited x 
          | Set.member x visited = 

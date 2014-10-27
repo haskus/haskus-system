@@ -17,7 +17,7 @@ import ViperVM.Arch.Common.Endianness
 getMemoryEndianness :: IO Endianness
 getMemoryEndianness = do
    -- Write a 32 bit Int and check byte ordering
-   let magic = 1 .|. (shiftL 8 2) .|. (shiftL 16 3) .|. (shiftL 24 4) :: Word32
+   let magic = 1 .|. shiftL 8 2 .|. shiftL 16 3 .|. shiftL 24 4 :: Word32
    alloca $ \p -> do
       poke p magic
       rs <- peekArray 4 (castPtr p :: Ptr Word8)

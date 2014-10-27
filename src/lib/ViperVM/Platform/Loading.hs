@@ -79,18 +79,18 @@ loadOpenCLPlatform config host = do
                    validProps = filter (`elem` supportedProps) props
                linkQueue <- CL.createCommandQueue' ctx' dev validProps
 
-               let memPeer = OpenCLMemory $ OpenCL.Memory {
+               let memPeer = OpenCLMemory OpenCL.Memory {
                         OpenCL.clMemLibrary = lib,
                         OpenCL.clMemDevice = dev,
                         OpenCL.clMemContext = ctx',
                         OpenCL.clMemEndianness = endianness,
                         OpenCL.clMemSize = size
                      }
-                   prcPeer = OpenCLProc $ OpenCL.Proc {
+                   prcPeer = OpenCLProc OpenCL.Proc {
                         OpenCL.clProcDevice = dev,
                         OpenCL.clProcContext = ctx'
                      }
-                   linkPeer = OpenCLNetwork $ OpenCL.Network {
+                   linkPeer = OpenCLNetwork OpenCL.Network {
                         OpenCL.clLinkDevice = dev,
                         OpenCL.clLinkContext = ctx',
                         OpenCL.clLinkQueue = linkQueue
@@ -104,7 +104,7 @@ loadOpenCLPlatform config host = do
                -- Add link to every registered host memory
                let hostMems = hostMemories host
 
-               let neighbors m = do
+               let neighbors m =
                      if m == clMem
                         then return hostMems
                         else do
@@ -131,7 +131,7 @@ loadHostPlatform config host = do
          m = Linux.nodeMemory node
          nid = Linux.nodeId node
       (total,_) <- Linux.nodeMemoryStatus m
-      let memPeer = HostMemory $ Host.Memory {
+      let memPeer = HostMemory Host.Memory {
             Host.hostMemNode = nid,
             Host.hostMemEndianness = hostEndianness,
             Host.hostMemSize = total

@@ -47,7 +47,7 @@ defaultManagerConfig = ManagerConfig
 -- | Initialize a memory manager
 initManager :: ManagerConfig -> Memory -> IO Manager
 initManager _ mem = Manager mem 
-   <$> atomically (TMap.empty)
+   <$> atomically TMap.empty
    <*> newTVarIO 0
 
 -- | Store a buffer data and return a new data reference

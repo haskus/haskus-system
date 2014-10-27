@@ -24,7 +24,7 @@ sysSystemInfo = go (5 * fieldSize)
    where
       fieldSize = 65
       go sz = do
-         ret <- allocaArray sz $ \ptr -> do
+         ret <- allocaArray sz $ \ptr ->
             onSuccessIO (syscall1 63 (ptr :: CString)) $ \_ -> do
                [nam,nodeName,rel,ver,mach] <- forM [0..4] $ \n -> peekCString (ptr `plusPtr` (n*fieldSize))
                return $ SystemInfo nam nodeName rel ver mach

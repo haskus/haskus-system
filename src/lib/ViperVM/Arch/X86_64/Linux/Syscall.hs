@@ -10,7 +10,7 @@
 
 module ViperVM.Arch.X86_64.Linux.Syscall (
    syscall0, syscall1, syscall2, syscall3, 
-   syscall4, syscall5, syscall6
+   syscall4, syscall5, syscall6, Arg
 ) where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)

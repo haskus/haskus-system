@@ -35,17 +35,17 @@ main = do
 
       extractMem xs x = return (x:xs)
 
-   mems <- reverse <$> (atomically $ breadthFirstMemories pf [] extractMem)
+   mems <- reverse <$> atomically (breadthFirstMemories pf [] extractMem)
 
    putStrLn . memoriesStr . length $ mems
    traverse_ (showInfo . memoryInfo) mems
 
-   procs <- atomically $ (TSet.toList =<< TSet.unions (map memoryProcs mems))
+   procs <- atomically (TSet.toList =<< TSet.unions (map memoryProcs mems))
 
    putStrLn . procsStr $ length procs
    traverse_ (showInfo . procInfo) procs
 
-   nets <- atomically $ (TSet.toList =<< TSet.unions (map memoryNetworks mems))
+   nets <- atomically (TSet.toList =<< TSet.unions (map memoryNetworks mems))
 
    putStrLn . netsStr $ length nets
    traverse_ (showInfo . networkInfo) nets

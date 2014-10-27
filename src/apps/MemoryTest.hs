@@ -23,7 +23,7 @@ main = do
          }
 
    let extractMem xs x = return (x:xs)
-   mems <- reverse <$> (atomically $ breadthFirstMemories pf [] extractMem)
+   mems <- reverse <$> atomically (breadthFirstMemories pf [] extractMem)
 
    putStrLn "\nCreate basic memory manager for each memory"
    mgrs <- forM mems (initManager defaultManagerConfig)
@@ -35,7 +35,7 @@ main = do
    putStrLn "\nAllocating data in each memory"
    datas <- forM mgrs $ \mgr -> do
       let 
-         dt = \endian -> Array (Scalar (DoubleField endian)) (200*1024*1024)
+         dt endian = Array (Scalar (DoubleField endian)) (200*1024*1024)
          f = either (error . ("Allocation error: " ++) . show) id
       
       f <$> allocateDataWithEndianness dt mgr
@@ -49,11 +49,11 @@ main = do
 
    putStrLn "\nTransferring data between each directly connected memory"
    forM_ mems $ \m1 -> do
-      ms <- atomically $ (TSet.toList =<< memoryNetNeighbors m1)
+      ms <- atomically (TSet.toList =<< memoryNetNeighbors m1)
       forM_ ms $ \(net,m2) -> do
          putStrLn "\n  - Allocating data in 2 memories"
          let 
-            dt = \endian -> Array (Scalar (DoubleField endian)) 128
+            dt endian = Array (Scalar (DoubleField endian)) 128
             mgr1 = memManagers Map.! m1
             mgr2 = memManagers Map.! m2
             f = either (error . ("Allocation error: " ++) . show) id

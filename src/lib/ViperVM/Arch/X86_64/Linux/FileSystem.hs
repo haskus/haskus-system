@@ -21,7 +21,7 @@ import Data.Word (Word,Word64)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Bits (Bits, (.|.), (.&.))
-import Data.Maybe (fromMaybe,catMaybes)
+import Data.Maybe (catMaybes)
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.ErrorCode
@@ -317,35 +317,29 @@ sysChangePermission :: FileDescriptor -> [FilePermission] -> SysRet ()
 sysChangePermission (FileDescriptor fd) mode = 
    onSuccess (syscall2 91 fd (toSet mode :: Int)) (const ())
 
--- | chown
-sysChangeOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeOwnershipPath path uid gid = withCString path $ \path' -> do
+
+-- | Avoid duplication in *chown syscalls
+chownEx :: Arg x => Int64 -> x -> Maybe UserID -> Maybe GroupID -> SysRet ()
+chownEx n a uid gid = do
    let
       fuid (UserID x) = x
       fgid (GroupID x) = x
-      uid' = fromMaybe (-1) (fmap fuid uid)
-      gid' = fromMaybe (-1) (fmap fgid gid)
-   onSuccess (syscall3 92 path' uid' gid') (const ())
+      uid' = maybe (-1) fuid uid
+      gid' = maybe (-1) fgid gid
+   onSuccess (syscall3 n a uid' gid') (const ())
+
+
+-- | chown
+sysChangeOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
+sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx 92 p uid gid)
 
 -- | lchown
 sysChangeLinkOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeLinkOwnershipPath path uid gid = withCString path $ \path' -> do
-   let
-      fuid (UserID x) = x
-      fgid (GroupID x) = x
-      uid' = fromMaybe (-1) (fmap fuid uid)
-      gid' = fromMaybe (-1) (fmap fgid gid)
-   onSuccess (syscall3 94 path' uid' gid') (const ())
+sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx 94 p uid gid)
 
 -- | fchown
 sysChangeOwnership :: FileDescriptor -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeOwnership (FileDescriptor fd) uid gid = do
-   let
-      fuid (UserID x) = x
-      fgid (GroupID x) = x
-      uid' = fromMaybe (-1) (fmap fuid uid)
-      gid' = fromMaybe (-1) (fmap fgid gid)
-   onSuccess (syscall3 93 fd uid' gid') (const ())
+sysChangeOwnership (FileDescriptor fd) = chownEx 93 fd
 
 -- | umask
 sysSetProcessUMask :: [FilePermission] -> SysRet [FilePermission]

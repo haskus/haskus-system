@@ -213,4 +213,4 @@ sysMemInCore addr len = do
    let n = fromIntegral $ (len + 4095) `div` 4096
    allocaArray n $ \arr ->
       onSuccessIO (syscall3 27 addr len (arr :: Ptr Word8))
-         (const $ (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
+         (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))

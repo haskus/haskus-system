@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 -- | Module to get info strings from platform objects
 module ViperVM.Platform.PlatformInfo
    ( memoryInfo

@@ -84,7 +84,7 @@ main = do
       Right (ProcessID 0) -> do
          putStrLn "I'm the child process!"
          sysExit 0
-      Right (ProcessID n) -> do
+      Right (ProcessID n) ->
          putStrLn (printf "Child process created with PID %d" n)
       Left _ -> error "Error while forking"
 
@@ -104,10 +104,10 @@ main = do
    putStrLn $ "New umask: " ++ show perm2
 
    Right info <- sysSystemInfo
-   putStrLn (show info)
+   print info
 
    -- Use strace to see that syscall is correctly called
-   _ <- alloca $ \p -> do
+   _ <- alloca $ \p ->
       alloca $ \p2 -> do
          poke p 10
          poke p2 12

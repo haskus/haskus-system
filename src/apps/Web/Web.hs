@@ -92,8 +92,7 @@ appTemplate _ title bdy = docTypeHtml $ do
 
 -- | Welcoming screen
 showWelcome :: Html
-showWelcome = do
-   H.a "Local host information" ! A.href "/localhost"
+showWelcome = H.a "Local host information" ! A.href "/localhost"
 
 -- | Show the host
 showHost :: V.Host -> ServerPartT IO Response
@@ -108,16 +107,16 @@ showHost pf = do
 
    ok . toResponse . appTemplate pf "Local host" $ do
       H.h2 "Memories"
-      H.ul $ forM_ mems $ \mem -> H.li $ do
+      H.ul $ forM_ mems $ \mem -> H.li $
          H.a (toHtml $ memoryInfo mem)
             ! A.href (H.toValue $ "/localhost/memory/" ++ show (memoryUID mem))
 
       H.h2 "Processors"
-      H.ul $ forM_ procs $ \p -> do
+      H.ul $ forM_ procs $ \p ->
          H.li . toHtml $ procInfo p
 
       H.h2 "Networks"
-      H.ul $ forM_ nets $ \net -> H.li $ do
+      H.ul $ forM_ nets $ \net -> H.li $
          H.a (toHtml $ networkInfo net)
             ! A.href (H.toValue $ "/localhost/network/" ++ show (networkUID net))
 
@@ -159,9 +158,9 @@ showMemory pf uid = do
       H.ul $ forM_ buffers $ \buf -> do
          let
             sz = bufferSize buf
-            sizeMB = (fromIntegral sz / (1024.0 * 1024.0) :: Float)
+            sizeMB = fromIntegral sz / (1024.0 * 1024.0) :: Float
          H.li $ do
-            toHtml $ (printf "Buffer - %f MB" sizeMB :: String)
+            toHtml (printf "Buffer - %f MB" sizeMB :: String)
             H.preEscapedToMarkup ("&nbsp;" :: String)
             H.form 
                ! A.action (H.toValue uri)
@@ -198,7 +197,7 @@ memoryAction pf uid = do
                   H.p (toHtml $ "Error: " ++ show err)
 
             Right _ ->
-               ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+               ok . toResponse . appTemplate pf ("Memory - " ++ uid) $
                   H.p (toHtml $ "Buffer (" ++ show bsize ++ " KB) successfully allocated")
 
       "release" -> do
@@ -211,7 +210,7 @@ memoryAction pf uid = do
          let Just b = buf
 
          lift $ memoryBufferRelease b
-         ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+         ok . toResponse . appTemplate pf ("Memory - " ++ uid) $
             H.p "Buffer released"
 
       _ -> mzero
@@ -226,7 +225,7 @@ showNetwork pf uid = do
    -- guard (isJust mem)
    -- let Just m = mem
 
-   ok . toResponse . appTemplate pf ("Network - " ++ uid) $ do
+   ok . toResponse . appTemplate pf ("Network - " ++ uid) $
       H.h2 (toHtml $ "Network - " ++ uid)
 
       -- H.ul $ do
