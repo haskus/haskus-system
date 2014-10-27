@@ -2,12 +2,19 @@
 module ViperVM.STM.TGraph
    ( deepFirst
    , breadthFirst
+   , TNode (..)
+   , singleton
+   , linkTo
    )
 where
 
 import qualified Data.Set as Set
-import Control.Monad (foldM, foldM_, when)
+import Control.Monad (foldM, foldM_, when, void)
+import Control.Concurrent.STM
+import Control.Applicative ((<$>), (<*>))
 
+import ViperVM.STM.TList (TList)
+import qualified ViperVM.STM.TList as TList
 
 -- | Deep-first graph traversal
 --
@@ -58,3 +65,22 @@ breadthFirst visit children = go Set.empty
                -- visit and we continue the traversal
                cs <- children x
                go (Set.insert x visited) (xs ++ cs)
+
+
+-- | A node contains a value and two lists of incoming/outgoing edges
+data TNode a r = TNode
+   { nodeValue :: a
+   , nodeEdgeIn :: TList (r, TNode a r)
+   , nodeEdgeOut :: TList (r, TNode a r)
+   }
+
+-- | Create a graph node
+singleton :: a -> STM (TNode a r)
+singleton v = TNode v <$> TList.empty <*> TList.empty
+
+-- | Link two nodes together
+linkTo :: TNode a r -> r -> TNode a r -> STM ()
+linkTo src rel dst = do
+   void $ TList.append (rel, src) (nodeEdgeIn dst)
+   void $ TList.append (rel, dst) (nodeEdgeOut src)
+
