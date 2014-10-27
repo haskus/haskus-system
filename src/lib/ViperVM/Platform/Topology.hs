@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TupleSections #-}
 
 -- | Platform topology
