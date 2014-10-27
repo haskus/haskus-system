@@ -3,7 +3,7 @@ module ViperVM.Platform.Memory.MultiData
    )
 where
 
-import ViperVM.Platform.Memory.Data
+import ViperVM.Platform.Types (Data)
 import ViperVM.STM.TList
 
 data MultiData p i = MultiData

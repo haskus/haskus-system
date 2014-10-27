@@ -20,8 +20,7 @@ import qualified ViperVM.Platform.Drivers.Host as Host
 import qualified ViperVM.STM.TSet as TSet
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
-import ViperVM.Platform.Topology
-import ViperVM.Platform.Memory.Buffer
+import ViperVM.Platform.Types (Memory(..), Buffer(..))
 
 -- | Indicate the endianness of a memory
 memoryEndianness :: Memory -> Endianness
@@ -40,20 +39,23 @@ memoryBufferCount :: Memory -> STM Int
 memoryBufferCount mem = TSet.size (memoryBuffers mem)
 
 -- | Allocate a buffer of the given size in the memory 
-memoryBufferAllocate :: Word64 -> Memory -> IO (Either AllocError MemoryBuffer)
+memoryBufferAllocate :: Word64 -> Memory -> IO (Either AllocError Buffer)
 memoryBufferAllocate sz mem = do
-   b <- fmap (Buffer sz) <$> Peer.allocateBuffer sz (memoryPeer mem)
+   b <- fmap (Buffer mem sz) <$> Peer.allocateBuffer sz (memoryPeer mem)
 
    forM_ b $ \b' ->
       -- Add allocated buffer to memory buffer list
       atomically $ TSet.insert b' (memoryBuffers mem)
 
-   return (MemoryBuffer mem <$> b)
+   return b
+
 
 -- | Release a buffer
-memoryBufferRelease :: MemoryBuffer -> IO ()
-memoryBufferRelease (MemoryBuffer mem buf) = do
-   -- Remove buffer from memory buffer list
-   atomically $ TSet.delete buf (memoryBuffers mem)
+memoryBufferRelease :: Buffer -> IO ()
+memoryBufferRelease b = do
+   let mem = bufferMemory b
 
-   Peer.releaseBuffer (memoryPeer mem) (bufferPeer buf)
+   -- Remove buffer from memory buffer list
+   atomically $ TSet.delete b (memoryBuffers mem)
+
+   Peer.releaseBuffer (memoryPeer mem) (bufferPeer b)

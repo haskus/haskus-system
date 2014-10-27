@@ -1,21 +1,14 @@
 -- | Low-level data
 module ViperVM.Platform.Memory.Data 
-   ( Data(..)
-   , dataCoveringRegion
+   ( dataCoveringRegion
    , dataCoveringRegion1D
    )
 where
 
-import Data.Word (Word64)
-
+import ViperVM.Platform.Types (Data(..))
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Region
 
--- | A data physically stored in memory with the given layout
-data Data = Data 
-   { dataOffset :: Word64
-   , dataLayout :: Layout
-   }
 
 -- | Return the smallest covering shape
 dataCoveringShape :: Data -> Shape

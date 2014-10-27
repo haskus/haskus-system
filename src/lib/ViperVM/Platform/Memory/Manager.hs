@@ -15,8 +15,7 @@ module ViperVM.Platform.Memory.Manager
 where
 
 import ViperVM.Platform.Memory
-import ViperVM.Platform.Memory.Data
-import ViperVM.Platform.Topology
+import ViperVM.Platform.Types(Memory, Data(..))
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Layout
@@ -34,7 +33,7 @@ type DataRef = Word64
 -- | Memory manager
 data Manager = Manager 
    { managerMemory   :: Memory
-   , managerData     :: TMap DataRef BufferData
+   , managerData     :: TMap DataRef Data
    , managerLastRef  :: TVar DataRef
    }
 
@@ -52,8 +51,8 @@ initManager _ mem = Manager mem
    <*> newTVarIO 0
 
 -- | Store a buffer data and return a new data reference
-storeBufferData :: Manager -> BufferData -> IO DataRef
-storeBufferData m d = atomically $ do
+storeData :: Manager -> Data -> IO DataRef
+storeData m d = atomically $ do
    let 
       lst = managerLastRef m
       ds = managerData m
@@ -76,7 +75,7 @@ allocateData fm m = do
    buf <- memoryBufferAllocate (sizeOf fm) mem
    case buf of
       Left err -> return (Left err)
-      Right b  -> Right <$> storeBufferData m (BufferData b (Data 0 fm))
+      Right b  -> Right <$> storeData m (Data b 0 fm)
 
 -- | Allocate a data in a newly allocated data in memory, passing endianness as a parameter for layout definition
 allocateDataWithEndianness :: (Endianness -> Layout) -> Manager -> IO (Either AllocError DataRef)
@@ -93,4 +92,4 @@ releaseData m ref = do
       TMap.delete ref ds
       return d
 
-   traverse_ (memoryBufferRelease . bufferDataBuffer) d'
+   traverse_ (memoryBufferRelease . dataBuffer) d'

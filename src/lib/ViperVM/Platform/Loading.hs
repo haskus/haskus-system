@@ -20,7 +20,13 @@ import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
 import ViperVM.Platform.Host
-import ViperVM.Platform.Topology
+import ViperVM.Platform.Types 
+   ( Memory(..)
+   , Network(..)
+   , NetworkType(..)
+   , Duplex(..)
+   , Proc(..)
+   )
 import ViperVM.Platform.Config
 import ViperVM.STM.TSet (TSet)
 import qualified ViperVM.STM.TSet as TSet

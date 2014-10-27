@@ -10,6 +10,7 @@ module ViperVM.Platform.Host
 where
 
 import ViperVM.Platform.Topology
+import ViperVM.Platform.Types (Memory, MemoryUID, memoryUID)
 import ViperVM.STM.TSet (TSet)
 import qualified ViperVM.STM.TSet as TSet
 import ViperVM.STM.TGraph (deepFirst,breadthFirst)

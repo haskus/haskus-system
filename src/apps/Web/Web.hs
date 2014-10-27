@@ -6,8 +6,13 @@ import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
 import ViperVM.Platform.Memory
-import ViperVM.Platform.Memory.Buffer
-import ViperVM.Platform.Topology as V
+import ViperVM.Platform.Types
+   ( Memory(..)
+   , memoryUID
+   , networkUID
+   , Buffer(..)
+   , bufferUID
+   )
 import qualified ViperVM.STM.TSet as TSet
 
 import Paths_ViperVM
@@ -205,7 +210,7 @@ memoryAction pf uid = do
          guard (isJust buf)
          let Just b = buf
 
-         lift $ memoryBufferRelease (MemoryBuffer m b)
+         lift $ memoryBufferRelease b
          ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
             H.p "Buffer released"
 

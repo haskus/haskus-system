@@ -8,20 +8,24 @@ module ViperVM.Platform.TransferBench
 where
 
 import ViperVM.Platform.Transfer
-import ViperVM.Platform.NetworkBench
 import ViperVM.Platform.TransferResult
-import ViperVM.Platform.Topology
+import ViperVM.Platform.Types
+   ( Memory
+   , Network(..)
+   , NetworkBenchResult(..)
+   , BenchResult(..)
+   , Buffer
+   )
 import ViperVM.Platform.Memory.Region
-import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Memory
 
 import qualified ViperVM.STM.TMap as TMap
-import qualified ViperVM.STM.TSet as TSet
+import qualified ViperVM.STM.TList as TList
 
 import Control.Concurrent.STM
+import Control.Applicative ((<$>))
 import Data.Traversable (forM)
 import Criterion.Measurement
-import qualified Data.Map as Map
 
 -- | Bench network and store results
 networkBenchStore :: Network -> Memory -> Memory -> IO ()
@@ -33,9 +37,9 @@ networkBenchStore net m1 m2 = do
       bs <- TMap.lookup (m1,m2) benchs
       case bs of
          Nothing -> do
-            s <- TSet.singleton res
+            s <- TList.singleton res
             TMap.insert (m1,m2) s benchs
-         Just rs -> TSet.insert res rs
+         Just rs -> TList.append_ res rs
 
 
 -- | Bench a link between two memories
@@ -58,13 +62,13 @@ networkBench net m1 m2 = do
          (Right b, Left _)    -> memoryBufferRelease b >> return BenchFailed
          (Right b1, Right b2) -> do
             let r = Region1D 0 size
-            res <- transferBench net (memoryBufferBuffer b1,r) (memoryBufferBuffer b2,r)
+            res <- transferBench net (b1,r) (b2,r)
             memoryBufferRelease b1
             memoryBufferRelease b2
             return res
 
    -- Return results
-   return $ NetworkBenchResult $ Map.fromList (bufSizes1D `zip` res1D)
+   NetworkBenchResult <$> atomically (TList.fromList $ bufSizes1D `zip` res1D)
                      
 
 -- | Bench a transfer over a network

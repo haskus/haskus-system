@@ -8,7 +8,7 @@ import ViperVM.Platform.Host
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Config
-import ViperVM.Platform.Topology
+import ViperVM.Platform.Types(Memory(..))
 import qualified ViperVM.STM.TSet as TSet
 
 main :: IO ()

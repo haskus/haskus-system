@@ -2,6 +2,7 @@
 module ViperVM.STM.TList
    ( TList
    , empty
+   , singleton
    , null
    , length
    , first
@@ -11,16 +12,21 @@ module ViperVM.STM.TList
    , value
    , delete
    , append
+   , append_
    , prepend
+   , prepend_
    , insertBefore
    , insertAfter
    , toList
+   , fromList
    )
 where
 
 import Prelude hiding (null,length,last)
 
 import Control.Concurrent.STM
+import Data.Foldable (forM_)
+import Control.Monad (void)
 
 import qualified Data.STM.LinkedList as LL
 
@@ -35,6 +41,13 @@ value = LL.value
 -- | Create an empty list
 empty :: STM (TList e)
 empty = LL.empty
+
+-- | Create a singleton list
+singleton :: e -> STM (TList e)
+singleton e = do
+   m <- empty
+   void $ append e m
+   return m
 
 -- | Indicate if the list is empty
 null :: TList e -> STM Bool
@@ -68,9 +81,17 @@ delete = LL.delete
 append :: a -> TList a -> STM (TNode a)
 append = LL.append
 
+-- | Append an element to the list
+append_ :: a -> TList a -> STM ()
+append_ a = void . append a
+
 -- | Prepend an element to the list
 prepend :: a -> TList a -> STM (TNode a)
 prepend = LL.prepend
+
+-- | Prepend an element to the list
+prepend_ :: a -> TList a -> STM ()
+prepend_ a = void . prepend a
 
 -- | Insert an element before another
 insertBefore :: a -> TNode a -> STM (TNode a)
@@ -83,3 +104,10 @@ insertAfter = LL.insertAfter
 -- | Convert into a list
 toList :: TList a -> STM ([a])
 toList = LL.toList
+
+-- | Create from a list
+fromList :: [e] -> STM (TList e)
+fromList xs = do
+   s <- empty
+   forM_ xs (`append` s)
+   return s

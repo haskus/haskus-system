@@ -62,6 +62,7 @@ library
     ViperVM.Platform.Drivers.OpenCL
     ViperVM.Platform.Drivers.Host
 
+    ViperVM.Platform.Types
     ViperVM.Platform.Host
     ViperVM.Platform.PlatformInfo
     ViperVM.Platform.Topology
@@ -71,12 +72,10 @@ library
     ViperVM.Platform.Transfer
     ViperVM.Platform.TransferResult
     ViperVM.Platform.TransferBench
-    ViperVM.Platform.NetworkBench
 
     ViperVM.Platform.Memory.Region
     ViperVM.Platform.Memory.Layout
     ViperVM.Platform.Memory.Data
-    ViperVM.Platform.Memory.Buffer
     ViperVM.Platform.Memory.MultiData
 
     ViperVM.Platform.Memory.Manager

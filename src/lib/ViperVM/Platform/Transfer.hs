@@ -13,9 +13,8 @@ import Control.Monad (void)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 
-import ViperVM.Platform.Topology
+import ViperVM.Platform.Types (Buffer(..), Network(..), Data(..))
 import ViperVM.Platform.TransferResult
-import ViperVM.Platform.Memory.Buffer
 import ViperVM.Platform.Memory.Data
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Drivers (transferRegion)
@@ -26,16 +25,10 @@ data Transfer = Transfer
    }
 
 -- | Asynchronously transfer a data
-networkTransferData :: Network -> BufferData -> BufferData -> IO Transfer
-networkTransferData net src dst = do
-   let
-      MemoryBufferData _ b1 d1 = src
-      MemoryBufferData _ b2 d2 = dst
-
-      r1 = dataCoveringRegion d1
-      r2 = dataCoveringRegion d2
-
-   networkTransferRegionAsync net (b1,r1) (b2,r2)
+networkTransferData :: Network -> Data -> Data -> IO Transfer
+networkTransferData net src dst = networkTransferRegionAsync net 
+   (dataBuffer src, dataCoveringRegion src)
+   (dataBuffer dst, dataCoveringRegion dst)
 
 -- | Transfer a region
 networkTransferRegion :: Bool -> Network -> (Buffer,Region) -> (Buffer,Region) -> IO Transfer
