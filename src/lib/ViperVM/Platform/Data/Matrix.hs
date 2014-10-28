@@ -1,12 +1,22 @@
 -- | Matrix module
-module ViperVM.Platform.Data.Matrix where
+module ViperVM.Platform.Data.Matrix 
+   ( Matrix
+   , MatrixParameters(..)
+   , MatrixCellType(..)
+   , MatrixRepresentation(..)
+   , MatrixSource(..)
+   , new
+   )
+where
+
+import Control.Concurrent.STM
 
 import ViperVM.Platform.Memory.Layout
-import ViperVM.Platform.Memory.MultiData
+import qualified ViperVM.Platform.Memory.MultiData as MD
 import Data.Word
 
 -- | Matrix
-type Matrix = MultiData MatrixParameters MatrixRepresentation MatrixSource
+type Matrix = MD.MultiData MatrixParameters MatrixRepresentation MatrixSource
 
 -- | Matrix parameters
 data MatrixParameters = MatrixParameters
@@ -36,3 +46,7 @@ data MatrixSource
       , sourceSubOffset :: [Word64] -- ^ Offset of the first element
       , sourceSubDims   :: [Word64] -- ^ Dimensions
       }
+
+-- | Create a new Matrix
+new :: MatrixParameters -> STM Matrix
+new = MD.new

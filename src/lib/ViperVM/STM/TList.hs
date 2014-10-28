@@ -1,6 +1,7 @@
 -- | Transactional list
 module ViperVM.STM.TList
    ( TList
+   , TNode
    , empty
    , singleton
    , null

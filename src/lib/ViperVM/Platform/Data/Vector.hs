@@ -1,12 +1,22 @@
 -- | Vector module
-module ViperVM.Platform.Data.Vector where
+module ViperVM.Platform.Data.Vector 
+   ( Vector
+   , VectorParameters(..)
+   , VectorCellType(..)
+   , VectorRepresentation(..)
+   , VectorSource(..)
+   , new
+   )
+where
+
+import Control.Concurrent.STM
 
 import ViperVM.Platform.Memory.Layout
-import ViperVM.Platform.Memory.MultiData
+import qualified ViperVM.Platform.Memory.MultiData as MD
 import Data.Word
 
 -- | Vector
-type Vector = MultiData VectorParameters VectorRepresentation VectorSource
+type Vector = MD.MultiData VectorParameters VectorRepresentation VectorSource
 
 -- | Data parameters
 data VectorParameters = VectorParameters
@@ -33,3 +43,8 @@ data VectorSource
       , sourceSubOffset :: Word64   -- ^ Offset
       , sourceSubSize   :: Word64   -- ^ Size
       }
+
+
+-- | Create a new Vector
+new :: VectorParameters -> STM Vector
+new = MD.new
