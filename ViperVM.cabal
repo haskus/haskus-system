@@ -80,8 +80,8 @@ library
 
     ViperVM.Platform.Memory.Manager
 
-    ViperVM.Platform.Memory.Matrix
-    ViperVM.Platform.Memory.Vector
+    ViperVM.Platform.Data.Matrix
+    ViperVM.Platform.Data.Vector
 
     ViperVM.STM.TMap
     ViperVM.STM.TSet

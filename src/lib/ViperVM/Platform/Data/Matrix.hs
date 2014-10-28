@@ -1,5 +1,5 @@
 -- | Matrix module
-module ViperVM.Platform.Memory.Matrix where
+module ViperVM.Platform.Data.Matrix where
 
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.MultiData

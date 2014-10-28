@@ -1,5 +1,5 @@
 -- | Vector module
-module ViperVM.Platform.Memory.Vector where
+module ViperVM.Platform.Data.Vector where
 
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.MultiData
