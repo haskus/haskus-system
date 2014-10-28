@@ -8,6 +8,7 @@ import ViperVM.Platform.Config
 import ViperVM.Platform.Loading
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Data
+import qualified ViperVM.Platform.Data.Vector as Vector
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Transfer
 import ViperVM.Platform.TransferBench
@@ -26,13 +27,19 @@ main = do
    putStrLn "============================================"
    putStrLn "Testing allocation/release..."
 
+   let
+      vsize = 200*1024*1024
+   vector <- atomically $ Vector.new (Vector.VectorParameters Vector.FDouble vsize)
+
    putStrLn "\nAllocating data in each memory"
    datas <- forM mems $ \mem -> do
       let 
-         layout endian = Array (Scalar (DoubleField endian)) (200*1024*1024)
+         layout endian = Array (Scalar (DoubleField endian)) vsize
          f = either (error . ("Allocation error: " ++) . show) id
       
-      f <$> allocateDataWithEndianness layout mem
+      d <- f <$> allocateDataWithEndianness layout mem
+      atomically $ Vector.attach_ vector Vector.DenseVector d
+      return d
 
    putStrLn "\nReleasing data in each memory"
    traverse_ releaseData datas
