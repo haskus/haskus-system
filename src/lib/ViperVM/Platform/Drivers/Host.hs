@@ -3,15 +3,16 @@ module ViperVM.Platform.Drivers.Host
    ( Memory(..)
    , Buffer(..)
    , Proc(..)
-   , allocateBuffer
-   , releaseBuffer
    , hostMemUID
    , hostProcUID
    , hostBufferUID
+   , allocateBuffer
+   , releaseBuffer
+   , registerBuffer
    )
 where
 
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr,castPtr)
 import Data.Word (Word,Word64)
 import Data.Ord (comparing)
 import Control.Applicative ((<$>))
@@ -34,7 +35,8 @@ instance Ord Memory where
    compare = comparing hostMemNode
 
 data Buffer = Buffer 
-   { hostBufferPtr :: Ptr ()
+   { hostBufferSize :: Word64
+   , hostBufferPtr :: Ptr ()
    } deriving (Eq,Ord)
 
 data Proc = Proc
@@ -56,8 +58,13 @@ hostBufferUID buf = printf "Host Buffer %s" (show . hostBufferPtr $ buf)
 
 -- | Allocate a buffer in host memory
 allocateBuffer :: Word64 -> Memory -> IO (Either AllocError Buffer)
-allocateBuffer size _ = fmap Buffer <$> Posix.malloc (fromIntegral size)
+allocateBuffer size _ = fmap (Buffer size) <$> Posix.malloc (fromIntegral size)
 
 -- | Release a buffer in host memory
 releaseBuffer :: Memory -> Buffer -> IO ()
 releaseBuffer _ buf = Posix.free (hostBufferPtr buf)
+
+
+-- | Convert a pointer into a buffer
+registerBuffer :: Memory -> Ptr a -> Word64 -> Buffer
+registerBuffer _ ptr size = Buffer size (castPtr ptr)

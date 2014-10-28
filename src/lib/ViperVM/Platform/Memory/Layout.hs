@@ -38,7 +38,7 @@ data Layout =
                                  --   for the considered data, but that may have for another)
    | InvalidPadding Word64       -- ^ Padding bytes (i.e. interleaved bytes that have no meaning 
                                  --   for ANY data)
-   deriving (Show)
+   deriving (Eq,Show)
 
 -- | Path to select a field in a field map
 newtype FieldPath = FieldPath [Word64]
@@ -50,7 +50,7 @@ type ArraySize = Word64
 data Sign
    = Signed 
    | Unsigned
-   deriving (Show)
+   deriving (Eq,Ord,Show)
 
 -- | Number of bits representing an integral field
 data IntBits
@@ -58,14 +58,14 @@ data IntBits
    | Bit16 
    | Bit32 
    | Bit64
-   deriving (Show)
+   deriving (Eq,Ord,Show)
 
 -- | Scalar field
 data ScalarField =
      IntField Sign IntBits Endianness  -- ^ Numeric integral field (signed or not)
    | FloatField Endianness             -- ^ Single precision floating-point field (IEEE 754)
    | DoubleField Endianness            -- ^ Double precision floating-point field (IEEE 754)
-   deriving (Show)
+   deriving (Eq,Show)
 
 -- | Data type with a fixed number of bytes to represent it
 class SizeOf t where
