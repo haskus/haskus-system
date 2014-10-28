@@ -79,5 +79,6 @@ attach v r d = case r of
       -- Add instance
       MD.addInstance v r d
 
+-- | Attach an existing data (see `attach` if you want to get the instance)
 attach_ :: Vector -> VectorRepresentation -> Data -> STM ()
 attach_ v r d = void $ attach v r d

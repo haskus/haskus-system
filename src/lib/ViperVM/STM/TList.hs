@@ -31,8 +31,10 @@ import Control.Monad (void)
 
 import qualified Data.STM.LinkedList as LL
 
+-- | A transactional list
 type TList a = LL.LinkedList a
 
+-- | A node in the list
 type TNode a = LL.Node a
 
 -- | Get value associated with a node
