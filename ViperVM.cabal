@@ -78,8 +78,6 @@ library
     ViperVM.Platform.Memory.Data
     ViperVM.Platform.Memory.MultiData
 
-    ViperVM.Platform.Memory.Manager
-
     ViperVM.Platform.Data.Matrix
     ViperVM.Platform.Data.Vector
 
