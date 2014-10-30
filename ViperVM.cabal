@@ -76,7 +76,7 @@ library
     ViperVM.Platform.Memory.Region
     ViperVM.Platform.Memory.Layout
     ViperVM.Platform.Memory.Data
-    ViperVM.Platform.Memory.MultiData
+    ViperVM.Platform.Memory.Object
 
     ViperVM.Platform.Data.Matrix
     ViperVM.Platform.Data.Vector

@@ -12,11 +12,11 @@ where
 import Control.Concurrent.STM
 
 import ViperVM.Platform.Memory.Layout
-import qualified ViperVM.Platform.Memory.MultiData as MD
+import qualified ViperVM.Platform.Memory.Object as MD
 import Data.Word
 
 -- | Matrix
-type Matrix = MD.MultiData MatrixParameters MatrixRepresentation MatrixSource
+type Matrix = MD.Object MatrixParameters MatrixRepresentation MatrixSource
 
 -- | Matrix parameters
 data MatrixParameters = MatrixParameters

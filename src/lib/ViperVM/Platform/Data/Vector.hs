@@ -16,11 +16,11 @@ import Control.Monad (void)
 
 import ViperVM.Platform.Types(Data(..))
 import ViperVM.Platform.Memory.Layout
-import qualified ViperVM.Platform.Memory.MultiData as MD
+import qualified ViperVM.Platform.Memory.Object as MD
 import Data.Word
 
 -- | Vector
-type Vector = MD.MultiData VectorParameters VectorRepresentation VectorSource
+type Vector = MD.Object VectorParameters VectorRepresentation VectorSource
 
 -- | Data parameters
 data VectorParameters = VectorParameters

@@ -1,6 +1,6 @@
 -- | Data with several instances
-module ViperVM.Platform.Memory.MultiData
-   ( MultiData(..)
+module ViperVM.Platform.Memory.Object
+   ( Object(..)
    , DataInstance(instanceData,instanceRepr)
    , new
    , addInstance
@@ -19,7 +19,7 @@ import ViperVM.STM.TList as TList
 --
 -- * parameterized with p
 -- * stored in different locations and with potentially different representation r
-data MultiData p r s = MultiData
+data Object p r s = Object
    { mdParameters :: p                      -- ^ Parameters of the data
    , mdInstances  :: TList (DataInstance r) -- ^ Data instances
    , mdSources    :: TList s                -- ^ Sources (data from which we can obtain this one using s)
@@ -33,13 +33,13 @@ data DataInstance r = DataInstance
    , instanceNode :: TMVar (TList.TNode (DataInstance r)) -- ^ Node in the instance list
    }
 
--- | Create a new MultiData
-new :: p -> STM (MultiData p r s)
-new p = MultiData p <$> TList.empty <*> TList.empty <*> TList.empty
+-- | Create a new Object
+new :: p -> STM (Object p r s)
+new p = Object p <$> TList.empty <*> TList.empty <*> TList.empty
 
 
 -- | Add an instance
-addInstance :: MultiData p r s -> r -> Data -> STM (DataInstance r)
+addInstance :: Object p r s -> r -> Data -> STM (DataInstance r)
 addInstance md r d = do
    di <- DataInstance d r <$> newEmptyTMVar
    node <- TList.append di (mdInstances md)
