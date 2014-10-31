@@ -1,0 +1,170 @@
+\documentclass[twocolumn]{article}
+
+\usepackage[xcolor]{rvdtx}
+
+%\usepackage[fontsize=8pt,baseline=9.6pt,lines=50]{grid}
+%\usepackage[fontsize=9pt,baseline=10.8pt]{grid}
+\usepackage[fontsize=10pt,baseline=12pt,lines=53]{grid}
+%\usepackage[fontsize=11pt,baseline=13.2pt]{grid}
+%\usepackage[fontsize=12pt,baseline=14.4pt]{grid}
+%\usepackage[fontsize=20pt,baseline=24pt,lines=20]{grid}
+
+\newcommand{\ip}[2]{(#1, #2)}
+\columnsep=20pt
+\begin{document}
+
+\title{ViperVM -- Memory and Data Management}
+\author{Sylvain HENRY}
+\contact{hsyl20@gmail.com}
+\version{1.0}
+\date{2014/10/31}
+%\keywords{\LaTeX, grid typesetting}
+
+\newtheorem{defin}{Definition}
+
+\maketitle
+
+\section{Introduction}
+
+ViperVM automatically manages heterogeneous distributed memory.
+
+\section{Layers}
+
+\subsection{Allocation}
+
+On systems with paging, memory has to be allocated by the application to be
+used. An allocation basically reserves a set of pages that are or will later be
+mapped on physical memory. We call the result of an allocation a \emph{buffer}.
+
+\begin{defin}
+A \emph{buffer} is a contiguous indexed set of cells characterized by:
+\begin{itemize}
+   \item its size
+   \item the memory it is allocated in
+\end{itemize}
+\end{defin}
+
+On systems without paging, all of the memory is directly accessible. A single
+buffer could be used to encompass the whole memory.
+
+\subsection{Data}
+
+Buffers can contain arbitrary data in their cells. However, we want the runtime
+system to have a representation of the data contained into them. \emph{Data} are
+used to describe some cells of a buffer.
+
+\begin{defin}
+A \emph{data} is characterized by
+\begin{itemize}
+   \item the buffer it is in
+   \item the index of the first cell of the buffer described by the data
+   \item a data layout
+\end{itemize}
+\end{defin}
+
+\begin{defin}
+A \emph{data layout} consists in the description of several cells. It can be:
+\begin{itemize}
+   \item A scalar: Float, Double, Signed/Unsigned Integer of arbitrary precision
+   (in bytes). Parameterize with the endianness.
+   \item An array with a fixed length: parameterized with a data layout used for
+   each cell
+   \item A structure: a vector of data layouts
+   \item A number of padding bytes: valid or invalid bytes that must be skipped
+   in arrays of structures
+\end{itemize}
+\end{defin}
+
+Scalars are parameterized with their endianness (the order of the bytes
+composing them). This is because data can be transferred from on memory to
+another which does not use the same kind of byte ordering. Without explicitly
+performing the byte reordering, scalars cannot be used directly in the new
+memory except for single byte ones. With data layouts, the runtime system has
+enough information to automatically perform this reordering or to generate
+kernels to do it.
+
+The distinction between valid and invalid padding bytes in a layout can be used
+by the runtime system for instance to optimize data transfers: it may be cheaper
+to perform a single transfer overwriting invalid padding bytes than to avoid
+overwriting them (e.g. strided transfer or several transfers).
+
+\begin{defin}
+A \emph{region} is a untyped set of cells in a buffer. We currently support two
+kinds of region:
+\begin{itemize}
+   \item 1D region: contiguous set of cells characterized by an offset and a
+   number of cells.
+   \item 2D region: strided set of cells characterized by an offset, a row size,
+   a number of rows and a number of padding cells between two rows.
+\end{itemize}
+\end{defin}
+
+Regions are used to perform data transfers. A data can easily be converted into
+a region by using its layout. DMA (direct-memory access) modules may support
+transfers with strides which correspond to 2D regions. It may not be required
+that the source and target numbers of padding cells are equal.
+
+\subsection{Object}
+
+An object is an \emph{immutable} abstract data representation with its own
+parameters. It can have several concrete instances which are Data parametrized
+with representation parameters.
+
+For instance, a Matrix object is parameterized by its cell type and
+the number and sizes of its dimensions. It is an abstract data because
+conceptually it is just a function from the index domain (given by its
+dimensions) to the codomain (given by its cell type). However its concrete
+instances can be: 
+\begin{itemize}
+   \item A dense array: parameters of the representation define
+dimension storage order (row major, column major, generalized to any number of
+dimensions)
+   \item A sparse representation: compressed row-storage, etc.
+\end{itemize}
+
+An object can also be created from other source objects in an abstract way. For
+instance, a sub-matrix can be defined by a source matrix and (offset,range)
+couples for each dimensions.
+
+\begin{defin}
+An object is characterized by
+\begin{itemize}
+   \item The type of its parameters
+   \item A list of concrete data instances each associated to representation parameters
+   \item A list of object sources each associated with source parameters
+   \item A list of object targets (objects using this one as a source)
+\end{itemize}
+\end{defin}
+
+
+\section{Garbage Collection}
+
+\subsection{Data}
+
+Data cannot contain references (pointers) to other data. Hence there cannot be
+any cycle and a kind of reference counting algorithm can be used. They can only
+be referenced by one object at a time, so they live at most as long as their
+associated object.
+
+A data can be detached from its object iff the object has at least one other
+concrete data instance or has at least one object source. Detaching a data can
+be used to release it or to perform a transformation and before attaching it to
+another object.
+
+\subsection{Objects}
+
+Objects can reference other objects (as sources or targets). The link (A,B) is:
+\begin{itemize}
+   \item strong: object A has no concrete instance and has only object B as
+   source
+   \item weak: object A has object B as source but also have at least one concrete
+   instances and/or other object sources
+\end{itemize}
+
+If for all $x$, links ($x$, B) are weak, B can be released and links must be
+removed. Otherwise, before releasing B, all the $x$ objects so that the link
+($x$, B) is weak must create a concrete instance from B.
+
+\end{document}  
+
+% End of document.
