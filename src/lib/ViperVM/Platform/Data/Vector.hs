@@ -59,8 +59,8 @@ attach v r d = case r of
 
    DenseVector -> do
       let 
-         vsize = vectorSize (MD.mdParameters v)
-         vct = vectorCellType (MD.mdParameters v)
+         vsize = vectorSize (MD.objectParameters v)
+         vct = vectorCellType (MD.objectParameters v)
 
       -- Check layout (1D array with appropriate cell type and size)
       case (vct, dataLayout d) of

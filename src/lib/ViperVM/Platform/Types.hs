@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ExistentialQuantification #-}
 
 -- | Types used in Platform
 module ViperVM.Platform.Types
@@ -23,6 +24,9 @@ module ViperVM.Platform.Types
    , NetworkType(..)
    , BenchResult(..)
    , NetworkBenchResult(..)
+   -- * Multi-data
+   , MultiData (..)
+   , MultiData_(..)
    )
 where
 
@@ -178,7 +182,28 @@ instance Hashable Buffer where
 
 -- | A data physically stored in memory with the given layout
 data Data = Data 
-   { dataBuffer :: Buffer
-   , dataOffset :: Word64
-   , dataLayout :: Layout
+   { dataBuffer :: Buffer           -- ^ Buffer containing the data
+   , dataOffset :: Word64           -- ^ Offset in the buffer
+   , dataLayout :: Layout           -- ^ Layout of the data
+   , dataOwner  :: TMVar MultiData  -- ^ Owner node: it can't be an Object,
+                                    -- otherwise type parameters would be
+                                    -- needed. Existential quantification is
+                                    -- used to avoid this.
    }
+
+
+---------------------------------------------------------------
+-- MULTI DATA
+---------------------------------------------------------------
+
+class MultiData_ o where
+   mdInstances :: o -> STM [Data]
+   mdSources :: o -> STM [MultiData]
+   mdTargets :: o -> STM [MultiData]
+
+-- | Multi data are used as untyped objects to create graphs of
+-- buffer/data/"object"
+--
+-- This should contain enough information to perform garbage collection and
+-- other memory management...
+data MultiData = forall o . MultiData_ o => MultiData o

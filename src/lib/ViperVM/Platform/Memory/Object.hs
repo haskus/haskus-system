@@ -2,6 +2,7 @@
 module ViperVM.Platform.Memory.Object
    ( Object(..)
    , DataInstance(instanceData,instanceRepr)
+   , MultiDatable(..)
    , new
    , addInstance
    , removeInstance
@@ -11,8 +12,10 @@ where
 import Control.Concurrent.STM
 import Control.Applicative ((<$>), (<*>))
 import Data.Foldable (traverse_)
+import Data.Traversable (traverse)
+import Control.Monad ((<=<))
 
-import ViperVM.Platform.Types (Data)
+import ViperVM.Platform.Types (Data,MultiData,MultiData_(..))
 import ViperVM.STM.TList as TList
 
 -- | A data with possibly more than one instance
@@ -20,10 +23,10 @@ import ViperVM.STM.TList as TList
 -- * parameterized with p
 -- * stored in different locations and with potentially different representation r
 data Object p r s = Object
-   { mdParameters :: p                      -- ^ Parameters of the data
-   , mdInstances  :: TList (DataInstance r) -- ^ Data instances
-   , mdSources    :: TList s                -- ^ Sources (data from which we can obtain this one using s)
-   , mdTargets    :: TList s                -- ^ Targets (data that can/must use our data to create theirs)
+   { objectParameters :: p                      -- ^ Parameters of the data
+   , objectInstances  :: TList (DataInstance r) -- ^ Data instances
+   , objectSources    :: TList s                -- ^ Sources (data from which we can obtain this one using s)
+   , objectTargets    :: TList s                -- ^ Targets (data that can/must use our data to create theirs)
    }
 
 -- | Data instance
@@ -33,6 +36,14 @@ data DataInstance r = DataInstance
    , instanceNode :: TMVar (TList.TNode (DataInstance r)) -- ^ Node in the instance list
    }
 
+class MultiDatable s where
+   toMultiData :: s -> STM MultiData
+
+instance MultiDatable s => MultiData_ (Object p r s) where
+   mdInstances = fmap (fmap instanceData) . TList.toList . objectInstances
+   mdSources = traverse toMultiData <=< (TList.toList . objectSources)
+   mdTargets = traverse toMultiData <=< (TList.toList . objectTargets)
+
 -- | Create a new Object
 new :: p -> STM (Object p r s)
 new p = Object p <$> TList.empty <*> TList.empty <*> TList.empty
@@ -40,9 +51,9 @@ new p = Object p <$> TList.empty <*> TList.empty <*> TList.empty
 
 -- | Add an instance
 addInstance :: Object p r s -> r -> Data -> STM (DataInstance r)
-addInstance md r d = do
+addInstance obj r d = do
    di <- DataInstance d r <$> newEmptyTMVar
-   node <- TList.append di (mdInstances md)
+   node <- TList.append di (objectInstances obj)
    putTMVar (instanceNode di) node
    return di
 
@@ -51,3 +62,5 @@ removeInstance :: DataInstance r -> STM ()
 removeInstance di = do
    node <- tryTakeTMVar (instanceNode di)
    traverse_ TList.delete node
+
+

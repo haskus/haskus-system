@@ -15,6 +15,8 @@ import ViperVM.Platform.Memory
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Region
 
+import Control.Concurrent.STM
+import Control.Applicative ((<$>))
 
 -- | Return the smallest covering shape
 dataCoveringShape :: Data -> Shape
@@ -34,9 +36,9 @@ allocateData :: Layout -> Memory -> IO (Either AllocError Data)
 allocateData fm mem = do
    buf <- memoryBufferAllocate (sizeOf fm) mem
    --TODO: associate data with buffer?
-   return $ case buf of
-      Left err -> Left err
-      Right b  -> Right (Data b 0 fm)
+   case buf of
+      Left err -> return (Left err)
+      Right b  -> Right . Data b 0 fm <$> atomically newEmptyTMVar
 
 -- | Allocate a data in a newly allocated data in memory, passing endianness as a parameter for layout definition
 allocateDataWithEndianness :: (Endianness -> Layout) -> Memory -> IO (Either AllocError Data)
