@@ -197,9 +197,9 @@ data Data = Data
 ---------------------------------------------------------------
 
 class MultiData_ o where
-   mdInstances :: o -> STM [Data]
-   mdSources :: o -> STM [MultiData]
-   mdTargets :: o -> STM [MultiData]
+   mdInstances :: o -> STM [Data]      -- ^ Retrieve data instances
+   mdSources :: o -> STM [MultiData]   -- ^ Retrieve multi data that can be used as sources
+   mdTargets :: o -> STM [MultiData]   -- ^ Retrieve multi data for which this data can be used as source
 
 -- | Multi data are used as untyped objects to create graphs of
 -- buffer/data/"object"
@@ -207,3 +207,8 @@ class MultiData_ o where
 -- This should contain enough information to perform garbage collection and
 -- other memory management...
 data MultiData = forall o . MultiData_ o => MultiData o
+
+instance MultiData_ MultiData where
+   mdInstances (MultiData a) = mdInstances a
+   mdSources (MultiData a) = mdSources a
+   mdTargets (MultiData a) = mdTargets a
