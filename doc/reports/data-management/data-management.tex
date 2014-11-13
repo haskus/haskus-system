@@ -136,6 +136,17 @@ An object is characterized by
 \end{itemize}
 \end{defin}
 
+\section{Distributed graph}
+
+If we want to make some space in a memory, we need to know which
+buffers/data/objects are stored in it (bottom-up traversal). However, if we
+schedule a kernel using some objects, we need to know which
+data/buffers/memories contain it (top-down traversal). Hence the graph has
+double-linked edges.
+
+We want to be able to modify the graph concurrently (e.g. performing garbage
+collection on several memories at the same time). We use \emph{software
+transactional memory} to make it possible easily.
 
 \section{Garbage Collection}
 
@@ -164,6 +175,8 @@ Objects can reference other objects (as sources or targets). The link (A,B) is:
 If for all $x$, links ($x$, B) are weak, B can be released and links must be
 removed. Otherwise, before releasing B, all the $x$ objects so that the link
 ($x$, B) is weak must create a concrete instance from B.
+
+
 
 \end{document}  
 
