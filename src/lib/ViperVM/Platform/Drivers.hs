@@ -3,6 +3,7 @@ module ViperVM.Platform.Drivers
    , BufferPeer(..)
    , ProcPeer(..)
    , NetworkPeer(..)
+   , KernelPeer(..)
    , allocateBuffer
    , releaseBuffer
    , transferRegion
@@ -43,32 +44,22 @@ data NetworkPeer =
      OpenCLNetwork OpenCL.Network
    deriving (Eq,Ord)
 
+data KernelPeer
+   = OpenCLKernel OpenCL.Kernel
+   | HostKernel
 
-data Driver mem buf = Driver 
-   { driverAllocateBuffer :: Word64 -> mem -> IO (Either AllocError buf)
-   , driverReleaseBuffer :: mem -> buf -> IO ()
-   }
 
-openclDriver :: Driver OpenCL.Memory OpenCL.Buffer
-openclDriver = Driver
-   OpenCL.allocateBuffer
-   OpenCL.releaseBuffer
-
-hostDriver :: Driver Host.Memory Host.Buffer
-hostDriver = Driver
-   Host.allocateBuffer
-   Host.releaseBuffer
 
 
 -- | Allocate a buffer of the given size in the memory 
 allocateBuffer :: Word64 -> MemoryPeer -> IO (Either AllocError BufferPeer)
-allocateBuffer size (HostMemory m) = fmap HostBuffer <$> driverAllocateBuffer hostDriver size m
-allocateBuffer size (OpenCLMemory m) = fmap OpenCLBuffer <$> driverAllocateBuffer openclDriver size m
+allocateBuffer size (HostMemory m)     = fmap HostBuffer    <$> Host.allocateBuffer   size m
+allocateBuffer size (OpenCLMemory m)   = fmap OpenCLBuffer  <$> OpenCL.allocateBuffer size m
 
 -- | Release a buffer
 releaseBuffer :: MemoryPeer -> BufferPeer -> IO ()
-releaseBuffer (HostMemory m) (HostBuffer b) = driverReleaseBuffer hostDriver m b
-releaseBuffer (OpenCLMemory m) (OpenCLBuffer b) = driverReleaseBuffer openclDriver m b
+releaseBuffer (HostMemory m) (HostBuffer b)     = Host.releaseBuffer m b
+releaseBuffer (OpenCLMemory m) (OpenCLBuffer b) = OpenCL.releaseBuffer m b
 releaseBuffer _ _ = error "Trying to release a buffer from an invalid memory"
 
 -- | Transfer a region

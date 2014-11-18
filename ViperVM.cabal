@@ -81,6 +81,9 @@ library
     ViperVM.Platform.Data.Matrix
     ViperVM.Platform.Data.Vector
 
+    ViperVM.Platform.Processing.Kernel
+
+
     ViperVM.STM.TMap
     ViperVM.STM.TSet
     ViperVM.STM.TList

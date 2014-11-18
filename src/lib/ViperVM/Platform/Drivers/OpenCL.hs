@@ -4,6 +4,7 @@ module ViperVM.Platform.Drivers.OpenCL
    , Buffer(..)
    , Network(..)
    , Proc(..)
+   , Kernel(..)
    , allocateBuffer
    , releaseBuffer
    , transferHostToDevice
@@ -71,6 +72,11 @@ instance Eq Proc where
 
 instance Ord Proc where
    compare = comparing clProcDevice
+
+
+data Kernel = Kernel
+   { clKernelPeer :: CL.Kernel
+   }
 
 -- | Unique network ID
 clNetUID :: Network -> String
