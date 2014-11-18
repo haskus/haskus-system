@@ -1,10 +1,14 @@
 # Future releases
 
+## Version 0.4
+
+* Support kernels
+
+# Past releases
+
 ## Version 0.3
 
 * Support meta-data (data with instances in different memories)
-
-# Past releases
 
 ## Version 0.2
 
