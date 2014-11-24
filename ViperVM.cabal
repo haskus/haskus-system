@@ -89,6 +89,9 @@ library
     ViperVM.STM.TList
     ViperVM.STM.TGraph
 
+
+    ViperVM.Library.Maths.MatrixOps
+
   c-sources: 
     src/lib/ViperVM/Arch/X86_64/Linux/syscall.c
 

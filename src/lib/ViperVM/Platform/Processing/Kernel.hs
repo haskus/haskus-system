@@ -20,7 +20,8 @@ data Task = Task
    }
 
 
+-- | A parameter of a task
 data TaskParameter
-   = ParamBuffer Buffer
-   | ParamData   Data
-   | ParamMultiData MultiData
+   = ParamBuffer Buffer          -- ^ Buffer reference
+   | ParamData   Data            -- ^ Data reference
+   | ParamMultiData MultiData    -- ^ Object reference
