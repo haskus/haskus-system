@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 
 -- | OpenCL device module
 module ViperVM.Arch.OpenCL.Device
@@ -14,6 +14,10 @@ module ViperVM.Arch.OpenCL.Device
    , isDeviceLittleEndian'
    , getDeviceGlobalMemSize
    , getDeviceGlobalMemSize'
+   , getDeviceName
+   , getDeviceName'
+   , getDeviceVendor
+   , getDeviceVendor'
    , getDeviceType
    , getDeviceType'
    , allDeviceTypes
@@ -35,7 +39,9 @@ import Data.Word (Word64)
 import Data.Ord (comparing)
 import Control.Applicative ((<$>))
 import Foreign.Ptr (Ptr, castPtr, nullPtr)
-import Foreign.Marshal.Alloc (alloca)
+import Foreign.C.Types (CSize)
+import Foreign.C.String (peekCString)
+import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Storable (peek, sizeOf)
 
 -- | Device
@@ -205,6 +211,23 @@ data CommandQueueProperty
 
 instance CLSet CommandQueueProperty
 
+-- | Return the required size to return a device info
+getDeviceInfoRetSize :: DeviceInfo -> Device -> IO (Either CLError CSize)
+getDeviceInfoRetSize infoid dev = do
+   alloca $ \(dat :: Ptr CSize) -> whenSuccess 
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) 0 nullPtr dat)
+      (peek dat)
+
+-- | Return a string device info
+getDeviceInfoString :: DeviceInfo -> Device -> IO (Either CLError String)
+getDeviceInfoString infoid dev = do
+   getDeviceInfoRetSize infoid dev >>= \case
+      Left err   -> return (Left err)
+      Right size -> do
+         allocaBytes (fromIntegral size) $ \dat -> whenSuccess 
+            (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
+            (peekCString dat)
+         
 
 -- | Return a boolean device info
 getDeviceInfoBool :: DeviceInfo -> Device -> IO (Either CLError Bool)
@@ -221,6 +244,23 @@ getDeviceInfoWord64 infoid dev = do
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
       (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
       (peek dat)
+
+
+-- | Return OpenCL device name
+getDeviceName :: Device -> IO (Either CLError String)
+getDeviceName = getDeviceInfoString CL_DEVICE_NAME
+
+-- | Return OpenCL device name (throw an exception on error)
+getDeviceName' :: Device -> IO String
+getDeviceName' = fmap toException . getDeviceName
+
+-- | Return OpenCL device name
+getDeviceVendor :: Device -> IO (Either CLError String)
+getDeviceVendor = getDeviceInfoString CL_DEVICE_VENDOR
+
+-- | Return OpenCL device name (throw an exception on error)
+getDeviceVendor' :: Device -> IO String
+getDeviceVendor' = fmap toException . getDeviceVendor
 
 -- | Return OpenCL device type
 getDeviceType :: Device -> IO (Either CLError [DeviceType])
