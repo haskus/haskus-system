@@ -12,6 +12,7 @@ module ViperVM.Platform.Drivers.OpenCL
    , clNetUID
    , clMemUID
    , clProcUID
+   , clProcModel
    , clBufferUID
    )
 where
@@ -20,6 +21,7 @@ import Data.Word (Word64)
 import Data.Ord (comparing)
 import Foreign.Ptr (Ptr,plusPtr)
 import Text.Printf
+import System.IO.Unsafe
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
@@ -89,6 +91,12 @@ clMemUID mem = printf "OpenCL Memory %s" (show . CL.unwrap . clMemDevice $ mem)
 -- | Unique memory ID
 clProcUID :: Proc -> String
 clProcUID proc = printf "OpenCL Proc %s" (show . CL.unwrap . clProcDevice $ proc)
+
+-- | Processor model
+clProcModel :: Proc -> String
+clProcModel proc = printf "%s - %s" (unsafePerformIO $ CL.getDeviceVendor' dev) (unsafePerformIO $ CL.getDeviceName' dev)
+   where
+      dev = clProcDevice proc
 
 -- | Unique buffer ID
 clBufferUID :: Buffer -> String

@@ -5,6 +5,7 @@ module ViperVM.Platform.Drivers.Host
    , Proc(..)
    , hostMemUID
    , hostProcUID
+   , hostProcModel
    , hostBufferUID
    , allocateBuffer
    , releaseBuffer
@@ -17,10 +18,12 @@ import Data.Word (Word,Word64)
 import Data.Ord (comparing)
 import Control.Applicative ((<$>))
 import Text.Printf
+import System.IO.Unsafe
 
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 import qualified ViperVM.Arch.Posix.Malloc as Posix
+import qualified ViperVM.Arch.X86_64.Cpuid as C
 
 data Memory = Memory
    { hostMemNode :: Word
@@ -51,6 +54,10 @@ hostMemUID _ = "Host Memory"
 -- | Unique proc ID
 hostProcUID :: Proc -> String
 hostProcUID p = printf "Host Proc %d:%d" (hostProcNode p) (hostProcIndex p)
+
+-- | Processor model
+hostProcModel :: Proc -> String
+hostProcModel _ = printf "%s - %s" (unsafePerformIO  C.procVendor) (unsafePerformIO C.procName)
 
 -- | Unique buffer ID
 hostBufferUID :: Buffer -> String

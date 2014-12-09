@@ -16,6 +16,7 @@ module ViperVM.Platform.Types
    , Data(..)
    -- * Processor   
    , Proc(..)
+   , procModelHash
    -- * Network   
    , Network(..)
    , NetworkUID
@@ -39,6 +40,7 @@ import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
+import ViperVM.Utils (hashString)
 import ViperVM.STM.TSet as TSet
 import ViperVM.STM.TMap
 import ViperVM.STM.TList
@@ -94,10 +96,15 @@ newtype ProcUID = ProcUID String deriving (Read, Show, Eq, Ord, Hashable)
 
 -- | Processor unique identifier (not stable between different program executions)
 procUID :: Proc -> ProcUID
-procUID mem = ProcUID $ case procPeer mem of
-   Peer.OpenCLProc m -> OpenCL.clProcUID m
-   Peer.HostProc m -> Host.hostProcUID m
+procUID proc = ProcUID $ case procPeer proc of
+   Peer.OpenCLProc p -> OpenCL.clProcUID p
+   Peer.HostProc p -> Host.hostProcUID p
 
+-- | Return a hash for the proc model
+procModelHash :: Proc -> String
+procModelHash proc = hashString $ case procPeer proc of
+   Peer.OpenCLProc p -> OpenCL.clProcModel p
+   Peer.HostProc p -> Host.hostProcModel p
 
 instance Hashable Proc where
    hashWithSalt salt p = hashWithSalt salt (procUID p)
