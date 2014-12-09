@@ -2,6 +2,7 @@
 module ViperVM.Arch.OpenCL.Program
    ( Program(..)
    , ProgramBuildStatus(..)
+   , buildProgram
    )
 where
 
@@ -9,8 +10,13 @@ import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Bindings
+import ViperVM.Arch.OpenCL.Device
+import ViperVM.Arch.OpenCL.Error
 
 import Control.Monad (void)
+import Foreign.Ptr
+import Foreign.C.String
+import Foreign.Marshal.Array (withArray)
 
 -- | Program
 data Program = Program Library Program_ deriving (Eq)
@@ -35,8 +41,17 @@ instance CLConstant ProgramBuildStatus where
 
 -- | Release a program
 releaseProgram :: Program -> IO ()
-releaseProgram ctx = void (rawClReleaseProgram (cllib ctx) (unwrap ctx))
+releaseProgram prog = void (rawClReleaseProgram (cllib prog) (unwrap prog))
 
 -- | Retain a program
 retainProgram :: Program -> IO ()
-retainProgram ctx = void (rawClRetainProgram (cllib ctx) (unwrap ctx))
+retainProgram prog = void (rawClRetainProgram (cllib prog) (unwrap prog))
+
+-- | Build a program for the specified device
+buildProgram :: Program -> Device -> String -> IO (Either CLError ())
+buildProgram prog dev options = do
+   withCString options $ \options' ->
+      withArray [(unwrap dev)] $ \dev' ->
+         whenSuccess
+            (rawClBuildProgram (cllib prog) (unwrap prog) 1 dev' options' nullFunPtr nullPtr)
+            (return ())
