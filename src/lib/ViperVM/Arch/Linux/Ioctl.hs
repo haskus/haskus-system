@@ -1,16 +1,20 @@
--- | Bindings from asm-generic/ioctl.h
+{-# LANGUAGE ScopedTypeVariables #-}
+-- | Linux IOCTL
+--
+-- Bindings from asm-generic/ioctl.h
 --
 -- Warning: some constants may be modified depending on the architecture. For now, we only support X86_64.
 module ViperVM.Arch.Linux.Ioctl
-   ( Command (..)
+   ( IOCTL
+   , Command (..)
    , Direction(..)
    , CommandType
    , CommandNumber
    , CommandSize
    , encodeCommand
    , decodeCommand
+   , ioctlRead
    , signalCommand
-   , readCommand
    , writeCommand
    , readWriteCommand
    )
@@ -18,9 +22,16 @@ where
 
 import Control.Applicative ((<$>))
 import Data.Word
+import Data.Int
 import Data.Bits
 import Foreign.Storable
 import Foreign.Ptr
+import Foreign.Marshal.Alloc (alloca)
+
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
+
+import ViperVM.Arch.X86_64.Linux.Syscall
 
 type CommandType   = Word8
 type CommandNumber = Word8
@@ -90,10 +101,6 @@ paramSize x | sz .&. 0xC0 == 0 = fromIntegral sz
 signalCommand :: CommandType -> CommandNumber -> Command
 signalCommand typ nr = Command typ nr None 0
 
--- | Create a Read command
-readCommand :: Storable a => CommandType -> CommandNumber -> a -> Command
-readCommand typ nr param = Command typ nr Read (paramSize param)
-
 -- | Create a Write command
 writeCommand :: Storable a => CommandType -> CommandNumber -> a -> Command
 writeCommand typ nr param = Command typ nr Write (paramSize param)
@@ -101,3 +108,18 @@ writeCommand typ nr param = Command typ nr Write (paramSize param)
 -- | Create a ReadWrite command
 readWriteCommand :: Storable a => CommandType -> CommandNumber -> a -> Command
 readWriteCommand typ nr param = Command typ nr ReadWrite (paramSize param)
+
+-- | We abstract over the ioctl function
+type IOCTL = FileDescriptor -> Int64 -> Int64 -> IO Int64
+
+-- | Build a Read IOCTL
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
+ioctlRead :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet a
+ioctlRead ioctl typ nr test fd = do
+   alloca $ \(ptr :: Ptr a) -> do
+      let cmd = Command typ nr Read (paramSize (undefined :: a))
+      ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+      case test ret of
+         Just err -> return (Left err)
+         Nothing  -> Right <$> peek ptr

@@ -6,7 +6,8 @@ import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.X86_64.Linux.Info
 import ViperVM.Arch.X86_64.Linux.Futex
-import ViperVM.Arch.X86_64.Linux.ErrorCode
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Input
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Control.Applicative ((<$>))
@@ -106,12 +107,19 @@ main = do
    Right info <- sysSystemInfo
    print info
 
+   putStrLn "Get driver version"
+   dev <- check <$> sysOpen "/dev/sda9" [OpenReadOnly] [PermUserRead]
+   driverVersion <- check <$> getDriverVersion sysIoctl dev
+   putStrLn $ "Driver version: " ++ show driverVersion
+
    -- Use strace to see that syscall is correctly called
-   _ <- alloca $ \p ->
-      alloca $ \p2 -> do
-         poke p 10
-         poke p2 12
-         sysFutexCmpRequeue p 10 15 p2
+   -- BUGGY (segfault)
+   --_ <- alloca $ \p ->
+   --   alloca $ \p2 -> do
+   --      poke p 10
+   --      poke p2 12
+   --      sysFutexCmpRequeue p 10 15 p2
+
 
    putStrLn "Now exiting with code 15"
    sysExit 15

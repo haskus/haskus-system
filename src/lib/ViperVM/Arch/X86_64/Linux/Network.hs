@@ -11,8 +11,8 @@ import Foreign.Storable (peek)
 import Data.Word
 
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.FileSystem (FileDescriptor(..))
 
 data ShutFlag =
      ShutRead

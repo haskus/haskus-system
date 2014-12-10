@@ -10,8 +10,8 @@ import Foreign.Storable (peekElemOff)
 import Control.Applicative ((<$>), (<*>))
 
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.FileSystem
 
 -- | Create a pipe
 sysPipe :: SysRet (FileDescriptor, FileDescriptor)

@@ -55,9 +55,11 @@ library
     ViperVM.Arch.OpenCL.Types
 
     ViperVM.Arch.Linux.ErrorCode
+    ViperVM.Arch.Linux.FileDescriptor
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl
+    ViperVM.Arch.Linux.Input
 
     ViperVM.Arch.Posix.Malloc
 

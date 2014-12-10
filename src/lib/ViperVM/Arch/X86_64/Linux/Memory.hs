@@ -22,9 +22,9 @@ import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
-import ViperVM.Arch.X86_64.Linux.FileSystem (FileDescriptor(..))
 
 -- | Set program break location (i.e. data segement size)
 -- 

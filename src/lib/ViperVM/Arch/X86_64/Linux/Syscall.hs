@@ -8,9 +8,15 @@
              UnliftedFFITypes #-}
 #endif
 
-module ViperVM.Arch.X86_64.Linux.Syscall (
-   syscall0, syscall1, syscall2, syscall3, 
-   syscall4, syscall5, syscall6, Arg
+module ViperVM.Arch.X86_64.Linux.Syscall
+   ( syscall0
+   , syscall1
+   , syscall2
+   , syscall3
+   , syscall4
+   , syscall5
+   , syscall6
+   , Arg (..)
 ) where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)
@@ -122,7 +128,6 @@ syscall0 = syscall0_
 13	64	rt_sigaction		sys_rt_sigaction
 14	common	rt_sigprocmask		sys_rt_sigprocmask
 15	64	rt_sigreturn		stub_rt_sigreturn
-16	64	ioctl			sys_ioctl
 19	64	readv			sys_readv
 20	64	writev			sys_writev
 23	common	select			sys_select

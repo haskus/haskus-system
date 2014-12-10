@@ -1,6 +1,5 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem
-   ( FileDescriptor(..)
-   , FilePermission(..)
+   ( FilePermission(..)
    , OpenFlag(..)
    , SeekWhence(..)
    , AccessMode(..)
@@ -11,6 +10,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysCreate
    , sysClose
    , sysSeek
+   , sysIoctl
    , sysReadAt
    , sysWriteAt
    , sysAccess
@@ -40,20 +40,17 @@ where
 
 import Foreign.Ptr (Ptr)
 import Foreign.Marshal.Array (allocaArray)
-import Data.Word (Word,Word64)
+import Data.Word (Word64)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Bits (Bits, (.|.), (.&.))
 import Data.Maybe (catMaybes)
 
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
 import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
-
--- | File descriptor
-newtype FileDescriptor = FileDescriptor Word
-
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
@@ -222,6 +219,13 @@ data SeekWhence =
 sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
 sysSeek (FileDescriptor fd) off whence =
    onSuccess (syscall3 8 fd off (fromEnum whence)) id
+
+
+-- | Send a custom command to a device
+sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64
+sysIoctl (FileDescriptor fd) cmd arg =
+   syscall3 16 fd cmd arg
+
 
 -- | Read a file descriptor at a given position
 sysReadAt :: FileDescriptor -> Ptr () -> Word64 -> Word64 -> SysRet Word64
