@@ -1,14 +1,17 @@
-module ViperVM.Arch.X86_64.Linux.Network (
-   sysShutdown, sysSendFile, sysSendFileWithOffset
-) where
+module ViperVM.Arch.X86_64.Linux.Network
+   ( sysShutdown
+   , sysSendFile
+   , sysSendFileWithOffset
+   )
+where
 
 import Foreign.Ptr (nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Storable (peek)
 import Data.Word
 
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.FileSystem (FileDescriptor(..))
 
 data ShutFlag =

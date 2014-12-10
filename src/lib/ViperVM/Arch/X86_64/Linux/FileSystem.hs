@@ -1,19 +1,42 @@
-module ViperVM.Arch.X86_64.Linux.FileSystem (
-   FileDescriptor(..), FilePermission(..), OpenFlag(..), 
-   SeekWhence(..), AccessMode(..), FileLock(..),
-   sysRead, sysWrite,
-   sysOpen, sysCreate, sysClose,
-   sysSeek, sysReadAt, sysWriteAt,
-   sysAccess, sysDup, sysDup2,
-   sysSetCurrentDirectory, sysSetCurrentDirectoryPath,
-   sysGetCurrentDirectory, sysRename, sysRemoveDirectory,
-   sysFileLock, sysFileSync, sysFileDataSync,
-   sysTruncate, sysTruncatePath, 
-   sysLink, sysSymlink, sysUnlink,
-   sysChangePermission, sysChangePermissionPath,
-   sysChangeOwnership, sysChangeOwnershipPath, sysChangeLinkOwnershipPath,
-   sysSetProcessUMask
-) where
+module ViperVM.Arch.X86_64.Linux.FileSystem
+   ( FileDescriptor(..)
+   , FilePermission(..)
+   , OpenFlag(..)
+   , SeekWhence(..)
+   , AccessMode(..)
+   , FileLock(..)
+   , sysRead
+   , sysWrite
+   , sysOpen
+   , sysCreate
+   , sysClose
+   , sysSeek
+   , sysReadAt
+   , sysWriteAt
+   , sysAccess
+   , sysDup
+   , sysDup2
+   , sysSetCurrentDirectory
+   , sysSetCurrentDirectoryPath
+   , sysGetCurrentDirectory
+   , sysRename
+   , sysRemoveDirectory
+   , sysFileLock
+   , sysFileSync
+   , sysFileDataSync
+   , sysTruncate
+   , sysTruncatePath
+   , sysLink
+   , sysSymlink
+   , sysUnlink
+   , sysChangePermission
+   , sysChangePermissionPath
+   , sysChangeOwnership
+   , sysChangeOwnershipPath
+   , sysChangeLinkOwnershipPath
+   , sysSetProcessUMask
+   )
+where
 
 import Foreign.Ptr (Ptr)
 import Foreign.Marshal.Array (allocaArray)
@@ -23,8 +46,8 @@ import Data.Int (Int64)
 import Data.Bits (Bits, (.|.), (.&.))
 import Data.Maybe (catMaybes)
 
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
 import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
 

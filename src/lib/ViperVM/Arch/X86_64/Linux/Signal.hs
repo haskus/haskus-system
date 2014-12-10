@@ -1,11 +1,15 @@
-module ViperVM.Arch.X86_64.Linux.Signal (
-   sysPause, sysAlarm, sysSendSignal,
-   sysSendSignalGroup, sysSendSignalAll,
-   sysCheckProcess
-) where
+module ViperVM.Arch.X86_64.Linux.Signal
+   ( sysPause
+   , sysAlarm
+   , sysSendSignal
+   , sysSendSignalGroup
+   , sysSendSignalAll
+   , sysCheckProcess
+   )
+where
 
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Process
 
 import Data.Int

@@ -1,10 +1,21 @@
-module ViperVM.Arch.X86_64.Linux.Process (
-   ProcessID(..), ThreadID(..), UserID(..), GroupID(..),
-   sysExit, sysGetCPU, sysGetProcessID, sysGetParentProcessID,
-   sysGetRealUserID, sysGetEffectiveUserID,
-   sysGetRealGroupID, sysGetEffectiveGroupID,
-   sysGetThreadID, sysFork, sysVFork
-) where
+module ViperVM.Arch.X86_64.Linux.Process
+   ( ProcessID(..)
+   , ThreadID(..)
+   , UserID(..)
+   , GroupID(..)
+   , sysExit
+   , sysGetCPU
+   , sysGetProcessID
+   , sysGetParentProcessID
+   , sysGetRealUserID
+   , sysGetEffectiveUserID
+   , sysGetRealGroupID
+   , sysGetEffectiveGroupID
+   , sysGetThreadID
+   , sysFork
+   , sysVFork
+   )
+where
 
 import Control.Monad (void)
 import Data.Int (Int64)
@@ -15,7 +26,7 @@ import Foreign.Storable (peek)
 import Control.Applicative ((<$>), (<*>))
 
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.ErrorCode
+import ViperVM.Arch.Linux.ErrorCode
 
 newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord)
 newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord)

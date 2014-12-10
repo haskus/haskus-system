@@ -26,7 +26,6 @@ library
     ViperVM.Arch.X86_64.Cpuid
 
     ViperVM.Arch.X86_64.Linux.Syscall
-    ViperVM.Arch.X86_64.Linux.ErrorCode
     ViperVM.Arch.X86_64.Linux.FileSystem
     ViperVM.Arch.X86_64.Linux.Process
     ViperVM.Arch.X86_64.Linux.Pipe
@@ -55,6 +54,7 @@ library
     ViperVM.Arch.OpenCL.Sampler
     ViperVM.Arch.OpenCL.Types
 
+    ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl

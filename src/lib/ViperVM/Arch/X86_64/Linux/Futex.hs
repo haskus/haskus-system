@@ -1,15 +1,20 @@
-module ViperVM.Arch.X86_64.Linux.Futex (
-   FutexOp(..), sysFutex, sysFutexWait,
-   sysFutexWake, sysFutexRequeue, sysFutexCmpRequeue
-) where
+module ViperVM.Arch.X86_64.Linux.Futex
+   ( FutexOp(..)
+   , sysFutex
+   , sysFutexWait
+   , sysFutexWake
+   , sysFutexRequeue
+   , sysFutexCmpRequeue
+   )
+where
 
 import Foreign.Ptr
 import Data.Int
 import Control.Applicative
 import Control.Monad (void)
 
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Time
 import ViperVM.Arch.X86_64.Linux.Utils
 

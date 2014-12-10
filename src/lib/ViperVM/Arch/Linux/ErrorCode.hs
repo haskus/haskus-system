@@ -1,4 +1,11 @@
-module ViperVM.Arch.X86_64.Linux.ErrorCode where
+module ViperVM.Arch.Linux.ErrorCode 
+   ( SysRet
+   , ErrorCode (..)
+   , toErrorCode
+   , onSuccessIO
+   , onSuccess
+   )
+where
 
 import Data.Int (Int64)
 import Control.Applicative ((<$>))

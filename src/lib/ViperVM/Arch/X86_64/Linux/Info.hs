@@ -1,14 +1,16 @@
-module ViperVM.Arch.X86_64.Linux.Info (
-   SystemInfo(..), sysSystemInfo
-) where
+module ViperVM.Arch.X86_64.Linux.Info
+   ( SystemInfo(..)
+   , sysSystemInfo
+   )
+where
 
 import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.C.String
 import Control.Monad
 
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.ErrorCode
 
 data SystemInfo = SystemInfo {
    systemName :: String,

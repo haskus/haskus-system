@@ -1,8 +1,17 @@
-module ViperVM.Arch.X86_64.Linux.Memory (
-   sysBrk, sysBrkGet, sysBrkSet, sysMemMap,
-   MemProtect(..), MapFlag(..), sysMemUnmap, sysMemProtect, sysMemAdvise, sysMemSync,
-   sysMemInCore
-) where
+module ViperVM.Arch.X86_64.Linux.Memory
+   ( sysBrk
+   , sysBrkGet
+   , sysBrkSet
+   , sysMemMap
+   , MemProtect(..)
+   , MapFlag(..)
+   , sysMemUnmap
+   , sysMemProtect
+   , sysMemAdvise
+   , sysMemSync
+   , sysMemInCore
+   )
+where
 
 import Data.Word (Word8,Word64)
 import Data.Int (Int64)
@@ -12,9 +21,9 @@ import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
-import ViperVM.Arch.X86_64.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.FileSystem (FileDescriptor(..))
 
 -- | Set program break location (i.e. data segement size)
