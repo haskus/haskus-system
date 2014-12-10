@@ -12,6 +12,8 @@ module ViperVM.Arch.OpenCL.Program
    , getProgramDevices'
    , getProgramBinarySizes
    , getProgramBinarySizes'
+   , getProgramBinary
+   , getProgramBinary'
    )
 where
 
@@ -24,6 +26,7 @@ import ViperVM.Arch.OpenCL.Error
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
+import Control.Applicative ((<$>))
 import Foreign.Ptr
 import Foreign.C.String
 import Foreign.C.Types (CSize)
@@ -31,6 +34,8 @@ import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Storable (peek, sizeOf)
 import Data.Word
+import Data.List (elemIndex)
+import qualified Data.ByteString as BS
 
 -- | Program
 data Program = Program Library Program_ deriving (Eq)
@@ -140,12 +145,43 @@ getProgramBinarySizes prog = runEitherT $ do
 getProgramBinarySizes' :: Program -> IO [CSize]
 getProgramBinarySizes' = fmap toException . getProgramBinarySizes
 
+
 -- | Get the binary associated to the device (if any)
---getProgramBinary :: Program -> Device -> IO (Maybe ByteString)
---getProgramBinary prog dev = do
---
---   count? <- runEitherT $ do
---      -- number of devices associated to the program
---      count <- EitherT $ getProgramDeviceCount prog
+getProgramBinary :: Program -> Device -> IO (Either CLError (Maybe BS.ByteString))
+getProgramBinary prog dev = runEitherT $ do
+
+   devs <- EitherT $ getProgramDevices prog
+
+   case elemIndex dev devs of
+      Nothing  -> right Nothing
+      Just idx -> do
+
+         -- get binary size
+         sizes <- EitherT $ getProgramBinarySizes prog
+         let binsize = fromIntegral $ sizes !! idx
+             ndev    = length devs
+             size    = fromIntegral $ ndev * sizeOf (undefined :: Ptr ())
+             infoid  = CL_PROGRAM_BINARIES
+
+         case binsize of
+            0 -> right Nothing
+            _ -> EitherT $ do
+               -- alloc buffer for the binary
+               allocaBytes binsize $ \(binPtr :: Ptr Word8) -> do
+
+                  -- create list of pointers: binPtr for our device, NULL otherwise
+                  let f x | unwrap x == unwrap dev = binPtr
+                          | otherwise              = nullPtr
+
+                  withArray (map f devs) $ \ptrs ->
+                     -- get the binary
+                     whenSuccess 
+                        (rawClGetProgramInfo (cllib prog) (unwrap prog) 
+                           (toCL infoid) size (castPtr ptrs) nullPtr)
+                        (Just . BS.pack <$> peekArray binsize binPtr)
    
-      
+
+-- | Get the binary associated to the device (if any)
+-- throw an exception on failure
+getProgramBinary' :: Program -> Device -> IO (Maybe BS.ByteString)
+getProgramBinary' prog = fmap toException . getProgramBinary prog
