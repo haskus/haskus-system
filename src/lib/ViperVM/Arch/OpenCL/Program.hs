@@ -8,6 +8,8 @@ module ViperVM.Arch.OpenCL.Program
    , buildProgram
    , getProgramDeviceCount
    , getProgramDeviceCount'
+   , getProgramDevices
+   , getProgramDevices'
    )
 where
 
@@ -19,9 +21,10 @@ import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 
 import Control.Monad (void)
+import Control.Monad.Trans.Either
 import Foreign.Ptr
 import Foreign.C.String
-import Foreign.Marshal.Array (withArray)
+import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Storable (peek, sizeOf)
 import Data.Word
@@ -94,3 +97,33 @@ getProgramDeviceCount = getProgramInfoWord32 CL_PROGRAM_NUM_DEVICES
 -- throw an exception on error
 getProgramDeviceCount' :: Program -> IO Word32
 getProgramDeviceCount' = fmap toException . getProgramDeviceCount
+
+-- | Get devices associated with the program
+getProgramDevices :: Program -> IO (Either CLError [Device])
+getProgramDevices prog = runEitherT $ do
+   count <- EitherT $ fmap (fmap fromIntegral) $ getProgramDeviceCount prog
+   
+   let 
+      size = fromIntegral $ count * sizeOf (undefined :: Device_)
+      infoid = CL_PROGRAM_DEVICES
+
+   devs <- EitherT $ allocaArray count $ \(dat :: Ptr Device_) -> whenSuccess 
+      (rawClGetProgramInfo (cllib prog) (unwrap prog) (toCL infoid) size (castPtr dat) nullPtr)
+      (peekArray count dat)
+
+   return $ fmap (Device (cllib prog)) devs
+
+-- | Get devices associated with the program
+-- throw an exception on failure
+getProgramDevices' :: Program -> IO [Device]
+getProgramDevices' = fmap toException . getProgramDevices
+
+-- | Get the binary associated to the device (if any)
+--getProgramBinary :: Program -> Device -> IO (Maybe ByteString)
+--getProgramBinary prog dev = do
+--
+--   count? <- runEitherT $ do
+--      -- number of devices associated to the program
+--      count <- EitherT $ getProgramDeviceCount prog
+   
+      
