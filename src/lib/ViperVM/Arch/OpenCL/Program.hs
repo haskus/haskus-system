@@ -10,6 +10,8 @@ module ViperVM.Arch.OpenCL.Program
    , getProgramDeviceCount'
    , getProgramDevices
    , getProgramDevices'
+   , getProgramBinarySizes
+   , getProgramBinarySizes'
    )
 where
 
@@ -24,6 +26,7 @@ import Control.Monad (void)
 import Control.Monad.Trans.Either
 import Foreign.Ptr
 import Foreign.C.String
+import Foreign.C.Types (CSize)
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Storable (peek, sizeOf)
@@ -117,6 +120,25 @@ getProgramDevices prog = runEitherT $ do
 -- throw an exception on failure
 getProgramDevices' :: Program -> IO [Device]
 getProgramDevices' = fmap toException . getProgramDevices
+
+
+-- | Get binary sizes for all devices (0 if not available)
+getProgramBinarySizes :: Program -> IO (Either CLError [CSize])
+getProgramBinarySizes prog = runEitherT $ do
+   count <- EitherT $ fmap (fmap fromIntegral) $ getProgramDeviceCount prog
+
+   let 
+      size = fromIntegral $ count * sizeOf (undefined :: CSize)
+      infoid = CL_PROGRAM_BINARY_SIZES
+
+   EitherT $ allocaArray count $ \(dat :: Ptr CSize) -> whenSuccess 
+      (rawClGetProgramInfo (cllib prog) (unwrap prog) (toCL infoid) size (castPtr dat) nullPtr)
+      (peekArray count dat)
+
+-- | Get binary sizes for all devices (0 if not available)
+-- throw an exception on failure
+getProgramBinarySizes' :: Program -> IO [CSize]
+getProgramBinarySizes' = fmap toException . getProgramBinarySizes
 
 -- | Get the binary associated to the device (if any)
 --getProgramBinary :: Program -> Device -> IO (Maybe ByteString)
