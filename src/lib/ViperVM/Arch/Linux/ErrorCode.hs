@@ -1,6 +1,7 @@
 module ViperVM.Arch.Linux.ErrorCode 
    ( SysRet
    , ErrorCode (..)
+   , defaultCheck
    , toErrorCode
    , onSuccessIO
    , onSuccess
@@ -12,23 +13,28 @@ import Control.Applicative ((<$>))
 
 type SysRet a = IO (Either ErrorCode a)
 
-
+-- | Convert an error code into ErrorCode type
 toErrorCode :: Int64 -> ErrorCode
 toErrorCode = toEnum . fromIntegral . (*(-1))
+
+-- | Default error checking (if < 0 then error)
+defaultCheck :: Int64 -> Maybe ErrorCode
+defaultCheck x | x < 0     = Just (toErrorCode x)
+               | otherwise = Nothing
 
 onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
 onSuccessIO sc f = do
    ret <- sc
-   if ret < 0
-      then return (Left (toErrorCode ret))
-      else Right <$> f ret
+   case defaultCheck ret of
+      Just err -> return (Left err)
+      Nothing  -> Right <$> f ret
 
 onSuccess :: IO Int64 -> (Int64 -> a) -> SysRet a
 onSuccess sc f = do
    ret <- sc
-   return $ if ret < 0
-      then Left (toErrorCode ret)
-      else Right . f $ ret
+   return $ case defaultCheck ret of
+      Just err -> Left err
+      Nothing  -> Right (f ret)
 
 data ErrorCode =
      EPERM     -- ^ Operation not permitted

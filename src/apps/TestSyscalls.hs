@@ -5,14 +5,14 @@ import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.X86_64.Linux.Info
-import ViperVM.Arch.X86_64.Linux.Futex
+--import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Input
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Control.Applicative ((<$>))
-import Foreign.Marshal.Alloc
-import Foreign.Storable (poke)
+--import Foreign.Marshal.Alloc
+--import Foreign.Storable (poke)
 import Text.Printf
 
 check :: Either ErrorCode a -> a
@@ -107,10 +107,18 @@ main = do
    Right info <- sysSystemInfo
    print info
 
-   putStrLn "Get driver version"
-   dev <- check <$> sysOpen "/dev/sda9" [OpenReadOnly] [PermUserRead]
-   driverVersion <- check <$> getDriverVersion sysIoctl dev
+   putStrLn "Get device info"
+   dev <- check <$> sysOpen "/dev/input/event6" [OpenReadOnly] [PermUserRead]
+
+   driverVersion <- getDriverVersion sysIoctl dev
    putStrLn $ "Driver version: " ++ show driverVersion
+
+   deviceInfo <- getDeviceInfo sysIoctl dev
+   putStrLn $ "Device info: " ++ show deviceInfo
+
+   repeatSettings <- getRepeatSettings sysIoctl dev
+   putStrLn $ "Repeat settings: " ++ show repeatSettings
+
 
    -- Use strace to see that syscall is correctly called
    -- BUGGY (segfault)
