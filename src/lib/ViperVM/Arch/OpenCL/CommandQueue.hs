@@ -106,7 +106,7 @@ instance CLConstant CommandQueueInfo where
 
 
 -- | Create a command queue
-createCommandQueue :: Context -> Device -> [CommandQueueProperty] -> IO (Either CLError CommandQueue)
+createCommandQueue :: Context -> Device -> [CommandQueueProperty] -> CLRet CommandQueue
 createCommandQueue ctx dev props =
    fmap (CommandQueue lib) <$> wrapPError (rawClCreateCommandQueue lib (unwrap ctx) (unwrap dev) (toCLSet props))
    where lib = cllib ctx

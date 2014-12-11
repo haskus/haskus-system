@@ -81,7 +81,7 @@ retainProgram :: Program -> IO ()
 retainProgram prog = void (rawClRetainProgram (cllib prog) (unwrap prog))
 
 -- | Build a program for the specified device
-buildProgram :: Program -> Device -> String -> IO (Either CLError ())
+buildProgram :: Program -> Device -> String -> CLRet ()
 buildProgram prog dev options = do
    withCString options $ \options' ->
       withArray [(unwrap dev)] $ \dev' ->
@@ -90,7 +90,7 @@ buildProgram prog dev options = do
             (return ())
 
 -- | Return a unsigned int program info
-getProgramInfoWord32 :: ProgramInfo -> Program -> IO (Either CLError Word32)
+getProgramInfoWord32 :: ProgramInfo -> Program -> CLRet Word32
 getProgramInfoWord32 infoid prog = do
    let size = fromIntegral $ sizeOf (0 :: Word32)
    alloca $ \(dat :: Ptr Word32) -> whenSuccess 
@@ -98,7 +98,7 @@ getProgramInfoWord32 infoid prog = do
       (peek dat)
 
 -- | Return the number of associated devices
-getProgramDeviceCount :: Program -> IO (Either CLError Word32)
+getProgramDeviceCount :: Program -> CLRet Word32
 getProgramDeviceCount = getProgramInfoWord32 CL_PROGRAM_NUM_DEVICES
 
 -- | Return the number of associated devices
@@ -107,7 +107,7 @@ getProgramDeviceCount' :: Program -> IO Word32
 getProgramDeviceCount' = fmap toException . getProgramDeviceCount
 
 -- | Get devices associated with the program
-getProgramDevices :: Program -> IO (Either CLError [Device])
+getProgramDevices :: Program -> CLRet [Device]
 getProgramDevices prog = runEitherT $ do
    count <- EitherT $ fmap (fmap fromIntegral) $ getProgramDeviceCount prog
    
@@ -128,7 +128,7 @@ getProgramDevices' = fmap toException . getProgramDevices
 
 
 -- | Get binary sizes for all devices (0 if not available)
-getProgramBinarySizes :: Program -> IO (Either CLError [CSize])
+getProgramBinarySizes :: Program -> CLRet [CSize]
 getProgramBinarySizes prog = runEitherT $ do
    count <- EitherT $ fmap (fmap fromIntegral) $ getProgramDeviceCount prog
 
@@ -147,7 +147,7 @@ getProgramBinarySizes' = fmap toException . getProgramBinarySizes
 
 
 -- | Get the binary associated to the device (if any)
-getProgramBinary :: Program -> Device -> IO (Either CLError (Maybe BS.ByteString))
+getProgramBinary :: Program -> Device -> CLRet (Maybe BS.ByteString)
 getProgramBinary prog dev = runEitherT $ do
 
    devs <- EitherT $ getProgramDevices prog

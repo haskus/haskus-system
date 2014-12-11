@@ -3,6 +3,7 @@
 -- | OpenCL error management module
 module ViperVM.Arch.OpenCL.Error
    ( CLError(..)
+   , CLRet
    , toException
    , wrapPError
    , wrapCheckSuccess
@@ -21,6 +22,8 @@ import Foreign.C.Types (CSize)
 
 import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.OpenCL.Types
+
+type CLRet a = IO (Either CLError a)
 
 -- | An OpenCL error code
 data CLError
@@ -114,7 +117,7 @@ toException (Right a) = a
 toException (Left a) = throw a
 
 -- | Wrap an OpenCL call taking an CLint error pointer as last parameter
-wrapPError :: (Ptr CLint -> IO a) -> IO (Either CLError a)
+wrapPError :: (Ptr CLint -> IO a) -> CLRet a
 wrapPError f = alloca $ \perr -> do
   v <- f perr
   errcode <- fromCL <$> peek perr

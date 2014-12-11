@@ -41,7 +41,7 @@ instance CLConstant CLContextInfo where
    fromCL x = toEnum (fromIntegral x - 0x1080)
 
 -- | Create a context
-createContext :: Platform -> [Device] -> IO (Either CLError Context)
+createContext :: Platform -> [Device] -> CLRet Context
 createContext pf devs = do
    let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
        ndevs = fromIntegral (length devs)

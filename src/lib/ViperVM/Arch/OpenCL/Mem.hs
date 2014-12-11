@@ -84,7 +84,7 @@ instance CLConstant MemObjectType where
 
 
 -- | Create a buffer
-createBuffer :: Device -> Context -> [MemFlag] -> CSize -> IO (Either CLError Mem)
+createBuffer :: Device -> Context -> [MemFlag] -> CSize -> CLRet Mem
 createBuffer _ ctx flags size = do
    let lib = cllib ctx
    mem <- fmap (Mem lib) <$> wrapPError (rawClCreateBuffer lib (unwrap ctx) (toCLSet flags) size nullPtr)
@@ -94,13 +94,13 @@ createBuffer _ ctx flags size = do
    return mem
 
 -- | Create 2D image
-createImage2D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage2D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> CLRet Mem
 createImage2D ctx flags imgFormat width height rowPitch hostPtr =
    fmap (Mem lib) <$> wrapPError (rawClCreateImage2D lib (unwrap ctx) (toCLSet flags) imgFormat width height rowPitch hostPtr)
    where lib = cllib ctx
 
 -- | Create 3D image
-createImage3D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> IO (Either CLError Mem)
+createImage3D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> CLRet Mem
 createImage3D ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
    fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
    where lib = cllib ctx
@@ -114,7 +114,7 @@ retainMem :: Mem -> IO ()
 retainMem mem = void (rawClRetainMemObject (cllib mem) (unwrap mem))
 
 -- | Helper function to enqueue commands
-enqueue :: Library -> (CLuint -> Ptr Event_ -> Ptr Event_ -> IO CLint) -> [Event] -> IO (Either CLError Event)
+enqueue :: Library -> (CLuint -> Ptr Event_ -> Ptr Event_ -> IO CLint) -> [Event] -> CLRet Event
 enqueue lib f [] = alloca $ \event -> whenSuccess (f 0 nullPtr event) (Event lib <$> peek event)
 enqueue lib f events = allocaArray nevents $ \pevents -> do
   pokeArray pevents (fmap unwrap events)
@@ -124,19 +124,19 @@ enqueue lib f events = allocaArray nevents $ \pevents -> do
       cnevents = fromIntegral nevents
 
 -- | Transfer from device to host
-enqueueReadBuffer :: CommandQueue -> Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueReadBuffer :: CommandQueue -> Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [Event] -> CLRet Event
 enqueueReadBuffer cq mem blocking off size ptr = 
    enqueue lib (rawClEnqueueReadBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) (fromIntegral off) (fromIntegral size) ptr)
    where lib = cllib cq
 
 -- | Transfer from host to device
-enqueueWriteBuffer :: CommandQueue -> Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [Event] -> IO (Either CLError Event)
+enqueueWriteBuffer :: CommandQueue -> Mem -> Bool -> Word64 -> Word64 -> Ptr () -> [Event] -> CLRet Event
 enqueueWriteBuffer cq mem blocking off size ptr = 
    enqueue lib (rawClEnqueueWriteBuffer lib (unwrap cq) (unwrap mem) (fromBool blocking) (fromIntegral off) (fromIntegral size) ptr)
    where lib = cllib cq
 
 -- | Copy from one buffer to another
-enqueueCopyBuffer :: CommandQueue -> Mem -> Mem -> Word64 -> Word64 -> Word64 -> [Event] -> IO (Either CLError Event)
+enqueueCopyBuffer :: CommandQueue -> Mem -> Mem -> Word64 -> Word64 -> Word64 -> [Event] -> CLRet Event
 enqueueCopyBuffer cq src dst srcOffset dstOffset sz =
    enqueue lib (rawClEnqueueCopyBuffer lib (unwrap cq) (unwrap src) (unwrap dst) (fromIntegral srcOffset) (fromIntegral dstOffset) (fromIntegral sz))
    where lib = cllib cq

@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | OpenCL platform module
 module ViperVM.Arch.OpenCL.Platform
    ( Platform
@@ -30,6 +31,7 @@ import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Bindings
 
+import Control.Monad.Trans.Either
 import Foreign.C.Types (CSize)
 import Foreign.C.String (peekCString)
 import Data.Word (Word32)
@@ -37,7 +39,7 @@ import Control.Applicative ((<$>), (<*>))
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,peekArray)
 import Foreign.Storable (peek)
-import Foreign.Ptr (nullPtr,castPtr)
+import Foreign.Ptr (Ptr,nullPtr,castPtr)
 
 -- | Platform
 data Platform = Platform Library Platform_ deriving (Eq)
@@ -103,25 +105,19 @@ getPlatformDevices pf = do
             _ -> return []
 
 -- | Get platform info
-getPlatformInfo :: PlatformInfo -> Platform -> IO (Either CLError String)
-getPlatformInfo infoid pf = getSize >>>= getInfo
+getPlatformInfo :: PlatformInfo -> Platform -> CLRet String
+getPlatformInfo infoid pf = 
+      runEitherT (getSize >>= getInfo)
    where
       lib = cllib pf
-      (>>>=) f g = do
-         t <- f
-         case t of
-            Left a -> return (Left a)
-            Right a -> g a
 
       -- Get output size
-      getSize :: IO (Either CLError CSize)
-      getSize = alloca $ \sz -> whenSuccess 
+      getSize =  EitherT $ alloca $ \(sz :: Ptr CSize) -> whenSuccess 
          (rawClGetPlatformInfo lib (unwrap pf) (toCL infoid) 0 nullPtr sz) 
          (peek sz)
 
       -- Get info
-      getInfo :: CSize -> IO (Either CLError String)
-      getInfo size = allocaArray (fromIntegral size) $ \buff -> whenSuccess 
+      getInfo size = EitherT $ allocaArray (fromIntegral size) $ \buff -> whenSuccess 
          (rawClGetPlatformInfo lib (unwrap pf) (toCL infoid) size (castPtr buff) nullPtr)
          (peekCString buff)
 
@@ -130,7 +126,7 @@ getPlatformInfo' :: PlatformInfo -> Platform -> IO String
 getPlatformInfo' infoid platform = toException <$> getPlatformInfo infoid platform
 
 -- | Get platform name
-getPlatformName :: Platform -> IO (Either CLError String)
+getPlatformName :: Platform -> CLRet String
 getPlatformName = getPlatformInfo CL_PLATFORM_NAME
 
 -- | Get platform name (throw an exception if an error occurs)
@@ -138,7 +134,7 @@ getPlatformName' :: Platform -> IO String
 getPlatformName' = getPlatformInfo' CL_PLATFORM_NAME
 
 -- | Get platform vendor
-getPlatformVendor :: Platform -> IO (Either CLError String)
+getPlatformVendor :: Platform -> CLRet String
 getPlatformVendor = getPlatformInfo CL_PLATFORM_VENDOR
 
 -- | Get platform vendor (throw an exception if an error occurs)
@@ -146,7 +142,7 @@ getPlatformVendor' :: Platform -> IO String
 getPlatformVendor' = getPlatformInfo' CL_PLATFORM_VENDOR
 
 -- | Get platform profile
-getPlatformProfile :: Platform -> IO (Either CLError String)
+getPlatformProfile :: Platform -> CLRet String
 getPlatformProfile = getPlatformInfo CL_PLATFORM_PROFILE
 
 -- | Get platform profile (throw an exception if an error occurs)
@@ -154,7 +150,7 @@ getPlatformProfile' :: Platform -> IO String
 getPlatformProfile' = getPlatformInfo' CL_PLATFORM_PROFILE
 
 -- | Get platform version
-getPlatformVersion :: Platform -> IO (Either CLError String)
+getPlatformVersion :: Platform -> CLRet String
 getPlatformVersion = getPlatformInfo CL_PLATFORM_VERSION
 
 -- | Get platform version (throw an exception if an error occurs)
@@ -162,7 +158,7 @@ getPlatformVersion' :: Platform -> IO String
 getPlatformVersion' = getPlatformInfo' CL_PLATFORM_VERSION
 
 -- | Get platform extensions
-getPlatformExtensions :: Platform -> IO (Either CLError [String])
+getPlatformExtensions :: Platform -> CLRet [String]
 getPlatformExtensions pf = fmap words <$> getPlatformInfo CL_PLATFORM_EXTENSIONS pf
 
 -- | Get platform extensions (throw an exception if an error occurs)

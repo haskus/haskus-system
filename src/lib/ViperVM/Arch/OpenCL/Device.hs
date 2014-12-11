@@ -212,14 +212,14 @@ data CommandQueueProperty
 instance CLSet CommandQueueProperty
 
 -- | Return the required size to return a device info
-getDeviceInfoRetSize :: DeviceInfo -> Device -> IO (Either CLError CSize)
+getDeviceInfoRetSize :: DeviceInfo -> Device -> CLRet CSize
 getDeviceInfoRetSize infoid dev = do
    alloca $ \(dat :: Ptr CSize) -> whenSuccess 
       (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) 0 nullPtr dat)
       (peek dat)
 
 -- | Return a string device info
-getDeviceInfoString :: DeviceInfo -> Device -> IO (Either CLError String)
+getDeviceInfoString :: DeviceInfo -> Device -> CLRet String
 getDeviceInfoString infoid dev = do
    getDeviceInfoRetSize infoid dev >>= \case
       Left err   -> return (Left err)
@@ -230,7 +230,7 @@ getDeviceInfoString infoid dev = do
          
 
 -- | Return a boolean device info
-getDeviceInfoBool :: DeviceInfo -> Device -> IO (Either CLError Bool)
+getDeviceInfoBool :: DeviceInfo -> Device -> CLRet Bool
 getDeviceInfoBool infoid dev = do
    let size = fromIntegral $ sizeOf (fromBool False)
    alloca $ \(dat :: Ptr CLbool) -> whenSuccess 
@@ -238,7 +238,7 @@ getDeviceInfoBool infoid dev = do
       (fromCLBool <$> peek dat)
 
 -- | Return a unsigned long device info
-getDeviceInfoWord64 :: DeviceInfo -> Device -> IO (Either CLError Word64)
+getDeviceInfoWord64 :: DeviceInfo -> Device -> CLRet Word64
 getDeviceInfoWord64 infoid dev = do
    let size = fromIntegral $ sizeOf (0 :: Word64)
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
@@ -247,7 +247,7 @@ getDeviceInfoWord64 infoid dev = do
 
 
 -- | Return OpenCL device name
-getDeviceName :: Device -> IO (Either CLError String)
+getDeviceName :: Device -> CLRet String
 getDeviceName = getDeviceInfoString CL_DEVICE_NAME
 
 -- | Return OpenCL device name (throw an exception on error)
@@ -255,7 +255,7 @@ getDeviceName' :: Device -> IO String
 getDeviceName' = fmap toException . getDeviceName
 
 -- | Return OpenCL device name
-getDeviceVendor :: Device -> IO (Either CLError String)
+getDeviceVendor :: Device -> CLRet String
 getDeviceVendor = getDeviceInfoString CL_DEVICE_VENDOR
 
 -- | Return OpenCL device name (throw an exception on error)
@@ -263,7 +263,7 @@ getDeviceVendor' :: Device -> IO String
 getDeviceVendor' = fmap toException . getDeviceVendor
 
 -- | Return OpenCL device type
-getDeviceType :: Device -> IO (Either CLError [DeviceType])
+getDeviceType :: Device -> CLRet [DeviceType]
 getDeviceType dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_TYPE dev
 
 -- | Return OpenCL device type (throw an exception on error)
@@ -271,7 +271,7 @@ getDeviceType' :: Device -> IO [DeviceType]
 getDeviceType' = fmap toException . getDeviceType
 
 -- | Indicate if the device is little endian
-isDeviceLittleEndian :: Device -> IO (Either CLError Bool)
+isDeviceLittleEndian :: Device -> CLRet Bool
 isDeviceLittleEndian = getDeviceInfoBool CL_DEVICE_ENDIAN_LITTLE
 
 -- | Indicate if the device is little endian (throw an exception on error)
@@ -279,7 +279,7 @@ isDeviceLittleEndian' :: Device -> IO Bool
 isDeviceLittleEndian' = fmap toException . isDeviceLittleEndian
 
 -- | Size of global device memory in bytes
-getDeviceGlobalMemSize :: Device -> IO (Either CLError Word64)
+getDeviceGlobalMemSize :: Device -> CLRet Word64
 getDeviceGlobalMemSize = getDeviceInfoWord64 CL_DEVICE_GLOBAL_MEM_SIZE
 
 -- | Size of global device memory in bytes (throw an exception on error)
@@ -294,7 +294,7 @@ getDeviceEndianness dev = toEndianness <$> isDeviceLittleEndian' dev
       toEndianness False = BigEndian
 
 -- | Return OpenCL device queue properties
-getDeviceQueueProperties :: Device -> IO (Either CLError [CommandQueueProperty])
+getDeviceQueueProperties :: Device -> CLRet [CommandQueueProperty]
 getDeviceQueueProperties dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_QUEUE_PROPERTIES dev
 
 -- | Return OpenCL device queue properties (throw an exception on error)
