@@ -15,6 +15,7 @@ module ViperVM.Arch.OpenCL.Program
    , getProgramBinary
    , getProgramBinary'
    , createProgramFromSource
+   , createProgramFromBinary
    )
 where
 
@@ -34,10 +35,12 @@ import Foreign.C.String
 import Foreign.C.Types (CSize)
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
+import Foreign.Marshal.Utils (withMany)
 import Foreign.Storable (peek, sizeOf)
 import Data.Word
 import Data.List (elemIndex)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Unsafe as BS
 
 -- | Program
 data Program = Program Library Program_ deriving (Eq)
@@ -197,3 +200,30 @@ createProgramFromSource ctx src =
       withArray [src'] $ \strings -> do
          p <- wrapPError (rawClCreateProgramWithSource (cllib ctx) (unwrap ctx) 1 strings nullPtr)
          return (Program (cllib ctx) <$> p)
+
+-- | Create a program from a binary
+--
+-- Each device has an associated binary and returns a specific status
+createProgramFromBinary :: Context -> [(Device, BS.ByteString)] -> CLRet (Program, [CLError])
+createProgramFromBinary ctx binaries = do
+   let 
+      devs = map (unwrap . fst) binaries
+      bins = map snd binaries
+      lens = map (fromIntegral . BS.length) bins :: [CSize]
+      n    = length devs
+
+   withArray devs $ \devs' ->
+      withArray lens $ \lens' ->
+         -- Convert [ByteString] into [CString]
+         withMany BS.unsafeUseAsCString bins $ \bins' ->
+            -- Convert [CString] into [Ptr Word8] into Ptr CString
+            withArray (map castPtr bins') $ \bins'' ->
+               allocaArray n $ \(status' :: Ptr CLint) -> do
+                  p' <- wrapPError (rawClCreateProgramWithBinary (cllib ctx) (unwrap ctx) 
+                                  (fromIntegral n) devs' lens' bins'' status')
+                  -- if there is no error, get status for each binary
+                  case Program (cllib ctx) <$> p' of
+                     Left err -> return (Left err)
+                     Right p  -> do
+                        status <- fmap fromCL <$> peekArray n status'
+                        return (Right (p,status))
