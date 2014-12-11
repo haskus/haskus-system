@@ -17,6 +17,7 @@ module ViperVM.Arch.Linux.Ioctl
    , ioctlRead
    , ioctlWrite
    , ioctlReadWrite
+   , repeatIoctl
    )
 where
 
@@ -146,3 +147,12 @@ ioctlSignal ioctl typ nr test fd = do
    let cmd = Command typ nr None 0
    ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg nullPtr)
    test ret
+
+-- | Call the IOCTL, restarting if interrupted
+repeatIoctl :: IOCTL -> IOCTL
+repeatIoctl ioctl fd nr arg = do
+   ret <- ioctl fd nr arg
+   case defaultCheck ret of
+      Just EINTR  -> repeatIoctl ioctl fd nr arg
+      Just EAGAIN -> repeatIoctl ioctl fd nr arg
+      _           -> return ret
