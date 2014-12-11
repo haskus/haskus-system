@@ -60,6 +60,7 @@ library
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
+    ViperVM.Arch.Linux.Graphics
 
     ViperVM.Arch.Posix.Malloc
 
