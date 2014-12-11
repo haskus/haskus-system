@@ -119,6 +119,16 @@ main = do
    repeatSettings <- getRepeatSettings sysIoctl dev
    putStrLn $ "Repeat settings: " ++ show repeatSettings
 
+   case repeatSettings of
+      Left _ -> putStrLn "Skip: set repeat period"
+      Right rs -> do
+         putStrLn "Set repeat period very low"
+         let nrs = rs { repeatDelay = 250, repeatPeriod = 33 } 
+         setRepeatSettings sysIoctl dev nrs >>= \case
+            Left err -> putStrLn $ "Failed: " ++ show err
+            Right _  -> do
+               rs2 <- getRepeatSettings sysIoctl dev
+               putStrLn $ "New repeat settings: " ++ show rs2
 
    -- Use strace to see that syscall is correctly called
    -- BUGGY (segfault)

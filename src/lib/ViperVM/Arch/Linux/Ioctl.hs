@@ -13,10 +13,10 @@ module ViperVM.Arch.Linux.Ioctl
    , CommandSize
    , encodeCommand
    , decodeCommand
+   , ioctlSignal
    , ioctlRead
-   , signalCommand
-   , writeCommand
-   , readWriteCommand
+   , ioctlWrite
+   , ioctlReadWrite
    )
 where
 
@@ -27,6 +27,7 @@ import Data.Bits
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.Marshal.Alloc (alloca)
+import Foreign.Marshal.Utils (with)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -97,18 +98,6 @@ paramSize x | sz .&. 0xC0 == 0 = fromIntegral sz
             | otherwise        = error "Invalid size (> 14 bits)"
    where sz = sizeOf x
 
--- | Create a basic commad: without additional parameter
-signalCommand :: CommandType -> CommandNumber -> Command
-signalCommand typ nr = Command typ nr None 0
-
--- | Create a Write command
-writeCommand :: Storable a => CommandType -> CommandNumber -> a -> Command
-writeCommand typ nr param = Command typ nr Write (paramSize param)
-
--- | Create a ReadWrite command
-readWriteCommand :: Storable a => CommandType -> CommandNumber -> a -> Command
-readWriteCommand typ nr param = Command typ nr ReadWrite (paramSize param)
-
 -- | We abstract over the ioctl function
 type IOCTL = FileDescriptor -> Int64 -> Int64 -> IO Int64
 
@@ -123,3 +112,37 @@ ioctlRead ioctl typ nr test fd = do
       case test ret of
          Just err -> return (Left err)
          Nothing  -> Right <$> peek ptr
+
+
+
+-- | Build a Write IOCTL
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. 
+ioctlWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> SysRet b) -> FileDescriptor -> a -> SysRet b
+ioctlWrite ioctl typ nr test fd arg = do
+   with arg $ \ptr -> do
+      let cmd = Command typ nr Write (paramSize arg)
+      ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+      test ret
+
+-- | Build a ReadWrite IOCTL
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
+ioctlReadWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet a
+ioctlReadWrite ioctl typ nr test fd arg = do
+   with arg $ \ptr -> do
+      let cmd = Command typ nr ReadWrite (paramSize arg)
+      ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+      case test ret of
+         Just err -> return (Left err)
+         Nothing  -> Right <$> peek ptr
+
+
+-- | Build a Signal IOCTL (direction = None)
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. 
+ioctlSignal :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> SysRet b) -> FileDescriptor -> SysRet b
+ioctlSignal ioctl typ nr test fd = do
+   let cmd = Command typ nr None 0
+   ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg nullPtr)
+   test ret

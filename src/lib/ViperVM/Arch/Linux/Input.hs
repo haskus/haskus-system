@@ -8,9 +8,12 @@ module ViperVM.Arch.Linux.Input
    , AbsoluteInfo(..)
    , KeymapEntry(..)
    , RepeatSettings(..)
+   , protocolVersion
+   , inputKeymapByIndexFlag
    , getDriverVersion
    , getDeviceInfo
    , getRepeatSettings
+   , setRepeatSettings
    )
 where
 
@@ -115,7 +118,7 @@ data RepeatSettings = RepeatSettings
 
 instance Storable RepeatSettings where
    sizeOf _ = 8
-   alignment _ = 8
+   alignment _ = 4
    peek ptr = let p = castPtr ptr :: Ptr Int32 in
       RepeatSettings <$> peekElemOff p 0 
                      <*> peekElemOff p 1
@@ -131,3 +134,9 @@ instance Storable RepeatSettings where
 -- EVIOCGREP
 getRepeatSettings :: IOCTL -> FileDescriptor -> SysRet RepeatSettings
 getRepeatSettings ioctl = ioctlRead ioctl 0x45 0x03 defaultCheck
+
+-- | Set repeat settings
+--
+-- EVIOCSREP
+setRepeatSettings :: IOCTL -> FileDescriptor -> RepeatSettings -> SysRet ()
+setRepeatSettings ioctl = ioctlWrite ioctl 0x45 0x03 defaultCheckRet

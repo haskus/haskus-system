@@ -2,6 +2,7 @@ module ViperVM.Arch.Linux.ErrorCode
    ( SysRet
    , ErrorCode (..)
    , defaultCheck
+   , defaultCheckRet
    , toErrorCode
    , onSuccessIO
    , onSuccess
@@ -21,6 +22,15 @@ toErrorCode = toEnum . fromIntegral . (*(-1))
 defaultCheck :: Int64 -> Maybe ErrorCode
 defaultCheck x | x < 0     = Just (toErrorCode x)
                | otherwise = Nothing
+
+-- | Use defaultCheck to check for error and return () otherwise
+--
+-- Similar to LIBC's behavior (return 0 except on error)
+defaultCheckRet :: Int64 -> SysRet ()
+defaultCheckRet x = case defaultCheck x of
+   Nothing  -> return (Right ())
+   Just err -> return (Left err)
+
 
 onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
 onSuccessIO sc f = do
