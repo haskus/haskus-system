@@ -13,8 +13,10 @@ import qualified ViperVM.Platform.Drivers.OpenCL as CL
 import qualified ViperVM.Arch.OpenCL.Program as CL
 import qualified ViperVM.Arch.OpenCL.Context as CL
 import qualified ViperVM.Arch.OpenCL.Platform as CL
+import qualified ViperVM.Arch.OpenCL.Entity as CL
 
 import Control.Monad.Trans.Either
+import Control.Monad.IO.Class (liftIO)
 import Filesystem (isFile,getAppCacheDirectory)
 import Filesystem.Path.CurrentOS
 import qualified Data.ByteString as BS
@@ -73,7 +75,13 @@ preprocess proc (OpenCLSource src) = do
             EitherT $ CL.buildProgram prog dev options
 
             -- Try to retrieve binary
-            EitherT $ CL.getProgramBinary prog dev
+            b <- EitherT $ CL.getProgramBinary prog dev
+
+            -- Cleanup
+            liftIO $ CL.release prog
+            liftIO $ CL.release ctx
+
+            right b
 
          case bin of
             Left err       -> error (show err)
