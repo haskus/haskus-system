@@ -130,7 +130,7 @@ wrapCheckSuccess :: IO CLint -> IO Bool
 wrapCheckSuccess f = (== CL_SUCCESS) . fromCL <$> f
 
 -- | Wrap an OpenCL call to get entity info
-wrapGetInfo :: Storable a => (Ptr a -> Ptr CSize -> IO CLint) -> (a -> b) -> IO (Either CLError b)
+wrapGetInfo :: Storable a => (Ptr a -> Ptr CSize -> IO CLint) -> (a -> b) -> CLRet b
 wrapGetInfo fget fconvert= alloca $ \dat -> do
   errcode <- fget dat nullPtr
   if errcode == toCL CL_SUCCESS

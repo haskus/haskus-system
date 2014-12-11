@@ -8,9 +8,13 @@ import ViperVM.Library.Kernel
 import ViperVM.Platform.Types (Proc,procModelHash,procPeer)
 
 import qualified ViperVM.Platform.Drivers as Peer
-import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
+import qualified ViperVM.Platform.Drivers.OpenCL as CL
+-- TODO: move low-level parts into Platform.Drivers
+import qualified ViperVM.Arch.OpenCL.Program as CL
+import qualified ViperVM.Arch.OpenCL.Context as CL
+import qualified ViperVM.Arch.OpenCL.Platform as CL
 
---import System.FilePath
+import Control.Monad.Trans.Either
 import Filesystem (isFile,getAppCacheDirectory)
 import Filesystem.Path.CurrentOS
 import qualified Data.ByteString as BS
@@ -54,12 +58,26 @@ preprocess :: Proc -> Kernel -> IO KernelBin
 preprocess proc (OpenCLSource src) = do
    case procPeer proc of
       Peer.OpenCLProc p -> do
-         -- Compile program
-         -- TODO
+         let 
+            options = ""
+            dev = CL.clProcDevice p
 
-         -- Retrieve binary
-         -- TODO
+         bin <- runEitherT $ do
+            pf <- EitherT $ CL.getDevicePlatform dev
+            ctx <- EitherT $ CL.createContext pf [dev]
 
-         --return (OpenCLBinary bin)
-         undefined
+            -- Create program
+            prog <- EitherT $ CL.createProgramFromSource ctx src
+ 
+            -- Compile program
+            EitherT $ CL.buildProgram prog dev options
+
+            -- Try to retrieve binary
+            EitherT $ CL.getProgramBinary prog dev
+
+         case bin of
+            Left err       -> error (show err)
+            Right Nothing  -> error "Unable to get binary"
+            Right (Just b) -> return (OpenCLBinary b)
+
       _ -> error "Invalid proc"

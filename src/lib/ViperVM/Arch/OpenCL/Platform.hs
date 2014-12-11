@@ -21,6 +21,7 @@ module ViperVM.Arch.OpenCL.Platform
    , getPlatformExtensions
    , getPlatformExtensions'
    , getPlatformInfos'
+   , getDevicePlatform
    )
 where
 
@@ -38,7 +39,7 @@ import Data.Word (Word32)
 import Control.Applicative ((<$>), (<*>))
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,peekArray)
-import Foreign.Storable (peek)
+import Foreign.Storable (peek,sizeOf)
 import Foreign.Ptr (Ptr,nullPtr,castPtr)
 
 -- | Platform
@@ -182,3 +183,14 @@ getPlatformInfos' pf = PlatformInfos
    <*> getPlatformProfile' pf
    <*> getPlatformVersion' pf
    <*> getPlatformExtensions' pf
+
+-- | Retrieve device platform
+--
+-- FIXME: it belongs to OpenCL.Device but this create a circular dependency with OpenCL.Platform
+getDevicePlatform :: Device -> CLRet Platform
+getDevicePlatform dev = do
+   let
+      sz = fromIntegral (sizeOf (undefined :: Platform_))
+   alloca $ \(dat :: Ptr Platform_) -> whenSuccess 
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL CL_DEVICE_PLATFORM) sz (castPtr dat) nullPtr)
+      (Platform (cllib dev) <$> peek dat)

@@ -300,3 +300,5 @@ getDeviceQueueProperties dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_
 -- | Return OpenCL device queue properties (throw an exception on error)
 getDeviceQueueProperties' :: Device -> IO [CommandQueueProperty]
 getDeviceQueueProperties' = fmap toException . getDeviceQueueProperties
+
+
