@@ -14,6 +14,7 @@ module ViperVM.Arch.OpenCL.Program
    , getProgramBinarySizes'
    , getProgramBinary
    , getProgramBinary'
+   , createProgramFromSource
    )
 where
 
@@ -23,6 +24,7 @@ import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
+import ViperVM.Arch.OpenCL.Context
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
@@ -185,3 +187,13 @@ getProgramBinary prog dev = runEitherT $ do
 -- throw an exception on failure
 getProgramBinary' :: Program -> Device -> IO (Maybe BS.ByteString)
 getProgramBinary' prog = fmap toException . getProgramBinary prog
+
+
+-- | Create a program from its source
+-- TODO: provide a Text alternative
+createProgramFromSource :: Context -> String -> CLRet Program
+createProgramFromSource ctx src =
+   withCString src $ \src' ->
+      withArray [src'] $ \strings -> do
+         p <- wrapPError (rawClCreateProgramWithSource (cllib ctx) (unwrap ctx) 1 strings nullPtr)
+         return (Program (cllib ctx) <$> p)
