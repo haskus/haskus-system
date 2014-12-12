@@ -38,18 +38,18 @@ main :: IO ()
 main = withSocketsDo $ do
 
    -- Loading platform
-   pf <- loadPlatform defaultConfig {
+   hst <- loadPlatform defaultConfig {
       enableOpenCLCPUs = False
    }
 
    getArgs >>= \case
-      []  -> server (nullConf { port = 8000}) pf
-      [p] -> server (nullConf { port = read p}) pf
+      []  -> server (nullConf { port = 8000}) hst
+      [p] -> server (nullConf { port = read p}) hst
       _   -> putStrLn =<< (printf "Usage: %s [PORT]" <$> getProgName)
 
 
 server :: Conf -> V.Host -> IO ()
-server conf pf = do
+server conf hst = do
    putStrLn (printf "Starting Web server at localhost:%d" (port conf))
    simpleHTTP conf $ msum
       [ 
@@ -60,19 +60,19 @@ server conf pf = do
          serveFile (asContentType "text/css") cssPath
 
         -- Show memory information
-      , dir "localhost" $ dir "memory" $ path $ \uid -> showMemory pf uid
+      , dir "localhost" $ dir "memory" $ path $ \uid -> showMemory hst uid
 
         -- Perform memory action
-      , dir "localhost" $ dir "memory" $ path $ \uid -> memoryAction pf uid
+      , dir "localhost" $ dir "memory" $ path $ \uid -> memoryAction hst uid
 
         -- Show network information
-      , dir "localhost" $ dir "network" $ path $ \uid -> showNetwork pf uid
+      , dir "localhost" $ dir "network" $ path $ \uid -> showNetwork hst uid
 
         -- Show platform information
-      , dir "localhost" $ showHost pf
+      , dir "localhost" $ showHost hst
 
         -- Show welcome screen
-      , nullDir >> (ok . toResponse . appTemplate pf "Welcome" $ showWelcome)
+      , nullDir >> (ok . toResponse . appTemplate hst "Welcome" $ showWelcome)
       ]
 
 -- | Template of all pages
@@ -92,20 +92,19 @@ appTemplate _ title bdy = docTypeHtml $ do
 
 -- | Welcoming screen
 showWelcome :: Html
-showWelcome = H.a "Local host information" ! A.href "/localhost"
+showWelcome = H.a "Local hst information" ! A.href "/localhost"
 
 -- | Show the host
 showHost :: V.Host -> ServerPartT IO Response
-showHost pf = do
+showHost hst = do
 
    (mems,procs,nets) <- lift . atomically $ do
-      let extractMem xs x = return (x:xs)
-      mems <- reverse <$> breadthFirstMemories pf [] extractMem
-      procs <- TSet.toList =<< TSet.unions (map memoryProcs mems)
-      nets <- TSet.toList =<< TSet.unions (map memoryNetworks mems)
+      mems <- TSet.toList =<< hostMemories hst
+      procs <- TSet.toList =<< hostProcessors hst
+      nets <- TSet.toList =<< hostNetworks hst
       return (mems,procs,nets)
 
-   ok . toResponse . appTemplate pf "Local host" $ do
+   ok . toResponse . appTemplate hst "Local host" $ do
       H.h2 "Memories"
       H.ul $ forM_ mems $ \mem -> H.li $
          H.a (toHtml $ memoryInfo mem)
@@ -122,11 +121,11 @@ showHost pf = do
 
 -- | Show a memory
 showMemory :: V.Host -> String -> ServerPartT IO Response
-showMemory pf uid = do
+showMemory hst uid = do
    method GET
 
    -- check that the memory with the given identifier exists
-   mem <- lift . atomically $ findMemoryByUID pf (read uid)
+   mem <- lift . atomically $ findMemoryByUID hst (read uid)
    guard (isJust mem)
    let Just m = mem
 
@@ -137,7 +136,7 @@ showMemory pf uid = do
 
    uri <- rqUri <$> askRq
    
-   ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+   ok . toResponse . appTemplate hst ("Memory - " ++ uid) $ do
       H.h2 (toHtml $ "Memory - " ++ uid)
 
       H.ul $ do
@@ -175,11 +174,11 @@ showMemory pf uid = do
 
 -- | Perform a memory action
 memoryAction :: V.Host -> String -> ServerPartT IO Response
-memoryAction pf uid = do
+memoryAction hst uid = do
    method POST
 
    -- check that the memory with the given identifier exists
-   mem <- lift $ atomically $ findMemoryByUID pf (read uid)
+   mem <- lift $ atomically $ findMemoryByUID hst (read uid)
    guard (isJust mem)
    let Just m = mem
 
@@ -192,12 +191,12 @@ memoryAction pf uid = do
          res <- lift $ memoryBufferAllocate bsize m
          case res of
             Left err -> 
-               ok . toResponse . appTemplate pf ("Memory - " ++ uid) $ do
+               ok . toResponse . appTemplate hst ("Memory - " ++ uid) $ do
                   H.p (toHtml $ "Cannot allocate buffer of size" ++ show bsize ++ " KB")
                   H.p (toHtml $ "Error: " ++ show err)
 
             Right _ ->
-               ok . toResponse . appTemplate pf ("Memory - " ++ uid) $
+               ok . toResponse . appTemplate hst ("Memory - " ++ uid) $
                   H.p (toHtml $ "Buffer (" ++ show bsize ++ " KB) successfully allocated")
 
       "release" -> do
@@ -210,22 +209,22 @@ memoryAction pf uid = do
          let Just b = buf
 
          lift $ memoryBufferRelease b
-         ok . toResponse . appTemplate pf ("Memory - " ++ uid) $
+         ok . toResponse . appTemplate hst ("Memory - " ++ uid) $
             H.p "Buffer released"
 
       _ -> mzero
 
 -- | Show a network
 showNetwork :: V.Host -> String -> ServerPartT IO Response
-showNetwork pf uid = do
+showNetwork hst uid = do
    method GET
 
    -- check that the memory with the given identifier exists
-   -- mem <- lift $ atomically (findMemoryByUID pf (read uid))
+   -- mem <- lift $ atomically (findMemoryByUID hst (read uid))
    -- guard (isJust mem)
    -- let Just m = mem
 
-   ok . toResponse . appTemplate pf ("Network - " ++ uid) $
+   ok . toResponse . appTemplate hst ("Network - " ++ uid) $
       H.h2 (toHtml $ "Network - " ++ uid)
 
       -- H.ul $ do

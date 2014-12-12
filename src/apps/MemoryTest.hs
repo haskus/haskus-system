@@ -17,12 +17,11 @@ import qualified ViperVM.STM.TSet as TSet
 main :: IO ()
 main = do
    putStrLn "Loading Platform..."
-   pf <- loadPlatform defaultConfig {
+   host <- loadPlatform defaultConfig {
             enableOpenCLCPUs = True
          }
 
-   let extractMem xs x = return (x:xs)
-   mems <- reverse <$> atomically (breadthFirstMemories pf [] extractMem)
+   mems <- allMemoriesFromHostIO host
 
    putStrLn "============================================"
    putStrLn "Testing allocation/release..."

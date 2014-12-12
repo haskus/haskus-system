@@ -49,8 +49,8 @@ procInit peer = return (Proc peer)
 
 
 -- | Load OpenCL platform
-loadOpenCLPlatform :: PlatformConfig -> Host -> IO ()
-loadOpenCLPlatform config host = do
+loadOpenCLPlatform :: PlatformConfig -> TSet Memory -> IO ()
+loadOpenCLPlatform config hostMems = do
    lib <- CL.loadOpenCL (libraryOpenCL config)
    platforms <- CL.getPlatforms lib
 
@@ -102,8 +102,6 @@ loadOpenCLPlatform config host = do
                atomically $ TSet.insert proc (memoryProcs clMem)
                
                -- Add link to every registered host memory
-               let hostMems = hostMemories host
-
                let neighbors m =
                      if m == clMem
                         then return hostMems
@@ -121,8 +119,8 @@ loadOpenCLPlatform config host = do
 
 
 -- | Load host platform
-loadHostPlatform :: PlatformConfig -> Host -> IO ()
-loadHostPlatform config host = do
+loadHostPlatform :: PlatformConfig -> TSet Memory -> IO ()
+loadHostPlatform config hostMems = do
    numa <- Linux.loadNUMA (sysfsPath config)
    hostEndianness <- Generic.getMemoryEndianness
 
@@ -147,7 +145,7 @@ loadHostPlatform config host = do
       return mem
          
    -- Init platform host memories
-   atomically $ forM_ mems (`TSet.insert` hostMemories host)
+   atomically $ forM_ mems (`TSet.insert` hostMems)
          
 
 
@@ -155,13 +153,13 @@ loadHostPlatform config host = do
 loadPlatform :: PlatformConfig -> IO Host
 loadPlatform config = do
    
-   host <- Host <$> atomically TSet.empty
+   hostMems <- atomically TSet.empty
 
-   loadHostPlatform config host
+   loadHostPlatform config hostMems
          
    when (enableOpenCL config) $
-      loadOpenCLPlatform config host
+      loadOpenCLPlatform config hostMems
 
    -- TODO: load other devices (CUDA...)
 
-   return host
+   return (newHost hostMems)
