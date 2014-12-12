@@ -1,7 +1,11 @@
 module ViperVM.Library.Maths.MatrixOps
-   ( clAddKernel
+   ( BasicOp (..)
+   , BasicType (..)
+   , clMapOpKernel
    )
 where
+
+import ViperVM.Library.Kernel
 
 data BasicOp = OpAdd | OpSub | OpMul | OpDiv
 
@@ -11,8 +15,8 @@ data BasicType = TyUInt | TyInt | TyFloat | TyDouble
 -- ADDITION
 ---------------------------------------------
 
-clAddKernel :: BasicType -> BasicOp -> String
-clAddKernel ty op = code
+clMapOpKernel :: BasicType -> BasicOp -> Kernel
+clMapOpKernel ty op = OpenCLSource code
    where
       tyS = case ty of
          TyUInt   -> "unsigned int"

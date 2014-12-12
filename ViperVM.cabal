@@ -181,6 +181,15 @@ executable ViperWeb
     transformers == 0.4.*,
     network == 2.5.*
 
+executable TestKernels
+  main-is: TestKernels.hs
+  hs-source-dirs: src/apps
+  ghc-options: -Wall
+  default-language:    Haskell2010
+  build-depends: 
+    base,
+    ViperVM
+
 executable TestSyscalls
   main-is: TestSyscalls.hs
   hs-source-dirs: src/apps

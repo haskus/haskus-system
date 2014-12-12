@@ -88,4 +88,4 @@ preprocess proc (OpenCLSource src) = do
             Right Nothing  -> error "Unable to get binary"
             Right (Just b) -> return (OpenCLBinary b)
 
-      _ -> error "Invalid proc"
+      _ -> error "Invalid processor for the given kernel"
