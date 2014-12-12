@@ -1,23 +1,19 @@
 -- | Helpers for OpenCL bindings
 module ViperVM.Arch.OpenCL.Bindings where
 
+import ViperVM.Utils.EnumSet as ES
 import Data.Bits
-import Data.Maybe
 
 -- | Data convertible from and to an OpenCL constant value
 class Enum a => CLConstant a where
    toCL :: Integral b => a -> b
    fromCL :: Integral b => b -> a
 
+
 -- | Data convertible from and to an OpenCL bitset
 class Enum a => CLSet a where
    toCLSet :: (Bits b, Integral b) => [a] -> b
-   toCLSet = sum . map f
-      where f = shiftL 1 . fromIntegral . fromEnum
+   toCLSet = ES.unwrap . ES.fromList
 
    fromCLSet :: (Bits b, Integral b) => b -> [a]
-   fromCLSet x = mapMaybe f (enumFrom (toEnum 0))
-      where f e = if testBit x (fromEnum e)
-                        then Just e
-                        else Nothing
-
+   fromCLSet = ES.toList . ES.EnumSet

@@ -1,6 +1,7 @@
 -- | A bit set: use bitwise operations and minimal storage
 module ViperVM.Utils.EnumSet
    ( EnumSet (..)
+   , unwrap
    , member
    , notMember
    , elems
@@ -18,6 +19,9 @@ import Data.Bits
 -- a is the element type (Enum a)
 newtype EnumSet b a = EnumSet b deriving (Eq,Ord)
 
+-- | Unwrap the bitset
+unwrap :: EnumSet b a -> b
+unwrap (EnumSet b) = b
 
 -- | Test if an element is in the set
 member :: (Bits b, Enum a) => EnumSet b a -> a -> Bool
