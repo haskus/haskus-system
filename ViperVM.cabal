@@ -90,7 +90,9 @@ library
     ViperVM.Platform.Processing.Kernel
 
 
-    ViperVM.Utils
+    ViperVM.Utils.Hash
+    ViperVM.Utils.EnumSet
+
     ViperVM.STM.TMap
     ViperVM.STM.TSet
     ViperVM.STM.TList

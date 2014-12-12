@@ -1,4 +1,4 @@
-module ViperVM.Utils
+module ViperVM.Utils.Hash
    ( hashString
    )
 where
@@ -12,4 +12,3 @@ import Data.Digest.Pure.MD5 (md5)
 -- TODO: use Text instead of String
 hashString :: String -> String
 hashString = LBS.unpack . toLazyByteString . byteStringHex . encode . md5 . LBS.pack
-

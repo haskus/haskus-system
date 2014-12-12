@@ -40,7 +40,7 @@ import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
-import ViperVM.Utils (hashString)
+import ViperVM.Utils.Hash (hashString)
 import ViperVM.STM.TSet as TSet
 import ViperVM.STM.TMap
 import ViperVM.STM.TList

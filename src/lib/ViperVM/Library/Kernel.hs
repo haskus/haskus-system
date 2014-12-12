@@ -9,7 +9,7 @@ where
 import Data.ByteString as SBS
 import Data.SafeCopy
 
-import ViperVM.Utils (hashString)
+import ViperVM.Utils.Hash (hashString)
 
 -- | Various Kernel representations
 data Kernel
