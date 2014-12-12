@@ -41,7 +41,8 @@ data VectorRepresentation = DenseVector
 
 -- | Vector creation from another data
 data VectorSource
-   = SourceSubVector                -- ^ Sub-vector
+   -- | Sub-vector
+   = SourceSubVector
       { sourceSubParent :: Vector   -- ^ Parent
       , sourceSubChild  :: Vector   -- ^ Child
       , sourceSubOffset :: Word64   -- ^ Offset

@@ -32,7 +32,8 @@ data MatrixCellType =
 
 -- | Matrix representations
 data MatrixRepresentation
-   = DenseMatrix                       -- ^ Dense array
+   -- | Dense array
+   = DenseMatrix
       { denseMatrixDimOrder :: [Int]   -- ^ Dimensions storage order (e.g. [0,2,1]
       }
 
@@ -40,7 +41,8 @@ data MatrixRepresentation
 
 -- | Matrix creation from another data
 data MatrixSource
-   = SourceSubMatrix                -- ^ Sub-matrix (same number of dimensions)
+   -- | Sub-matrix (same number of dimensions)
+   = SourceSubMatrix
       { sourceSubParent :: Matrix   -- ^ Parent matrix
       , sourceSubChild  :: Matrix   -- ^ Child matrix
       , sourceSubOffset :: [Word64] -- ^ Offset of the first element
