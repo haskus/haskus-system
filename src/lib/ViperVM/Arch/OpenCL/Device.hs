@@ -27,6 +27,8 @@ module ViperVM.Arch.OpenCL.Device
    )
 where
 
+import ViperVM.Utils.EnumSet (EnumBitSet, fromBitSet)
+
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
@@ -149,7 +151,7 @@ data DeviceType
    | CL_DEVICE_TYPE_CUSTOM
    deriving (Eq,Show,Bounded,Enum)
 
-instance CLSet DeviceType
+instance EnumBitSet DeviceType
 
 -- | List of all device types
 allDeviceTypes :: [DeviceType]
@@ -172,7 +174,7 @@ data DeviceFPConfig
    | CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet DeviceFPConfig
+instance EnumBitSet DeviceFPConfig
 
 -- | Device execution capabilities
 data DeviceExecCapability
@@ -180,7 +182,7 @@ data DeviceExecCapability
    | CL_EXEC_NATIVE_KERNEL
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet DeviceExecCapability
+instance EnumBitSet DeviceExecCapability
 
 -- | Device cache memory type
 data DeviceMemCacheType
@@ -209,7 +211,7 @@ data CommandQueueProperty
    | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet CommandQueueProperty
+instance EnumBitSet CommandQueueProperty
 
 -- | Return the required size to return a device info
 getDeviceInfoRetSize :: DeviceInfo -> Device -> CLRet CSize
@@ -264,7 +266,7 @@ getDeviceVendor' = fmap toException . getDeviceVendor
 
 -- | Return OpenCL device type
 getDeviceType :: Device -> CLRet [DeviceType]
-getDeviceType dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_TYPE dev
+getDeviceType dev = fmap fromBitSet <$> getDeviceInfoWord64 CL_DEVICE_TYPE dev
 
 -- | Return OpenCL device type (throw an exception on error)
 getDeviceType' :: Device -> IO [DeviceType]
@@ -295,7 +297,7 @@ getDeviceEndianness dev = toEndianness <$> isDeviceLittleEndian' dev
 
 -- | Return OpenCL device queue properties
 getDeviceQueueProperties :: Device -> CLRet [CommandQueueProperty]
-getDeviceQueueProperties dev = fmap fromCLSet <$> getDeviceInfoWord64 CL_DEVICE_QUEUE_PROPERTIES dev
+getDeviceQueueProperties dev = fmap fromBitSet <$> getDeviceInfoWord64 CL_DEVICE_QUEUE_PROPERTIES dev
 
 -- | Return OpenCL device queue properties (throw an exception on error)
 getDeviceQueueProperties' :: Device -> IO [CommandQueueProperty]

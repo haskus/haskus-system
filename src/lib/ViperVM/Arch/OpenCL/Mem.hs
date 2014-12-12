@@ -10,6 +10,8 @@ module ViperVM.Arch.OpenCL.Mem
    )
 where
 
+import ViperVM.Utils.EnumSet (EnumBitSet, toBitSet)
+
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
@@ -56,7 +58,7 @@ data MemFlag
    | CL_MEM_HOST_NO_ACCESS    -- 512
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet MemFlag
+instance EnumBitSet MemFlag
 
 -- | Memory object mapping flags
 data MapFlag
@@ -65,7 +67,7 @@ data MapFlag
    | CL_MAP_WRITE_INVALIDATE_REGION
    deriving (Show, Bounded, Eq, Ord, Enum)
 
-instance CLSet MapFlag
+instance EnumBitSet MapFlag
 
 -- | Memory object type
 data MemObjectType
@@ -87,7 +89,7 @@ instance CLConstant MemObjectType where
 createBuffer :: Device -> Context -> [MemFlag] -> CSize -> CLRet Mem
 createBuffer _ ctx flags size = do
    let lib = cllib ctx
-   mem <- fmap (Mem lib) <$> wrapPError (rawClCreateBuffer lib (unwrap ctx) (toCLSet flags) size nullPtr)
+   mem <- fmap (Mem lib) <$> wrapPError (rawClCreateBuffer lib (unwrap ctx) (toBitSet flags) size nullPtr)
    --FIXME: ensure buffer is allocated 
    --  use clEnqueueMigrateMemObjects if available (OpenCL 1.1 or 1.2?)
    --  perform a dummy operation on the buffer (OpenCL 1.0)
@@ -96,13 +98,13 @@ createBuffer _ ctx flags size = do
 -- | Create 2D image
 createImage2D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> Ptr () -> CLRet Mem
 createImage2D ctx flags imgFormat width height rowPitch hostPtr =
-   fmap (Mem lib) <$> wrapPError (rawClCreateImage2D lib (unwrap ctx) (toCLSet flags) imgFormat width height rowPitch hostPtr)
+   fmap (Mem lib) <$> wrapPError (rawClCreateImage2D lib (unwrap ctx) (toBitSet flags) imgFormat width height rowPitch hostPtr)
    where lib = cllib ctx
 
 -- | Create 3D image
 createImage3D :: Context -> [MemFlag] -> CLImageFormat_p -> CSize -> CSize -> CSize -> CSize -> CSize -> Ptr () -> CLRet Mem
 createImage3D ctx flags imgFormat width height depth rowPitch slicePitch hostPtr =
-   fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toCLSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
+   fmap (Mem lib) <$> wrapPError (rawClCreateImage3D lib (unwrap ctx) (toBitSet flags) imgFormat width height depth rowPitch slicePitch hostPtr)
    where lib = cllib ctx
 
 -- | Release a mem object
