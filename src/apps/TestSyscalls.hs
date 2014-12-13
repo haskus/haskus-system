@@ -37,7 +37,7 @@ main = do
          check <$> sysClose fd
 
    putStrLn "Checking for access to dummy.result file"
-   fExist <- sysAccess "dummy.result" [AccessExist]
+   fExist <- sysAccess "dummy.result" []
    fWrite <- sysAccess "dummy.result" [AccessWrite]
    case (fExist,fWrite) of
       (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"

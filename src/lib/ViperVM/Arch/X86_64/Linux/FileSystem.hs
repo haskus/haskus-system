@@ -68,7 +68,7 @@ sysWrite (FileDescriptor fd) buf count =
 
 sysOpenCString :: CString -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
 sysOpenCString path flags mode =
-   onSuccess (syscall3 2 path (toSet flags :: Int) (toSet mode :: Int))
+   onSuccess (syscall3 2 path (toSet flags :: Int) (toBitSet mode :: Int))
       (FileDescriptor . fromIntegral)
 
 -- | Open a file
@@ -77,7 +77,7 @@ sysOpen path flags mode = withCString path (\path' -> sysOpenCString path' flags
 
 sysCreateCString :: CString -> [FilePermission] -> SysRet FileDescriptor
 sysCreateCString path mode = 
-   onSuccess (syscall2 85 path (toSet mode :: Int)) (FileDescriptor . fromIntegral)
+   onSuccess (syscall2 85 path (toBitSet mode :: Int)) (FileDescriptor . fromIntegral)
 
 sysCreate :: String -> [FilePermission] -> SysRet FileDescriptor
 sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
@@ -200,20 +200,20 @@ sysWriteAt :: FileDescriptor -> Ptr () -> Word64 -> Word64 -> SysRet Word64
 sysWriteAt (FileDescriptor fd) buf count offset =
    onSuccess (syscall4 18 fd buf count offset) fromIntegral
 
-data AccessMode = AccessExist | AccessRead | AccessWrite | AccessExecute
+-- | Access mode
+--
+-- To test if a file exists, use no flag
+data AccessMode
+   = AccessExecute  -- bit 0
+   | AccessWrite    -- bit 1
+   | AccessRead     -- bit 2
+   deriving (Eq,Show,Enum)
 
-instance Enum AccessMode where
-   fromEnum x = case x of
-      AccessExist    -> 0
-      AccessRead     -> 4
-      AccessWrite    -> 2
-      AccessExecute  -> 1
-
-   toEnum = undefined
+instance EnumBitSet AccessMode
 
 sysAccess :: FilePath -> [AccessMode] -> SysRet ()
 sysAccess path mode = withCString path $ \path' ->
-   onSuccess (syscall2 21 path' (toSet mode :: Int64)) (const ())
+   onSuccess (syscall2 21 path' (toBitSet mode :: Int64)) (const ())
 
 
 sysDup :: FileDescriptor -> SysRet FileDescriptor
@@ -301,11 +301,11 @@ sysUnlink path = withCString path $ \path' ->
 
 sysChangePermissionPath :: FilePath -> [FilePermission] -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   onSuccess (syscall2 90 path' (toSet mode :: Int)) (const ())
+   onSuccess (syscall2 90 path' (toBitSet mode :: Int)) (const ())
 
 sysChangePermission :: FileDescriptor -> [FilePermission] -> SysRet ()
 sysChangePermission (FileDescriptor fd) mode = 
-   onSuccess (syscall2 91 fd (toSet mode :: Int)) (const ())
+   onSuccess (syscall2 91 fd (toBitSet mode :: Int)) (const ())
 
 
 -- | Avoid duplication in *chown syscalls
@@ -334,4 +334,4 @@ sysChangeOwnership (FileDescriptor fd) = chownEx 93 fd
 -- | umask
 sysSetProcessUMask :: [FilePermission] -> SysRet [FilePermission]
 sysSetProcessUMask mode =
-   onSuccess (syscall1 95 (toSet mode :: Int)) fromBitSet
+   onSuccess (syscall1 95 (toBitSet mode :: Int)) fromBitSet
