@@ -43,9 +43,9 @@ import Foreign.Marshal.Array (allocaArray)
 import Data.Word (Word64)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
-import Data.Bits (Bits, (.|.), (.&.))
-import Data.Maybe (catMaybes)
+import Data.Bits ((.|.))
 
+import ViperVM.Utils.EnumSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
@@ -156,56 +156,19 @@ instance Enum OpenFlag where
 
 
 -- | File permissions
-data FilePermission =
-     PermUserRead
-   | PermUserWrite
-   | PermUserExecute
-   | PermGroupRead
-   | PermGroupWrite
-   | PermGroupExecute
-   | PermOtherRead
+data FilePermission
+   = PermOtherExecute
    | PermOtherWrite
-   | PermOtherExecute
-   deriving (Show)
+   | PermOtherRead
+   | PermGroupExecute
+   | PermGroupWrite
+   | PermGroupRead
+   | PermUserExecute
+   | PermUserWrite
+   | PermUserRead
+   deriving (Show,Enum)
 
-instance Enum FilePermission where
-   fromEnum x = case x of
-      PermUserRead      -> 0o400
-      PermUserWrite     -> 0o200
-      PermUserExecute   -> 0o100
-      PermGroupRead     -> 0o040
-      PermGroupWrite    -> 0o020
-      PermGroupExecute  -> 0o010
-      PermOtherRead     -> 0o004
-      PermOtherWrite    -> 0o002
-      PermOtherExecute  -> 0o001
-
-   toEnum x = case x of
-      0o400 -> PermUserRead
-      0o200 -> PermUserWrite
-      0o100 -> PermUserExecute
-      0o040 -> PermGroupRead
-      0o020 -> PermGroupWrite
-      0o010 -> PermGroupExecute
-      0o004 -> PermOtherRead
-      0o002 -> PermOtherWrite
-      0o001 -> PermOtherExecute
-      _ -> error "Unrecognized file permission"
-
-toPermission :: (Num a, Bits a) => a -> [FilePermission]
-toPermission n = catMaybes (fmap f vs)
-   where
-      f (v,e) = if n .&. v /= 0 then Just e else Nothing
-      vs = [
-         (0o400, PermUserRead),
-         (0o200, PermUserWrite),
-         (0o100, PermUserExecute),
-         (0o040, PermGroupRead),
-         (0o020, PermGroupWrite),
-         (0o010, PermGroupExecute),
-         (0o004, PermOtherRead),
-         (0o002, PermOtherWrite),
-         (0o001, PermOtherExecute)]
+instance EnumBitSet FilePermission
 
 data SeekWhence = 
      SeekSet 
@@ -371,4 +334,4 @@ sysChangeOwnership (FileDescriptor fd) = chownEx 93 fd
 -- | umask
 sysSetProcessUMask :: [FilePermission] -> SysRet [FilePermission]
 sysSetProcessUMask mode =
-   onSuccess (syscall1 95 (toSet mode :: Int)) toPermission
+   onSuccess (syscall1 95 (toSet mode :: Int)) fromBitSet
