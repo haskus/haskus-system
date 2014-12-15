@@ -7,6 +7,7 @@ module ViperVM.Arch.Linux.Graphics
    , CardResources(..)
    , Connector(..)
    , Connection(..)
+   , SubPixel(..)
    , ConnectorID
    , FrameBufferID
    , CRTCID
@@ -264,7 +265,15 @@ data Connection
    | Disconnected
    | ConnectionUnknown
    deriving (Eq,Ord,Show)
-newtype SubPixel = SubPixel Word32 deriving (Show)
+
+data SubPixel
+   = SubPixelUnknown
+   | SubPixelHorizontalRGB
+   | SubPixelHorizontalBGR
+   | SubPixelVerticalRGB
+   | SubPixelVerticalBGR
+   | SubPixelNone
+   deriving (Eq,Ord,Enum,Show)
 
 data Connector = Connector
    { connEncoders          :: [EncoderID]
@@ -332,7 +341,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                      <*> return (isConnected       $ connConnection_ res4)
                      <*> return (connWidth_ res4)
                      <*> return (connHeight_ res4)
-                     <*> return (SubPixel          $ connSubPixel_ res4)
+                     <*> return (toEnum . fromIntegral $ connSubPixel_ res4)
 
                   right (res4, res5)
 
