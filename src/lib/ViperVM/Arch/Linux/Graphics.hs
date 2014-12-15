@@ -5,13 +5,15 @@
 module ViperVM.Arch.Linux.Graphics
    ( Capability(..)
    , CardResources(..)
-   , Connector
-   , FrameBuffer
-   , CRTC
-   , Encoder
+   , Connector(..)
+   , ConnectorID
+   , FrameBufferID
+   , CRTCID
+   , EncoderID
    , drmIoctl
    , getCapability
    , getModeResources
+   , getConnector
    )
 where
 
@@ -22,6 +24,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
@@ -67,16 +70,16 @@ getCapability ioctl fd cap = do
       Left err -> return (Left err)
       Right (GetCapability _ value) -> return (Right value)
 
-newtype Connector    = Connector Word32 deriving (Show,Eq,Storable)
-newtype FrameBuffer  = FrameBuffer Word32 deriving (Show,Eq,Storable)
-newtype CRTC         = CRTC Word32 deriving (Show,Eq,Storable)
-newtype Encoder      = Encoder Word32 deriving (Show,Eq,Storable)
+newtype ConnectorID    = ConnectorID Word32 deriving (Show,Eq,Storable)
+newtype FrameBufferID  = FrameBufferID Word32 deriving (Show,Eq,Storable)
+newtype CRTCID         = CRTCID Word32 deriving (Show,Eq,Storable)
+newtype EncoderID      = EncoderID Word32 deriving (Show,Eq,Storable)
 
 data CardResources = CardResources
-   { framebuffers    :: [FrameBuffer]
-   , crtcs           :: [CRTC]
-   , connectors      :: [Connector]
-   , encoders        :: [Encoder]
+   { framebuffers    :: [FrameBufferID]
+   , crtcs           :: [CRTCID]
+   , connectors      :: [ConnectorID]
+   , encoders        :: [EncoderID]
    , minWidth        :: Word32
    , maxWidth        :: Word32
    , minHeight       :: Word32
@@ -89,10 +92,12 @@ data ModeCardRes = ModeCardRes
    , crtcPtr         :: Word64
    , connectorPtr    :: Word64
    , encoderPtr      :: Word64
+
    , fbCount         :: Word32
    , crtcCount       :: Word32
    , connectorCount  :: Word32
    , encoderCount    :: Word32
+
    , minWidth_       :: Word32
    , maxWidth_       :: Word32
    , minHeight_      :: Word32
@@ -164,10 +169,10 @@ getModeResources ioctl fd = runEitherT $ do
                   -- we get the values
                   res4 <- getModeResources' res3
                   res5 <- liftIO $ CardResources
-                     <$> (fmap FrameBuffer <$> peekArray' (fbCount res2) fs)
-                     <*> (fmap CRTC <$> peekArray' (crtcCount res2) fs)
-                     <*> (fmap Connector <$> peekArray' (connectorCount res2) fs)
-                     <*> (fmap Encoder <$> peekArray' (encoderCount res2) fs)
+                     <$> (fmap FrameBufferID <$> peekArray' (fbCount res2) fs)
+                     <*> (fmap CRTCID <$> peekArray' (crtcCount res2) crs)
+                     <*> (fmap ConnectorID <$> peekArray' (connectorCount res2) cs)
+                     <*> (fmap EncoderID <$> peekArray' (encoderCount res2) es)
                      <*> return (minWidth_ res4)
                      <*> return (maxWidth_ res4)
                      <*> return (minHeight_ res4)
@@ -186,3 +191,152 @@ getModeResources ioctl fd = runEitherT $ do
       then EitherT $ getModeResources ioctl fd
       else right retRes
 
+
+data ModeGetConnector = ModeGetConnector
+   { connEncodersPtr       :: Word64
+   , connModesPtr          :: Word64
+   , connPropsPtr          :: Word64
+   , connPropValuesPtr     :: Word64
+
+   , connModesCount        :: Word32
+   , connPropsCount        :: Word32
+   , connEncodersCount     :: Word32
+
+   , connEncoderID_        :: Word32   -- ^ current encoder
+   , connConnectorID_      :: Word32   -- ^ ID
+   , connConnectorType_    :: Word32
+   , connConnectorTypeID_  :: Word32
+
+   , connConnection_       :: Word32
+   , connWidth_            :: Word32   -- ^ HxW in millimeters
+   , connHeight_           :: Word32
+   , connSubPixel_         :: Word32
+   } deriving (Show)
+
+instance Storable ModeGetConnector where
+   sizeOf _    = 4*8 + (3+4+4)*4
+   alignment _ = 8
+   peek ptr    = ModeGetConnector
+      <$> peekByteOff ptr 0
+      <*> peekByteOff ptr 8
+      <*> peekByteOff ptr 16
+      <*> peekByteOff ptr 24
+
+      <*> peekByteOff ptr 32
+      <*> peekByteOff ptr 36
+      <*> peekByteOff ptr 40
+
+      <*> peekByteOff ptr 44
+      <*> peekByteOff ptr 48
+      <*> peekByteOff ptr 52
+      <*> peekByteOff ptr 56
+
+      <*> peekByteOff ptr 60
+      <*> peekByteOff ptr 64
+      <*> peekByteOff ptr 68
+      <*> peekByteOff ptr 72
+   poke ptr res = do
+      pokeByteOff ptr 0  (connEncodersPtr       res)
+      pokeByteOff ptr 8  (connModesPtr          res)
+      pokeByteOff ptr 16 (connPropsPtr          res)
+      pokeByteOff ptr 24 (connPropValuesPtr     res)
+
+      pokeByteOff ptr 32 (connModesCount        res)
+      pokeByteOff ptr 36 (connPropsCount        res)
+      pokeByteOff ptr 40 (connEncodersCount     res)
+
+      pokeByteOff ptr 44 (connEncoderID_        res)
+      pokeByteOff ptr 48 (connConnectorID_      res)
+      pokeByteOff ptr 52 (connConnectorType_    res)
+      pokeByteOff ptr 56 (connConnectorTypeID_  res)
+
+      pokeByteOff ptr 60 (connConnection_       res)
+      pokeByteOff ptr 64 (connWidth_            res)
+      pokeByteOff ptr 68 (connHeight_           res)
+      pokeByteOff ptr 72 (connSubPixel_         res)
+
+newtype ModeID = ModeID Word32 deriving (Show)
+data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
+newtype ConnectorType = ConnectorType Word32 deriving (Show)
+newtype ConnectorTypeID = ConnectorTypeID Word32 deriving (Show)
+newtype Connection = Connection Word32 deriving (Show)
+newtype SubPixel = SubPixel Word32 deriving (Show)
+
+data Connector = Connector
+   { connEncoders          :: [EncoderID]
+   , connModes             :: [ModeID]
+   , connProperties        :: [ConnectorProperty]
+   , connEncoderID         :: EncoderID
+   , connConnectorID       :: ConnectorID
+   , connConnectorType     :: ConnectorType
+   , connConnectorTypeID   :: ConnectorTypeID
+
+   , connConnection        :: Connection
+   , connWidth             :: Word32   -- ^ HxW in millimeters
+   , connHeight            :: Word32
+   , connSubPixel          :: SubPixel
+   } deriving (Show)
+
+
+-- | Get connector
+getConnector :: IOCTL -> FileDescriptor -> ConnectorID -> SysRet Connector
+getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
+   let 
+      res = ModeGetConnector 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
+
+      allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> IO b) -> IO b
+      allocaArray'      = allocaArray . fromIntegral
+
+      peekArray' :: (Storable a, Integral c) => c -> Ptr a -> IO [a]
+      peekArray'        = peekArray . fromIntegral
+
+      getModeConnector' = EitherT . ioctlReadWrite ioctl 0x64 0xA7 defaultCheck fd
+
+   liftIO $ print res
+
+   -- First we get the number of each resource
+   res2 <- getModeConnector' res
+
+   liftIO $ print res2
+
+   -- then we allocate arrays of appropriate sizes
+   (rawRes, retRes) <-
+      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr Word32) ->
+         allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
+            allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
+               allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> runEitherT $ do
+                  -- we put them in a new struct
+                  let
+                     cv = fromIntegral . ptrToWordPtr
+                     res3 = res2 { connEncodersPtr   = cv es
+                                 , connModesPtr      = cv ms
+                                 , connPropsPtr      = cv ps
+                                 , connPropValuesPtr = cv pvs
+                                 }
+                  -- we get the values
+                  res4 <- getModeConnector' res3
+                  res5 <- liftIO $ Connector
+                     <$> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
+                     <*> (fmap ModeID <$> peekArray' (connModesCount res2) ms)
+                     <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
+                                                   <*> peekArray' (connPropsCount res2) pvs)
+                     <*> return (EncoderID         $ connEncoderID_ res4)
+                     <*> return (ConnectorID       $ connConnectorID_ res4)
+                     <*> return (ConnectorType     $ connConnectorType_ res4)
+                     <*> return (ConnectorTypeID   $ connConnectorTypeID_ res4)
+                     <*> return (Connection        $ connConnection_ res4)
+                     <*> return (connWidth_ res4)
+                     <*> return (connHeight_ res4)
+                     <*> return (SubPixel          $ connSubPixel_ res4)
+
+                  right (res4, res5)
+
+   -- we need to check that the number of resources is still the same (a
+   -- resources may have appeared between the time we get the number of
+   -- resources an the time we get them...)
+   -- If not, we redo the whole process
+   if   connModesCount    res2 < connModesCount    rawRes
+     || connPropsCount    res2 < connPropsCount    rawRes
+     || connEncodersCount res2 < connEncodersCount rawRes
+      then EitherT $ getConnector ioctl fd connId
+      else right retRes

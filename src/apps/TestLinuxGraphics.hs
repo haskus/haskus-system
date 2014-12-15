@@ -4,6 +4,7 @@ import ViperVM.Arch.X86_64.Linux.FileSystem
 import Control.Monad.Trans.Either
 import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
+import Data.Foldable (forM_)
 
 main :: IO ()
 main = do
@@ -20,6 +21,11 @@ main = do
       -- Get resources
       res <- EitherT $ getModeResources ioctl fd
       liftIO $ putStrLn $ show res
+
+      forM_ (connectors res) $ \connId -> do
+         conn <- EitherT $ getConnector ioctl fd connId
+
+         liftIO $ putStrLn $ show conn
 
 
    case ret of
