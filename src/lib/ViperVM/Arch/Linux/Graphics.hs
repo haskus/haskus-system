@@ -9,6 +9,7 @@ module ViperVM.Arch.Linux.Graphics
    , Connection(..)
    , SubPixel(..)
    , ConnectorType(..)
+   , Mode(..)
    , ConnectorID
    , FrameBufferID
    , CRTCID
@@ -31,6 +32,7 @@ import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
+import Foreign.C.String (peekCString)
 import Data.Word
 
 -- | IOCTL for DRM is restarted on interruption
@@ -257,7 +259,53 @@ instance Storable ModeGetConnector where
       pokeByteOff ptr 68 (connHeight_           res)
       pokeByteOff ptr 72 (connSubPixel_         res)
 
-newtype ModeID = ModeID Word32 deriving (Show)
+data Mode = Mode
+   { modeClock               :: Word32
+
+   , modeHorizontalDisplay   :: Word16
+   , modeHorizontalSyncStart :: Word16
+   , modeHorizontalSyncEnd   :: Word16
+   , modeHorizontalTotal     :: Word16
+   , modeHorizontalSkew      :: Word16
+
+   , modeVerticalDisplay     :: Word16
+   , modeVerticalSyncStart   :: Word16
+   , modeVerticalSyncEnd     :: Word16
+   , modeVerticalTotal       :: Word16
+   , modeVerticalSkew        :: Word16
+
+   , modeVerticalRefresh     :: Word32
+   , modeFlags               :: Word32
+   , modeType                :: Word32
+   , modeName                :: String    -- length = DRM_DISPLAY_MODE_LEN = 32
+   } deriving (Show)
+
+instance Storable Mode where
+   sizeOf _    = 4 + 10 * 2 + 3*4 + 32
+   alignment _ = 8
+   peek ptr    = Mode
+      <$> peekByteOff ptr 0
+
+      <*> peekByteOff ptr 4
+      <*> peekByteOff ptr 6
+      <*> peekByteOff ptr 8
+      <*> peekByteOff ptr 10
+      <*> peekByteOff ptr 12
+
+      <*> peekByteOff ptr 14
+      <*> peekByteOff ptr 16
+      <*> peekByteOff ptr 18
+      <*> peekByteOff ptr 20
+      <*> peekByteOff ptr 22
+
+      <*> peekByteOff ptr 24
+      <*> peekByteOff ptr 28
+      <*> peekByteOff ptr 32
+      <*> peekCString (castPtr $ ptr `plusPtr` 36)
+
+   poke = undefined
+
+
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
 
 data ConnectorType
@@ -320,7 +368,7 @@ data SubPixel
 
 data Connector = Connector
    { connEncoders          :: [EncoderID]
-   , connModes             :: [ModeID]
+   , connModes             :: [Mode]
    , connProperties        :: [ConnectorProperty]
    , connEncoderID         :: EncoderID
    , connConnectorID       :: ConnectorID
@@ -353,7 +401,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
 
    -- then we allocate arrays of appropriate sizes
    (rawRes, retRes) <-
-      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr Word32) ->
+      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr Mode) ->
          allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
             allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
                allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> runEitherT $ do
@@ -374,7 +422,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                   res4 <- getModeConnector' res3
                   res5 <- liftIO $ Connector
                      <$> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
-                     <*> (fmap ModeID <$> peekArray' (connModesCount res2) ms)
+                     <*> (peekArray' (connModesCount res2) ms)
                      <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
                                                    <*> peekArray' (connPropsCount res2) pvs)
                      <*> return (EncoderID             $ connEncoderID_ res4)
