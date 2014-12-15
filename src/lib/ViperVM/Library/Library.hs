@@ -19,7 +19,7 @@ import qualified ViperVM.Arch.OpenCL.Entity as CL
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
-import Filesystem (isFile,getAppCacheDirectory)
+import Filesystem (isFile, getAppCacheDirectory, createTree)
 import Filesystem.Path.CurrentOS
 import qualified Data.ByteString as BS
 import Data.Serialize (runGet, runPut)
@@ -40,7 +40,9 @@ loadPreprocessedKernel proc kernel = do
    appDir <- getAppCacheDirectory "vipervm"
 
    -- Compute kernel cache filename for the proc model
-   let file = appDir </> fromText "library" </> fromText (T.pack kerHash) </> fromText "preprocessed" </> fromText (T.pack modelHash)
+   let
+      dir = appDir </> fromText "library" </> fromText (T.pack kerHash) </> fromText "preprocessed"
+      file = dir </> fromText (T.pack modelHash)
 
    -- Try to load the preprocessed kernel
    k1 <- isFile file >>= \case
@@ -51,7 +53,11 @@ loadPreprocessedKernel proc kernel = do
    case k1 of
       Right k -> return k
       Left _ -> do
+         -- Preprocess file
          preproc <- preprocess proc kernel
+         -- Create directory
+         createTree dir
+         -- Write preprocessed kernel
          BS.writeFile (encodeString file) (runPut (safePut preproc))
          return preproc
 
@@ -101,4 +107,4 @@ preprocess proc (OpenCLSource src) = do
             Right Nothing  -> error "Unable to get binary"
             Right (Just b) -> return (OpenCLBinary b)
 
-      _ -> error "Invalid processor for the given kernel"
+      _ -> error "Skipped: invalid processor for the given kernel"
