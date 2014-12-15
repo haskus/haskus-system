@@ -7,6 +7,7 @@ where
 import ViperVM.Library.Kernel
 import ViperVM.Platform.Types (Proc,procModelHash,procPeer)
 
+import ViperVM.Platform.PlatformInfo
 import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as CL
 -- TODO: move low-level parts into Platform.Drivers
@@ -58,6 +59,7 @@ loadPreprocessedKernel proc kernel = do
 -- (e.g. compile an OpenCL source into a program)
 preprocess :: Proc -> Kernel -> IO KernelBin
 preprocess proc (OpenCLSource src) = do
+   putStrLn $ "Compiling on " ++ procInfo proc
    case procPeer proc of
       Peer.OpenCLProc p -> do
          let 

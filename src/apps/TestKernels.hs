@@ -12,8 +12,10 @@ import Data.Foldable (traverse_)
 
 main :: IO ()
 main = do
-   host <- loadPlatform defaultConfig
-   procs <- hostProcessorsIO host
+   host <- loadPlatform defaultConfig {
+               enableOpenCLCPUs = True
+            }
+   procs <- allProcessorsFromHostIO host
 
    let 
       kernels =
