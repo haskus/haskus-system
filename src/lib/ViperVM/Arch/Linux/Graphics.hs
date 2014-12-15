@@ -1,10 +1,14 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
 -- | Interface to Linux graphics API
 --
 -- Linux currently uses KMS/DRM interface
 module ViperVM.Arch.Linux.Graphics
    ( Capability(..)
    , CardResources(..)
+   , Connector
+   , FrameBuffer
+   , CRTC
+   , Encoder
    , drmIoctl
    , getCapability
    , getModeResources
@@ -63,16 +67,21 @@ getCapability ioctl fd cap = do
       Left err -> return (Left err)
       Right (GetCapability _ value) -> return (Right value)
 
+newtype Connector    = Connector Word32 deriving (Show,Eq,Storable)
+newtype FrameBuffer  = FrameBuffer Word32 deriving (Show,Eq,Storable)
+newtype CRTC         = CRTC Word32 deriving (Show,Eq,Storable)
+newtype Encoder      = Encoder Word32 deriving (Show,Eq,Storable)
+
 data CardResources = CardResources
-   { framebuffers    :: [Word32]
-   , crtcs           :: [Word32]
-   , connectors      :: [Word32]
-   , encoders        :: [Word32]
+   { framebuffers    :: [FrameBuffer]
+   , crtcs           :: [CRTC]
+   , connectors      :: [Connector]
+   , encoders        :: [Encoder]
    , minWidth        :: Word32
    , maxWidth        :: Word32
    , minHeight       :: Word32
    , maxHeight       :: Word32
-   }
+   } deriving (Show)
 
 -- | Parameter for MODE_GETRESOURCES IOCTL
 data ModeCardRes = ModeCardRes
@@ -88,7 +97,7 @@ data ModeCardRes = ModeCardRes
    , maxWidth_       :: Word32
    , minHeight_      :: Word32
    , maxHeight_      :: Word32
-   }
+   } deriving (Show)
 
 instance Storable ModeCardRes where
    sizeOf _    = 4*(8+4) + 4*4
@@ -155,14 +164,14 @@ getModeResources ioctl fd = runEitherT $ do
                   -- we get the values
                   res4 <- getModeResources' res3
                   res5 <- liftIO $ CardResources
-                     <$> peekArray' (fbCount res2) fs
-                     <*> peekArray' (crtcCount res2) fs
-                     <*> peekArray' (connectorCount res2) fs
-                     <*> peekArray' (encoderCount res2) fs
+                     <$> (fmap FrameBuffer <$> peekArray' (fbCount res2) fs)
+                     <*> (fmap CRTC <$> peekArray' (crtcCount res2) fs)
+                     <*> (fmap Connector <$> peekArray' (connectorCount res2) fs)
+                     <*> (fmap Encoder <$> peekArray' (encoderCount res2) fs)
                      <*> return (minWidth_ res4)
                      <*> return (maxWidth_ res4)
                      <*> return (minHeight_ res4)
-                     <*> return (minHeight_ res4)
+                     <*> return (maxHeight_ res4)
 
                   right (res4, res5)
 

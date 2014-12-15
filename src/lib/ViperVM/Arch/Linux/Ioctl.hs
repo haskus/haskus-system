@@ -95,8 +95,8 @@ instance Storable Command where
 
 -- | Helper to check parameter size
 paramSize :: Storable a => a -> Word16
-paramSize x | sz .&. 0xC0 == 0 = fromIntegral sz
-            | otherwise        = error "Invalid size (> 14 bits)"
+paramSize x | sz .&. 0xC000 == 0 = fromIntegral sz
+            | otherwise          = error "Invalid size (> 14 bits)"
    where sz = sizeOf x
 
 -- | We abstract over the ioctl function
