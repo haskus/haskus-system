@@ -33,9 +33,9 @@ clMapOpKernel ty op = OpenCLSource code
          "__kernel void clMatrixBiOp\
          \  ( unsigned int w\
          \  , unsigned int h\
-         \  , " ++ tyS ++ " *a\
-         \  , " ++ tyS ++ " *b\
-         \  , " ++ tyS ++ " *r\
+         \  , __global " ++ tyS ++ " *a\
+         \  , __global " ++ tyS ++ " *b\
+         \  , __global " ++ tyS ++ " *r\
          \) {\n\
          \  unsigned int x = get_global_id(0);\n\
          \  unsigned int y = get_global_id(1);\n\
