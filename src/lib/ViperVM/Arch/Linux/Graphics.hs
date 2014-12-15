@@ -8,6 +8,7 @@ module ViperVM.Arch.Linux.Graphics
    , Connector(..)
    , Connection(..)
    , SubPixel(..)
+   , ConnectorType(..)
    , ConnectorID
    , FrameBufferID
    , CRTCID
@@ -258,8 +259,50 @@ instance Storable ModeGetConnector where
 
 newtype ModeID = ModeID Word32 deriving (Show)
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
-newtype ConnectorType = ConnectorType Word32 deriving (Show)
+
+data ConnectorType
+   = ConnectorTypeUnknown
+   | ConnectorTypeVGA
+   | ConnectorTypeDVII
+   | ConnectorTypeDVID
+   | ConnectorTypeDVIA
+   | ConnectorTypeComposite
+   | ConnectorTypeSVIDEO
+   | ConnectorTypeLVDS
+   | ConnectorTypeComponent
+   | ConnectorType9PinDIN
+   | ConnectorTypeDisplayPort
+   | ConnectorTypeHDMIA
+   | ConnectorTypeHDMIB
+   | ConnectorTypeTV
+   | ConnectorTypeeDP
+   | ConnectorTypeVirtual
+   | ConnectorTypeDSI
+   deriving (Eq, Ord, Enum)
+
+instance Show ConnectorType where
+   show x = case x of
+      ConnectorTypeUnknown       -> "Unknown"
+      ConnectorTypeVGA           -> "VGA"
+      ConnectorTypeDVII          -> "DVI-I"
+      ConnectorTypeDVID          -> "DVI-D"
+      ConnectorTypeDVIA          -> "DVI-A"
+      ConnectorTypeComposite     -> "Composite"
+      ConnectorTypeSVIDEO        -> "SVIDEO"
+      ConnectorTypeLVDS          -> "LVDS"
+      ConnectorTypeComponent     -> "Component"
+      ConnectorType9PinDIN       -> "9PinDIN"
+      ConnectorTypeDisplayPort   -> "DisplayPort"
+      ConnectorTypeHDMIA         -> "HDMI-A"
+      ConnectorTypeHDMIB         -> "HDMI-B"
+      ConnectorTypeTV            -> "TV"
+      ConnectorTypeeDP           -> "eDP"
+      ConnectorTypeVirtual       -> "Virtual"
+      ConnectorTypeDSI           -> "DSI"
+
 newtype ConnectorTypeID = ConnectorTypeID Word32 deriving (Show)
+
+
 data Connection
    = Connected
    | Disconnected
@@ -334,11 +377,11 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                      <*> (fmap ModeID <$> peekArray' (connModesCount res2) ms)
                      <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
                                                    <*> peekArray' (connPropsCount res2) pvs)
-                     <*> return (EncoderID         $ connEncoderID_ res4)
-                     <*> return (ConnectorID       $ connConnectorID_ res4)
-                     <*> return (ConnectorType     $ connConnectorType_ res4)
-                     <*> return (ConnectorTypeID   $ connConnectorTypeID_ res4)
-                     <*> return (isConnected       $ connConnection_ res4)
+                     <*> return (EncoderID             $ connEncoderID_ res4)
+                     <*> return (ConnectorID           $ connConnectorID_ res4)
+                     <*> return (toEnum . fromIntegral $ connConnectorType_ res4)
+                     <*> return (ConnectorTypeID       $ connConnectorTypeID_ res4)
+                     <*> return (isConnected           $ connConnection_ res4)
                      <*> return (connWidth_ res4)
                      <*> return (connHeight_ res4)
                      <*> return (toEnum . fromIntegral $ connSubPixel_ res4)
