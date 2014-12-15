@@ -6,6 +6,7 @@ module ViperVM.Arch.Linux.Graphics
    ( Capability(..)
    , CardResources(..)
    , Connector(..)
+   , Connection(..)
    , ConnectorID
    , FrameBufferID
    , CRTCID
@@ -29,7 +30,6 @@ import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
 import Data.Word
-
 
 -- | IOCTL for DRM is restarted on interruption
 -- Apply this function to your preferred ioctl function
@@ -259,7 +259,11 @@ newtype ModeID = ModeID Word32 deriving (Show)
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
 newtype ConnectorType = ConnectorType Word32 deriving (Show)
 newtype ConnectorTypeID = ConnectorTypeID Word32 deriving (Show)
-newtype Connection = Connection Word32 deriving (Show)
+data Connection
+   = Connected
+   | Disconnected
+   | ConnectionUnknown
+   deriving (Eq,Ord,Show)
 newtype SubPixel = SubPixel Word32 deriving (Show)
 
 data Connector = Connector
@@ -292,12 +296,8 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
 
       getModeConnector' = EitherT . ioctlReadWrite ioctl 0x64 0xA7 defaultCheck fd
 
-   liftIO $ print res
-
    -- First we get the number of each resource
    res2 <- getModeConnector' res
-
-   liftIO $ print res2
 
    -- then we allocate arrays of appropriate sizes
    (rawRes, retRes) <-
@@ -313,6 +313,11 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                                  , connPropsPtr      = cv ps
                                  , connPropValuesPtr = cv pvs
                                  }
+                     isConnected x = case x of
+                        1 -> Connected
+                        2 -> Disconnected
+                        _ -> ConnectionUnknown
+
                   -- we get the values
                   res4 <- getModeConnector' res3
                   res5 <- liftIO $ Connector
@@ -324,7 +329,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                      <*> return (ConnectorID       $ connConnectorID_ res4)
                      <*> return (ConnectorType     $ connConnectorType_ res4)
                      <*> return (ConnectorTypeID   $ connConnectorTypeID_ res4)
-                     <*> return (Connection        $ connConnection_ res4)
+                     <*> return (isConnected       $ connConnection_ res4)
                      <*> return (connWidth_ res4)
                      <*> return (connHeight_ res4)
                      <*> return (SubPixel          $ connSubPixel_ res4)
