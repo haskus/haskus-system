@@ -19,13 +19,22 @@ main = do
       liftIO $ putStrLn "The card has DumbBuffer capability :)"
 
       -- Get resources
+      liftIO $ putStrLn "==================\n= RESOURCES\n=================="
       res <- EitherT $ getModeResources ioctl fd
       liftIO $ putStrLn $ show res
+
+      liftIO $ putStrLn "==================\n= CONNECTORS\n=================="
 
       forM_ (connectors res) $ \connId -> do
          conn <- EitherT $ getConnector ioctl fd connId
 
          liftIO $ putStrLn $ show conn
+
+      liftIO $ putStrLn "==================\n= ENCODERS \n=================="
+      forM_ (encoders res) $ \encId -> do
+         enc <- EitherT $ getEncoder ioctl fd encId
+
+         liftIO $ putStrLn $ show enc
 
 
    case ret of

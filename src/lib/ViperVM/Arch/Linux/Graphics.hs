@@ -1,4 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables
+           , GeneralizedNewtypeDeriving
+           , RecordWildCards #-}
 -- | Interface to Linux graphics API
 --
 -- Linux currently uses KMS/DRM interface
@@ -18,6 +20,7 @@ module ViperVM.Arch.Linux.Graphics
    , getCapability
    , getModeResources
    , getConnector
+   , getEncoder
    )
 where
 
@@ -445,3 +448,41 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
      || connEncodersCount res2 < connEncodersCount rawRes
       then EitherT $ getConnector ioctl fd connId
       else right retRes
+
+
+newtype EncoderType = EncoderType Word32 deriving (Storable,Show)
+
+data Encoder = Encoder
+   { encoderID             :: EncoderID
+   , encoderType           :: EncoderType
+   , encoderCRTCID         :: CRTCID
+   , encoderPossibleCRTCs  :: Word32
+   , encoderPossibleClones :: Word32
+   } deriving (Show)
+
+
+instance Storable Encoder where
+   sizeOf _    = 5*4
+   alignment _ = 8
+   peek ptr    = Encoder
+      <$> peekByteOff ptr 0
+
+      <*> (EncoderType <$> peekByteOff ptr 4)
+      <*> (CRTCID <$> peekByteOff ptr 8)
+      <*> peekByteOff ptr 12
+      <*> peekByteOff ptr 16
+
+   poke ptr (Encoder {..}) = do
+      pokeByteOff ptr 0 encoderID
+      pokeByteOff ptr 4 encoderType
+      pokeByteOff ptr 8 encoderCRTCID
+      pokeByteOff ptr 12 encoderPossibleCRTCs
+      pokeByteOff ptr 16 encoderPossibleClones
+
+-- | Get encoder
+getEncoder :: IOCTL -> FileDescriptor -> EncoderID -> SysRet Encoder
+getEncoder ioctl fd encId = do
+   
+   let res = Encoder encId (EncoderType 0) (CRTCID 0) 0 0
+
+   ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
