@@ -21,6 +21,7 @@ module ViperVM.Arch.Linux.Graphics
    , getModeResources
    , getConnector
    , getEncoder
+   , getEncoderCRTCs
    )
 where
 
@@ -37,6 +38,8 @@ import Foreign.Storable
 import Foreign.Ptr
 import Foreign.C.String (peekCString)
 import Data.Word
+import Data.Maybe (catMaybes)
+import Data.Bits (testBit)
 
 -- | IOCTL for DRM is restarted on interruption
 -- Apply this function to your preferred ioctl function
@@ -486,3 +489,14 @@ getEncoder ioctl fd encId = do
    let res = Encoder encId (EncoderType 0) (CRTCID 0) 0 0
 
    ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
+
+
+-- | Retrieve CRTCs that can work with the given encoder
+getEncoderCRTCs :: CardResources -> Encoder -> [CRTCID]
+getEncoderCRTCs res enc = catMaybes (map f cs)
+   where
+      ps = encoderPossibleCRTCs enc
+      cs = [1..] `zip` crtcs res
+      f (n,crtc)
+         | testBit ps n = Just crtc
+         | otherwise    = Nothing

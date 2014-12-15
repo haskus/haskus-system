@@ -33,8 +33,9 @@ main = do
       liftIO $ putStrLn "==================\n= ENCODERS \n=================="
       forM_ (encoders res) $ \encId -> do
          enc <- EitherT $ getEncoder ioctl fd encId
-
-         liftIO $ putStrLn $ show enc
+         liftIO $ do
+            putStrLn $ show enc
+            putStrLn $ "Valid CRTCs: " ++ (show $ getEncoderCRTCs res enc)
 
 
    case ret of
