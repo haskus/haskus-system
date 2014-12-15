@@ -11,6 +11,7 @@ import ViperVM.Platform.PlatformInfo
 import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as CL
 -- TODO: move low-level parts into Platform.Drivers
+import qualified ViperVM.Arch.OpenCL.Error as CL
 import qualified ViperVM.Arch.OpenCL.Program as CL
 import qualified ViperVM.Arch.OpenCL.Context as CL
 import qualified ViperVM.Arch.OpenCL.Platform as CL
@@ -49,7 +50,7 @@ loadPreprocessedKernel proc kernel = do
    -- Preprocess and save the kernel if necessary
    case k1 of
       Right k -> return k
-      Left err -> do
+      Left _ -> do
          preproc <- preprocess proc kernel
          BS.writeFile (encodeString file) (runPut (safePut preproc))
          return preproc
@@ -74,7 +75,17 @@ preprocess proc (OpenCLSource src) = do
             prog <- EitherT $ CL.createProgramFromSource ctx src
  
             -- Compile program
-            EitherT $ CL.buildProgram prog dev options
+            EitherT $ do
+               err <- CL.buildProgram prog dev options
+               case err of
+                  Left CL.CL_BUILD_PROGRAM_FAILURE -> do
+                     -- Show log
+                     errlog <- CL.getProgramBuildLog prog dev
+                     putStrLn $ "Error: " ++ show err
+                     putStrLn "Log:"
+                     putStrLn (show errlog)
+                     return err
+                  _ -> return err
 
             -- Try to retrieve binary
             b <- EitherT $ CL.getProgramBinary prog dev

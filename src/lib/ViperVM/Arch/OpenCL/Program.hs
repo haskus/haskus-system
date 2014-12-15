@@ -5,6 +5,7 @@ module ViperVM.Arch.OpenCL.Program
    ( Program(..)
    , ProgramBuildStatus(..)
    , ProgramInfo(..)
+   , ProgramBuildInfo(..)
    , buildProgram
    , getProgramDeviceCount
    , getProgramDeviceCount'
@@ -16,6 +17,7 @@ module ViperVM.Arch.OpenCL.Program
    , getProgramBinary'
    , createProgramFromSource
    , createProgramFromBinary
+   , getProgramBuildLog
    )
 where
 
@@ -32,7 +34,7 @@ import Control.Monad.Trans.Either
 import Control.Applicative ((<$>))
 import Foreign.Ptr
 import Foreign.C.String
-import Foreign.C.Types (CSize)
+import Foreign.C.Types (CSize, CChar)
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)
@@ -71,11 +73,21 @@ data ProgramInfo
    | CL_PROGRAM_SOURCE
    | CL_PROGRAM_BINARY_SIZES
    | CL_PROGRAM_BINARIES
-   deriving (Enum)
+   deriving (Show,Eq,Enum)
 
 instance CLConstant ProgramInfo where
    toCL x = fromIntegral (0x1160 + fromEnum x)
    fromCL x = toEnum (fromIntegral x - 0x1160)
+
+data ProgramBuildInfo
+   = CL_PROGRAM_BUILD_STATUS
+   | CL_PROGRAM_BUILD_OPTIONS
+   | CL_PROGRAM_BUILD_LOG
+   deriving (Eq,Show, Enum)
+
+instance CLConstant ProgramBuildInfo where
+   toCL x = fromIntegral (0x1181 + fromEnum x)
+   fromCL x = toEnum (fromIntegral x - 0x1181)
 
 -- | Release a program
 releaseProgram :: Program -> IO ()
@@ -227,3 +239,22 @@ createProgramFromBinary ctx binaries = do
                      Right p  -> do
                         status <- fmap fromCL <$> peekArray n status'
                         return (Right (p,status))
+
+-- | Return program build log for the specified device
+getProgramBuildLog :: Program -> Device -> CLRet String
+getProgramBuildLog prog dev = do
+   let call = rawClGetProgramBuildInfo (cllib prog) (unwrap prog) (unwrap dev)
+                  (toCL CL_PROGRAM_BUILD_LOG) 
+
+   runEitherT $ do
+      -- Get log size
+      size <- EitherT $ alloca $ \(sz :: Ptr CSize) -> whenSuccess 
+         (call 0 nullPtr sz)
+         (peek sz)
+
+      let intSize = fromIntegral size
+
+      -- Get log
+      EitherT $ allocaArray intSize $ \(s :: Ptr CChar) -> whenSuccess 
+         (call size (castPtr s) nullPtr)
+         (peekCStringLen (s,intSize-1))
