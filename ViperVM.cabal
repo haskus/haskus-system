@@ -61,6 +61,7 @@ library
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
     ViperVM.Arch.Linux.Graphics
+    ViperVM.Arch.Linux.Graphics.DumbBuffer
 
     ViperVM.Arch.Posix.Malloc
 

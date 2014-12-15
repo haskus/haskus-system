@@ -22,9 +22,6 @@ module ViperVM.Arch.Linux.Graphics
    , getConnector
    , getEncoder
    , getEncoderCRTCs
-   , createDumbBuffer
-   , destroyDumbBuffer
-   , mapDumbBuffer
    )
 where
 
@@ -37,7 +34,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
-import Foreign.Marshal.Utils (with)
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.C.String (peekCString)
@@ -505,71 +501,3 @@ getEncoderCRTCs res enc = catMaybes (map f cs)
          | testBit ps n = Just crtc
          | otherwise    = Nothing
 
-data DumbBuffer = DumbBuffer
-   { dumbBufferHeight   :: Word32
-   , dumbBufferWidth    :: Word32
-   , dumbBufferBPP      :: Word32
-   , dumbBufferFlags    :: Word32
-   , dumbBufferHandle   :: Word32
-   , dumbBufferSize     :: Word64
-   } deriving (Show)
-
-instance Storable DumbBuffer where
-   sizeOf _    = 5*4 + 8
-   alignment _ = 8
-   peek ptr    = DumbBuffer
-      <$> peekByteOff ptr 0
-      <*> peekByteOff ptr 4
-      <*> peekByteOff ptr 8
-      <*> peekByteOff ptr 12
-      <*> peekByteOff ptr 16
-      <*> peekByteOff ptr 20
-
-   poke ptr (DumbBuffer {..}) = do
-      pokeByteOff ptr 0  dumbBufferHeight
-      pokeByteOff ptr 4  dumbBufferWidth
-      pokeByteOff ptr 8  dumbBufferBPP
-      pokeByteOff ptr 12 dumbBufferFlags
-      pokeByteOff ptr 16 dumbBufferHandle
-      pokeByteOff ptr 20 dumbBufferSize
-
-
--- | Create a new Dumb buffer
---
--- This is supported by all drivers (software rendering)
-createDumbBuffer :: IOCTL -> FileDescriptor -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet DumbBuffer
-createDumbBuffer ioctl fd width height bpp flags = do
-   let res = DumbBuffer height width bpp flags 0 0
-   ioctlReadWrite ioctl 0x64 0xB2 defaultCheck fd res
-
--- | Destroy a dumb buffer
-destroyDumbBuffer :: IOCTL -> FileDescriptor -> DumbBuffer -> SysRet ()
-destroyDumbBuffer ioctl fd buffer = do
-   
-   with (dumbBufferHandle buffer) $ \bufPtr ->
-      fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xB4 defaultCheck fd bufPtr
-
-data DumbBufferMap = DumbBufferMap
-   { dumbMapHandle :: Word32
-   --, dumbMapPad    :: Word32  -- Padding field: not useful
-   , dumbMapOffset :: Word64
-   } deriving (Show)
-
-instance Storable DumbBufferMap where
-   sizeOf _    = 16
-   alignment _ = 8
-   peek ptr    = DumbBufferMap
-      <$> peekByteOff ptr 0
-      -- <*> peekByteOff ptr 4
-      <*> peekByteOff ptr 8
-
-   poke ptr (DumbBufferMap {..}) = do
-      pokeByteOff ptr 0  dumbMapHandle
-      -- pokeByteOff ptr 4  dumbMapPad
-      pokeByteOff ptr 8  dumbMapOffset
-
--- | Map a Dumb buffer
-mapDumbBuffer :: IOCTL -> FileDescriptor -> DumbBuffer -> SysRet DumbBufferMap
-mapDumbBuffer ioctl fd buffer = do
-   let res = DumbBufferMap (dumbBufferHandle buffer) 0
-   ioctlReadWrite ioctl 0x64 0xB3 defaultCheck fd res
