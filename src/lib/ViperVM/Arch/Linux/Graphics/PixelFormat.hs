@@ -5,7 +5,6 @@ module ViperVM.Arch.Linux.Graphics.PixelFormat
    ( PixelFormat(..)
    , Format(..)
    , Endianness(..)
-   , toBits
    )
 where
 
@@ -13,94 +12,126 @@ import ViperVM.Arch.Common.Endianness
 import Data.Word
 import Data.Char (ord)
 import Data.Bits
+import Data.Map (Map, (!), fromList)
+import Data.Tuple (swap)
+import Control.Arrow (second)
+import Foreign.Storable
+import Foreign.Ptr
 
-data PixelFormat = PixelFormat Format Endianness deriving (Eq,Show)
+data PixelFormat
+   = PixelFormat Format Endianness
+   deriving (Eq,Show)
 
-toBits :: PixelFormat -> Word32
-toBits (PixelFormat fmt endian) = setEndian getFmt
+instance Storable PixelFormat where
+   sizeOf _    = 4
+   alignment _ = 4
+   peek ptr    = do
+      w <- peek (castPtr ptr :: Ptr Word32)
+      let 
+         endian = case testBit w 31 of
+            True  -> BigEndian
+            False -> LittleEndian
+         fmt = bits2fmt ! (clearBit w 31)
+
+      return $ PixelFormat fmt endian
+
+   poke ptr (PixelFormat fmt endian) = do
+      let
+         fmt' = fmt2bits ! fmt
+         w = case endian of
+            BigEndian    -> fmt' `setBit` 31
+            LittleEndian -> fmt'
+      poke (castPtr ptr :: Ptr Word32) w
+   
+
+fmt2bits :: Map Format Word32
+fmt2bits = fromList assoc
+
+bits2fmt :: Map Word32 Format
+bits2fmt = fromList (map swap assoc)
+
+-- | Associate formats to their fourcc code
+assoc :: [(Format,Word32)]
+assoc = assoc'
    where
-      setEndian = case endian of
-         BigEndian    -> (`setBit` 31)
-         LittleEndian -> id
-
       f (a,b,c,d) = a .|. (b `shiftL` 8) .|. (c `shiftL` 16) .|. (d `shiftL` 24)
       k = fromIntegral . ord
       g [a,b,c,d] = f (k a, k b, k c, k d)
       g _ = undefined
+      assoc' = map (second g)
+         [(C8         , "C8  ")
+         ,(RGB332     , "RGB8")
+         ,(BGR233     , "BGR8")
 
-      getFmt = g $ case fmt of
-         C8         -> "C8  "
-         RGB332     -> "RGB8"
-         BGR233     -> "BGR8"
+         ,(XRGB4444   , "XR12")
+         ,(XBGR4444   , "XB12")
+         ,(RGBX4444   , "RX12")
+         ,(BGRX4444   , "BX12")
 
-         XRGB4444   -> "XR12"
-         XBGR4444   -> "XB12"
-         RGBX4444   -> "RX12"
-         BGRX4444   -> "BX12"
+         ,(ARGB4444   , "AR12")
+         ,(ABGR4444   , "AB12")
+         ,(RGBA4444   , "RA12")
+         ,(BGRA4444   , "BA12")
 
-         ARGB4444   -> "AR12"
-         ABGR4444   -> "AB12"
-         RGBA4444   -> "RA12"
-         BGRA4444   -> "BA12"
+         ,(XRGB1555   , "XR15")
+         ,(XBGR1555   , "XB15")
+         ,(RGBX5551   , "RX15")
+         ,(BGRX5551   , "BX15")
 
-         XRGB1555   -> "XR15"
-         XBGR1555   -> "XB15"
-         RGBX5551   -> "RX15"
-         BGRX5551   -> "BX15"
+         ,(ARGB1555   , "AR15")
+         ,(ABGR1555   , "AB15")
+         ,(RGBA5551   , "RA15")
+         ,(BGRA5551   , "BA15")
 
-         ARGB1555   -> "AR15"
-         ABGR1555   -> "AB15"
-         RGBA5551   -> "RA15"
-         BGRA5551   -> "BA15"
+         ,(RGB565     , "RG16")
+         ,(BGR565     , "BG16")
 
-         RGB565     -> "RG16"
-         BGR565     -> "BG16"
+         ,(RGB888     , "RG24")
+         ,(BGR888     , "BG24")
 
-         RGB888     -> "RG24"
-         BGR888     -> "BG24"
+         ,(XRGB8888   , "XR24")
+         ,(XBGR8888   , "XB24")
+         ,(RGBX8888   , "RX24")
+         ,(BGRX8888   , "BX24")
 
-         XRGB8888   -> "XR24"
-         XBGR8888   -> "XB24"
-         RGBX8888   -> "RX24"
-         BGRX8888   -> "BX24"
+         ,(ARGB8888   , "AR24")
+         ,(ABGR8888   , "AB24")
+         ,(RGBA8888   , "RA24")
+         ,(BGRA8888   , "BA24")
 
-         ARGB8888   -> "AR24"
-         ABGR8888   -> "AB24"
-         RGBA8888   -> "RA24"
-         BGRA8888   -> "BA24"
+         ,(XRGB2101010 , "XR30")
+         ,(XBGR2101010 , "XB30")
+         ,(RGBX1010102 , "RX30")
+         ,(BGRX1010102 , "BX30")
 
-         XRGB2101010 -> "XR30"
-         XBGR2101010 -> "XB30"
-         RGBX1010102 -> "RX30"
-         BGRX1010102 -> "BX30"
+         ,(ARGB2101010 , "AR30")
+         ,(ABGR2101010 , "AB30")
+         ,(RGBA1010102 , "RA30")
+         ,(BGRA1010102 , "BA30")
 
-         ARGB2101010 -> "AR30"
-         ABGR2101010 -> "AB30"
-         RGBA1010102 -> "RA30"
-         BGRA1010102 -> "BA30"
+         ,(YUYV        , "YUYV")
+         ,(YVYU        , "YVYU")
+         ,(UYVY        , "UYVY")
+         ,(VYUY        , "VYUY")
 
-         YUYV        -> "YUYV"
-         YVYU        -> "YVYU"
-         UYVY        -> "UYVY"
-         VYUY        -> "VYUY"
+         ,(AYUY        , "AYUY")
 
-         AYUY        -> "AYUY"
+         ,(NV12        , "NV12")
+         ,(NV21        , "NV21")
+         ,(NV16        , "NV16")
+         ,(NV61        , "NV61")
 
-         NV12        -> "NV12"
-         NV21        -> "NV21"
-         NV16        -> "NV16"
-         NV61        -> "NV61"
-
-         YUV410      -> "YUV9"
-         YVU410      -> "YVU9"
-         YUV411      -> "YU11"
-         YVU411      -> "YV11"
-         YUV420      -> "YU12"
-         YVU420      -> "YV12"
-         YUV422      -> "YU16"
-         YVU422      -> "YV16"
-         YUV444      -> "YU24"
-         YVU444      -> "YV24"
+         ,(YUV410      , "YUV9")
+         ,(YVU410      , "YVU9")
+         ,(YUV411      , "YU11")
+         ,(YVU411      , "YV11")
+         ,(YUV420      , "YU12")
+         ,(YVU420      , "YV12")
+         ,(YUV422      , "YU16")
+         ,(YVU422      , "YV16")
+         ,(YUV444      , "YU24")
+         ,(YVU444      , "YV24")
+         ]
 
 data Format
    = C8                 -- ^ 8 bits, color index
@@ -188,4 +219,4 @@ data Format
    | YVU422             -- ^ 3 plane YCbCr: 2x1 subsampled Cr (1) and Cb (2) planes
    | YUV444             -- ^ 3 plane YCbCr: non-subsampled Cb (1) and Cr (2) planes
    | YVU444             -- ^ 3 plane YCbCr: non-subsampled Cr (1) and Cb (2) planes
-   deriving (Eq,Show)
+   deriving (Eq,Ord,Show)
