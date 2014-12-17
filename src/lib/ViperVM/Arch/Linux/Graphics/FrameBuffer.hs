@@ -2,16 +2,22 @@
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
    ( Plane(..)
    , FrameBuffer(..)
+   , addFrameBuffer
+   , removeFrameBuffer
    )
 where
 
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.Marshal.Array
+import Foreign.Marshal.Utils (with)
 import Data.Word
 import Data.List (transpose)
 import Control.Applicative ((<$>), (<*>))
 
+import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
 data Plane = Plane
@@ -44,11 +50,11 @@ instance Storable FrameBuffer where
 
       let 
          ps = transpose [handles,pitches,offsets]
-         f [h,pp,o]  = Plane h pp o
-         f _         = undefined
-         g [a,b,c,d] = (a,b,c,d)
-         g _         = undefined
-         planes = g (map f ps)
+         toPlane [h,pp,o]   = Plane h pp o
+         toPlane _          = undefined
+         takeFour [a,b,c,d] = (a,b,c,d)
+         takeFour _         = undefined
+         planes = takeFour (map toPlane ps)
       
       FrameBuffer
          <$> peekByteOff ptr 0
@@ -75,3 +81,24 @@ instance Storable FrameBuffer where
       pokeArray phandles (map planeHandle planes)
       pokeArray ppitches (map planePitch  planes)
       pokeArray poffsets (map planeOffset planes)
+
+-- | Add a framebuffer
+--
+-- We use DRM_IOCTL_MODE_ADDFB2 as it provides more control on pixel format
+addFrameBuffer :: IOCTL -> FileDescriptor -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
+addFrameBuffer ioctl fd width height fmt flags planes = do
+   
+   let
+      emptyPlane = Plane 0 0 0
+      takeFour (a:b:c:d:_) = (a,b,c,d)
+      takeFour _           = undefined
+      planes' = takeFour (planes ++ repeat emptyPlane)
+      fb = FrameBuffer 0 width height fmt flags planes'
+
+   ioctlReadWrite ioctl 0x64 0xB8 defaultCheck fd fb
+
+
+removeFrameBuffer :: IOCTL -> FileDescriptor -> FrameBuffer -> SysRet ()
+removeFrameBuffer ioctl fd fb = do
+   with (fbID fb) $ \bufPtr ->
+      fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xAF defaultCheck fd bufPtr
