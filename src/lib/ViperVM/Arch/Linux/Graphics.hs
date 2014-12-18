@@ -38,7 +38,7 @@ import Foreign.Storable
 import Foreign.Ptr
 import Foreign.C.String (peekCString)
 import Data.Word
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Bits (testBit)
 
 -- | IOCTL for DRM is restarted on interruption
@@ -376,7 +376,7 @@ data Connector = Connector
    { connEncoders          :: [EncoderID]
    , connModes             :: [Mode]
    , connProperties        :: [ConnectorProperty]
-   , connEncoderID         :: EncoderID
+   , connEncoderID         :: Maybe EncoderID
    , connConnectorID       :: ConnectorID
    , connConnectorType     :: ConnectorType
    , connConnectorTypeID   :: ConnectorTypeID
@@ -425,13 +425,15 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                         _ -> ConnectionUnknown
 
                   -- we get the values
+                  let wrapZero 0 = Nothing
+                      wrapZero x = Just x
                   res4 <- getModeConnector' res3
                   res5 <- liftIO $ Connector
                      <$> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
                      <*> (peekArray' (connModesCount res2) ms)
                      <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
                                                    <*> peekArray' (connPropsCount res2) pvs)
-                     <*> return (EncoderID             $ connEncoderID_ res4)
+                     <*> return (EncoderID            <$> wrapZero (connEncoderID_ res4))
                      <*> return (ConnectorID           $ connConnectorID_ res4)
                      <*> return (toEnum . fromIntegral $ connConnectorType_ res4)
                      <*> return (ConnectorTypeID       $ connConnectorTypeID_ res4)
@@ -458,7 +460,7 @@ newtype EncoderType = EncoderType Word32 deriving (Storable,Show)
 data Encoder = Encoder
    { encoderID             :: EncoderID
    , encoderType           :: EncoderType
-   , encoderCRTCID         :: CRTCID
+   , encoderCRTCID         :: Maybe CRTCID
    , encoderPossibleCRTCs  :: Word32
    , encoderPossibleClones :: Word32
    } deriving (Show)
@@ -467,18 +469,21 @@ data Encoder = Encoder
 instance Storable Encoder where
    sizeOf _    = 5*4
    alignment _ = 8
-   peek ptr    = Encoder
-      <$> peekByteOff ptr 0
+   peek ptr    = do
+      let wrapZero 0 = Nothing
+          wrapZero x = Just x
+      Encoder
+         <$> peekByteOff ptr 0
 
-      <*> (EncoderType <$> peekByteOff ptr 4)
-      <*> (CRTCID <$> peekByteOff ptr 8)
-      <*> peekByteOff ptr 12
-      <*> peekByteOff ptr 16
+         <*> (EncoderType <$> peekByteOff ptr 4)
+         <*> (fmap CRTCID . wrapZero <$> peekByteOff ptr 8)
+         <*> peekByteOff ptr 12
+         <*> peekByteOff ptr 16
 
    poke ptr (Encoder {..}) = do
       pokeByteOff ptr 0 encoderID
       pokeByteOff ptr 4 encoderType
-      pokeByteOff ptr 8 encoderCRTCID
+      pokeByteOff ptr 8 (fromMaybe (CRTCID 0) encoderCRTCID)
       pokeByteOff ptr 12 encoderPossibleCRTCs
       pokeByteOff ptr 16 encoderPossibleClones
 
@@ -486,7 +491,7 @@ instance Storable Encoder where
 getEncoder :: IOCTL -> FileDescriptor -> EncoderID -> SysRet Encoder
 getEncoder ioctl fd encId = do
    
-   let res = Encoder encId (EncoderType 0) (CRTCID 0) 0 0
+   let res = Encoder encId (EncoderType 0) Nothing 0 0
 
    ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
 
