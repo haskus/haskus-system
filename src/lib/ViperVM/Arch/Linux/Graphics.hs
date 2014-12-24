@@ -12,6 +12,7 @@ module ViperVM.Arch.Linux.Graphics
    , SubPixel(..)
    , ConnectorType(..)
    , Mode(..)
+   , CRTC(..)
    , ConnectorID
    , FrameBufferID
    , CRTCID
@@ -22,6 +23,8 @@ module ViperVM.Arch.Linux.Graphics
    , getConnector
    , getEncoder
    , getEncoderCRTCs
+   , getCRTC
+   , getConnectorCRTC
    )
 where
 
@@ -33,6 +36,7 @@ import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (liftM2)
+import Data.Traversable (traverse)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
@@ -506,3 +510,87 @@ getEncoderCRTCs res enc = catMaybes (map f cs)
          | testBit ps n = Just crtc
          | otherwise    = Nothing
 
+data CRTC = CRTC
+   { crtcSetConnectorsPtr :: Word64
+   , crtcConnectorCount   :: Word32
+   , crtcID               :: CRTCID
+   , crtcFrameBuffer      :: Maybe (FrameBufferID,Word32, Word32)
+   --, crtcFrameBufferX     :: Word32
+   --, crtcFrameBufferY     :: Word32
+   , crtcGammaSize        :: Word32
+   --, crtcModeIsValid      :: Word32
+   , crtcMode             :: Maybe Mode
+   } deriving (Show)
+
+instance Storable CRTC where
+   sizeOf _    = 8 + 7*4 + sizeOf (undefined :: Mode)
+   alignment _ = 8
+   peek ptr    = do
+      -- Read FB position only if FB is valid
+      fbId <- peekByteOff ptr 16 :: IO Word32
+      fb <- if fbId == 0
+               then return Nothing
+               else do
+                  x <- peekByteOff ptr 20
+                  y <- peekByteOff ptr 24
+                  return $ (Just (FrameBufferID fbId,x,y))
+      -- Read mode only if mode is valid
+      modeIsValid <- peekByteOff ptr 32 :: IO Word32
+      mode <- if modeIsValid == 0
+               then return Nothing
+               else Just <$> peekByteOff ptr 36
+      CRTC
+         <$> peekByteOff ptr 0
+         <*> peekByteOff ptr 8
+         <*> peekByteOff ptr 12
+         <*> return fb
+         <*> peekByteOff ptr 28
+         <*> return mode
+   poke ptr (CRTC {..}) = do
+      pokeByteOff ptr 0  crtcSetConnectorsPtr
+      pokeByteOff ptr 8  crtcConnectorCount
+      pokeByteOff ptr 12 crtcID
+      pokeByteOff ptr 28 crtcGammaSize
+      case crtcMode of
+         Nothing -> pokeByteOff ptr 32 (0 :: Word32)
+         Just m  -> do
+            pokeByteOff ptr 32 (1 :: Word32)
+            pokeByteOff ptr 36 m
+      case crtcFrameBuffer of
+         Nothing -> do
+            pokeByteOff ptr 16 (0 :: Word32)
+            pokeByteOff ptr 20 (0 :: Word32)
+            pokeByteOff ptr 24 (0 :: Word32)
+         Just (fbId,x,y) -> do
+            pokeByteOff ptr 16 fbId
+            pokeByteOff ptr 20 x
+            pokeByteOff ptr 24 y
+
+-- | Get CRTC
+getCRTC :: IOCTL -> FileDescriptor -> CRTCID -> SysRet CRTC
+getCRTC ioctl fd crtcid = do
+   let crtc = CRTC 0 0 crtcid Nothing 0 Nothing
+   ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
+
+-- | Retrieve CRTC (and encoder) controling a connector (if any)
+getConnectorCRTC :: IOCTL -> FileDescriptor -> Connector -> SysRet (Maybe CRTC, Maybe Encoder)
+getConnectorCRTC ioctl fd conn = do
+   -- Maybe EncoderID
+   let encId = connEncoderID conn
+
+   -- Maybe Encoder
+   enc <- traverse (getEncoder ioctl fd) encId
+
+   case enc of
+      Nothing        -> return (Right (Nothing,Nothing))
+      Just (Left err)-> return (Left err)
+      Just (Right e) -> do
+         -- Maybe CRTCID
+         let crtcId = encoderCRTCID e
+
+         -- Maybe CRTC
+         crtc <- traverse (getCRTC ioctl fd) crtcId
+         return $ case crtc of
+            Nothing        -> Right (Nothing,Just e)
+            Just (Left err)-> Left err
+            Just (Right c) -> Right (Just c,Just e)
