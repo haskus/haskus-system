@@ -11,19 +11,19 @@ module ViperVM.Arch.Linux.Graphics
    , Connection(..)
    , SubPixel(..)
    , ConnectorType(..)
-   , CRTC(..)
+   , Controller(..)
    , ConnectorID
    , FrameBufferID
-   , CRTCID
+   , ControllerID
    , EncoderID
    , drmIoctl
    , getCapability
    , getModeResources
    , getConnector
    , getEncoder
-   , getEncoderCRTCs
-   , getCRTC
-   , getConnectorCRTC
+   , getEncoderControllers
+   , getController
+   , getConnectorController
    )
 where
 
@@ -52,7 +52,7 @@ drmIoctl = repeatIoctl
 data Capability
    = CapDUMMY     -- Added to easily derive Enum (start at 0x01...)
    | CapDumbBuffer
-   | CapVBlankHighCRTC
+   | CapVBlankHighController
    | CapDumbPreferredDepth
    | CapDumbPreferShadow
    | CapPrime
@@ -85,12 +85,12 @@ getCapability ioctl fd cap = do
 
 newtype ConnectorID    = ConnectorID Word32 deriving (Show,Eq,Storable)
 newtype FrameBufferID  = FrameBufferID Word32 deriving (Show,Eq,Storable)
-newtype CRTCID         = CRTCID Word32 deriving (Show,Eq,Storable)
+newtype ControllerID         = ControllerID Word32 deriving (Show,Eq,Storable)
 newtype EncoderID      = EncoderID Word32 deriving (Show,Eq,Storable)
 
 data CardResources = CardResources
    { framebuffers    :: [FrameBufferID]
-   , crtcs           :: [CRTCID]
+   , crtcs           :: [ControllerID]
    , connectors      :: [ConnectorID]
    , encoders        :: [EncoderID]
    , minWidth        :: Word32
@@ -183,7 +183,7 @@ getModeResources ioctl fd = runEitherT $ do
                   res4 <- getModeResources' res3
                   res5 <- liftIO $ CardResources
                      <$> (fmap FrameBufferID <$> peekArray' (fbCount res2) fs)
-                     <*> (fmap CRTCID <$> peekArray' (crtcCount res2) crs)
+                     <*> (fmap ControllerID <$> peekArray' (crtcCount res2) crs)
                      <*> (fmap ConnectorID <$> peekArray' (connectorCount res2) cs)
                      <*> (fmap EncoderID <$> peekArray' (encoderCount res2) es)
                      <*> return (minWidth_ res4)
@@ -417,8 +417,8 @@ newtype EncoderType = EncoderType Word32 deriving (Storable,Show)
 data Encoder = Encoder
    { encoderID             :: EncoderID
    , encoderType           :: EncoderType
-   , encoderCRTCID         :: Maybe CRTCID
-   , encoderPossibleCRTCs  :: Word32
+   , encoderControllerID         :: Maybe ControllerID
+   , encoderPossibleControllers  :: Word32
    , encoderPossibleClones :: Word32
    } deriving (Show)
 
@@ -433,15 +433,15 @@ instance Storable Encoder where
          <$> peekByteOff ptr 0
 
          <*> (EncoderType <$> peekByteOff ptr 4)
-         <*> (fmap CRTCID . wrapZero <$> peekByteOff ptr 8)
+         <*> (fmap ControllerID . wrapZero <$> peekByteOff ptr 8)
          <*> peekByteOff ptr 12
          <*> peekByteOff ptr 16
 
    poke ptr (Encoder {..}) = do
       pokeByteOff ptr 0 encoderID
       pokeByteOff ptr 4 encoderType
-      pokeByteOff ptr 8 (fromMaybe (CRTCID 0) encoderCRTCID)
-      pokeByteOff ptr 12 encoderPossibleCRTCs
+      pokeByteOff ptr 8 (fromMaybe (ControllerID 0) encoderControllerID)
+      pokeByteOff ptr 12 encoderPossibleControllers
       pokeByteOff ptr 16 encoderPossibleClones
 
 -- | Get encoder
@@ -453,20 +453,20 @@ getEncoder ioctl fd encId = do
    ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
 
 
--- | Retrieve CRTCs that can work with the given encoder
-getEncoderCRTCs :: CardResources -> Encoder -> [CRTCID]
-getEncoderCRTCs res enc = catMaybes (map f cs)
+-- | Retrieve Controllers that can work with the given encoder
+getEncoderControllers :: CardResources -> Encoder -> [ControllerID]
+getEncoderControllers res enc = catMaybes (map f cs)
    where
-      ps = encoderPossibleCRTCs enc
+      ps = encoderPossibleControllers enc
       cs = [1..] `zip` crtcs res
       f (n,crtc)
          | testBit ps n = Just crtc
          | otherwise    = Nothing
 
-data CRTC = CRTC
+data Controller = Controller
    { crtcSetConnectorsPtr :: Word64
    , crtcConnectorCount   :: Word32
-   , crtcID               :: CRTCID
+   , crtcID               :: ControllerID
    , crtcFrameBuffer      :: Maybe (FrameBufferID,Word32, Word32)
    --, crtcFrameBufferX     :: Word32
    --, crtcFrameBufferY     :: Word32
@@ -475,7 +475,7 @@ data CRTC = CRTC
    , crtcMode             :: Maybe Mode
    } deriving (Show)
 
-instance Storable CRTC where
+instance Storable Controller where
    sizeOf _    = 8 + 7*4 + sizeOf (undefined :: Mode)
    alignment _ = 8
    peek ptr    = do
@@ -492,14 +492,14 @@ instance Storable CRTC where
       mode <- if modeIsValid == 0
                then return Nothing
                else Just <$> peekByteOff ptr 36
-      CRTC
+      Controller
          <$> peekByteOff ptr 0
          <*> peekByteOff ptr 8
          <*> peekByteOff ptr 12
          <*> return fb
          <*> peekByteOff ptr 28
          <*> return mode
-   poke ptr (CRTC {..}) = do
+   poke ptr (Controller {..}) = do
       pokeByteOff ptr 0  crtcSetConnectorsPtr
       pokeByteOff ptr 8  crtcConnectorCount
       pokeByteOff ptr 12 crtcID
@@ -519,15 +519,15 @@ instance Storable CRTC where
             pokeByteOff ptr 20 x
             pokeByteOff ptr 24 y
 
--- | Get CRTC
-getCRTC :: IOCTL -> FileDescriptor -> CRTCID -> SysRet CRTC
-getCRTC ioctl fd crtcid = do
-   let crtc = CRTC 0 0 crtcid Nothing 0 Nothing
+-- | Get Controller
+getController :: IOCTL -> FileDescriptor -> ControllerID -> SysRet Controller
+getController ioctl fd crtcid = do
+   let crtc = Controller 0 0 crtcid Nothing 0 Nothing
    ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
 
--- | Retrieve CRTC (and encoder) controling a connector (if any)
-getConnectorCRTC :: IOCTL -> FileDescriptor -> Connector -> SysRet (Maybe CRTC, Maybe Encoder)
-getConnectorCRTC ioctl fd conn = do
+-- | Retrieve Controller (and encoder) controling a connector (if any)
+getConnectorController :: IOCTL -> FileDescriptor -> Connector -> SysRet (Maybe Controller, Maybe Encoder)
+getConnectorController ioctl fd conn = do
    -- Maybe EncoderID
    let encId = connEncoderID conn
 
@@ -538,11 +538,11 @@ getConnectorCRTC ioctl fd conn = do
       Nothing        -> return (Right (Nothing,Nothing))
       Just (Left err)-> return (Left err)
       Just (Right e) -> do
-         -- Maybe CRTCID
-         let crtcId = encoderCRTCID e
+         -- Maybe ControllerID
+         let crtcId = encoderControllerID e
 
-         -- Maybe CRTC
-         crtc <- traverse (getCRTC ioctl fd) crtcId
+         -- Maybe Controller
+         crtc <- traverse (getController ioctl fd) crtcId
          return $ case crtc of
             Nothing        -> Right (Nothing,Just e)
             Just (Left err)-> Left err

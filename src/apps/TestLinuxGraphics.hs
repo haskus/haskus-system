@@ -47,7 +47,7 @@ main = do
          enc <- EitherT $ getEncoder ioctl fd encId
          liftIO $ do
             putStrLn $ show enc
-            putStrLn $ "Valid CRTCs: " ++ (show $ getEncoderCRTCs res enc)
+            putStrLn $ "Valid Controllers: " ++ (show $ getEncoderControllers res enc)
 
       liftIO $ putStrLn "==================\n= Test \n=================="
       
@@ -64,9 +64,9 @@ main = do
          mode = head (connModes conn)
 
       -- check if the connector already has an associated encoder+crtc to avoid modesetting
-      (curCrtc,curEnc) <- EitherT $ getConnectorCRTC ioctl fd conn
+      (curCrtc,curEnc) <- EitherT $ getConnectorController ioctl fd conn
 
-      liftIO $ putStrLn $ "Current CRTC and encoder: " ++ show (curCrtc,curEnc)
+      liftIO $ putStrLn $ "Current Controller and encoder: " ++ show (curCrtc,curEnc)
 
       -- find a crtc, attach encoder and set mode
       -- TODO
