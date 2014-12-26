@@ -65,6 +65,8 @@ library
     ViperVM.Arch.Linux.Graphics.DumbBuffer
     ViperVM.Arch.Linux.Graphics.FrameBuffer
     ViperVM.Arch.Linux.Graphics.PixelFormat
+    ViperVM.Arch.Linux.Graphics.Controller
+    ViperVM.Arch.Linux.Graphics.Encoder
 
     ViperVM.Arch.Posix.Malloc
 

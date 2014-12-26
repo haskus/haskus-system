@@ -1,7 +1,9 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards
+           , GeneralizedNewtypeDeriving #-}
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
    ( Plane(..)
    , FrameBuffer(..)
+   , FrameBufferID(..)
    , addFrameBuffer
    , removeFrameBuffer
    )
@@ -19,6 +21,8 @@ import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.PixelFormat
+
+newtype FrameBufferID  = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
 data Plane = Plane
    { planeHandle :: Word32

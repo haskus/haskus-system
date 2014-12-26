@@ -11,19 +11,14 @@ module ViperVM.Arch.Linux.Graphics
    , Connection(..)
    , SubPixel(..)
    , ConnectorType(..)
-   , Controller(..)
    , ConnectorID
    , FrameBufferID
-   , ControllerID
-   , EncoderID
    , drmIoctl
    , getCapability
    , getModeResources
    , getConnector
-   , getEncoder
-   , getEncoderControllers
-   , getController
    , getConnectorController
+   , getEncoderControllers
    )
 where
 
@@ -31,6 +26,9 @@ import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Mode
+import ViperVM.Arch.Linux.Graphics.Encoder
+import ViperVM.Arch.Linux.Graphics.FrameBuffer
+import ViperVM.Arch.Linux.Graphics.Controller
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
@@ -41,7 +39,7 @@ import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
 import Data.Word
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes)
 import Data.Bits (testBit)
 
 -- | IOCTL for DRM is restarted on interruption
@@ -84,9 +82,6 @@ getCapability ioctl fd cap = do
       Right (GetCapability _ value) -> return (Right value)
 
 newtype ConnectorID    = ConnectorID Word32 deriving (Show,Eq,Storable)
-newtype FrameBufferID  = FrameBufferID Word32 deriving (Show,Eq,Storable)
-newtype ControllerID         = ControllerID Word32 deriving (Show,Eq,Storable)
-newtype EncoderID      = EncoderID Word32 deriving (Show,Eq,Storable)
 
 data CardResources = CardResources
    { framebuffers    :: [FrameBufferID]
@@ -412,118 +407,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
       else right retRes
 
 
-newtype EncoderType = EncoderType Word32 deriving (Storable,Show)
 
-data Encoder = Encoder
-   { encoderID             :: EncoderID
-   , encoderType           :: EncoderType
-   , encoderControllerID         :: Maybe ControllerID
-   , encoderPossibleControllers  :: Word32
-   , encoderPossibleClones :: Word32
-   } deriving (Show)
-
-
-instance Storable Encoder where
-   sizeOf _    = 5*4
-   alignment _ = 8
-   peek ptr    = do
-      let wrapZero 0 = Nothing
-          wrapZero x = Just x
-      Encoder
-         <$> peekByteOff ptr 0
-
-         <*> (EncoderType <$> peekByteOff ptr 4)
-         <*> (fmap ControllerID . wrapZero <$> peekByteOff ptr 8)
-         <*> peekByteOff ptr 12
-         <*> peekByteOff ptr 16
-
-   poke ptr (Encoder {..}) = do
-      pokeByteOff ptr 0 encoderID
-      pokeByteOff ptr 4 encoderType
-      pokeByteOff ptr 8 (fromMaybe (ControllerID 0) encoderControllerID)
-      pokeByteOff ptr 12 encoderPossibleControllers
-      pokeByteOff ptr 16 encoderPossibleClones
-
--- | Get encoder
-getEncoder :: IOCTL -> FileDescriptor -> EncoderID -> SysRet Encoder
-getEncoder ioctl fd encId = do
-   
-   let res = Encoder encId (EncoderType 0) Nothing 0 0
-
-   ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
-
-
--- | Retrieve Controllers that can work with the given encoder
-getEncoderControllers :: CardResources -> Encoder -> [ControllerID]
-getEncoderControllers res enc = catMaybes (map f cs)
-   where
-      ps = encoderPossibleControllers enc
-      cs = [1..] `zip` crtcs res
-      f (n,crtc)
-         | testBit ps n = Just crtc
-         | otherwise    = Nothing
-
-data Controller = Controller
-   { crtcSetConnectorsPtr :: Word64
-   , crtcConnectorCount   :: Word32
-   , crtcID               :: ControllerID
-   , crtcFrameBuffer      :: Maybe (FrameBufferID,Word32, Word32)
-   --, crtcFrameBufferX     :: Word32
-   --, crtcFrameBufferY     :: Word32
-   , crtcGammaSize        :: Word32
-   --, crtcModeIsValid      :: Word32
-   , crtcMode             :: Maybe Mode
-   } deriving (Show)
-
-instance Storable Controller where
-   sizeOf _    = 8 + 7*4 + sizeOf (undefined :: Mode)
-   alignment _ = 8
-   peek ptr    = do
-      -- Read FB position only if FB is valid
-      fbId <- peekByteOff ptr 16 :: IO Word32
-      fb <- if fbId == 0
-               then return Nothing
-               else do
-                  x <- peekByteOff ptr 20
-                  y <- peekByteOff ptr 24
-                  return $ (Just (FrameBufferID fbId,x,y))
-      -- Read mode only if mode is valid
-      modeIsValid <- peekByteOff ptr 32 :: IO Word32
-      mode <- if modeIsValid == 0
-               then return Nothing
-               else Just <$> peekByteOff ptr 36
-      Controller
-         <$> peekByteOff ptr 0
-         <*> peekByteOff ptr 8
-         <*> peekByteOff ptr 12
-         <*> return fb
-         <*> peekByteOff ptr 28
-         <*> return mode
-   poke ptr (Controller {..}) = do
-      pokeByteOff ptr 0  crtcSetConnectorsPtr
-      pokeByteOff ptr 8  crtcConnectorCount
-      pokeByteOff ptr 12 crtcID
-      pokeByteOff ptr 28 crtcGammaSize
-      case crtcMode of
-         Nothing -> pokeByteOff ptr 32 (0 :: Word32)
-         Just m  -> do
-            pokeByteOff ptr 32 (1 :: Word32)
-            pokeByteOff ptr 36 m
-      case crtcFrameBuffer of
-         Nothing -> do
-            pokeByteOff ptr 16 (0 :: Word32)
-            pokeByteOff ptr 20 (0 :: Word32)
-            pokeByteOff ptr 24 (0 :: Word32)
-         Just (fbId,x,y) -> do
-            pokeByteOff ptr 16 fbId
-            pokeByteOff ptr 20 x
-            pokeByteOff ptr 24 y
-
--- | Get Controller
-getController :: IOCTL -> FileDescriptor -> ControllerID -> SysRet Controller
-getController ioctl fd crtcid = do
-   let crtc = Controller 0 0 crtcid Nothing 0 Nothing
-   ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
 getConnectorController :: IOCTL -> FileDescriptor -> Connector -> SysRet (Maybe Controller, Maybe Encoder)
@@ -547,3 +431,13 @@ getConnectorController ioctl fd conn = do
             Nothing        -> Right (Nothing,Just e)
             Just (Left err)-> Left err
             Just (Right c) -> Right (Just c,Just e)
+
+-- | Retrieve Controllers that can work with the given encoder
+getEncoderControllers :: CardResources -> Encoder -> [ControllerID]
+getEncoderControllers res enc = catMaybes (map f cs)
+   where
+      ps = encoderPossibleControllers enc
+      cs = [1..] `zip` crtcs res
+      f (n,crtc)
+         | testBit ps n = Just crtc
+         | otherwise    = Nothing
