@@ -61,12 +61,14 @@ library
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
     ViperVM.Arch.Linux.Graphics
+    ViperVM.Arch.Linux.Graphics.IDs
     ViperVM.Arch.Linux.Graphics.Mode
     ViperVM.Arch.Linux.Graphics.DumbBuffer
     ViperVM.Arch.Linux.Graphics.FrameBuffer
     ViperVM.Arch.Linux.Graphics.PixelFormat
     ViperVM.Arch.Linux.Graphics.Controller
     ViperVM.Arch.Linux.Graphics.Encoder
+    ViperVM.Arch.Linux.Graphics.Connector
 
     ViperVM.Arch.Posix.Malloc
 

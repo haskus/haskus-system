@@ -4,7 +4,6 @@
 -- | Encoders
 module ViperVM.Arch.Linux.Graphics.Encoder
    ( Encoder(..)
-   , EncoderID(..)
    , getEncoder
    )
 where
@@ -18,8 +17,8 @@ import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Controller
+import ViperVM.Arch.Linux.Graphics.IDs
 
-newtype EncoderID   = EncoderID Word32 deriving (Show,Eq,Storable)
 
 newtype EncoderType = EncoderType Word32 deriving (Storable,Show)
 

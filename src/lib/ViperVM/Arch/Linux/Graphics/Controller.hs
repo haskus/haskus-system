@@ -4,7 +4,6 @@
 -- | A video controller (CRTC in original terminology)
 module ViperVM.Arch.Linux.Graphics.Controller
    ( Controller(..)
-   , ControllerID(..)
    , getController
    )
 where
@@ -18,8 +17,8 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
+import ViperVM.Arch.Linux.Graphics.IDs
 
-newtype ControllerID   = ControllerID Word32 deriving (Show,Eq,Storable)
 
 data Controller = Controller
    { crtcSetConnectorsPtr :: Word64
@@ -82,3 +81,9 @@ getController :: IOCTL -> FileDescriptor -> ControllerID -> SysRet Controller
 getController ioctl fd crtcid = do
    let crtc = Controller 0 0 crtcid Nothing 0 Nothing
    ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
+
+-- | Set Controller
+--setController :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
+--setController ioctl fd crtcid fb conns mode = do
+--   let crtc = Controller 0 0 crtcid Nothing 0 Nothing
+--   ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
