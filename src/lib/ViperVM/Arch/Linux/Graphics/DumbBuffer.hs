@@ -23,11 +23,12 @@ data DumbBuffer = DumbBuffer
    , dumbBufferBPP      :: Word32
    , dumbBufferFlags    :: Word32
    , dumbBufferHandle   :: Word32
+   , dumbBufferPitch    :: Word32
    , dumbBufferSize     :: Word64
    } deriving (Show)
 
 instance Storable DumbBuffer where
-   sizeOf _    = 5*4 + 8
+   sizeOf _    = 6*4 + 8
    alignment _ = 8
    peek ptr    = DumbBuffer
       <$> peekByteOff ptr 0
@@ -36,6 +37,7 @@ instance Storable DumbBuffer where
       <*> peekByteOff ptr 12
       <*> peekByteOff ptr 16
       <*> peekByteOff ptr 20
+      <*> peekByteOff ptr 24
 
    poke ptr (DumbBuffer {..}) = do
       pokeByteOff ptr 0  dumbBufferHeight
@@ -43,7 +45,8 @@ instance Storable DumbBuffer where
       pokeByteOff ptr 8  dumbBufferBPP
       pokeByteOff ptr 12 dumbBufferFlags
       pokeByteOff ptr 16 dumbBufferHandle
-      pokeByteOff ptr 20 dumbBufferSize
+      pokeByteOff ptr 20 dumbBufferPitch
+      pokeByteOff ptr 24 dumbBufferSize
 
 -- | Mapping of a dump buffer
 data DumbBufferMap = DumbBufferMap
@@ -71,7 +74,7 @@ instance Storable DumbBufferMap where
 -- This is supported by all drivers (software rendering)
 createDumbBuffer :: IOCTL -> FileDescriptor -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet DumbBuffer
 createDumbBuffer ioctl fd width height bpp flags = do
-   let res = DumbBuffer height width bpp flags 0 0
+   let res = DumbBuffer height width bpp flags 0 0 0
    ioctlReadWrite ioctl 0x64 0xB2 defaultCheck fd res
 
 -- | Destroy a dumb buffer
