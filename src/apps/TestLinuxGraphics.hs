@@ -1,5 +1,11 @@
 import ViperVM.Arch.Linux.Graphics
+import ViperVM.Arch.Linux.Graphics.DumbBuffer
+import ViperVM.Arch.Linux.Graphics.FrameBuffer
+import ViperVM.Arch.Linux.Graphics.PixelFormat
+import ViperVM.Arch.Linux.Graphics.Mode
+
 import ViperVM.Arch.X86_64.Linux.FileSystem
+import ViperVM.Arch.X86_64.Linux.Memory
 
 import Control.Monad.Trans.Either
 import Control.Applicative ((<$>))
@@ -9,7 +15,9 @@ import Data.Traversable (forM)
 
 main :: IO ()
 main = do
-   let ioctl = drmIoctl sysIoctl
+   let 
+      ioctl = drmIoctl sysIoctl
+      mmap  = sysMemMap
 
    ret <- runEitherT $ do
       -- Open device
@@ -60,11 +68,32 @@ main = do
 
       liftIO $ putStrLn $ "Current CRTC and encoder: " ++ show (curCrtc,curEnc)
 
-         -- find a crtc
-         -- TODO
+      -- find a crtc, attach encoder and set mode
+      -- TODO
+      
+      let
+         width  = fromIntegral $ modeHorizontalDisplay mode
+         height = fromIntegral $ modeVerticalDisplay mode
+         bpp    = 32
+         dbFlags = 0
 
-         -- create a framebuffer
-         -- TODO
+      -- create a dumb buffer
+      db <- EitherT $ createDumbBuffer ioctl fd width height bpp dbFlags
 
+      -- create a framebuffer for the dumb buffer
+      let 
+         plane = Plane (dumbBufferHandle db) (dumbBufferPitch db) 0
+         fmt   = PixelFormat RGBX8888 LittleEndian
+         fbFlgs = 0
+      fb <- EitherT $ addFrameBuffer ioctl fd width height fmt fbFlgs [plane]
+
+      -- prepare buffer for memory mapping
+      dbmap <- EitherT $ mapDumbBuffer ioctl fd db
+
+	   -- perform actual memory mapping
+      let size = dumbBufferSize db
+      mem <- EitherT $ mmap Nothing size [ProtRead,ProtWrite] [MapShared] (Just (fd, dumbMapOffset dbmap))
+
+      return ()
 
    return ()

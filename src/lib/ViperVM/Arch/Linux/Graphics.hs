@@ -11,7 +11,6 @@ module ViperVM.Arch.Linux.Graphics
    , Connection(..)
    , SubPixel(..)
    , ConnectorType(..)
-   , Mode(..)
    , CRTC(..)
    , ConnectorID
    , FrameBufferID
@@ -31,6 +30,7 @@ where
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Graphics.Mode
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
@@ -40,7 +40,6 @@ import Data.Traversable (traverse)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
-import Foreign.C.String (peekCString)
 import Data.Word
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Bits (testBit)
@@ -268,52 +267,6 @@ instance Storable ModeGetConnector where
       pokeByteOff ptr 64 (connWidth_            res)
       pokeByteOff ptr 68 (connHeight_           res)
       pokeByteOff ptr 72 (connSubPixel_         res)
-
-data Mode = Mode
-   { modeClock               :: Word32
-
-   , modeHorizontalDisplay   :: Word16
-   , modeHorizontalSyncStart :: Word16
-   , modeHorizontalSyncEnd   :: Word16
-   , modeHorizontalTotal     :: Word16
-   , modeHorizontalSkew      :: Word16
-
-   , modeVerticalDisplay     :: Word16
-   , modeVerticalSyncStart   :: Word16
-   , modeVerticalSyncEnd     :: Word16
-   , modeVerticalTotal       :: Word16
-   , modeVerticalSkew        :: Word16
-
-   , modeVerticalRefresh     :: Word32
-   , modeFlags               :: Word32
-   , modeType                :: Word32
-   , modeName                :: String    -- length = DRM_DISPLAY_MODE_LEN = 32
-   } deriving (Show)
-
-instance Storable Mode where
-   sizeOf _    = 4 + 10 * 2 + 3*4 + 32
-   alignment _ = 8
-   peek ptr    = Mode
-      <$> peekByteOff ptr 0
-
-      <*> peekByteOff ptr 4
-      <*> peekByteOff ptr 6
-      <*> peekByteOff ptr 8
-      <*> peekByteOff ptr 10
-      <*> peekByteOff ptr 12
-
-      <*> peekByteOff ptr 14
-      <*> peekByteOff ptr 16
-      <*> peekByteOff ptr 18
-      <*> peekByteOff ptr 20
-      <*> peekByteOff ptr 22
-
-      <*> peekByteOff ptr 24
-      <*> peekByteOff ptr 28
-      <*> peekByteOff ptr 32
-      <*> peekCString (castPtr $ ptr `plusPtr` 36)
-
-   poke = undefined
 
 
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)

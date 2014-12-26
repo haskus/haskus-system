@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module ViperVM.Arch.Linux.Graphics.DumbBuffer
    ( DumbBuffer(..)
+   , DumbBufferMap(..)
    , createDumbBuffer
    , destroyDumbBuffer
    , mapDumbBuffer
