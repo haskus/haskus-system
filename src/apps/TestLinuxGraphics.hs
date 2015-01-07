@@ -43,7 +43,7 @@ main = do
       _ <- (/= 0) <$> (EitherT $ getCapability ioctl fd CapDumbBuffer)
       liftIO $ putStrLn "The card has DumbBuffer capability :)"
 
-      liftIO $ putStrLn "==================\n= cardOURCES\n=================="
+      liftIO $ putStrLn "==================\n= CARD\n=================="
 
       card <- EitherT $ getCard ioctl fd
       liftIO $ putStrLn $ show card
