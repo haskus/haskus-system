@@ -1,9 +1,11 @@
+{-# LANGUAGE RecordWildCards #-}
 import ViperVM.Arch.Linux.Graphics
 import ViperVM.Arch.Linux.Graphics.DumbBuffer
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Encoder
+import ViperVM.Arch.Linux.Graphics.IDs
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Memory
@@ -13,6 +15,19 @@ import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (forM_)
 import Data.Traversable (forM)
+
+import Text.Printf
+
+-- Print connector info
+printConnector :: Connector -> String
+printConnector (Connector {..}) = 
+   printf "%d %s %s %umm x %umm"
+      connId
+      (show connConnectorType)
+      (show connConnection)
+      connWidth connHeight
+   where
+      ConnectorID connId = connConnectorID
 
 main :: IO ()
 main = do
@@ -28,27 +43,29 @@ main = do
       _ <- (/= 0) <$> (EitherT $ getCapability ioctl fd CapDumbBuffer)
       liftIO $ putStrLn "The card has DumbBuffer capability :)"
 
-      liftIO $ putStrLn "==================\n= RESOURCES\n=================="
+      liftIO $ putStrLn "==================\n= cardOURCES\n=================="
 
-      res <- EitherT $ getModeResources ioctl fd
-      liftIO $ putStrLn $ show res
+      card <- EitherT $ getCard ioctl fd
+      liftIO $ putStrLn $ show card
 
 
       liftIO $ putStrLn "==================\n= CONNECTORS\n=================="
 
-      conns <- forM (connectors res) $ \connId -> do
+      conns <- forM (cardConnectors card) $ \connId -> do
          conn <- EitherT $ getConnector ioctl fd connId
          liftIO $ putStrLn $ show conn
+         liftIO $ putStrLn (printConnector conn)
          return conn
 
 
       liftIO $ putStrLn "==================\n= ENCODERS \n=================="
 
-      forM_ (encoders res) $ \encId -> do
+      forM_ (cardEncoders card) $ \encId -> do
          enc <- EitherT $ getEncoder ioctl fd encId
          liftIO $ do
             putStrLn $ show enc
-            putStrLn $ "Valid Controllers: " ++ (show $ getEncoderControllers res enc)
+            putStrLn $ "  * Valid controllers: " ++ (show $ getEncoderControllers card enc)
+            putStrLn $ "  * Valid connectors: " ++ (show $ getEncoderConnectors card enc)
 
       liftIO $ putStrLn "==================\n= Test \n=================="
       

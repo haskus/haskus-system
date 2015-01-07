@@ -6,17 +6,18 @@
 -- Linux currently uses KMS/DRM interface
 module ViperVM.Arch.Linux.Graphics
    ( Capability(..)
-   , CardResources(..)
+   , Card(..)
    , Connector(..)
    , Connection(..)
    , SubPixel(..)
    , ConnectorType(..)
    , drmIoctl
    , getCapability
-   , getModeResources
+   , getCard
    , getConnector
    , getConnectorController
    , getEncoderControllers
+   , getEncoderConnectors
    )
 where
 
@@ -36,8 +37,7 @@ import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Storable
 import Foreign.Ptr
 import Data.Word
-import Data.Maybe (catMaybes)
-import Data.Bits (testBit)
+import Data.Bits (Bits,testBit)
 
 -- | IOCTL for DRM is restarted on interruption
 -- Apply this function to your preferred ioctl function
@@ -79,19 +79,19 @@ getCapability ioctl fd cap = do
       Right (GetCapability _ value) -> return (Right value)
 
 
-data CardResources = CardResources
-   { framebuffers    :: [FrameBufferID]
-   , crtcs           :: [ControllerID]
-   , connectors      :: [ConnectorID]
-   , encoders        :: [EncoderID]
-   , minWidth        :: Word32
-   , maxWidth        :: Word32
-   , minHeight       :: Word32
-   , maxHeight       :: Word32
+data Card = Card
+   { cardFrameBuffers    :: [FrameBufferID]
+   , cardControllers     :: [ControllerID]
+   , cardConnectors      :: [ConnectorID]
+   , cardEncoders        :: [EncoderID]
+   , cardMinWidth        :: Word32
+   , cardMaxWidth        :: Word32
+   , cardMinHeight       :: Word32
+   , cardMaxHeight       :: Word32
    } deriving (Show)
 
 -- | Parameter for MODE_GETRESOURCES IOCTL
-data ModeCardRes = ModeCardRes
+data ModeCard = ModeCard
    { fbPtr           :: Word64
    , crtcPtr         :: Word64
    , connectorPtr    :: Word64
@@ -108,10 +108,10 @@ data ModeCardRes = ModeCardRes
    , maxHeight_      :: Word32
    } deriving (Show)
 
-instance Storable ModeCardRes where
+instance Storable ModeCard where
    sizeOf _    = 4*(8+4) + 4*4
    alignment _ = 8
-   peek ptr    = ModeCardRes
+   peek ptr    = ModeCard
       <$> peekByteOff ptr 0
       <*> peekByteOff ptr 8
       <*> peekByteOff ptr 16
@@ -139,16 +139,16 @@ instance Storable ModeCardRes where
       pokeByteOff ptr 60 (maxHeight_      res)
 
 
--- | Get mode resources
+-- | Get graphic card info
 --
 -- It seems like the kernel fills *Count fields and min/max fields.  If *Ptr
 -- fields are not NULL, the kernel fills the pointed arrays with up to *Count
 -- elements.
 -- 
-getModeResources :: IOCTL -> FileDescriptor -> SysRet CardResources
-getModeResources ioctl fd = runEitherT $ do
+getCard :: IOCTL -> FileDescriptor -> SysRet Card
+getCard ioctl fd = runEitherT $ do
    let 
-      res = ModeCardRes 0 0 0 0 0 0 0 0 0 0 0 0
+      res = ModeCard 0 0 0 0 0 0 0 0 0 0 0 0
       allocaArray'      = allocaArray . fromIntegral
       peekArray'        = peekArray . fromIntegral
       getModeResources' = EitherT . ioctlReadWrite ioctl 0x64 0xA0 defaultCheck fd
@@ -172,7 +172,7 @@ getModeResources ioctl fd = runEitherT $ do
                                  }
                   -- we get the values
                   res4 <- getModeResources' res3
-                  res5 <- liftIO $ CardResources
+                  res5 <- liftIO $ Card
                      <$> (fmap FrameBufferID <$> peekArray' (fbCount res2) fs)
                      <*> (fmap ControllerID <$> peekArray' (crtcCount res2) crs)
                      <*> (fmap ConnectorID <$> peekArray' (connectorCount res2) cs)
@@ -192,7 +192,7 @@ getModeResources ioctl fd = runEitherT $ do
      || crtcCount      res2 < crtcCount      rawRes
      || connectorCount res2 < connectorCount rawRes
      || encoderCount   res2 < encoderCount   rawRes
-      then EitherT $ getModeResources ioctl fd
+      then EitherT $ getCard ioctl fd
       else right retRes
 
 
@@ -222,12 +222,21 @@ getConnectorController ioctl fd conn = do
             Just (Left err)-> Left err
             Just (Right c) -> Right (Just c,Just e)
 
--- | Retrieve Controllers that can work with the given encoder
-getEncoderControllers :: CardResources -> Encoder -> [ControllerID]
-getEncoderControllers res enc = catMaybes (map f cs)
+-- | Select elements in the list if the bit corresponding to their index is set in the mask
+fromMaskedList :: Bits a => a -> [b] -> [b]
+fromMaskedList mask xs = foldr f [] xs'
    where
-      ps = encoderPossibleControllers enc
-      cs = [1..] `zip` crtcs res
-      f (n,crtc)
-         | testBit ps n = Just crtc
-         | otherwise    = Nothing
+      xs' = [0..] `zip` xs
+      f (k,v) vs
+         | testBit mask k = v:vs
+         | otherwise      = vs
+
+-- | Retrieve Controllers that can work with the given encoder
+getEncoderControllers :: Card -> Encoder -> [ControllerID]
+getEncoderControllers res enc = 
+   fromMaskedList (encoderPossibleControllers enc) (cardControllers res)
+
+-- | Retrieve Connectors that can work with the given encoder
+getEncoderConnectors :: Card -> Encoder -> [ConnectorID]
+getEncoderConnectors res enc = 
+   fromMaskedList (encoderPossibleConnectors enc) (cardConnectors res)

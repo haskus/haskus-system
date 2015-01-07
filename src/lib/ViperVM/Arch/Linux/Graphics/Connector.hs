@@ -133,13 +133,14 @@ instance Show ConnectorType where
       ConnectorTypeDSI           -> "DSI"
 
 
-
+-- | Indicate if a cable is plugged in the connector
 data Connection
    = Connected
    | Disconnected
    | ConnectionUnknown
    deriving (Eq,Ord,Show)
 
+-- | Indicate how a pixel is physically subdivised in RGB pixel elements
 data SubPixel
    = SubPixelUnknown
    | SubPixelHorizontalRGB
@@ -149,6 +150,7 @@ data SubPixel
    | SubPixelNone
    deriving (Eq,Ord,Enum,Show)
 
+-- | A connector on the graphic card
 data Connector = Connector
    { connEncoders          :: [EncoderID]
    , connModes             :: [Mode]

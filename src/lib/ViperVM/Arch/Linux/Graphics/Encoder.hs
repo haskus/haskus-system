@@ -16,7 +16,6 @@ import Data.Maybe (fromMaybe)
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.IDs
 
 
@@ -27,7 +26,7 @@ data Encoder = Encoder
    , encoderType                 :: EncoderType
    , encoderControllerID         :: Maybe ControllerID
    , encoderPossibleControllers  :: Word32
-   , encoderPossibleClones       :: Word32
+   , encoderPossibleConnectors   :: Word32
    } deriving (Show)
 
 
@@ -50,7 +49,7 @@ instance Storable Encoder where
       pokeByteOff ptr 4 encoderType
       pokeByteOff ptr 8 (fromMaybe (ControllerID 0) encoderControllerID)
       pokeByteOff ptr 12 encoderPossibleControllers
-      pokeByteOff ptr 16 encoderPossibleClones
+      pokeByteOff ptr 16 encoderPossibleConnectors
 
 -- | Get encoder
 getEncoder :: IOCTL -> FileDescriptor -> EncoderID -> SysRet Encoder

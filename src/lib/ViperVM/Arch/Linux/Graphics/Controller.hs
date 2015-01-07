@@ -5,6 +5,7 @@
 module ViperVM.Arch.Linux.Graphics.Controller
    ( Controller(..)
    , getController
+   , setController
    )
 where
 
@@ -15,21 +16,20 @@ import Data.Word
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.IDs
 
 
 data Controller = Controller
-   { crtcSetConnectorsPtr :: Word64
-   , crtcConnectorCount   :: Word32
-   , crtcID               :: ControllerID
-   , crtcFrameBuffer      :: Maybe (FrameBufferID,Word32, Word32)
-   --, crtcFrameBufferX     :: Word32
-   --, crtcFrameBufferY     :: Word32
-   , crtcGammaSize        :: Word32
-   --, crtcModeIsValid      :: Word32
-   , crtcMode             :: Maybe Mode
+   { controllerSetConnectorsPtr :: Word64
+   , controllerConnectorCount   :: Word32
+   , controllerID               :: ControllerID
+   , controllerFrameBuffer      :: Maybe (FrameBufferID,Word32, Word32)
+   --, controllerFrameBufferX     :: Word32
+   --, controllerFrameBufferY     :: Word32
+   , controllerGammaSize        :: Word32
+   --, controllerModeIsValid      :: Word32
+   , controllerMode             :: Maybe Mode
    } deriving (Show)
 
 instance Storable Controller where
@@ -57,16 +57,16 @@ instance Storable Controller where
          <*> peekByteOff ptr 28
          <*> return mode
    poke ptr (Controller {..}) = do
-      pokeByteOff ptr 0  crtcSetConnectorsPtr
-      pokeByteOff ptr 8  crtcConnectorCount
-      pokeByteOff ptr 12 crtcID
-      pokeByteOff ptr 28 crtcGammaSize
-      case crtcMode of
+      pokeByteOff ptr 0  controllerSetConnectorsPtr
+      pokeByteOff ptr 8  controllerConnectorCount
+      pokeByteOff ptr 12 controllerID
+      pokeByteOff ptr 28 controllerGammaSize
+      case controllerMode of
          Nothing -> pokeByteOff ptr 32 (0 :: Word32)
          Just m  -> do
             pokeByteOff ptr 32 (1 :: Word32)
             pokeByteOff ptr 36 m
-      case crtcFrameBuffer of
+      case controllerFrameBuffer of
          Nothing -> do
             pokeByteOff ptr 16 (0 :: Word32)
             pokeByteOff ptr 20 (0 :: Word32)
@@ -83,7 +83,8 @@ getController ioctl fd crtcid = do
    ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
 
 -- | Set Controller
---setController :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
---setController ioctl fd crtcid fb conns mode = do
---   let crtc = Controller 0 0 crtcid Nothing 0 Nothing
---   ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
+setController :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
+setController ioctl fd crtcid fb conns mode = do
+   let crtc = Controller 0 0 crtcid Nothing 0 Nothing
+   ret <- ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
+   return (fmap (const ()) ret)
