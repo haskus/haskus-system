@@ -69,6 +69,7 @@ library
     ViperVM.Arch.Linux.Graphics.Controller
     ViperVM.Arch.Linux.Graphics.Encoder
     ViperVM.Arch.Linux.Graphics.Connector
+    ViperVM.Arch.Linux.Graphics.Properties
 
     ViperVM.Arch.Posix.Malloc
 
