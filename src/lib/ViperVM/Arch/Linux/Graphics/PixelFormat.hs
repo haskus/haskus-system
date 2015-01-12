@@ -18,6 +18,7 @@ import Control.Arrow (second)
 import Foreign.Storable
 import Foreign.Ptr
 
+-- | Pixel format
 data PixelFormat
    = PixelFormat Format Endianness
    deriving (Eq,Show)
@@ -133,6 +134,7 @@ assoc = assoc'
          ,(YVU444      , "YV24")
          ]
 
+-- | Logical pixel format (i.e. without considering storage endianness)
 data Format
    = C8                 -- ^ 8 bits, color index
 

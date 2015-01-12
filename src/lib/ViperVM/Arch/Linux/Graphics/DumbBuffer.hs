@@ -1,4 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
+
+-- | Dumb buffer management
+--
+-- Dumb buffers are unaccelerated buffers that can be used with all devices
+-- that support them with the same API (contrary to accelerated buffers)
 module ViperVM.Arch.Linux.Graphics.DumbBuffer
    ( DumbBuffer(..)
    , DumbBufferMap(..)
@@ -21,7 +26,7 @@ import Data.Word
 data DumbBuffer = DumbBuffer
    { dumbBufferHeight   :: Word32
    , dumbBufferWidth    :: Word32
-   , dumbBufferBPP      :: Word32
+   , dumbBufferBPP      :: Word32   -- ^ Bits per pixel
    , dumbBufferFlags    :: Word32
    , dumbBufferHandle   :: Word32
    , dumbBufferPitch    :: Word32

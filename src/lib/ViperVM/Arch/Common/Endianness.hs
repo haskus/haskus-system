@@ -11,6 +11,6 @@ where
 
 -- | Memory endianness
 data Endianness 
-   = LittleEndian 
-   | BigEndian 
+   = LittleEndian    -- ^ Less significant bytes first
+   | BigEndian       -- ^ Most significant bytes first
    deriving (Eq,Show)

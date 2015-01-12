@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables
            , GeneralizedNewtypeDeriving
            , RecordWildCards #-}
+
 -- | Interface to Linux graphics API
 --
 -- Linux currently uses KMS/DRM interface

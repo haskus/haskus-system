@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards
            , GeneralizedNewtypeDeriving #-}
+
+-- | Frame buffer management
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
    ( Plane(..)
    , FrameBuffer(..)
@@ -21,20 +23,21 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
-
+-- | Plane (used for pixel formats that use several sources)
 data Plane = Plane
    { planeHandle :: Word32
    , planePitch  :: Word32
    , planeOffset :: Word32
    }
 
+-- | Frame buffer
 data FrameBuffer = FrameBuffer
-   { fbID :: Word32
-   , fbWidth :: Word32
-   , fbHeight :: Word32
-   , fbPixelFormat :: PixelFormat
-   , fbFlags :: Word32
-   , fbPlanes :: (Plane,Plane,Plane,Plane)
+   { fbID :: Word32                          -- ^ Frame buffer identifier
+   , fbWidth :: Word32                       -- ^ Frame buffer width
+   , fbHeight :: Word32                      -- ^ Frame buffer height
+   , fbPixelFormat :: PixelFormat            -- ^ Pixel format
+   , fbFlags :: Word32                       -- ^ Flags
+   , fbPlanes :: (Plane,Plane,Plane,Plane)   -- ^ Data sources (up to four planes)
    }
 
 instance Storable FrameBuffer where
@@ -84,7 +87,7 @@ instance Storable FrameBuffer where
       pokeArray ppitches (map planePitch  planes)
       pokeArray poffsets (map planeOffset planes)
 
--- | Add a framebuffer
+-- | Create a framebuffer
 --
 -- We use DRM_IOCTL_MODE_ADDFB2 as it provides more control on pixel format
 addFrameBuffer :: IOCTL -> FileDescriptor -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
@@ -99,7 +102,7 @@ addFrameBuffer ioctl fd width height fmt flags planes = do
 
    ioctlReadWrite ioctl 0x64 0xB8 defaultCheck fd fb
 
-
+-- | Release a frame buffer
 removeFrameBuffer :: IOCTL -> FileDescriptor -> FrameBuffer -> SysRet ()
 removeFrameBuffer ioctl fd fb = do
    with (fbID fb) $ \bufPtr ->

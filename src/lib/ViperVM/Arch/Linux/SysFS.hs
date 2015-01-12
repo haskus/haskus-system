@@ -1,8 +1,12 @@
--- | SysFS (Linux) management module
-module ViperVM.Arch.Linux.SysFS (
-   readMemInfo,
-   CPUMap(..), readCPUMap, member, toList
-) where
+-- | Linux SysFS management
+module ViperVM.Arch.Linux.SysFS
+   ( CPUMap(..)
+   , readMemInfo
+   , readCPUMap
+   , member
+   , toList
+   )
+where
 
 import Control.Applicative ((<$>), (<*))
 import Control.Monad (void)
@@ -16,6 +20,9 @@ import Data.Maybe (isJust,mapMaybe)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 
+-- | A CPUMap is a set of CPU identifiers
+--
+-- TODO: replace Vector of Word32 with a variable length bitset
 data CPUMap = CPUMap (V.Vector Word32) deriving (Show)
 
 -- | Read meminfo files
@@ -60,7 +67,7 @@ member idx (CPUMap v) = q < V.length v && testBit (v V.! q) r
    where
       (q,r) = fromIntegral idx `quotRem` 32
 
-
+-- | Transform a CPUMap into a list of identifiers
 toList :: CPUMap -> [Word]
 toList (CPUMap v) = go 0 (V.toList v)
    where

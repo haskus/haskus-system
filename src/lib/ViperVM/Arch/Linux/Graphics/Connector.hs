@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables
            , GeneralizedNewtypeDeriving
            , RecordWildCards #-}
+
+-- | Graphic card connector management
 module ViperVM.Arch.Linux.Graphics.Connector
    ( Connector(..)
    , Connection(..)
@@ -26,6 +28,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.IDs
 
+-- | Internal Connector structure
 data ModeGetConnector = ModeGetConnector
    { connEncodersPtr       :: Word64
    , connModesPtr          :: Word64
@@ -89,9 +92,10 @@ instance Storable ModeGetConnector where
       pokeByteOff ptr 68 (connHeight_           res)
       pokeByteOff ptr 72 (connSubPixel_         res)
 
-
+-- | Connector property
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
 
+-- | Connector type
 data ConnectorType
    = ConnectorTypeUnknown
    | ConnectorTypeVGA
@@ -135,9 +139,9 @@ instance Show ConnectorType where
 
 -- | Indicate if a cable is plugged in the connector
 data Connection
-   = Connected
-   | Disconnected
-   | ConnectionUnknown
+   = Connected          -- ^ The connector is connected to a displaying device
+   | Disconnected       -- ^ The connector is disconnected
+   | ConnectionUnknown  -- ^ The connection state cannot be determined
    deriving (Eq,Ord,Show)
 
 -- | Indicate how a pixel is physically subdivised in RGB pixel elements
@@ -160,9 +164,9 @@ data Connector = Connector
    , connConnectorType     :: ConnectorType
    , connConnectorTypeID   :: ConnectorTypeID
 
-   , connConnection        :: Connection
-   , connWidth             :: Word32   -- ^ HxW in millimeters
-   , connHeight            :: Word32
+   , connConnection        :: Connection           -- ^ Connection state
+   , connWidth             :: Word32               -- ^ Width (in millimeters)
+   , connHeight            :: Word32               -- ^ Height (in millimeters)
    , connSubPixel          :: SubPixel
    } deriving (Show)
 
@@ -225,11 +229,10 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
 
    -- we need to check that the number of resources is still the same (a
    -- resources may have appeared between the time we get the number of
-   -- resources an the time we get them...)
+   -- resources and the time we get them...)
    -- If not, we redo the whole process
    if   connModesCount    res2 < connModesCount    rawRes
      || connPropsCount    res2 < connPropsCount    rawRes
      || connEncodersCount res2 < connEncodersCount rawRes
       then EitherT $ getConnector ioctl fd connId
       else right retRes
-

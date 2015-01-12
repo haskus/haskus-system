@@ -1,3 +1,4 @@
+-- | Graphic object properties management
 module ViperVM.Arch.Linux.Graphics.Properties
    ( PropertyType(..)
    )
@@ -6,6 +7,7 @@ where
 import Data.Bits
 import Data.Word
 
+-- | Type of the property
 data PropertyType
    = PropTypePending
    | PropTypeRange

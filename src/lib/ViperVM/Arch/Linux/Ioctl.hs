@@ -3,7 +3,8 @@
 --
 -- Bindings from asm-generic/ioctl.h
 --
--- Warning: some constants may be modified depending on the architecture. For now, we only support X86_64.
+-- Warning: some constants may be modified depending on the architecture. For
+-- now, we only support X86_64.
 module ViperVM.Arch.Linux.Ioctl
    ( IOCTL
    , Command (..)

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards
            , GeneralizedNewtypeDeriving #-}
 
--- | A video controller (CRTC in original terminology)
+-- | Video controller (CRTC in original terminology) management
 module ViperVM.Arch.Linux.Graphics.Controller
    ( Controller(..)
    , getController
@@ -19,16 +19,15 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.IDs
 
-
+-- | Video controller
+--
+-- A controller is used to configure what is displayed on the screen
 data Controller = Controller
    { controllerSetConnectorsPtr :: Word64
    , controllerConnectorCount   :: Word32
    , controllerID               :: ControllerID
-   , controllerFrameBuffer      :: Maybe (FrameBufferID,Word32, Word32)
-   --, controllerFrameBufferX     :: Word32
-   --, controllerFrameBufferY     :: Word32
+   , controllerFrameBuffer      :: Maybe (FrameBufferID, Word32, Word32)   -- ^ Associated frame buffer and its dimensions (WxH)
    , controllerGammaSize        :: Word32
-   --, controllerModeIsValid      :: Word32
    , controllerMode             :: Maybe Mode
    } deriving (Show)
 

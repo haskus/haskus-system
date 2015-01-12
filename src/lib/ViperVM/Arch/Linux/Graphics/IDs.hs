@@ -1,4 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+-- | Unique identifiers for graphic objects (used in several modules)
 module ViperVM.Arch.Linux.Graphics.IDs
    ( ConnectorID(..)
    , ConnectorTypeID(..)

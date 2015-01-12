@@ -13,7 +13,7 @@ import Foreign.Storable (poke)
 
 import ViperVM.Arch.Common.Endianness
 
--- | Indicate the endianness of the host memory
+-- | Detect the endianness of the host memory
 getMemoryEndianness :: IO Endianness
 getMemoryEndianness = do
    -- Write a 32 bit Int and check byte ordering

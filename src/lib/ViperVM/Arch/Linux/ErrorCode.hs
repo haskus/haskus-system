@@ -1,3 +1,4 @@
+-- | Management of returned values from syscalls
 module ViperVM.Arch.Linux.ErrorCode 
    ( SysRet
    , ErrorCode (..)
@@ -12,6 +13,7 @@ where
 import Data.Int (Int64)
 import Control.Applicative ((<$>))
 
+-- | Syscall return type
 type SysRet a = IO (Either ErrorCode a)
 
 -- | Convert an error code into ErrorCode type
@@ -31,7 +33,8 @@ defaultCheckRet x = case defaultCheck x of
    Nothing  -> return (Right ())
    Just err -> return (Left err)
 
-
+-- | Apply an IO function to the result of the action if no error occured (use
+-- `defaultCheck` to detect an error)
 onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
 onSuccessIO sc f = do
    ret <- sc
@@ -39,6 +42,8 @@ onSuccessIO sc f = do
       Just err -> return (Left err)
       Nothing  -> Right <$> f ret
 
+-- | Apply a function to the result of the action if no error occured (use
+-- `defaultCheck` to detect an error)
 onSuccess :: IO Int64 -> (Int64 -> a) -> SysRet a
 onSuccess sc f = do
    ret <- sc
@@ -46,8 +51,9 @@ onSuccess sc f = do
       Just err -> Left err
       Nothing  -> Right (f ret)
 
-data ErrorCode =
-     EPERM     -- ^ Operation not permitted
+-- | Linux error codes
+data ErrorCode
+   = EPERM     -- ^ Operation not permitted
    | ENOENT    -- ^ No such file or directory
    | ESRCH     -- ^ No such process
    | EINTR     -- ^ Interrupted system call

@@ -1,7 +1,12 @@
 {-# LANGUAGE RecordWildCards
            , GeneralizedNewtypeDeriving #-}
 
--- | Encoders
+-- | Encoders management
+--
+-- An encoder converts data obtained from the controller (i.e. from the frame
+-- buffer associated with the controller) into suitable data for the connector
+-- (i.e. for the device connected to the connector). Hence it only supports a
+-- set of connectors. In addition, it may not work with all controllers.
 module ViperVM.Arch.Linux.Graphics.Encoder
    ( Encoder(..)
    , getEncoder
@@ -28,12 +33,13 @@ data EncoderType
    | EncoderTypeTVDAC
    deriving (Eq,Ord,Show,Enum)
 
+-- | An encoder
 data Encoder = Encoder
-   { encoderID                   :: EncoderID
-   , encoderType                 :: EncoderType
-   , encoderControllerID         :: Maybe ControllerID
-   , encoderPossibleControllers  :: Word32
-   , encoderPossibleConnectors   :: Word32
+   { encoderID                   :: EncoderID            -- ^ Encoder identifier
+   , encoderType                 :: EncoderType          -- ^ Type of the encoder
+   , encoderControllerID         :: Maybe ControllerID   -- ^ Associated controller
+   , encoderPossibleControllers  :: Word32               -- ^ Bitset of valid controllers
+   , encoderPossibleConnectors   :: Word32               -- ^ Bitset of valid connectors
    } deriving (Show)
 
 
@@ -71,5 +77,3 @@ getEncoder ioctl fd encId = do
    let res = Encoder encId EncoderTypeNone Nothing 0 0
 
    ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
-
-

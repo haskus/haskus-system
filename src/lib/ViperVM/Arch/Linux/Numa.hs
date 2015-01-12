@@ -1,4 +1,4 @@
--- | Linux NUMA management
+-- | Linux CPU and NUMA node management
 module ViperVM.Arch.Linux.Numa where
 
 import Control.Applicative ((<$>))

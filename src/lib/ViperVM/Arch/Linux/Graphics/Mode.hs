@@ -1,3 +1,4 @@
+-- | Display mode (resolution, refresh rate, etc.)
 module ViperVM.Arch.Linux.Graphics.Mode
    ( Mode(..)
    )
@@ -9,6 +10,7 @@ import Control.Applicative ((<$>), (<*>))
 import Foreign.C.String (peekCString)
 import Foreign.Ptr
 
+-- | Display mode
 data Mode = Mode
    { modeClock               :: Word32
 
