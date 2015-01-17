@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards
+           , DeriveGeneric
            , GeneralizedNewtypeDeriving #-}
 
 -- | Video controller (CRTC in original terminology) management
@@ -11,7 +12,9 @@ where
 
 import Control.Applicative ((<$>), (<*>))
 import Foreign.Storable
+import Foreign.CStorable
 import Data.Word
+import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
@@ -31,8 +34,24 @@ data Controller = Controller
    , controllerMode             :: Maybe Mode
    } deriving (Show)
 
+-- | Data matching the C structure (drm_mode_crtc)
+data ControllerStruct = ControllerStruct
+   { contSetConnPtr :: Word64
+   , contConnCount  :: Word32
+   , contID         :: Word32
+   , contFbID       :: Word32
+   , contFbX        :: Word32
+   , contFbY        :: Word32
+   , contGammaSize  :: Word32
+   , contModeValid  :: Word32
+   , contModeInfo   :: ModeStruct
+   } deriving Generic
+
+instance CStorable ControllerStruct
+
+
 instance Storable Controller where
-   sizeOf _    = 8 + 7*4 + sizeOf (undefined :: Mode)
+   sizeOf _    = 8 + 7*4 + sizeOf (undefined :: ModeStruct)
    alignment _ = 8
    peek ptr    = do
       -- Read FB position only if FB is valid
@@ -47,7 +66,7 @@ instance Storable Controller where
       modeIsValid <- peekByteOff ptr 32 :: IO Word32
       mode <- if modeIsValid == 0
                then return Nothing
-               else Just <$> peekByteOff ptr 36
+               else Just . toMode <$> peekByteOff ptr 36
       Controller
          <$> peekByteOff ptr 0
          <*> peekByteOff ptr 8

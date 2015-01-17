@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables
            , GeneralizedNewtypeDeriving
+           , DeriveGeneric
            , RecordWildCards #-}
 
 -- | Graphic card connector management
@@ -14,13 +15,14 @@ where
 
 import Control.Applicative ((<$>), (<*>))
 import Data.Word
+import GHC.Generics
 import Foreign.Storable
-
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr
+import Foreign.CStorable
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
@@ -29,7 +31,7 @@ import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.IDs
 
 -- | Internal Connector structure
-data ModeGetConnector = ModeGetConnector
+data ConnectorStruct = ConnectorStruct
    { connEncodersPtr       :: Word64
    , connModesPtr          :: Word64
    , connPropsPtr          :: Word64
@@ -48,49 +50,15 @@ data ModeGetConnector = ModeGetConnector
    , connWidth_            :: Word32   -- ^ HxW in millimeters
    , connHeight_           :: Word32
    , connSubPixel_         :: Word32
-   } deriving (Show)
+   } deriving (Generic)
 
-instance Storable ModeGetConnector where
-   sizeOf _    = 4*8 + (3+4+4)*4
-   alignment _ = 8
-   peek ptr    = ModeGetConnector
-      <$> peekByteOff ptr 0
-      <*> peekByteOff ptr 8
-      <*> peekByteOff ptr 16
-      <*> peekByteOff ptr 24
+instance CStorable ConnectorStruct
 
-      <*> peekByteOff ptr 32
-      <*> peekByteOff ptr 36
-      <*> peekByteOff ptr 40
-
-      <*> peekByteOff ptr 44
-      <*> peekByteOff ptr 48
-      <*> peekByteOff ptr 52
-      <*> peekByteOff ptr 56
-
-      <*> peekByteOff ptr 60
-      <*> peekByteOff ptr 64
-      <*> peekByteOff ptr 68
-      <*> peekByteOff ptr 72
-   poke ptr res = do
-      pokeByteOff ptr 0  (connEncodersPtr       res)
-      pokeByteOff ptr 8  (connModesPtr          res)
-      pokeByteOff ptr 16 (connPropsPtr          res)
-      pokeByteOff ptr 24 (connPropValuesPtr     res)
-
-      pokeByteOff ptr 32 (connModesCount        res)
-      pokeByteOff ptr 36 (connPropsCount        res)
-      pokeByteOff ptr 40 (connEncodersCount     res)
-
-      pokeByteOff ptr 44 (connEncoderID_        res)
-      pokeByteOff ptr 48 (connConnectorID_      res)
-      pokeByteOff ptr 52 (connConnectorType_    res)
-      pokeByteOff ptr 56 (connConnectorTypeID_  res)
-
-      pokeByteOff ptr 60 (connConnection_       res)
-      pokeByteOff ptr 64 (connWidth_            res)
-      pokeByteOff ptr 68 (connHeight_           res)
-      pokeByteOff ptr 72 (connSubPixel_         res)
+instance Storable ConnectorStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
 
 -- | Connector property
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
@@ -175,7 +143,7 @@ data Connector = Connector
 getConnector :: IOCTL -> FileDescriptor -> ConnectorID -> SysRet Connector
 getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
    let 
-      res = ModeGetConnector 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
+      res = ConnectorStruct 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
 
       allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> IO b) -> IO b
       allocaArray'      = allocaArray . fromIntegral
@@ -190,7 +158,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
 
    -- then we allocate arrays of appropriate sizes
    (rawRes, retRes) <-
-      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr Mode) ->
+      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr ModeStruct) ->
          allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
             allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
                allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> runEitherT $ do
@@ -213,7 +181,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                   res4 <- getModeConnector' res3
                   res5 <- liftIO $ Connector
                      <$> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
-                     <*> (peekArray' (connModesCount res2) ms)
+                     <*> (fmap toMode <$> peekArray' (connModesCount res2) ms)
                      <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
                                                    <*> peekArray' (connPropsCount res2) pvs)
                      <*> return (EncoderID            <$> wrapZero (connEncoderID_ res4))

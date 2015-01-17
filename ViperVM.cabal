@@ -143,7 +143,9 @@ library
     transformers == 0.4.*,
     unix == 2.7.*,
     stm == 2.4.*,
-    criterion == 1.0.*
+    criterion == 1.0.*,
+    c-storable-deriving == 0.1.1,
+    fixed-vector == 0.7.*
 
   build-tools: 
 

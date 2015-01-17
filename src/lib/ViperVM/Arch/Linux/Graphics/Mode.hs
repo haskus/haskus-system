@@ -1,14 +1,32 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric   #-}
+
+-- We need this one to use type literal numbers (S (S .. Z)) of size 32
+{-# OPTIONS -fcontext-stack=50 #-}
+
 -- | Display mode (resolution, refresh rate, etc.)
 module ViperVM.Arch.Linux.Graphics.Mode
    ( Mode(..)
+   , ModeStruct(..)
+   , toMode
+   , fromMode
    )
 where
 
 import Foreign.Storable
+import Foreign.CStorable
 import Data.Word
-import Control.Applicative ((<$>), (<*>))
-import Foreign.C.String (peekCString)
-import Foreign.Ptr
+import Foreign.C.String 
+   ( castCCharToChar
+   , castCharToCChar
+   )
+import Control.Applicative ((<$>))
+import Foreign.C.Types (CChar)
+import Foreign.Ptr (castPtr)
+import Data.Vector.Fixed.Cont (S,Z)
+import Data.Vector.Fixed.Storable (Vec)
+import Data.Vector.Fixed (toList, fromList)
+import GHC.Generics (Generic)
 
 -- | Display mode
 data Mode = Mode
@@ -24,7 +42,7 @@ data Mode = Mode
    , modeVerticalSyncStart   :: Word16
    , modeVerticalSyncEnd     :: Word16
    , modeVerticalTotal       :: Word16
-   , modeVerticalSkew        :: Word16
+   , modeVerticalScan        :: Word16
 
    , modeVerticalRefresh     :: Word32
    , modeFlags               :: Word32
@@ -33,27 +51,76 @@ data Mode = Mode
    } deriving (Show)
 
 instance Storable Mode where
-   sizeOf _    = 4 + 10 * 2 + 3*4 + 32
-   alignment _ = 8
-   peek ptr    = Mode
-      <$> peekByteOff ptr 0
+   sizeOf _    = cSizeOf (undefined :: ModeStruct)
+   alignment _ = cAlignment (undefined :: ModeStruct)
+   peek v      = toMode <$> (cPeek $ castPtr v)
+   poke p v    = cPoke (castPtr p) (fromMode v)
 
-      <*> peekByteOff ptr 4
-      <*> peekByteOff ptr 6
-      <*> peekByteOff ptr 8
-      <*> peekByteOff ptr 10
-      <*> peekByteOff ptr 12
+-- | Constant DRM_DISPLAY_MODE_LEN = 32
+type DisplayModeLength = -- 32 
+   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (
+   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
+   )))))))))))))))))))))))))))))))
 
-      <*> peekByteOff ptr 14
-      <*> peekByteOff ptr 16
-      <*> peekByteOff ptr 18
-      <*> peekByteOff ptr 20
-      <*> peekByteOff ptr 22
+-- | Data matching the C structure drm_mode_modeinfo
+data ModeStruct = ModeStruct
+   { miClock         :: Word32
+   , miHDisplay, miHSyncStart, miHSyncEnd, miHTotal, miHSkew :: Word16
+   , miVDisplay, miVSyncStart, miVSyncEnd, miVTotal, miVScan :: Word16
+   , miVRefresh      :: Word32
+   , miFlags         :: Word32
+   , miType          :: Word32
+   , miName          :: StorableWrap (Vec DisplayModeLength CChar)
+   } deriving Generic
 
-      <*> peekByteOff ptr 24
-      <*> peekByteOff ptr 28
-      <*> peekByteOff ptr 32
-      <*> peekCString (castPtr $ ptr `plusPtr` 36)
+instance CStorable ModeStruct
 
-   poke = undefined
+instance Storable ModeStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
+toMode :: ModeStruct -> Mode
+toMode (ModeStruct {..}) =
+   let extractName (Storable x) = 
+         takeWhile (/= '\0') (fmap castCCharToChar (toList x))
+   in Mode
+      { modeClock               = miClock
+      , modeHorizontalDisplay   = miHDisplay
+      , modeHorizontalSyncStart = miHSyncStart
+      , modeHorizontalSyncEnd   = miHSyncEnd
+      , modeHorizontalTotal     = miHTotal
+      , modeHorizontalSkew      = miHSkew
+      , modeVerticalDisplay     = miVDisplay
+      , modeVerticalSyncStart   = miVSyncStart
+      , modeVerticalSyncEnd     = miVSyncEnd
+      , modeVerticalTotal       = miVTotal
+      , modeVerticalScan        = miVScan
+      , modeVerticalRefresh     = miVRefresh
+      , modeFlags               = miFlags
+      , modeType                = miType
+      , modeName                = extractName (miName)
+      }
+
+fromMode :: Mode -> ModeStruct
+fromMode (Mode {..}) =
+   let modeName' = fromList (fmap castCharToCChar modeName)
+
+   in ModeStruct
+      { miClock      = modeClock
+      , miHDisplay   = modeHorizontalDisplay
+      , miHSyncStart = modeHorizontalSyncStart
+      , miHSyncEnd   = modeHorizontalSyncEnd
+      , miHTotal     = modeHorizontalTotal
+      , miHSkew      = modeHorizontalSkew
+      , miVDisplay   = modeVerticalDisplay
+      , miVSyncStart = modeVerticalSyncStart
+      , miVSyncEnd   = modeVerticalSyncEnd
+      , miVTotal     = modeVerticalTotal
+      , miVScan      = modeVerticalScan
+      , miVRefresh   = modeVerticalRefresh
+      , miFlags      = modeFlags
+      , miType       = modeType
+      , miName       = Storable modeName'
+      }
