@@ -42,7 +42,13 @@ getCard :: IOCTL -> FileDescriptor -> SysRet Card
 getCard ioctl fd = runEitherT $ do
    let 
       res          = CardStruct 0 0 0 0 0 0 0 0 0 0 0 0
-      allocaArray' = allocaArray . fromIntegral
+ 
+      -- allocate several arrays with the same type at once, call f on the list of arrays
+      allocaArrays' sizes f = go [] sizes
+         where
+            go as []     = f (reverse as)
+            go as (x:xs) = allocaArray (fromIntegral x) $ \a -> go (a:as) xs
+
       peekArray'   = peekArray . fromIntegral
       getCard'     = EitherT . ioctlReadWrite ioctl 0x64 0xA0 defaultCheck fd
 
@@ -50,36 +56,34 @@ getCard ioctl fd = runEitherT $ do
    res2 <- getCard' res
 
    -- then we allocate arrays of appropriate sizes
-   (rawRes, retRes) <-
-      EitherT $ allocaArray' (csCountFbs res2) $ \(fs :: Ptr Word32) ->
-         allocaArray'(csCountCrtcs res2) $ \(crs :: Ptr Word32) ->
-            allocaArray' (csCountConns res2) $ \(cs:: Ptr Word32) ->
-               allocaArray' (csCountEncs res2) $ \(es:: Ptr Word32) -> runEitherT $ do
-                  -- we put them in a new struct
-                  let
-                     cv = fromIntegral . ptrToWordPtr
-                     res3 = res2 { csFbIdPtr   = cv fs
-                                 , csCrtcIdPtr = cv crs
-                                 , csEncIdPtr  = cv es
-                                 , csConnIdPtr = cv cs
-                                 }
-                  -- we get the values
-                  res4 <- getCard' res3
-                  res5 <- liftIO $ Card
-                     <$> (fmap FrameBufferID <$> peekArray' (csCountFbs res2) fs)
-                     <*> (fmap ControllerID <$> peekArray' (csCountCrtcs res2) crs)
-                     <*> (fmap ConnectorID <$> peekArray' (csCountConns res2) cs)
-                     <*> (fmap EncoderID <$> peekArray' (csCountEncs res2) es)
-                     <*> return (csMinWidth res4)
-                     <*> return (csMaxWidth res4)
-                     <*> return (csMinHeight res4)
-                     <*> return (csMaxHeight res4)
+   let arraySizes = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [res2]
+   (rawRes, retRes) <- EitherT $ allocaArrays' arraySizes $ 
+      \([fs,crs,cs,es] :: [Ptr Word32]) -> runEitherT $ do
+         -- we put them in a new struct
+         let
+            cv = fromIntegral . ptrToWordPtr
+            res3 = res2 { csFbIdPtr   = cv fs
+                        , csCrtcIdPtr = cv crs
+                        , csEncIdPtr  = cv es
+                        , csConnIdPtr = cv cs
+                        }
+         -- we get the values
+         res4 <- getCard' res3
+         res5 <- liftIO $ Card
+            <$> (fmap FrameBufferID <$> peekArray' (csCountFbs res2) fs)
+            <*> (fmap ControllerID  <$> peekArray' (csCountCrtcs res2) crs)
+            <*> (fmap ConnectorID   <$> peekArray' (csCountConns res2) cs)
+            <*> (fmap EncoderID     <$> peekArray' (csCountEncs res2) es)
+            <*> return (csMinWidth res4)
+            <*> return (csMaxWidth res4)
+            <*> return (csMinHeight res4)
+            <*> return (csMaxHeight res4)
 
-                  right (res4, res5)
+         right (res4, res5)
 
    -- we need to check that the number of resources is still the same (a
    -- resources may have appeared between the time we get the number of
-   -- resources an the time we get them...)
+   -- resources and the time we get them...)
    -- If not, we redo the whole process
    if   csCountFbs   res2 < csCountFbs   rawRes
      || csCountCrtcs res2 < csCountCrtcs rawRes
