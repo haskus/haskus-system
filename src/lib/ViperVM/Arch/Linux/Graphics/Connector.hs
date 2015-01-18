@@ -8,21 +8,23 @@ module ViperVM.Arch.Linux.Graphics.Connector
    ( Connector(..)
    , Connection(..)
    , SubPixel(..)
-   , ConnectorType(..)
    , getConnector
    )
 where
 
+import ViperVM.Arch.Linux.Graphics.LowLevel 
+   ( ConnectorStruct(..)
+   , ConnectorType
+   )
+
 import Control.Applicative ((<$>), (<*>))
 import Data.Word
-import GHC.Generics
 import Foreign.Storable
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr
-import Foreign.CStorable
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
@@ -30,80 +32,8 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.IDs
 
--- | Internal Connector structure
-data ConnectorStruct = ConnectorStruct
-   { connEncodersPtr       :: Word64
-   , connModesPtr          :: Word64
-   , connPropsPtr          :: Word64
-   , connPropValuesPtr     :: Word64
-
-   , connModesCount        :: Word32
-   , connPropsCount        :: Word32
-   , connEncodersCount     :: Word32
-
-   , connEncoderID_        :: Word32   -- ^ current encoder
-   , connConnectorID_      :: Word32   -- ^ ID
-   , connConnectorType_    :: Word32
-   , connConnectorTypeID_  :: Word32
-
-   , connConnection_       :: Word32
-   , connWidth_            :: Word32   -- ^ HxW in millimeters
-   , connHeight_           :: Word32
-   , connSubPixel_         :: Word32
-   } deriving (Generic)
-
-instance CStorable ConnectorStruct
-
-instance Storable ConnectorStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
 -- | Connector property
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
-
--- | Connector type
-data ConnectorType
-   = ConnectorTypeUnknown
-   | ConnectorTypeVGA
-   | ConnectorTypeDVII
-   | ConnectorTypeDVID
-   | ConnectorTypeDVIA
-   | ConnectorTypeComposite
-   | ConnectorTypeSVIDEO
-   | ConnectorTypeLVDS
-   | ConnectorTypeComponent
-   | ConnectorType9PinDIN
-   | ConnectorTypeDisplayPort
-   | ConnectorTypeHDMIA
-   | ConnectorTypeHDMIB
-   | ConnectorTypeTV
-   | ConnectorTypeeDP
-   | ConnectorTypeVirtual
-   | ConnectorTypeDSI
-   deriving (Eq, Ord, Enum)
-
-instance Show ConnectorType where
-   show x = case x of
-      ConnectorTypeUnknown       -> "Unknown"
-      ConnectorTypeVGA           -> "VGA"
-      ConnectorTypeDVII          -> "DVI-I"
-      ConnectorTypeDVID          -> "DVI-D"
-      ConnectorTypeDVIA          -> "DVI-A"
-      ConnectorTypeComposite     -> "Composite"
-      ConnectorTypeSVIDEO        -> "SVIDEO"
-      ConnectorTypeLVDS          -> "LVDS"
-      ConnectorTypeComponent     -> "Component"
-      ConnectorType9PinDIN       -> "9PinDIN"
-      ConnectorTypeDisplayPort   -> "DisplayPort"
-      ConnectorTypeHDMIA         -> "HDMI-A"
-      ConnectorTypeHDMIB         -> "HDMI-B"
-      ConnectorTypeTV            -> "TV"
-      ConnectorTypeeDP           -> "eDP"
-      ConnectorTypeVirtual       -> "Virtual"
-      ConnectorTypeDSI           -> "DSI"
-
 
 -- | Indicate if a cable is plugged in the connector
 data Connection

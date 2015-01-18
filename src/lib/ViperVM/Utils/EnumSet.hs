@@ -76,7 +76,7 @@ fromList = EnumSet . foldl' f zeroBits
 
 class Enum a => EnumBitSet a where
    -- | Convert a list of enum elements into a bitset Warning: b
-   -- must hav enough bits to store the given elements! (we don't
+   -- must have enough bits to store the given elements! (we don't
    -- perform any check, for performance reason)
    toBitSet :: (Bits b, Foldable m) => m a -> b
    toBitSet = getBits . fromList

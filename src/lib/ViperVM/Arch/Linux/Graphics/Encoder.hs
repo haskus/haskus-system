@@ -23,15 +23,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.IDs
 
-
--- | Type of the encoder
-data EncoderType
-   = EncoderTypeNone
-   | EncoderTypeDAC
-   | EncoderTypeTMDS
-   | EncoderTypeLVDS
-   | EncoderTypeTVDAC
-   deriving (Eq,Ord,Show,Enum)
+import ViperVM.Arch.Linux.Graphics.LowLevel (EncoderType(..))
 
 -- | An encoder
 data Encoder = Encoder

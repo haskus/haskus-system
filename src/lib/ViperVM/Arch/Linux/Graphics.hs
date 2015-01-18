@@ -11,7 +11,6 @@ module ViperVM.Arch.Linux.Graphics
    , Connector(..)
    , Connection(..)
    , SubPixel(..)
-   , ConnectorType(..)
    , drmIoctl
    , getCapability
    , getCard
@@ -21,6 +20,8 @@ module ViperVM.Arch.Linux.Graphics
    , getEncoderConnectors
    )
 where
+
+import ViperVM.Arch.Linux.Graphics.LowLevel (CardStruct(..))
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
@@ -91,55 +92,6 @@ data Card = Card
    , cardMaxHeight       :: Word32
    } deriving (Show)
 
--- | Parameter for MODE_GETRESOURCES IOCTL
-data ModeCard = ModeCard
-   { fbPtr           :: Word64
-   , crtcPtr         :: Word64
-   , connectorPtr    :: Word64
-   , encoderPtr      :: Word64
-
-   , fbCount         :: Word32
-   , crtcCount       :: Word32
-   , connectorCount  :: Word32
-   , encoderCount    :: Word32
-
-   , minWidth_       :: Word32
-   , maxWidth_       :: Word32
-   , minHeight_      :: Word32
-   , maxHeight_      :: Word32
-   } deriving (Show)
-
-instance Storable ModeCard where
-   sizeOf _    = 4*(8+4) + 4*4
-   alignment _ = 8
-   peek ptr    = ModeCard
-      <$> peekByteOff ptr 0
-      <*> peekByteOff ptr 8
-      <*> peekByteOff ptr 16
-      <*> peekByteOff ptr 24
-      <*> peekByteOff ptr 32
-      <*> peekByteOff ptr 36
-      <*> peekByteOff ptr 40
-      <*> peekByteOff ptr 44
-      <*> peekByteOff ptr 48
-      <*> peekByteOff ptr 52
-      <*> peekByteOff ptr 56
-      <*> peekByteOff ptr 60
-   poke ptr res = do
-      pokeByteOff ptr 0  (fbPtr           res)
-      pokeByteOff ptr 8  (crtcPtr         res)
-      pokeByteOff ptr 16 (connectorPtr    res)
-      pokeByteOff ptr 24 (encoderPtr      res)
-      pokeByteOff ptr 32 (fbCount         res)
-      pokeByteOff ptr 36 (crtcCount       res)
-      pokeByteOff ptr 40 (connectorCount  res)
-      pokeByteOff ptr 44 (encoderCount    res)
-      pokeByteOff ptr 48 (minWidth_       res)
-      pokeByteOff ptr 52 (maxWidth_       res)
-      pokeByteOff ptr 56 (minHeight_      res)
-      pokeByteOff ptr 60 (maxHeight_      res)
-
-
 -- | Get graphic card info
 --
 -- It seems like the kernel fills *Count fields and min/max fields.  If *Ptr
@@ -149,39 +101,39 @@ instance Storable ModeCard where
 getCard :: IOCTL -> FileDescriptor -> SysRet Card
 getCard ioctl fd = runEitherT $ do
    let 
-      res = ModeCard 0 0 0 0 0 0 0 0 0 0 0 0
-      allocaArray'      = allocaArray . fromIntegral
-      peekArray'        = peekArray . fromIntegral
-      getModeResources' = EitherT . ioctlReadWrite ioctl 0x64 0xA0 defaultCheck fd
+      res          = CardStruct 0 0 0 0 0 0 0 0 0 0 0 0
+      allocaArray' = allocaArray . fromIntegral
+      peekArray'   = peekArray . fromIntegral
+      getCard'     = EitherT . ioctlReadWrite ioctl 0x64 0xA0 defaultCheck fd
 
    -- First we get the number of each resource
-   res2 <- getModeResources' res
+   res2 <- getCard' res
 
    -- then we allocate arrays of appropriate sizes
    (rawRes, retRes) <-
-      EitherT $ allocaArray' (fbCount res2) $ \(fs :: Ptr Word32) ->
-         allocaArray'(crtcCount res2) $ \(crs :: Ptr Word32) ->
-            allocaArray' (connectorCount res2) $ \(cs:: Ptr Word32) ->
-               allocaArray' (encoderCount res2) $ \(es:: Ptr Word32) -> runEitherT $ do
+      EitherT $ allocaArray' (csCountFbs res2) $ \(fs :: Ptr Word32) ->
+         allocaArray'(csCountCrtcs res2) $ \(crs :: Ptr Word32) ->
+            allocaArray' (csCountConns res2) $ \(cs:: Ptr Word32) ->
+               allocaArray' (csCountEncs res2) $ \(es:: Ptr Word32) -> runEitherT $ do
                   -- we put them in a new struct
                   let
                      cv = fromIntegral . ptrToWordPtr
-                     res3 = res2 { fbPtr        = cv fs
-                                 , crtcPtr      = cv crs
-                                 , encoderPtr   = cv es
-                                 , connectorPtr = cv cs
+                     res3 = res2 { csFbIdPtr   = cv fs
+                                 , csCrtcIdPtr = cv crs
+                                 , csEncIdPtr  = cv es
+                                 , csConnIdPtr = cv cs
                                  }
                   -- we get the values
-                  res4 <- getModeResources' res3
+                  res4 <- getCard' res3
                   res5 <- liftIO $ Card
-                     <$> (fmap FrameBufferID <$> peekArray' (fbCount res2) fs)
-                     <*> (fmap ControllerID <$> peekArray' (crtcCount res2) crs)
-                     <*> (fmap ConnectorID <$> peekArray' (connectorCount res2) cs)
-                     <*> (fmap EncoderID <$> peekArray' (encoderCount res2) es)
-                     <*> return (minWidth_ res4)
-                     <*> return (maxWidth_ res4)
-                     <*> return (minHeight_ res4)
-                     <*> return (maxHeight_ res4)
+                     <$> (fmap FrameBufferID <$> peekArray' (csCountFbs res2) fs)
+                     <*> (fmap ControllerID <$> peekArray' (csCountCrtcs res2) crs)
+                     <*> (fmap ConnectorID <$> peekArray' (csCountConns res2) cs)
+                     <*> (fmap EncoderID <$> peekArray' (csCountEncs res2) es)
+                     <*> return (csMinWidth res4)
+                     <*> return (csMaxWidth res4)
+                     <*> return (csMinHeight res4)
+                     <*> return (csMaxHeight res4)
 
                   right (res4, res5)
 
@@ -189,10 +141,10 @@ getCard ioctl fd = runEitherT $ do
    -- resources may have appeared between the time we get the number of
    -- resources an the time we get them...)
    -- If not, we redo the whole process
-   if   fbCount        res2 < fbCount        rawRes
-     || crtcCount      res2 < crtcCount      rawRes
-     || connectorCount res2 < connectorCount rawRes
-     || encoderCount   res2 < encoderCount   rawRes
+   if   csCountFbs   res2 < csCountFbs   rawRes
+     || csCountCrtcs res2 < csCountCrtcs rawRes
+     || csCountConns res2 < csCountConns rawRes
+     || csCountEncs  res2 < csCountEncs  rawRes
       then EitherT $ getCard ioctl fd
       else right retRes
 
