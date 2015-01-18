@@ -5,6 +5,8 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Encoder
+import ViperVM.Arch.Linux.Graphics.Connector
+import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.IDs
 
 import ViperVM.Arch.X86_64.Linux.FileSystem

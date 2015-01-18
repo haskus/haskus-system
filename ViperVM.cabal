@@ -63,6 +63,7 @@ library
     ViperVM.Arch.Linux.Graphics
     ViperVM.Arch.Linux.Graphics.LowLevel
     ViperVM.Arch.Linux.Graphics.IDs
+    ViperVM.Arch.Linux.Graphics.Card
     ViperVM.Arch.Linux.Graphics.Mode
     ViperVM.Arch.Linux.Graphics.DumbBuffer
     ViperVM.Arch.Linux.Graphics.FrameBuffer
