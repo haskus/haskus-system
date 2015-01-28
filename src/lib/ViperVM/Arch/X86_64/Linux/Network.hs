@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.Linux.Network
    , sysSocket
    , sysBind
    , sysConnect
+   , sysAccept
    )
 where
 
@@ -253,3 +254,17 @@ sysConnect :: Storable a => FileDescriptor -> a -> SysRet ()
 sysConnect (FileDescriptor fd) addr =
    with addr $ \addr' ->
       onSuccess (syscall3 42 fd addr' (sizeOf addr)) (const ())
+
+-- | Accept a connection on a socket
+--
+-- We use accept4 (288) instead of accept (43) to support socket options
+--
+sysAccept :: Storable a => FileDescriptor -> a -> [SocketOption] -> SysRet FileDescriptor
+sysAccept (FileDescriptor fd) addr opts =
+   let 
+      f :: Enum a => a -> Word64
+      f = fromIntegral . fromEnum
+      opts' = foldl' (\x y -> x .|. f y) 0 opts
+   in
+   with addr $ \addr' ->
+      onSuccess (syscall4 288 fd addr' (sizeOf addr) opts') (FileDescriptor . fromIntegral)

@@ -139,7 +139,6 @@ syscall0 = syscall0_
 35	common	nanosleep		sys_nanosleep
 36	common	getitimer		sys_getitimer
 38	common	setitimer		sys_setitimer
-43	common	accept			sys_accept
 44	common	sendto			sys_sendto
 45	64	recvfrom		sys_recvfrom
 46	64	sendmsg			sys_sendmsg
@@ -350,7 +349,6 @@ syscall0 = syscall0_
 285	common	fallocate		sys_fallocate
 286	common	timerfd_settime		sys_timerfd_settime
 287	common	timerfd_gettime		sys_timerfd_gettime
-288	common	accept4			sys_accept4
 289	common	signalfd4		sys_signalfd4
 290	common	eventfd2		sys_eventfd2
 291	common	epoll_create1		sys_epoll_create1
