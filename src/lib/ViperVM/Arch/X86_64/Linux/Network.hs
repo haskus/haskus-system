@@ -12,6 +12,7 @@ module ViperVM.Arch.X86_64.Linux.Network
    , sysBind
    , sysConnect
    , sysAccept
+   , sysListen
    )
 where
 
@@ -268,3 +269,10 @@ sysAccept (FileDescriptor fd) addr opts =
    in
    with addr $ \addr' ->
       onSuccess (syscall4 288 fd addr' (sizeOf addr) opts') (FileDescriptor . fromIntegral)
+
+-- | Listen on a socket
+--
+-- @ backlog is the number of incoming requests that are stored
+sysListen :: FileDescriptor -> Word64 -> SysRet ()
+sysListen (FileDescriptor fd) backlog =
+   onSuccess (syscall2 50 fd backlog) (const ())
