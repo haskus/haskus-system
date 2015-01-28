@@ -10,6 +10,7 @@ module ViperVM.Arch.X86_64.Linux.Network
    , sysSocket'
    , sysSocket
    , sysBind
+   , sysConnect
    )
 where
 
@@ -246,3 +247,9 @@ sysBind :: Storable a => FileDescriptor -> a -> SysRet ()
 sysBind (FileDescriptor fd) addr =
    with addr $ \addr' ->
       onSuccess (syscall3 49 fd addr' (sizeOf addr)) (const ())
+
+-- | Connect a socket
+sysConnect :: Storable a => FileDescriptor -> a -> SysRet ()
+sysConnect (FileDescriptor fd) addr =
+   with addr $ \addr' ->
+      onSuccess (syscall3 42 fd addr' (sizeOf addr)) (const ())
