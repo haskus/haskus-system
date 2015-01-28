@@ -145,7 +145,6 @@ syscall0 = syscall0_
 45	64	recvfrom		sys_recvfrom
 46	64	sendmsg			sys_sendmsg
 47	64	recvmsg			sys_recvmsg
-49	common	bind			sys_bind
 50	common	listen			sys_listen
 51	common	getsockname		sys_getsockname
 52	common	getpeername		sys_getpeername

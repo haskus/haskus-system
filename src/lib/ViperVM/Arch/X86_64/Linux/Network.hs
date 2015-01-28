@@ -9,10 +9,12 @@ module ViperVM.Arch.X86_64.Linux.Network
    , IPType(..)
    , sysSocket'
    , sysSocket
+   , sysBind
    )
 where
 
 import Foreign.Ptr (nullPtr)
+import Foreign.Storable (Storable, sizeOf)
 import Foreign.Marshal.Utils (with)
 import Foreign.Storable (peek)
 import Data.Word
@@ -238,3 +240,9 @@ sysSocket typ opts =
       SockTypeUDP IPv4   -> sysSocket' SockRawTypeDatagram SockProtIPv4 0 opts
       SockTypeUDP IPv6   -> sysSocket' SockRawTypeDatagram SockProtIPv6 0 opts
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
+
+-- | Bind a socket
+sysBind :: Storable a => FileDescriptor -> a -> SysRet ()
+sysBind (FileDescriptor fd) addr =
+   with addr $ \addr' ->
+      onSuccess (syscall3 49 fd addr' (sizeOf addr)) (const ())
