@@ -1,9 +1,13 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem
    ( FilePermission(..)
+   , FileType(..)
+   , FileOptions(..)
    , OpenFlag(..)
    , SeekWhence(..)
    , AccessMode(..)
    , FileLock(..)
+   , Device(..)
+   , Stat(..)
    , sysRead
    , sysWrite
    , sysOpen
@@ -38,18 +42,21 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    )
 where
 
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Marshal.Array (allocaArray)
-import Data.Word (Word64)
+import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
+import Data.Word (Word64, Word32)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
-import Data.Bits ((.|.))
+import Data.Bits (Bits, (.|.), (.&.), shiftR, shiftL, complement)
+import Control.Applicative ((<$>))
 
 import ViperVM.Utils.EnumSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
+import ViperVM.Arch.X86_64.Linux.Time (TimeSpec)
 import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
@@ -166,7 +173,7 @@ data FilePermission
    | PermUserExecute
    | PermUserWrite
    | PermUserRead
-   deriving (Show,Enum)
+   deriving (Eq,Show,Enum)
 
 instance EnumBitSet FilePermission
 
@@ -335,3 +342,107 @@ sysChangeOwnership (FileDescriptor fd) = chownEx 93 fd
 sysSetProcessUMask :: [FilePermission] -> SysRet [FilePermission]
 sysSetProcessUMask mode =
    onSuccess (syscall1 95 (toBitSet mode :: Int)) fromBitSet
+
+-- | File type
+data FileType
+   = FileTypeSocket
+   | FileTypeLink
+   | FileTypeFile
+   | FileTypeBlockDevice
+   | FileTypeCharDevice
+   | FileTypeFIFO
+   | FileTypeDirectory
+   deriving (Show,Eq)
+
+instance Enum FileType where
+   fromEnum x = case x of
+      FileTypeSocket       -> 12
+      FileTypeLink         -> 10
+      FileTypeFile         -> 8
+      FileTypeBlockDevice  -> 6
+      FileTypeCharDevice   -> 2
+      FileTypeFIFO         -> 1
+      FileTypeDirectory    -> 4
+   toEnum x = case x of
+      12 -> FileTypeSocket
+      10 -> FileTypeLink
+      8  -> FileTypeFile
+      6  -> FileTypeBlockDevice
+      2  -> FileTypeCharDevice
+      1  -> FileTypeFIFO
+      4  -> FileTypeDirectory
+      _  -> error "Invalid file type"
+
+-- | Read file type from Stat "mode" field 
+toFileType :: (Num a, Bits a, Integral a) => a -> FileType
+toFileType x = toEnum (fromIntegral ((x `shiftR` 12) .&. 0x0F))
+
+-- | File options
+data FileOptions
+   = FileOptSticky
+   | FileOptSetGID
+   | FileOptSetUID
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet FileOptions
+
+-- | Read file options from Stat "mode" field 
+toFileOptions :: (Num a, Bits a) => a -> [FileOptions]
+toFileOptions x = fromBitSet ((x `shiftR` 9) .&. 0x07)
+
+-- | Read file permission from Stat "mode" field 
+toFilePermission :: (Num a, Bits a) => a -> [FilePermission]
+toFilePermission x = fromBitSet (x .&. 0x01FF)
+
+-- | Device identifier
+data Device = Device
+   { deviceMajor :: Word32
+   , deviceMinor :: Word32
+   } deriving (Show,Eq)
+
+instance Storable Device where
+   sizeOf _    = 8
+   alignment _ = alignment (undefined :: Word64)
+   peek x      = f <$> peek (castPtr x :: Ptr Word64)
+      where
+         f y = Device
+            { deviceMajor = fromIntegral $
+                              ((y `shiftR` 8) .&. 0xFFF) .|.
+                              ((y `shiftR` 32) .&. complement 0xFFF)
+            , deviceMinor = fromIntegral $
+                              (y .&. 0xFF) .|.
+                              ((y `shiftR` 12) .&. complement 0xFF)
+            }
+   poke ptr x = poke (castPtr ptr :: Ptr Word64) (f x)
+      where
+         f (Device major' minor') =
+            let
+               minor = fromIntegral minor' :: Word64
+               major = fromIntegral major' :: Word64
+            in
+            (minor .&. 0xFF) 
+              .|. ((major .&. 0xfff) `shiftL` 8)
+              .|. ((minor .&. complement 0xff) `shiftL` 12)
+              .|. ((major .&. complement 0xfff) `shiftL` 32)
+
+-- | File stat
+--
+-- Warning: the original structure is not portable between different
+-- architectures (a lot of ifdefs for field sizes and field order...)
+-- This one is for x86-64
+data Stat = Stat
+   { statDevice      :: Device
+   , statInode       :: Word64
+   , statMode        :: Word32
+   , statLinkCount   :: Word64
+   , statUID         :: Word32
+   , statGID         :: Word32
+   , statPad0        :: Word32
+   , statDevNum      :: Device
+   , statSize        :: Int64
+   , statBlockSize   :: Int64
+   , statBlockCount  :: Int64
+   , statLastAccess  :: TimeSpec
+   , statLastModif   :: TimeSpec
+   , statLastStatusChange :: TimeSpec
+   } deriving (Show)
