@@ -1,7 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables
-           , GeneralizedNewtypeDeriving
-           , DeriveGeneric
-           , RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Graphic card connector management
 module ViperVM.Arch.Linux.Graphics.Connector
