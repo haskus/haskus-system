@@ -1,22 +1,22 @@
+{-# LANGUAGE DeriveGeneric #-}
 module ViperVM.Arch.X86_64.Linux.Time (
    TimeSpec(..)
 ) where
 
 import Foreign.Storable
+import Foreign.CStorable
 import Data.Int
-import Control.Applicative
+
+import GHC.Generics (Generic)
 
 data TimeSpec = TimeSpec {
-   tsSeconds :: Int64,
+   tsSeconds      :: Int64,
    tsNanosecondes :: Int64
-} deriving (Show)
+} deriving (Show,Eq,Generic)
 
+instance CStorable TimeSpec
 instance Storable TimeSpec where
-   alignment _ = alignment (undefined :: Int64)
-   sizeOf _ = 16
-   peek p = TimeSpec 
-      <$> peekByteOff p 0 
-      <*> peekByteOff p 8
-   poke p (TimeSpec sec nsec) = do
-      pokeByteOff p 0 sec
-      pokeByteOff p 8 nsec
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek

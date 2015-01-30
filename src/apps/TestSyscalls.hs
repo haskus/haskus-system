@@ -99,6 +99,11 @@ main = do
    sysGetCurrentDirectory >>= \(Right cwd) -> 
       putStrLn (printf "Current directory is: %s" cwd)
 
+   putStrLn "Applying stat to /usr/bin/vim"
+   stat <- check <$> sysFileStat "/usr/bin/vim" True
+   print stat
+
+
    Right perm <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "Previous umask: " ++ show perm
    Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
@@ -129,6 +134,7 @@ main = do
             Right _  -> do
                rs2 <- getRepeatSettings sysIoctl dev
                putStrLn $ "New repeat settings: " ++ show rs2
+
 
    -- Use strace to see that syscall is correctly called
    -- BUGGY (segfault)

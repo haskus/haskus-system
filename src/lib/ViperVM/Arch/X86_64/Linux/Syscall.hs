@@ -121,9 +121,6 @@ syscall0 = syscall0_
 {-
  - Remaining syscalls to wrap
  -
-4	common	stat			sys_newstat
-5	common	fstat			sys_newfstat
-6	common	lstat			sys_newlstat
 7	common	poll			sys_poll
 13	64	rt_sigaction		sys_rt_sigaction
 14	common	rt_sigprocmask		sys_rt_sigprocmask

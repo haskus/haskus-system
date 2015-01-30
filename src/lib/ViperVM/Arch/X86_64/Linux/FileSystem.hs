@@ -1,7 +1,9 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards #-}
 module ViperVM.Arch.X86_64.Linux.FileSystem
    ( FilePermission(..)
    , FileType(..)
-   , FileOptions(..)
+   , FileOption(..)
    , OpenFlag(..)
    , SeekWhence(..)
    , AccessMode(..)
@@ -39,17 +41,23 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysChangeOwnershipPath
    , sysChangeLinkOwnershipPath
    , sysSetProcessUMask
+   , sysFileStat
+   , sysFileDescriptorStat
    )
 where
 
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Marshal.Array (allocaArray)
+import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
+import Foreign.CStorable
 import Data.Word (Word64, Word32)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Bits (Bits, (.|.), (.&.), shiftR, shiftL, complement)
 import Control.Applicative ((<$>))
+
+import GHC.Generics (Generic)
 
 import ViperVM.Utils.EnumSet
 import ViperVM.Arch.Linux.ErrorCode
@@ -371,23 +379,23 @@ instance Enum FileType where
       2  -> FileTypeCharDevice
       1  -> FileTypeFIFO
       4  -> FileTypeDirectory
-      _  -> error "Invalid file type"
+      _  -> error $ "Invalid file type: " ++ show x
 
 -- | Read file type from Stat "mode" field 
 toFileType :: (Num a, Bits a, Integral a) => a -> FileType
 toFileType x = toEnum (fromIntegral ((x `shiftR` 12) .&. 0x0F))
 
 -- | File options
-data FileOptions
+data FileOption
    = FileOptSticky
    | FileOptSetGID
    | FileOptSetUID
    deriving (Show,Eq,Enum)
 
-instance EnumBitSet FileOptions
+instance EnumBitSet FileOption
 
 -- | Read file options from Stat "mode" field 
-toFileOptions :: (Num a, Bits a) => a -> [FileOptions]
+toFileOptions :: (Num a, Bits a) => a -> [FileOption]
 toFileOptions x = fromBitSet ((x `shiftR` 9) .&. 0x07)
 
 -- | Read file permission from Stat "mode" field 
@@ -430,19 +438,90 @@ instance Storable Device where
 -- Warning: the original structure is not portable between different
 -- architectures (a lot of ifdefs for field sizes and field order...)
 -- This one is for x86-64
+data StatStruct = StatStruct
+   { statDevice'           :: StorableWrap Device
+   , statInode'            :: Word64
+   , statLinkCount'        :: Word64
+   , statMode'             :: Word32
+   , statUID'              :: Word32
+   , statGID'              :: Word32
+   , statPad0'             :: Word32
+   , statDevNum'           :: StorableWrap Device
+   , statSize'             :: Int64
+   , statBlockSize'        :: Int64
+   , statBlockCount'       :: Int64
+   , statLastAccess'       :: TimeSpec
+   , statLastModif'        :: TimeSpec
+   , statLastStatusChange' :: TimeSpec
+   } deriving (Generic)
+
+instance CStorable StatStruct
+instance Storable StatStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
 data Stat = Stat
-   { statDevice      :: Device
-   , statInode       :: Word64
-   , statMode        :: Word32
-   , statLinkCount   :: Word64
-   , statUID         :: Word32
-   , statGID         :: Word32
-   , statPad0        :: Word32
-   , statDevNum      :: Device
-   , statSize        :: Int64
-   , statBlockSize   :: Int64
-   , statBlockCount  :: Int64
-   , statLastAccess  :: TimeSpec
-   , statLastModif   :: TimeSpec
-   , statLastStatusChange :: TimeSpec
+   { statDevice            :: Device
+   , statInode             :: Word64
+   , statLinkCount         :: Word64
+   , statMode              :: Word32
+   , statFileType          :: FileType
+   , statFileOptions       :: [FileOption]
+   , statFilePermissions   :: [FilePermission]
+   , statUID               :: Word32
+   , statGID               :: Word32
+   , statDevNum            :: Device
+   , statSize              :: Int64
+   , statBlockSize         :: Int64
+   , statBlockCount        :: Int64
+   , statLastAccess        :: TimeSpec
+   , statLastModif         :: TimeSpec
+   , statLastStatusChange  :: TimeSpec
    } deriving (Show)
+
+toStat :: StatStruct -> Stat
+toStat (StatStruct {..}) = 
+   let
+      Storable statDevice'' = statDevice'
+      Storable statDevNum'' = statDevNum'
+   in Stat
+      { statDevice            = statDevice''
+      , statInode             = statInode'
+      , statMode              = statMode'
+      , statFileType          = toFileType statMode'
+      , statFileOptions       = toFileOptions statMode'
+      , statFilePermissions   = toFilePermission statMode'
+      , statLinkCount         = statLinkCount'
+      , statUID               = statUID'
+      , statGID               = statGID'
+      , statDevNum            = statDevNum''
+      , statSize              = statSize'
+      , statBlockSize         = statBlockSize'
+      , statBlockCount        = statBlockCount'
+      , statLastAccess        = statLastAccess'
+      , statLastModif         = statLastModif'
+      , statLastStatusChange  = statLastStatusChange'
+      }
+
+-- | StatStruct on a path
+--
+-- If the path targets a symbolic link and followLink is false, then returned
+-- information are about the link itself
+sysFileStat :: String -> Bool -> SysRet Stat
+sysFileStat path followLink = do
+   putStrLn $ "Size of stat: " ++ show (cSizeOf (undefined :: StatStruct))
+   withCString path $ \path' ->
+      allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
+         let
+            -- select between stat and lstat syscalls
+            code = if followLink then 4 else 6
+         in
+         onSuccessIO (syscall2 code path' s) (const (toStat <$> peek s))
+
+-- | StatStruct on file descriptor
+sysFileDescriptorStat :: FileDescriptor -> SysRet Stat
+sysFileDescriptorStat (FileDescriptor fd) =
+   allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
+      onSuccessIO (syscall2 5 fd s) (const (toStat <$> peek s))
