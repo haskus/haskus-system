@@ -81,7 +81,7 @@ getCard ioctl fd = runEitherT $ do
 
          right (res4, res5)
 
-   -- we need to check that the number of resources is still the same (a
+   -- we need to check that the number of resources is still the same (as
    -- resources may have appeared between the time we get the number of
    -- resources and the time we get them...)
    -- If not, we redo the whole process
