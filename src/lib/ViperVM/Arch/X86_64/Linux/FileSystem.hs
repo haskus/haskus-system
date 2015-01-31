@@ -505,7 +505,7 @@ toStat (StatStruct {..}) =
       , statLastStatusChange  = statLastStatusChange'
       }
 
--- | StatStruct on a path
+-- | Stat on a path
 --
 -- If the path targets a symbolic link and followLink is false, then returned
 -- information are about the link itself
@@ -520,7 +520,7 @@ sysFileStat path followLink = do
          in
          onSuccessIO (syscall2 code path' s) (const (toStat <$> peek s))
 
--- | StatStruct on file descriptor
+-- | Stat on file descriptor
 sysFileDescriptorStat :: FileDescriptor -> SysRet Stat
 sysFileDescriptorStat (FileDescriptor fd) =
    allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
