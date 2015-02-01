@@ -1,10 +1,13 @@
+{-# LANGUAGE ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
 module ViperVM.Arch.X86_64.Linux.Signal
-   ( sysPause
+   ( SignalSet(..)
+   , sysPause
    , sysAlarm
    , sysSendSignal
    , sysSendSignalGroup
    , sysSendSignalAll
    , sysCheckProcess
+   , sysChangeBlockedSignals
    )
 where
 
@@ -14,6 +17,18 @@ import ViperVM.Arch.X86_64.Linux.Process
 
 import Data.Int
 import Data.Word
+import Foreign.Storable
+import Foreign.Ptr (Ptr,nullPtr)
+import Foreign.Marshal.Utils (with)
+import Foreign.Marshal.Alloc (alloca)
+import Data.Vector.Fixed.Cont (S,Z)
+import Data.Vector.Fixed.Storable (Vec)
+
+type N16 = --16
+   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
+   )))))))))))))))
+
+newtype SignalSet = SignalSet (Vec N16 Word64) deriving (Storable)
 
 sysPause :: SysRet ()
 sysPause = onSuccess (syscall0 34) (const ())
@@ -47,3 +62,18 @@ sysCheckProcess pid = do
       Right _ -> Right True
       Left ESRCH -> Right False
       Left e -> Left e
+
+data ChangeSignals
+   = BlockSignals    -- ^ Block signals in the set
+   | UnblockSignals  -- ^ Unblock signals in the set
+   | SetSignals      -- ^ Set blocked signals to the set
+   deriving (Show,Eq,Enum)
+
+sysChangeBlockedSignals :: ChangeSignals -> Maybe SignalSet -> SysRet SignalSet
+sysChangeBlockedSignals act set =
+   let f x = alloca $ \(ret :: Ptr SignalSet) ->
+               onSuccessIO (syscall3 14 (fromEnum act) x ret) (const $ peek ret)
+   in
+   case set of
+      Just s -> with s f
+      Nothing -> f nullPtr
