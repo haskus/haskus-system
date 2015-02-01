@@ -156,7 +156,6 @@ syscall0 = syscall0_
 71	common	msgctl			sys_msgctl
 72	common	fcntl			sys_fcntl
 78	common	getdents		sys_getdents
-83	common	mkdir			sys_mkdir
 89	common	readlink		sys_readlink
 96	common	gettimeofday		sys_gettimeofday
 97	common	getrlimit		sys_getrlimit
@@ -313,7 +312,6 @@ syscall0 = syscall0_
 255	common	inotify_rm_watch	sys_inotify_rm_watch
 256	common	migrate_pages		sys_migrate_pages
 257	common	openat			sys_openat
-258	common	mkdirat			sys_mkdirat
 259	common	mknodat			sys_mknodat
 260	common	fchownat		sys_fchownat
 261	common	futimesat		sys_futimesat

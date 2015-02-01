@@ -43,6 +43,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysSetProcessUMask
    , sysFileStat
    , sysFileDescriptorStat
+   , sysCreateDirectory
    )
 where
 
@@ -398,9 +399,15 @@ instance EnumBitSet FileOption
 toFileOptions :: (Num a, Bits a) => a -> [FileOption]
 toFileOptions x = fromBitSet ((x `shiftR` 9) .&. 0x07)
 
+fromFileOptions :: (Num a, Bits a) => [FileOption] -> a
+fromFileOptions x = toBitSet x `shiftL` 9
+
 -- | Read file permission from Stat "mode" field 
 toFilePermission :: (Num a, Bits a) => a -> [FilePermission]
 toFilePermission x = fromBitSet (x .&. 0x01FF)
+
+fromFilePermission :: (Num a, Bits a) => [FilePermission] -> a
+fromFilePermission x = toBitSet x
 
 -- | Device identifier
 data Device = Device
@@ -525,3 +532,15 @@ sysFileDescriptorStat :: FileDescriptor -> SysRet Stat
 sysFileDescriptorStat (FileDescriptor fd) =
    allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
       onSuccessIO (syscall2 5 fd s) (const (toStat <$> peek s))
+
+
+sysCreateDirectory :: Maybe FileDescriptor -> String -> [FilePermission] -> Bool -> SysRet ()
+sysCreateDirectory fd path perm sticky = do
+   let
+      opt = if sticky then [FileOptSticky] else []
+      mode = fromFilePermission perm .|. fromFileOptions opt :: Word64
+
+   withCString path $ \path' ->
+      case fd of
+         Nothing -> onSuccess (syscall2 83 path' mode) (const ())
+         Just (FileDescriptor fd') -> onSuccess (syscall3 258 fd' path' mode) (const ())
