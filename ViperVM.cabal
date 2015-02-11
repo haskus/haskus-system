@@ -227,3 +227,12 @@ executable TestSyscalls
   build-depends: 
     base,
     ViperVM
+
+executable HaskOS
+  main-is: HaskOS.hs
+  hs-source-dirs: src/apps/OS
+  ghc-options: -Wall
+  default-language:    Haskell2010
+  build-depends: 
+    base,
+    ViperVM
