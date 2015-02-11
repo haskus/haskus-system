@@ -222,7 +222,6 @@ syscall0 = syscall0_
 164	common	settimeofday		sys_settimeofday
 167	common	swapon			sys_swapon
 168	common	swapoff			sys_swapoff
-169	common	reboot			sys_reboot
 170	common	sethostname		sys_sethostname
 171	common	setdomainname		sys_setdomainname
 172	common	iopl			stub_iopl
