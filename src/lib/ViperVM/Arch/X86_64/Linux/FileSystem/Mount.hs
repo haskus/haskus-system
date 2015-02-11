@@ -1,5 +1,8 @@
 module ViperVM.Arch.X86_64.Linux.FileSystem.Mount
-   ( sysMount
+   ( MountFlag(..)
+   , UnmountFlag(..)
+   , sysMount
+   , sysUnmount
    )
 where
 
@@ -102,3 +105,19 @@ sysMount source target fstype flags dat = do
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->
             onSuccess (syscall5 165 source' target' fstype' (toBitSet flags :: Word64) dat) (const ())
+
+
+
+data UnmountFlag
+   = UnmountForce       -- ^ Force unmounting
+   | UnmountDetach      -- ^ Just detach from the tree
+   | UnmountExpire      -- ^ Mark for expiry
+   | UnmountDontFollow  -- ^ Don't follow symlink on unmount
+   deriving (Enum)
+
+instance EnumBitSet UnmountFlag
+
+sysUnmount :: String -> [UnmountFlag] -> SysRet ()
+sysUnmount target flags =
+   withCString target $ \target' ->
+      onSuccess (syscall2 166 target' (toBitSet flags :: Word64)) (const ())
