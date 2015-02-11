@@ -218,7 +218,6 @@ syscall0 = syscall0_
 159	common	adjtimex		sys_adjtimex
 160	common	setrlimit		sys_setrlimit
 161	common	chroot			sys_chroot
-162	common	sync			sys_sync
 163	common	acct			sys_acct
 164	common	settimeofday		sys_settimeofday
 167	common	swapon			sys_swapon
@@ -356,7 +355,6 @@ syscall0 = syscall0_
 303	common	name_to_handle_at	sys_name_to_handle_at
 304	common	open_by_handle_at	sys_open_by_handle_at
 305	common	clock_adjtime		sys_clock_adjtime
-306	common	syncfs			sys_syncfs
 307	64	sendmmsg		sys_sendmmsg
 308	common	setns			sys_setns
 310	64	process_vm_readv	sys_process_vm_readv

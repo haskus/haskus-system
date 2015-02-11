@@ -44,6 +44,8 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysFileStat
    , sysFileDescriptorStat
    , sysCreateDirectory
+   , sysSync
+   , sysSyncFS
    )
 where
 
@@ -544,3 +546,10 @@ sysCreateDirectory fd path perm sticky = do
       case fd of
          Nothing -> onSuccess (syscall2 83 path' mode) (const ())
          Just (FileDescriptor fd') -> onSuccess (syscall3 258 fd' path' mode) (const ())
+
+
+sysSync :: SysRet ()
+sysSync = onSuccess (syscall0 162) (const ())
+
+sysSyncFS :: FileDescriptor -> SysRet ()
+sysSyncFS (FileDescriptor fd) = onSuccess (syscall1 306 fd) (const ())
