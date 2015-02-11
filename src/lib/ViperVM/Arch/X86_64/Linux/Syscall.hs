@@ -221,7 +221,6 @@ syscall0 = syscall0_
 162	common	sync			sys_sync
 163	common	acct			sys_acct
 164	common	settimeofday		sys_settimeofday
-165	common	mount			sys_mount
 166	common	umount2			sys_umount
 167	common	swapon			sys_swapon
 168	common	swapoff			sys_swapoff
