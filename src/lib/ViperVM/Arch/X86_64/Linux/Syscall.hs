@@ -131,7 +131,6 @@ syscall0 = syscall0_
 29	common	shmget			sys_shmget
 30	common	shmat			sys_shmat
 31	common	shmctl			sys_shmctl
-35	common	nanosleep		sys_nanosleep
 36	common	getitimer		sys_getitimer
 38	common	setitimer		sys_setitimer
 44	common	sendto			sys_sendto

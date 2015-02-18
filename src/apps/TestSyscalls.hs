@@ -146,6 +146,17 @@ main = do
 
    traverse_ printClock clocks
 
+   putStrLn "Sleeping for 2 seconds (interruptible)..."
+   sysNanoSleep (TimeSpec 2 0) >>= \case
+      Left err -> putStrLn $ "Sleeping failed with " ++ show err
+      Right (WokenUp remd) -> putStrLn $ "Woken-up, remaining time: " ++ show remd
+      Right CompleteSleep -> putStrLn $ "Sleep completed"
+
+   putStrLn "Sleeping for 2 seconds (automatic relaunch)..."
+   nanoSleep (TimeSpec 2 0) >>= \case
+      Left err -> putStrLn $ "Sleeping failed with " ++ show err
+      Right _  -> putStrLn $ "Sleeping succeeded"
+
    putStrLn "Get device info"
    dev <- check <$> sysOpen "/dev/input/event6" [OpenReadOnly] [PermUserRead]
 
