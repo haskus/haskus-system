@@ -10,8 +10,11 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , FileLock(..)
    , Device(..)
    , Stat(..)
+   , IOVec(..)
    , sysRead
+   , sysReadMany
    , sysWrite
+   , sysWriteMany
    , sysOpen
    , sysCreate
    , sysClose
@@ -50,7 +53,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
 where
 
 import Foreign.Ptr (Ptr, castPtr)
-import Foreign.Marshal.Array (allocaArray)
+import Foreign.Marshal.Array (withArray,allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
@@ -70,18 +73,50 @@ import ViperVM.Arch.X86_64.Linux.Utils (toSet)
 import ViperVM.Arch.X86_64.Linux.Time (TimeSpec)
 import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
 
+-- | Vector of buffers
+data IOVec = IOVec
+   { iovecPtr  :: Ptr ()
+   , iovecSize :: Word64
+   } deriving (Generic)
+
+instance CStorable IOVec
+instance Storable IOVec where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
 sysRead :: FileDescriptor -> Ptr a -> Word64 -> SysRet Word64
 sysRead (FileDescriptor fd) buf count =
    onSuccess (syscall3 0 fd buf count) fromIntegral
 
+-- | Like read but uses several buffers
+sysReadMany :: FileDescriptor -> [(Ptr a, Word64)] -> SysRet Word64
+sysReadMany (FileDescriptor fd) bufs =
+   let
+      toVec (p,s) = IOVec (castPtr p) s
+      count = length bufs
+   in
+   withArray (fmap toVec bufs) $ \bufs' ->
+      onSuccess (syscall3 19 fd bufs' count) fromIntegral
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
 sysWrite :: FileDescriptor -> Ptr a -> Word64 -> SysRet Word64
 sysWrite (FileDescriptor fd) buf count =
    onSuccess (syscall3 1 fd buf count) fromIntegral
+
+-- | Like write but uses several buffers
+sysWriteMany :: FileDescriptor -> [(Ptr a, Word64)] -> SysRet Word64
+sysWriteMany (FileDescriptor fd) bufs =
+   let
+      toVec (p,s) = IOVec (castPtr p) s
+      count = length bufs
+   in
+   withArray (fmap toVec bufs) $ \bufs' ->
+      onSuccess (syscall3 20 fd bufs' count) fromIntegral
 
 
 sysOpenCString :: CString -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor

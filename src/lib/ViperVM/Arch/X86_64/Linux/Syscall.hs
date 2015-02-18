@@ -123,8 +123,6 @@ syscall0 = syscall0_
  -
 13	64	rt_sigaction		sys_rt_sigaction
 15	64	rt_sigreturn		stub_rt_sigreturn
-19	64	readv			sys_readv
-20	64	writev			sys_writev
 23	common	select			sys_select
 24	common	sched_yield		sys_sched_yield
 25	common	mremap			sys_mremap
