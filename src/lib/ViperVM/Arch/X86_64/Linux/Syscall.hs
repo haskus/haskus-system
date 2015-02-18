@@ -277,9 +277,6 @@ syscall0 = syscall0_
 224	common	timer_gettime		sys_timer_gettime
 225	common	timer_getoverrun	sys_timer_getoverrun
 226	common	timer_delete		sys_timer_delete
-227	common	clock_settime		sys_clock_settime
-228	common	clock_gettime		sys_clock_gettime
-229	common	clock_getres		sys_clock_getres
 230	common	clock_nanosleep		sys_clock_nanosleep
 231	common	exit_group		sys_exit_group
 232	common	epoll_wait		sys_epoll_wait

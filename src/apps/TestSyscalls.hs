@@ -5,12 +5,14 @@ import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.X86_64.Linux.Info
+import ViperVM.Arch.X86_64.Linux.Time
 --import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Input
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Control.Applicative ((<$>))
+import Data.Foldable (traverse_)
 --import Foreign.Marshal.Alloc
 --import Foreign.Storable (poke)
 import Text.Printf
@@ -111,6 +113,38 @@ main = do
 
    Right info <- sysSystemInfo
    print info
+
+   let 
+      printTimeSpec ts = ret
+         where 
+            ret = s * (10^ (9 :: Integer) :: Integer) + ns
+            s = fromIntegral (tsSeconds ts) :: Integer
+            ns = fromIntegral (tsNanoSeconds ts) :: Integer
+      printClock clk = do
+         ret <- sysClockGetTime clk
+         res <- sysClockGetResolution clk
+         putStrLn $ case (ret,res) of
+            (Right t, Right r) -> 
+               "Clock " ++ show clk ++ ": " ++ show (printTimeSpec t) ++ " (resolution: " ++ show (printTimeSpec r) ++ ")"
+            (Right t, Left err) -> 
+               "Clock " ++ show clk ++ ": " ++ show (printTimeSpec t) ++ " (no resolution: " ++ show err ++ ")"
+            (Left err1, Left err2) -> 
+               "Clock " ++ show clk ++ ": error " ++ show err1 ++ " (no resolution: " ++ show err2 ++ ")"
+            (Left err1, Right r) -> 
+               "Clock " ++ show clk ++ ": error " ++ show err1 ++ " (resolution: " ++ show (printTimeSpec r) ++ ")"
+      clocks =
+         [ ClockWall
+         , ClockMonotonic
+         , ClockProcess
+         , ClockThread
+         , ClockRawMonotonic
+         , ClockCoarseWall
+         , ClockCoarseMonotonic
+         , ClockBoot
+         , ClockTAI
+         ]
+
+   traverse_ printClock clocks
 
    putStrLn "Get device info"
    dev <- check <$> sysOpen "/dev/input/event6" [OpenReadOnly] [PermUserRead]
