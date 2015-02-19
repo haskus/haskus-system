@@ -22,14 +22,15 @@ import Data.Word
 
 -- | Graphic card ressources
 data Card = Card
-   { cardFrameBuffers    :: [FrameBufferID]
-   , cardControllers     :: [ControllerID]
-   , cardConnectors      :: [ConnectorID]
-   , cardEncoders        :: [EncoderID]
+   { cardFrameBufferIDs  :: [FrameBufferID]
+   , cardControllerIDs   :: [ControllerID]
+   , cardConnectorIDs    :: [ConnectorID]
+   , cardEncoderIDs      :: [EncoderID]
    , cardMinWidth        :: Word32
    , cardMaxWidth        :: Word32
    , cardMinHeight       :: Word32
    , cardMaxHeight       :: Word32
+   , cardFileDescriptor  :: FileDescriptor
    } deriving (Show)
 
 -- | Get graphic card info
@@ -78,6 +79,7 @@ getCard ioctl fd = runEitherT $ do
             <*> return (csMaxWidth res4)
             <*> return (csMinHeight res4)
             <*> return (csMaxHeight res4)
+            <*> return fd
 
          right (res4, res5)
 

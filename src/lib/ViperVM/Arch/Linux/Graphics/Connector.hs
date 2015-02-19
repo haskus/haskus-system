@@ -6,6 +6,7 @@ module ViperVM.Arch.Linux.Graphics.Connector
    , Connection(..)
    , SubPixel(..)
    , getConnector
+   , cardConnectors
    )
 where
 
@@ -22,11 +23,13 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr
+import Data.Traversable (traverse)
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Mode
+import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.IDs
 
 -- | Connector property
@@ -131,3 +134,16 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
      || connEncodersCount res2 < connEncodersCount rawRes
       then EitherT $ getConnector ioctl fd connId
       else right retRes
+
+
+-- | Get connectors (discard errors)
+cardConnectors :: IOCTL -> Card -> IO [Connector]
+cardConnectors ioctl card = do
+   let 
+      f (Left _)  xs = xs
+      f (Right x) xs = x:xs
+      fd = cardFileDescriptor card
+      ids = cardConnectorIDs card
+   
+   xs <- traverse (getConnector ioctl fd) ids
+   return (foldr f [] xs)

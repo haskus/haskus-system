@@ -16,7 +16,6 @@ import Control.Monad.Trans.Either
 import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (forM_)
-import Data.Traversable (forM)
 
 import Text.Printf
 
@@ -53,16 +52,15 @@ main = do
 
       liftIO $ putStrLn "==================\n= CONNECTORS\n=================="
 
-      conns <- forM (cardConnectors card) $ \connId -> do
-         conn <- EitherT $ getConnector ioctl fd connId
+      conns <- liftIO $ cardConnectors ioctl card
+      forM_ conns $ \conn -> do
          liftIO $ putStrLn $ show conn
          liftIO $ putStrLn (printConnector conn)
-         return conn
 
 
       liftIO $ putStrLn "==================\n= ENCODERS \n=================="
 
-      forM_ (cardEncoders card) $ \encId -> do
+      forM_ (cardEncoderIDs card) $ \encId -> do
          enc <- EitherT $ getEncoder ioctl fd encId
          liftIO $ do
             putStrLn $ show enc

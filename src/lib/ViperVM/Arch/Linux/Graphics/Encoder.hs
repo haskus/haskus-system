@@ -10,6 +10,7 @@
 module ViperVM.Arch.Linux.Graphics.Encoder
    ( Encoder(..)
    , getEncoder
+   , cardEncoders
    )
 where
 
@@ -17,11 +18,13 @@ import Control.Applicative ((<$>), (<*>))
 import Foreign.Storable
 import Data.Word
 import Data.Maybe (fromMaybe)
+import Data.Traversable (traverse)
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.IDs
+import ViperVM.Arch.Linux.Graphics.Card
 
 import ViperVM.Arch.Linux.Graphics.LowLevel (EncoderType(..))
 
@@ -69,3 +72,15 @@ getEncoder ioctl fd encId = do
    let res = Encoder encId EncoderTypeNone Nothing 0 0
 
    ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
+
+-- | Get encoders (discard errors)
+cardEncoders :: IOCTL -> Card -> IO [Encoder]
+cardEncoders ioctl card = do
+   let 
+      f (Left _)  xs = xs
+      f (Right x) xs = x:xs
+      fd = cardFileDescriptor card
+      ids = cardEncoderIDs card
+   
+   xs <- traverse (getEncoder ioctl fd) ids
+   return (foldr f [] xs)

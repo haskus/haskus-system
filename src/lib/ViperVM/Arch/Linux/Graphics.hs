@@ -104,9 +104,9 @@ fromMaskedList mask xs = foldr f [] xs'
 -- | Retrieve Controllers that can work with the given encoder
 getEncoderControllers :: Card -> Encoder -> [ControllerID]
 getEncoderControllers res enc = 
-   fromMaskedList (encoderPossibleControllers enc) (cardControllers res)
+   fromMaskedList (encoderPossibleControllers enc) (cardControllerIDs res)
 
 -- | Retrieve Connectors that can work with the given encoder
 getEncoderConnectors :: Card -> Encoder -> [ConnectorID]
 getEncoderConnectors res enc = 
-   fromMaskedList (encoderPossibleConnectors enc) (cardConnectors res)
+   fromMaskedList (encoderPossibleConnectors enc) (cardConnectorIDs res)
