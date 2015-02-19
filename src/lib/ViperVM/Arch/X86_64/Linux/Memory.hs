@@ -10,6 +10,11 @@ module ViperVM.Arch.X86_64.Linux.Memory
    , sysMemAdvise
    , sysMemSync
    , sysMemInCore
+   , MemLockFlag(..)
+   , sysMemLock
+   , sysMemLockAll
+   , sysMemUnlock
+   , sysMemUnlockAll
    )
 where
 
@@ -25,6 +30,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
+import ViperVM.Utils.EnumSet (EnumBitSet, toBitSet)
 
 -- | Set program break location (i.e. data segement size)
 -- 
@@ -223,3 +229,24 @@ sysMemInCore addr len = do
    allocaArray n $ \arr ->
       onSuccessIO (syscall3 27 addr len (arr :: Ptr Word8))
          (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
+
+
+sysMemLock :: Ptr () -> Word64 -> SysRet ()
+sysMemLock addr len = onSuccess (syscall2 149 addr len) (const ())
+
+sysMemUnlock :: Ptr () -> Word64 -> SysRet ()
+sysMemUnlock addr len = onSuccess (syscall2 150 addr len) (const ())
+
+data MemLockFlag
+   = LockCurrentPages
+   | LockFuturePages
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet MemLockFlag
+
+
+sysMemLockAll :: [MemLockFlag] -> SysRet ()
+sysMemLockAll flags = onSuccess (syscall1 151 (toBitSet flags :: Word64)) (const ())
+
+sysMemUnlockAll :: SysRet ()
+sysMemUnlockAll = onSuccess (syscall0 152) (const ())

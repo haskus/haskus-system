@@ -199,10 +199,6 @@ syscall0 = syscall0_
 146	common	sched_get_priority_max	sys_sched_get_priority_max
 147	common	sched_get_priority_min	sys_sched_get_priority_min
 148	common	sched_rr_get_interval	sys_sched_rr_get_interval
-149	common	mlock			sys_mlock
-150	common	munlock			sys_munlock
-151	common	mlockall		sys_mlockall
-152	common	munlockall		sys_munlockall
 153	common	vhangup			sys_vhangup
 154	common	modify_ldt		sys_modify_ldt
 155	common	pivot_root		sys_pivot_root
