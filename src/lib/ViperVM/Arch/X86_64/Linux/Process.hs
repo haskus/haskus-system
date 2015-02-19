@@ -14,6 +14,7 @@ module ViperVM.Arch.X86_64.Linux.Process
    , sysGetThreadID
    , sysFork
    , sysVFork
+   , sysSchedulerYield
    )
 where
 
@@ -81,4 +82,8 @@ sysFork = onSuccess (syscall0 57) (ProcessID . fromIntegral)
 -- | Create a child process and block parent
 sysVFork :: SysRet ProcessID
 sysVFork = onSuccess (syscall0 58) (ProcessID . fromIntegral)
+
+-- | Yield the processor
+sysSchedulerYield :: SysRet ()
+sysSchedulerYield = onSuccess (syscall0 24) (const ())
 
