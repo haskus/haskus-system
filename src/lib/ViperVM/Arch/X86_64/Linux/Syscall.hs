@@ -253,7 +253,6 @@ syscall0 = syscall0_
 210	common	io_cancel		sys_io_cancel
 211	64	get_thread_area
 212	common	lookup_dcookie		sys_lookup_dcookie
-213	common	epoll_create		sys_epoll_create
 214	64	epoll_ctl_old
 215	64	epoll_wait_old
 216	common	remap_file_pages	sys_remap_file_pages
@@ -326,7 +325,6 @@ syscall0 = syscall0_
 287	common	timerfd_gettime		sys_timerfd_gettime
 289	common	signalfd4		sys_signalfd4
 290	common	eventfd2		sys_eventfd2
-291	common	epoll_create1		sys_epoll_create1
 292	common	dup3			sys_dup3
 293	common	pipe2			sys_pipe2
 294	common	inotify_init1		sys_inotify_init1
