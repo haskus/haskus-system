@@ -160,8 +160,6 @@ syscall0 = syscall0_
 100	common	times			sys_times
 101	64	ptrace			sys_ptrace
 103	common	syslog			sys_syslog
-105	common	setuid			sys_setuid
-106	common	setgid			sys_setgid
 109	common	setpgid			sys_setpgid
 111	common	getpgrp			sys_getpgrp
 112	common	setsid			sys_setsid

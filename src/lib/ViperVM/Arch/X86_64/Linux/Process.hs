@@ -9,8 +9,10 @@ module ViperVM.Arch.X86_64.Linux.Process
    , sysGetParentProcessID
    , sysGetRealUserID
    , sysGetEffectiveUserID
+   , sysSetEffectiveUserID
    , sysGetRealGroupID
    , sysGetEffectiveGroupID
+   , sysSetEffectiveGroupID
    , sysGetThreadID
    , sysFork
    , sysVFork
@@ -67,6 +69,11 @@ sysGetRealUserID = UserID . fromIntegral <$> syscall0 102
 sysGetEffectiveUserID :: IO UserID
 sysGetEffectiveUserID = UserID . fromIntegral <$> syscall0 107
 
+-- | Set effective user ID of the calling process
+sysSetEffectiveUserID :: UserID -> SysRet ()
+sysSetEffectiveUserID (UserID uid) =
+   onSuccess (syscall1 105 uid) (const ())
+
 -- | Get real group ID of the calling process
 sysGetRealGroupID :: IO GroupID
 sysGetRealGroupID = GroupID . fromIntegral <$> syscall0 104
@@ -74,6 +81,11 @@ sysGetRealGroupID = GroupID . fromIntegral <$> syscall0 104
 -- | Get effective group ID of the calling process
 sysGetEffectiveGroupID :: IO GroupID
 sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall0 108
+
+-- | Set effective group ID of the calling process
+sysSetEffectiveGroupID :: GroupID -> SysRet ()
+sysSetEffectiveGroupID (GroupID gid) =
+   onSuccess (syscall1 106 gid) (const ())
 
 -- | Create a child process
 sysFork :: SysRet ProcessID
