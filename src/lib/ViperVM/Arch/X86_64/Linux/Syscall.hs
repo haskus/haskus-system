@@ -337,8 +337,6 @@ syscall0 = syscall0_
 292	common	dup3			sys_dup3
 293	common	pipe2			sys_pipe2
 294	common	inotify_init1		sys_inotify_init1
-295	64	preadv			sys_preadv
-296	64	pwritev			sys_pwritev
 297	64	rt_tgsigqueueinfo	sys_rt_tgsigqueueinfo
 298	common	perf_event_open		sys_perf_event_open
 299	64	recvmmsg		sys_recvmmsg

@@ -2,6 +2,7 @@
 module Main where
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
+import ViperVM.Arch.X86_64.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.X86_64.Linux.Info

@@ -27,6 +27,7 @@ library
 
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.FileSystem
+    ViperVM.Arch.X86_64.Linux.FileSystem.ReadWrite
     ViperVM.Arch.X86_64.Linux.FileSystem.Notification
     ViperVM.Arch.X86_64.Linux.FileSystem.Mount
     ViperVM.Arch.X86_64.Linux.Process
