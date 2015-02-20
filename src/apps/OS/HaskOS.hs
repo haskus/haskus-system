@@ -13,7 +13,6 @@ import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Connector
 
 import Control.Monad.Trans.Either
-import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 
 main :: IO ()
@@ -35,7 +34,16 @@ main = do
                   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
       card  <- try "Get card information from descriptor" $
                   getCard ioctl fd
+      cap   <- try "Get DumbBuffer capability" $
+                  cardCapability ioctl card CapDumbBuffer
+      hoistEither $ if cap == 0
+         then Left ("Test DumbBuffer capability", ENOENT) 
+         else Right ()
+
       conns <- liftIO $ cardConnectors ioctl card
+      hoistEither $ if null conns 
+         then Left ("Get connectors", ENOENT) 
+         else Right ()
 
       let
          isValid x  = connConnection x == Connected

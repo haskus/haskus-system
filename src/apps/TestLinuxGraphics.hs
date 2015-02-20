@@ -11,6 +11,7 @@ import ViperVM.Arch.Linux.Graphics.IDs
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Memory
+import ViperVM.Arch.Linux.ErrorCode
 
 import Control.Monad.Trans.Either
 import Control.Applicative ((<$>))
@@ -41,7 +42,11 @@ main = do
       fd <- EitherT $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
 
       -- Test for DumbBuffer capability
-      _ <- (/= 0) <$> (EitherT $ getCapability ioctl fd CapDumbBuffer)
+      cap <- (/= 0) <$> (EitherT $ getCapability ioctl fd CapDumbBuffer)
+      hoistEither $ if cap
+         then Left ENOENT 
+         else Right ()
+
       liftIO $ putStrLn "The card has DumbBuffer capability :)"
 
       liftIO $ putStrLn "==================\n= CARD\n=================="
