@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Interface to Linux graphics API
 --
 -- Linux currently uses KMS/DRM interface
@@ -5,6 +6,7 @@ module ViperVM.Arch.Linux.Graphics
    ( Capability(..)
    , drmIoctl
    , getCapability
+   , cardCapability
    , getConnector
    , getConnectorController
    , getEncoderControllers
@@ -21,12 +23,12 @@ import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.IDs
 import ViperVM.Arch.Linux.Graphics.Card
 
-import Control.Applicative ((<$>), (<*>))
 import Data.Traversable (traverse)
 import Foreign.Storable
-import Foreign.Ptr
+import Foreign.CStorable
 import Data.Word
 import Data.Bits (Bits,testBit)
+import GHC.Generics (Generic)
 
 -- | IOCTL for DRM is restarted on interruption
 -- Apply this function to your preferred ioctl function
@@ -34,29 +36,45 @@ drmIoctl :: IOCTL -> IOCTL
 drmIoctl = repeatIoctl
 
 data Capability
-   = CapDUMMY     -- Added to easily derive Enum (start at 0x01...)
-   | CapDumbBuffer
+   = CapDumbBuffer
    | CapVBlankHighController
    | CapDumbPreferredDepth
    | CapDumbPreferShadow
    | CapPrime
    | CapTimestampMonotonic
    | CapAsyncPageFlip
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq)
+
+instance Enum Capability where
+   fromEnum x = case x of 
+      CapDumbBuffer           -> 1
+      CapVBlankHighController -> 2
+      CapDumbPreferredDepth   -> 3
+      CapDumbPreferShadow     -> 4
+      CapPrime                -> 5
+      CapTimestampMonotonic   -> 6
+      CapAsyncPageFlip        -> 7
+   toEnum x = case x of 
+      1 -> CapDumbBuffer
+      2 -> CapVBlankHighController
+      3 -> CapDumbPreferredDepth
+      4 -> CapDumbPreferShadow
+      5 -> CapPrime
+      6 -> CapTimestampMonotonic
+      7 -> CapAsyncPageFlip
+      _ -> error "Unknown capability"
 
 -- | Parameter for getCapability IOCTL (capability id, return value)
-data GetCapability = GetCapability Word64 Word64
+data GetCapability =
+   GetCapability Word64 Word64
+   deriving (Generic)
 
+instance CStorable GetCapability
 instance Storable GetCapability where
-   sizeOf _ = 16
-   alignment _ = 8
-   peek ptr = 
-      let p = castPtr ptr :: Ptr Word64 in
-         GetCapability <$> peekElemOff p 0 <*> peekElemOff p 1
-   poke ptr (GetCapability x y) = do
-      let p = castPtr ptr :: Ptr Word64
-      pokeElemOff p 0 x
-      pokeElemOff p 1 y
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 -- | Indicate if the given capability is supported
 getCapability :: IOCTL -> FileDescriptor -> Capability -> SysRet Word64
@@ -67,6 +85,10 @@ getCapability ioctl fd cap = do
       Left err -> return (Left err)
       Right (GetCapability _ value) -> return (Right value)
 
+
+-- | Get card capability
+cardCapability :: IOCTL -> Card -> Capability -> SysRet Word64
+cardCapability ioctl card cap = getCapability ioctl (cardFileDescriptor card) cap
 
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
