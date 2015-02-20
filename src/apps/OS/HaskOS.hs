@@ -12,41 +12,53 @@ import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Connector
 
+import Control.Monad.Trans.Either
+import Control.Applicative ((<$>))
+import Control.Monad.IO.Class (liftIO)
+
 main :: IO ()
 main = do
 
    putStrLn "Booting HaskOS"
 
-   let ioctl = drmIoctl sysIoctl
+   let 
+      ioctl = drmIoctl sysIoctl
+      try str a = EitherT (a >>= \case
+         Left err -> return (Left (str,err))
+         Right v  -> return (Right v))
 
    -------------------------------------
    -- Try to display something on screen
    
-   -- Open device
-   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] [] >>= \case
-      Left err -> putStrLn $ "Cannot find video card:" ++ show err
-      Right fd -> getCard ioctl fd >>= \case
-         Left err -> putStrLn $ "Invalid card: " ++ show err
-         Right card -> do
-            conns <- cardConnectors ioctl card
+   ret <- runEitherT $ do
+      fd    <- try "Open graphic card descriptor" $
+                  sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
+      card  <- try "Get card information from descriptor" $
+                  getCard ioctl fd
+      conns <- liftIO $ cardConnectors ioctl card
 
-            let
-               isValid x  = connConnection x == Connected
-                            && not (null $ connModes x)
-               validConns = filter isValid conns
+      let
+         isValid x  = connConnection x == Connected
+                      && not (null $ connModes x)
+         validConns = filter isValid conns
 
-               -- select first connector
-               conn = head validConns
+         -- select first connector
+         conn = head validConns
 
-               -- select highest mode
-               mode = head (connModes conn)
-               width  = fromIntegral $ modeHorizontalDisplay mode
-               height = fromIntegral $ modeVerticalDisplay mode
-               bpp    = 32
-               dbFlags = 0
-            -- create a dumb buffer
-            db <- createDumbBuffer ioctl fd width height bpp dbFlags
-            return ()
+         -- select highest mode
+         mode = head (connModes conn)
+         width  = fromIntegral $ modeHorizontalDisplay mode
+         height = fromIntegral $ modeVerticalDisplay mode
+         bpp    = 32
+         dbFlags = 0
+
+      dumb <- try "Create a dumb buffer" $
+                  createDumbBuffer ioctl fd width height bpp dbFlags
+      return (Right dumb)
+
+   case ret of
+      Left (str,err) -> putStrLn $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
+      Right _ -> putStrLn "Screen initialized"
 
    putStrLn "Press a key to continue"
    waitKey
