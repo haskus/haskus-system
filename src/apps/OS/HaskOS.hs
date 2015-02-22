@@ -29,6 +29,8 @@ main = do
          Right v  -> return (Right v))
 
    ret <- runEitherT $ do
+      _     <- try "Create /sys" $ sysCreateDirectory Nothing "/sys" [PermUserExecute,PermUserWrite,PermUserRead] False
+
       _     <- try "Mount SysFS" $ mountSysFS sysMount "/sys"
 
       fd    <- try "Open graphic card descriptor" $
