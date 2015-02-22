@@ -2,6 +2,8 @@ module ViperVM.Arch.Linux.FileSystem.Mount
    ( MountFlag(..)
    , UnmountFlag(..)
    , mountSysFS
+   , mountDevFS
+   , mountProcFS
    )
 where
 
@@ -108,7 +110,14 @@ instance EnumBitSet UnmountFlag
 -- | Type of the low-level Linux "mount" function
 type MountCall = String -> String -> String -> [MountFlag] -> Ptr () -> SysRet ()
 
--- | Mount SysFS into at the given path
+-- | Mount SysFS at the given location
 mountSysFS :: MountCall -> FilePath -> SysRet ()
 mountSysFS mount path = mount "none" path "sysfs" [] nullPtr
 
+-- | Mount DevFS at the given location
+mountDevFS :: MountCall -> FilePath -> SysRet ()
+mountDevFS mount path = mount "none" path "devtmpfs" [] nullPtr
+
+-- | Mount ProcFS at the given location
+mountProcFS :: MountCall -> FilePath -> SysRet ()
+mountProcFS mount path = mount "none" path "proc" [] nullPtr
