@@ -110,5 +110,5 @@ type MountCall = String -> String -> String -> [MountFlag] -> Ptr () -> SysRet (
 
 -- | Mount SysFS into at the given path
 mountSysFS :: MountCall -> FilePath -> SysRet ()
-mountSysFS mount path = mount "" path "sysfs" [] nullPtr
+mountSysFS mount path = mount "none" path "sysfs" [] nullPtr
 
