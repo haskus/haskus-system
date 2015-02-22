@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 import ViperVM.Arch.X86_64.Linux.Power
 import ViperVM.Arch.X86_64.Linux.FileSystem
+import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
+import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.ErrorCode
 
 import ViperVM.Arch.Linux.Graphics
@@ -26,10 +28,9 @@ main = do
          Left err -> return (Left (str,err))
          Right v  -> return (Right v))
 
-   -------------------------------------
-   -- Try to display something on screen
-   
    ret <- runEitherT $ do
+      _     <- try "Mount SysFS" $ mountSysFS sysMount "/sys"
+
       fd    <- try "Open graphic card descriptor" $
                   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
       card  <- try "Get card information from descriptor" $
