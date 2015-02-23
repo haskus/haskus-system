@@ -22,7 +22,7 @@ import Data.Foldable (forM_)
 import Numeric (showHex,readHex)
 
 
-{- We only consider the "new" CPIO format becaue the old ones are deprecated.
+{- We only consider the "new" CPIO format because the old ones are deprecated.
  - From the man page: http://people.freebsd.org/~kientzle/libarchive/man/cpio.5.txt
  -
  -   The cpio archive format collects any number of files, directories, and
