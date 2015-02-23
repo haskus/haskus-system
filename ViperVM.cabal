@@ -115,6 +115,7 @@ library
     ViperVM.STM.TList
     ViperVM.STM.TGraph
 
+    ViperVM.Format.CPIO
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
@@ -153,7 +154,9 @@ library
     stm == 2.4.*,
     criterion == 1.0.*,
     c-storable-deriving == 0.1.1,
-    fixed-vector == 0.7.*
+    fixed-vector == 0.7.*,
+    binary == 0.7.*,
+    utf8-string == 0.3.*
 
   build-tools: 
 
