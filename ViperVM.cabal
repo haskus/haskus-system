@@ -116,6 +116,7 @@ library
     ViperVM.STM.TGraph
 
     ViperVM.Format.CPIO
+    ViperVM.Format.Compression.Huffman
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
@@ -156,7 +157,8 @@ library
     c-storable-deriving == 0.1.1,
     fixed-vector == 0.7.*,
     binary == 0.7.*,
-    utf8-string == 0.3.*
+    utf8-string == 0.3.*,
+    pqueue == 1.2.*
 
   build-tools: 
 
