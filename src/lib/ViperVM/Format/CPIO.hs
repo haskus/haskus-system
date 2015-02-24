@@ -1,6 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Module implementing the CPIO format (used by Linux initramfs)
+--
+-- FIXME: we use ByteStrings, but their size ("length") is only an Int, not a
+-- Word64.
 module ViperVM.Format.CPIO
    ( FileDesc(..)
    , putFile
