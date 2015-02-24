@@ -1,6 +1,7 @@
 -- | Implement Huffman coding
 module ViperVM.Format.Compression.Huffman
-   ( computeOccurences
+   ( Tree(..)
+   , computeOccurences
    , buildQueue
    , buildTree
    , buildCoding
@@ -27,10 +28,12 @@ computeOccurences = foldl' f Map.empty
 buildQueue :: Map.Map a Prio -> PQueue.MinPQueue Prio a
 buildQueue = PQueue.fromList . fmap swap . Map.toList
 
+-- | A binary tree
 data Tree a
    = Node (Tree a) (Tree a)
    | Leaf a
    | Empty
+   deriving (Eq,Show)
 
 -- | Build the Huffman tree
 buildTree :: PQueue.MinPQueue Prio a -> Tree a
