@@ -30,6 +30,7 @@ buildQueue = PQueue.fromList . fmap swap . Map.toList
 data Tree a
    = Node (Tree a) (Tree a)
    | Leaf a
+   | Empty
 
 -- | Build the Huffman tree
 buildTree :: PQueue.MinPQueue Prio a -> Tree a
@@ -37,7 +38,7 @@ buildTree pq = rec pq'
    where
       pq' = PQueue.map Leaf pq
       rec q = case PQueue.size q of
-         0 -> error "Invalid empty queue"
+         0 -> Empty
          1 -> snd (PQueue.findMin q)
          _ -> rec q''' where
                   q'  = PQueue.deleteMin q
@@ -54,11 +55,13 @@ buildCoding left right op tree = rec Nothing tree
          (Node l r) -> Map.union (rec (Just left)  l) 
                                  (rec (Just right) r)
          (Leaf x)   -> Map.singleton x left -- arbitrarily chose left
+         Empty      -> Map.empty
 
       rec (Just cur) t = case t of
          (Node l r) -> Map.union (rec (Just $ cur `op` left)  l) 
                                  (rec (Just $ cur `op` right) r)
          (Leaf x)   -> Map.singleton x cur
+         Empty      -> Map.empty
       
 -- | Compute a Huffman coding
 computeCoding :: (Foldable m, Ord a, Eq a) => b -> b -> (b -> b -> b) -> m a -> Map.Map a b
