@@ -136,7 +136,6 @@ syscall0 = syscall0_
 47	64	recvmsg			sys_recvmsg
 51	common	getsockname		sys_getsockname
 52	common	getpeername		sys_getpeername
-53	common	socketpair		sys_socketpair
 54	64	setsockopt		sys_setsockopt
 55	64	getsockopt		sys_getsockopt
 56	common	clone			stub_clone

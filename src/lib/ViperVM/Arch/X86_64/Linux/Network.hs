@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module ViperVM.Arch.X86_64.Linux.Network
    ( sysShutdown
    , sysSendFile
@@ -9,6 +10,8 @@ module ViperVM.Arch.X86_64.Linux.Network
    , IPType(..)
    , sysSocket'
    , sysSocket
+   , sysSocketPair'
+   , sysSocketPair
    , sysBind
    , sysConnect
    , sysAccept
@@ -16,13 +19,15 @@ module ViperVM.Arch.X86_64.Linux.Network
    )
 where
 
-import Foreign.Ptr (nullPtr)
+import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Storable (Storable, sizeOf)
 import Foreign.Marshal.Utils (with)
+import Foreign.Marshal.Array (peekArray,allocaArray)
 import Foreign.Storable (peek)
 import Data.Word
 import Data.List (foldl')
 import Data.Bits
+import Control.Applicative ((<$>))
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -154,6 +159,21 @@ sysSocket' typ protocol subprotocol opts =
    in
    onSuccess (syscall3 41 (fromEnum protocol) typ' subprotocol) (FileDescriptor . fromIntegral)
 
+-- | Create a socket pair (low-level API)
+--
+-- `subprotocol` may be 0
+sysSocketPair' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet (FileDescriptor,FileDescriptor)
+sysSocketPair' typ protocol subprotocol opts =
+   let
+      f :: Enum a => a -> Word64
+      f = fromIntegral . fromEnum
+      typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
+      toTuple [x,y] = (x,y)
+      toTuple _     = error "Invalid tuple"
+   in
+   allocaArray 2 $ \(ptr :: Ptr Int) -> onSuccessIO (syscall4 53 (fromEnum protocol) typ' subprotocol ptr)
+      (const $ toTuple . fmap (FileDescriptor . fromIntegral) <$> peekArray 2 ptr)
+
 -- | IP type
 data IPType
    = IPv4
@@ -243,6 +263,16 @@ sysSocket typ opts =
       SockTypeUDP IPv4   -> sysSocket' SockRawTypeDatagram SockProtIPv4 0 opts
       SockTypeUDP IPv6   -> sysSocket' SockRawTypeDatagram SockProtIPv6 0 opts
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
+
+-- | Create a socket pair
+sysSocketPair :: SocketType -> [SocketOption] -> SysRet (FileDescriptor,FileDescriptor)
+sysSocketPair typ opts =
+   case typ of
+      SockTypeTCP IPv4   -> sysSocketPair' SockRawTypeStream SockProtIPv4 0 opts
+      SockTypeTCP IPv6   -> sysSocketPair' SockRawTypeStream SockProtIPv6 0 opts
+      SockTypeUDP IPv4   -> sysSocketPair' SockRawTypeDatagram SockProtIPv4 0 opts
+      SockTypeUDP IPv6   -> sysSocketPair' SockRawTypeDatagram SockProtIPv6 0 opts
+      SockTypeNetlink nt -> sysSocketPair' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Bind a socket
 sysBind :: Storable a => FileDescriptor -> a -> SysRet ()
