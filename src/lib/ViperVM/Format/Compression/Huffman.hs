@@ -25,7 +25,7 @@ computeOccurences = foldl' f Map.empty
 
 -- | Build min priority queue (priority is number of occurences)
 buildQueue :: Map.Map a Prio -> PQueue.MinPQueue Prio a
-buildQueue = PQueue.fromAscList . fmap swap . Map.toAscList
+buildQueue = PQueue.fromList . fmap swap . Map.toList
 
 data Tree a
    = Node (Tree a) (Tree a)
