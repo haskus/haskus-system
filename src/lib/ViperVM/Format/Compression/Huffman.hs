@@ -1,20 +1,35 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | Implement Huffman coding
 module ViperVM.Format.Compression.Huffman
    ( Tree(..)
    , computeOccurences
    , buildQueue
+   , makeTree
    , buildTree
    , buildCoding
-   , computeCoding
-   , computeCodingString
+   , buildCodingString
+   , makeBitGet
+   , makeBitPut
+   , toBinary
+   , fromBinary
+   , fromBinaryLen
    )
 where
 
-import Data.Foldable (foldl', Foldable)
+import Prelude hiding (mapM_)
+
+import Data.Foldable (foldl', Foldable, mapM_)
 import qualified Data.Map as Map
 import qualified Data.PQueue.Prio.Min as PQueue
 import Data.Word
 import Data.Tuple (swap)
+import Data.Bits (xor)
+import Data.Binary.Bits.Get as BitGet
+import Data.Binary.Bits.Put
+import Data.Binary.Get as Get
+import Data.Binary.Put
+import qualified Data.ByteString.Lazy as BS
 
 type Prio = Word64
 
@@ -50,6 +65,14 @@ buildTree pq = rec pq'
                   (k2,m2) = PQueue.findMin q'
                   q'''= PQueue.insert (k1+k2) (Node m1 m2) q''
 
+-- | Create a Huffman tree
+makeTree :: (Foldable m, Eq a, Ord a) => m a -> Tree a
+makeTree xs = tree
+   where
+      occs  = computeOccurences xs
+      queue = buildQueue occs
+      tree  = buildTree queue
+
 -- | Get Huffman coding from a Huffman tree
 buildCoding :: Ord a => b -> b -> (b -> b -> b) -> Tree a -> Map.Map a b
 buildCoding left right op tree = rec Nothing tree
@@ -66,15 +89,61 @@ buildCoding left right op tree = rec Nothing tree
          (Leaf x)   -> Map.singleton x cur
          Empty      -> Map.empty
       
--- | Compute a Huffman coding
-computeCoding :: (Foldable m, Ord a, Eq a) => b -> b -> (b -> b -> b) -> m a -> Map.Map a b
-computeCoding left right op xs = code
-   where
-      occs  = computeOccurences xs
-      queue = buildQueue occs
-      tree  = buildTree queue
-      code  = buildCoding left right op tree
-
 -- | Compute strings containing binary coding ("0" and "1" chars)
-computeCodingString :: (Foldable m, Ord a, Eq a) => m a -> Map.Map a String
-computeCodingString = computeCoding "0" "1" (++)
+buildCodingString :: Ord a => Tree a -> Map.Map a String
+buildCodingString = buildCoding "0" "1" (++)
+
+-- | Create a BitGet that reads a single element
+--
+-- You can specify which child is 0 or 1
+makeBitGet :: Bool -> Tree a -> BitGet (Maybe a)
+makeBitGet leftIsZero tree = rec tree
+   where
+      rec (Leaf x)   = return (Just x)
+      rec Empty      = return Nothing
+      rec (Node l r) = do
+         empty <- BitGet.isEmpty
+         if empty
+            then return Nothing
+            else do
+               b <- getBool
+               if b `xor` leftIsZero
+                  then rec l
+                  else rec r
+
+-- | Create a BitPut from a Huffman tree
+--
+-- You can specify which child is 0 or 1
+makeBitPut :: (Ord a) => Bool -> Tree a -> a -> BitPut ()
+makeBitPut leftIsZero tree x = code Map.! x
+   where
+      l = putBool (not leftIsZero)
+      r = putBool leftIsZero
+      code = buildCoding l r (>>) tree
+
+
+-- | Convert a sequence into a compressed binary
+toBinary :: (Foldable m, Ord a, Eq a) => Bool -> Tree a -> m a -> BS.ByteString
+toBinary leftIsZero tree xs = runPut p
+   where
+      bp    = makeBitPut leftIsZero tree
+      p     = runBitPut (mapM_ bp xs)
+
+-- | Convert a binary sequence into a token sequence
+fromBinary :: Bool -> Tree a -> BS.ByteString -> [a]
+fromBinary leftIsZero tree = runGet (runBitGet (g []))
+   where
+      bg    = makeBitGet leftIsZero tree
+      g xs  = bg >>= \case
+         Nothing -> return (reverse xs)
+         Just x  -> g (x:xs)
+
+-- | Convert a binary sequence into a delimited token sequence
+fromBinaryLen :: Bool -> Tree a -> Int -> BS.ByteString -> [a]
+fromBinaryLen leftIsZero tree n = runGet (runBitGet (g [] n))
+   where
+      bg     = makeBitGet leftIsZero tree
+      g xs 0 = return (reverse xs)
+      g xs m = bg >>= \case
+         Nothing -> return (reverse xs)
+         Just x  -> g (x:xs) (m-1)
