@@ -35,8 +35,10 @@ module ViperVM.Format.Compression.LZ77
    )
 where
 
-import Data.List (maximumBy,tails)
+import Data.Foldable (maximumBy)
 import Data.Ord (comparing)
+import Data.Sequence (Seq,viewl,ViewL(..),(|>),(><))
+import qualified Data.Sequence as Seq
 
 data Code a = Code 
    { codePosition :: Int
@@ -49,18 +51,17 @@ data Code a = Code
 -- `ls` is the maximal word length
 -- `n` is the buffer length
 -- `ini` is the value filling the buffer initially
-compress :: (Eq a) => Int -> Int -> a -> [a] -> [Code a]
-compress ls n ini = rec (replicate (n-ls) ini)
+compress :: (Show a, Eq a) => Int -> Int -> a -> [a] -> [Code a]
+compress ls n ini = rec (Seq.replicate (n-ls) ini)
    where
       -- return the length and the value of the longest prefix
-      prefixLen :: Eq a => [a] -> [a] -> Int
+      prefixLen :: Eq a => [a] -> Seq a -> Int
       prefixLen ss bs = prefixLen' 0 ss bs
 
-      prefixLen' len u v = case (u,v) of
-         (s:ss,b:bs) | s == b -> prefixLen' (len+1) ss (bs++[s]) 
-         _                    -> len
+      prefixLen' len u v = case (u, viewl v) of
+         (s:ss,b:<bs) | s == b -> prefixLen' (len+1) ss (bs |> s) 
+         _                     -> len
 
-      rec :: Eq a => [a] -> [a] -> [Code a]
       rec _ [] = []
       rec b s  = Code pos len k : rec newb ks
          where
@@ -68,7 +69,7 @@ compress ls n ini = rec (replicate (n-ls) ini)
             w = take (ls-1) s
 
             -- prefix lengths and their position [(len,pos)]
-            prefixes = (map (prefixLen w) (tails b)) `zip` [0..]
+            prefixes = (fmap (prefixLen w) (Seq.tails b)) `Seq.zip` Seq.fromList [0..Seq.length b]
 
             -- longest prefix length and its position
             (len,pos) = maximumBy (comparing fst) prefixes
@@ -77,7 +78,7 @@ compress ls n ini = rec (replicate (n-ls) ini)
             (k:ks) = drop len s
 
             -- new buffer
-            newb = drop (len+1) b ++ take (len+1) s
+            newb = Seq.drop (len+1) b >< Seq.fromList (take (len+1) s)
 
 
 -- | Decompress a sequence, using LZ77
