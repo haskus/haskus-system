@@ -11,12 +11,15 @@
 --
 -- The maximum length of p is parametric. p can't be equal to s, it is a
 -- *proper* prefix, meaning that at least the last token of s is not in p.
+-- 
 -- Each compression step returns a (Code pos len c :: Code a) where pos and len
 -- are respectively the position and length of the prefix in the window. "c" is
 -- the token just after the prefix in s. When len is 0, only one character
--- of s is encoded. The final result is a sequence of (Code a). It can be
--- latter transformed into a new sequence of [a] by encoding positions and
--- lengths into "a" values (e.g. imagine "a" is a byte (Word8)).
+-- of s is encoded. 
+--
+-- The final result is a sequence of (Code a). It can be later transformed into
+-- a new sequence of [a] by encoding positions and lengths into "a" values
+-- (e.g. imagine "a" is a byte (Word8)).
 --
 -- The decompression algorithm is similar. It uses the same kind of window. It
 -- decompresses an input s :: [Code a] into a [a].
@@ -43,9 +46,9 @@ data Code a = Code
 
 -- | Compress a sequence, using LZ77
 --
--- `maxWordLength` (ls) is the maximum of elements that can compose a word
+-- `ls` is the maximal word length
 -- `n` is the buffer length
--- `ini` is the initial value contained in the buffer
+-- `ini` is the value filling the buffer initially
 compress :: (Eq a) => Int -> Int -> a -> [a] -> [Code a]
 compress ls n ini = rec (replicate (n-ls) ini)
    where
@@ -79,9 +82,9 @@ compress ls n ini = rec (replicate (n-ls) ini)
 
 -- | Decompress a sequence, using LZ77
 --
--- `maxWordLength` (ls) is the maximum of elements that can compose a word
+-- `ls` is the maximal word length
 -- `n` is the buffer length
--- `ini` is the initial value contained in the buffer
+-- `ini` is the value filling the buffer initially
 decompress :: Int -> Int -> a -> [Code a] -> [a]
 decompress ls n ini = rec (replicate (n-ls) ini)
    where
