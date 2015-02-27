@@ -67,7 +67,7 @@ data Compression
 
 -- | Read block header and returns (isFinal,compression)
 --
--- If compression type == 3 (not supposed to happen), then fromEnum will fail
+-- If compression type == 3 (not supposed to happen), then toEnum will fail
 getBlockHeader :: BitGet (Bool,Compression)
 getBlockHeader = block $ (,)
    <$> fmap (/=0)                   (word8 1)
@@ -144,16 +144,15 @@ getDynamicToken = do
 getTables :: BitGet ([Word8],[Word8])
 getTables = do
    -- Get the number of entries in each table
-   nlits  <- (+257) <$> getWord16be 5  -- # of literal/length codes [257..286]
-   ndist  <- (+1)   <$> getWord8 5     -- # of distance codes [1..32]
-   nclen  <- (+4)   <$> getWord8 4     -- # of RLE code lengths [4..19]
+   nlits  <- fromIntegral . (+257) <$> getWord16be 5  -- # of literal/length codes [257..286]
+   ndist  <- fromIntegral . (+1)   <$> getWord8 5     -- # of distance codes [1..32]
+   nclen  <- fromIntegral . (+4)   <$> getWord8 4     -- # of RLE code lengths [4..19]
    -- Get the table decoder
-   getTable <- getTableDecoder (fromIntegral nclen)
-   -- Decode literal/length table
-   lits <- getTable (fromIntegral nlits)
-   -- Decode distance table
-   dist <- getTable (fromIntegral ndist)
-   return (lits,dist)
+   getTable <- getTableDecoder nclen
+   -- Decode both tables at once because the RLE coding can overlap
+   values <- getTable (nlits + ndist)
+   -- Split values into two tables
+   return (splitAt nlits values)
 
 
 -- | Run-length encoding
