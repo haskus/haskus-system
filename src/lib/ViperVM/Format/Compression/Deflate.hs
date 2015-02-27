@@ -18,6 +18,9 @@ import Control.Applicative ((<$>), (<*>))
 import Data.Binary.Bits.Get
 import Data.Binary.Bits.Put
 import qualified Data.ByteString as BS
+import qualified Data.Sequence as Seq
+import Data.Sequence ((><), Seq, (|>))
+import Data.Foldable (toList)
 
 
 -- | Compute Huffman codes from a list of code lengths
@@ -87,8 +90,8 @@ getBlockHeader = block $ (,)
    <*> fmap (toEnum . fromIntegral) (word8 2)
 
 -- | Return a decompressed block
-getBlock :: BitGet (BS.ByteString,Bool)
-getBlock = do
+getBlock :: Seq Word8 -> BitGet (Seq Word8,Bool)
+getBlock s = do
    (isFinal,comp) <- getBlockHeader
    content <- case comp of
 
@@ -102,16 +105,34 @@ getBlock = do
          when (len /= nlen `xor` 0xFF) $
             error "Invalid uncompressed block length"
          -- Read raw data
-         getByteString (fromIntegral len)
+         bs <- getByteString (fromIntegral len)
+         return (s >< Seq.fromList (BS.unpack bs))
 
-      --FixedHuffman -> do
+      FixedHuffman -> getNextThunk s
       --DynamicHuffman -> do
 
    return (content,isFinal)
 
 
+-- | Read the next code and decompress it
+getNextThunk :: Seq Word8 -> BitGet (Seq Word8)
+getNextThunk s = do
+   code <- getFixedCode
+   case code of
+      256            -> return s
+      _ | code < 256 -> getNextThunk (s |> fromIntegral code)
+      _ -> do
+         len  <- getLength code
+         dist <- getDistance
+         let
+            pre = Seq.length s - fromIntegral dist
+            ss = cycle (drop pre (toList s))
+            w  = Seq.fromList (take len ss) 
+         getNextThunk (s >< w)
+
+
 -- | Return the encoded length
-getLength :: Int -> BitGet Word16
+getLength :: Int -> BitGet Int
 getLength code = case code of
    x | x <= 260 -> return (fromIntegral code - 254)
 
@@ -128,24 +149,27 @@ getLength code = case code of
          (n,r) = (code-261) `divMod` 4
          r'    = fromIntegral r
       e <- getWord16be n
-      return ((4+r') * 2^n + e + 3)
+      return (fromIntegral $ ((4+r') * 2^n + e + 3))
 
    285 -> return 258
    _   -> error "Invalid length code"
 
 
 -- | Return the encoded distance
-getDistance :: Int -> BitGet Word32
-getDistance code = case code of
-   x | x <= 1 -> return (fromIntegral code + 1)
+getDistance :: BitGet Int
+getDistance = do
+   code <- getWord8 5
 
-   _ -> do
-      -- The magic formula is very similar to the one in 'getLength'
-      let 
-         (n,r) = (code-2) `divMod` 2
-         r'    = fromIntegral r
-      e <- getWord32be n
-      return ((2+r') * 2^n + e + 1)
+   case code of
+      x | x <= 1 -> return (fromIntegral code + 1)
+
+      _ -> do
+         -- The magic formula is very similar to the one in 'getLength'
+         let 
+            (n,r) = (fromIntegral code-2) `divMod` 2
+            r'    = fromIntegral r
+         e <- getWord32be n
+         return (fromIntegral $ ((2+r') * 2^n + e + 1))
 
 
 -- | Put the code
