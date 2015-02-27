@@ -2,18 +2,32 @@
 
 -- | Implement Huffman coding
 module ViperVM.Format.Compression.Huffman
-   ( Tree(..)
-   , computeOccurences
-   , buildQueue
+   ( 
+   -- * Huffman Tree
+     Tree(..)
    , makeTree
    , buildTree
+
+   -- * Huffman Code
+   , Code(..)
+   , emptyCode
    , buildCoding
    , buildCodingString
+   , buildTreeFromCodes
+   , codeAdd
+   , codeShiftL
+   , codeShiftR
+
+   -- * Encoding
    , makeBitGet
    , makeBitPut
    , toBinary
    , fromBinary
    , fromBinaryLen
+
+   -- * Helpers
+   , computeOccurences
+   , buildQueue
    )
 where
 
@@ -24,12 +38,13 @@ import qualified Data.Map as Map
 import qualified Data.PQueue.Prio.Min as PQueue
 import Data.Word
 import Data.Tuple (swap)
-import Data.Bits (xor)
+import Data.Bits (xor,shiftL,shiftR,testBit)
 import Data.Binary.Bits.Get as BitGet
 import Data.Binary.Bits.Put
 import Data.Binary.Get as Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BS
+import Control.Arrow (first)
 
 type Prio = Word64
 
@@ -147,3 +162,78 @@ fromBinaryLen leftIsZero tree n = runGet (runBitGet (g [] n))
       g xs m = bg >>= \case
          Nothing -> return (reverse xs)
          Just x  -> g (x:xs) (m-1)
+
+
+-- | A Huffman code
+--
+-- Length of the code is limited to 64
+data Code = Code
+   { codeLength :: Int
+   , codeValue  :: Word64
+   } deriving (Show,Eq,Ord)
+
+data LeftRight = L | R
+
+-- | Empty code
+emptyCode :: Code
+emptyCode = Code 0 0
+
+-- | Convert a code into a binary list
+codeToList :: Code -> [LeftRight]
+codeToList = rec []
+   where
+      rec xs p 
+         | codeLength p == 0 = reverse xs
+         | otherwise = rec (x:xs) p'
+            where
+               lk = codeValue p
+               x = if testBit lk 0
+                  then R
+                  else L
+               p' = p 
+                  { codeValue = lk `shiftR` 1
+                  , codeLength = codeLength p - 1
+                  }
+
+-- | Build a tree from a set of codes
+buildTreeFromCodes :: [(Code,a)] -> Tree a
+buildTreeFromCodes = rec . fmap (first codeToList)
+   where
+      rec [] = Empty
+      rec ps = case ff [] [] [] ps of
+         ([],lp,rp)  -> Node (rec lp) (rec rp)
+         ([v],[],[]) -> Leaf v
+         _           -> error "Invalid (ambiguous) codes"
+
+
+      -- characterize codes in three ways:
+      --    * empty codes
+      --    * codes going to the left first
+      --    * codes going to the right first
+      ff ep lp rp [] = (ep,lp,rp)
+      ff ep lp rp (p:ps)  = case p of
+         ([],v)    -> ff (v:ep) lp rp ps
+         ((L:_),_) -> ff ep (p:lp) rp ps
+         ((R:_),_) -> ff ep lp (p:rp) ps
+         
+-- | Increase code length
+codeShiftL :: Int -> Code -> Code
+codeShiftL n p = p
+   { codeLength = codeLength p + n
+   , codeValue  = codeValue p `shiftL` n
+   }
+
+-- | Decrease code length
+codeShiftR :: Int -> Code -> Code
+codeShiftR n p = p
+   { codeLength = codeLength p - n
+   , codeValue  = codeValue p `shiftR` n
+   }
+
+-- | Add a value to a code
+codeAdd :: Word64 -> Code -> Code
+codeAdd n p = p
+   { codeLength = codeLength p
+   , codeValue  = codeValue p + n
+   }
+
