@@ -1,11 +1,10 @@
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiWayIf, LambdaCase #-}
 
 -- | Implement DEFLATE (de)compression algorithm
 --
 -- http://www.ietf.org/rfc/rfc1951.txt
 module ViperVM.Format.Compression.Deflate
-   ( makeCodes
-   , getBlock
+   ( decompress
    )
 where
 
@@ -22,72 +21,19 @@ import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 
-
--- | Compute Huffman codes from a list of code lengths
---
--- Deflate algorithm uses Huffman coding with some additional rules:
---    For two symbols a and b:
---       1) if  codelength(a) == codelength(b) then
---             if code(a) < code(b) then
---                a < b
---             else
---                a > b
---
---       2) if codelength(a) < codelength(b) then
---             code(a) < code(b)
---
---    where:
---       * code(x) is the value of the coding of x
---       * codelength(x) is the length of the coding of x (i.e. the number of
---       bits)
---
--- These properties allow the Huffman encoding to be provided with only a
--- sequence of code lengths.
-makeCodes :: [Word] -> [Word64]
-makeCodes es = codes
-   where
-      -- number of codes for each length
-      counts = foldl' (\m k -> Map.insertWith (+) k 1 m) Map.empty es
-
-      -- first code for each length
-      initCodes = Map.fromList ([0..maximum es] `zip` cds)
-         where
-            cds = reverse $ foldl' f [] [0..maximum es]
-            f [] _      = [0] -- first code is 0
-            f (c:cs) sz = code:c:cs
-               where
-                  code = (c + Map.findWithDefault 0 (sz-1) counts) `shiftL` 1
-
-      -- values of each code
-      codes = reverse . fst $ foldl' f ([],initCodes) es
-         where
-            f (cs,cds) sz = (c:cs,cds')
-               where
-                  (Just c, cds') = Map.insertLookupWithKey (const (+)) sz 1 cds
-
-
 -- 
 -- Compressed data are split in blocks. Blocks are *not* byte aligned.
 --
--- Header of a block:
---    1st bit: if set, indicate final block
---    2-3 bits: data compression
---       00 - No compression
---       01 - Compressed with fixed Huffman codes
---       10 - Compressed with dynamic Huffman codes
---       11 - Reserved (error)
 
-data Compression
-   = NoCompression
-   | FixedHuffman
-   | DynamicHuffman
-   deriving (Show,Eq,Enum)
+-- | Decompress all blocks
+decompress :: BitGet (Seq Word8)
+decompress = rec Seq.empty
+   where
+      rec s = getBlock s >>= \case
+         (s',True)  -> return s'
+         (s',False) -> rec s'
 
--- | Read block header and returns (isFinal,compression)
-getBlockHeader :: BitGet (Bool,Compression)
-getBlockHeader = block $ (,)
-   <$> fmap (/=0)                   (word8 1)
-   <*> fmap (toEnum . fromIntegral) (word8 2)
+
 
 -- | Return a decompressed block
 getBlock :: Seq Word8 -> BitGet (Seq Word8,Bool)
@@ -112,6 +58,31 @@ getBlock s = do
       --DynamicHuffman -> do
 
    return (content,isFinal)
+
+
+
+-- | Block compression type
+data Compression
+   = NoCompression
+   | FixedHuffman
+   | DynamicHuffman
+   deriving (Show,Eq,Enum)
+
+
+-- | Read block header and returns (isFinal,compression)
+--
+-- Header of a block:
+--    1st bit: if set, indicate final block
+--    2-3 bits: data compression
+--       00 - No compression
+--       01 - Compressed with fixed Huffman codes
+--       10 - Compressed with dynamic Huffman codes
+--       11 - Reserved (error)
+getBlockHeader :: BitGet (Bool,Compression)
+getBlockHeader = block $ (,)
+   <$> fmap (/=0)                   (word8 1)
+   <*> fmap (toEnum . fromIntegral) (word8 2)
+
 
 
 -- | Read the next code and decompress it
@@ -227,3 +198,48 @@ getFixedCode = do
             b2 <- getWord8 4
             let r = fromIntegral $ ((b `shiftL` 4) .|. b2)
             return (r - 48)
+
+-- | Compute Huffman codes from a list of code lengths
+--
+-- Deflate algorithm uses Huffman coding with some additional rules:
+--    For two symbols a and b:
+--       1) if  codelength(a) == codelength(b) then
+--             if code(a) < code(b) then
+--                a < b
+--             else
+--                a > b
+--
+--       2) if codelength(a) < codelength(b) then
+--             code(a) < code(b)
+--
+--    where:
+--       * code(x) is the value of the coding of x
+--       * codelength(x) is the length of the coding of x (i.e. the number of
+--       bits)
+--
+-- These properties allow the Huffman encoding to be provided with only a
+-- sequence of code lengths.
+makeCodes :: [Word] -> [Word64]
+makeCodes es = codes
+   where
+      -- number of codes for each length
+      counts = foldl' (\m k -> Map.insertWith (+) k 1 m) Map.empty es
+
+      -- first code for each length
+      initCodes = Map.fromList ([0..maximum es] `zip` cds)
+         where
+            cds = reverse $ foldl' f [] [0..maximum es]
+            f [] _      = [0] -- first code is 0
+            f (c:cs) sz = code:c:cs
+               where
+                  code = (c + Map.findWithDefault 0 (sz-1) counts) `shiftL` 1
+
+      -- values of each code
+      codes = reverse . fst $ foldl' f ([],initCodes) es
+         where
+            f (cs,cds) sz = (c:cs,cds')
+               where
+                  (Just c, cds') = Map.insertLookupWithKey (const (+)) sz 1 cds
+
+
+
