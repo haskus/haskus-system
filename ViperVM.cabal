@@ -118,6 +118,7 @@ library
     ViperVM.Format.CPIO
     ViperVM.Format.Compression.Huffman
     ViperVM.Format.Compression.LZ77
+    ViperVM.Format.Compression.Deflate
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
@@ -158,7 +159,7 @@ library
     c-storable-deriving == 0.1.1,
     fixed-vector == 0.7.*,
     binary == 0.7.*,
-    binary-bits == 0.5.*,
+    binary-bits == 0.5.1,
     utf8-string == 0.3.*,
     pqueue == 1.2.*
 
