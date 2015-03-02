@@ -1,5 +1,5 @@
 import qualified Data.ByteString.Lazy as BS
-import ViperVM.Format.Compression.Huffman
+import ViperVM.Format.Compression.Algorithms.Huffman
 
 import Text.Printf
 

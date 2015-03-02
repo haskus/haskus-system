@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 -- | Implement Huffman coding
-module ViperVM.Format.Compression.Huffman
+module ViperVM.Format.Compression.Algorithms.Huffman
    ( 
    -- * Huffman Tree
      Tree(..)
@@ -172,7 +172,7 @@ data Code = Code
    , codeValue  :: Word64
    } deriving (Show,Eq,Ord)
 
-data LeftRight = L | R
+data LeftRight = L | R deriving (Show)
 
 -- | Empty code
 emptyCode :: Code
@@ -183,7 +183,7 @@ codeToList :: Code -> [LeftRight]
 codeToList = rec []
    where
       rec xs p 
-         | codeLength p == 0 = reverse xs
+         | codeLength p == 0 = xs
          | otherwise = rec (x:xs) p'
             where
                lk = codeValue p
@@ -196,14 +196,14 @@ codeToList = rec []
                   }
 
 -- | Build a tree from a set of codes
-buildTreeFromCodes :: [(Code,a)] -> Tree a
+buildTreeFromCodes :: Show a => [(Code,a)] -> Tree a
 buildTreeFromCodes = rec . fmap (first codeToList)
    where
       rec [] = Empty
       rec ps = case ff [] [] [] ps of
          ([],lp,rp)  -> Node (rec lp) (rec rp)
          ([v],[],[]) -> Leaf v
-         _           -> error "Invalid (ambiguous) codes"
+         x           -> error $ "Invalid (ambiguous) codes: " ++ show x
 
 
       -- characterize codes in three ways:
@@ -213,8 +213,8 @@ buildTreeFromCodes = rec . fmap (first codeToList)
       ff ep lp rp [] = (ep,lp,rp)
       ff ep lp rp (p:ps)  = case p of
          ([],v)    -> ff (v:ep) lp rp ps
-         ((L:_),_) -> ff ep (p:lp) rp ps
-         ((R:_),_) -> ff ep lp (p:rp) ps
+         ((L:r),v) -> ff ep ((r,v):lp) rp ps
+         ((R:r),v) -> ff ep lp ((r,v):rp) ps
          
 -- | Increase code length
 codeShiftL :: Int -> Code -> Code
@@ -232,8 +232,15 @@ codeShiftR n p = p
 
 -- | Add a value to a code
 codeAdd :: Word64 -> Code -> Code
-codeAdd n p = p
-   { codeLength = codeLength p
-   , codeValue  = codeValue p + n
-   }
+codeAdd 0 p = p
+codeAdd n p = codeAdd (n-1) p'
+   where
+      v   = codeValue p + 1
+      len = if testBit v (codeLength p)
+         then codeLength p + 1
+         else codeLength p
+      p'  = p
+            { codeLength = len
+            , codeValue  = v
+            }
 

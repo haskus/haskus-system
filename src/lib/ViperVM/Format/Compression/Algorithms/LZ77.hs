@@ -28,7 +28,7 @@
 --    "A Universal Algorithm for Sequential Data Compression"
 --       Ziv, Jacob; Lempel, Abraham (May 1977)
 --       IEEE Transactions on Information Theory 23 (3): 337–343
-module ViperVM.Format.Compression.LZ77
+module ViperVM.Format.Compression.Algorithms.LZ77
    ( Code(..)
    , compress
    , decompress

@@ -116,9 +116,10 @@ library
     ViperVM.STM.TGraph
 
     ViperVM.Format.CPIO
-    ViperVM.Format.Compression.Huffman
-    ViperVM.Format.Compression.LZ77
-    ViperVM.Format.Compression.Deflate
+    ViperVM.Format.Compression.Algorithms.Huffman
+    ViperVM.Format.Compression.Algorithms.LZ77
+    ViperVM.Format.Compression.Algorithms.Deflate
+    ViperVM.Format.Compression.GZip
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
@@ -252,6 +253,16 @@ executable HaskOS
 
 executable huffman
   main-is: huffman.hs
+  hs-source-dirs: src/apps
+  ghc-options: -Wall
+  default-language:    Haskell2010
+  build-depends: 
+    base,
+    ViperVM,
+    bytestring == 0.10.*
+
+executable gunzip
+  main-is: gunzip.hs
   hs-source-dirs: src/apps
   ghc-options: -Wall
   default-language:    Haskell2010

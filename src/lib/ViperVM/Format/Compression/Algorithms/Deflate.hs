@@ -3,12 +3,16 @@
 -- | Implement DEFLATE (de)compression algorithm
 --
 -- http://www.ietf.org/rfc/rfc1951.txt
-module ViperVM.Format.Compression.Deflate
+module ViperVM.Format.Compression.Algorithms.Deflate
    ( decompress
+   , makeHuffmanCodes
+   , makeBitGetFromCodes
+   , encodeRLE
    )
 where
 
 import Data.List (sortBy)
+import Data.Tuple (swap)
 import Data.Word
 import Data.Maybe (fromJust)
 import Data.Bits (shiftL, xor, (.|.), (.&.), testBit)
@@ -22,7 +26,7 @@ import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 import Data.Ord(comparing)
 
-import ViperVM.Format.Compression.Huffman
+import ViperVM.Format.Compression.Algorithms.Huffman
 
 -- 
 -- Compressed data are split in blocks. Blocks are *not* byte aligned.
@@ -30,7 +34,7 @@ import ViperVM.Format.Compression.Huffman
 
 -- | Decompress all blocks
 decompress :: BitGet (Seq Word8)
-decompress = rec Seq.empty
+decompress = withBitOrder LB (rec Seq.empty)
    where
       rec s = getBlock s >>= \case
          (s',True)  -> return s' -- Final block
@@ -86,7 +90,7 @@ getRawBlock = do
    when (len /= nlen `xor` 0xFF) $
       error "Invalid uncompressed block length"
    -- Read raw data
-   bs <- getByteString (fromIntegral len)
+   bs <- withBitOrder BB $ getByteString (fromIntegral len)
    return (Seq.fromList (BS.unpack bs))
 
 -- | A block is a sequence of tokens
@@ -144,7 +148,7 @@ getDynamicToken = do
 getTables :: BitGet ([Word8],[Word8])
 getTables = do
    -- Get the number of entries in each table
-   nlits  <- fromIntegral . (+257) <$> getWord16be 5  -- # of literal/length codes [257..286]
+   nlits  <- fromIntegral . (+257) <$> getWord16 5    -- # of literal/length codes [257..286]
    ndist  <- fromIntegral . (+1)   <$> getWord8 5     -- # of distance codes [1..32]
    nclen  <- fromIntegral . (+4)   <$> getWord8 4     -- # of RLE code lengths [4..19]
    -- Get the table decoder
@@ -158,10 +162,23 @@ getTables = do
 -- | Run-length encoding
 data RLE
    = Value Word8        -- ^ A value [1..15]
-   | Repeat2bits        -- ^ 2 extra bits indicating repetition (3-6 times)
-   | Repeat3bits        -- ^ 3 extra bits indicating repetition (3-10 times)
-   | Repeat7bits        -- ^ 7 extra bits indicating repetition (11-138 times)
-   deriving (Show,Eq,Ord)
+   | Repeat2bits        -- ^ 2 extra bits indicating repetition of last value (3-6 times)
+   | Repeat3bits        -- ^ 3 extra bits indicating repetition of 0 (3-10 times)
+   | Repeat7bits        -- ^ 7 extra bits indicating repetition of 0 (11-138 times)
+   deriving (Show,Eq)
+
+instance Ord RLE where
+   compare = comparing f
+      where
+         f (Value x)   = x
+         f Repeat2bits = 16
+         f Repeat3bits = 17
+         f Repeat7bits = 18
+
+data RawRLE a
+   = RLEValue a
+   | RLERepeat Word8   -- ^ Repeat last (3-6 times)
+   | RLEZeroes Word8   -- ^ Fill with zeroes (3-138 times)
 
 -- | Read the table to build the RLE decoder. Return a RLE-encoded table decoder.
 getTableDecoder :: Int -> BitGet (Int -> BitGet [Word8])
@@ -174,10 +191,9 @@ getTableDecoder nclen = do
    -- trailing codes
    let 
       cl = [Repeat2bits, Repeat3bits, Repeat7bits, Value 0,
-            Value 8, Value 7,  Value 9, Value 6,  Value 10,
-            Value 5, Value 11, Value 4, Value 12, Value 3,
-            Value 3, Value 13, Value 2, Value 14, Value 1,
-            Value 15]
+            Value 8,  Value 7,  Value 9, Value 6,  Value 10,
+            Value 5,  Value 11, Value 4, Value 12, Value 3,
+            Value 13, Value 2, Value 14, Value 1, Value 15]
       
       g = makeBitGetFromCodes (cl `zip` clens)
 
@@ -198,11 +214,24 @@ makeRLEDecoder get = rec []
             rec (replicate rep (head xs) ++ xs) (n-1)
          Repeat3bits -> do
             rep <- fromIntegral . (+3) <$> getWord8 3
-            rec (replicate rep (head xs) ++ xs) (n-1)
+            rec (replicate rep 0 ++ xs) (n-1)
          Repeat7bits -> do
             rep <- fromIntegral . (+11) <$> getWord8 7
-            rec (replicate rep (head xs) ++ xs) (n-1)
+            rec (replicate rep 0 ++ xs) (n-1)
 
+encodeRLE :: (Num a, Eq a) => [a] -> [RawRLE a]
+encodeRLE = reverse . rec []
+   where
+      rec xs' ys' = case (xs',ys') of
+         (xs,[])                              -> xs
+         (RLEValue 0:RLEValue 0:xs, 0:ys)     -> rec (RLEZeroes 3:xs) ys
+         (RLEZeroes n:RLEValue 0:xs, 0:ys)
+            | n < 138                         -> rec (RLEZeroes (n+1):xs) ys
+         (RLEValue x1:RLEValue x2:RLEValue x3:xs, y:ys)
+            | x1 == x2 && x1 == x3 && x1 == y -> rec (RLERepeat 3:RLEValue x1:xs) ys
+         (RLERepeat n:RLEValue x:xs, y:ys)
+            | x == y && n < 6                 -> rec (RLERepeat (n+1):RLEValue x:xs) ys
+         (xs,y:ys)                            -> rec (RLEValue y:xs) ys
 
 
 -- | Read the length for the Copy token with the fixed Huffman compression
@@ -217,14 +246,14 @@ getFixedLength code = case code of
    --       4*(1-2^n)/(1-2) + r*(2^n) + e + 7
    --
    -- It simplifies to: (4+r)*2^n + e + 3
-   x | x <= 284 -> f <$> getWord16be n
+   x | x <= 284 -> f <$> getWord16 n
          where 
             (n,r) = (code-261) `divMod` 4
             r'    = fromIntegral r
             f e   = fromIntegral $ (4+r') * 2^n + e + 3
 
    285 -> return 258
-   _   -> error "Invalid length code"
+   _   -> error $ "Invalid length code: " ++ show code
 
 
 -- | Read the distance for the Copy token with the fixed Huffman compression
@@ -233,7 +262,7 @@ getFixedDistance = getWord8 5 >>= \case
    x | x <= 1 -> return (fromIntegral x + 1)
 
       -- The magic formula is very similar to the one in 'getFixedLength'
-   x -> f <$> getWord32be n
+   x -> f <$> getWord32 n
          where 
             (n,r) = (fromIntegral x-2) `divMod` 2
             r'    = fromIntegral r
@@ -279,7 +308,7 @@ getFixedCode = do
 
       -- B
       | b .&. 0xC == 0xC -> do
-            b2 <- getWord16be 5
+            b2 <- getWord16 5
             let b' = fromIntegral b
             let r  = fromIntegral $ ((b' `shiftL` 5) .|. b2)
             return (r - 400 + 144)
@@ -318,28 +347,27 @@ getFixedCode = do
 -- These properties allow the Huffman encoding to be provided with only a
 -- sequence of code lengths. A null code length indicates an element that
 -- cannot be encoded.
-makeHuffmanCodes :: (Ord b,Num b) => [(a,b)] -> [(Code,a)]
+makeHuffmanCodes :: (Show b,Show a, Ord a, Ord b,Num b) => [(a,b)] -> [(Code,a)]
 makeHuffmanCodes = rec emptyCode [] . msort
    where
-      -- Sort by code length, then by index in the stream
-      csort ((_,b),i) = (b,i)
-      msort = fmap fst . sortBy (comparing csort) . (`zip` ([0..] :: [Int]))
+      -- sort by length, then by value ordering
+      msort = sortBy (comparing swap)
 
       -- Encode each symbol, recursively
-      rec _ xs [] = xs
+      rec _ xs [] = reverse xs
       rec c xs ys@((v,l):ls)
          -- Skip symbols with length == 0
-         | l == 0    = rec c ((emptyCode,v):xs) ls
+         | l == 0    = rec c xs ls
          -- Assign current code if the code length matches
          | l == cl   = rec (codeAdd 1 c) ((c,v):xs) ls
          -- Otherwise, increase the current code length, prefixed with the
          -- current code
-         | l < cl    = rec (codeShiftL 1 c) xs ys
+         | cl < l    = rec (codeShiftL 1 c) xs ys
          -- Shouldn't occur, except for negative code lengths...
-         | otherwise = error "Invalid length"
+         | otherwise = error $ "Invalid length: " ++ show l ++ " cl: " ++ show cl
          where
             cl = fromIntegral (codeLength c)
 
 -- | Create a Huffman code getter from a list of codes
-makeBitGetFromCodes :: (Ord b, Num b) => [(a,b)] -> BitGet a
-makeBitGetFromCodes = fmap fromJust . makeBitGet True . buildTreeFromCodes . makeHuffmanCodes
+makeBitGetFromCodes :: (Show a, Show b, Ord a, Ord b, Num b) => [(a,b)] -> BitGet a
+makeBitGetFromCodes = fmap fromJust . makeBitGet True . buildTreeFromCodes . makeHuffmanCodes 
