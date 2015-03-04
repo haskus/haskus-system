@@ -7,7 +7,6 @@ module ViperVM.Format.Compression.Algorithms.Deflate
    ( decompress
    , makeHuffmanCodes
    , makeBitGetFromCodes
-   , encodeRLE
    )
 where
 
@@ -112,20 +111,20 @@ decodeBlock getToken s = getToken >>= \case
          w  = Seq.fromList (take len ss) 
 
 -- | Create a getToken getter
-makeGetToken :: BitGet Int -> BitGet Int -> BitGet (Token Word8)
-makeGetToken getCode getDist = do
+makeGetToken :: BitGet Int -> BitGet Word8 -> BitGet (Token Word8)
+makeGetToken getCode getDistCode = do
    code <- getCode
    case code of
       256            -> return EndOfBlock
       _ | code < 256 -> return (Literal (fromIntegral code))
       _ -> do
          len  <- getFixedLength code
-         dist <- getDist
+         dist <- getDistCode >>= getDistance
          return (Copy dist len)
 
 -- | Return the next token with fixed Huffman compression
 getFixedToken :: BitGet (Token Word8)
-getFixedToken = makeGetToken getFixedCode getFixedDistance
+getFixedToken = makeGetToken getFixedCode getFixedDistanceCode
 
 
 -- | Create the getToken method with dynamic Huffman compression
@@ -136,9 +135,9 @@ getDynamicToken :: BitGet (BitGet (Token Word8))
 getDynamicToken = do
    (lits,dist) <- getTables
    let
-      getCode = makeBitGetFromCodes ([0..285] `zip` lits)
-      getDist = makeBitGetFromCodes ([0..29] `zip` dist)
-   return $ makeGetToken getCode getDist
+      getCode     = makeBitGetFromCodes ([0..285] `zip` lits)
+      getDistCode = makeBitGetFromCodes ([0..29] `zip` dist)
+   return $ makeGetToken getCode getDistCode
 
 -- | Read tables for dynamic Huffman compression
 --
@@ -151,6 +150,7 @@ getTables = do
    nlits  <- fromIntegral . (+257) <$> getWord16 5    -- # of literal/length codes [257..286]
    ndist  <- fromIntegral . (+1)   <$> getWord8 5     -- # of distance codes [1..32]
    nclen  <- fromIntegral . (+4)   <$> getWord8 4     -- # of RLE code lengths [4..19]
+
    -- Get the table decoder
    getTable <- getTableDecoder nclen
    -- Decode both tables at once because the RLE coding can overlap
@@ -160,25 +160,20 @@ getTables = do
 
 
 -- | Run-length encoding
-data RLE
+data RLECode
    = Value Word8        -- ^ A value [1..15]
    | Repeat2bits        -- ^ 2 extra bits indicating repetition of last value (3-6 times)
    | Repeat3bits        -- ^ 3 extra bits indicating repetition of 0 (3-10 times)
    | Repeat7bits        -- ^ 7 extra bits indicating repetition of 0 (11-138 times)
    deriving (Show,Eq)
 
-instance Ord RLE where
+instance Ord RLECode where
    compare = comparing f
       where
          f (Value x)   = x
          f Repeat2bits = 16
          f Repeat3bits = 17
          f Repeat7bits = 18
-
-data RawRLE a
-   = RLEValue a
-   | RLERepeat Word8   -- ^ Repeat last (3-6 times)
-   | RLEZeroes Word8   -- ^ Fill with zeroes (3-138 times)
 
 -- | Read the table to build the RLE decoder. Return a RLE-encoded table decoder.
 getTableDecoder :: Int -> BitGet (Int -> BitGet [Word8])
@@ -203,7 +198,7 @@ getTableDecoder nclen = do
 --
 -- The table decoder uses the Huffman tree to decode the RLE code.
 -- Then it decodes the RLE code and returns the decoded values.
-makeRLEDecoder :: BitGet RLE -> Int -> BitGet [Word8]
+makeRLEDecoder :: BitGet RLECode -> Int -> BitGet [Word8]
 makeRLEDecoder get = rec []
    where
       rec xs 0 = return (reverse xs)
@@ -211,27 +206,13 @@ makeRLEDecoder get = rec []
          Value x     -> rec (x:xs) (n-1)
          Repeat2bits -> do
             rep <- fromIntegral . (+3) <$> getWord8 2
-            rec (replicate rep (head xs) ++ xs) (n-1)
+            rec (replicate rep (head xs) ++ xs) (n-rep)
          Repeat3bits -> do
             rep <- fromIntegral . (+3) <$> getWord8 3
-            rec (replicate rep 0 ++ xs) (n-1)
+            rec (replicate rep 0 ++ xs) (n-rep)
          Repeat7bits -> do
-            rep <- fromIntegral . (+11) <$> getWord8 7
-            rec (replicate rep 0 ++ xs) (n-1)
-
-encodeRLE :: (Num a, Eq a) => [a] -> [RawRLE a]
-encodeRLE = reverse . rec []
-   where
-      rec xs' ys' = case (xs',ys') of
-         (xs,[])                              -> xs
-         (RLEValue 0:RLEValue 0:xs, 0:ys)     -> rec (RLEZeroes 3:xs) ys
-         (RLEZeroes n:RLEValue 0:xs, 0:ys)
-            | n < 138                         -> rec (RLEZeroes (n+1):xs) ys
-         (RLEValue x1:RLEValue x2:RLEValue x3:xs, y:ys)
-            | x1 == x2 && x1 == x3 && x1 == y -> rec (RLERepeat 3:RLEValue x1:xs) ys
-         (RLERepeat n:RLEValue x:xs, y:ys)
-            | x == y && n < 6                 -> rec (RLERepeat (n+1):RLEValue x:xs) ys
-         (xs,y:ys)                            -> rec (RLEValue y:xs) ys
+            rep <- fromIntegral . (+11) <$> getWord16 7
+            rec (replicate rep 0 ++ xs) (n-rep)
 
 
 -- | Read the length for the Copy token with the fixed Huffman compression
@@ -250,23 +231,30 @@ getFixedLength code = case code of
          where 
             (n,r) = (code-261) `divMod` 4
             r'    = fromIntegral r
-            f e   = fromIntegral $ (4+r') * 2^n + e + 3
+            f e   = fromIntegral $ (4+r') * (1 `shiftL` n) + e + 3
 
    285 -> return 258
    _   -> error $ "Invalid length code: " ++ show code
 
+-- | Read distance code with the fixed Huffman compression
+getFixedDistanceCode :: BitGet Word8
+getFixedDistanceCode = withBitOrder LL (getWord8 5)
+
 
 -- | Read the distance for the Copy token with the fixed Huffman compression
-getFixedDistance :: BitGet Int
-getFixedDistance = getWord8 5 >>= \case
+getDistance :: Word8 -> BitGet Int
+getDistance = \case
    x | x <= 1 -> return (fromIntegral x + 1)
 
       -- The magic formula is very similar to the one in 'getFixedLength'
+   --       2*(1-2^n)/(1-2) + r*(2^n) + e + 1
+   --
+   -- It simplifies to: (r+2) * 2^n + e + 1
    x -> f <$> getWord32 n
          where 
             (n,r) = (fromIntegral x-2) `divMod` 2
             r'    = fromIntegral r
-            f e   = fromIntegral $ (2+r') * 2^n + e + 1
+            f e   = fromIntegral $ (r'+2) * (1 `shiftL` n) + e + 1
 
 
 -- | Put the token code with the fixed Huffman compression
@@ -297,32 +285,31 @@ putFixedCode code
 
 -- | Get the token code with the fixed Huffman compression
 getFixedCode :: BitGet Int
-getFixedCode = do
-   b <- getWord8 4
+getFixedCode = fromIntegral <$> do
+   b <- getWord16 4
 
       -- D
    if | b  == 0xC -> do
-            b2 <- getWord8 4
-            let r = fromIntegral $ ((b `shiftL` 4) .|. b2)
+            b2 <- getWord16 4
+            let r = (b `shiftL` 4) .|. b2
             return (r - 192 + 280)
 
       -- B
       | b .&. 0xC == 0xC -> do
             b2 <- getWord16 5
-            let b' = fromIntegral b
-            let r  = fromIntegral $ ((b' `shiftL` 5) .|. b2)
+            let r  = (b `shiftL` 5) .|. b2
             return (r - 400 + 144)
 
       -- C
       | (b .&. 0xC == 0) && (testBit b 0 /= testBit b 1) -> do
-            b2 <- getWord8 3
-            let r = fromIntegral $ ((b `shiftL` 3) .|. b2)
+            b2 <- getWord16 3
+            let r = (b `shiftL` 3) .|. b2
             return (r + 256)
 
       -- A
       | otherwise -> do
-            b2 <- getWord8 4
-            let r = fromIntegral $ ((b `shiftL` 4) .|. b2)
+            b2 <- getWord16 4
+            let r = (b `shiftL` 4) .|. b2
             return (r - 48)
 
 -- | Compute Huffman codes from a list of code lengths with given (unchecked)
