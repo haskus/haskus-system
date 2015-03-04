@@ -9,13 +9,14 @@ where
 import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 
 import Data.Sequence (Seq)
+import Data.Foldable (toList)
 import Data.Word
 import Data.Binary.Get
 import Data.Binary.Bits.Get (block,bool,runBitGet,skipBits)
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString.Lazy (pack,ByteString)
 import Text.Printf
 
 data Member = Member 
@@ -23,7 +24,7 @@ data Member = Member
    , memberTime    :: Word32
    , memberName    :: String
    , memberComment :: String
-   , memberContent :: Seq Word8
+   , memberContent :: ByteString
    }
 
 
@@ -80,7 +81,7 @@ getMember = do
    crc32 <- getWord32le
    isize <- getWord32le
       
-   return $ Member flags mtime name comment content
+   return $ Member flags mtime name comment (pack (toList content))
       
 
 
