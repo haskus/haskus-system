@@ -161,7 +161,7 @@ library
     c-storable-deriving == 0.1.1,
     fixed-vector == 0.7.*,
     binary == 0.7.*,
-    binary-bits == 0.5.1,
+    binary-bits == 0.6,
     utf8-string == 0.3.*,
     pqueue == 1.2.*
 

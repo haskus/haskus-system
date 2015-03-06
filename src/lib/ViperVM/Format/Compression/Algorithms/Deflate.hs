@@ -19,6 +19,7 @@ import Control.Monad (when,replicateM)
 import Control.Applicative ((<$>), (<*>))
 import Data.Binary.Bits.Get
 import Data.Binary.Bits.Put
+import Data.Binary.Bits.BitOrder
 import qualified Data.ByteString as BS
 import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
