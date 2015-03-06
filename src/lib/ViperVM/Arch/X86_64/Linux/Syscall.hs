@@ -157,7 +157,6 @@ syscall0 = syscall0_
 98	common	getrusage		sys_getrusage
 99	common	sysinfo			sys_sysinfo
 100	common	times			sys_times
-101	64	ptrace			sys_ptrace
 103	common	syslog			sys_syslog
 109	common	setpgid			sys_setpgid
 111	common	getpgrp			sys_getpgrp

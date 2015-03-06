@@ -7,6 +7,7 @@ module ViperVM.Arch.Linux.ErrorCode
    , toErrorCode
    , onSuccessIO
    , onSuccess
+   , onSuccessId
    )
 where
 
@@ -50,6 +51,9 @@ onSuccess sc f = do
    return $ case defaultCheck ret of
       Just err -> Left err
       Nothing  -> Right (f ret)
+
+onSuccessId :: IO Int64 -> SysRet Int64
+onSuccessId = flip onSuccess id
 
 -- | Linux error codes
 data ErrorCode

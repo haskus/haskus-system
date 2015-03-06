@@ -41,6 +41,7 @@ library
     ViperVM.Arch.X86_64.Linux.Futex
     ViperVM.Arch.X86_64.Linux.Time
     ViperVM.Arch.X86_64.Linux.Utils
+    ViperVM.Arch.X86_64.Linux.Trace
 
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.FileDescriptor
