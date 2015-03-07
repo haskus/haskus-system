@@ -34,7 +34,7 @@ import ViperVM.Format.Compression.Algorithms.Huffman
 
 -- | Decompress all blocks
 decompress :: BitGet (Seq Word8)
-decompress = withBitOrder LB (rec Seq.empty)
+decompress = withBitOrder LL (rec Seq.empty)
    where
       rec s = getBlock s >>= \case
          (s',True)  -> return s' -- Final block
@@ -239,7 +239,7 @@ getFixedLength code = case code of
 
 -- | Read distance code with the fixed Huffman compression
 getFixedDistanceCode :: BitGet Word8
-getFixedDistanceCode = withBitOrder LL (getWord8 5)
+getFixedDistanceCode = withBitOrder LB (getWord8 5)
 
 
 -- | Read the distance for the Copy token with the fixed Huffman compression
