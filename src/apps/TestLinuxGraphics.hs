@@ -1,20 +1,19 @@
 {-# LANGUAGE RecordWildCards #-}
-import ViperVM.Arch.Linux.Graphics
-import ViperVM.Arch.Linux.Graphics.DumbBuffer
+import ViperVM.Arch.Linux.Graphics.Graphics
+import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Card
-import ViperVM.Arch.Linux.Graphics.IDs
+import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.Linux.ErrorCode
 
 import Control.Monad.Trans.Either
-import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (forM_)
 
@@ -41,17 +40,18 @@ main = do
       -- Open device
       fd <- EitherT $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
 
-      -- Test for DumbBuffer capability
-      cap <- (/= 0) <$> (EitherT $ getCapability ioctl fd CapDumbBuffer)
+      card <- EitherT $ getCard ioctl fd
+
+      -- Test for GenericBuffer capability
+      cap <- EitherT $ cardHasSupportFor ioctl card CapGenericBuffer
       hoistEither $ if cap
          then Left ENOENT 
          else Right ()
 
-      liftIO $ putStrLn "The card has DumbBuffer capability :)"
+      liftIO $ putStrLn "The card has GenericBuffer capability :)"
 
       liftIO $ putStrLn "==================\n= CARD\n=================="
 
-      card <- EitherT $ getCard ioctl fd
       liftIO $ putStrLn $ show card
 
 
@@ -100,22 +100,22 @@ main = do
          bpp    = 32
          dbFlags = 0
 
-      -- create a dumb buffer
-      db <- EitherT $ createDumbBuffer ioctl fd width height bpp dbFlags
+      -- create a generic buffer
+      db <- EitherT $ createGenericBuffer ioctl fd width height bpp dbFlags
 
-      -- create a framebuffer for the dumb buffer
+      -- create a framebuffer for the generic buffer
       let 
-         plane = Plane (dumbBufferHandle db) (dumbBufferPitch db) 0
+         plane = Plane (genericBufferHandle db) (genericBufferPitch db) 0
          fmt   = PixelFormat RGBX8888 LittleEndian
          fbFlgs = 0
       fb <- EitherT $ addFrameBuffer ioctl fd width height fmt fbFlgs [plane]
 
       -- prepare buffer for memory mapping
-      dbmap <- EitherT $ mapDumbBuffer ioctl fd db
+      dbmap <- EitherT $ mapGenericBuffer ioctl fd db
 
 	   -- perform actual memory mapping
-      let size = dumbBufferSize db
-      mem <- EitherT $ mmap Nothing size [ProtRead,ProtWrite] [MapShared] (Just (fd, dumbMapOffset dbmap))
+      let size = genericBufferSize db
+      mem <- EitherT $ mmap Nothing size [ProtRead,ProtWrite] [MapShared] (Just (fd, genericMapOffset dbmap))
 
       return ()
 

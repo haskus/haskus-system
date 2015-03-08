@@ -50,12 +50,17 @@ library
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
-    ViperVM.Arch.Linux.Graphics
     ViperVM.Arch.Linux.Graphics.LowLevel
-    ViperVM.Arch.Linux.Graphics.IDs
+    ViperVM.Arch.Linux.Graphics.LowLevel.Card
+    ViperVM.Arch.Linux.Graphics.LowLevel.Capability
+    ViperVM.Arch.Linux.Graphics.LowLevel.Connector
+    ViperVM.Arch.Linux.Graphics.LowLevel.Controller
+    ViperVM.Arch.Linux.Graphics.LowLevel.IDs
+    ViperVM.Arch.Linux.Graphics.LowLevel.Mode
+    ViperVM.Arch.Linux.Graphics.Graphics
     ViperVM.Arch.Linux.Graphics.Card
     ViperVM.Arch.Linux.Graphics.Mode
-    ViperVM.Arch.Linux.Graphics.DumbBuffer
+    ViperVM.Arch.Linux.Graphics.GenericBuffer
     ViperVM.Arch.Linux.Graphics.FrameBuffer
     ViperVM.Arch.Linux.Graphics.PixelFormat
     ViperVM.Arch.Linux.Graphics.Controller

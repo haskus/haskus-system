@@ -7,24 +7,16 @@
 
 -- | Low level bindings
 module ViperVM.Arch.Linux.Graphics.LowLevel
-   ( ModeType(..)
-   , ModeFlag(..)
-   , PowerMode(..)
+   ( PowerMode(..)
    , ScalingMode(..)
    , DitheringMode(..)
    , DirtyMode(..)
-   , ModeStruct(..)
-   , CardStruct(..)
-   , ControllerStruct(..)
    , ModeFieldPresent(..)
    , SetPlaneStruct(..)
    , GetPlaneStruct(..)
    , GetPlaneResStruct(..)
    , EncoderType(..)
    , GetEncoderStruct(..)
-   , SubConnectorType(..)
-   , ConnectorType(..)
-   , ConnectorStruct(..)
    , PropertyType(..)
    , toPropType
    , fromPropType
@@ -49,9 +41,9 @@ module ViperVM.Arch.Linux.Graphics.LowLevel
    , ControllerLutStruct(..)
    , ModePageFlip(..)
    , PageFlipStruct(..)
-   , CreateDumbStruct(..)
-   , MapDumbStruct(..)
-   , DestroyDumbStruct(..)
+   , CreateGenericStruct(..)
+   , MapGenericStruct(..)
+   , DestroyGenericStruct(..)
    )
 where
 
@@ -67,6 +59,8 @@ import Data.Vector.Fixed.Storable (Vec)
 import GHC.Generics (Generic)
 import Data.Bits
 
+import ViperVM.Arch.Linux.Graphics.LowLevel.Mode
+
 type N32 = -- 32 
    S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (
    S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
@@ -79,49 +73,8 @@ type Vec4 = Vec (S (S (S (S Z))))
 -- From drm/drm_mode.h
 --------------------------------------------
 
-type DisplayInfoLength   = N32
 type ConnectorNameLength = N32
-type DisplayModeLength   = N32
 type PropertyNameLength  = N32
-
-data ModeType
-   = ModeTypeBuiltin
-   | ModeTypeClockC
-   | ModeTypeControllerC
-   | ModeTypePreferred
-   | ModeTypeDefault
-   | ModeTypeUserDef
-   | ModeTypeDriver
-   deriving (Show,Enum)
-
-instance EnumBitSet ModeType
-
-data ModeFlag
-   = ModeFlagPHSync
-   | ModeFlagNHSync
-   | ModeFlagPVSync
-   | ModeFlagNVSync
-   | ModeFlagInterlace
-   | ModeFlagDoubleScan
-   | ModeFlagCSync
-   | ModeFlagPCSync
-   | ModeFlagNCSync
-   | ModeFlagHSkew
-   | ModeFlagBroadCast
-   | ModeFlagPixMux
-   | ModeFlagDoubleClock
-   | ModeFlagClockDiv2
-   | ModeFlag3DFramePacking
-   | ModeFlag3DFieldAlternative
-   | ModeFlag3DLineAlternative
-   | ModeFlag3DSideBySideFull
-   | ModeFlag3DLDepth
-   | ModeFlag3DLDepthGFXGFXDepth
-   | ModeFlag3DTopAndBottom
-   | ModeFlag3DSideBySideHalf
-   deriving (Show,Enum)
-
-instance EnumBitSet ModeFlag
 
 -- | DPMS flags
 data PowerMode 
@@ -152,68 +105,6 @@ data DirtyMode
    | DirtyOn
    | DirtyAnnotate
    deriving (Show,Enum)
-
--- | Data matching the C structure drm_mode_modeinfo
-data ModeStruct = ModeStruct
-   { miClock         :: Word32
-   , miHDisplay, miHSyncStart, miHSyncEnd, miHTotal, miHSkew :: Word16
-   , miVDisplay, miVSyncStart, miVSyncEnd, miVTotal, miVScan :: Word16
-   , miVRefresh      :: Word32
-   , miFlags         :: Word32
-   , miType          :: Word32
-   , miName          :: StorableWrap (Vec DisplayModeLength CChar)
-   } deriving Generic
-
-instance CStorable ModeStruct
-instance Storable ModeStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
--- | Data matching the C structure drm_mode_card_res
-data CardStruct = CardStruct
-   { csFbIdPtr    :: Word64
-   , csCrtcIdPtr  :: Word64
-   , csConnIdPtr  :: Word64
-   , csEncIdPtr   :: Word64
-   , csCountFbs   :: Word32
-   , csCountCrtcs :: Word32
-   , csCountConns :: Word32
-   , csCountEncs  :: Word32
-   , csMinWidth   :: Word32
-   , csMaxWidth   :: Word32
-   , csMinHeight  :: Word32
-   , csMaxHeight  :: Word32
-   } deriving Generic
-
-instance CStorable CardStruct
-instance Storable CardStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
-
--- | Data matching the C structure drm_mode_crtc
-data ControllerStruct = ControllerStruct
-   { cosSetConnPtr   :: Word64
-   , cosCountconns   :: Word32
-   , cosCrtcId       :: Word32
-   , cosFbId         :: Word32
-   , cosX            :: Word32
-   , cosY            :: Word32
-   , cosGammaSize    :: Word32
-   , cosModeValid    :: Word32
-   , cosMode         :: ModeStruct
-   } deriving Generic
-
-instance CStorable ControllerStruct
-instance Storable ControllerStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
 
 
 data ModeFieldPresent
@@ -301,109 +192,6 @@ instance Storable GetEncoderStruct where
    alignment   = cAlignment
    poke        = cPoke
    peek        = cPeek
-
-data SubConnectorType
-   = SubConnectorAuto
-   | SubConnectorUnknown
-   | SubConnectorDVID
-   | SubConnectorDVIA
-   | SubConnectorComposite
-   | SubConnectorSVIDEO
-   | SubConnectorComponent
-   | SubConnectorSCART
-   deriving (Show)
-
-instance Enum SubConnectorType where
-   toEnum x = case x of
-      0 -> SubConnectorUnknown
-      3 -> SubConnectorDVID
-      4 -> SubConnectorDVIA
-      5 -> SubConnectorComposite
-      6 -> SubConnectorSVIDEO
-      8 -> SubConnectorComponent
-      9 -> SubConnectorSCART
-      _ -> error $ "Invalid sub-connector type (" ++ show x ++ ")"
-
-   fromEnum x = case x of
-      SubConnectorAuto        -> 0
-      SubConnectorUnknown     -> 0
-      SubConnectorDVID        -> 3
-      SubConnectorDVIA        -> 4
-      SubConnectorComposite   -> 5
-      SubConnectorSVIDEO      -> 6
-      SubConnectorComponent   -> 8
-      SubConnectorSCART       -> 9
-
--- | Connector type
-data ConnectorType
-   = ConnectorTypeUnknown
-   | ConnectorTypeVGA
-   | ConnectorTypeDVII
-   | ConnectorTypeDVID
-   | ConnectorTypeDVIA
-   | ConnectorTypeComposite
-   | ConnectorTypeSVIDEO
-   | ConnectorTypeLVDS
-   | ConnectorTypeComponent
-   | ConnectorType9PinDIN
-   | ConnectorTypeDisplayPort
-   | ConnectorTypeHDMIA
-   | ConnectorTypeHDMIB
-   | ConnectorTypeTV
-   | ConnectorTypeeDP
-   | ConnectorTypeVirtual
-   | ConnectorTypeDSI
-   deriving (Eq, Ord, Enum)
-
-instance Show ConnectorType where
-   show x = case x of
-      ConnectorTypeUnknown       -> "Unknown"
-      ConnectorTypeVGA           -> "VGA"
-      ConnectorTypeDVII          -> "DVI-I"
-      ConnectorTypeDVID          -> "DVI-D"
-      ConnectorTypeDVIA          -> "DVI-A"
-      ConnectorTypeComposite     -> "Composite"
-      ConnectorTypeSVIDEO        -> "SVIDEO"
-      ConnectorTypeLVDS          -> "LVDS"
-      ConnectorTypeComponent     -> "Component"
-      ConnectorType9PinDIN       -> "9PinDIN"
-      ConnectorTypeDisplayPort   -> "DisplayPort"
-      ConnectorTypeHDMIA         -> "HDMI-A"
-      ConnectorTypeHDMIB         -> "HDMI-B"
-      ConnectorTypeTV            -> "TV"
-      ConnectorTypeeDP           -> "eDP"
-      ConnectorTypeVirtual       -> "Virtual"
-      ConnectorTypeDSI           -> "DSI"
-
-
--- | Data matching the C structure drm_mode_get_connector
-data ConnectorStruct = ConnectorStruct
-   { connEncodersPtr       :: Word64
-   , connModesPtr          :: Word64
-   , connPropsPtr          :: Word64
-   , connPropValuesPtr     :: Word64
-
-   , connModesCount        :: Word32
-   , connPropsCount        :: Word32
-   , connEncodersCount     :: Word32
-
-   , connEncoderID_        :: Word32   -- ^ current encoder
-   , connConnectorID_      :: Word32   -- ^ ID
-   , connConnectorType_    :: Word32
-   , connConnectorTypeID_  :: Word32
-
-   , connConnection_       :: Word32
-   , connWidth_            :: Word32   -- ^ HxW in millimeters
-   , connHeight_           :: Word32
-   , connSubPixel_         :: Word32
-   } deriving Generic
-
-instance CStorable ConnectorStruct
-instance Storable ConnectorStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
 
 -- | Type of the property
 data PropertyType
@@ -741,7 +529,7 @@ instance Storable  PageFlipStruct where
    poke        = cPoke
 
 -- | Data matching the C structure drm_mode_create_dumb
-data CreateDumbStruct = CreateDumbStruct
+data CreateGenericStruct = CreateGenericStruct
    { cdHeight        :: Word32
    , cdWidth         :: Word32
    , cdBPP           :: Word32
@@ -751,34 +539,34 @@ data CreateDumbStruct = CreateDumbStruct
    , cdSize          :: Word64
    } deriving Generic
 
-instance CStorable CreateDumbStruct
-instance Storable  CreateDumbStruct where
+instance CStorable CreateGenericStruct
+instance Storable  CreateGenericStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    peek        = cPeek
    poke        = cPoke
 
 -- | Data matching the C structure drm_mode_map_dumb
-data MapDumbStruct = MapDumbStruct
+data MapGenericStruct = MapGenericStruct
    { mdHandle        :: Word32
    , mdPad           :: Word32
    , mdOffset        :: Word64
    } deriving Generic
 
-instance CStorable MapDumbStruct
-instance Storable  MapDumbStruct where
+instance CStorable MapGenericStruct
+instance Storable  MapGenericStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    peek        = cPeek
    poke        = cPoke
 
 -- | Data matching the C structure drm_mode_destroy_dumb
-data DestroyDumbStruct = DestroyDumbStruct
+data DestroyGenericStruct = DestroyGenericStruct
    { ddHandle     :: Word32
    } deriving Generic
 
-instance CStorable DestroyDumbStruct
-instance Storable  DestroyDumbStruct where
+instance CStorable DestroyGenericStruct
+instance Storable  DestroyGenericStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    peek        = cPeek

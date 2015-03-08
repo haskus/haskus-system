@@ -5,13 +5,10 @@ import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.ErrorCode
 
-import ViperVM.Arch.Linux.Graphics
+import ViperVM.Arch.Linux.Graphics.Graphics
 import ViperVM.Arch.Linux.Graphics.Card
-import ViperVM.Arch.Linux.Graphics.DumbBuffer
-import ViperVM.Arch.Linux.Graphics.FrameBuffer
-import ViperVM.Arch.Linux.Graphics.PixelFormat
+import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
-import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Connector
 
 import Control.Monad.Trans.Either
@@ -37,10 +34,10 @@ main = do
                   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
       card  <- try "Get card information from descriptor" $
                   getCard ioctl fd
-      cap   <- try "Get DumbBuffer capability" $
-                  cardCapability ioctl card CapDumbBuffer
+      cap   <- try "Get GenericBuffer capability" $
+                  cardCapability ioctl card CapGenericBuffer
       hoistEither $ if cap == 0
-         then Left ("Test DumbBuffer capability", ENOENT) 
+         then Left ("Test GenericBuffer capability", ENOENT) 
          else Right ()
 
       conns <- liftIO $ cardConnectors ioctl card
@@ -64,7 +61,7 @@ main = do
          dbFlags = 0
 
       dumb <- try "Create a dumb buffer" $
-                  createDumbBuffer ioctl fd width height bpp dbFlags
+                  createGenericBuffer ioctl fd width height bpp dbFlags
       return (Right dumb)
 
    case ret of
