@@ -39,9 +39,6 @@ module ViperVM.Arch.Linux.Graphics.LowLevel
    , ControllerLutStruct(..)
    , ModePageFlip(..)
    , PageFlipStruct(..)
-   , CreateGenericStruct(..)
-   , MapGenericStruct(..)
-   , DestroyGenericStruct(..)
    )
 where
 
@@ -71,7 +68,6 @@ type Vec4 = Vec (S (S (S (S Z))))
 -- From drm/drm_mode.h
 --------------------------------------------
 
-type ConnectorNameLength = N32
 type PropertyNameLength  = N32
 
 -- | DPMS flags
@@ -501,46 +497,3 @@ instance Storable  PageFlipStruct where
    peek        = cPeek
    poke        = cPoke
 
--- | Data matching the C structure drm_mode_create_dumb
-data CreateGenericStruct = CreateGenericStruct
-   { cdHeight        :: Word32
-   , cdWidth         :: Word32
-   , cdBPP           :: Word32
-   , cdFlags         :: Word32
-   , cdHandle        :: Word32
-   , cdPitch         :: Word32
-   , cdSize          :: Word64
-   } deriving Generic
-
-instance CStorable CreateGenericStruct
-instance Storable  CreateGenericStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
--- | Data matching the C structure drm_mode_map_dumb
-data MapGenericStruct = MapGenericStruct
-   { mdHandle        :: Word32
-   , mdPad           :: Word32
-   , mdOffset        :: Word64
-   } deriving Generic
-
-instance CStorable MapGenericStruct
-instance Storable  MapGenericStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
--- | Data matching the C structure drm_mode_destroy_dumb
-data DestroyGenericStruct = DestroyGenericStruct
-   { ddHandle     :: Word32
-   } deriving Generic
-
-instance CStorable DestroyGenericStruct
-instance Storable  DestroyGenericStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
