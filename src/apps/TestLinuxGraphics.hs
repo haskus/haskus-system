@@ -66,11 +66,11 @@ main = do
       liftIO $ putStrLn "==================\n= ENCODERS \n=================="
 
       forM_ (cardEncoderIDs card) $ \encId -> do
-         enc <- EitherT $ getEncoder ioctl fd encId
+         enc <- EitherT $ cardEncoderFromID ioctl card encId
          liftIO $ do
             putStrLn $ show enc
-            putStrLn $ "  * Valid controllers: " ++ (show $ getEncoderControllers card enc)
-            putStrLn $ "  * Valid connectors: " ++ (show $ getEncoderConnectors card enc)
+            putStrLn $ "  * Valid controllers: " ++ (show $ cardEncoderControllers card enc)
+            putStrLn $ "  * Valid connectors: " ++ (show $ cardEncoderConnectors card enc)
 
       liftIO $ putStrLn "==================\n= Test \n=================="
       
@@ -87,7 +87,7 @@ main = do
          mode = head (connModes conn)
 
       -- check if the connector already has an associated encoder+crtc to avoid modesetting
-      (curCrtc,curEnc) <- EitherT $ getConnectorController ioctl fd conn
+      (curCrtc,curEnc) <- EitherT $ cardConnectorController ioctl card conn
 
       liftIO $ putStrLn $ "Current Controller and encoder: " ++ show (curCrtc,curEnc)
 

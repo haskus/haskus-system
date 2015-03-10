@@ -15,8 +15,6 @@ module ViperVM.Arch.Linux.Graphics.LowLevel
    , SetPlaneStruct(..)
    , GetPlaneStruct(..)
    , GetPlaneResStruct(..)
-   , EncoderType(..)
-   , GetEncoderStruct(..)
    , PropertyType(..)
    , toPropType
    , fromPropType
@@ -163,31 +161,6 @@ data GetPlaneResStruct = GetPlaneResStruct
 
 instance CStorable GetPlaneResStruct
 instance Storable GetPlaneResStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
--- | Type of the encoder
-data EncoderType
-   = EncoderTypeNone
-   | EncoderTypeDAC
-   | EncoderTypeTMDS
-   | EncoderTypeLVDS
-   | EncoderTypeTVDAC
-   deriving (Eq,Ord,Show,Enum)
-
--- | Data matching the C structure drm_mode_get_encoder
-data GetEncoderStruct = GetEncoderStruct
-   { geEncoderId      :: Word32
-   , geEncoderType    :: Word32
-   , geCrtcId         :: Word32
-   , gePossibleCrtcs  :: Word32
-   , gePossibleClones :: Word32
-   } deriving Generic
-
-instance CStorable GetEncoderStruct
-instance Storable GetEncoderStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    poke        = cPoke
