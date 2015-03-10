@@ -101,7 +101,7 @@ main = do
          dbFlags = 0
 
       -- create a generic buffer
-      db <- EitherT $ createGenericBuffer ioctl fd width height bpp dbFlags
+      db <- EitherT $ cardCreateGenericBuffer card width height bpp dbFlags
 
       -- create a framebuffer for the generic buffer
       let 
@@ -111,7 +111,7 @@ main = do
       fb <- EitherT $ cardAddFrameBuffer card width height fmt fbFlgs [plane]
 
       -- prepare buffer for memory mapping
-      dbmap <- EitherT $ mapGenericBuffer ioctl fd db
+      dbmap <- EitherT $ cardMapGenericBuffer card db
 
 	   -- perform actual memory mapping
       let size = genericBufferSize db

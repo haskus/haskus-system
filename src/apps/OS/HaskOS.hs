@@ -61,7 +61,7 @@ main = do
          dbFlags = 0
 
       dumb <- try "Create a dumb buffer" $
-                  createGenericBuffer ioctl fd width height bpp dbFlags
+                  cardCreateGenericBuffer card width height bpp dbFlags
       return (Right dumb)
 
    case ret of
