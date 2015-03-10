@@ -108,7 +108,7 @@ main = do
          plane = Plane (genericBufferHandle db) (genericBufferPitch db) 0
          fmt   = PixelFormat RGBX8888 LittleEndian
          fbFlgs = 0
-      fb <- EitherT $ addFrameBuffer ioctl fd width height fmt fbFlgs [plane]
+      fb <- EitherT $ cardAddFrameBuffer card width height fmt fbFlgs [plane]
 
       -- prepare buffer for memory mapping
       dbmap <- EitherT $ mapGenericBuffer ioctl fd db

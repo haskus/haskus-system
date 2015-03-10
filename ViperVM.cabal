@@ -56,6 +56,7 @@ library
     ViperVM.Arch.Linux.Graphics.LowLevel.Connector
     ViperVM.Arch.Linux.Graphics.LowLevel.Controller
     ViperVM.Arch.Linux.Graphics.LowLevel.Encoder
+    ViperVM.Arch.Linux.Graphics.LowLevel.FrameBuffer
     ViperVM.Arch.Linux.Graphics.LowLevel.IDs
     ViperVM.Arch.Linux.Graphics.LowLevel.Mode
     ViperVM.Arch.Linux.Graphics.Graphics
