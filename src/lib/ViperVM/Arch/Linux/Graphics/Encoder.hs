@@ -17,37 +17,29 @@ module ViperVM.Arch.Linux.Graphics.Encoder
    )
 where
 
-import Control.Applicative ((<$>), (<*>))
-import Foreign.Storable
-import Data.Word
-import Data.Maybe (fromMaybe)
 import Data.Traversable (traverse)
 import Data.Bits
 
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
 import ViperVM.Arch.Linux.Graphics.Card
 
 import ViperVM.Arch.Linux.Graphics.LowLevel.Encoder
+import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 
 -- | Get encoder from its ID
-cardEncoderFromID :: IOCTL -> Card -> EncoderID -> SysRet Encoder
-cardEncoderFromID ioctl card encId = getEncoder ioctl fd encId
-   where
-      fd = cardFileDescriptor card
+cardEncoderFromID :: Card -> EncoderID -> SysRet Encoder
+cardEncoderFromID card encId = withCard card getEncoder encId
 
 -- | Get encoders (discard errors)
-cardEncoders :: IOCTL -> Card -> IO [Encoder]
-cardEncoders ioctl card = do
+cardEncoders :: Card -> IO [Encoder]
+cardEncoders card = do
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs
-      fd = cardFileDescriptor card
       ids = cardEncoderIDs card
    
-   xs <- traverse (cardEncoderFromID ioctl card) ids
+   xs <- traverse (cardEncoderFromID card) ids
    return (foldr f [] xs)
 
 -- | Select elements in the list if the bit corresponding to their index is set in the mask

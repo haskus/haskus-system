@@ -43,7 +43,7 @@ main = do
       card <- EitherT $ getCard ioctl fd
 
       -- Test for GenericBuffer capability
-      cap <- EitherT $ cardHasSupportFor ioctl card CapGenericBuffer
+      cap <- EitherT $ cardHasSupportFor card CapGenericBuffer
       hoistEither $ if cap
          then Left ENOENT 
          else Right ()
@@ -57,7 +57,7 @@ main = do
 
       liftIO $ putStrLn "==================\n= CONNECTORS\n=================="
 
-      conns <- liftIO $ cardConnectors ioctl card
+      conns <- liftIO $ cardConnectors card
       forM_ conns $ \conn -> do
          liftIO $ putStrLn $ show conn
          liftIO $ putStrLn (printConnector conn)
@@ -66,7 +66,7 @@ main = do
       liftIO $ putStrLn "==================\n= ENCODERS \n=================="
 
       forM_ (cardEncoderIDs card) $ \encId -> do
-         enc <- EitherT $ cardEncoderFromID ioctl card encId
+         enc <- EitherT $ cardEncoderFromID card encId
          liftIO $ do
             putStrLn $ show enc
             putStrLn $ "  * Valid controllers: " ++ (show $ cardEncoderControllers card enc)
@@ -87,7 +87,7 @@ main = do
          mode = head (connModes conn)
 
       -- check if the connector already has an associated encoder+crtc to avoid modesetting
-      (curCrtc,curEnc) <- EitherT $ cardConnectorController ioctl card conn
+      (curCrtc,curEnc) <- EitherT $ cardConnectorController card conn
 
       liftIO $ putStrLn $ "Current Controller and encoder: " ++ show (curCrtc,curEnc)
 

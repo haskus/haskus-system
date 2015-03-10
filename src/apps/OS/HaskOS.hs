@@ -35,12 +35,12 @@ main = do
       card  <- try "Get card information from descriptor" $
                   getCard ioctl fd
       cap   <- try "Get GenericBuffer capability" $
-                  cardCapability ioctl card CapGenericBuffer
+                  cardCapability card CapGenericBuffer
       hoistEither $ if cap == 0
          then Left ("Test GenericBuffer capability", ENOENT) 
          else Right ()
 
-      conns <- liftIO $ cardConnectors ioctl card
+      conns <- liftIO $ cardConnectors card
       hoistEither $ if null conns 
          then Left ("Get connectors", ENOENT) 
          else Right ()

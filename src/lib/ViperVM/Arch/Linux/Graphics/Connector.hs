@@ -10,25 +10,21 @@ module ViperVM.Arch.Linux.Graphics.Connector
 where
 
 import ViperVM.Arch.Linux.Graphics.LowLevel.Connector
-import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Controller
-import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
-import ViperVM.Arch.Linux.Graphics.Card
 
 import Data.Traversable (traverse)
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
-cardConnectorController :: IOCTL -> Card -> Connector -> SysRet (Maybe Controller, Maybe Encoder)
-cardConnectorController ioctl card conn = do
-   let fd = cardFileDescriptor card
+cardConnectorController :: Card -> Connector -> SysRet (Maybe Controller, Maybe Encoder)
+cardConnectorController card conn = do
    -- Maybe EncoderID
    let encId = connEncoderID conn
 
    -- Maybe Encoder
-   enc <- traverse (cardEncoderFromID ioctl card) encId
+   enc <- traverse (cardEncoderFromID card) encId
 
    case enc of
       Nothing        -> return (Right (Nothing,Nothing))
@@ -38,7 +34,7 @@ cardConnectorController ioctl card conn = do
          let crtcId = encoderControllerID e
 
          -- Maybe Controller
-         crtc <- traverse (getController ioctl fd) crtcId
+         crtc <- traverse (withCard card getController) crtcId
          return $ case crtc of
             Nothing        -> Right (Nothing,Just e)
             Just (Left err)-> Left err

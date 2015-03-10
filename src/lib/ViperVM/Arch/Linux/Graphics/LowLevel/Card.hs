@@ -1,10 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- | Graphic card management
 module ViperVM.Arch.Linux.Graphics.LowLevel.Card
    ( Card(..)
    , getCard
+   , withCard
    )
 where
 
@@ -34,7 +36,22 @@ data Card = Card
    , cardMinHeight       :: Word32
    , cardMaxHeight       :: Word32
    , cardFileDescriptor  :: FileDescriptor
-   } deriving (Show)
+   , cardIOCTL           :: IOCTL
+   }
+
+instance Show Card where
+   show (Card {..}) = 
+      "{ FrameBuffer IDs: " ++ show cardFrameBufferIDs ++ "\n" ++
+      ", Controller IDs:  " ++ show cardControllerIDs ++ "\n" ++
+      ", Connector IDs:   " ++ show cardConnectorIDs ++ "\n" ++
+      ", Encoder IDs:     " ++ show cardEncoderIDs ++ "\n" ++
+      ", Minimal size:    " ++ show cardMinWidth ++ "x" ++ show cardMinHeight++"\n" ++
+      ", Maximal size:    " ++ show cardMaxWidth ++ "x" ++ show cardMaxHeight++"\n" ++
+      ", File descriptor: " ++ show cardFileDescriptor ++"\n" ++
+      "}"
+
+withCard :: Card -> (IOCTL -> FileDescriptor -> a) -> a
+withCard card f = f (cardIOCTL card) (cardFileDescriptor card)
 
 -- | Data matching the C structure drm_mode_card_res
 data CardStruct = CardStruct
@@ -108,6 +125,7 @@ getCard ioctl fd = runEitherT $ do
             <*> return (csMinHeight res4)
             <*> return (csMaxHeight res4)
             <*> return fd
+            <*> return ioctl
 
          right (res4, res5)
 
