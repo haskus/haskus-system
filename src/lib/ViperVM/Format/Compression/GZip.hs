@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module ViperVM.Format.Compression.GZip
    ( Member(..)
+   , Flags(..)
    , decompressGet
    , decompress
    )
@@ -8,7 +9,6 @@ where
 
 import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 
-import Data.Sequence (Seq)
 import Data.Foldable (toList)
 import Data.Word
 import Data.Binary.Get
@@ -20,11 +20,16 @@ import Data.ByteString.Lazy (pack,ByteString)
 import Text.Printf
 
 data Member = Member 
-   { memberFlags   :: Flags
-   , memberTime    :: Word32
-   , memberName    :: String
-   , memberComment :: String
-   , memberContent :: ByteString
+   { memberFlags        :: Flags
+   , memberTime         :: Word32
+   , memberExtraFlags   :: Word8
+   , memberOS           :: Word8
+   , memberName         :: String
+   , memberComment      :: String
+   , memberContent      :: ByteString
+   , memberCRC          :: Word16
+   , memberCRC32        :: Word32
+   , memberSize         :: Word32   -- ^ uncompressed input size (module 1^32)
    }
 
 
@@ -56,9 +61,9 @@ getMember = do
       error "Unknown compression method"
 
    flags <- getFlags
-   mtime <- getWord32le
-   xfl   <- getWord8
-   os    <- getWord8
+   mtime <- getWord32le   -- modification time
+   xfl   <- getWord8      -- extra flags
+   os    <- getWord8      -- os
 
    when (flagExtra flags) $ do
       xlen <- getWord16le
@@ -81,7 +86,7 @@ getMember = do
    crc32 <- getWord32le
    isize <- getWord32le
       
-   return $ Member flags mtime name comment (pack (toList content))
+   return $ Member flags mtime xfl os name comment (pack (toList content)) crc crc32 isize
       
 
 
