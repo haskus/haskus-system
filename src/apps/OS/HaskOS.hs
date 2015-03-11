@@ -46,15 +46,15 @@ main = do
          else Right ()
 
       let
-         isValid x  = connConnection x == Connected
-                      && not (null $ connModes x)
+         isValid x  = connectorState x == Connected
+                      && not (null $ connectorModes x)
          validConns = filter isValid conns
 
          -- select first connector
          conn = head validConns
 
          -- select highest mode
-         mode = head (connModes conn)
+         mode = head (connectorModes conn)
          width  = fromIntegral $ modeHorizontalDisplay mode
          height = fromIntegral $ modeVerticalDisplay mode
          bpp    = 32

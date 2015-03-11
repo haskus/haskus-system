@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module ViperVM.Arch.Linux.Graphics.LowLevel.Controller
    ( Controller(..)
-   , getController
+   , cardControllerFromID
    , setController
    , ControllerStruct(..)
    , fromControllerStruct
@@ -19,6 +19,7 @@ import Control.Applicative ((<$>))
 
 import ViperVM.Arch.Linux.Graphics.LowLevel.Mode
 import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
+import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -31,6 +32,7 @@ data Controller = Controller
    , controllerGammaSize        :: Word32
    , controllerMode             :: Maybe Mode
    , controllerFrameBuffer      :: Maybe (FrameBufferID, Word32, Word32)   -- ^ Associated frame buffer and its dimensions (WxH)
+   , controllerCard             :: Card
    } deriving (Show)
 
 
@@ -57,8 +59,8 @@ instance Storable ControllerStruct where
 emptyControllerStruct :: ControllerStruct
 emptyControllerStruct = ControllerStruct 0 0 0 0 0 0 0 0 emptyModeStruct
 
-fromControllerStruct :: ControllerStruct -> Controller
-fromControllerStruct (ControllerStruct {..}) =
+fromControllerStruct :: Card -> ControllerStruct -> Controller
+fromControllerStruct card (ControllerStruct {..}) =
    Controller
       (ControllerID contID)
       contGammaSize
@@ -68,16 +70,17 @@ fromControllerStruct (ControllerStruct {..}) =
       (if contFbID /= 0 
          then Just (FrameBufferID contFbID, contFbX, contFbY)
          else Nothing)
+      card
 
       
 -- | Get Controller
-getController :: IOCTL -> FileDescriptor -> ControllerID -> SysRet Controller
-getController ioctl fd crtcid = do
+cardControllerFromID :: Card -> ControllerID -> SysRet Controller
+cardControllerFromID card crtcid = withCard card $ \ioctl fd -> do
    let
       ControllerID cid = crtcid
       crtc = emptyControllerStruct { contID = cid }
 
-   fmap fromControllerStruct <$> ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
+   fmap (fromControllerStruct card) <$> ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
 
 -- | Set Controller
 setController :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()

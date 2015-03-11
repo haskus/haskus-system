@@ -7,13 +7,18 @@ module ViperVM.Arch.Linux.Graphics.Card
    , cardHasSupportFor
    , cardConnectors
    , cardConnectorFromID
+   , cardEncoders
+   , cardEncoderFromID
+   , cardControllers
+   , cardControllerFromID
    )
 where
 
 import ViperVM.Arch.Linux.Graphics.LowLevel.Capability
 import ViperVM.Arch.Linux.Graphics.LowLevel.Connector
+import ViperVM.Arch.Linux.Graphics.LowLevel.Controller
+import ViperVM.Arch.Linux.Graphics.LowLevel.Encoder
 import ViperVM.Arch.Linux.Graphics.LowLevel.Card
-import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
 import ViperVM.Arch.Linux.ErrorCode
 
 import Data.Word
@@ -29,17 +34,25 @@ cardCapability card cap = withCard card getCapability cap
 cardHasSupportFor :: Card -> Capability -> SysRet Bool
 cardHasSupportFor card cap = fmap (/= 0) <$> cardCapability card cap
 
--- | Get connector
-cardConnectorFromID :: Card -> ConnectorID -> SysRet Connector
-cardConnectorFromID card = withCard card getConnector
 
--- | Get connectors (discard errors)
-cardConnectors :: Card -> IO [Connector]
-cardConnectors card = do
+cardEntities :: (Card -> [a]) -> (Card -> a -> IO (Either x b)) -> Card -> IO [b]
+cardEntities getIDs getEntityFromID card = do
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs
-      ids = cardConnectorIDs card
+      ids = getIDs card
    
-   xs <- traverse (cardConnectorFromID card) ids
+   xs <- traverse (getEntityFromID card) ids
    return (foldr f [] xs)
+
+-- | Get connectors (discard errors)
+cardConnectors :: Card -> IO [Connector]
+cardConnectors = cardEntities cardConnectorIDs cardConnectorFromID
+
+-- | Get encoders (discard errors)
+cardEncoders :: Card -> IO [Encoder]
+cardEncoders = cardEntities cardEncoderIDs cardEncoderFromID
+
+-- | Get controllers (discard errors)
+cardControllers :: Card -> IO [Controller]
+cardControllers = cardEntities cardControllerIDs cardControllerFromID

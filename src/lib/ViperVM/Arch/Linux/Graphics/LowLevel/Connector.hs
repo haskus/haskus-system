@@ -8,7 +8,7 @@ module ViperVM.Arch.Linux.Graphics.LowLevel.Connector
    , SubConnectorType(..)
    , ConnectorType(..)
    , SubPixel(..)
-   , getConnector
+   , cardConnectorFromID
    )
 where
 
@@ -26,10 +26,10 @@ import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
 
 import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
 import ViperVM.Arch.Linux.Graphics.LowLevel.Mode
+import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 
 -- | Connector property
 data ConnectorProperty = ConnectorProperty Word32 Word64 deriving (Show)
@@ -53,24 +53,24 @@ data SubPixel
 
 -- | A connector on the graphic card
 data Connector = Connector
-   { connEncoders          :: [EncoderID]
-   , connModes             :: [Mode]
-   , connProperties        :: [ConnectorProperty]
-   , connEncoderID         :: Maybe EncoderID
-   , connConnectorID       :: ConnectorID
-   , connConnectorType     :: ConnectorType
-   , connConnectorTypeID   :: ConnectorTypeID
+   { connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
+   , connectorModes              :: [Mode]               -- ^ Supported modes
+   , connectorProperties         :: [ConnectorProperty]  -- ^ Properties of the connector
+   , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
+   , connectorID                 :: ConnectorID          -- ^ ID
+   , connectorType               :: ConnectorType        -- ^ Type of connector
+   , connectorTypeID             :: ConnectorTypeID      -- ^ Identifier within connectors of the same type
 
-   , connConnection        :: Connection           -- ^ Connection state
-   , connWidth             :: Word32               -- ^ Width (in millimeters)
-   , connHeight            :: Word32               -- ^ Height (in millimeters)
-   , connSubPixel          :: SubPixel
+   , connectorState              :: Connection           -- ^ Connection state
+   , connectorWidth              :: Word32               -- ^ Width (in millimeters)
+   , connectorHeight             :: Word32               -- ^ Height (in millimeters)
+   , connectorSubPixel           :: SubPixel             -- ^ Sub-pixel structure
+   , connectorCard               :: Card                 -- ^ Graphic card
    } deriving (Show)
 
-
 -- | Get connector
-getConnector :: IOCTL -> FileDescriptor -> ConnectorID -> SysRet Connector
-getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
+cardConnectorFromID :: Card -> ConnectorID -> SysRet Connector
+cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd -> runEitherT $ do
    let 
       res = ConnectorStruct 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
 
@@ -121,6 +121,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
                      <*> return (connWidth_ res4)
                      <*> return (connHeight_ res4)
                      <*> return (toEnum . fromIntegral $ connSubPixel_ res4)
+                     <*> return card
 
                   right (res4, res5)
 
@@ -131,7 +132,7 @@ getConnector ioctl fd connId@(ConnectorID cid) = runEitherT $ do
    if   connModesCount    res2 < connModesCount    rawRes
      || connPropsCount    res2 < connPropsCount    rawRes
      || connEncodersCount res2 < connEncodersCount rawRes
-      then EitherT $ getConnector ioctl fd connId
+      then EitherT $ cardConnectorFromID card connId
       else right retRes
 
 

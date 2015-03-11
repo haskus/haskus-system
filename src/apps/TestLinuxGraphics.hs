@@ -24,11 +24,11 @@ printConnector :: Connector -> String
 printConnector (Connector {..}) = 
    printf "%d %s %s %umm x %umm"
       connId
-      (show connConnectorType)
-      (show connConnection)
-      connWidth connHeight
+      (show connectorType)
+      (show connectorState)
+      connectorWidth connectorHeight
    where
-      ConnectorID connId = connConnectorID
+      ConnectorID connId = connectorID
 
 main :: IO ()
 main = do
@@ -69,25 +69,25 @@ main = do
          enc <- EitherT $ cardEncoderFromID card encId
          liftIO $ do
             putStrLn $ show enc
-            putStrLn $ "  * Valid controllers: " ++ (show $ cardEncoderControllers card enc)
-            putStrLn $ "  * Valid connectors: " ++ (show $ cardEncoderConnectors card enc)
+            putStrLn $ "  * Valid controllers: " ++ (show $ encoderPossibleControllers enc)
+            putStrLn $ "  * Valid connectors: " ++ (show $ encoderPossibleConnectors enc)
 
       liftIO $ putStrLn "==================\n= Test \n=================="
       
       -- Find connected connectors
       let
-         isValid x  = connConnection x == Connected
-                      && not (null $ connModes x)
+         isValid x  = connectorState x == Connected
+                      && not (null $ connectorModes x)
          validConns = filter isValid conns
 
          -- select first connector
          conn = head validConns
 
          -- select highest mode
-         mode = head (connModes conn)
+         mode = head (connectorModes conn)
 
       -- check if the connector already has an associated encoder+crtc to avoid modesetting
-      (curCrtc,curEnc) <- EitherT $ cardConnectorController card conn
+      (curCrtc,curEnc) <- EitherT (connectorController conn)
 
       liftIO $ putStrLn $ "Current Controller and encoder: " ++ show (curCrtc,curEnc)
 
