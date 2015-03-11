@@ -269,7 +269,7 @@ putFixedCode code
    | code <= 255 = do -- B
          -- 9 bit code, starting from 110010000 to 111111111
          let c = fromIntegral (code-144) + 400
-         putWord16be 9 c
+         putWord16 9 c
 
    | code <= 279 = do -- C
          -- 7 bit code, starting from 0000000 to 0010111
