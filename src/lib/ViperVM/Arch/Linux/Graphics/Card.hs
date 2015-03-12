@@ -21,20 +21,15 @@ import ViperVM.Arch.Linux.Graphics.LowLevel.Encoder
 import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 import ViperVM.Arch.Linux.ErrorCode
 
-import Data.Word
 import Control.Applicative ((<$>))
 import Data.Traversable (traverse)
 
-
--- | Get card capability
-cardCapability :: Card -> Capability -> SysRet Word64
-cardCapability card cap = withCard card getCapability cap
 
 -- | Indicate if a capability is supported
 cardHasSupportFor :: Card -> Capability -> SysRet Bool
 cardHasSupportFor card cap = fmap (/= 0) <$> cardCapability card cap
 
-
+-- | Internal function to retrive card entities from their identifiers
 cardEntities :: (Card -> [a]) -> (Card -> a -> IO (Either x b)) -> Card -> IO [b]
 cardEntities getIDs getEntityFromID card = do
    let 

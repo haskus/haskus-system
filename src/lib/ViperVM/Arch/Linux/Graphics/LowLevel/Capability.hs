@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 
--- | Graphic card management
+-- | Graphic card capabilities
 module ViperVM.Arch.Linux.Graphics.LowLevel.Capability
    ( Capability(..)
-   , getCapability
+   , cardCapability
    )
 where
 
@@ -12,12 +12,13 @@ import Foreign.CStorable
 import GHC.Generics (Generic)
 import Data.Word
 
+import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Ioctl
 
+-- | Graphic card capability
 data Capability
-   = CapGenericBuffer
+   = CapGenericBuffer            -- ^ Support generic buffers (i.e. not vendor specific)
    | CapVBlankHighController
    | CapGenericPreferredDepth
    | CapGenericPreferShadow
@@ -58,8 +59,8 @@ instance Storable GetCapability where
    poke      = cPoke
 
 -- | Indicate if the given capability is supported
-getCapability :: IOCTL -> FileDescriptor -> Capability -> SysRet Word64
-getCapability ioctl fd cap = do
+cardCapability :: Card -> Capability -> SysRet Word64
+cardCapability card cap = withCard card $ \ioctl fd -> do
    let param = GetCapability (fromIntegral $ fromEnum cap) 0
    ret <- ioctlReadWrite ioctl 0x64 0x0c defaultCheck fd param
    case ret of

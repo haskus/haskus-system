@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module ViperVM.Arch.Linux.Graphics.LowLevel.Controller
    ( Controller(..)
+   , PageFlip(..)
    , cardControllerFromID
    , setController
    , ControllerStruct(..)
@@ -23,6 +24,7 @@ import ViperVM.Arch.Linux.Graphics.LowLevel.Card
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Utils.EnumSet
 
 -- | Video controller
 --
@@ -105,3 +107,44 @@ setController ioctl fd crtcid fb conns mode = do
             }
 
       fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
+
+-- | Data matching the C structure drm_mode_crtc_lut
+data ControllerLutStruct = ControllerLutStruct
+   { clsCrtcId       :: Word32
+   , clsGammaSize    :: Word32
+   , clsRed          :: Word64
+   , clsGreen        :: Word64
+   , clsBlue         :: Word64
+   } deriving Generic
+
+instance CStorable ControllerLutStruct
+instance Storable  ControllerLutStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
+
+
+data PageFlip
+   = PageFlipEvent
+   | PageFlipAsync
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet PageFlip
+
+-- | Data matching the C structure drm_mode_crtc_page_flip
+data PageFlipStruct = PageFlipStruct
+   { pfCrtcId        :: Word32
+   , pfFbId          :: Word32
+   , pfFlags         :: Word32
+   , pfReserved      :: Word32
+   , pfUserData      :: Word64
+   } deriving Generic
+
+instance CStorable PageFlipStruct
+instance Storable  PageFlipStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
+

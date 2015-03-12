@@ -1,5 +1,6 @@
-{-# LANGUAGE RecordWildCards
-           , GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Frame buffer management
 module ViperVM.Arch.Linux.Graphics.LowLevel.FrameBuffer
@@ -11,17 +12,24 @@ module ViperVM.Arch.Linux.Graphics.LowLevel.FrameBuffer
 where
 
 import Foreign.Storable
+import Foreign.CStorable
 import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils (with)
 import Data.Word
 import Data.List (transpose)
 import Control.Applicative ((<$>), (<*>))
+import GHC.Generics (Generic)
+import Data.Vector.Fixed.Cont (S,Z)
+import Data.Vector.Fixed.Storable (Vec)
 
+import ViperVM.Utils.EnumSet
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.PixelFormat
+
+type Vec4 = Vec (S (S (S (S Z))))
 
 -- | Plane (used for pixel formats that use several sources)
 data Plane = Plane
@@ -107,4 +115,72 @@ removeFrameBuffer :: IOCTL -> FileDescriptor -> FrameBuffer -> SysRet ()
 removeFrameBuffer ioctl fd fb = do
    with (fbID fb) $ \bufPtr ->
       fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xAF defaultCheck fd bufPtr
+
+data FrameBufferMode
+   = FrameBufferInterlaced
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet FrameBufferMode
+
+
+-- | Data matching the C structure drm_mode_fb_cmd2
+data FbCmd2Struct = FbCmd2Struct
+   { fc2FbId          :: Word32
+   , fc2Width         :: Word32
+   , fc2Height        :: Word32
+   , fc2PixelFormat   :: Word32
+   , fc2Flags         :: Word32
+   , fc2Handles       :: StorableWrap (Vec4 Word32)
+   , fc2Pitches       :: StorableWrap (Vec4 Word32)
+   , fc2Offsets       :: StorableWrap (Vec4 Word32)
+   } deriving Generic
+
+instance CStorable FbCmd2Struct
+instance Storable FbCmd2Struct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
+
+
+data FrameBufferDirty
+   = FrameBufferDirtyNone
+   | FrameBufferDirtyAnnotateCopy
+   | FrameBufferDirtyAnnotateFill
+   | FrameBufferDirtyFlags
+   deriving (Show,Eq,Enum)
+
+-- | Data matching the C structure drm_mode_fb_dirty_cmd
+data FbDirtyStruct = FbDirtyStruct
+   { fdFbId          :: Word32
+   , fdFlags         :: Word32
+   , fdColor         :: Word32
+   , fdNumClips      :: Word32
+   , fdClipsPtr      :: Word64
+   } deriving Generic
+
+instance CStorable FbDirtyStruct
+instance Storable FbDirtyStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
+
+-- | Data matching the C structure drm_mode_fb_cmd
+data FbCmdStruct = FbCmdStruct
+   { fcFbId          :: Word32
+   , fcWidth         :: Word32
+   , fcHeight        :: Word32
+   , fcPitch         :: Word32
+   , fcBPP           :: Word32
+   , fcDepth         :: Word32
+   , fcHandle        :: Word32
+   } deriving Generic
+
+instance CStorable FbCmdStruct
+instance Storable FbCmdStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
 
