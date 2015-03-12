@@ -5,8 +5,8 @@ import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.ErrorCode
 
-import ViperVM.Arch.Linux.Graphics.Graphics
 import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Connector

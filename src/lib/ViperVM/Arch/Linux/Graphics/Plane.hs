@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 -- | Plane
-module ViperVM.Arch.Linux.Graphics.LowLevel.Plane
+module ViperVM.Arch.Linux.Graphics.Plane
    (
    )
 where

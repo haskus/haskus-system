@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 -- | Object
-module ViperVM.Arch.Linux.Graphics.LowLevel.Object
+module ViperVM.Arch.Linux.Graphics.Object
    ( ObjectType(..)
    )
 where

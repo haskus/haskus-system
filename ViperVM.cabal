@@ -50,28 +50,19 @@ library
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
-    ViperVM.Arch.Linux.Graphics.LowLevel.Card
-    ViperVM.Arch.Linux.Graphics.LowLevel.Capability
-    ViperVM.Arch.Linux.Graphics.LowLevel.Connector
-    ViperVM.Arch.Linux.Graphics.LowLevel.Controller
-    ViperVM.Arch.Linux.Graphics.LowLevel.Encoder
-    ViperVM.Arch.Linux.Graphics.LowLevel.FrameBuffer
-    ViperVM.Arch.Linux.Graphics.LowLevel.GenericBuffer
-    ViperVM.Arch.Linux.Graphics.LowLevel.IDs
-    ViperVM.Arch.Linux.Graphics.LowLevel.Mode
-    ViperVM.Arch.Linux.Graphics.LowLevel.Object
-    ViperVM.Arch.Linux.Graphics.LowLevel.Plane
-    ViperVM.Arch.Linux.Graphics.LowLevel.Cursor
-    ViperVM.Arch.Linux.Graphics.LowLevel.Options
-    ViperVM.Arch.Linux.Graphics.Graphics
+    ViperVM.Arch.Linux.Graphics.Capability
     ViperVM.Arch.Linux.Graphics.Card
-    ViperVM.Arch.Linux.Graphics.Mode
-    ViperVM.Arch.Linux.Graphics.GenericBuffer
-    ViperVM.Arch.Linux.Graphics.FrameBuffer
-    ViperVM.Arch.Linux.Graphics.PixelFormat
-    ViperVM.Arch.Linux.Graphics.Controller
-    ViperVM.Arch.Linux.Graphics.Encoder
     ViperVM.Arch.Linux.Graphics.Connector
+    ViperVM.Arch.Linux.Graphics.Controller
+    ViperVM.Arch.Linux.Graphics.Cursor
+    ViperVM.Arch.Linux.Graphics.Encoder
+    ViperVM.Arch.Linux.Graphics.FrameBuffer
+    ViperVM.Arch.Linux.Graphics.GenericBuffer
+    ViperVM.Arch.Linux.Graphics.Mode
+    ViperVM.Arch.Linux.Graphics.Object
+    ViperVM.Arch.Linux.Graphics.Options
+    ViperVM.Arch.Linux.Graphics.PixelFormat
+    ViperVM.Arch.Linux.Graphics.Plane
 
     ViperVM.Arch.OpenCL.All
     ViperVM.Arch.OpenCL.Bindings

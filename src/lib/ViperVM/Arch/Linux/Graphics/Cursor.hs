@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 -- | Cursor
-module ViperVM.Arch.Linux.Graphics.LowLevel.Cursor
+module ViperVM.Arch.Linux.Graphics.Cursor
    ( CursorMode(..)
 
    )

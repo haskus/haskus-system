@@ -1,18 +1,20 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 -- | Graphic card capabilities
-module ViperVM.Arch.Linux.Graphics.LowLevel.Capability
+module ViperVM.Arch.Linux.Graphics.Capability
    ( Capability(..)
    , cardCapability
+   , cardHasSupportFor
    )
 where
 
+import Control.Applicative ((<$>))
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics (Generic)
 import Data.Word
 
-import ViperVM.Arch.Linux.Graphics.LowLevel.Card
+import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Ioctl
 
@@ -66,3 +68,8 @@ cardCapability card cap = withCard card $ \ioctl fd -> do
    case ret of
       Left err -> return (Left err)
       Right (GetCapability _ value) -> return (Right value)
+
+-- | Indicate if a capability is supported
+cardHasSupportFor :: Card -> Capability -> SysRet Bool
+cardHasSupportFor card cap = fmap (/= 0) <$> cardCapability card cap
+

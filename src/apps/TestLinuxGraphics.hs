@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-import ViperVM.Arch.Linux.Graphics.Graphics
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -7,7 +6,7 @@ import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Card
-import ViperVM.Arch.Linux.Graphics.LowLevel.IDs
+import ViperVM.Arch.Linux.Graphics.Capability
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Memory

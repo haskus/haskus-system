@@ -1,4 +1,4 @@
-module ViperVM.Arch.Linux.Graphics.LowLevel.Options
+module ViperVM.Arch.Linux.Graphics.Options
    ( PowerState(..)
    , ScalingMode(..)
    , DitheringMode(..)
