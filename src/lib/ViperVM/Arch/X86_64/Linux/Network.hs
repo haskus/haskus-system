@@ -35,7 +35,6 @@ import GHC.Generics (Generic)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.Process
 
 data ShutFlag
    = ShutRead
@@ -325,8 +324,8 @@ instance Storable NetlinkSocket where
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
-sysBindNetlink :: FileDescriptor -> ProcessID -> Word32 -> SysRet ()
-sysBindNetlink fd (ProcessID pid) groups = sysBind fd s
+sysBindNetlink :: FileDescriptor -> Word32 -> Word32 -> SysRet ()
+sysBindNetlink fd portID groups = sysBind fd s
    where
-      s = NetlinkSocket p pid groups
+      s = NetlinkSocket p portID groups
       p = fromIntegral (fromEnum SockProtNETLINK)

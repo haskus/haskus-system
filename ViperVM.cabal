@@ -46,6 +46,7 @@ library
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.FileDescriptor
     ViperVM.Arch.Linux.FileSystem.Mount
+    ViperVM.Arch.Linux.FileSystem.ReadWrite
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl
@@ -281,4 +282,5 @@ executable udev
   build-depends: 
     base,
     ViperVM,
-    either == 4.3.*
+    either == 4.3.*,
+    transformers == 0.4.*

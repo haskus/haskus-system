@@ -27,7 +27,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 
 
--- | Vector of buffers
+-- | Entry for vectors of buffers
 data IOVec = IOVec
    { iovecPtr  :: Ptr ()
    , iovecSize :: Word64

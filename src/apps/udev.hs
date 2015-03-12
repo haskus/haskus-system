@@ -1,8 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 
 import ViperVM.Arch.X86_64.Linux.Network
-import ViperVM.Arch.X86_64.Linux.Process
+import ViperVM.Arch.Linux.FileSystem.ReadWrite
+
 import Control.Monad.Trans.Either
+import Control.Monad.IO.Class (liftIO)
 
 main :: IO ()
 main = do
@@ -14,7 +16,11 @@ main = do
    ret <- runEitherT $ do
       fd <- try "Create a netlink socket" $ sysSocket (SockTypeNetlink NetlinkTypeKernelEvent) []
 
-      try "Bind socket" $ sysBindNetlink fd (ProcessID 0) 0
+      try "Bind socket" $ sysBindNetlink fd 0 0
+
+      bs <- try "Reading socket" $ readByteString fd 500
+
+      liftIO $ putStrLn (show bs)
 
    case ret of
       Left (str,err) -> putStrLn $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
