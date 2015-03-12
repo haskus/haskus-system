@@ -272,3 +272,13 @@ executable gunzip
     base,
     ViperVM,
     bytestring == 0.10.*
+
+executable udev
+  main-is: udev.hs
+  hs-source-dirs: src/apps
+  ghc-options: -Wall
+  default-language:    Haskell2010
+  build-depends: 
+    base,
+    ViperVM,
+    either == 4.3.*

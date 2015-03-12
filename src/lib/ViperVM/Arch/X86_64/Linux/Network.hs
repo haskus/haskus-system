@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric #-}
 module ViperVM.Arch.X86_64.Linux.Network
    ( sysShutdown
    , sysSendFile
@@ -13,6 +14,7 @@ module ViperVM.Arch.X86_64.Linux.Network
    , sysSocketPair'
    , sysSocketPair
    , sysBind
+   , sysBindNetlink
    , sysConnect
    , sysAccept
    , sysListen
@@ -20,18 +22,20 @@ module ViperVM.Arch.X86_64.Linux.Network
 where
 
 import Foreign.Ptr (Ptr, nullPtr)
-import Foreign.Storable (Storable, sizeOf)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Array (peekArray,allocaArray)
-import Foreign.Storable (peek)
+import Foreign.Storable
+import Foreign.CStorable
 import Data.Word
 import Data.List (foldl')
 import Data.Bits
 import Control.Applicative ((<$>))
+import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.X86_64.Linux.Process
 
 data ShutFlag
    = ShutRead
@@ -306,3 +310,23 @@ sysAccept (FileDescriptor fd) addr opts =
 sysListen :: FileDescriptor -> Word64 -> SysRet ()
 sysListen (FileDescriptor fd) backlog =
    onSuccess (syscall2 50 fd backlog) (const ())
+
+
+-- | Netlink socket binding
+data NetlinkSocket = NetlinkSocket Word32 Word32 Word32 deriving (Generic)
+
+instance CStorable NetlinkSocket
+instance Storable NetlinkSocket where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
+
+-- | Bind a netlink socket
+--
+-- @groups@ is a group mask
+sysBindNetlink :: FileDescriptor -> ProcessID -> Word32 -> SysRet ()
+sysBindNetlink fd (ProcessID pid) groups = sysBind fd s
+   where
+      s = NetlinkSocket p pid groups
+      p = fromIntegral (fromEnum SockProtNETLINK)
