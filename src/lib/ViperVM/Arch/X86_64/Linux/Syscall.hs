@@ -131,7 +131,6 @@ syscall0 = syscall0_
 36	common	getitimer		sys_getitimer
 38	common	setitimer		sys_setitimer
 44	common	sendto			sys_sendto
-45	64	recvfrom		sys_recvfrom
 46	64	sendmsg			sys_sendmsg
 47	64	recvmsg			sys_recvmsg
 51	common	getsockname		sys_getsockname

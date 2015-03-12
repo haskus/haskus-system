@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 import ViperVM.Arch.X86_64.Linux.Network
-import ViperVM.Arch.Linux.FileSystem.ReadWrite
+import ViperVM.Arch.Linux.Network.SendReceive
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
@@ -18,7 +18,7 @@ main = do
 
       try "Bind socket" $ sysBindNetlink fd 0 0
 
-      bs <- try "Reading socket" $ readByteString fd 500
+      bs <- try "Reading socket" $ receiveByteString fd 500 []
 
       liftIO $ putStrLn (show bs)
 

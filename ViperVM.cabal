@@ -37,6 +37,7 @@ library
     ViperVM.Arch.X86_64.Linux.Memory
     ViperVM.Arch.X86_64.Linux.Signal
     ViperVM.Arch.X86_64.Linux.Network
+    ViperVM.Arch.X86_64.Linux.Network.SendReceive
     ViperVM.Arch.X86_64.Linux.Info
     ViperVM.Arch.X86_64.Linux.Futex
     ViperVM.Arch.X86_64.Linux.Time
@@ -47,6 +48,7 @@ library
     ViperVM.Arch.Linux.FileDescriptor
     ViperVM.Arch.Linux.FileSystem.Mount
     ViperVM.Arch.Linux.FileSystem.ReadWrite
+    ViperVM.Arch.Linux.Network.SendReceive
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
     ViperVM.Arch.Linux.Ioctl
