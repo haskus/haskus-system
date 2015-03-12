@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
+
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -34,18 +36,21 @@ main = do
    let 
       ioctl = drmIoctl sysIoctl
       mmap  = sysMemMap
+      try str a = EitherT (a >>= \case
+         Left err -> return (Left (str,err))
+         Right v  -> return (Right v))
 
    ret <- runEitherT $ do
       -- Open device
-      fd <- EitherT $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
+      fd <- try "Open card" $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
 
-      card <- EitherT $ getCard ioctl fd
+      card <- try "Read card info" $ getCard ioctl fd
 
       -- Test for GenericBuffer capability
-      cap <- EitherT $ cardHasSupportFor card CapGenericBuffer
-      hoistEither $ if cap
-         then Left ENOENT 
-         else Right ()
+      cap <- try "Check support for generic buffers" $ cardHasSupportFor card CapGenericBuffer
+      if cap
+         then left ("No support for generic buffers", ENOENT)
+         else right ()
 
       liftIO $ putStrLn "The card has GenericBuffer capability :)"
 
@@ -65,7 +70,7 @@ main = do
       liftIO $ putStrLn "==================\n= ENCODERS \n=================="
 
       forM_ (cardEncoderIDs card) $ \encId -> do
-         enc <- EitherT $ cardEncoderFromID card encId
+         enc <- try "Get encoder" $ cardEncoderFromID card encId
          liftIO $ do
             putStrLn $ show enc
             putStrLn $ "  * Valid controllers: " ++ (show $ encoderPossibleControllers enc)
@@ -86,7 +91,7 @@ main = do
          mode = head (connectorModes conn)
 
       -- check if the connector already has an associated encoder+crtc to avoid modesetting
-      (curCrtc,curEnc) <- EitherT (connectorController conn)
+      (curCrtc,curEnc) <- try "Get current state" (connectorController conn)
 
       liftIO $ putStrLn $ "Current Controller and encoder: " ++ show (curCrtc,curEnc)
 
@@ -100,22 +105,24 @@ main = do
          dbFlags = 0
 
       -- create a generic buffer
-      db <- EitherT $ cardCreateGenericBuffer card width height bpp dbFlags
+      db <- try "Create a generic buffer" $ cardCreateGenericBuffer card width height bpp dbFlags
 
       -- create a framebuffer for the generic buffer
       let 
          plane = Plane (genericBufferHandle db) (genericBufferPitch db) 0
          fmt   = PixelFormat RGBX8888 LittleEndian
          fbFlgs = 0
-      fb <- EitherT $ cardAddFrameBuffer card width height fmt fbFlgs [plane]
+      fb <- try "Add a frame buffer" $ cardAddFrameBuffer card width height fmt fbFlgs [plane]
 
       -- prepare buffer for memory mapping
-      dbmap <- EitherT $ cardMapGenericBuffer card db
+      dbmap <- try "Prepare for mapping" $ cardMapGenericBuffer card db
 
 	   -- perform actual memory mapping
       let size = genericBufferSize db
-      mem <- EitherT $ mmap Nothing size [ProtRead,ProtWrite] [MapShared] (Just (fd, genericMapOffset dbmap))
+      mem <- try "Map generic buffer" $ mmap Nothing size [ProtRead,ProtWrite] [MapShared] (Just (fd, genericMapOffset dbmap))
 
       return ()
 
-   return ()
+   case ret of
+      Left (str,err) -> error $ "Error: " ++ str ++ " (" ++ show err ++ ")"
+      Right _ -> putStrLn "Done"
