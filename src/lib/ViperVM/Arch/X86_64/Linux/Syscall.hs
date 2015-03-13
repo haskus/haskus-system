@@ -180,7 +180,6 @@ syscall0 = syscall0_
 130	common	rt_sigsuspend		sys_rt_sigsuspend
 131	64	sigaltstack		sys_sigaltstack
 132	common	utime			sys_utime
-133	common	mknod			sys_mknod
 134	64	uselib
 135	common	personality		sys_personality
 136	common	ustat			sys_ustat
@@ -291,7 +290,6 @@ syscall0 = syscall0_
 255	common	inotify_rm_watch	sys_inotify_rm_watch
 256	common	migrate_pages		sys_migrate_pages
 257	common	openat			sys_openat
-259	common	mknodat			sys_mknodat
 260	common	fchownat		sys_fchownat
 261	common	futimesat		sys_futimesat
 262	common	newfstatat		sys_newfstatat

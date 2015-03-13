@@ -42,17 +42,21 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysCreateDirectory
    , sysSync
    , sysSyncFS
+   , sysCreateSpecialFile
+   , sysCreateSpecialFileAt
    )
 where
 
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
+import Foreign.Marshal.Utils (with)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
 import Data.Word (Word64, Word32)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
+import Data.Maybe (fromMaybe)
 import Data.Bits (Bits, (.|.), (.&.), shiftR, shiftL, complement)
 import Control.Applicative ((<$>))
 
@@ -361,6 +365,10 @@ instance Enum FileType where
 toFileType :: (Num a, Bits a, Integral a) => a -> FileType
 toFileType x = toEnum (fromIntegral ((x `shiftR` 12) .&. 0x0F))
 
+-- | Create file type value for mode
+fromFileType :: (Bits a, Num a) => FileType -> a
+fromFileType x = fromIntegral (fromEnum x) `shiftL` 12
+
 -- | File options
 data FileOption
    = FileOptSticky
@@ -526,3 +534,29 @@ sysSync = onSuccess (syscall0 162) (const ())
 
 sysSyncFS :: FileDescriptor -> SysRet ()
 sysSyncFS (FileDescriptor fd) = onSuccess (syscall1 306 fd) (const ())
+
+-- | Create a special file
+--
+-- mknod syscall
+sysCreateSpecialFile :: FilePath -> FileType -> [FilePermission] -> Maybe Device -> SysRet ()
+sysCreateSpecialFile path typ perm dev = do
+   let 
+      mode = fromFilePermission perm .|. fromFileType typ :: Word64
+      dev' = fromMaybe (Device 0 0) dev
+
+   withCString path $ \path' ->
+      with dev' $ \dev'' ->
+         onSuccess (syscall3 133 path' mode dev'') (const ())
+
+-- | Create a special file
+--
+-- mknodat syscall
+sysCreateSpecialFileAt :: FileDescriptor -> FilePath -> FileType -> [FilePermission] -> Maybe Device -> SysRet ()
+sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
+   let 
+      mode = fromFilePermission perm .|. fromFileType typ :: Word64
+      dev' = fromMaybe (Device 0 0) dev
+
+   withCString path $ \path' ->
+      with dev' $ \dev'' ->
+         onSuccess (syscall4 259 fd path' mode dev'') (const ())
