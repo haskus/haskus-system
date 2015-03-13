@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-import ViperVM.Arch.X86_64.Linux.Network
-import ViperVM.Arch.Linux.Network.SendReceive
+import ViperVM.Arch.Linux.KernelEvent
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
@@ -15,16 +14,16 @@ main = do
          Right v  -> return (Right v))
 
    ret <- runEitherT $ do
-      fd <- try "Create a netlink socket" $ sysSocket (SockTypeNetlink NetlinkTypeKernelEvent) []
-
-      try "Bind socket" $ sysBindNetlink fd 0 0xFFFFFFFF
+      fd <- try "Create a kernel event socket" $ createKernelEventSocket
 
       _ <- forever $ do
-         bs <- try "Reading socket" $ receiveByteString fd 512 []
+         msg <- try "Reading socket" $ receiveKernelEvent fd
+         liftIO $ putStrLn (show msg)
 
-         liftIO $ putStrLn (show bs)
       return ()
 
    case ret of
       Left (str,err) -> putStrLn $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
       Right _ -> putStrLn "Done"
+
+

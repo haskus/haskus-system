@@ -51,6 +51,7 @@ library
     ViperVM.Arch.Linux.Network.SendReceive
     ViperVM.Arch.Linux.Numa
     ViperVM.Arch.Linux.SysFS
+    ViperVM.Arch.Linux.KernelEvent
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
     ViperVM.Arch.Linux.Graphics.Capability
@@ -167,7 +168,8 @@ library
     binary == 0.7.*,
     binary-bits == 0.6,
     utf8-string == 0.3.*,
-    pqueue == 1.2.*
+    pqueue == 1.2.*,
+    split == 0.2.*
 
   build-tools: 
 
