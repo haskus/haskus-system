@@ -13,7 +13,6 @@ import ViperVM.Arch.Linux.Network.SendReceive
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans.Either
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
 import qualified Data.ByteString.UTF8 as UTF8
@@ -22,6 +21,10 @@ import Data.List.Split
 data KernelEventAction
    = ActionAdd
    | ActionRemove
+   | ActionChange
+   | ActionOnline
+   | ActionOffline
+   | ActionMove
    | ActionOther String
    deriving (Show)
 
@@ -59,6 +62,10 @@ parseKernelEvent bs = r
       act = case fs Map.! "ACTION" of
          "add"    -> ActionAdd
          "remove" -> ActionRemove
+         "change" -> ActionChange
+         "online" -> ActionOnline
+         "offline"-> ActionOffline
+         "move"   -> ActionMove
          x        -> ActionOther x
       devpath = fs Map.! "DEVPATH"
       subsys = fs Map.! "SUBSYSTEM"
