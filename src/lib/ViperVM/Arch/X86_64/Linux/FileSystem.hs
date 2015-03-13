@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , Device(..)
    , Stat(..)
    , sysOpen
+   , sysOpenAt
    , sysCreate
    , sysClose
    , sysSeek
@@ -71,14 +72,19 @@ import ViperVM.Arch.X86_64.Linux.Time (TimeSpec)
 import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
 
 
-sysOpenCString :: CString -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
-sysOpenCString path flags mode =
-   onSuccess (syscall3 2 path (toSet flags :: Int) (toBitSet mode :: Int))
-      (FileDescriptor . fromIntegral)
+-- | Open a file
+sysOpen :: FilePath -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
+sysOpen path flags mode = 
+   withCString path $ \path' -> 
+      onSuccess (syscall3 2 path' (toSet flags :: Int) (toBitSet mode :: Int))
+         (FileDescriptor . fromIntegral)
 
 -- | Open a file
-sysOpen :: String -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
-sysOpen path flags mode = withCString path (\path' -> sysOpenCString path' flags mode)
+sysOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
+sysOpenAt (FileDescriptor fd) path flags mode = 
+   withCString path $ \path' -> 
+      onSuccess (syscall4 257 fd path' (toSet flags :: Int) (toBitSet mode :: Int))
+         (FileDescriptor . fromIntegral)
 
 sysCreateCString :: CString -> [FilePermission] -> SysRet FileDescriptor
 sysCreateCString path mode = 

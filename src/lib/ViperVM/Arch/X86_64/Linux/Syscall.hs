@@ -289,7 +289,6 @@ syscall0 = syscall0_
 254	common	inotify_add_watch	sys_inotify_add_watch
 255	common	inotify_rm_watch	sys_inotify_rm_watch
 256	common	migrate_pages		sys_migrate_pages
-257	common	openat			sys_openat
 260	common	fchownat		sys_fchownat
 261	common	futimesat		sys_futimesat
 262	common	newfstatat		sys_newfstatat
