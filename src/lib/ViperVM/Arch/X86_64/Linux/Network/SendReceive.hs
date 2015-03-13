@@ -89,9 +89,10 @@ instance EnumBitSet SendReceiveFlag
 sysReceive :: Storable a => FileDescriptor -> Ptr () -> Word64 -> [SendReceiveFlag] -> Maybe a -> SysRet Word64
 sysReceive (FileDescriptor fd) ptr size flags addr = do
    let
-      call :: Ptr a -> Word64 -> SysRet Word64
+      call :: Ptr a -> Ptr Word64 -> SysRet Word64
       call add len = onSuccess (syscall6 45 fd ptr size (toBitSet flags :: Word64) add len) fromIntegral
 
    case addr of
-      Nothing -> call nullPtr 0
-      Just a  -> with a $ \a' -> call a' (fromIntegral (sizeOf a))
+      Nothing -> call nullPtr nullPtr
+      Just a  -> with a $ \a' -> 
+         with (fromIntegral (sizeOf a)) $ \sptr -> call a' sptr

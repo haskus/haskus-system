@@ -4,7 +4,7 @@ module ViperVM.Arch.Linux.Network.SendReceive
 where
 
 import Foreign.Marshal.Alloc
-import Data.ByteString
+import Data.ByteString (ByteString)
 import Data.ByteString.Unsafe
 import Control.Applicative ((<$>))
 import Foreign.Ptr (castPtr)
@@ -19,8 +19,4 @@ receiveByteString fd size flags = do
    ret <- sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
    case ret of
       Left err -> return (Left err)
-      Right sz -> Right <$> unsafePackCStringLen (b',sz')
-         where
-            sz' = fromIntegral sz
-            b'  = castPtr b
-
+      Right sz -> Right <$> unsafePackMallocCStringLen (castPtr b, fromIntegral sz)
