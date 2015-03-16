@@ -13,7 +13,7 @@ import qualified ListT
 
 import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.Memory as Generic
-import qualified ViperVM.Arch.Linux.Numa as Linux
+import qualified ViperVM.Arch.Linux.System.Topology as Linux
 
 import ViperVM.Platform.Drivers
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL

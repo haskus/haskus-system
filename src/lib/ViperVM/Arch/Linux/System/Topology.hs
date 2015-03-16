@@ -1,22 +1,28 @@
--- | Linux SysFS management
-module ViperVM.Arch.Linux.SysFS
+-- | Processor/memory topology
+module ViperVM.Arch.Linux.System.Topology
    ( CPUMap(..)
    , readMemInfo
    , readCPUMap
    , member
-   , toList
+   , Node(..)
+   , NUMA(..)
+   , loadNUMA
+   , nodeMemoryStatus
+   , nodeCPUs
    )
 where
 
+import System.Directory
+import Data.List (isPrefixOf,stripPrefix)
 import Control.Applicative ((<$>), (<*))
-import Control.Monad (void)
+import Control.Monad (void,forM)
 import Text.ParserCombinators.Parsec.Number
 import Text.Parsec.Combinator
 import Text.Parsec.Char
 import Text.Parsec
 import Data.Word
 import Data.Bits
-import Data.Maybe (isJust,mapMaybe)
+import Data.Maybe (fromJust,isJust,mapMaybe)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 
@@ -68,9 +74,51 @@ member idx (CPUMap v) = q < V.length v && testBit (v V.! q) r
       (q,r) = fromIntegral idx `quotRem` 32
 
 -- | Transform a CPUMap into a list of identifiers
-toList :: CPUMap -> [Word]
-toList (CPUMap v) = go 0 (V.toList v)
+fromCPUMap :: CPUMap -> [Word]
+fromCPUMap (CPUMap v) = go 0 (V.toList v)
    where
       go _ [] = []
       go n (x:xs) = mapMaybe (f x n) [0..31] ++ go (n+1) xs
       f x n idx = if testBit x idx then Just (n * 32 + fromIntegral idx) else Nothing
+
+
+-- | A set of NUMA nodes
+data NUMA = NUMA {
+   numaNodes :: [Node]
+} deriving (Show)
+
+-- | A NUMA node
+data Node = Node {
+   nodeId :: Word,
+   nodeCPUMap :: CPUMap,
+   nodeMemory :: NodeMemory
+} deriving (Show)
+
+-- | A memory node
+newtype NodeMemory = NodeMemory FilePath deriving (Show)
+
+-- | Load platform from sysfs (Linux)
+loadNUMA :: FilePath -> IO NUMA
+loadNUMA sysfsPath = do
+   let nodePath = sysfsPath ++ "/devices/system/node/"
+
+   nDirs <- filter ("node" `isPrefixOf`) <$> getDirectoryContents nodePath
+
+   ndes <- forM nDirs $ \nDir -> do
+      let nid = read (fromJust $ stripPrefix "node" nDir)
+      cpus <- readCPUMap (nodePath ++ nDir ++ "/cpumap")
+      return $ Node nid cpus (NodeMemory $ nodePath ++ nDir ++ "/meminfo")
+
+   return $ NUMA ndes
+
+
+-- | Return (total,free) memory for the given node
+nodeMemoryStatus :: NodeMemory -> IO (Word64,Word64)
+nodeMemoryStatus (NodeMemory path) = do
+   infos <- readMemInfo path
+
+   return (infos Map.! "MemTotal", infos Map.! "MemFree")
+
+-- | Return a list of CPU numbers from a map in a node
+nodeCPUs :: Node -> [Word]
+nodeCPUs = fromCPUMap . nodeCPUMap
