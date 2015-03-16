@@ -1,4 +1,4 @@
-module ViperVM.Arch.Linux.KernelEvent
+module ViperVM.Arch.Linux.System.KernelEvent
    ( KernelEvent(..)
    , KernelEventAction(..)
    , createKernelEventSocket

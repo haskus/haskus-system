@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-import ViperVM.Arch.Linux.KernelEvent
+import ViperVM.Arch.Linux.System.KernelEvent
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)

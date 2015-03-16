@@ -49,9 +49,9 @@ library
     ViperVM.Arch.Linux.FileSystem.Mount
     ViperVM.Arch.Linux.FileSystem.ReadWrite
     ViperVM.Arch.Linux.Network.SendReceive
-    ViperVM.Arch.Linux.KernelEvent
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
+    ViperVM.Arch.Linux.System.KernelEvent
     ViperVM.Arch.Linux.System.Topology
     ViperVM.Arch.Linux.Graphics.Capability
     ViperVM.Arch.Linux.Graphics.Card
