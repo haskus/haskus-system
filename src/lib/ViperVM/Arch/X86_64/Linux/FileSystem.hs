@@ -15,6 +15,7 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysCreate
    , sysClose
    , sysSeek
+   , sysSeek'
    , sysIoctl
    , sysAccess
    , sysDup
@@ -189,11 +190,14 @@ data SeekWhence =
    | SeekHole
    deriving (Enum,Eq,Show)
 
--- | Reposition read/write file offset
+-- | Reposition read/write file offset, return the new position
 sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
 sysSeek (FileDescriptor fd) off whence =
    onSuccess (syscall3 8 fd off (fromEnum whence)) id
 
+-- | Reposition read/write file offset
+sysSeek' :: FileDescriptor -> Int64 -> SeekWhence -> SysRet ()
+sysSeek' fd off whence = fmap (const ()) <$> (sysSeek fd off whence)
 
 -- | Send a custom command to a device
 sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64

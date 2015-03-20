@@ -3,7 +3,7 @@ module Main where
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.FileSystem.ReadWrite
-import ViperVM.Arch.X86_64.Linux.FileSystem.Directory
+import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.X86_64.Linux.Process
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.X86_64.Linux.Info
@@ -150,9 +150,11 @@ main = do
 
    putStrLn "Listing /etc directory:"
    etcfd <- check <$> sysOpen "/etc" [OpenReadOnly] []
-   entries <- check <$> sysGetDirectoryEntries etcfd 32000
+   entries <- check <$> listDirectory etcfd
+   entries2 <- check <$> listDirectory etcfd
    check <$> sysClose etcfd
    print entries
+   print entries2
 
    putStrLn "Sleeping for 2 seconds (interruptible)..."
    sysNanoSleep (TimeSpec 2 0) >>= \case

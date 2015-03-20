@@ -66,7 +66,10 @@ sysGetDirectoryEntries (FileDescriptor fd) buffersize = do
                name <- peekCString (castPtr namepos)
                let x = DirectoryEntry (dirInod hdr) (dirFileTyp hdr) name
                xs <- readEntries nextpos nextlen
-               return (x:xs)
+               -- filter deleted files
+               if dirInod hdr /= 0
+                  then return (x:xs)
+                  else return xs
 
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
       onSuccessIO (syscall3 217 fd ptr buffersize) $ \nread -> 
