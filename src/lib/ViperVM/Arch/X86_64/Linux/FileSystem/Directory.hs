@@ -1,0 +1,73 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+module ViperVM.Arch.X86_64.Linux.FileSystem.Directory
+   ( sysGetDirectoryEntries
+   , DirectoryEntry(..)
+   , DirectoryEntryHeader(..)
+   )
+where
+
+import Foreign.Storable
+import Foreign.CStorable
+import GHC.Generics (Generic)
+import Data.Word
+import Data.Int
+import Foreign.Marshal.Array
+import Foreign.Ptr
+import Foreign.C.String
+
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.X86_64.Linux.Syscall
+
+data DirectoryEntryHeader = DirectoryEntryHeader
+   { dirInod      :: Word64   -- ^ Inode number
+   , dirOffset    :: Int64    -- ^ Offset of the next entry
+   , dirLength    :: Word16   -- ^ Length of the entry
+   , dirFileTyp   :: Word8    -- ^ Type of file
+   } deriving (Generic)
+
+instance CStorable DirectoryEntryHeader
+
+instance Storable DirectoryEntryHeader where
+   peek      = cPeek
+   poke      = cPoke
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+
+data DirectoryEntry = DirectoryEntry
+   { entryInode :: Word64
+   , entryType  :: Word8
+   , entryName  :: FilePath
+   } deriving (Show)
+
+-- | getdents64 syscall
+--
+-- Linux doesn't provide a stateless API: the offset in the file (i.e. the
+-- iterator in the directory contents) is shared by everyone using the file
+-- descriptor...
+--
+-- TODO: propose a "pgetdents64" syscall for Linux with an additional offset
+-- (like pread, pwrite)
+sysGetDirectoryEntries :: FileDescriptor -> Int -> SysRet [DirectoryEntry]
+sysGetDirectoryEntries (FileDescriptor fd) buffersize = do
+
+   let
+      readEntries p n
+         | n < sizeOf (undefined :: DirectoryEntryHeader) = return []
+         | otherwise = do
+               hdr  <- peek p
+               let 
+                  len     = fromIntegral (dirLength hdr)
+                  sizede  = sizeOf (undefined :: DirectoryEntryHeader)
+                  namepos = p `plusPtr` sizede
+                  nextpos = p `plusPtr` len
+                  nextlen = n - len
+               name <- peekCString (castPtr namepos)
+               let x = DirectoryEntry (dirInod hdr) (dirFileTyp hdr) name
+               xs <- readEntries nextpos nextlen
+               return (x:xs)
+
+   allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
+      onSuccessIO (syscall3 217 fd ptr buffersize) $ \nread -> 
+         readEntries (castPtr ptr) (fromIntegral nread)

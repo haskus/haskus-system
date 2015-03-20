@@ -31,6 +31,7 @@ library
     ViperVM.Arch.X86_64.Linux.FileSystem.ReadWrite
     ViperVM.Arch.X86_64.Linux.FileSystem.Notification
     ViperVM.Arch.X86_64.Linux.FileSystem.Mount
+    ViperVM.Arch.X86_64.Linux.FileSystem.Directory
     ViperVM.Arch.X86_64.Linux.Process
     ViperVM.Arch.X86_64.Linux.Power
     ViperVM.Arch.X86_64.Linux.Pipe

@@ -252,7 +252,6 @@ syscall0 = syscall0_
 214	64	epoll_ctl_old
 215	64	epoll_wait_old
 216	common	remap_file_pages	sys_remap_file_pages
-217	common	getdents64		sys_getdents64
 218	common	set_tid_address		sys_set_tid_address
 219	common	restart_syscall		sys_restart_syscall
 220	common	semtimedop		sys_semtimedop
