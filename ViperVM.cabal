@@ -50,11 +50,14 @@ library
     ViperVM.Arch.Linux.FileSystem.Mount
     ViperVM.Arch.Linux.FileSystem.ReadWrite
     ViperVM.Arch.Linux.FileSystem.Directory
+    ViperVM.Arch.Linux.FileSystem.OpenClose
     ViperVM.Arch.Linux.Network.SendReceive
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
+    ViperVM.Arch.Linux.System.SysFS
     ViperVM.Arch.Linux.System.KernelEvent
     ViperVM.Arch.Linux.System.Topology
+    ViperVM.Arch.Linux.System.Graphics
     ViperVM.Arch.Linux.Graphics.Capability
     ViperVM.Arch.Linux.Graphics.Card
     ViperVM.Arch.Linux.Graphics.Connector

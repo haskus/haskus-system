@@ -10,6 +10,9 @@ import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Capability
 
+import ViperVM.Arch.Linux.System.Graphics
+import ViperVM.Arch.Linux.System.SysFS
+
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.Linux.ErrorCode
@@ -17,6 +20,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (forM_)
+import Control.Applicative ((<$>))
 
 import Text.Printf
 
@@ -41,6 +45,14 @@ main = do
          Right v  -> return (Right v))
 
    ret <- runEitherT $ do
+      sysfs <- try "Load SysFS" $ fmap SysFS <$> sysOpen "/sys" [OpenReadOnly] []
+
+      cards <- try "Load graphic cards" $ loadGraphicCards sysfs
+
+      liftIO $ do
+         putStrLn "Graphic cards:"
+         print cards
+
       -- Open device
       fd <- try "Open card" $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
 

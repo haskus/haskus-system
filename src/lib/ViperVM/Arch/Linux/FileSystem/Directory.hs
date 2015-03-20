@@ -1,6 +1,7 @@
 -- | Directory
 module ViperVM.Arch.Linux.FileSystem.Directory
    ( listDirectory
+   , DirectoryEntry(..)
    )
 where
 
