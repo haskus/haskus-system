@@ -47,6 +47,6 @@ systemInit path = do
 
       -- create device directory
       sysTry "Create device directory" $ createDir devicePath
-      devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadWrite] []
+      devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] []
 
       return (System devfd (SysFS sysfs))
