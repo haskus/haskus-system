@@ -20,18 +20,15 @@ main = do
 
    let 
       ioctl = drmIoctl sysIoctl
-      try str a = EitherT (a >>= \case
-         Left err -> return (Left (str,err))
-         Right v  -> return (Right v))
 
-   ret <- runEitherT $ do
-      sys   <- try "Initialize System" $ systemInit "/system"
+   ret <- runCatch $ do
+      sys   <- sysTry "Initialize System" $ systemInit "/system"
 
-      fd    <- try "Open graphic card descriptor" $
+      fd    <- sysTry "Open graphic card descriptor" $
                   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
-      card  <- try "Get card information from descriptor" $
+      card  <- sysTry "Get card information from descriptor" $
                   getCard ioctl fd
-      cap   <- try "Get GenericBuffer capability" $
+      cap   <- sysTry "Get GenericBuffer capability" $
                   cardCapability card CapGenericBuffer
       hoistEither $ if cap == 0
          then Left ("Test GenericBuffer capability", ENOENT) 
@@ -57,12 +54,12 @@ main = do
          bpp    = 32
          dbFlags = 0
 
-      dumb <- try "Create a dumb buffer" $
+      dumb <- sysTry "Create a dumb buffer" $
                   cardCreateGenericBuffer card width height bpp dbFlags
       return (Right dumb)
 
    case ret of
-      Left (str,err) -> putStrLn $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
+      Left _  -> return ()
       Right _ -> putStrLn "Screen initialized"
 
    putStrLn "Press a key to continue"

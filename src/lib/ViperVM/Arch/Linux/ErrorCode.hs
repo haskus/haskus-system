@@ -1,6 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | Management of returned values from syscalls
 module ViperVM.Arch.Linux.ErrorCode 
    ( SysRet
+   , sysTry
+   , sysCatch
+   , sysCatchFail
+   , runCatch
    , ErrorCode (..)
    , defaultCheck
    , defaultCheckRet
@@ -13,9 +19,34 @@ where
 
 import Data.Int (Int64)
 import Control.Applicative ((<$>))
+import Control.Monad.Trans.Either
 
 -- | Syscall return type
 type SysRet a = IO (Either ErrorCode a)
+
+sysTry :: String -> IO (Either a b) -> EitherT (String,a) IO b
+sysTry str a = EitherT (a >>= \case
+   Left err -> return (Left (str,err))
+   Right v  -> return (Right v))
+
+sysCatch :: Show a => Either (String,a) b -> IO (Either a b)
+sysCatch a = case a of
+   Left (str,err) -> do
+      putStrLn $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
+      return (Left err)
+   Right r -> return (Right r)
+
+sysCatchFail :: Show a => Either (String,a) b -> IO b
+sysCatchFail a = do
+   r <- sysCatch a
+   case r of
+      Left _  -> error "Error catch"
+      Right b -> return b
+
+runCatch :: Show a => EitherT (String,a) IO b -> IO (Either a b)
+runCatch x = do
+   ret <- runEitherT x
+   sysCatch ret
 
 -- | Convert an error code into ErrorCode type
 toErrorCode :: Int64 -> ErrorCode

@@ -14,8 +14,6 @@ import ViperVM.Arch.X86_64.Linux.FileSystem.Directory
 import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
 
 import System.FilePath
-import Control.Applicative ((<$>))
-import Control.Monad.Trans.Either
 import Control.Monad (void)
 
 data System = System
@@ -32,24 +30,23 @@ systemInit path = do
 
    let 
       createDir p = sysCreateDirectory Nothing p [PermUserRead,PermUserWrite,PermUserExecute] False
-      createDirT = EitherT . createDir
       systemPath = path </> "sys"
       devicePath = path </> "dev"
 
    -- create root path (allowed to fail if it already exists)
-   void (createDir path)
+   void $ runCatch $ sysTry "Create root directory" $ createDir path
 
-   runEitherT $ do
+   runCatch $ do
       -- mount a tmpfs in root path
-      EitherT $ mountTmpFS sysMount path
+      sysTry "Mount tmpfs" $ mountTmpFS sysMount path
 
       -- mount sysfs
-      createDirT systemPath
-      EitherT $ mountSysFS sysMount systemPath
-      sysfs <- EitherT $ fmap SysFS <$> sysOpen systemPath [OpenReadOnly] []
+      sysTry "Create system directory" $ createDir systemPath
+      sysTry "Mount sysfs" $ mountSysFS sysMount systemPath
+      sysfs <- sysTry "Open sysfs directory" $ sysOpen systemPath [OpenReadOnly] []
 
       -- create device directory
-      createDirT devicePath
-      devfd <- EitherT $ sysOpen devicePath [OpenReadWrite] []
+      sysTry "Create device directory" $ createDir devicePath
+      devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadWrite] []
 
-      return (System devfd sysfs)
+      return (System devfd (SysFS sysfs))
