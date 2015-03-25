@@ -2,6 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ViperVM.Arch.X86_64.Linux.FileSystem.Directory
    ( sysGetDirectoryEntries
+   , sysCreateDirectory
+   , sysRemoveDirectory
    , DirectoryEntry(..)
    , DirectoryEntryHeader(..)
    )
@@ -15,10 +17,29 @@ import Data.Int
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.C.String
+import Data.Bits
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.X86_64.Linux.FileSystem
+
+sysCreateDirectory :: Maybe FileDescriptor -> FilePath -> [FilePermission] -> Bool -> SysRet ()
+sysCreateDirectory fd path perm sticky = do
+   let
+      opt = if sticky then [FileOptSticky] else []
+      mode = fromFilePermission perm .|. fromFileOptions opt :: Word64
+
+   withCString path $ \path' ->
+      case fd of
+         Nothing -> onSuccess (syscall2 83 path' mode) (const ())
+         Just (FileDescriptor fd') -> onSuccess (syscall3 258 fd' path' mode) (const ())
+
+
+sysRemoveDirectory :: FilePath -> SysRet ()
+sysRemoveDirectory path = withCString path $ \path' ->
+   onSuccess (syscall1 84 path') (const ())
+
 
 data DirectoryEntryHeader = DirectoryEntryHeader
    { dirInod      :: Word64   -- ^ Inode number

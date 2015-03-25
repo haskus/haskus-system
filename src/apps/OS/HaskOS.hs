@@ -1,9 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 import ViperVM.Arch.X86_64.Linux.Power
 import ViperVM.Arch.X86_64.Linux.FileSystem
-import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
-import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.System.System
 
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Capability
@@ -26,9 +25,7 @@ main = do
          Right v  -> return (Right v))
 
    ret <- runEitherT $ do
-      _     <- try "Create /sys" $ sysCreateDirectory Nothing "/sys" [PermUserExecute,PermUserWrite,PermUserRead] False
-
-      _     <- try "Mount SysFS" $ mountSysFS sysMount "/sys"
+      sys   <- try "Initialize System" $ systemInit "/system"
 
       fd    <- try "Open graphic card descriptor" $
                   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []

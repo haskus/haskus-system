@@ -2,8 +2,10 @@
 {-# LANGUAGE RecordWildCards #-}
 module ViperVM.Arch.X86_64.Linux.FileSystem
    ( FilePermission(..)
+   , fromFilePermission
    , FileType(..)
    , FileOption(..)
+   , fromFileOptions
    , OpenFlag(..)
    , SeekWhence(..)
    , AccessMode(..)
@@ -24,7 +26,6 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysSetCurrentDirectoryPath
    , sysGetCurrentDirectory
    , sysRename
-   , sysRemoveDirectory
    , sysFileLock
    , sysFileSync
    , sysFileDataSync
@@ -41,7 +42,6 @@ module ViperVM.Arch.X86_64.Linux.FileSystem
    , sysSetProcessUMask
    , sysFileStat
    , sysFileDescriptorStat
-   , sysCreateDirectory
    , sysSync
    , sysSyncFS
    , sysCreateSpecialFile
@@ -251,10 +251,6 @@ sysRename oldPath newPath =
    withCString oldPath $ \old' ->
       withCString newPath $ \new' ->
          onSuccess (syscall2 82 old' new') (const ())
-
-sysRemoveDirectory :: FilePath -> SysRet ()
-sysRemoveDirectory path = withCString path $ \path' ->
-   onSuccess (syscall1 84 path') (const ())
 
 data FileLock =
      SharedLock
@@ -525,18 +521,6 @@ sysFileDescriptorStat :: FileDescriptor -> SysRet Stat
 sysFileDescriptorStat (FileDescriptor fd) =
    allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
       onSuccessIO (syscall2 5 fd s) (const (toStat <$> peek s))
-
-
-sysCreateDirectory :: Maybe FileDescriptor -> String -> [FilePermission] -> Bool -> SysRet ()
-sysCreateDirectory fd path perm sticky = do
-   let
-      opt = if sticky then [FileOptSticky] else []
-      mode = fromFilePermission perm .|. fromFileOptions opt :: Word64
-
-   withCString path $ \path' ->
-      case fd of
-         Nothing -> onSuccess (syscall2 83 path' mode) (const ())
-         Just (FileDescriptor fd') -> onSuccess (syscall3 258 fd' path' mode) (const ())
 
 
 sysSync :: SysRet ()

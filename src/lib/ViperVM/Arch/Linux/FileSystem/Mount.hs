@@ -4,6 +4,7 @@ module ViperVM.Arch.Linux.FileSystem.Mount
    , mountSysFS
    , mountDevFS
    , mountProcFS
+   , mountTmpFS
    )
 where
 
@@ -121,3 +122,7 @@ mountDevFS mount path = mount "none" path "devtmpfs" [] nullPtr
 -- | Mount ProcFS at the given location
 mountProcFS :: MountCall -> FilePath -> SysRet ()
 mountProcFS mount path = mount "none" path "proc" [] nullPtr
+
+-- | Mount TmpFS at the given location
+mountTmpFS :: MountCall -> FilePath -> SysRet ()
+mountTmpFS mount path = mount "none" path "tmpfs" [] nullPtr

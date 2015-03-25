@@ -54,6 +54,7 @@ library
     ViperVM.Arch.Linux.Network.SendReceive
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Input
+    ViperVM.Arch.Linux.System.System
     ViperVM.Arch.Linux.System.SysFS
     ViperVM.Arch.Linux.System.KernelEvent
     ViperVM.Arch.Linux.System.Topology
