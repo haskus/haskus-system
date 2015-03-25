@@ -16,6 +16,7 @@ import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
 import System.FilePath
 import Control.Applicative ((<$>))
 import Control.Monad.Trans.Either
+import Control.Monad (void)
 
 data System = System
    { systemDevFS  :: FileDescriptor    -- ^ root of the tmpfs used to create device nodes
@@ -27,24 +28,28 @@ data System = System
 --
 -- Create the given @path@ if it doesn't exist and mount the system in it
 systemInit :: FilePath -> SysRet System
-systemInit path = runEitherT $ do
+systemInit path = do
 
    let 
-      createDir p = EitherT $ sysCreateDirectory Nothing p [PermUserRead,PermUserWrite,PermUserExecute] False
+      createDir p = sysCreateDirectory Nothing p [PermUserRead,PermUserWrite,PermUserExecute] False
+      createDirT = EitherT . createDir
       systemPath = path </> "sys"
       devicePath = path </> "dev"
 
-   -- create root path and mount a tmpfs in it
-   createDir path
-   EitherT $ mountTmpFS sysMount path
+   -- create root path (allowed to fail if it already exists)
+   void (createDir path)
 
-   -- mount sysfs
-   createDir systemPath
-   EitherT $ mountSysFS sysMount systemPath
-   sysfs <- EitherT $ fmap SysFS <$> sysOpen systemPath [OpenReadOnly] []
+   runEitherT $ do
+      -- mount a tmpfs in root path
+      EitherT $ mountTmpFS sysMount path
 
-   -- create device directory
-   createDir devicePath
-   devfd <- EitherT $ sysOpen devicePath [OpenReadWrite] []
+      -- mount sysfs
+      createDirT systemPath
+      EitherT $ mountSysFS sysMount systemPath
+      sysfs <- EitherT $ fmap SysFS <$> sysOpen systemPath [OpenReadOnly] []
 
-   return (System devfd sysfs)
+      -- create device directory
+      createDirT devicePath
+      devfd <- EitherT $ sysOpen devicePath [OpenReadWrite] []
+
+      return (System devfd sysfs)
