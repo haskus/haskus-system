@@ -142,39 +142,39 @@ library
   cc-options: -O3
 
   build-depends:       
-    base >= 4.7,
-    containers == 0.5.*,
-    list-t == 0.2.*,
-    stm-containers == 0.2.*,
-    stm-linkedlist == 0.1.*,
-    hashable == 1.2.*,
-    cereal == 0.4.*,
-    safecopy == 0.8.*,
-    bytestring == 0.10.*,
-    system-fileio == 0.3.*,
-    system-filepath == 0.4.*,
-    crypto-api == 0.13.*,
-    pureMD5 == 2.1.*,
-    cpuid == 0.2.*,
-    text == 1.2.*,
-    filepath ==1.3.*,
-    either == 4.3.*,
-    vector == 0.10.*,
-    directory == 1.2.*,
-    parsec == 3.1.*,
-    parsec-numbers == 0.1.*,
+    base                >= 4.8,
+    containers          == 0.5.*,
+    list-t              == 0.2.*,
+    stm                 == 2.4.*,
+    stm-containers      == 0.2.*,
+    stm-linkedlist      == 0.1.*,
+    hashable            == 1.2.*,
+    cereal              == 0.4.*,
+    safecopy            == 0.8.*,
+    bytestring          == 0.10.*,
+    system-fileio       == 0.3.*,
+    system-filepath     == 0.4.*,
+    crypto-api          == 0.13.*,
+    pureMD5             == 2.1.*,
+    cpuid               == 0.2.*,
+    text                == 1.2.*,
+    filepath            == 1.4.*,
+    either              == 4.3.*,
+    vector              == 0.10.*,
+    directory           == 1.2.*,
+    parsec              == 3.1.*,
+    parsec-numbers      == 0.1.*,
     dynamic-linker-template == 0.1.*,
-    transformers == 0.4.*,
-    unix == 2.7.*,
-    stm == 2.4.*,
-    criterion == 1.0.*,
+    transformers        == 0.4.*,
+    unix                == 2.7.*,
+    criterion           == 1.1.*,
     c-storable-deriving == 0.1.1,
-    fixed-vector == 0.7.*,
-    binary == 0.7.*,
-    binary-bits == 0.6,
-    utf8-string == 0.3.*,
-    pqueue == 1.2.*,
-    split == 0.2.*
+    fixed-vector        == 0.7.*,
+    binary              == 0.7.*,
+    binary-bits         == 0.6,
+    utf8-string         == 1.*,
+    pqueue              == 1.2.*,
+    split               == 0.2.*
 
   build-tools: 
 
@@ -201,8 +201,8 @@ executable MemoryTest
   build-depends: 
     base,
     ViperVM,
-    stm == 2.4.*,
-    containers == 0.5.*
+    stm,
+    containers
 
 executable TestLinuxGraphics
   main-is: TestLinuxGraphics.hs
@@ -212,8 +212,8 @@ executable TestLinuxGraphics
   build-depends: 
     base,
     ViperVM,
-    either == 4.3.*,
-    transformers == 0.4.*
+    either,
+    transformers
 
 executable ViperWeb
   main-is: Web.hs
@@ -224,15 +224,15 @@ executable ViperWeb
   ghc-options: -Wall -threaded -O3
   default-language:    Haskell2010
   build-depends: 
-    base == 4.7.*, 
+    base, 
     ViperVM, 
-    stm == 2.4.*,
-    containers ==0.5.*,
-    happstack-server == 7.3.*,
-    blaze-html == 0.7.*,
-    blaze-markup == 0.6.*,
-    transformers == 0.4.*,
-    network == 2.5.*
+    stm,
+    containers,
+    happstack-server == 7.4.*,
+    blaze-html       == 0.8.*,
+    blaze-markup     == 0.7.*,
+    transformers     == 0.4.*,
+    network          == 2.6.*
 
 executable TestKernels
   main-is: TestKernels.hs
@@ -260,8 +260,8 @@ executable HaskOS
   build-depends: 
     base,
     ViperVM,
-    either == 4.3.*,
-    transformers == 0.4.*
+    either,
+    transformers
 
 executable huffman
   main-is: huffman.hs
@@ -291,5 +291,5 @@ executable udev
   build-depends: 
     base,
     ViperVM,
-    either == 4.3.*,
-    transformers == 0.4.*
+    either,
+    transformers

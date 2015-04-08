@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- We need this one to use type literal numbers (S (S .. Z)) of size 32
 {-# OPTIONS -fcontext-stack=50 #-}

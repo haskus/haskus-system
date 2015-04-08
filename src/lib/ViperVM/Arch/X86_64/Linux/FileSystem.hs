@@ -59,7 +59,7 @@ import Data.Word (Word64, Word32)
 import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
-import Data.Bits (Bits, (.|.), (.&.), shiftR, shiftL, complement)
+import Data.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
 import Control.Applicative ((<$>))
 
 import GHC.Generics (Generic)
@@ -385,14 +385,14 @@ data FileOption
 instance EnumBitSet FileOption
 
 -- | Read file options from Stat "mode" field 
-toFileOptions :: (Num a, Bits a) => a -> [FileOption]
+toFileOptions :: (Num a, FiniteBits a) => a -> [FileOption]
 toFileOptions x = fromBitSet ((x `shiftR` 9) .&. 0x07)
 
 fromFileOptions :: (Num a, Bits a) => [FileOption] -> a
 fromFileOptions x = toBitSet x `shiftL` 9
 
 -- | Read file permission from Stat "mode" field 
-toFilePermission :: (Num a, Bits a) => a -> [FilePermission]
+toFilePermission :: (Num a, FiniteBits a) => a -> [FilePermission]
 toFilePermission x = fromBitSet (x .&. 0x01FF)
 
 fromFilePermission :: (Num a, Bits a) => [FilePermission] -> a

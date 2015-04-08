@@ -21,22 +21,11 @@ where
 import Data.Bits
 import Data.Foldable (Foldable, foldl')
 
--- | Count the trailing zeros
---
--- TODO: 12/12/14 replace this with the same function that will lend into
--- Data.Bits soon and that uses new primops (to use bsf for instance on X86). 
--- The same function name has been chosen so that a clash should occur on
--- package bounce :)
--- cf https://ghc.haskell.org/trac/ghc/ticket/9340
-countTrailingZeros :: (Bits b) => b -> Maybe Int
-countTrailingZeros = go 0
-   where
-      go n x
-         | x == zeroBits = Nothing
-         | testBit x 0   = Just n
-         | otherwise     = go (n+1) (x `shiftR` 1)
-
-
+myCountTrailingZeros :: (FiniteBits b) => b -> Maybe Int
+myCountTrailingZeros x = 
+   if x == zeroBits
+      then Nothing
+      else Just (countTrailingZeros x)
 
 -- | A bit set: use bitwise operations (fast!) and minimal storage (sizeOf basetype)
 --
@@ -57,15 +46,15 @@ notMember :: (Bits b, Enum a) => EnumSet b a -> a -> Bool
 notMember b e = not (member b e)
 
 -- | Retrieve elements in the set
-elems :: (Enum a, Bits b) => EnumSet b a -> [a]
+elems :: (Enum a, FiniteBits b) => EnumSet b a -> [a]
 elems (EnumSet b) = go b
    where
-      go c = case countTrailingZeros c of
+      go c = case myCountTrailingZeros c of
          Nothing -> []
          Just e  -> toEnum e : go (clearBit c e)
 
 -- | Convert a set into a list
-toList :: (Enum a, Bits b) => EnumSet b a -> [a]
+toList :: (Enum a, FiniteBits b) => EnumSet b a -> [a]
 toList = elems
 
 -- | Convert a Foldable into a set
@@ -82,5 +71,5 @@ class Enum a => EnumBitSet a where
    toBitSet = getBits . fromList
 
    -- | Convert a bitset into a list of Enum elements
-   fromBitSet :: (Bits b) => b -> [a]
+   fromBitSet :: (FiniteBits b) => b -> [a]
    fromBitSet = toList . EnumSet
