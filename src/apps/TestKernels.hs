@@ -6,7 +6,6 @@ import ViperVM.Library.Library
 import ViperVM.Library.Maths.MatrixOps
 
 import Control.Monad (void)
-import Control.Applicative ((<$>),(<*>))
 import Control.Exception (SomeException,catch)
 import Data.Foldable (traverse_)
 

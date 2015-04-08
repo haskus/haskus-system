@@ -11,7 +11,6 @@ module ViperVM.Platform.Drivers
    )
 where
 
-import Control.Applicative ((<$>))
 import Data.Word (Word64)
 
 import ViperVM.Arch.Common.Errors

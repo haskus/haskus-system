@@ -33,7 +33,7 @@ where
 
 import Prelude hiding (mapM_)
 
-import Data.Foldable (foldl', Foldable, mapM_)
+import Data.Foldable (foldl', mapM_)
 import qualified Data.Map as Map
 import qualified Data.PQueue.Prio.Min as PQueue
 import Data.Word

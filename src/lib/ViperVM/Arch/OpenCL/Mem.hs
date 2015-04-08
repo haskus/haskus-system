@@ -23,7 +23,6 @@ import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Bindings
 
 import Foreign.C.Types (CSize)
-import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Data.Ord (comparing)
 import Data.Word (Word64)

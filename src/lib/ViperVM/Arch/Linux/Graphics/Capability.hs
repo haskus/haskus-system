@@ -8,7 +8,6 @@ module ViperVM.Arch.Linux.Graphics.Capability
    )
 where
 
-import Control.Applicative ((<$>))
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics (Generic)

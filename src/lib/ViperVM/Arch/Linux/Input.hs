@@ -17,7 +17,6 @@ module ViperVM.Arch.Linux.Input
    )
 where
 
-import Control.Applicative ((<$>), (<*>))
 import Data.Word
 import Data.Int
 import Foreign.Storable

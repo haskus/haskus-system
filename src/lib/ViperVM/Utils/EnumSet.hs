@@ -19,7 +19,7 @@ module ViperVM.Utils.EnumSet
 where
 
 import Data.Bits
-import Data.Foldable (Foldable, foldl')
+import Data.Foldable (foldl')
 
 myCountTrailingZeros :: (FiniteBits b) => b -> Maybe Int
 myCountTrailingZeros x = 

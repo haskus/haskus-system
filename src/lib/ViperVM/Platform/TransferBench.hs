@@ -23,7 +23,6 @@ import qualified ViperVM.STM.TMap as TMap
 import qualified ViperVM.STM.TList as TList
 
 import Control.Concurrent.STM
-import Control.Applicative ((<$>))
 import Data.Traversable (forM)
 import Criterion.Measurement
 

@@ -22,7 +22,6 @@ import Foreign.Marshal.Array
 import Foreign.Ptr
 import Data.Word
 import GHC.Generics (Generic)
-import Control.Applicative ((<$>))
 
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card

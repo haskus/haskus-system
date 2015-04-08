@@ -19,7 +19,6 @@ import Data.Binary.Get
 import Data.ByteString (ByteString)
 import Data.ByteString.UTF8 (fromString,toString)
 import qualified Data.ByteString as BS
-import Control.Applicative ((<$>))
 import Control.Monad (when)
 import Data.Foldable (forM_)
 import Numeric (showHex,readHex)

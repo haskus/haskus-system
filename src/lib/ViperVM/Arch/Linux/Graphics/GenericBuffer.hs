@@ -22,7 +22,6 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Ioctl
 
-import Control.Applicative ((<$>))
 import Foreign.Marshal.Utils (with)
 import Foreign.Storable
 import Foreign.CStorable

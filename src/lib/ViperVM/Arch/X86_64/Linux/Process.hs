@@ -22,11 +22,10 @@ where
 
 import Control.Monad (void)
 import Data.Int (Int64)
-import Data.Word (Word, Word32)
+import Data.Word (Word32)
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (peek)
-import Control.Applicative ((<$>), (<*>))
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.Linux.ErrorCode

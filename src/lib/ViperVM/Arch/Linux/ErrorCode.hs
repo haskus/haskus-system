@@ -18,7 +18,6 @@ module ViperVM.Arch.Linux.ErrorCode
 where
 
 import Data.Int (Int64)
-import Control.Applicative ((<$>))
 import Control.Monad.Trans.Either
 
 -- | Syscall return type

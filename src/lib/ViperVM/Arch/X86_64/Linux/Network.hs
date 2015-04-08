@@ -29,7 +29,6 @@ import Foreign.CStorable
 import Data.Word
 import Data.List (foldl')
 import Data.Bits
-import Control.Applicative ((<$>))
 import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode

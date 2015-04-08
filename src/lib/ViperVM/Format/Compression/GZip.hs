@@ -13,7 +13,6 @@ import Data.Foldable (toList)
 import Data.Word
 import Data.Binary.Get
 import Data.Binary.Bits.Get (block,bool,runBitGet,skipBits)
-import Control.Applicative ((<$>), (<*>))
 import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.ByteString.Lazy (pack,ByteString)

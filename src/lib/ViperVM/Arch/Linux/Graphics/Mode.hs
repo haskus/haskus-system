@@ -23,7 +23,6 @@ import Foreign.CStorable
 import Data.Word
 import GHC.Generics (Generic)
 import Data.Bits (shiftL,shiftR)
-import Control.Applicative ((<$>))
 import Foreign.Ptr (castPtr)
 import qualified Data.Vector.Fixed as Vec
 import Foreign.C.String 

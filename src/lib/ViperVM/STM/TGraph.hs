@@ -11,7 +11,6 @@ where
 import qualified Data.Set as Set
 import Control.Monad (foldM, foldM_, when, void)
 import Control.Concurrent.STM
-import Control.Applicative ((<$>), (<*>))
 
 import ViperVM.STM.TList (TList)
 import qualified ViperVM.STM.TList as TList

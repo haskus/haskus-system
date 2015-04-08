@@ -60,7 +60,6 @@ import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
-import Control.Applicative ((<$>))
 
 import GHC.Generics (Generic)
 

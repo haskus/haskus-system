@@ -13,7 +13,6 @@ import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Bindings
 
-import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Foreign.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
 import Foreign.Marshal.Array (withArray)

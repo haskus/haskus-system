@@ -39,7 +39,6 @@ import ViperVM.Arch.Common.Endianness
 
 import Data.Word (Word64)
 import Data.Ord (comparing)
-import Control.Applicative ((<$>))
 import Foreign.Ptr (Ptr, castPtr, nullPtr)
 import Foreign.C.Types (CSize)
 import Foreign.C.String (peekCString)

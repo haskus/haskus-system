@@ -11,7 +11,6 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Network.SendReceive
 
-import Control.Applicative ((<$>))
 import Control.Monad.Trans.Either
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map

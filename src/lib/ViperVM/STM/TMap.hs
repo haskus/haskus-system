@@ -25,7 +25,6 @@ import ListT (fold)
 import qualified ListT
 
 import Data.Maybe (fromJust,isJust,isNothing)
-import Control.Applicative ( (<$>) )
 
 type TMap a b = SMAP.Map a b
 

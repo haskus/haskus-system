@@ -4,10 +4,8 @@ module ViperVM.Arch.X86_64.Linux.Pipe
 where
 
 import Foreign.Ptr (Ptr)
-import Data.Word (Word)
 import Foreign.Marshal.Array (allocaArray)
 import Foreign.Storable (peekElemOff)
-import Control.Applicative ((<$>), (<*>))
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor

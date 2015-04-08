@@ -4,7 +4,6 @@ module ViperVM.Platform.Loading
    ) 
 where
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Monad (filterM,when)
 import Control.Concurrent.STM
 import Data.Foldable (forM_)

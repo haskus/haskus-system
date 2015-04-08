@@ -24,7 +24,6 @@ import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
 
-import Control.Applicative ((<$>))
 import Control.Monad (void)
 
 -- | Command queue

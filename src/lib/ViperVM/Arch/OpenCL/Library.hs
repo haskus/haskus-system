@@ -11,7 +11,6 @@ import System.Posix.DynamicLinker.Template
 import Foreign.C.Types (CSize(..))
 import Foreign.Ptr (Ptr)
 import Foreign.C.String (CString)
-import Control.Applicative ((<$>))
 import Data.Maybe (fromJust)
 import Data.Word (Word8)
 

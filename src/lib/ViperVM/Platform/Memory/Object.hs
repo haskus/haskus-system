@@ -10,9 +10,7 @@ module ViperVM.Platform.Memory.Object
 where
 
 import Control.Concurrent.STM
-import Control.Applicative ((<$>), (<*>))
 import Data.Foldable (traverse_)
-import Data.Traversable (traverse)
 import Control.Monad ((<=<))
 
 import ViperVM.Platform.Types (Data,MultiData,MultiData_(..))

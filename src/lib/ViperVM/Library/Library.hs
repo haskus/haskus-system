@@ -25,7 +25,6 @@ import qualified Data.ByteString as BS
 import Data.Serialize (runGet, runPut)
 import Data.SafeCopy (safePut,safeGet)
 import qualified Data.Text as T
-import Control.Applicative ((<$>))
 
 -- | Try to load a preprocessed kernel for a processor
 -- (e.g. a compiled OpenCL kernel)

@@ -11,7 +11,6 @@ import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.OpenCL.Error
 
-import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Foreign.Marshal.Array (withArray)
 

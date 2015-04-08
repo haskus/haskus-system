@@ -20,7 +20,6 @@ import ViperVM.Arch.Linux.ErrorCode
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (forM_)
-import Control.Applicative ((<$>))
 
 import Text.Printf
 
@@ -129,7 +128,7 @@ main = do
       -- prepare buffer for memory mapping
       dbmap <- try "Prepare for mapping" $ cardMapGenericBuffer card db
 
-	   -- perform actual memory mapping
+      -- perform actual memory mapping
       let size = genericBufferSize db
       mem <- try "Map generic buffer" $ mmap Nothing size [ProtRead,ProtWrite] [MapShared] (Just (fd, genericMapOffset dbmap))
 

@@ -23,10 +23,8 @@ import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Either
-import Data.Traversable (traverse)
 import Data.Word
 import Foreign.CStorable
 import Foreign.Marshal.Array (peekArray, allocaArray)

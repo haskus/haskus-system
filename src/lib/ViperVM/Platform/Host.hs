@@ -30,7 +30,6 @@ import ViperVM.STM.TGraph (deepFirst,breadthFirst)
 
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Class
-import Data.Traversable (traverse)
 import Control.Concurrent.STM
 
 -- | Host

@@ -20,7 +20,6 @@ import Data.Version
 
 import Control.Concurrent.STM
 
-import Control.Applicative ((<$>))
 import Control.Monad (msum, forM_, guard, mzero)
 import Control.Monad.Trans.Class (lift)
 import System.Environment

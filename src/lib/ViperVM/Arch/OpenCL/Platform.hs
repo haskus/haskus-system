@@ -38,7 +38,6 @@ import Control.Monad.Trans.Either
 import Foreign.C.Types (CSize)
 import Foreign.C.String (peekCString)
 import Data.Word (Word32)
-import Control.Applicative ((<$>), (<*>))
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,peekArray)
 import Foreign.Storable (peek,sizeOf)

@@ -11,7 +11,6 @@ where
 import Data.Word (Word64)
 import Control.Concurrent.STM
 import Data.Foldable (forM_)
-import Control.Applicative ((<$>))
 
 import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL

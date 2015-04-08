@@ -14,9 +14,8 @@ module ViperVM.Platform.Drivers.Host
 where
 
 import Foreign.Ptr (Ptr,castPtr)
-import Data.Word (Word,Word64)
+import Data.Word (Word64)
 import Data.Ord (comparing)
-import Control.Applicative ((<$>))
 import Text.Printf
 import System.IO.Unsafe
 

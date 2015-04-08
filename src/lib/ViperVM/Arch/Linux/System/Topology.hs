@@ -14,7 +14,6 @@ where
 
 import System.Directory
 import Data.List (isPrefixOf,stripPrefix)
-import Control.Applicative ((<$>), (<*))
 import Control.Monad (void,forM)
 import Text.ParserCombinators.Parsec.Number
 import Text.Parsec.Combinator

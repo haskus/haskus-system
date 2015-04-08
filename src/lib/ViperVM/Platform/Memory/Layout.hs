@@ -17,7 +17,6 @@ import Prelude hiding (sum)
 import Data.Word
 import Data.Foldable (sum)
 import qualified Data.Vector as V
-import Control.Applicative ((<$>))
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Platform.Memory.Region
 

@@ -1,5 +1,4 @@
 import Control.Monad (forM)
-import Control.Applicative ((<$>))
 import Control.Concurrent.STM
 import Data.Foldable (traverse_,forM_)
 

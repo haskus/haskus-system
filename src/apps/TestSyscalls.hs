@@ -13,7 +13,6 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Input
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
-import Control.Applicative ((<$>))
 import Data.Foldable (traverse_)
 --import Foreign.Marshal.Alloc
 --import Foreign.Storable (poke)

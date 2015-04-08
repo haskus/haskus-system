@@ -6,7 +6,6 @@ where
 import Foreign.Marshal.Alloc
 import Data.ByteString
 import Data.ByteString.Unsafe
-import Control.Applicative ((<$>))
 import Foreign.Ptr (castPtr)
 
 import ViperVM.Arch.Linux.FileDescriptor

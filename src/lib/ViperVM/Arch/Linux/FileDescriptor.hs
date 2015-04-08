@@ -4,9 +4,5 @@ module ViperVM.Arch.Linux.FileDescriptor
    )
 where
 
-import Data.Word
-
 -- | File descriptor
 newtype FileDescriptor = FileDescriptor Word deriving (Show,Eq)
-
-

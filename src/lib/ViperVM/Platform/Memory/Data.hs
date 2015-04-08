@@ -16,7 +16,6 @@ import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Region
 
 import Control.Concurrent.STM
-import Control.Applicative ((<$>))
 
 -- | Return the smallest covering shape
 dataCoveringShape :: Data -> Shape

@@ -17,7 +17,8 @@ import System.FilePath ((</>))
 import Data.List (isPrefixOf)
 import Control.Monad (forM)
 import Control.Arrow ((***))
-import Data.ByteString (breakByte,init,tail)
+import qualified Data.ByteString as BS
+import Data.ByteString (init,tail)
 import Data.ByteString.Char8 (unpack)
 import Data.Char (ord)
 
@@ -49,7 +50,7 @@ loadGraphicCards sysfs = do
             let 
                f = read . unpack
                sep = fromIntegral (ord ':')
-               (major,minor) = (f *** (f . tail)) (breakByte sep (init content))
+               (major,minor) = (f *** (f . tail)) (BS.break (== sep) (init content))
                dev = Device major minor
                devid = read (drop 4 dir)
                path  = "class/drm" </> dir

@@ -31,7 +31,6 @@ import ViperVM.Arch.OpenCL.Context
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
-import Control.Applicative ((<$>))
 import Foreign.Ptr
 import Foreign.C.String
 import Foreign.C.Types (CSize, CChar)

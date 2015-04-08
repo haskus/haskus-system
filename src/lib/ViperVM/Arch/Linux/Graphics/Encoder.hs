@@ -19,7 +19,6 @@ module ViperVM.Arch.Linux.Graphics.Encoder
    )
 where
 
-import Control.Applicative ((<$>))
 import Data.Bits
 import Data.Word
 import Foreign.CStorable

@@ -11,7 +11,6 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    )
 where
 
-import Control.Applicative ((<$>), (<*>))
 import Data.List (transpose)
 import Data.Vector.Fixed.Cont (S,Z)
 import Data.Vector.Fixed.Storable (Vec)

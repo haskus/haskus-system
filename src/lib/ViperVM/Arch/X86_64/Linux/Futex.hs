@@ -10,7 +10,6 @@ where
 
 import Foreign.Ptr
 import Data.Int
-import Control.Applicative
 import Control.Monad (void)
 
 import ViperVM.Arch.Linux.ErrorCode

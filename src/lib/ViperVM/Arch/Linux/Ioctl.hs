@@ -22,7 +22,6 @@ module ViperVM.Arch.Linux.Ioctl
    )
 where
 
-import Control.Applicative ((<$>))
 import Data.Word
 import Data.Int
 import Data.Bits

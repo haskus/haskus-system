@@ -17,7 +17,6 @@ import Data.Int
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr)
-import Control.Applicative ((<$>))
 
 import GHC.Generics (Generic)
 

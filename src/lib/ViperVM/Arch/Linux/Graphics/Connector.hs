@@ -23,7 +23,6 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Controller
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2)
 import Control.Monad.Trans.Either

@@ -16,7 +16,6 @@ import Data.Word
 import Data.Maybe (fromJust)
 import Data.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import Control.Monad (when,replicateM)
-import Control.Applicative ((<$>), (<*>))
 import Data.Binary.Bits.Get
 import Data.Binary.Bits.Put
 import Data.Binary.Bits.BitOrder

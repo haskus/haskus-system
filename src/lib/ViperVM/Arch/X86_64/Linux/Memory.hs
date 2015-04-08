@@ -20,7 +20,6 @@ where
 
 import Data.Word (Word8,Word64)
 import Data.Int (Int64)
-import Control.Applicative ((<$>))
 import Foreign.Ptr (Ptr, nullPtr, intPtrToPtr)
 import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)

@@ -14,7 +14,6 @@ where
 
 import Control.Exception (Exception, throw)
 import Data.Typeable (Typeable)
-import Control.Applicative ((<$>))
 import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable, peek)
