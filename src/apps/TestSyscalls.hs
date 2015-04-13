@@ -167,7 +167,7 @@ main = do
       Right _  -> putStrLn $ "Sleeping succeeded"
 
    putStrLn "Get device info"
-   dev <- check <$> sysOpen "/dev/input/event6" [OpenReadOnly] [PermUserRead]
+   dev <- check <$> sysOpen "/dev/input/event0" [OpenReadOnly] [PermUserRead]
 
    driverVersion <- getDriverVersion sysIoctl dev
    putStrLn $ "Driver version: " ++ show driverVersion
@@ -189,6 +189,12 @@ main = do
 
    devProp <- getDeviceProperties sysIoctl dev
    putStrLn $ "Device properties: " ++ show devProp
+
+   devKeys <- getDeviceKeys sysIoctl 256 dev
+   putStrLn $ "Device keys: " ++ show devKeys
+
+   devLeds <- getDeviceLEDs sysIoctl 16 dev
+   putStrLn $ "Device LEDs: " ++ show devLeds
 
    case repeatSettings of
       Left _ -> putStrLn "Skip: set repeat period"

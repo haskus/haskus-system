@@ -26,10 +26,18 @@ module ViperVM.Arch.Linux.Input
    , getDeviceUniqueID
    , getDeviceProperties
    , getDeviceMultiTouchSlots
+   , getDeviceKeys
+   , getDeviceLEDs
+   , getDeviceSoundStatus
+   , getDeviceSwitchStatus
+   , getDeviceBits
+   , getDeviceAbsInfo
+   , setDeviceAbsInfo
    )
 where
 
 import Data.Word
+import qualified Data.ByteString as BS
 import Data.Int
 import Foreign.Storable
 import Foreign.CStorable
@@ -95,8 +103,14 @@ data AbsoluteInfo = AbsoluteInfo
    , absFuzz       :: Int32   -- ^ Fuzz value used to filter noise from the event stream
    , absFlat       :: Int32   -- ^ Values that are within this value will be discarded and reported as 0 instead
    , absResolution :: Int32   -- ^ Resolution for the values reported for the axis
-   } deriving (Show, Eq)
+   } deriving (Show, Eq, Generic)
 
+instance CStorable AbsoluteInfo
+instance Storable AbsoluteInfo where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
 
 -- | Query or modify keymap data
 --
@@ -209,3 +223,45 @@ getDeviceMultiTouchSlots ioctl code nSlots fd = do
       case ret of
          Left err -> return (Left err)
          Right _  -> Right <$> peekArray nSlots ptr
+
+-- | Get keys (one bit per pressed key)
+--
+-- EVIOCGKEY
+getDeviceKeys :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceKeys ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x18 defaultCheck ((n `div` 8) + 1) fd
+
+-- | Get leds (one bit per led)
+--
+-- EVIOCGLED
+getDeviceLEDs :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceLEDs ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x19 defaultCheck ((n `div` 8) + 1) fd
+
+-- | Get sound status (one bit per sound)
+--
+-- EVIOCGSND
+getDeviceSoundStatus :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceSoundStatus ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x1a defaultCheck ((n `div` 8) + 1) fd
+
+-- | Get switch status (one bit per switch)
+--
+-- EVIOCGSW
+getDeviceSwitchStatus :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceSwitchStatus ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x1b defaultCheck ((n `div` 8) + 1) fd
+
+-- | Get bits that can be set by the given event type
+--
+-- EVIOCGBIT
+getDeviceBits :: IOCTL -> Word8 -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceBits ioctl code n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 (0x20 + code) defaultCheck ((n `div` 8) + 1) fd
+
+-- | Get absolute info
+--
+-- EVIOCGABS
+getDeviceAbsInfo :: IOCTL -> Word8 -> FileDescriptor -> SysRet AbsoluteInfo
+getDeviceAbsInfo ioctl code = ioctlRead ioctl 0x45 (0x40 + code) defaultCheck
+
+-- | Set absolute info
+--
+-- EVIOCSABS
+setDeviceAbsInfo :: IOCTL -> Word8 -> AbsoluteInfo -> FileDescriptor -> SysRet ()
+setDeviceAbsInfo ioctl code value fd = ioctlWrite ioctl 0x45 (0xc0 + code) defaultCheckRet fd value

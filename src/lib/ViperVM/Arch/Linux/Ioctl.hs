@@ -19,6 +19,7 @@ module ViperVM.Arch.Linux.Ioctl
    , ioctlSignal
    , ioctlRead
    , ioctlReadBytes
+   , ioctlReadByteString
    , ioctlReadBuffer
    , ioctlReadWithRet
    , ioctlWrite
@@ -35,6 +36,7 @@ import Foreign.Storable
 import Foreign.Ptr
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
+import qualified Data.ByteString as BS
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -136,6 +138,17 @@ ioctlReadBytes ioctl typ nr test n ptr fd = do
    case test ret of
       Just err -> return (Left err)
       Nothing  -> return (Right ret)
+
+-- | Build a Read IOCTL
+--
+-- Read n bytes and return the ioctl returned value
+ioctlReadByteString :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Int -> FileDescriptor -> SysRet (Int64, BS.ByteString)
+ioctlReadByteString ioctl typ nr test n fd = do
+   allocaBytes n $ \ptr -> do
+      ret <- ioctlReadBytes ioctl typ nr test (fromIntegral n) ptr fd
+      case ret of
+         Left err -> return (Left err)
+         Right v  -> Right . (v,) <$> BS.packCStringLen (ptr, n)
 
 -- | Build a Read IOCTL
 --
