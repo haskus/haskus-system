@@ -49,7 +49,7 @@ data EventType
 
 -- | Event type is represented as a Word16 in Event
 instance Storable EventType where
-   alignment _ = 1
+   alignment _ = 2
    sizeOf   _  = 2
    peek ptr    = toEnum . fromIntegral <$> peek (castPtr ptr :: Ptr Word16)
    poke ptr v  = poke (castPtr ptr :: Ptr Word16) (fromIntegral (fromEnum v))

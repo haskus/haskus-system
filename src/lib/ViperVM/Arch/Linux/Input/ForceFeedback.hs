@@ -5,7 +5,7 @@ module ViperVM.Arch.Linux.Input.ForceFeedback
    , ForceFeedbackEffectHeader(..)
    , ForceFeedbackDirection(..)
    , ForceFeedbackType(..)
-   , ForceFeedbackPeriodicType(..)
+   , ForceFeedbackPeriodicEffectType(..)
    , ForceFeedbackDeviceProperties(..)
    , ForceFeedbackReplay(..)
    , ForceFeedbackTrigger(..)
@@ -99,7 +99,7 @@ instance Enum ForceFeedbackType where
       0x57 -> Ramp
       _    -> error "Unknown force feedback type"
 
-data ForceFeedbackPeriodicType
+data ForceFeedbackPeriodicEffectType
    = Square
    | Triangle
    | Sine
@@ -108,7 +108,20 @@ data ForceFeedbackPeriodicType
    | Custom
    deriving (Show,Eq)
 
-instance Enum ForceFeedbackPeriodicType where
+-- | ForceFeedbackPeriodicEffectType type is represented as a Word16 in ForceFeedbackPeriodicEffect
+instance Storable ForceFeedbackPeriodicEffectType where
+   alignment _ = 2
+   sizeOf    _ = 2
+   peek ptr    = toEnum . fromIntegral <$> peek (castPtr ptr :: Ptr Word16)
+   poke ptr v  = poke (castPtr ptr :: Ptr Word16) (fromIntegral (fromEnum v))
+
+instance CStorable ForceFeedbackPeriodicEffectType where
+   cAlignment = alignment
+   cSizeOf    = sizeOf
+   cPeek      = peek
+   cPoke      = poke
+
+instance Enum ForceFeedbackPeriodicEffectType where
    fromEnum x = case x of
       Square   -> 0x58
       Triangle -> 0x59
@@ -269,7 +282,7 @@ instance Storable  ForceFeedbackConditionEffect where
 -- Note: the data pointed by custom_data is copied by the driver.
 -- You can therefore dispose of the memory after the upload/update.
 data ForceFeedbackPeriodicEffect = ForceFeedbackPeriodicEffect
-   { ffPeriodicEffectWaveform   :: Word16
+   { ffPeriodicEffectWaveform   :: ForceFeedbackPeriodicEffectType
    , ffPeriodicEffectPeriod     :: Word16
    , ffPeriodicEffectMagnitude  :: Int16
    , ffPeriodicEffectOffset     :: Int16
