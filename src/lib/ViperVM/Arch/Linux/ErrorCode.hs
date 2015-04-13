@@ -10,6 +10,7 @@ module ViperVM.Arch.Linux.ErrorCode
    , ErrorCode (..)
    , defaultCheck
    , defaultCheckRet
+   , checkReturn
    , toErrorCode
    , onSuccessIO
    , onSuccess
@@ -62,6 +63,11 @@ defaultCheck x | x < 0     = Just (toErrorCode x)
 defaultCheckRet :: Int64 -> SysRet ()
 defaultCheckRet x = case defaultCheck x of
    Nothing  -> return (Right ())
+   Just err -> return (Left err)
+
+checkReturn :: Int64 -> SysRet Int64
+checkReturn x = case defaultCheck x of
+   Nothing  -> return (Right x)
    Just err -> return (Left err)
 
 -- | Apply an IO function to the result of the action if no error occured (use

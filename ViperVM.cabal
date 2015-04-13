@@ -53,7 +53,21 @@ library
     ViperVM.Arch.Linux.FileSystem.OpenClose
     ViperVM.Arch.Linux.Network.SendReceive
     ViperVM.Arch.Linux.Ioctl
-    ViperVM.Arch.Linux.Input
+
+    ViperVM.Arch.Linux.Input.Absolute
+    ViperVM.Arch.Linux.Input.Device
+    ViperVM.Arch.Linux.Input.Event
+    ViperVM.Arch.Linux.Input.ForceFeedback
+    ViperVM.Arch.Linux.Input.Keys
+    ViperVM.Arch.Linux.Input.LEDs
+    ViperVM.Arch.Linux.Input.Misc
+    ViperVM.Arch.Linux.Input.MultiTouch
+    ViperVM.Arch.Linux.Input.Relative
+    ViperVM.Arch.Linux.Input.Repeat
+    ViperVM.Arch.Linux.Input.Sound
+    ViperVM.Arch.Linux.Input.Switch
+    ViperVM.Arch.Linux.Input.Sync
+
     ViperVM.Arch.Linux.System.System
     ViperVM.Arch.Linux.System.SysFS
     ViperVM.Arch.Linux.System.KernelEvent

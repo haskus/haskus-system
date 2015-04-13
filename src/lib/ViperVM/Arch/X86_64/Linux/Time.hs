@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
 module ViperVM.Arch.X86_64.Linux.Time
    ( TimeSpec(..)
+   , TimeVal(..)
    , Clock(..)
    , sysClockGetTime
    , sysClockSetTime
@@ -14,6 +15,7 @@ where
 import Foreign.Storable
 import Foreign.CStorable
 import Data.Int
+import Data.Word
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr)
@@ -30,6 +32,18 @@ data TimeSpec = TimeSpec {
 
 instance CStorable TimeSpec
 instance Storable TimeSpec where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
+data TimeVal = TimeVal
+   { tvSeconds       :: Word64
+   , tvMilliSeconds  :: Word64
+   } deriving (Show,Eq,Ord, Generic)
+
+instance CStorable TimeVal
+instance Storable TimeVal where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    poke        = cPoke

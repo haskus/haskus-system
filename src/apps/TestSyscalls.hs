@@ -10,7 +10,10 @@ import ViperVM.Arch.X86_64.Linux.Info
 import ViperVM.Arch.X86_64.Linux.Time
 --import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Input
+import ViperVM.Arch.Linux.Input.Device
+import ViperVM.Arch.Linux.Input.Keys
+import ViperVM.Arch.Linux.Input.LEDs
+import ViperVM.Arch.Linux.Input.Repeat
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
