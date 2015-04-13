@@ -11,17 +11,17 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Ioctl
 
 data LED
-   = LEDNumLock
-   | LEDCapsLock
-   | LEDScrollLock
-   | LEDCompose
-   | LEDKana
-   | LEDSleep
-   | LEDSuspend
-   | LEDMute
-   | LEDMisc
-   | LEDMail
-   | LEDCharging
+   = NumLock
+   | CapsLock
+   | ScrollLock
+   | Compose
+   | Kana
+   | Sleep
+   | Suspend
+   | Mute
+   | Misc
+   | Mail
+   | Charging
    deriving (Eq,Show,Enum,Bounded)
 
 -- | Get leds (one bit per led)
