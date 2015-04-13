@@ -388,7 +388,7 @@ div#style-menu-holder {
 }
 
 #interface h1 {
-   display: none;
+   border-top: 1px dashed lightgray;
    /* background: rgb(177,202,225);
    color:white;
    text-shadow: 1px 1px gray;

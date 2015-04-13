@@ -14,17 +14,23 @@ module ViperVM.Arch.Linux.Ioctl
    , CommandType
    , CommandNumber
    , CommandSize
+   -- * Command encoding/decoding
    , encodeCommand
    , decodeCommand
+   -- * Signal
    , ioctlSignal
+   -- * Read
    , ioctlRead
    , ioctlReadBytes
    , ioctlReadByteString
    , ioctlReadBuffer
    , ioctlReadWithRet
+   -- * Write
    , ioctlWrite
+   -- * Read / Write
    , ioctlReadWrite
    , ioctlReadWriteWithRet
+   -- * Helpers
    , repeatIoctl
    )
 where
