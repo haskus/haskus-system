@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module ViperVM.Arch.Linux.Input.ForceFeedback
-   ( ForceFeedbackDirection(..)
+   ( ForceFeedbackEffect(..)
+   , ForceFeedbackEffectHeader(..)
+   , ForceFeedbackDirection(..)
    , ForceFeedbackType(..)
    , ForceFeedbackPeriodicType(..)
    , ForceFeedbackDeviceProperties(..)
-   , ForceFeedbackEffect(..)
    , ForceFeedbackReplay(..)
    , ForceFeedbackTrigger(..)
    , ForceFeedbackEnvelope(..)
@@ -14,12 +17,16 @@ module ViperVM.Arch.Linux.Input.ForceFeedback
    , ForceFeedbackRumbleEffect(..)
    , removeForceFeedback
    , supportedSimultaneousEffects
+   , sendForceFeedback
    )
 where
 
 import Data.Word
 import Data.Int
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr, castPtr, plusPtr)
+import GHC.Generics (Generic)
+import Foreign.Storable
+import Foreign.CStorable
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -35,13 +42,30 @@ data ForceFeedbackDirection
    | FFLeft 
    | FFUp 
    | FFRight
+   deriving (Show,Eq)
 
-fromDirection :: ForceFeedbackDirection -> Word16
-fromDirection x = case x of
-   FFDown   -> 0x0000
-   FFLeft   -> 0x4000
-   FFUp     -> 0x8000
-   FFRight  -> 0xC000
+instance Storable ForceFeedbackDirection where
+   sizeOf _    = 2
+   alignment _ = 1
+   peek ptr    = do
+      v <- peek (castPtr ptr :: Ptr Word16)
+      return $ case v of
+         0x0000 -> FFDown
+         0x4000 -> FFLeft
+         0x8000 -> FFUp
+         0xC000 -> FFRight
+         _      -> error "Invalid force feedback direction"
+   poke ptr d  = poke (castPtr ptr :: Ptr Word16) $ case d of
+         FFDown   -> 0x0000
+         FFLeft   -> 0x4000
+         FFUp     -> 0x8000
+         FFRight  -> 0xC000
+      
+instance CStorable ForceFeedbackDirection where
+   cSizeOf    = sizeOf
+   cAlignment = alignment
+   cPeek      = peek
+   cPoke      = poke
 
 data ForceFeedbackType
    = Rumble
@@ -115,23 +139,20 @@ instance Enum ForceFeedbackDeviceProperties where
       0x61 -> FFAutoCenter
       _    -> error "Unknown force feedback device property"
 
-data ForceFeedbackEffect a = ForceFeedbackEffect
-   { ffType              :: Word16
-   , ffID                :: Int16
-   , ffDirection         :: ForceFeedbackDirection
-   , ffTrigger           :: ForceFeedbackTrigger
-   , ffReplay            :: ForceFeedbackReplay
-   , ffEffectProperties  :: a
-   }
-
 -- | Defines scheduling of the force-feedback effect
 -- @length: duration of the effect
 -- @delay: delay before effect should start playing
 data ForceFeedbackReplay = ForceFeedbackReplay
    { ffReplayLength :: Word16
    , ffReplayDelay  :: Word16
-   }
+   } deriving (Show,Eq,Generic)
 
+instance CStorable ForceFeedbackReplay
+instance Storable ForceFeedbackReplay where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 -- | Defines what triggers the force-feedback effect
 -- @button: number of the button triggering the effect
@@ -139,7 +160,14 @@ data ForceFeedbackReplay = ForceFeedbackReplay
 data ForceFeedbackTrigger = ForceFeedbackTrigger
    { ffTriggerButton   :: Word16
    , ffTriggerInterval :: Word16
-   }
+   } deriving (Show,Eq,Generic)
+
+instance CStorable ForceFeedbackTrigger
+instance Storable ForceFeedbackTrigger where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 
 -- | Generic force-feedback effect envelope
@@ -157,7 +185,14 @@ data ForceFeedbackEnvelope = ForceFeedbackEnvelope
    , ffEnvelopeAttackLevel  :: Word16
    , ffEnvelopeFadeLength   :: Word16
    , ffEnvelopeFadeLevel    :: Word16
-   }
+   } deriving (Eq,Show,Generic)
+
+instance CStorable ForceFeedbackEnvelope
+instance Storable  ForceFeedbackEnvelope where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 
 -- | Defines parameters of a constant force-feedback effect
@@ -166,7 +201,14 @@ data ForceFeedbackEnvelope = ForceFeedbackEnvelope
 data ForceFeedbackConstantEffect = ForceFeedbackConstantEffect
    { ffConstantEffectLevel    :: Int16
    , ffConstantEffectEnvelope :: ForceFeedbackEnvelope
-   }
+   } deriving (Eq,Show,Generic)
+
+instance CStorable ForceFeedbackConstantEffect
+instance Storable  ForceFeedbackConstantEffect where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 
 -- | Defines parameters of a ramp force-feedback effect
@@ -177,7 +219,14 @@ data ForceFeedbackRampEffect = ForceFeedbackRampEffect
    { ffRampEffectStartLevel :: Int16
    , ffRampEffectEndLevel   :: Int16
    , ffRampEffectEnvelope   :: ForceFeedbackEnvelope
-   }
+   } deriving (Eq,Show,Generic)
+
+instance CStorable ForceFeedbackRampEffect
+instance Storable  ForceFeedbackRampEffect where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 
 -- | Defines a spring or friction force-feedback effect
@@ -194,8 +243,14 @@ data ForceFeedbackConditionEffect = ForceFeedbackConditionEffect
    , ffConditionEffectLeftCoeff       :: Int16
    , ffConditionEffectDeadBand        :: Word16
    , ffConditionEffectCenter          :: Int16
-   }
+   } deriving (Eq,Show,Generic)
 
+instance CStorable ForceFeedbackConditionEffect
+instance Storable  ForceFeedbackConditionEffect where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 -- | Defines parameters of a periodic force-feedback effect
 -- @waveform: kind of the effect (wave)
@@ -222,7 +277,14 @@ data ForceFeedbackPeriodicEffect = ForceFeedbackPeriodicEffect
    , ffPeriodicEffectEnvelope   :: ForceFeedbackEnvelope
    , ffPeriodicEffectCustomLen  :: Word32
    , ffPeriodicEffectCustomData :: Ptr Int16
-   }
+   } deriving (Eq,Show,Generic)
+
+instance CStorable ForceFeedbackPeriodicEffect
+instance Storable  ForceFeedbackPeriodicEffect where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 
 -- | Defines parameters of a periodic force-feedback effect
@@ -234,13 +296,20 @@ data ForceFeedbackPeriodicEffect = ForceFeedbackPeriodicEffect
 data ForceFeedbackRumbleEffect = ForceFeedbackRumbleEffect
    { ffRumbleEffectStrongMagnitude :: Word16
    , ffRumbleEffectWeakMagnitude   :: Word16
-   }
+   } deriving (Eq,Show,Generic)
+
+instance CStorable ForceFeedbackRumbleEffect
+instance Storable  ForceFeedbackRumbleEffect where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
 
 -- | Erase a force effect
 --
 -- EVIOCRMFF
 removeForceFeedback :: IOCTL -> FileDescriptor -> Int -> SysRet ()
-removeForceFeedback ioctl =  ioctlWrite ioctl 0x45 0x81 defaultCheckRet 
+removeForceFeedback ioctl = ioctlWrite ioctl 0x45 0x81 defaultCheckRet 
 
 -- | Report the number of effects playable at the same time
 --
@@ -248,6 +317,105 @@ removeForceFeedback ioctl =  ioctlWrite ioctl 0x45 0x81 defaultCheckRet
 supportedSimultaneousEffects :: IOCTL -> FileDescriptor -> SysRet Int
 supportedSimultaneousEffects ioctl = ioctlRead ioctl 0x45 0x84 defaultCheck
 
--- TODO
--- #define EVIOCSFF		_IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))	/* send a force effect to a force feedback device */
+data ForceFeedbackEffectHeader = ForceFeedbackEffectHeader
+   { ffHeaderType       :: Word16
+   , ffHeaderID         :: Int16
+   , ffHeaderDirection  :: ForceFeedbackDirection
+   , ffHeaderTrigger    :: ForceFeedbackTrigger
+   , ffHeaderReplay     :: ForceFeedbackReplay
+   } deriving (Eq,Show,Generic)
 
+instance CStorable ForceFeedbackEffectHeader
+instance Storable ForceFeedbackEffectHeader where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
+
+data ForceFeedbackEffect
+   = ForceFeedbackEffectConstant
+      { ffHeader           :: ForceFeedbackEffectHeader
+      , ffConstantParams   :: ForceFeedbackConstantEffect
+      }
+   | ForceFeedbackEffectRamp
+      { ffHeader           :: ForceFeedbackEffectHeader
+      , ffRampParams       :: ForceFeedbackRampEffect
+      }
+   | ForceFeedbackEffectPeriodic
+      { ffHeader           :: ForceFeedbackEffectHeader
+      , ffPeriodicParams   :: ForceFeedbackPeriodicEffect
+      }
+   | ForceFeedbackEffectRumble
+      { ffHeader           :: ForceFeedbackEffectHeader
+      , ffRumbleParams     :: ForceFeedbackRumbleEffect
+      }
+   | ForceFeedbackEffectSpring
+      { ffHeader           :: ForceFeedbackEffectHeader
+      , ffConditionParam1  :: ForceFeedbackConditionEffect -- one for each axis
+      , ffConditionParam2  :: ForceFeedbackConditionEffect
+      }
+   | ForceFeedbackEffectFriction
+      { ffHeader           :: ForceFeedbackEffectHeader
+      , ffConditionParam1  :: ForceFeedbackConditionEffect -- one for each axis
+      , ffConditionParam2  :: ForceFeedbackConditionEffect
+      }
+   | ForceFeedbackEffectDamper
+      { ffHeader           :: ForceFeedbackEffectHeader
+      }
+   | ForceFeedbackEffectInertia
+      { ffHeader           :: ForceFeedbackEffectHeader
+      }
+      
+
+
+instance Storable ForceFeedbackEffect where
+   alignment _ = 8
+
+   sizeOf _    = sizeOf (undefined :: ForceFeedbackEffectHeader) + maximum
+      [ sizeOf (undefined :: ForceFeedbackConstantEffect)
+      , sizeOf (undefined :: ForceFeedbackRampEffect)
+      , sizeOf (undefined :: ForceFeedbackPeriodicEffect)
+      , 2 * sizeOf (undefined :: ForceFeedbackConditionEffect) -- one for each axis
+      , sizeOf (undefined :: ForceFeedbackRumbleEffect)
+      ]
+
+   peek ptr = do
+      header <- peek (castPtr ptr :: Ptr ForceFeedbackEffectHeader)
+      let 
+         p1 = ptr `plusPtr` sizeOf (undefined :: ForceFeedbackEffectHeader)
+         p2 = p1  `plusPtr` sizeOf (undefined :: ForceFeedbackConditionEffect)
+
+      case toEnum (fromIntegral (ffHeaderType header)) of
+         Ramp     -> ForceFeedbackEffectRamp      header <$> peek (castPtr p1)
+         Rumble   -> ForceFeedbackEffectRumble    header <$> peek (castPtr p1)
+         Periodic -> ForceFeedbackEffectPeriodic  header <$> peek (castPtr p1)
+         Constant -> ForceFeedbackEffectConstant  header <$> peek (castPtr p1) 
+         Spring   -> ForceFeedbackEffectSpring    header <$> peek (castPtr p1) <*> peek (castPtr p2)
+         Friction -> ForceFeedbackEffectFriction  header <$> peek (castPtr p1) <*> peek (castPtr p2)
+         Damper   -> return (ForceFeedbackEffectDamper   header)
+         Inertia  -> return (ForceFeedbackEffectInertia  header)
+
+   poke ptr x = do
+      poke (castPtr ptr) (ffHeader x)
+      let 
+         p1 = ptr `plusPtr` sizeOf (undefined :: ForceFeedbackEffectHeader)
+         p2 = p1  `plusPtr` sizeOf (undefined :: ForceFeedbackConditionEffect)
+
+      case x of
+         ForceFeedbackEffectRamp     _ v1    -> poke (castPtr p1) v1
+         ForceFeedbackEffectRumble   _ v1    -> poke (castPtr p1) v1
+         ForceFeedbackEffectPeriodic _ v1    -> poke (castPtr p1) v1
+         ForceFeedbackEffectConstant _ v1    -> poke (castPtr p1) v1
+         ForceFeedbackEffectSpring   _ v1 v2 -> poke (castPtr p1) v1 >> poke (castPtr p2) v2
+         ForceFeedbackEffectFriction _ v1 v2 -> poke (castPtr p1) v1 >> poke (castPtr p2) v2
+         ForceFeedbackEffectDamper   _ -> return ()
+         ForceFeedbackEffectInertia  _ -> return ()
+
+         
+-- | Send a force effect to a force feedback device
+--
+-- TODO: we should return the effect ID
+--
+-- EVIOCSFF
+sendForceFeedback :: IOCTL -> FileDescriptor -> ForceFeedbackEffect -> SysRet ()
+sendForceFeedback ioctl = ioctlWrite ioctl 0x45 0x80 defaultCheckRet 
