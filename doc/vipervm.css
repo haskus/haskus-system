@@ -388,10 +388,11 @@ div#style-menu-holder {
 }
 
 #interface h1 {
-   background: rgb(177,202,225);
+   display: none;
+   /* background: rgb(177,202,225);
    color:white;
    text-shadow: 1px 1px gray;
-   padding-left: 1em;
+   padding-left: 1em;*/
 }
 
 #interface h1 + div.top,

@@ -83,8 +83,8 @@ getRawBlock = do
    -- align on the next byte boundary
    alignByte
    -- Two bytes: len and nlen
-   -- * nlen is the one's complement of len
-   -- * len is the number of raw bytes that follow
+   -- @nlen@ is the one's complement of len
+   -- @len@ is the number of raw bytes that follow
    (len,nlen) <- block $ (,) <$> word8 8 <*> word8 8
    when (len /= nlen `xor` 0xFF) $
       error "Invalid uncompressed block length"

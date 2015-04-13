@@ -22,16 +22,19 @@ import Data.ByteString (init,tail)
 import Data.ByteString.Char8 (unpack)
 import Data.Char (ord)
 
+-- | Graphic card
 data GraphicCard = GraphicCard
-   { graphicCardPath    :: FilePath
-   , graphicCardDev     :: Device
-   , graphicCardID      :: Int
+   { graphicCardPath    :: FilePath    -- ^ Path to the graphic card in SysFS
+   , graphicCardDev     :: Device      -- ^ Device major/minor to create the device file descriptor
+   , graphicCardID      :: Int         -- ^ Card identifier
    } deriving (Show)
 
 
 -- | Return detected graphic cards
 --
--- Graphic cards are /class/drm/cardN directories in SysFS
+-- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
+-- identifier. The this directory, the dev file contains device major/minor to
+-- create appropriate device node.
 loadGraphicCards :: SysFS -> SysRet [GraphicCard]
 loadGraphicCards sysfs = do
    -- open drm directory
