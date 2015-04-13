@@ -1,4 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+
 -- | Linux IOCTL
 --
 -- Bindings from asm-generic/ioctl.h
@@ -16,8 +18,12 @@ module ViperVM.Arch.Linux.Ioctl
    , decodeCommand
    , ioctlSignal
    , ioctlRead
+   , ioctlReadBytes
+   , ioctlReadBuffer
+   , ioctlReadWithRet
    , ioctlWrite
    , ioctlReadWrite
+   , ioctlReadWriteWithRet
    , repeatIoctl
    )
 where
@@ -27,7 +33,7 @@ import Data.Int
 import Data.Bits
 import Foreign.Storable
 import Foreign.Ptr
-import Foreign.Marshal.Alloc (alloca)
+import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
 
 import ViperVM.Arch.Linux.ErrorCode
@@ -106,15 +112,47 @@ type IOCTL = FileDescriptor -> Int64 -> Int64 -> IO Int64
 --
 -- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
 ioctlRead :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet a
-ioctlRead ioctl typ nr test fd = do
+ioctlRead ioctl typ nr test fd = fmap snd <$> ioctlReadWithRet ioctl typ nr test fd
+
+-- | Build a Read IOCTL
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
+ioctlReadWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet (Int64,a)
+ioctlReadWithRet ioctl typ nr test fd = do
    alloca $ \(ptr :: Ptr a) -> do
       let cmd = Command typ nr Read (paramSize (undefined :: a))
       ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
       case test ret of
          Just err -> return (Left err)
-         Nothing  -> Right <$> peek ptr
+         Nothing  -> Right . (ret,) <$> peek ptr
 
+-- | Build a Read IOCTL
+--
+-- Read n bytes and return the ioctl returned value
+ioctlReadBytes :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Word16 -> Ptr a -> FileDescriptor -> SysRet Int64
+ioctlReadBytes ioctl typ nr test n ptr fd = do
+   let cmd = Command typ nr Read n
+   ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+   case test ret of
+      Just err -> return (Left err)
+      Nothing  -> return (Right ret)
 
+-- | Build a Read IOCTL
+--
+-- The returned value is the size of the buffer
+ioctlReadBuffer :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> (Word16 -> Ptr a -> IO b) -> Word16 -> FileDescriptor -> SysRet b
+ioctlReadBuffer ioctl typ nr test f defn fd = go defn
+   where
+      go n = do
+         -- try with the given buffer size
+         allocaBytes (fromIntegral n) $ \ptr -> do
+            ret <- ioctlReadBytes ioctl typ nr test n ptr fd
+            case ret of
+               Left err                      -> return (Left err)
+               Right len 
+                  | len <= (fromIntegral n)  -> Right <$> f n ptr
+                  -- try with the returned buffer size
+                  | otherwise                -> go (fromIntegral len)
 
 -- | Build a Write IOCTL
 --
@@ -130,14 +168,19 @@ ioctlWrite ioctl typ nr test fd arg = do
 --
 -- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
 ioctlReadWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet a
-ioctlReadWrite ioctl typ nr test fd arg = do
+ioctlReadWrite ioctl typ nr test fd arg = fmap snd <$> ioctlReadWriteWithRet ioctl typ nr test fd arg
+
+-- | Build a ReadWrite IOCTL
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
+ioctlReadWriteWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet (Int64,a)
+ioctlReadWriteWithRet ioctl typ nr test fd arg = do
    with arg $ \ptr -> do
       let cmd = Command typ nr ReadWrite (paramSize arg)
       ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
       case test ret of
          Just err -> return (Left err)
-         Nothing  -> Right <$> peek ptr
-
+         Nothing  -> Right . (ret,) <$> peek ptr
 
 -- | Build a Signal IOCTL (direction = None)
 --

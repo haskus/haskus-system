@@ -178,6 +178,18 @@ main = do
    repeatSettings <- getRepeatSettings sysIoctl dev
    putStrLn $ "Repeat settings: " ++ show repeatSettings
 
+   devName <- getDeviceName sysIoctl dev
+   putStrLn $ "Device name: " ++ show devName
+
+   devUID <- getDeviceUniqueID sysIoctl dev
+   putStrLn $ "Device uid: " ++ show devUID
+
+   devLoc <- getDevicePhysicalLocation sysIoctl dev
+   putStrLn $ "Device physical location: " ++ show devLoc
+
+   devProp <- getDeviceProperties sysIoctl dev
+   putStrLn $ "Device properties: " ++ show devProp
+
    case repeatSettings of
       Left _ -> putStrLn "Skip: set repeat period"
       Right rs -> do

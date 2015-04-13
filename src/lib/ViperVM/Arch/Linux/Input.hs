@@ -1,3 +1,8 @@
+{-# LANGUAGE DeriveGeneric #-}
+
+-- We need this one to use type literal numbers (S (S .. Z)) of size 32
+{-# OPTIONS -fcontext-stack=50 #-}
+
 -- | Linux Input management
 --
 -- Bindings from linux/input.h
@@ -14,17 +19,33 @@ module ViperVM.Arch.Linux.Input
    , getDeviceInfo
    , getRepeatSettings
    , setRepeatSettings
+   , getKeyCode
+   , setKeyCode
+   , getDeviceName
+   , getDevicePhysicalLocation
+   , getDeviceUniqueID
+   , getDeviceProperties
    )
 where
 
 import Data.Word
 import Data.Int
 import Foreign.Storable
-import Foreign.Ptr
+import Foreign.CStorable
+import Foreign.C.String (peekCString)
+import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Ioctl
+
+import Data.Vector.Fixed.Cont (S,Z)
+import Data.Vector.Fixed.Storable (Vec)
+
+type N32 = -- 32 
+   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (
+   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
+   )))))))))))))))))))))))))))))))
 
 data TimeVal = TimeVal
    { seconds  :: Word64
@@ -51,23 +72,14 @@ data DeviceInfo = DeviceInfo
    , infoVendor  :: Word16
    , infoProduct :: Word16
    , infoVersion :: Word16
-   } deriving (Show,Eq)
+   } deriving (Show,Eq,Generic)
 
+instance CStorable DeviceInfo
 instance Storable DeviceInfo where
-   sizeOf _ = 8
-   alignment _ = 8
-   peek ptr = DeviceInfo
-         <$> peekElemOff p 0
-         <*> peekElemOff p 1
-         <*> peekElemOff p 2
-         <*> peekElemOff p 3
-      where p = castPtr ptr :: Ptr Word16
-   poke ptr di = do
-      let p = castPtr ptr :: Ptr Word16
-      pokeElemOff p 0 (infoBusType di)
-      pokeElemOff p 1 (infoVendor di)
-      pokeElemOff p 2 (infoProduct di)
-      pokeElemOff p 3 (infoVersion di)
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
 
 
 -- | Absolute info
@@ -84,13 +96,23 @@ data AbsoluteInfo = AbsoluteInfo
 
 
 -- | Query or modify keymap data
+--
+-- `struct input_keymap_entry` in C header file
 data KeymapEntry = KeymapEntry
    { keymapEntryFlags    :: Word8    -- ^ Indicate how kernel should handle the request
    , keymapEntryLength   :: Word8    -- ^ Length of the scancode (TODO: remove this in the Storable instance)
    , keymapEntryIndex    :: Word16   -- ^ Index in the keymap (may be used instead of the scancode)
    , keymapEntryKeyCode  :: Word32   -- ^ Key code assigned to this scancode
-   , keymapEntryScanCode :: [Word8]  -- ^ Scan in machine-endian form (up to 32 bytes)
-   } deriving (Show,Eq)
+   , keymapEntryScanCode :: StorableWrap (Vec N32 Word8) -- ^ Scan in machine-endian form (up to 32 bytes)
+   } deriving (Generic)
+
+
+instance CStorable KeymapEntry
+instance Storable KeymapEntry where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
 
 -- | A flag for KeymapEntry
 inputKeymapByIndexFlag :: Word8
@@ -113,20 +135,14 @@ data RepeatSettings = RepeatSettings
    { repeatDelay  :: Int32
    , repeatPeriod :: Int32
    }
-   deriving (Show,Eq)
+   deriving (Show,Eq,Generic)
 
+instance CStorable RepeatSettings
 instance Storable RepeatSettings where
-   sizeOf _ = 8
-   alignment _ = 4
-   peek ptr = let p = castPtr ptr :: Ptr Int32 in
-      RepeatSettings <$> peekElemOff p 0 
-                     <*> peekElemOff p 1
-
-   poke ptr (RepeatSettings x y) = do
-      let p = castPtr ptr :: Ptr Int32
-      pokeElemOff p 0 x
-      pokeElemOff p 1 y
-            
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
 
 -- | Get repeat settings
 --
@@ -139,3 +155,41 @@ getRepeatSettings ioctl = ioctlRead ioctl 0x45 0x03 defaultCheck
 -- EVIOCSREP
 setRepeatSettings :: IOCTL -> FileDescriptor -> RepeatSettings -> SysRet ()
 setRepeatSettings ioctl = ioctlWrite ioctl 0x45 0x03 defaultCheckRet
+
+
+-- | Get key code
+--
+-- EVIOCGKEYCODE_V2
+getKeyCode :: IOCTL -> FileDescriptor -> SysRet KeymapEntry
+getKeyCode ioctl = ioctlRead ioctl 0x45 0x04 defaultCheck
+
+-- | Set key code
+--
+-- EVIOCSKEYCODE_V2
+setKeyCode :: IOCTL -> FileDescriptor -> KeymapEntry -> SysRet ()
+setKeyCode ioctl = ioctlWrite ioctl 0x45 0x04 defaultCheckRet
+
+
+-- | Get device name
+--
+-- EVIOCGNAME
+getDeviceName :: IOCTL -> FileDescriptor -> SysRet String
+getDeviceName ioctl = ioctlReadBuffer ioctl 0x45 0x06 defaultCheck (const peekCString) 256
+
+-- | Get physical location
+--
+-- EVIOCGPHYS
+getDevicePhysicalLocation :: IOCTL -> FileDescriptor -> SysRet String
+getDevicePhysicalLocation ioctl = ioctlReadBuffer ioctl 0x45 0x07 defaultCheck (const peekCString) 256
+
+-- | Get unique identifier
+--
+-- EVIOCGUNIQ
+getDeviceUniqueID :: IOCTL -> FileDescriptor -> SysRet String
+getDeviceUniqueID ioctl = ioctlReadBuffer ioctl 0x45 0x08 defaultCheck (const peekCString) 256
+
+-- | Get device properties
+--
+-- EVIOCGPROP
+getDeviceProperties :: IOCTL -> FileDescriptor -> SysRet String
+getDeviceProperties ioctl = ioctlReadBuffer ioctl 0x45 0x09 defaultCheck (const peekCString) 256
