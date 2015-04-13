@@ -193,7 +193,7 @@ main = do
    devKeys <- getDeviceKeys sysIoctl 256 dev
    putStrLn $ "Device keys: " ++ show devKeys
 
-   devLeds <- getDeviceLEDs sysIoctl 16 dev
+   devLeds <- getDeviceLEDs sysIoctl dev
    putStrLn $ "Device LEDs: " ++ show devLeds
 
    case repeatSettings of
