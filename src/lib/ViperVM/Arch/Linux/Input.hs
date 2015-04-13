@@ -25,6 +25,7 @@ module ViperVM.Arch.Linux.Input
    , getDevicePhysicalLocation
    , getDeviceUniqueID
    , getDeviceProperties
+   , getDeviceMultiTouchSlots
    )
 where
 
@@ -33,6 +34,8 @@ import Data.Int
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.C.String (peekCString)
+import Foreign.Marshal.Alloc (allocaBytes)
+import Foreign.Marshal.Array (peekArray)
 import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
@@ -193,3 +196,16 @@ getDeviceUniqueID ioctl = ioctlReadBuffer ioctl 0x45 0x08 defaultCheck (const pe
 -- EVIOCGPROP
 getDeviceProperties :: IOCTL -> FileDescriptor -> SysRet String
 getDeviceProperties ioctl = ioctlReadBuffer ioctl 0x45 0x09 defaultCheck (const peekCString) 256
+
+-- | Get multi-touch slots
+--
+-- EVIOCGMTSLOTS
+getDeviceMultiTouchSlots :: IOCTL -> Word32 -> Int -> FileDescriptor -> SysRet [Int32]
+getDeviceMultiTouchSlots ioctl code nSlots fd = do
+   let sz = 4 * (nSlots + 1)
+   allocaBytes (fromIntegral sz) $ \ptr -> do
+      pokeByteOff ptr 0 code
+      ret <- ioctlReadBytes ioctl 0x45 0x0a defaultCheck (fromIntegral sz) ptr fd
+      case ret of
+         Left err -> return (Left err)
+         Right _  -> Right <$> peekArray nSlots ptr
