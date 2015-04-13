@@ -12,13 +12,18 @@ module ViperVM.Arch.Linux.Input.ForceFeedback
    , ForceFeedbackConditionEffect(..)
    , ForceFeedbackPeriodicEffect(..)
    , ForceFeedbackRumbleEffect(..)
+   , removeForceFeedback
+   , supportedSimultaneousEffects
    )
 where
 
 import Data.Word
-
 import Data.Int
 import Foreign.Ptr (Ptr)
+
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Ioctl
 
 data ForceFeedbackStatus
    = StatusStopped
@@ -231,8 +236,18 @@ data ForceFeedbackRumbleEffect = ForceFeedbackRumbleEffect
    , ffRumbleEffectWeakMagnitude   :: Word16
    }
 
+-- | Erase a force effect
+--
+-- EVIOCRMFF
+removeForceFeedback :: IOCTL -> FileDescriptor -> Int -> SysRet ()
+removeForceFeedback ioctl =  ioctlWrite ioctl 0x45 0x81 defaultCheckRet 
 
+-- | Report the number of effects playable at the same time
+--
+-- EVIOCGEFFECTS
+supportedSimultaneousEffects :: IOCTL -> FileDescriptor -> SysRet Int
+supportedSimultaneousEffects ioctl = ioctlRead ioctl 0x45 0x84 defaultCheck
+
+-- TODO
 -- #define EVIOCSFF		_IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))	/* send a force effect to a force feedback device */
--- #define EVIOCRMFF		_IOW('E', 0x81, int)			/* Erase a force effect */
--- #define EVIOCGEFFECTS		_IOR('E', 0x84, int)			/* Report number of effects playable at the same time */
--- 
+
