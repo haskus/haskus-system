@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 import ViperVM.Platform.Host as V
 import ViperVM.Platform.PlatformInfo
@@ -16,6 +17,7 @@ import ViperVM.Platform.Types
 import qualified ViperVM.STM.TSet as TSet
 
 import Paths_ViperVM
+import Data.FileEmbed
 import Data.Version
 
 import Control.Concurrent.STM
@@ -32,6 +34,8 @@ import Happstack.Server
 import Text.Blaze.Html5 ((!), toHtml, docTypeHtml, Html)
 import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString.Lazy as L
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -54,9 +58,7 @@ server conf hst = do
       [ 
       
         -- CSS 
-        dir "css" $ dir "style.css" $ do
-         cssPath <- lift $ getDataFileName "data/web/css/style.css"
-         serveFile (asContentType "text/css") cssPath
+        dir "css" $ dir "style.css" $ ok css
 
         -- Show memory information
       , dir "localhost" $ dir "memory" $ path $ \uid -> showMemory hst uid
@@ -73,6 +75,9 @@ server conf hst = do
         -- Show welcome screen
       , nullDir >> (ok . toResponse . appTemplate hst "Welcome" $ showWelcome)
       ]
+
+css :: Response
+css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/Web/style.css"))
 
 -- | Template of all pages
 appTemplate :: V.Host -> String -> Html -> Html
@@ -91,7 +96,7 @@ appTemplate _ title bdy = docTypeHtml $ do
 
 -- | Welcoming screen
 showWelcome :: Html
-showWelcome = H.a "Local hst information" ! A.href "/localhost"
+showWelcome = H.a "Local host information" ! A.href "/localhost"
 
 -- | Show the host
 showHost :: V.Host -> ServerPartT IO Response

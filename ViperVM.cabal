@@ -6,13 +6,11 @@ license:             LGPL-3
 license-file:        LICENSE
 author:              Sylvain HENRY
 maintainer:          hsyl20@gmail.com
+homepage:            http://www.vipervm.org
 -- copyright:           
 category:            System
 build-type:          Simple
-cabal-version:       >=1.10
-
-data-files: 
-   data/web/css/style.css
+cabal-version:       >=1.20
 
 
 library
@@ -246,7 +244,9 @@ executable ViperWeb
     blaze-html       == 0.8.*,
     blaze-markup     == 0.7.*,
     transformers     == 0.4.*,
-    network          == 2.6.*
+    network          == 2.6.*,
+    file-embed       == 0.0.8.*,
+    bytestring       == 0.10.*
 
 executable TestKernels
   main-is: TestKernels.hs
