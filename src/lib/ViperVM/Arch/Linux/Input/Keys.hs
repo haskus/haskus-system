@@ -37,7 +37,7 @@ type N32 = -- 32
 -- `struct input_keymap_entry` in C header file
 data KeymapEntry = KeymapEntry
    { keymapEntryFlags    :: Word8                        -- ^ Indicate how kernel should handle the request
-   , keymapEntryLength   :: Word8                        -- ^ Length of the scancode (TODO: remove this in the Storable instance)
+   , keymapEntryLength   :: Word8                        -- ^ Length of the scancode
    , keymapEntryIndex    :: Word16                       -- ^ Index in the keymap (may be used instead of the scancode)
    , keymapEntryKeyCode  :: Word32                       -- ^ Key code assigned to this scancode
    , keymapEntryScanCode :: StorableWrap (Vec N32 Word8) -- ^ Scan in machine-endian form (up to 32 bytes)
