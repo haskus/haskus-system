@@ -166,25 +166,6 @@ instance Storable FbDirtyStruct where
    peek        = cPeek
    poke        = cPoke
 
--- | Data matching the C structure drm_mode_fb_cmd
-data FbCmdStruct = FbCmdStruct
-   { fcFbId          :: Word32
-   , fcWidth         :: Word32
-   , fcHeight        :: Word32
-   , fcPitch         :: Word32
-   , fcBPP           :: Word32
-   , fcDepth         :: Word32
-   , fcHandle        :: Word32
-   } deriving Generic
-
-instance CStorable FbCmdStruct
-instance Storable FbCmdStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
-
 -- | Create a framebuffer
 cardAddFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
 cardAddFrameBuffer card width height fmt flags planes =
