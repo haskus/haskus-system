@@ -33,19 +33,19 @@ type Vec4 = Vec (S (S (S (S Z))))
 
 -- | Plane (used for pixel formats that use several sources)
 data Plane = Plane
-   { planeHandle :: Word32
-   , planePitch  :: Word32
-   , planeOffset :: Word32
+   { planeHandle :: Word32       -- ^ Handle of the plane
+   , planePitch  :: Word32       -- ^ Pitch of the plane
+   , planeOffset :: Word32       -- ^ Offset of the plane
    }
 
 -- | Frame buffer
 data FrameBuffer = FrameBuffer
-   { fbID :: Word32                          -- ^ Frame buffer identifier
-   , fbWidth :: Word32                       -- ^ Frame buffer width
-   , fbHeight :: Word32                      -- ^ Frame buffer height
-   , fbPixelFormat :: PixelFormat            -- ^ Pixel format
-   , fbFlags :: Word32                       -- ^ Flags
-   , fbPlanes :: (Plane,Plane,Plane,Plane)   -- ^ Data sources (up to four planes)
+   { fbID            :: Word32                      -- ^ Frame buffer identifier
+   , fbWidth         :: Word32                      -- ^ Frame buffer width
+   , fbHeight        :: Word32                      -- ^ Frame buffer height
+   , fbPixelFormat   :: PixelFormat                 -- ^ Pixel format
+   , fbFlags         :: Word32                      -- ^ Flags
+   , fbPlanes        :: (Plane,Plane,Plane,Plane)   -- ^ Data sources (up to four planes)
    }
 
 instance Storable FrameBuffer where
