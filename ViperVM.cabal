@@ -50,6 +50,7 @@ library
     ViperVM.Arch.Linux.FileSystem.Directory
     ViperVM.Arch.Linux.FileSystem.OpenClose
     ViperVM.Arch.Linux.Network.SendReceive
+    ViperVM.Arch.Linux.Power
     ViperVM.Arch.Linux.Ioctl
 
     ViperVM.Arch.Linux.Input.Absolute

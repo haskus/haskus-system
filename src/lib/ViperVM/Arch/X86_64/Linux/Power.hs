@@ -1,45 +1,16 @@
 module ViperVM.Arch.X86_64.Linux.Power
-   ( PowerCommand(..)
-   , sysPower
+   ( syscall_reboot
    )
 where
 
 import Data.Word (Word64)
-import ViperVM.Arch.Linux.ErrorCode
-import Foreign.C.String (withCString)
+import Data.Int (Int64)
+import Foreign.C.Types (CChar)
+import Foreign.Ptr (Ptr)
 import ViperVM.Arch.X86_64.Linux.Syscall
 
-data PowerCommand
-   = PowerDisableRebootKeys
-   | PowerEnableRebootKeys
-   | PowerHalt
-   | PowerKernelExec
-   | PowerOff
-   | PowerRestart
-   | PowerRestartCommand String
-   | PowerHibernate
+-- | Reboot syscall
+syscall_reboot :: Word64 -> Word64 -> Word64 -> Ptr CChar -> IO Int64
+syscall_reboot magic1 magic2 cmd cmdPath = syscall4 169 magic1 magic2 cmd cmdPath
 
-fromPowerCommand :: PowerCommand -> Word64
-fromPowerCommand x = case x of
-   PowerDisableRebootKeys  -> 0x00000000
-   PowerEnableRebootKeys   -> 0x89ABCDEF
-   PowerHalt               -> 0xCDEF0123
-   PowerKernelExec         -> 0x45584543
-   PowerOff                -> 0x4321FEDC
-   PowerRestart            -> 0x01234567
-   PowerRestartCommand _   -> 0xA1B2C3D4
-   PowerHibernate          -> 0xD000FCE2
-
--- | reboot syscall
-sysPower :: PowerCommand -> SysRet ()
-sysPower cmd =
-   let
-      magic1 = 0xfee1dead :: Word64
-      magic2 = 0x28121969 :: Word64
-      cmd' = fromPowerCommand cmd
-      c = case cmd of
-         PowerRestartCommand x -> x
-         _                     -> ""
-   in
-      withCString c $ \c' ->
-         onSuccess (syscall4 169 magic1 magic2 cmd' c') (const ())
+{-# INLINE syscall_reboot #-}

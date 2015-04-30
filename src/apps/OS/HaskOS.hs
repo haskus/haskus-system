@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
-import ViperVM.Arch.X86_64.Linux.Power
+import ViperVM.Arch.Linux.Power
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.System.System
