@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
 module ViperVM.Arch.X86_64.Linux.Signal
    ( SignalSet(..)
+   , ChangeSignals(..)
    , sysPause
    , sysAlarm
    , sysSendSignal
