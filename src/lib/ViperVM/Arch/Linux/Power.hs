@@ -7,6 +7,7 @@ where
 import Data.Word (Word64)
 import ViperVM.Arch.Linux.ErrorCode
 import Foreign.C.String (withCString)
+import Foreign.Ptr (nullPtr)
 
 import ViperVM.Arch.X86_64.Linux.Power
 
@@ -33,12 +34,11 @@ fromPowerCommand x = case x of
 
 -- | reboot syscall
 sysPower :: PowerCommand -> SysRet ()
-sysPower cmd = withCString c $ \c' ->
-      onSuccess (syscall_reboot magic1 magic2 cmd' c') (const ())
+sysPower cmd = case cmd of
+      PowerRestartCommand cmdPath -> withCString cmdPath f
+      _                           -> f nullPtr
    where
+      f path = onSuccess (syscall_reboot magic1 magic2 cmd' path) (const ())
       magic1 = 0xfee1dead :: Word64
       magic2 = 0x28121969 :: Word64
       cmd' = fromPowerCommand cmd
-      c = case cmd of
-         PowerRestartCommand x -> x
-         _                     -> ""
