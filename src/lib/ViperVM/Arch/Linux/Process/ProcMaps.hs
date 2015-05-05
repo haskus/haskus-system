@@ -2,6 +2,7 @@
 module ViperVM.Arch.Linux.Process.ProcMaps
    ( Entry (..)
    , readMaps
+   , entryToBytestring
    )
 where
 
@@ -12,6 +13,9 @@ import Text.Parsec
 import Control.Monad (void)
 import Data.Word (Word8,Word64)
 import Data.Int (Int64)
+import Data.ByteString.Unsafe
+import Data.ByteString (ByteString)
+import Foreign.Ptr (wordPtrToPtr)
 
 data Entry = Entry
    { entryStartAddr :: Word64
@@ -71,3 +75,10 @@ readMaps path = do
          void spaces
          pth <- manyTill anyChar (void newline <|> eof)
          return $ Entry start stop perms sharing offset dev inode pth
+
+
+entryToBytestring :: Entry -> IO ByteString
+entryToBytestring e = unsafePackCStringLen (ptr,len)
+   where
+      ptr = wordPtrToPtr (fromIntegral (entryStartAddr e))
+      len = fromIntegral $ entryStopAddr e - entryStartAddr e

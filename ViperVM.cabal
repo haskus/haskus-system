@@ -143,6 +143,7 @@ library
     ViperVM.STM.TGraph
 
     ViperVM.Format.CPIO
+    ViperVM.Format.Elf
     ViperVM.Format.Compression.Algorithms.Huffman
     ViperVM.Format.Compression.Algorithms.LZ77
     ViperVM.Format.Compression.Algorithms.Deflate
@@ -190,7 +191,8 @@ library
     binary-bits         == 0.6,
     utf8-string         == 1.*,
     pqueue              == 1.2.*,
-    split               == 0.2.*
+    split               == 0.2.*,
+    elf                 == 0.27
 
   build-tools: 
 
