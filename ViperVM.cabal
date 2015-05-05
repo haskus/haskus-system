@@ -72,6 +72,9 @@ library
     ViperVM.Arch.Linux.System.KernelEvent
     ViperVM.Arch.Linux.System.Topology
     ViperVM.Arch.Linux.System.Graphics
+
+    ViperVM.Arch.Linux.Process.ProcMaps
+
     ViperVM.Arch.Linux.Graphics.Capability
     ViperVM.Arch.Linux.Graphics.Card
     ViperVM.Arch.Linux.Graphics.Connector
