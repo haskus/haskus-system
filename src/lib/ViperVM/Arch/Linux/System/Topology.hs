@@ -1,7 +1,9 @@
 -- | Processor/memory topology
 module ViperVM.Arch.Linux.System.Topology
    ( CPUMap(..)
+   , parseMemInfo
    , readMemInfo
+   , parseCPUMap
    , readCPUMap
    , member
    , Node(..)
@@ -12,16 +14,21 @@ module ViperVM.Arch.Linux.System.Topology
    )
 where
 
+import Data.Attoparsec.ByteString.Char8
+import Data.Text (Text)
+import qualified Data.Text as Text
+import Data.Text.Encoding (decodeUtf8)
 import System.Directory
 import Data.List (isPrefixOf,stripPrefix)
 import Control.Monad (void,forM)
-import Text.ParserCombinators.Parsec.Number
-import Text.Parsec.Combinator
-import Text.Parsec.Char
-import Text.Parsec
+import Control.Applicative ((<|>))
 import Data.Word
+import Data.ByteString (ByteString)
+import Data.ByteString.Char8 (pack)
+import qualified Data.ByteString as BS
 import Data.Bits
-import Data.Maybe (fromJust,isJust,mapMaybe)
+import Data.Maybe (fromJust,mapMaybe)
+import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 
@@ -30,41 +37,41 @@ import qualified Data.Vector as V
 -- TODO: replace Vector of Word32 with a variable length bitset
 data CPUMap = CPUMap (V.Vector Word32) deriving (Show)
 
--- | Read meminfo files
-readMemInfo :: FilePath -> IO (Map.Map String Word64)
-readMemInfo path = do
-   meminfo <- readFile path
+-- | Read cpumap files
+readMemInfo :: FilePath -> IO (Map Text Word64)
+readMemInfo = fmap parseMemInfo . BS.readFile
 
-   Map.fromList <$> case parse parseFile "" meminfo of
+-- | Read meminfo files
+parseMemInfo :: ByteString -> Map Text Word64
+parseMemInfo bs = case parseOnly parseFile bs of
+      Right v  -> Map.fromList v
       Left err -> error ("meminfo parsing error: " ++ show err)
-      Right v -> return v
 
    where
-      parseFile = many1 parseLine
+      parseFile = parseLine `sepBy` endOfLine
       parseLine = do
-         void (string "Node ")
-         void (many1 digit)
+         void (string (pack "Node "))
+         skipMany1 digit
          void (char ' ')
-         lbl <- manyTill anyChar (char ':')
+         lbl <- takeTill (== ':')
          skipMany1 space
-         value <- read <$> many1 digit
-         kb <- optionMaybe (try(string " kB"))
-         void (void newline <|> eof)
-         let f x = if isJust kb then x * 1024 else x
-         return (lbl, f value)
+         value <- decimal
+         kb <- (string (pack " kB") *> return (*1024)) <|> return id
+         return (decodeUtf8 lbl, kb value)
 
 
 -- | Read cpumap files
 readCPUMap :: FilePath -> IO CPUMap
-readCPUMap path = do
-   f <- readFile path
+readCPUMap = fmap parseCPUMap . BS.readFile
 
-   CPUMap . V.fromList . reverse . dropWhile (== 0) <$> case parse parseFile "" f of
+-- | Parse CPU map files
+parseCPUMap :: ByteString -> CPUMap
+parseCPUMap bs = case parseOnly parseFile bs of
       Left err -> error ("cpumap parsing error: " ++ show err)
-      Right v -> return v
+      Right v  -> CPUMap . V.fromList . reverse . dropWhile (==0) $ v
 
    where
-      parseFile = sepBy1 hexnum (char ',') <* newline <* eof
+      parseFile = hexadecimal `sepBy1` (char ',') <* endOfLine
 
 -- | Check that a CPU belongs to a CPU Map
 member :: Word -> CPUMap -> Bool
@@ -82,16 +89,16 @@ fromCPUMap (CPUMap v) = go 0 (V.toList v)
 
 
 -- | A set of NUMA nodes
-data NUMA = NUMA {
-   numaNodes :: [Node]
-} deriving (Show)
+data NUMA = NUMA
+   { numaNodes :: [Node]
+   } deriving (Show)
 
 -- | A NUMA node
-data Node = Node {
-   nodeId :: Word,
-   nodeCPUMap :: CPUMap,
-   nodeMemory :: NodeMemory
-} deriving (Show)
+data Node = Node
+   { nodeId :: Word
+   , nodeCPUMap :: CPUMap
+   , nodeMemory :: NodeMemory
+   } deriving (Show)
 
 -- | A memory node
 newtype NodeMemory = NodeMemory FilePath deriving (Show)
@@ -116,7 +123,7 @@ nodeMemoryStatus :: NodeMemory -> IO (Word64,Word64)
 nodeMemoryStatus (NodeMemory path) = do
    infos <- readMemInfo path
 
-   return (infos Map.! "MemTotal", infos Map.! "MemFree")
+   return (infos Map.! Text.pack "MemTotal", infos Map.! Text.pack "MemFree")
 
 -- | Return a list of CPU numbers from a map in a node
 nodeCPUs :: Node -> [Word]
