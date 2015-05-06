@@ -1,9 +1,9 @@
 -- | Parser for /proc/*/maps
 module ViperVM.Arch.Linux.Process.MemoryMap
-   ( Entry (..)
+   ( MemoryMapEntry (..)
    , readMemoryMap
    , parseMemoryMap
-   , entryToBytestring
+   , memoryMapToBytestring
    )
 where
 
@@ -21,7 +21,7 @@ import Control.Applicative ((<|>))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 
-data Entry = Entry
+data MemoryMapEntry = MemoryMapEntry
    { entryStartAddr :: Word64
    , entryStopAddr  :: Word64
    , entryPerms     :: [Perm]
@@ -43,11 +43,12 @@ data Sharing
    | Private
    deriving (Show)
 
-readMemoryMap :: FilePath -> IO [Entry]
+-- | Read /proc/[pid]/maps files
+readMemoryMap :: FilePath -> IO [MemoryMapEntry]
 readMemoryMap = fmap parseMemoryMap . BS.readFile
 
--- | Read meminfo files
-parseMemoryMap :: ByteString -> [Entry]
+-- | Parse /proc/[pid]/maps files
+parseMemoryMap :: ByteString -> [MemoryMapEntry]
 parseMemoryMap bs = do
    case parseOnly parseFile bs of
       Right v  -> v
@@ -79,11 +80,16 @@ parseMemoryMap bs = do
          inode <- decimal
          skipMany1 space
          pth <- takeWhile (/= '\n')
-         return $ Entry start stop perms sharing offset dev inode (decodeUtf8 pth)
+         return $ MemoryMapEntry start stop perms sharing offset dev inode (decodeUtf8 pth)
 
-
-entryToBytestring :: Entry -> IO ByteString
-entryToBytestring e = unsafePackCStringLen (ptr,len)
+-- | Convert a memory-map entry into a ByteString
+--
+-- Warning: The bytestring directly maps the entry
+-- (i.e. there is no copy of the data). Hence the
+-- referential transparency can be broken if the entry
+-- is written into 
+memoryMapToBytestring :: MemoryMapEntry -> IO ByteString
+memoryMapToBytestring e = unsafePackCStringLen (ptr,len)
    where
       ptr = wordPtrToPtr (fromIntegral (entryStartAddr e))
       len = fromIntegral $ entryStopAddr e - entryStartAddr e
