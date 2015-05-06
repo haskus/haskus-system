@@ -73,7 +73,7 @@ library
     ViperVM.Arch.Linux.System.Topology
     ViperVM.Arch.Linux.System.Graphics
 
-    ViperVM.Arch.Linux.Process.ProcMaps
+    ViperVM.Arch.Linux.Process.MemoryMap
 
     ViperVM.Arch.Linux.Graphics.Capability
     ViperVM.Arch.Linux.Graphics.Card

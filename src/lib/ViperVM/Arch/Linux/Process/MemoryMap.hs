@@ -1,5 +1,5 @@
 -- | Parser for /proc/*/maps
-module ViperVM.Arch.Linux.Process.ProcMaps
+module ViperVM.Arch.Linux.Process.MemoryMap
    ( Entry (..)
    , readMaps
    , entryToBytestring
