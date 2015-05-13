@@ -17,6 +17,7 @@ module ViperVM.Format.Elf
    , putHeader
    -- ** Section
    , Section (..)
+   , SectionFlag (..)
    , getSection
    , putSection
    )
@@ -30,6 +31,7 @@ import Data.Binary.Put
 import Control.Monad (when)
 
 import ViperVM.Arch.Common.Endianness
+import ViperVM.Utils.EnumSet
 
 import Text.Printf
 
@@ -631,3 +633,49 @@ instance Enum SectionType where
       0x6ffffffe  -> SectionTypeGNU_verneed
       0x6fffffff  -> SectionTypeGNU_versym
       v           -> SectionTypeCustom (fromIntegral v)
+
+data SectionFlag
+   = SectionFlagWritable          -- ^ Writable
+   | SectionFlagAlloc             -- ^ Occupies memory during execution
+   | SectionFlagExecutable        -- ^ Executable
+   | SectionFlagMergeable         -- ^ Might be merged
+   | SectionFlagStrings           -- ^ Contains nul-terminated strings
+   | SectionFlagInfoLink          -- ^ `sh_info' contains SHT index
+   | SectionFlagPreserveLinkOrder -- ^ Preserve order after combining
+   | SectionFlagOS_NonConforming  -- ^ Non-standard OS specific handling required
+   | SectionFlagGROUP             -- ^ Section is member of a group.
+   | SectionFlagTLS               -- ^ Section hold thread-local data.
+   | SectionFlagOrdered           -- ^ Special ordering requirement
+   | SectionFlagExclude           -- ^ Section is excluded unless referenced or allocated (Solaris).
+   deriving (Show,Eq)
+
+instance Enum SectionFlag where
+   fromEnum x = case x of
+      SectionFlagWritable           -> 0
+      SectionFlagAlloc              -> 1
+      SectionFlagExecutable         -> 2
+      SectionFlagMergeable          -> 4
+      SectionFlagStrings            -> 5
+      SectionFlagInfoLink           -> 6
+      SectionFlagPreserveLinkOrder  -> 7
+      SectionFlagOS_NonConforming   -> 8
+      SectionFlagGROUP              -> 9
+      SectionFlagTLS                -> 10
+      SectionFlagOrdered            -> 30
+      SectionFlagExclude            -> 31
+   toEnum x = case x of
+      0  -> SectionFlagWritable
+      1  -> SectionFlagAlloc
+      2  -> SectionFlagExecutable
+      4  -> SectionFlagMergeable
+      5  -> SectionFlagStrings
+      6  -> SectionFlagInfoLink
+      7  -> SectionFlagPreserveLinkOrder
+      8  -> SectionFlagOS_NonConforming
+      9  -> SectionFlagGROUP
+      10 -> SectionFlagTLS
+      30 -> SectionFlagOrdered
+      31 -> SectionFlagExclude
+      _  -> error "Unknwon flag"
+
+instance EnumBitSet SectionFlag
