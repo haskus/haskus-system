@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
+
 module Main where
 
 import ViperVM.Arch.X86_64.Linux.FileSystem
@@ -33,7 +35,7 @@ main = do
    
    let writeDummyFile = do
          putStrLn "Opening dummy.result file"
-         fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] (BitSet.fromList [PermUserWrite,PermUserRead])
+         fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] [PermUserWrite,PermUserRead]
 
          let str = "Hello Linux!"
          putStrLn (printf "Writing \"%s\" in it" str)
@@ -47,7 +49,7 @@ main = do
 
    putStrLn "Checking for access to dummy.result file"
    fExist <- sysAccess "dummy.result" BitSet.empty
-   fWrite <- sysAccess "dummy.result" (BitSet.fromList [AccessWrite])
+   fWrite <- sysAccess "dummy.result" [AccessWrite]
    case (fExist,fWrite) of
       (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"
       (Right _, Right _) -> putStrLn " - File exists and is writeable" >> writeDummyFile
@@ -113,9 +115,9 @@ main = do
    print stat
 
 
-   Right perm <- sysSetProcessUMask (BitSet.fromList [PermUserRead,PermUserWrite,PermUserExecute])
+   Right perm <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "Previous umask: " ++ show perm
-   Right perm2 <- sysSetProcessUMask (BitSet.fromList [PermUserRead,PermUserWrite,PermUserExecute])
+   Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "New umask: " ++ show perm2
 
    Right info <- sysSystemInfo
@@ -151,7 +153,7 @@ main = do
          , ClockTAI
          ]
 
-   traverse_ printClock clocks
+   traverse_ printClock (clocks :: [Clock])
 
    putStrLn "Listing /etc directory:"
    etcfd <- check <$> sysOpen "/etc" [OpenReadOnly] BitSet.empty
@@ -173,7 +175,7 @@ main = do
       Right _  -> putStrLn $ "Sleeping succeeded"
 
    putStrLn "Get device info"
-   dev <- check <$> sysOpen "/dev/input/event0" [OpenReadOnly] (BitSet.fromList [PermUserRead])
+   dev <- check <$> sysOpen "/dev/input/event0" [OpenReadOnly] [PermUserRead]
 
    driverVersion <- getDriverVersion sysIoctl dev
    putStrLn $ "Driver version: " ++ show driverVersion

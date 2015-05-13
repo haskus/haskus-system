@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | A bit set based on Enum to name the bits. Use bitwise operations and
 -- minimal storage.
@@ -26,6 +27,8 @@ module ViperVM.Utils.BitSet
 where
 
 import Prelude hiding (null)
+
+import qualified GHC.Exts as Ext
 
 import Data.Bits
 import Data.Foldable (foldl')
@@ -139,3 +142,9 @@ class Enum a => EnumBitSet a where
    fromList = BitSet . foldl' f zeroBits
       where
          f bs a = setBit bs (fromEnum a)
+
+
+instance (FiniteBits b, EnumBitSet a) => Ext.IsList (BitSet b a) where
+   type Item (BitSet b a) = a
+   fromList = fromList
+   toList   = toList
