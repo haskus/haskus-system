@@ -18,6 +18,7 @@ module ViperVM.Format.Elf
    -- ** Section
    , Section (..)
    , SectionFlag (..)
+   , SectionFlags
    , getSection
    , putSection
    )
@@ -31,7 +32,8 @@ import Data.Binary.Put
 import Control.Monad (when)
 
 import ViperVM.Arch.Common.Endianness
-import ViperVM.Utils.BitSet
+import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import Text.Printf
 
@@ -502,7 +504,7 @@ instance Enum Arch where
 data Section = Section
    { sectionNameIndex :: Word64
    , sectionType      :: SectionType
-   , sectionFlags     :: Word64
+   , sectionFlags     :: SectionFlags
    , sectionAddr      :: Word64
    , sectionOffset    :: Word64
    , sectionSize      :: Word64
@@ -518,7 +520,7 @@ getSection i = do
    Section
       <$> gwN
       <*> (toEnum . fromIntegral <$> gwN)
-      <*> gwN
+      <*> (BitSet.fromBits <$> gwN)
       <*> gwN
       <*> gwN
       <*> gwN
@@ -533,7 +535,7 @@ putSection i s = do
 
    pwN (sectionNameIndex s)
    pwN (fromIntegral . fromEnum . sectionType $ s)
-   pwN (sectionFlags s)
+   pwN (BitSet.toBits (sectionFlags s))
    pwN (sectionAddr s)
    pwN (sectionOffset s)
    pwN (sectionSize s)
@@ -679,3 +681,5 @@ instance Enum SectionFlag where
       _  -> error "Unknwon flag"
 
 instance EnumBitSet SectionFlag
+
+type SectionFlags = BitSet Word64 SectionFlag
