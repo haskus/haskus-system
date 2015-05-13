@@ -1,18 +1,24 @@
 {-# LANGUAGE LambdaCase #-}
 module ViperVM.Format.Elf
    ( module X
+   -- ** Pre-Header
    , Info (..)
    , Class (..)
    , Endianness (..)
    , OSABI (..)
+   , getInfo
+   , putInfo
+   -- ** Header
    , Header (..)
    , Type (..)
    , Arch (..)
    , elfCurrentVersion
-   , getInfo
-   , putInfo
    , getHeader
    , putHeader
+   -- ** Section
+   , Section (..)
+   , getSection
+   , putSection
    )
 where
 
@@ -148,14 +154,9 @@ instance Enum OSABI where
       v   -> ABI_CUSTOM (fromIntegral v)
 
 
------------------------------------------------------
--- Header
------------------------------------------------------
-
-
-getHeader :: Info -> Get Header
-getHeader i = do
-   let
+getGetters :: Info -> (Get Word16, Get Word32, Get Word64, Get Word64)
+getGetters i = (gw16, gw32, gw64, gwN)
+   where
       (gw16,gw32,gw64) = case infoEncoding i of
          LittleEndian -> (getWord16le, getWord32le, getWord64le)
          BigEndian    -> (getWord16be, getWord32be, getWord64be)
@@ -163,6 +164,26 @@ getHeader i = do
       gwN = case infoClass i of
          Class32 -> fromIntegral <$> gw32
          Class64 -> gw64
+
+getPutters :: Info -> (Word16 -> Put, Word32 -> Put, Word64 -> Put, Word64 -> Put)
+getPutters i = (pw16, pw32, pw64, pwN)
+   where
+      (pw16,pw32,pw64) = case infoEncoding i of
+         LittleEndian -> (putWord16le, putWord32le, putWord64le)
+         BigEndian    -> (putWord16be, putWord32be, putWord64be)
+
+      pwN = case infoClass i of
+         Class32 -> pw32 . fromIntegral
+         Class64 -> pw64
+
+-----------------------------------------------------
+-- Header
+-----------------------------------------------------
+
+
+getHeader :: Info -> Get Header
+getHeader i = do
+   let (gw16,gw32,_,gwN) = getGetters i
 
    Header
       <$> (toEnum . fromIntegral <$> gw16)
@@ -181,14 +202,7 @@ getHeader i = do
 
 putHeader :: Info -> Header -> Put
 putHeader i h = do
-   let
-      (pw16,pw32,pw64) = case infoEncoding i of
-         LittleEndian -> (putWord16le, putWord32le, putWord64le)
-         BigEndian    -> (putWord16be, putWord32be, putWord64be)
-
-      pwN = case infoClass i of
-         Class32 -> pw32 . fromIntegral
-         Class64 -> pw64
+   let (pw16,pw32,_, pwN) = getPutters i
 
    pw16 (fromIntegral . fromEnum . headerType $ h)
    pw16 (fromIntegral . fromEnum . headerArch $ h)
@@ -478,3 +492,142 @@ instance Enum Arch where
       189 -> ArchMICROBLAZE
       191 -> ArchTILEGX
       v   -> ArchCustom (fromIntegral v)
+
+-----------------------------------------------------
+-- Sections
+-----------------------------------------------------
+
+data Section = Section
+   { sectionNameIndex :: Word64
+   , sectionType      :: SectionType
+   , sectionFlags     :: Word64
+   , sectionAddr      :: Word64
+   , sectionOffset    :: Word64
+   , sectionSize      :: Word64
+   , sectionLink      :: Word64
+   , sectionInfo      :: Word64
+   , sectionAlignment :: Word64
+   , sectionEntrySize :: Word64
+   } deriving (Show)
+
+getSection :: Info -> Get Section
+getSection i = do
+   let (_,_,_,gwN) = getGetters i
+   Section
+      <$> gwN
+      <*> (toEnum . fromIntegral <$> gwN)
+      <*> gwN
+      <*> gwN
+      <*> gwN
+      <*> gwN
+      <*> gwN
+      <*> gwN
+      <*> gwN
+      <*> gwN
+
+putSection :: Info -> Section -> Put
+putSection i s = do
+   let (_,_,_, pwN) = getPutters i
+
+   pwN (sectionNameIndex s)
+   pwN (fromIntegral . fromEnum . sectionType $ s)
+   pwN (sectionFlags s)
+   pwN (sectionAddr s)
+   pwN (sectionOffset s)
+   pwN (sectionSize s)
+   pwN (sectionLink s)
+   pwN (sectionInfo s)
+   pwN (sectionAlignment s)
+   pwN (sectionEntrySize s)
+
+data SectionType
+   = SectionTypeNone                    -- ^ Section header table entry unused
+   | SectionTypePROGBITS                -- ^ Program data
+   | SectionTypeSYMTAB                  -- ^ Symbol table
+   | SectionTypeSTRTAB                  -- ^ String table
+   | SectionTypeRELA                    -- ^ Relocation entries with addends
+   | SectionTypeHASH                    -- ^ Symbol hash table
+   | SectionTypeDYNAMIC                 -- ^ Dynamic linking information
+   | SectionTypeNOTE                    -- ^ Notes
+   | SectionTypeNOBITS                  -- ^ Program space with no data (bss)
+   | SectionTypeREL                     -- ^ Relocation entries, no addends
+   | SectionTypeSHLIB                   -- ^ Reserved
+   | SectionTypeDYNSYM                  -- ^ Dynamic linker symbol table
+   | SectionTypeINIT_ARRAY              -- ^ Array of constructors
+   | SectionTypeFINI_ARRAY              -- ^ Array of destructors
+   | SectionTypePREINIT_ARRAY           -- ^ Array of pre-constructors
+   | SectionTypeGROUP                   -- ^ Section group
+   | SectionTypeSYMTAB_SHNDX            -- ^ Extended section indeces
+
+   | SectionTypeGNU_ATTRIBUTES          -- ^ Object attributes.
+   | SectionTypeGNU_HASH                -- ^ GNU-style hash table.
+   | SectionTypeGNU_LIBLIST             -- ^ Prelink library list
+   | SectionTypeCHECKSUM                -- ^ Checksum for DSO content.
+   | SectionTypeSUNW_move               
+   | SectionTypeSUNW_COMDAT             
+   | SectionTypeSUNW_syminfo            
+   | SectionTypeGNU_verdef              -- ^ Version definition section.
+   | SectionTypeGNU_verneed             -- ^ Version needs section.
+   | SectionTypeGNU_versym              -- ^ Version symbol table.
+   | SectionTypeCustom Word64
+   deriving (Show)
+
+instance Enum SectionType where
+   fromEnum x = case x of
+      SectionTypeNone            -> 0
+      SectionTypePROGBITS        -> 1
+      SectionTypeSYMTAB          -> 2
+      SectionTypeSTRTAB          -> 3
+      SectionTypeRELA            -> 4
+      SectionTypeHASH            -> 5
+      SectionTypeDYNAMIC         -> 6
+      SectionTypeNOTE            -> 7
+      SectionTypeNOBITS          -> 8
+      SectionTypeREL             -> 9
+      SectionTypeSHLIB           -> 10
+      SectionTypeDYNSYM          -> 11
+      SectionTypeINIT_ARRAY      -> 14
+      SectionTypeFINI_ARRAY      -> 15
+      SectionTypePREINIT_ARRAY   -> 16
+      SectionTypeGROUP           -> 17
+      SectionTypeSYMTAB_SHNDX    -> 18
+      SectionTypeGNU_ATTRIBUTES  -> 0x6ffffff5
+      SectionTypeGNU_HASH        -> 0x6ffffff6
+      SectionTypeGNU_LIBLIST     -> 0x6ffffff7
+      SectionTypeCHECKSUM        -> 0x6ffffff8
+      SectionTypeSUNW_move       -> 0x6ffffffa
+      SectionTypeSUNW_COMDAT     -> 0x6ffffffb
+      SectionTypeSUNW_syminfo    -> 0x6ffffffc
+      SectionTypeGNU_verdef      -> 0x6ffffffd
+      SectionTypeGNU_verneed     -> 0x6ffffffe
+      SectionTypeGNU_versym      -> 0x6fffffff
+      SectionTypeCustom v        -> fromIntegral v
+   toEnum x = case x of
+      0           -> SectionTypeNone
+      1           -> SectionTypePROGBITS
+      2           -> SectionTypeSYMTAB
+      3           -> SectionTypeSTRTAB
+      4           -> SectionTypeRELA
+      5           -> SectionTypeHASH
+      6           -> SectionTypeDYNAMIC
+      7           -> SectionTypeNOTE
+      8           -> SectionTypeNOBITS
+      9           -> SectionTypeREL
+      10          -> SectionTypeSHLIB
+      11          -> SectionTypeDYNSYM
+      14          -> SectionTypeINIT_ARRAY
+      15          -> SectionTypeFINI_ARRAY
+      16          -> SectionTypePREINIT_ARRAY
+      17          -> SectionTypeGROUP
+      18          -> SectionTypeSYMTAB_SHNDX
+      0x6ffffff5  -> SectionTypeGNU_ATTRIBUTES
+      0x6ffffff6  -> SectionTypeGNU_HASH
+      0x6ffffff7  -> SectionTypeGNU_LIBLIST
+      0x6ffffff8  -> SectionTypeCHECKSUM
+      0x6ffffffa  -> SectionTypeSUNW_move
+      0x6ffffffb  -> SectionTypeSUNW_COMDAT
+      0x6ffffffc  -> SectionTypeSUNW_syminfo
+      0x6ffffffd  -> SectionTypeGNU_verdef
+      0x6ffffffe  -> SectionTypeGNU_verneed
+      0x6fffffff  -> SectionTypeGNU_versym
+      v           -> SectionTypeCustom (fromIntegral v)
