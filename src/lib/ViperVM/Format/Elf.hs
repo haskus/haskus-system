@@ -3,7 +3,7 @@ module ViperVM.Format.Elf
    ( module X
    -- ** Pre-Header
    , Info (..)
-   , Class (..)
+   , WordSize (..)
    , Endianness (..)
    , OSABI (..)
    , getInfo
@@ -42,7 +42,7 @@ import Text.Printf
 -----------------------------------------------------
 
 data Info = Info
-   { infoClass      :: Class
+   { infoWordSize   :: WordSize
    , infoEncoding   :: Endianness
    , infoVersion    :: Word8
    , infoOSABI      :: OSABI
@@ -61,9 +61,9 @@ getInfo = do
 
    Info
       <$> (getWord8 >>= \case
-            1 -> return Class32
-            2 -> return Class64
-            _ -> error "Invalid class")
+            1 -> return WordSize32
+            2 -> return WordSize64
+            _ -> error "Invalid word size")
       <*> (getWord8 >>= \case
             1 -> return LittleEndian
             2 -> return BigEndian
@@ -79,9 +79,9 @@ putInfo :: Info -> Put
 putInfo i = do
    putWord32be 0x7F454C46
 
-   case infoClass i of
-      Class32 -> putWord8 1
-      Class64 -> putWord8 2
+   case infoWordSize i of
+      WordSize32 -> putWord8 1
+      WordSize64 -> putWord8 2
 
    case infoEncoding i of
       LittleEndian -> putWord8 1
@@ -99,9 +99,9 @@ putInfo i = do
 
 
 
-data Class
-   = Class32
-   | Class64
+data WordSize
+   = WordSize32
+   | WordSize64
    deriving (Show, Eq)
 
 -- | ABI
@@ -165,9 +165,9 @@ getGetters i = (gw16, gw32, gw64, gwN)
          LittleEndian -> (getWord16le, getWord32le, getWord64le)
          BigEndian    -> (getWord16be, getWord32be, getWord64be)
 
-      gwN = case infoClass i of
-         Class32 -> fromIntegral <$> gw32
-         Class64 -> gw64
+      gwN = case infoWordSize i of
+         WordSize32 -> fromIntegral <$> gw32
+         WordSize64 -> gw64
 
 getPutters :: Info -> (Word16 -> Put, Word32 -> Put, Word64 -> Put, Word64 -> Put)
 getPutters i = (pw16, pw32, pw64, pwN)
@@ -176,9 +176,9 @@ getPutters i = (pw16, pw32, pw64, pwN)
          LittleEndian -> (putWord16le, putWord32le, putWord64le)
          BigEndian    -> (putWord16be, putWord32be, putWord64be)
 
-      pwN = case infoClass i of
-         Class32 -> pw32 . fromIntegral
-         Class64 -> pw64
+      pwN = case infoWordSize i of
+         WordSize32 -> pw32 . fromIntegral
+         WordSize64 -> pw64
 
 -----------------------------------------------------
 -- Header
@@ -224,8 +224,8 @@ putHeader i h = do
 
 
 -- | Header
--- We use 64 bits fields for both 32 and 64 classes. These are truncated or
--- zero-extended in case of 32 bit class
+-- We use 64 bits fields for both 32 and 64 bit formats. These are truncated or
+-- zero-extended in case of 32 bit.
 data Header = Header
    { headerType               :: Type
    , headerArch               :: Arch
