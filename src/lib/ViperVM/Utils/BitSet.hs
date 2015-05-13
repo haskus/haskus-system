@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | A bit set based on Enum to name the bits. Use bitwise operations and
 -- minimal storage.
 --
@@ -27,6 +29,7 @@ import Prelude hiding (null)
 
 import Data.Bits
 import Data.Foldable (foldl')
+import Foreign.Storable
 
 -- | Count trailing zeros. Return Nothing if all the bits are cleared
 myCountTrailingZeros :: (FiniteBits b) => b -> Maybe Int
@@ -40,7 +43,7 @@ myCountTrailingZeros x =
 --
 -- b is the base type (Bits b)
 -- a is the element type (Enum a)
-newtype BitSet b a = BitSet b deriving (Eq,Ord)
+newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable)
 
 instance (Show a, EnumBitSet a, FiniteBits b) => Show (BitSet b a) where
    show b = "fromList " ++ show (toList b)
