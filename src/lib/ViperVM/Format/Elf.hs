@@ -649,6 +649,7 @@ data SectionFlag
    | SectionFlagTLS               -- ^ Section hold thread-local data.
    | SectionFlagOrdered           -- ^ Special ordering requirement
    | SectionFlagExclude           -- ^ Section is excluded unless referenced or allocated (Solaris).
+   | SectionFlagOther Word        -- ^ Other flags
    deriving (Show,Eq)
 
 instance Enum SectionFlag where
@@ -665,6 +666,7 @@ instance Enum SectionFlag where
       SectionFlagTLS                -> 10
       SectionFlagOrdered            -> 30
       SectionFlagExclude            -> 31
+      SectionFlagOther v            -> fromIntegral v
    toEnum x = case x of
       0  -> SectionFlagWritable
       1  -> SectionFlagAlloc
@@ -678,7 +680,7 @@ instance Enum SectionFlag where
       10 -> SectionFlagTLS
       30 -> SectionFlagOrdered
       31 -> SectionFlagExclude
-      _  -> error "Unknwon flag"
+      v  -> SectionFlagOther (fromIntegral v)
 
 instance EnumBitSet SectionFlag
 
