@@ -25,7 +25,7 @@ module ViperVM.Arch.OpenCL.Platform
    )
 where
 
-import ViperVM.Utils.EnumSet (toBitSet)
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -88,7 +88,7 @@ getPlatforms lib = do
 -- | Return the number of available devices
 getPlatformNumDevices :: Platform -> IO Word32
 getPlatformNumDevices pf = alloca $ \numDevices -> do 
-   err <- rawClGetDeviceIDs (cllib pf) (unwrap pf) (toBitSet allDeviceTypes) 0 nullPtr numDevices
+   err <- rawClGetDeviceIDs (cllib pf) (unwrap pf) (BitSet.toBits allDeviceTypes) 0 nullPtr numDevices
    case fromCL err of
       CL_SUCCESS -> peek numDevices
       _ -> return 0
@@ -101,7 +101,7 @@ getPlatformDevices pf = do
    if nbDevices == 0
       then return []
       else allocaArray (fromIntegral nbDevices) $ \devs -> do
-         err <- rawClGetDeviceIDs lib (unwrap pf) (toBitSet allDeviceTypes) nbDevices devs nullPtr
+         err <- rawClGetDeviceIDs lib (unwrap pf) (BitSet.toBits allDeviceTypes) nbDevices devs nullPtr
          case fromCL err of
             CL_SUCCESS -> fmap (Device lib) <$> peekArray (fromIntegral nbDevices) devs
             _ -> return []

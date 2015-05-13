@@ -1,5 +1,6 @@
 module ViperVM.Arch.X86_64.Linux.Network.SendReceive
    ( SendReceiveFlag(..)
+   , SendReceiveFlags
    , sysReceive
    )
 where
@@ -13,7 +14,8 @@ import Data.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet (EnumBitSet, BitSet)
+import qualified ViperVM.Utils.BitSet as BitSet
 
 
 data SendReceiveFlag
@@ -83,14 +85,16 @@ instance Enum SendReceiveFlag where
 
 instance EnumBitSet SendReceiveFlag
 
+type SendReceiveFlags = BitSet Word64 SendReceiveFlag
+
 -- | Receive data from a socket
 --
 -- recvfrom syscall
-sysReceive :: Storable a => FileDescriptor -> Ptr () -> Word64 -> [SendReceiveFlag] -> Maybe a -> SysRet Word64
+sysReceive :: Storable a => FileDescriptor -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> SysRet Word64
 sysReceive (FileDescriptor fd) ptr size flags addr = do
    let
       call :: Ptr a -> Ptr Word64 -> SysRet Word64
-      call add len = onSuccess (syscall6 45 fd ptr size (toBitSet flags :: Word64) add len) fromIntegral
+      call add len = onSuccess (syscall6 45 fd ptr size (BitSet.toBits flags) add len) fromIntegral
 
    case addr of
       Nothing -> call nullPtr nullPtr

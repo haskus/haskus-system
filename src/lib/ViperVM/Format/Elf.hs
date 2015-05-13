@@ -31,7 +31,7 @@ import Data.Binary.Put
 import Control.Monad (when)
 
 import ViperVM.Arch.Common.Endianness
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 import Text.Printf
 

@@ -12,7 +12,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Network.SendReceive
 
-receiveByteString :: FileDescriptor -> Int -> [SendReceiveFlag] -> SysRet ByteString
+receiveByteString :: FileDescriptor -> Int -> SendReceiveFlags -> SysRet ByteString
 receiveByteString fd size flags = do
    b <- mallocBytes size
    ret <- sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)

@@ -13,7 +13,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.FileSystem
 
-withOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> [FilePermission] -> (FileDescriptor -> SysRet a) -> SysRet a
+withOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> (FileDescriptor -> SysRet a) -> SysRet a
 withOpenAt fd path flags perm act = do
    sysOpenAt fd path flags perm >>= \case
       Left err  -> return (Left err)

@@ -14,6 +14,9 @@ import ViperVM.Arch.Linux.Input.Device
 import ViperVM.Arch.Linux.Input.Keys
 import ViperVM.Arch.Linux.Input.LEDs
 import ViperVM.Arch.Linux.Input.Repeat
+import qualified ViperVM.Utils.BitSet as BitSet
+
+
 import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
@@ -30,7 +33,7 @@ main = do
    
    let writeDummyFile = do
          putStrLn "Opening dummy.result file"
-         fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] [PermUserWrite,PermUserRead]
+         fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] (BitSet.fromList [PermUserWrite,PermUserRead])
 
          let str = "Hello Linux!"
          putStrLn (printf "Writing \"%s\" in it" str)
@@ -43,8 +46,8 @@ main = do
          check <$> sysClose fd
 
    putStrLn "Checking for access to dummy.result file"
-   fExist <- sysAccess "dummy.result" []
-   fWrite <- sysAccess "dummy.result" [AccessWrite]
+   fExist <- sysAccess "dummy.result" BitSet.empty
+   fWrite <- sysAccess "dummy.result" (BitSet.fromList [AccessWrite])
    case (fExist,fWrite) of
       (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"
       (Right _, Right _) -> putStrLn " - File exists and is writeable" >> writeDummyFile
@@ -110,9 +113,9 @@ main = do
    print stat
 
 
-   Right perm <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
+   Right perm <- sysSetProcessUMask (BitSet.fromList [PermUserRead,PermUserWrite,PermUserExecute])
    putStrLn $ "Previous umask: " ++ show perm
-   Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
+   Right perm2 <- sysSetProcessUMask (BitSet.fromList [PermUserRead,PermUserWrite,PermUserExecute])
    putStrLn $ "New umask: " ++ show perm2
 
    Right info <- sysSystemInfo
@@ -151,7 +154,7 @@ main = do
    traverse_ printClock clocks
 
    putStrLn "Listing /etc directory:"
-   etcfd <- check <$> sysOpen "/etc" [OpenReadOnly] []
+   etcfd <- check <$> sysOpen "/etc" [OpenReadOnly] BitSet.empty
    entries <- check <$> listDirectory etcfd
    entries2 <- check <$> listDirectory etcfd
    check <$> sysClose etcfd
@@ -170,7 +173,7 @@ main = do
       Right _  -> putStrLn $ "Sleeping succeeded"
 
    putStrLn "Get device info"
-   dev <- check <$> sysOpen "/dev/input/event0" [OpenReadOnly] [PermUserRead]
+   dev <- check <$> sysOpen "/dev/input/event0" [OpenReadOnly] (BitSet.fromList [PermUserRead])
 
    driverVersion <- getDriverVersion sysIoctl dev
    putStrLn $ "Driver version: " ++ show driverVersion

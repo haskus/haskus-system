@@ -10,6 +10,8 @@ import Data.Foldable (forM_)
 import Data.Traversable (forM)
 import qualified ListT
 
+import qualified ViperVM.Utils.BitSet as BitSet
+
 import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.Memory as Generic
 import qualified ViperVM.Arch.Linux.System.Topology as Linux
@@ -57,7 +59,7 @@ loadOpenCLPlatform config hostMems = do
       -- Filter OpenCL devices
       let cpuFilter = if enableOpenCLCPUs config
             then const (return True)
-            else fmap (notElem CL.CL_DEVICE_TYPE_CPU) . CL.getDeviceType'
+            else fmap (`BitSet.notMember` CL.CL_DEVICE_TYPE_CPU) . CL.getDeviceType'
 
       devices <- filterM (filterOpenCLDevices config) =<< filterM cpuFilter =<< CL.getPlatformDevices clpf
 
@@ -74,8 +76,8 @@ loadOpenCLPlatform config hostMems = do
                -- some implementations do not support profiling or out-of-order
                supportedProps <- CL.getDeviceQueueProperties' dev
                let
-                   props      = [CL.CL_QUEUE_OUT_OF_ORDER , CL.CL_QUEUE_PROFILING]
-                   validProps = filter (`elem` supportedProps) props
+                   props      = BitSet.fromList [CL.CL_QUEUE_OUT_OF_ORDER , CL.CL_QUEUE_PROFILING]
+                   validProps = supportedProps `BitSet.intersection` props
                linkQueue <- CL.createCommandQueue' ctx' dev validProps
 
                let memPeer = OpenCLMemory OpenCL.Memory {

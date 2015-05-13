@@ -14,7 +14,7 @@ module ViperVM.Arch.OpenCL.CommandQueue
    )
 where
 
-import ViperVM.Utils.EnumSet (toBitSet)
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
@@ -107,13 +107,13 @@ instance CLConstant CommandQueueInfo where
 
 
 -- | Create a command queue
-createCommandQueue :: Context -> Device -> [CommandQueueProperty] -> CLRet CommandQueue
+createCommandQueue :: Context -> Device -> CommandQueueProperties -> CLRet CommandQueue
 createCommandQueue ctx dev props =
-   fmap (CommandQueue lib) <$> wrapPError (rawClCreateCommandQueue lib (unwrap ctx) (unwrap dev) (toBitSet props))
+   fmap (CommandQueue lib) <$> wrapPError (rawClCreateCommandQueue lib (unwrap ctx) (unwrap dev) (BitSet.toBits props))
    where lib = cllib ctx
 
 -- | Create a command queue (throw an exception on error)
-createCommandQueue' :: Context -> Device -> [CommandQueueProperty] -> IO CommandQueue
+createCommandQueue' :: Context -> Device -> CommandQueueProperties -> IO CommandQueue
 createCommandQueue' ctx dev props = toException <$> createCommandQueue ctx dev props
 
 -- | Release a command queue

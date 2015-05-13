@@ -4,6 +4,7 @@
 -- | Notifications on file system (poll, select, inotify, etc.)
 module ViperVM.Arch.X86_64.Linux.FileSystem.Notification
    ( PollEvent(..)
+   , PollEventSet
    , PollEntry(..)
    , PollResult(..)
    , sysPoll
@@ -18,7 +19,7 @@ import Data.Word (Word64, Word16)
 import Data.Int (Int64,Int32)
 import GHC.Generics (Generic)
 
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet (EnumBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
@@ -50,6 +51,7 @@ data PollEvent
    | PollWriteNormal
    | PollReadBand
    | PollWriteBand
+   deriving (Show,Eq)
 
 instance Enum PollEvent where
    fromEnum x = case x of
@@ -84,12 +86,17 @@ instance Enum PollEvent where
 
 instance EnumBitSet PollEvent
 
-data PollEntry = PollEntry FileDescriptor [PollEvent]
+-- | A set of polling events
+type PollEventSet = BitSet Word16 PollEvent
+
+-- | A polling entry
+data PollEntry = PollEntry FileDescriptor PollEventSet deriving (Show,Eq)
 
 -- | Result of a call to poll
 data PollResult
    = PollTimeOut              -- ^ Time out
    | PollEvents [PollEntry]   -- ^ Events returned
+   deriving (Show,Eq)
 
 -- | Poll a set of file descriptors
 --
@@ -100,13 +107,13 @@ sysPoll entries blocking timeout = do
    let 
       toPollStruct (PollEntry (FileDescriptor fd) evs) = PollStruct
          { pollFD             = fromIntegral fd -- poll allows negative FDs to indicate that the entry must be skipped, we don't
-         , pollEvents         = toBitSet evs
+         , pollEvents         = toBits evs
          , pollReturnedEvents = 0
          }
       fromPollStruct (PollStruct fd _ evs) = 
          if evs == 0
             then Nothing
-            else Just $ PollEntry (FileDescriptor (fromIntegral fd)) (fromBitSet evs)
+            else Just $ PollEntry (FileDescriptor (fromIntegral fd)) (fromBits evs)
       fds = fmap toPollStruct entries
       nfds = fromIntegral (length fds) :: Word64
       timeout' = if not blocking

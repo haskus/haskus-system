@@ -11,7 +11,7 @@ where
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.X86_64.Linux.Process (ProcessID(..))
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 import Data.Word
 import Data.Int

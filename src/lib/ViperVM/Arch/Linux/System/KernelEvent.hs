@@ -8,6 +8,7 @@ module ViperVM.Arch.Linux.System.KernelEvent
    )
 where
 
+import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.X86_64.Linux.Network
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -51,7 +52,7 @@ createKernelEventSocket = runEitherT $ do
 -- | Block until a kernel event is received
 receiveKernelEvent :: FileDescriptor -> SysRet KernelEvent
 receiveKernelEvent fd = runEitherT $ do
-   msg <- parseKernelEvent <$> EitherT (receiveByteString fd 2048 [])
+   msg <- parseKernelEvent <$> EitherT (receiveByteString fd 2048 BitSet.empty)
    case msg of
       Nothing -> EitherT (receiveKernelEvent fd)
       Just m  -> return m

@@ -17,18 +17,19 @@ import Data.Int
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.C.String
-import Data.Bits
+
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.FileSystem
 
-sysCreateDirectory :: Maybe FileDescriptor -> FilePath -> [FilePermission] -> Bool -> SysRet ()
+sysCreateDirectory :: Maybe FileDescriptor -> FilePath -> FilePermissions -> Bool -> SysRet ()
 sysCreateDirectory fd path perm sticky = do
    let
-      opt = if sticky then [FileOptSticky] else []
-      mode = fromFilePermission perm .|. fromFileOptions opt :: Word64
+      opt = if sticky then BitSet.fromList [FileOptSticky] else BitSet.empty
+      mode = makeMode perm opt
 
    withCString path $ \path' ->
       case fd of

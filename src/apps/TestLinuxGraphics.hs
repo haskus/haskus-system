@@ -16,6 +16,7 @@ import ViperVM.Arch.Linux.System.SysFS
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.X86_64.Linux.Memory
 import ViperVM.Arch.Linux.ErrorCode
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
@@ -44,7 +45,7 @@ main = do
          Right v  -> return (Right v))
 
    ret <- runEitherT $ do
-      sysfs <- try "Load SysFS" $ fmap SysFS <$> sysOpen "/sys" [OpenReadOnly] []
+      sysfs <- try "Load SysFS" $ fmap SysFS <$> sysOpen "/sys" [OpenReadOnly] BitSet.empty
 
       cards <- try "Load graphic cards" $ loadGraphicCards sysfs
 
@@ -53,7 +54,7 @@ main = do
          print cards
 
       -- Open device
-      fd <- try "Open card" $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
+      fd <- try "Open card" $ sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] BitSet.empty
 
       card <- try "Read card info" $ getCard ioctl fd
 

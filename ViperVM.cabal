@@ -136,7 +136,7 @@ library
 
 
     ViperVM.Utils.Hash
-    ViperVM.Utils.EnumSet
+    ViperVM.Utils.BitSet
 
     ViperVM.STM.TMap
     ViperVM.STM.TSet

@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.Linux.Memory
    , sysMemSync
    , sysMemInCore
    , MemLockFlag(..)
+   , MemLockFlags
    , sysMemLock
    , sysMemLockAll
    , sysMemUnlock
@@ -25,11 +26,13 @@ import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
+import qualified ViperVM.Utils.BitSet as BitSet
+import ViperVM.Utils.BitSet (BitSet, EnumBitSet)
+
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.X86_64.Linux.Utils (toSet)
-import ViperVM.Utils.EnumSet (EnumBitSet, toBitSet)
 
 -- | Set program break location (i.e. data segement size)
 -- 
@@ -243,9 +246,10 @@ data MemLockFlag
 
 instance EnumBitSet MemLockFlag
 
+type MemLockFlags = BitSet Word64 MemLockFlag
 
-sysMemLockAll :: [MemLockFlag] -> SysRet ()
-sysMemLockAll flags = onSuccess (syscall1 151 (toBitSet flags :: Word64)) (const ())
+sysMemLockAll :: MemLockFlags -> SysRet ()
+sysMemLockAll flags = onSuccess (syscall1 151 (BitSet.toBits flags)) (const ())
 
 sysMemUnlockAll :: SysRet ()
 sysMemUnlockAll = onSuccess (syscall0 152) (const ())

@@ -23,6 +23,7 @@ import Foreign.Ptr (Ptr,plusPtr)
 import Text.Printf
 import System.IO.Unsafe
 
+import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Common.Endianness
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Region
@@ -109,7 +110,7 @@ allocateBuffer size mem = do
    let 
       ctx = clMemContext mem
       dev = clMemDevice mem
-      flags = []
+      flags = BitSet.empty
    buf <- CL.createBuffer dev ctx flags (fromIntegral size)
    
    return $ case buf of

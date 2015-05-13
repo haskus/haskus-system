@@ -2,13 +2,15 @@
 {-# LANGUAGE RecordWildCards #-}
 module ViperVM.Arch.X86_64.Linux.FileSystem
    ( FilePermission(..)
-   , fromFilePermission
+   , FilePermissions
    , FileType(..)
    , FileOption(..)
-   , fromFileOptions
+   , FileOptions
+   , makeMode
    , OpenFlag(..)
    , SeekWhence(..)
    , AccessMode(..)
+   , AccessModes
    , FileLock(..)
    , Device(..)
    , Stat(..)
@@ -63,7 +65,9 @@ import Data.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
 
 import GHC.Generics (Generic)
 
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
+import qualified ViperVM.Utils.BitSet as BitSet
+
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.X86_64.Linux.Syscall
@@ -73,24 +77,24 @@ import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
 
 
 -- | Open a file
-sysOpen :: FilePath -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
+sysOpen :: FilePath -> [OpenFlag] -> FilePermissions -> SysRet FileDescriptor
 sysOpen path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall3 2 path' (toSet flags :: Int) (toBitSet mode :: Int))
+      onSuccess (syscall3 2 path' (toSet flags :: Int) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
 -- | Open a file
-sysOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> [FilePermission] -> SysRet FileDescriptor
+sysOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> SysRet FileDescriptor
 sysOpenAt (FileDescriptor fd) path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall4 257 fd path' (toSet flags :: Int) (toBitSet mode :: Int))
+      onSuccess (syscall4 257 fd path' (toSet flags :: Int) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
-sysCreateCString :: CString -> [FilePermission] -> SysRet FileDescriptor
+sysCreateCString :: CString -> FilePermissions -> SysRet FileDescriptor
 sysCreateCString path mode = 
-   onSuccess (syscall2 85 path (toBitSet mode :: Int)) (FileDescriptor . fromIntegral)
+   onSuccess (syscall2 85 path (BitSet.toBits mode)) (FileDescriptor . fromIntegral)
 
-sysCreate :: String -> [FilePermission] -> SysRet FileDescriptor
+sysCreate :: String -> FilePermissions -> SysRet FileDescriptor
 sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 
 -- | Close a file descriptor
@@ -120,6 +124,7 @@ data OpenFlag =
    | OpenSynchronous
    | OpenTmpFile
    | OpenTruncate
+   deriving (Show,Eq)
 
 instance Enum OpenFlag where
    fromEnum x = case x of
@@ -181,6 +186,8 @@ data FilePermission
 
 instance EnumBitSet FilePermission
 
+type FilePermissions = BitSet Word FilePermission
+
 data SeekWhence = 
      SeekSet 
    | SeekCurrent 
@@ -215,9 +222,11 @@ data AccessMode
 
 instance EnumBitSet AccessMode
 
-sysAccess :: FilePath -> [AccessMode] -> SysRet ()
+type AccessModes = BitSet Word64 AccessMode
+
+sysAccess :: FilePath -> AccessModes -> SysRet ()
 sysAccess path mode = withCString path $ \path' ->
-   onSuccess (syscall2 21 path' (toBitSet mode :: Int64)) (const ())
+   onSuccess (syscall2 21 path' (BitSet.toBits mode)) (const ())
 
 
 sysDup :: FileDescriptor -> SysRet FileDescriptor
@@ -299,13 +308,13 @@ sysUnlink :: FilePath -> SysRet ()
 sysUnlink path = withCString path $ \path' ->
    onSuccess (syscall1 87 path') (const ())
 
-sysChangePermissionPath :: FilePath -> [FilePermission] -> SysRet ()
+sysChangePermissionPath :: FilePath -> FilePermissions -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   onSuccess (syscall2 90 path' (toBitSet mode :: Int)) (const ())
+   onSuccess (syscall2 90 path' (BitSet.toBits mode)) (const ())
 
-sysChangePermission :: FileDescriptor -> [FilePermission] -> SysRet ()
+sysChangePermission :: FileDescriptor -> FilePermissions -> SysRet ()
 sysChangePermission (FileDescriptor fd) mode = 
-   onSuccess (syscall2 91 fd (toBitSet mode :: Int)) (const ())
+   onSuccess (syscall2 91 fd (BitSet.toBits mode)) (const ())
 
 
 -- | Avoid duplication in *chown syscalls
@@ -332,9 +341,9 @@ sysChangeOwnership :: FileDescriptor -> Maybe UserID -> Maybe GroupID -> SysRet 
 sysChangeOwnership (FileDescriptor fd) = chownEx 93 fd
 
 -- | umask
-sysSetProcessUMask :: [FilePermission] -> SysRet [FilePermission]
+sysSetProcessUMask :: FilePermissions -> SysRet FilePermissions
 sysSetProcessUMask mode =
-   onSuccess (syscall1 95 (toBitSet mode :: Int)) fromBitSet
+   onSuccess (syscall1 95 (BitSet.toBits mode)) (fromBits . fromIntegral)
 
 -- | File type
 data FileType
@@ -367,8 +376,8 @@ instance Enum FileType where
       _  -> error $ "Invalid file type: " ++ show x
 
 -- | Read file type from Stat "mode" field 
-toFileType :: (Num a, Bits a, Integral a) => a -> FileType
-toFileType x = toEnum (fromIntegral ((x `shiftR` 12) .&. 0x0F))
+modeFileType :: (Num a, Bits a, Integral a) => a -> FileType
+modeFileType x = toEnum (fromIntegral ((x `shiftR` 12) .&. 0x0F))
 
 -- | Create file type value for mode
 fromFileType :: (Bits a, Num a) => FileType -> a
@@ -383,19 +392,19 @@ data FileOption
 
 instance EnumBitSet FileOption
 
--- | Read file options from Stat "mode" field 
-toFileOptions :: (Num a, FiniteBits a) => a -> [FileOption]
-toFileOptions x = fromBitSet ((x `shiftR` 9) .&. 0x07)
+type FileOptions = BitSet Word64 FileOption
 
-fromFileOptions :: (Num a, Bits a) => [FileOption] -> a
-fromFileOptions x = toBitSet x `shiftL` 9
+-- | Read file options from Stat "mode" field 
+modeFileOptions :: (Integral a, FiniteBits a) => a -> FileOptions
+modeFileOptions x = BitSet.fromBits ((fromIntegral x `shiftR` 9) .&. 0x07)
+
+makeMode :: FilePermissions -> FileOptions -> Word64
+makeMode perm opt = fromIntegral (BitSet.toBits perm) 
+                .|. (fromIntegral (BitSet.toBits opt)  `shiftL` 9)
 
 -- | Read file permission from Stat "mode" field 
-toFilePermission :: (Num a, FiniteBits a) => a -> [FilePermission]
-toFilePermission x = fromBitSet (x .&. 0x01FF)
-
-fromFilePermission :: (Num a, Bits a) => [FilePermission] -> a
-fromFilePermission x = toBitSet x
+modeFilePermission :: (Integral a, FiniteBits a) => a -> FilePermissions
+modeFilePermission x = fromBits (fromIntegral x .&. 0x01FF)
 
 -- | Device identifier
 data Device = Device
@@ -463,8 +472,8 @@ data Stat = Stat
    , statLinkCount         :: Word64
    , statMode              :: Word32
    , statFileType          :: FileType
-   , statFileOptions       :: [FileOption]
-   , statFilePermissions   :: [FilePermission]
+   , statFileOptions       :: FileOptions
+   , statFilePermissions   :: FilePermissions
    , statUID               :: Word32
    , statGID               :: Word32
    , statDevNum            :: Device
@@ -485,9 +494,9 @@ toStat (StatStruct {..}) =
       { statDevice            = statDevice''
       , statInode             = statInode'
       , statMode              = statMode'
-      , statFileType          = toFileType statMode'
-      , statFileOptions       = toFileOptions statMode'
-      , statFilePermissions   = toFilePermission statMode'
+      , statFileType          = modeFileType statMode'
+      , statFileOptions       = modeFileOptions statMode'
+      , statFilePermissions   = modeFilePermission statMode'
       , statLinkCount         = statLinkCount'
       , statUID               = statUID'
       , statGID               = statGID'
@@ -531,10 +540,10 @@ sysSyncFS (FileDescriptor fd) = onSuccess (syscall1 306 fd) (const ())
 -- | Create a special file
 --
 -- mknod syscall
-sysCreateSpecialFile :: FilePath -> FileType -> [FilePermission] -> Maybe Device -> SysRet ()
+sysCreateSpecialFile :: FilePath -> FileType -> FilePermissions -> Maybe Device -> SysRet ()
 sysCreateSpecialFile path typ perm dev = do
    let 
-      mode = fromFilePermission perm .|. fromFileType typ :: Word64
+      mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
       dev' = fromMaybe (Device 0 0) dev
 
    withCString path $ \path' ->
@@ -544,10 +553,10 @@ sysCreateSpecialFile path typ perm dev = do
 -- | Create a special file
 --
 -- mknodat syscall
-sysCreateSpecialFileAt :: FileDescriptor -> FilePath -> FileType -> [FilePermission] -> Maybe Device -> SysRet ()
+sysCreateSpecialFileAt :: FileDescriptor -> FilePath -> FileType -> FilePermissions -> Maybe Device -> SysRet ()
 sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
    let 
-      mode = fromFilePermission perm .|. fromFileType typ :: Word64
+      mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
       dev' = fromMaybe (Device 0 0) dev
 
    withCString path $ \path' ->

@@ -27,7 +27,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 type Vec4 = Vec (S (S (S (S Z))))
 

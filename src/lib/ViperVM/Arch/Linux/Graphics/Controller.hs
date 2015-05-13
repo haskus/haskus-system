@@ -28,7 +28,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 -- | Video controller
 --

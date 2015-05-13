@@ -1,4 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+
+import qualified ViperVM.Utils.BitSet as BitSet
+
 import ViperVM.Arch.Linux.Power
 import ViperVM.Arch.X86_64.Linux.FileSystem
 import ViperVM.Arch.Linux.ErrorCode
@@ -25,7 +28,7 @@ main = do
       sys   <- sysTry "Initialize System" $ systemInit "/system"
 
       fd    <- sysTry "Open graphic card descriptor" $
-                  sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] []
+                  sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] BitSet.empty
       card  <- sysTry "Get card information from descriptor" $
                   getCard ioctl fd
       cap   <- sysTry "Get GenericBuffer capability" $

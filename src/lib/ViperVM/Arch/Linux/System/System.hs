@@ -5,6 +5,7 @@ module ViperVM.Arch.Linux.System.System
    )
 where
 
+import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.System.SysFS
@@ -29,7 +30,7 @@ systemInit :: FilePath -> SysRet System
 systemInit path = do
 
    let 
-      createDir p = sysCreateDirectory Nothing p [PermUserRead,PermUserWrite,PermUserExecute] False
+      createDir p = sysCreateDirectory Nothing p (BitSet.fromList [PermUserRead,PermUserWrite,PermUserExecute]) False
       systemPath = path </> "sys"
       devicePath = path </> "dev"
 
@@ -43,10 +44,10 @@ systemInit path = do
       -- mount sysfs
       sysTry "Create system directory" $ createDir systemPath
       sysTry "Mount sysfs" $ mountSysFS sysMount systemPath
-      sysfs <- sysTry "Open sysfs directory" $ sysOpen systemPath [OpenReadOnly] []
+      sysfs <- sysTry "Open sysfs directory" $ sysOpen systemPath [OpenReadOnly] BitSet.empty
 
       -- create device directory
       sysTry "Create device directory" $ createDir devicePath
-      devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] []
+      devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
       return (System devfd (SysFS sysfs))

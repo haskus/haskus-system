@@ -10,6 +10,7 @@ import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.ErrorCode
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import Prelude hiding (init,tail)
 import Control.Monad.Trans.Either
@@ -38,7 +39,7 @@ data GraphicCard = GraphicCard
 loadGraphicCards :: SysFS -> SysRet [GraphicCard]
 loadGraphicCards sysfs = do
    -- open drm directory
-   withOpenAt (sysfsDescriptor sysfs) "class/drm" [OpenReadOnly] [] $ \fd -> runEitherT $ do
+   withOpenAt (sysfsDescriptor sysfs) "class/drm" [OpenReadOnly] BitSet.empty $ \fd -> runEitherT $ do
 
       -- detect cardN directories
       -- FIXME: the fd is not closed in case of error
@@ -48,7 +49,7 @@ loadGraphicCards sysfs = do
       forM cardDirs $ \dir -> do
          -- read device major and minor in "dev" file
          -- content format is: MMM:mmm\n (where M is major and m is minor)
-         EitherT $ withOpenAt fd (dir </> "dev") [OpenReadOnly] [] $ \devfd -> runEitherT $ do
+         EitherT $ withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty $ \devfd -> runEitherT $ do
             content <- EitherT $ readByteString devfd 16 -- 16 bytes should be enough
             let 
                f = read . unpack

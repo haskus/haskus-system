@@ -13,7 +13,7 @@ import Data.Word
 import Data.Int
 import GHC.Generics (Generic)
 
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 data CursorMode
    = CursorModeBO

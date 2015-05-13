@@ -1,6 +1,8 @@
 module ViperVM.Arch.Linux.FileSystem.Mount
    ( MountFlag(..)
+   , MountFlags
    , UnmountFlag(..)
+   , UnmountFlags
    , mountSysFS
    , mountDevFS
    , mountProcFS
@@ -9,8 +11,10 @@ module ViperVM.Arch.Linux.FileSystem.Mount
 where
 
 import Foreign.Ptr (Ptr,nullPtr)
+import Data.Word
 
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
+import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 
 data MountFlag
@@ -39,6 +43,7 @@ data MountFlag
    | MountStrictAccessTime       -- ^ Always perform atime updates
    | MountActive
    | MountNoUser
+   deriving (Show,Eq)
 
 instance Enum MountFlag where
    fromEnum x = case x of
@@ -98,31 +103,35 @@ instance Enum MountFlag where
 
 instance EnumBitSet MountFlag
 
+type MountFlags = BitSet Word64 MountFlag
+
 data UnmountFlag
    = UnmountForce       -- ^ Force unmounting
    | UnmountDetach      -- ^ Just detach from the tree
    | UnmountExpire      -- ^ Mark for expiry
    | UnmountDontFollow  -- ^ Don't follow symlink on unmount
-   deriving (Enum)
+   deriving (Show,Eq,Enum)
 
 instance EnumBitSet UnmountFlag
 
+type UnmountFlags = BitSet Word64 UnmountFlag
+
 
 -- | Type of the low-level Linux "mount" function
-type MountCall = String -> String -> String -> [MountFlag] -> Ptr () -> SysRet ()
+type MountCall = String -> String -> String -> MountFlags -> Ptr () -> SysRet ()
 
 -- | Mount SysFS at the given location
 mountSysFS :: MountCall -> FilePath -> SysRet ()
-mountSysFS mount path = mount "none" path "sysfs" [] nullPtr
+mountSysFS mount path = mount "none" path "sysfs" BitSet.empty nullPtr
 
 -- | Mount DevFS at the given location
 mountDevFS :: MountCall -> FilePath -> SysRet ()
-mountDevFS mount path = mount "none" path "devtmpfs" [] nullPtr
+mountDevFS mount path = mount "none" path "devtmpfs" BitSet.empty nullPtr
 
 -- | Mount ProcFS at the given location
 mountProcFS :: MountCall -> FilePath -> SysRet ()
-mountProcFS mount path = mount "none" path "proc" [] nullPtr
+mountProcFS mount path = mount "none" path "proc" BitSet.empty nullPtr
 
 -- | Mount TmpFS at the given location
 mountTmpFS :: MountCall -> FilePath -> SysRet ()
-mountTmpFS mount path = mount "none" path "tmpfs" [] nullPtr
+mountTmpFS mount path = mount "none" path "tmpfs" BitSet.empty nullPtr

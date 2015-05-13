@@ -33,7 +33,7 @@ import Foreign.C.Types (CChar)
 import Data.Vector.Fixed.Cont (S,Z)
 import Data.Vector.Fixed.Storable (Vec)
 
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 type N32 = -- 32 
    S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (

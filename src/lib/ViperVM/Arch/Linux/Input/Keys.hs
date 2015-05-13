@@ -22,7 +22,7 @@ import GHC.Generics (Generic)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Utils.EnumSet
+import ViperVM.Utils.BitSet
 
 import Data.Vector.Fixed.Cont (S,Z)
 import Data.Vector.Fixed.Storable (Vec)
