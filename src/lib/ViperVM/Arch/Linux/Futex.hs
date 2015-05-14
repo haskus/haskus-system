@@ -1,10 +1,10 @@
 module ViperVM.Arch.Linux.Futex
    ( FutexOp(..)
    , sysFutex
-   , sysFutexWait
-   , sysFutexWake
-   , sysFutexRequeue
-   , sysFutexCmpRequeue
+   , futexWait
+   , futexWake
+   , futexRequeue
+   , futexCompareRequeue
    )
 where
 
@@ -31,15 +31,15 @@ sysFutex uaddr op val timeout uaddr2 val3 =
    onSuccess (syscall_futex uaddr (fromEnum op) val timeout uaddr2 val3) id
 
 -- | Atomically check that addr contains val and sleep until it is wakened up or until the timeout expires
-sysFutexWait :: Ptr Int64 -> Int64 -> Maybe TimeSpec -> SysRet ()
-sysFutexWait addr val timeout =
+futexWait :: Ptr Int64 -> Int64 -> Maybe TimeSpec -> SysRet ()
+futexWait addr val timeout =
    withMaybeOrNull timeout $ \timeout' ->
       void <$> sysFutex addr FutexWait val timeout' nullPtr 0
 
 -- | Wake `count` processes waiting on the futex
 --  Return the number of processes woken up
-sysFutexWake :: Ptr Int64 -> Int64 -> SysRet Int64
-sysFutexWake addr count =
+futexWake :: Ptr Int64 -> Int64 -> SysRet Int64
+futexWake addr count =
    sysFutex addr FutexWake count nullPtr nullPtr 0
 
 
@@ -47,8 +47,8 @@ sysFutexWake addr count =
 -- and requeue the other ones on the second futex.
 --
 -- Return the number of processes woken up
-sysFutexRequeue :: Ptr Int64 -> Int64 -> Ptr Int64 -> SysRet Int64
-sysFutexRequeue addr count addr2 =
+futexRequeue :: Ptr Int64 -> Int64 -> Ptr Int64 -> SysRet Int64
+futexRequeue addr count addr2 =
    sysFutex addr FutexRequeue count nullPtr addr2 0
 
 -- | Atomically compare the first futex with `val, then
@@ -56,6 +56,6 @@ sysFutexRequeue addr count addr2 =
 -- and requeue the other ones on the second futex.
 --
 -- Return the number of processes woken up
-sysFutexCmpRequeue :: Ptr Int64 -> Int64 -> Int64 -> Ptr Int64 -> SysRet Int64
-sysFutexCmpRequeue addr val count addr2 =
+futexCompareRequeue :: Ptr Int64 -> Int64 -> Int64 -> Ptr Int64 -> SysRet Int64
+futexCompareRequeue addr val count addr2 =
    sysFutex addr FutexCmpRequeue count nullPtr addr2 val

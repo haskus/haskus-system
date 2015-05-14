@@ -1,6 +1,6 @@
 module ViperVM.Arch.Linux.Info
    ( SystemInfo(..)
-   , sysSystemInfo
+   , systemInfo
    )
 where
 
@@ -21,8 +21,8 @@ data SystemInfo = SystemInfo {
 } deriving (Show)
 
 -- | "uname" syscall
-sysSystemInfo :: SysRet SystemInfo
-sysSystemInfo = go (5 * fieldSize)
+systemInfo :: SysRet SystemInfo
+systemInfo = go (5 * fieldSize)
    where
       fieldSize = 65
       go sz = do

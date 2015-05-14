@@ -120,7 +120,7 @@ main = do
    Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "New umask: " ++ show perm2
 
-   Right info <- sysSystemInfo
+   Right info <- systemInfo
    print info
 
    let 

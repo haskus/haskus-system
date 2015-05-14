@@ -1,5 +1,5 @@
 module ViperVM.Arch.Linux.Pipe
-   ( sysPipe
+   ( createPipe
    )
 where
 
@@ -12,8 +12,8 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
 
 -- | Create a pipe
-sysPipe :: SysRet (FileDescriptor, FileDescriptor)
-sysPipe =
+createPipe :: SysRet (FileDescriptor, FileDescriptor)
+createPipe =
    allocaArray 2 $ \ptr ->
       onSuccessIO (syscall_pipe (ptr :: Ptr Word)) 
          (const ((,)

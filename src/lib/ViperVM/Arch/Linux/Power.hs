@@ -1,6 +1,14 @@
 module ViperVM.Arch.Linux.Power
    ( PowerCommand(..)
    , sysPower
+   , disableRebootKeys
+   , enableRebootKeys
+   , halt
+   , executeLoadedKernel
+   , powerOff
+   , restart
+   , restartWithCommand
+   , hibernate
    )
 where
 
@@ -42,3 +50,35 @@ sysPower cmd = case cmd of
       magic1 = 0xfee1dead :: Word64
       magic2 = 0x28121969 :: Word64
       cmd' = fromPowerCommand cmd
+
+-- | Disable the reboot keys
+disableRebootKeys :: SysRet ()
+disableRebootKeys = sysPower PowerDisableRebootKeys
+
+-- | Enable the reboot keys
+enableRebootKeys :: SysRet ()
+enableRebootKeys = sysPower PowerEnableRebootKeys
+
+-- | Halt the computer
+halt :: SysRet ()
+halt = sysPower PowerHalt
+
+-- | Execute a kernel previously loaded
+executeLoadedKernel :: SysRet ()
+executeLoadedKernel = sysPower PowerKernelExec
+
+-- | Power-off the computer
+powerOff :: SysRet ()
+powerOff = sysPower PowerOff
+
+-- | Restart the computer
+restart :: SysRet ()
+restart = sysPower PowerRestart
+
+-- | Restart the system with the given command
+restartWithCommand :: String -> SysRet ()
+restartWithCommand = sysPower . PowerRestartCommand
+
+-- | Hibernate on disk
+hibernate :: SysRet ()
+hibernate = sysPower PowerHibernate
