@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
-module ViperVM.Arch.X86_64.Linux.Time
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+module ViperVM.Arch.Linux.Time
    ( TimeSpec(..)
    , TimeVal(..)
    , Clock(..)
@@ -23,7 +24,7 @@ import Foreign.Ptr (Ptr)
 import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 
 data TimeSpec = TimeSpec {
    tsSeconds      :: Int64,
@@ -94,19 +95,19 @@ instance Enum Clock where
 sysClockGetTime :: Clock -> SysRet TimeSpec
 sysClockGetTime clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      onSuccessIO (syscall2 228 (fromEnum clk) t) (const $ peek t)
+      onSuccessIO (syscall_clock_gettime (fromEnum clk) t) (const $ peek t)
 
 -- | Set clock time
 sysClockSetTime :: Clock -> TimeSpec -> SysRet ()
 sysClockSetTime clk time =
    with time $ \(t :: Ptr TimeSpec) ->
-      onSuccess (syscall2 227 (fromEnum clk) t) (const ())
+      onSuccess (syscall_clock_settime (fromEnum clk) t) (const ())
 
 -- | Retrieve clock resolution
 sysClockGetResolution :: Clock -> SysRet TimeSpec
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      onSuccessIO (syscall2 229 (fromEnum clk) t) (const $ peek t)
+      onSuccessIO (syscall_clock_getres (fromEnum clk) t) (const $ peek t)
 
 data SleepResult
    = WokenUp TimeSpec   -- ^ Woken up by a signal, returns the remaining time to sleep
@@ -120,7 +121,7 @@ sysNanoSleep :: TimeSpec -> SysRet SleepResult
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
-         ret <- syscall2 35 ts' rem'
+         ret <- syscall_nanosleep ts' rem'
          case defaultCheck ret of
             Nothing    -> return (Right CompleteSleep)
             Just EINTR -> Right . WokenUp <$> peek rem'

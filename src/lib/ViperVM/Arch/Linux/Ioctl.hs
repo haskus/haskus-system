@@ -47,8 +47,6 @@ import qualified Data.ByteString as BS
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 
-import ViperVM.Arch.X86_64.Linux.Syscall
-
 type CommandType   = Word8
 type CommandNumber = Word8
 type CommandSize   = Word16 -- is really 14 bits
@@ -113,6 +111,10 @@ paramSize x | sz .&. 0xC000 == 0 = fromIntegral sz
             | otherwise          = error "Invalid size (> 14 bits)"
    where sz = sizeOf x
 
+-- | Helper to convert a Ptr into a Int64
+ptrToArg :: Ptr a -> Int64
+ptrToArg = fromIntegral . ptrToIntPtr
+
 -- | We abstract over the ioctl function
 type IOCTL = FileDescriptor -> Int64 -> Int64 -> IO Int64
 
@@ -129,7 +131,7 @@ ioctlReadWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int6
 ioctlReadWithRet ioctl typ nr test fd = do
    alloca $ \(ptr :: Ptr a) -> do
       let cmd = Command typ nr Read (paramSize (undefined :: a))
-      ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
       case test ret of
          Just err -> return (Left err)
          Nothing  -> Right . (ret,) <$> peek ptr
@@ -140,7 +142,7 @@ ioctlReadWithRet ioctl typ nr test fd = do
 ioctlReadBytes :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Word16 -> Ptr a -> FileDescriptor -> SysRet Int64
 ioctlReadBytes ioctl typ nr test n ptr fd = do
    let cmd = Command typ nr Read n
-   ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
    case test ret of
       Just err -> return (Left err)
       Nothing  -> return (Right ret)
@@ -180,7 +182,7 @@ ioctlWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> S
 ioctlWrite ioctl typ nr test fd arg = do
    with arg $ \ptr -> do
       let cmd = Command typ nr Write (paramSize arg)
-      ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
       test ret
 
 -- | Build a ReadWrite IOCTL
@@ -196,7 +198,7 @@ ioctlReadWriteWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> 
 ioctlReadWriteWithRet ioctl typ nr test fd arg = do
    with arg $ \ptr -> do
       let cmd = Command typ nr ReadWrite (paramSize arg)
-      ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg ptr)
+      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
       case test ret of
          Just err -> return (Left err)
          Nothing  -> Right . (ret,) <$> peek ptr
@@ -207,7 +209,7 @@ ioctlReadWriteWithRet ioctl typ nr test fd arg = do
 ioctlSignal :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> SysRet b) -> FileDescriptor -> SysRet b
 ioctlSignal ioctl typ nr test fd = do
    let cmd = Command typ nr None 0
-   ret <- ioctl fd (toArg $ encodeCommand cmd) (toArg nullPtr)
+   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg nullPtr)
    test ret
 
 -- | Call the IOCTL, restarting if interrupted

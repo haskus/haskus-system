@@ -3,6 +3,8 @@ module ViperVM.Arch.Linux.FileSystem.Mount
    , MountFlags
    , UnmountFlag(..)
    , UnmountFlags
+   , sysMount
+   , sysUnmount
    , mountSysFS
    , mountDevFS
    , mountProcFS
@@ -10,12 +12,14 @@ module ViperVM.Arch.Linux.FileSystem.Mount
    )
 where
 
+import Foreign.C.String (withCString)
 import Foreign.Ptr (Ptr,nullPtr)
 import Data.Word
 
 import ViperVM.Utils.BitSet
 import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Syscalls
 
 data MountFlag
    = MountReadOnly               -- ^ Mount read-only
@@ -116,6 +120,20 @@ instance EnumBitSet UnmountFlag
 
 type UnmountFlags = BitSet Word64 UnmountFlag
 
+-- | Mount a file system
+sysMount :: String -> String -> String -> MountFlags -> Ptr () -> SysRet ()
+sysMount source target fstype flags dat = do
+   withCString source $ \source' ->
+      withCString target $ \target' ->
+         withCString fstype $ \fstype' ->
+            onSuccess (syscall_mount source' target' fstype' (BitSet.toBits flags) dat) (const ())
+
+
+-- | Unmount a file system
+sysUnmount :: String -> UnmountFlags -> SysRet ()
+sysUnmount target flags =
+   withCString target $ \target' ->
+      onSuccess (syscall_umount2 target' (BitSet.toBits flags)) (const ())
 
 -- | Type of the low-level Linux "mount" function
 type MountCall = String -> String -> String -> MountFlags -> Ptr () -> SysRet ()

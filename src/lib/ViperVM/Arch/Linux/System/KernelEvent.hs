@@ -9,7 +9,7 @@ module ViperVM.Arch.Linux.System.KernelEvent
 where
 
 import qualified ViperVM.Utils.BitSet as BitSet
-import ViperVM.Arch.X86_64.Linux.Network
+import ViperVM.Arch.Linux.Network
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Network.SendReceive

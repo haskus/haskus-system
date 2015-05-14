@@ -1,4 +1,4 @@
-module ViperVM.Arch.X86_64.Linux.Info
+module ViperVM.Arch.Linux.Info
    ( SystemInfo(..)
    , sysSystemInfo
    )
@@ -10,7 +10,7 @@ import Foreign.C.String
 import Control.Monad
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 
 data SystemInfo = SystemInfo {
    systemName :: String,
@@ -27,7 +27,7 @@ sysSystemInfo = go (5 * fieldSize)
       fieldSize = 65
       go sz = do
          ret <- allocaArray sz $ \ptr ->
-            onSuccessIO (syscall1 63 (ptr :: CString)) $ \_ -> do
+            onSuccessIO (syscall_uname ptr) $ \_ -> do
                [nam,nodeName,rel,ver,mach] <- forM [0..4] $ \n -> peekCString (ptr `plusPtr` (n*fieldSize))
                return $ SystemInfo nam nodeName rel ver mach
          case ret of

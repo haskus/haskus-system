@@ -1,4 +1,4 @@
-module ViperVM.Arch.X86_64.Linux.Trace
+module ViperVM.Arch.Linux.Trace
    ( TraceRequest(..)
    , TraceFlag(..)
    , TraceOption(..)
@@ -8,9 +8,9 @@ module ViperVM.Arch.X86_64.Linux.Trace
    )
 where
 
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.Process (ProcessID(..))
+import ViperVM.Arch.Linux.Process (ProcessID(..))
 import ViperVM.Utils.BitSet
 
 import Data.Word
@@ -204,4 +204,4 @@ instance EnumBitSet PeekSigInfoFlags
    
 -- | Trace a process
 sysTrace :: TraceRequest -> ProcessID -> Ptr () -> Ptr () -> SysRet Int64
-sysTrace req (ProcessID pid) addr dat = onSuccessId (syscall4 101 (fromEnum req) pid addr dat)
+sysTrace req (ProcessID pid) addr dat = onSuccessId (syscall_ptrace (fromEnum req) pid addr dat)

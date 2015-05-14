@@ -13,8 +13,8 @@ import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.System.Graphics
 import ViperVM.Arch.Linux.System.SysFS
 
-import ViperVM.Arch.X86_64.Linux.FileSystem
-import ViperVM.Arch.X86_64.Linux.Memory
+import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.Memory
 import ViperVM.Arch.Linux.ErrorCode
 import qualified ViperVM.Utils.BitSet as BitSet
 

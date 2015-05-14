@@ -3,13 +3,13 @@
 
 module Main where
 
-import ViperVM.Arch.X86_64.Linux.FileSystem
-import ViperVM.Arch.X86_64.Linux.FileSystem.ReadWrite
+import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.Directory
-import ViperVM.Arch.X86_64.Linux.Process
-import ViperVM.Arch.X86_64.Linux.Memory
-import ViperVM.Arch.X86_64.Linux.Info
-import ViperVM.Arch.X86_64.Linux.Time
+import ViperVM.Arch.Linux.Process
+import ViperVM.Arch.Linux.Memory
+import ViperVM.Arch.Linux.Info
+import ViperVM.Arch.Linux.Time
 --import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Input.Device

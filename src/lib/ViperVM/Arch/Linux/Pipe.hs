@@ -1,4 +1,4 @@
-module ViperVM.Arch.X86_64.Linux.Pipe
+module ViperVM.Arch.Linux.Pipe
    ( sysPipe
    )
 where
@@ -9,13 +9,13 @@ import Foreign.Storable (peekElemOff)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 
 -- | Create a pipe
 sysPipe :: SysRet (FileDescriptor, FileDescriptor)
 sysPipe =
    allocaArray 2 $ \ptr ->
-      onSuccessIO (syscall1 22 (ptr :: Ptr Word)) 
+      onSuccessIO (syscall_pipe (ptr :: Ptr Word)) 
          (const ((,)
             <$> (FileDescriptor <$> peekElemOff ptr 0)
             <*> (FileDescriptor <$> peekElemOff ptr 1)))

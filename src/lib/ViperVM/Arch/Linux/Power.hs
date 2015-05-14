@@ -9,7 +9,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import Foreign.C.String (withCString)
 import Foreign.Ptr (nullPtr)
 
-import ViperVM.Arch.X86_64.Linux.Power
+import ViperVM.Arch.Linux.Syscalls
 
 data PowerCommand
    = PowerDisableRebootKeys

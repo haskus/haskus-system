@@ -32,7 +32,7 @@ import GHC.Generics (Generic)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Arch.X86_64.Linux.Time (Clock)
+import ViperVM.Arch.Linux.Time (Clock)
 
 -- | Protocol version
 protocolVersion :: Int

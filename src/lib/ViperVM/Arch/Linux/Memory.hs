@@ -1,4 +1,4 @@
-module ViperVM.Arch.X86_64.Linux.Memory
+module ViperVM.Arch.Linux.Memory
    ( sysBrk
    , sysBrkGet
    , sysBrkSet
@@ -31,8 +31,8 @@ import ViperVM.Utils.BitSet (BitSet, EnumBitSet)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.Utils (toSet)
+import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Arch.Linux.Utils (toSet)
 
 -- | Set program break location (i.e. data segement size)
 -- 
@@ -41,7 +41,7 @@ import ViperVM.Arch.X86_64.Linux.Utils (toSet)
 -- region we allocate, etc.  
 -- On success, the returned value is the new program break address (i.e. the given parameter).
 sysBrk :: Word64 -> IO Word64
-sysBrk addr = fromIntegral <$> syscall1 12 addr
+sysBrk addr = fromIntegral <$> syscall_brk addr
 
 -- | Return current program break
 -- We call sysBrk with an invalid value
@@ -129,18 +129,18 @@ sysMemMap addr len prot flags source = do
       prot' = toSet prot :: Int64
       addr' = fromMaybe nullPtr addr
    
-   onSuccess (syscall6 9 addr' len prot' flags' fd off) (intPtrToPtr . fromIntegral)
+   onSuccess (syscall_mmap addr' len prot' flags' fd off) (intPtrToPtr . fromIntegral)
 
 -- | Unmap memory
 sysMemUnmap :: Ptr () -> Word64 -> SysRet ()
 sysMemUnmap addr len =
-   onSuccess (syscall2 11 addr len) (const ())
+   onSuccess (syscall_munmap addr len) (const ())
 
 -- | Set protection of a region of memory
 sysMemProtect :: Ptr () -> Word64 -> [MemProtect] -> SysRet ()
 sysMemProtect addr len prot = do
    let prot' = toSet prot :: Int64
-   onSuccess (syscall3 10 addr len prot') (const ())
+   onSuccess (syscall_mprotect addr len prot') (const ())
 
 
 data MemAdvice =
@@ -202,7 +202,7 @@ instance Enum MemAdvice where
 
 sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> SysRet ()
 sysMemAdvise addr len adv = 
-   onSuccess (syscall3 28 addr len (fromEnum adv)) 
+   onSuccess (syscall_madvise addr len (fromEnum adv)) 
       (const ())
 
 data MemSync =
@@ -221,7 +221,7 @@ instance Enum MemSync where
 
 sysMemSync :: Ptr () -> Word64 -> [MemSync] -> SysRet ()
 sysMemSync addr len flag = 
-   onSuccess (syscall3 26 addr len (toSet flag :: Int64))
+   onSuccess (syscall_msync addr len (toSet flag :: Int64))
       (const ())
 
 sysMemInCore :: Ptr () -> Word64 -> SysRet [Bool]
@@ -229,15 +229,15 @@ sysMemInCore addr len = do
    -- On x86-64, page size is at least 4k
    let n = fromIntegral $ (len + 4095) `div` 4096
    allocaArray n $ \arr ->
-      onSuccessIO (syscall3 27 addr len (arr :: Ptr Word8))
+      onSuccessIO (syscall_mincore addr len (arr :: Ptr Word8))
          (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
 
 
 sysMemLock :: Ptr () -> Word64 -> SysRet ()
-sysMemLock addr len = onSuccess (syscall2 149 addr len) (const ())
+sysMemLock addr len = onSuccess (syscall_mlock addr len) (const ())
 
 sysMemUnlock :: Ptr () -> Word64 -> SysRet ()
-sysMemUnlock addr len = onSuccess (syscall2 150 addr len) (const ())
+sysMemUnlock addr len = onSuccess (syscall_munlock addr len) (const ())
 
 data MemLockFlag
    = LockCurrentPages
@@ -249,7 +249,7 @@ instance EnumBitSet MemLockFlag
 type MemLockFlags = BitSet Word64 MemLockFlag
 
 sysMemLockAll :: MemLockFlags -> SysRet ()
-sysMemLockAll flags = onSuccess (syscall1 151 (BitSet.toBits flags)) (const ())
+sysMemLockAll flags = onSuccess (syscall_mlockall (BitSet.toBits flags)) (const ())
 
 sysMemUnlockAll :: SysRet ()
-sysMemUnlockAll = onSuccess (syscall0 152) (const ())
+sysMemUnlockAll = onSuccess syscall_munlockall (const ())

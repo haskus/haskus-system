@@ -9,10 +9,9 @@ import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.System.SysFS
+import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
-import ViperVM.Arch.X86_64.Linux.FileSystem
-import ViperVM.Arch.X86_64.Linux.FileSystem.Directory
-import ViperVM.Arch.X86_64.Linux.FileSystem.Mount
 
 import System.FilePath
 import Control.Monad (void)

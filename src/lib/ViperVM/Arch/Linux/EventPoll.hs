@@ -1,11 +1,11 @@
-module ViperVM.Arch.X86_64.Linux.EventPoll
+module ViperVM.Arch.Linux.EventPoll
    ( EventPollFlag(..)
    , sysEventPollCreate
    )
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileDescriptor
 
 import Data.Bits ((.|.))
@@ -24,4 +24,4 @@ fromFlags = foldl' (.|.) 0 . fmap fromFlag
 
 sysEventPollCreate :: [EventPollFlag] -> SysRet FileDescriptor
 sysEventPollCreate flags =
-   onSuccess (syscall1 291 (fromFlags flags)) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_epoll_create1 (fromFlags flags)) (FileDescriptor . fromIntegral)

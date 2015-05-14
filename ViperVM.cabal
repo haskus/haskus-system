@@ -24,34 +24,31 @@ library
     ViperVM.Arch.X86_64.Cpuid
 
     ViperVM.Arch.X86_64.Linux.Syscall
-    ViperVM.Arch.X86_64.Linux.EventPoll
-    ViperVM.Arch.X86_64.Linux.FileSystem
-    ViperVM.Arch.X86_64.Linux.FileSystem.ReadWrite
-    ViperVM.Arch.X86_64.Linux.FileSystem.Notification
-    ViperVM.Arch.X86_64.Linux.FileSystem.Mount
-    ViperVM.Arch.X86_64.Linux.FileSystem.Directory
-    ViperVM.Arch.X86_64.Linux.Process
-    ViperVM.Arch.X86_64.Linux.Power
-    ViperVM.Arch.X86_64.Linux.Pipe
-    ViperVM.Arch.X86_64.Linux.Memory
-    ViperVM.Arch.X86_64.Linux.Signal
-    ViperVM.Arch.X86_64.Linux.Network
-    ViperVM.Arch.X86_64.Linux.Network.SendReceive
-    ViperVM.Arch.X86_64.Linux.Info
-    ViperVM.Arch.X86_64.Linux.Futex
-    ViperVM.Arch.X86_64.Linux.Time
-    ViperVM.Arch.X86_64.Linux.Utils
-    ViperVM.Arch.X86_64.Linux.Trace
+    ViperVM.Arch.X86_64.Linux.Syscalls
 
     ViperVM.Arch.Linux.ErrorCode
+    ViperVM.Arch.Linux.EventPoll
     ViperVM.Arch.Linux.FileDescriptor
-    ViperVM.Arch.Linux.FileSystem.Mount
-    ViperVM.Arch.Linux.FileSystem.ReadWrite
+    ViperVM.Arch.Linux.FileSystem
     ViperVM.Arch.Linux.FileSystem.Directory
+    ViperVM.Arch.Linux.FileSystem.Mount
+    ViperVM.Arch.Linux.FileSystem.Notification
     ViperVM.Arch.Linux.FileSystem.OpenClose
-    ViperVM.Arch.Linux.Network.SendReceive
-    ViperVM.Arch.Linux.Power
+    ViperVM.Arch.Linux.FileSystem.ReadWrite
+    ViperVM.Arch.Linux.Futex
+    ViperVM.Arch.Linux.Info
     ViperVM.Arch.Linux.Ioctl
+    ViperVM.Arch.Linux.Memory
+    ViperVM.Arch.Linux.Network
+    ViperVM.Arch.Linux.Network.SendReceive
+    ViperVM.Arch.Linux.Pipe
+    ViperVM.Arch.Linux.Power
+    ViperVM.Arch.Linux.Process
+    ViperVM.Arch.Linux.Signal
+    ViperVM.Arch.Linux.Syscalls
+    ViperVM.Arch.Linux.Time
+    ViperVM.Arch.Linux.Trace
+    ViperVM.Arch.Linux.Utils
 
     ViperVM.Arch.Linux.Input.Absolute
     ViperVM.Arch.Linux.Input.Device

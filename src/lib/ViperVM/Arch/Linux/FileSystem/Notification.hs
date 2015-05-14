@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 -- | Notifications on file system (poll, select, inotify, etc.)
-module ViperVM.Arch.X86_64.Linux.FileSystem.Notification
+module ViperVM.Arch.Linux.FileSystem.Notification
    ( PollEvent(..)
    , PollEventSet
    , PollEntry(..)
@@ -22,7 +22,7 @@ import GHC.Generics (Generic)
 import ViperVM.Utils.BitSet (EnumBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 
 data PollStruct = PollStruct
    { pollFD             :: Int32
@@ -123,7 +123,7 @@ sysPoll entries blocking timeout = do
             Just x  -> abs x
    
    withArray fds $ \fds' -> do
-      onSuccessIO (syscall3 7 fds' nfds timeout') $ \case
+      onSuccessIO (syscall_poll fds' nfds timeout') $ \case
          0 -> return PollTimeOut
          _ -> do
             retfds <- peekArray (length fds) fds'

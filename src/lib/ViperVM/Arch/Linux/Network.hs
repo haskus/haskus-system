@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
-module ViperVM.Arch.X86_64.Linux.Network
+module ViperVM.Arch.Linux.Network
    ( sysShutdown
    , sysSendFile
    , sysSendFileWithOffset
@@ -21,7 +21,7 @@ module ViperVM.Arch.X86_64.Linux.Network
    )
 where
 
-import Foreign.Ptr (Ptr, nullPtr)
+import Foreign.Ptr (nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Array (peekArray,allocaArray)
 import Foreign.Storable
@@ -33,7 +33,7 @@ import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Syscalls
 
 data ShutFlag
    = ShutRead
@@ -44,18 +44,18 @@ data ShutFlag
 -- | Shut down part of a full-duplex connection
 sysShutdown :: FileDescriptor -> ShutFlag -> SysRet ()
 sysShutdown (FileDescriptor fd) flag =
-   onSuccess (syscall2 48 fd (fromEnum flag)) (const ())
+   onSuccess (syscall_shutdown fd (fromEnum flag)) (const ())
 
 -- | Call sendfile using implicit file cursor for input
 sysSendFile :: FileDescriptor -> FileDescriptor -> Word64 -> SysRet Word64
 sysSendFile (FileDescriptor outfd) (FileDescriptor infd) count =
-   onSuccess (syscall4 40 outfd infd nullPtr count) fromIntegral
+   onSuccess (syscall_sendfile outfd infd nullPtr count) fromIntegral
 
 -- | Call sendFile using explicit input offset, returns new offset
 sysSendFileWithOffset :: FileDescriptor -> FileDescriptor -> Word64 -> Word64 -> SysRet (Word64,Word64)
 sysSendFileWithOffset (FileDescriptor outfd) (FileDescriptor infd) offset count =
    with offset $ \off ->
-      onSuccessIO (syscall4 40 outfd infd off count) $ \x -> do
+      onSuccessIO (syscall_sendfile outfd infd off count) $ \x -> do
          newOff <- peek off
          return (fromIntegral x, newOff)
 
@@ -159,7 +159,7 @@ sysSocket' typ protocol subprotocol opts =
       f = fromIntegral . fromEnum
       typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
    in
-   onSuccess (syscall3 41 (fromEnum protocol) typ' subprotocol) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_socket (fromEnum protocol) typ' subprotocol) (FileDescriptor . fromIntegral)
 
 -- | Create a socket pair (low-level API)
 --
@@ -173,8 +173,8 @@ sysSocketPair' typ protocol subprotocol opts =
       toTuple [x,y] = (x,y)
       toTuple _     = error "Invalid tuple"
    in
-   allocaArray 2 $ \(ptr :: Ptr Int) -> onSuccessIO (syscall4 53 (fromEnum protocol) typ' subprotocol ptr)
-      (const $ toTuple . fmap (FileDescriptor . fromIntegral) <$> peekArray 2 ptr)
+   allocaArray 2 $ \ptr -> onSuccessIO (syscall_socketpair (fromEnum protocol) typ' subprotocol ptr)
+      (const $ toTuple . fmap FileDescriptor <$> peekArray 2 ptr)
 
 -- | IP type
 data IPType
@@ -280,13 +280,13 @@ sysSocketPair typ opts =
 sysBind :: Storable a => FileDescriptor -> a -> SysRet ()
 sysBind (FileDescriptor fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall3 49 fd addr' (sizeOf addr)) (const ())
+      onSuccess (syscall_bind fd addr' (sizeOf addr)) (const ())
 
 -- | Connect a socket
 sysConnect :: Storable a => FileDescriptor -> a -> SysRet ()
 sysConnect (FileDescriptor fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall3 42 fd addr' (sizeOf addr)) (const ())
+      onSuccess (syscall_connect fd addr' (sizeOf addr)) (const ())
 
 -- | Accept a connection on a socket
 --
@@ -300,14 +300,14 @@ sysAccept (FileDescriptor fd) addr opts =
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      onSuccess (syscall4 288 fd addr' (sizeOf addr) opts') (FileDescriptor . fromIntegral)
+      onSuccess (syscall_accept4 fd addr' (sizeOf addr) opts') (FileDescriptor . fromIntegral)
 
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
 sysListen :: FileDescriptor -> Word64 -> SysRet ()
 sysListen (FileDescriptor fd) backlog =
-   onSuccess (syscall2 50 fd backlog) (const ())
+   onSuccess (syscall_listen fd backlog) (const ())
 
 
 -- | Netlink socket binding

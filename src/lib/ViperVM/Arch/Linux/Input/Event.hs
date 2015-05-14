@@ -13,7 +13,7 @@ import Foreign.Ptr (Ptr,castPtr)
 import Foreign.Storable
 import Foreign.CStorable
 
-import ViperVM.Arch.X86_64.Linux.Time (TimeVal)
+import ViperVM.Arch.Linux.Time (TimeVal)
 
 -- | Input event
 data Event = Event

@@ -3,7 +3,7 @@
 import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Arch.Linux.Power
-import ViperVM.Arch.X86_64.Linux.FileSystem
+import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.System.System
 

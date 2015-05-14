@@ -1,4 +1,4 @@
-module ViperVM.Arch.X86_64.Linux.Futex
+module ViperVM.Arch.Linux.Futex
    ( FutexOp(..)
    , sysFutex
    , sysFutexWait
@@ -13,9 +13,9 @@ import Data.Int
 import Control.Monad (void)
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.Time
-import ViperVM.Arch.X86_64.Linux.Utils
+import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Arch.Linux.Time
+import ViperVM.Arch.Linux.Utils
 
 data FutexOp =
      FutexWait
@@ -28,7 +28,7 @@ data FutexOp =
 -- | All the Futex API uses this `futex` syscall
 sysFutex :: Ptr Int64 -> FutexOp -> Int64 -> Ptr TimeSpec -> Ptr Int64 -> Int64 -> SysRet Int64
 sysFutex uaddr op val timeout uaddr2 val3 =
-   onSuccess (syscall6 202 uaddr (fromEnum op) val timeout uaddr2 val3) id
+   onSuccess (syscall_futex uaddr (fromEnum op) val timeout uaddr2 val3) id
 
 -- | Atomically check that addr contains val and sleep until it is wakened up or until the timeout expires
 sysFutexWait :: Ptr Int64 -> Int64 -> Maybe TimeSpec -> SysRet ()

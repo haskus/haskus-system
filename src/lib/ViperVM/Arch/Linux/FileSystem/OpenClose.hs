@@ -11,7 +11,7 @@ import Control.Monad (void)
 
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.FileSystem
+import ViperVM.Arch.Linux.FileSystem
 
 withOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> (FileDescriptor -> SysRet a) -> SysRet a
 withOpenAt fd path flags perm act = do

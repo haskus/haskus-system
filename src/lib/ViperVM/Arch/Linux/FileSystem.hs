@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-module ViperVM.Arch.X86_64.Linux.FileSystem
+module ViperVM.Arch.Linux.FileSystem
    ( FilePermission(..)
    , FilePermissions
    , FileType(..)
@@ -70,29 +70,28 @@ import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.X86_64.Linux.Utils (toSet)
-import ViperVM.Arch.X86_64.Linux.Time (TimeSpec)
-import ViperVM.Arch.X86_64.Linux.Process (UserID(..), GroupID(..))
-
+import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Arch.Linux.Utils (toSet)
+import ViperVM.Arch.Linux.Time (TimeSpec)
+import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
 
 -- | Open a file
 sysOpen :: FilePath -> [OpenFlag] -> FilePermissions -> SysRet FileDescriptor
 sysOpen path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall3 2 path' (toSet flags :: Int) (BitSet.toBits mode))
+      onSuccess (syscall_open path' (toSet flags :: Int) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
 -- | Open a file
 sysOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> SysRet FileDescriptor
 sysOpenAt (FileDescriptor fd) path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall4 257 fd path' (toSet flags :: Int) (BitSet.toBits mode))
+      onSuccess (syscall_openat fd path' (toSet flags :: Int) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
 sysCreateCString :: CString -> FilePermissions -> SysRet FileDescriptor
 sysCreateCString path mode = 
-   onSuccess (syscall2 85 path (BitSet.toBits mode)) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_creat path (BitSet.toBits mode)) (FileDescriptor . fromIntegral)
 
 sysCreate :: String -> FilePermissions -> SysRet FileDescriptor
 sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
@@ -100,7 +99,7 @@ sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 -- | Close a file descriptor
 sysClose :: FileDescriptor -> SysRet ()
 sysClose (FileDescriptor fd) =
-   onSuccess (syscall1 3 fd) (const ())
+   onSuccess (syscall_close fd) (const ())
 
 
 -- | Flags for "open" syscall
@@ -199,7 +198,7 @@ data SeekWhence =
 -- | Reposition read/write file offset, return the new position
 sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
 sysSeek (FileDescriptor fd) off whence =
-   onSuccess (syscall3 8 fd off (fromEnum whence)) id
+   onSuccess (syscall_lseek fd off (fromEnum whence)) id
 
 -- | Reposition read/write file offset
 sysSeek' :: FileDescriptor -> Int64 -> SeekWhence -> SysRet ()
@@ -208,7 +207,7 @@ sysSeek' fd off whence = fmap (const ()) <$> (sysSeek fd off whence)
 -- | Send a custom command to a device
 sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64
 sysIoctl (FileDescriptor fd) cmd arg =
-   syscall3 16 fd cmd arg
+   syscall_ioctl fd cmd arg
 
 
 -- | Access mode
@@ -226,30 +225,30 @@ type AccessModes = BitSet Word64 AccessMode
 
 sysAccess :: FilePath -> AccessModes -> SysRet ()
 sysAccess path mode = withCString path $ \path' ->
-   onSuccess (syscall2 21 path' (BitSet.toBits mode)) (const ())
+   onSuccess (syscall_access path' (BitSet.toBits mode)) (const ())
 
 
 sysDup :: FileDescriptor -> SysRet FileDescriptor
 sysDup (FileDescriptor oldfd) = 
-   onSuccess (syscall1 32 oldfd) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_dup oldfd) (FileDescriptor . fromIntegral)
 
 sysDup2 :: FileDescriptor -> FileDescriptor -> SysRet FileDescriptor
 sysDup2 (FileDescriptor oldfd) (FileDescriptor newfd) = 
-   onSuccess (syscall2 33 oldfd newfd) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_dup2 oldfd newfd) (FileDescriptor . fromIntegral)
 
 sysSetCurrentDirectoryPath :: FilePath -> SysRet ()
 sysSetCurrentDirectoryPath path = withCString path $ \path' ->
-   onSuccess (syscall1 80 path') (const ())
+   onSuccess (syscall_chdir path') (const ())
 
 sysSetCurrentDirectory :: FileDescriptor -> SysRet ()
 sysSetCurrentDirectory (FileDescriptor fd) = 
-   onSuccess (syscall1 81 fd) (const ())
+   onSuccess (syscall_fchdir fd) (const ())
 
 sysGetCurrentDirectory :: SysRet FilePath
 sysGetCurrentDirectory = go 128
    where
       go n = allocaArray n $ \ptr -> do
-         ret <- onSuccessIO (syscall2 79 (ptr :: CString) n) (const (peekCString ptr))
+         ret <- onSuccessIO (syscall_getcwd ptr (fromIntegral n)) (const (peekCString ptr))
          case ret of
             Left ERANGE -> go (2 * n)
             _ -> return ret
@@ -258,7 +257,7 @@ sysRename :: FilePath -> FilePath -> SysRet ()
 sysRename oldPath newPath =
    withCString oldPath $ \old' ->
       withCString newPath $ \new' ->
-         onSuccess (syscall2 82 old' new') (const ())
+         onSuccess (syscall_rename old' new') (const ())
 
 data FileLock =
      SharedLock
@@ -275,75 +274,75 @@ sysFileLock (FileDescriptor fd) mode nonBlocking = do
 
       nb = if nonBlocking then 4 else 0
 
-   onSuccess (syscall2 73 fd (mode' .|. nb :: Int64)) (const ())
+   onSuccess (syscall_flock fd (mode' .|. nb :: Int64)) (const ())
 
 
 sysFileSync :: FileDescriptor -> SysRet ()
-sysFileSync (FileDescriptor fd) = onSuccess (syscall1 74 fd) (const ())
+sysFileSync (FileDescriptor fd) = onSuccess (syscall_fsync fd) (const ())
 
 sysFileDataSync :: FileDescriptor -> SysRet ()
-sysFileDataSync (FileDescriptor fd) = onSuccess (syscall1 75 fd) (const ())
+sysFileDataSync (FileDescriptor fd) = onSuccess (syscall_fdatasync fd) (const ())
 
 sysTruncatePath :: FilePath -> Word64 -> SysRet ()
 sysTruncatePath path size = withCString path $ \path' ->
-   onSuccess (syscall2 76 path' size) (const ())
+   onSuccess (syscall_truncate path' size) (const ())
 
 sysTruncate :: FileDescriptor -> Word64 -> SysRet ()
 sysTruncate (FileDescriptor fd) size =
-   onSuccess (syscall2 77 fd size) (const ())
+   onSuccess (syscall_ftruncate fd size) (const ())
 
 sysLink :: FilePath -> FilePath -> SysRet ()
 sysLink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         onSuccess (syscall2 86 src' dest') (const ())
+         onSuccess (syscall_link src' dest') (const ())
 
 sysSymlink :: FilePath -> FilePath -> SysRet ()
 sysSymlink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         onSuccess (syscall2 88 src' dest') (const ())
+         onSuccess (syscall_symlink src' dest') (const ())
 
 sysUnlink :: FilePath -> SysRet ()
 sysUnlink path = withCString path $ \path' ->
-   onSuccess (syscall1 87 path') (const ())
+   onSuccess (syscall_unlink path') (const ())
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   onSuccess (syscall2 90 path' (BitSet.toBits mode)) (const ())
+   onSuccess (syscall_chmod path' (BitSet.toBits mode)) (const ())
 
 sysChangePermission :: FileDescriptor -> FilePermissions -> SysRet ()
 sysChangePermission (FileDescriptor fd) mode = 
-   onSuccess (syscall2 91 fd (BitSet.toBits mode)) (const ())
+   onSuccess (syscall_fchmod fd (BitSet.toBits mode)) (const ())
 
 
 -- | Avoid duplication in *chown syscalls
-chownEx :: Arg x => Int64 -> x -> Maybe UserID -> Maybe GroupID -> SysRet ()
-chownEx n a uid gid = do
+chownEx :: (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> SysRet ()
+chownEx sc a uid gid = do
    let
       fuid (UserID x) = x
       fgid (GroupID x) = x
       uid' = maybe (-1) fuid uid
       gid' = maybe (-1) fgid gid
-   onSuccess (syscall3 n a uid' gid') (const ())
+   onSuccess (sc a uid' gid') (const ())
 
 
 -- | chown
 sysChangeOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx 92 p uid gid)
+sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx syscall_chown p uid gid)
 
 -- | lchown
 sysChangeLinkOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx 94 p uid gid)
+sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx syscall_lchown p uid gid)
 
 -- | fchown
 sysChangeOwnership :: FileDescriptor -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeOwnership (FileDescriptor fd) = chownEx 93 fd
+sysChangeOwnership (FileDescriptor fd) = chownEx syscall_fchown fd
 
 -- | umask
 sysSetProcessUMask :: FilePermissions -> SysRet FilePermissions
 sysSetProcessUMask mode =
-   onSuccess (syscall1 95 (BitSet.toBits mode)) (fromBits . fromIntegral)
+   onSuccess (syscall_umask (BitSet.toBits mode)) (fromBits . fromIntegral)
 
 -- | File type
 data FileType
@@ -513,29 +512,29 @@ toStat (StatStruct {..}) =
 --
 -- If the path targets a symbolic link and followLink is false, then returned
 -- information are about the link itself
-sysFileStat :: String -> Bool -> SysRet Stat
+sysFileStat :: FilePath -> Bool -> SysRet Stat
 sysFileStat path followLink = do
    putStrLn $ "Size of stat: " ++ show (cSizeOf (undefined :: StatStruct))
    withCString path $ \path' ->
       allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
          let
             -- select between stat and lstat syscalls
-            code = if followLink then 4 else 6
+            sc = if followLink then syscall_stat else syscall_lstat
          in
-         onSuccessIO (syscall2 code path' s) (const (toStat <$> peek s))
+         onSuccessIO (sc path' s) (const (toStat <$> peek s))
 
 -- | Stat on file descriptor
 sysFileDescriptorStat :: FileDescriptor -> SysRet Stat
 sysFileDescriptorStat (FileDescriptor fd) =
    allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
-      onSuccessIO (syscall2 5 fd s) (const (toStat <$> peek s))
+      onSuccessIO (syscall_fstat fd s) (const (toStat <$> peek s))
 
 
 sysSync :: SysRet ()
-sysSync = onSuccess (syscall0 162) (const ())
+sysSync = onSuccess syscall_sync (const ())
 
 sysSyncFS :: FileDescriptor -> SysRet ()
-sysSyncFS (FileDescriptor fd) = onSuccess (syscall1 306 fd) (const ())
+sysSyncFS (FileDescriptor fd) = onSuccess (syscall_syncfs fd) (const ())
 
 -- | Create a special file
 --
@@ -548,7 +547,7 @@ sysCreateSpecialFile path typ perm dev = do
 
    withCString path $ \path' ->
       with dev' $ \dev'' ->
-         onSuccess (syscall3 133 path' mode dev'') (const ())
+         onSuccess (syscall_mknod path' mode dev'') (const ())
 
 -- | Create a special file
 --
@@ -561,4 +560,4 @@ sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
 
    withCString path $ \path' ->
       with dev' $ \dev'' ->
-         onSuccess (syscall4 259 fd path' mode dev'') (const ())
+         onSuccess (syscall_mknodat fd path' mode dev'') (const ())

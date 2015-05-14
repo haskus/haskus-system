@@ -1,4 +1,4 @@
-module ViperVM.Arch.X86_64.Linux.Utils (
+module ViperVM.Arch.Linux.Utils (
    toSet, withMaybeOrNull
 ) where
 
