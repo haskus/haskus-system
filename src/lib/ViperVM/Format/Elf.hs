@@ -18,6 +18,7 @@ module ViperVM.Format.Elf
    -- ** Section
    , Section (..)
    , SectionFlag (..)
+   , SectionType (..)
    , SectionFlags
    , getSection
    , putSection
@@ -574,7 +575,7 @@ data SectionType
    | SectionTypeGNU_verneed             -- ^ Version needs section.
    | SectionTypeGNU_versym              -- ^ Version symbol table.
    | SectionTypeCustom Word64
-   deriving (Show)
+   deriving (Show, Eq)
 
 instance Enum SectionType where
    fromEnum x = case x of
