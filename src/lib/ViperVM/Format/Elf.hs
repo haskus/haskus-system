@@ -43,7 +43,7 @@ import Text.Printf
 
 data Info = Info
    { infoWordSize   :: WordSize
-   , infoEncoding   :: Endianness
+   , infoEndianness :: Endianness
    , infoVersion    :: Word8
    , infoOSABI      :: OSABI
    , infoABIVersion :: Word8
@@ -83,7 +83,7 @@ putInfo i = do
       WordSize32 -> putWord8 1
       WordSize64 -> putWord8 2
 
-   case infoEncoding i of
+   case infoEndianness i of
       LittleEndian -> putWord8 1
       BigEndian    -> putWord8 2
 
@@ -161,7 +161,7 @@ instance Enum OSABI where
 getGetters :: Info -> (Get Word16, Get Word32, Get Word64, Get Word64)
 getGetters i = (gw16, gw32, gw64, gwN)
    where
-      (gw16,gw32,gw64) = case infoEncoding i of
+      (gw16,gw32,gw64) = case infoEndianness i of
          LittleEndian -> (getWord16le, getWord32le, getWord64le)
          BigEndian    -> (getWord16be, getWord32be, getWord64be)
 
@@ -172,7 +172,7 @@ getGetters i = (gw16, gw32, gw64, gwN)
 getPutters :: Info -> (Word16 -> Put, Word32 -> Put, Word64 -> Put, Word64 -> Put)
 getPutters i = (pw16, pw32, pw64, pwN)
    where
-      (pw16,pw32,pw64) = case infoEncoding i of
+      (pw16,pw32,pw64) = case infoEndianness i of
          LittleEndian -> (putWord16le, putWord32le, putWord64le)
          BigEndian    -> (putWord16be, putWord32be, putWord64be)
 
