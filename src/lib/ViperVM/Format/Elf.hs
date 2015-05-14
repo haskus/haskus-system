@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module ViperVM.Format.Elf
-   ( module X
+   ( Elf (..)
+   , parseElf
+   , readElf
    -- ** Pre-Header
    , Info (..)
    , WordSize (..)
@@ -25,8 +27,8 @@ module ViperVM.Format.Elf
    )
 where
 
-import Data.Elf as X
-
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as LBS
 import Data.Word
 import Data.Binary.Get
 import Data.Binary.Put
@@ -37,6 +39,26 @@ import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
 import qualified ViperVM.Utils.BitSet as BitSet
 
 import Text.Printf
+
+-- | Structure representing a ELF file
+data Elf = Elf
+   { elfInfo     :: Info        -- ^ Pre-header informations
+   , elfHeader   :: Header      -- ^ Header
+   , elfSections :: [Section]   -- ^ Sections
+   } deriving (Show)
+
+-- | Parse the ELF format
+parseElf :: ByteString -> Elf
+parseElf bs = Elf info hdr sections
+   where
+      info     = runGet getInfo bs
+      hdr      = runGet (skip 16 >> getHeader info) bs
+      sections = parseSectionTable bs hdr info
+
+-- | Read a ELF file
+readElf :: FilePath -> IO Elf
+readElf path = parseElf <$> LBS.readFile path
+
 
 -----------------------------------------------------
 -- Info
@@ -514,6 +536,16 @@ data Section = Section
    , sectionAlignment :: Word64
    , sectionEntrySize :: Word64
    } deriving (Show)
+
+parseSectionTable :: ByteString -> Header -> Info -> [Section]
+parseSectionTable bs h info = fmap f offs
+   where
+      f o  = runGet (getSection info) (LBS.drop o bs')
+      off  = fromIntegral $ headerSectionTableOffset h
+      bs'  = LBS.drop off bs
+      sz   = fromIntegral $ headerSectionEntrySize h
+      cnt  = fromIntegral $ headerSectionEntryCount h
+      offs = [ sz * i | i <- [0..cnt-1]]
 
 getSection :: Info -> Get Section
 getSection i = do

@@ -188,8 +188,7 @@ library
     binary-bits         == 0.6,
     utf8-string         == 1.*,
     pqueue              == 1.2.*,
-    split               == 0.2.*,
-    elf                 == 0.27
+    split               == 0.2.*
 
   build-tools: 
 
