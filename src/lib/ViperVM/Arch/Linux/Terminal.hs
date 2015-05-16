@@ -6,6 +6,7 @@ module ViperVM.Arch.Linux.Terminal
    , stderr
    , writeStr
    , writeStrLn
+   , readChar
    )
    where
 
@@ -36,3 +37,7 @@ writeStr fd = writeByteString fd . BS.pack
 -- file descriptor
 writeStrLn :: FileDescriptor -> String -> SysRet Word64
 writeStrLn fd = writeByteString fd . BS.pack . (++ "\n")
+
+-- | Read a single character
+readChar :: FileDescriptor -> SysRet Char
+readChar fd = fmap (head . BS.unpack) <$> readByteString fd 1
