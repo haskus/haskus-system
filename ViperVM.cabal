@@ -28,6 +28,7 @@ library
 
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll
+    ViperVM.Arch.Linux.Terminal
     ViperVM.Arch.Linux.FileDescriptor
     ViperVM.Arch.Linux.FileSystem
     ViperVM.Arch.Linux.FileSystem.Directory

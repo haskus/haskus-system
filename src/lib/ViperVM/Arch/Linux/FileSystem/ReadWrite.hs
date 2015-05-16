@@ -114,6 +114,7 @@ sysWriteManyWithOffset (FileDescriptor fd) offset bufs =
    withArray (fmap toVec bufs) $ \bufs' ->
       onSuccess (syscall_pwritev fd bufs' count ol oh) fromIntegral
 
+-- | Read n bytes in a bytestring
 readByteString :: FileDescriptor -> Int -> SysRet ByteString
 readByteString fd size = do
    b <- mallocBytes size
@@ -125,6 +126,7 @@ readByteString fd size = do
             sz' = fromIntegral sz
             b'  = castPtr b
 
+-- | Write a bytestring
 writeByteString :: FileDescriptor -> ByteString -> SysRet Word64
 writeByteString fd bs = unsafeUseAsCStringLen bs $ \(ptr,len) ->
    sysWrite fd ptr (fromIntegral len)
