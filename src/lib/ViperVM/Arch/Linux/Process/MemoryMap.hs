@@ -4,6 +4,7 @@ module ViperVM.Arch.Linux.Process.MemoryMap
    , readMemoryMap
    , parseMemoryMap
    , memoryMapToBytestring
+   , memoryMapToLazyBytestring
    )
 where
 
@@ -14,6 +15,7 @@ import Control.Monad (void)
 import Data.Word (Word8,Word64)
 import Data.Int (Int64)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import Data.ByteString.Unsafe
 import Data.ByteString (ByteString)
 import Foreign.Ptr (wordPtrToPtr)
@@ -93,3 +95,6 @@ memoryMapToBytestring e = unsafePackCStringLen (ptr,len)
    where
       ptr = wordPtrToPtr (fromIntegral (entryStartAddr e))
       len = fromIntegral $ entryStopAddr e - entryStartAddr e
+
+memoryMapToLazyBytestring :: MemoryMapEntry -> IO LBS.ByteString
+memoryMapToLazyBytestring = fmap LBS.fromStrict . memoryMapToBytestring
