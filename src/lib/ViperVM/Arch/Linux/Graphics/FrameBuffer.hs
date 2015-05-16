@@ -8,6 +8,9 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    , FrameBuffer(..)
    , cardAddFrameBuffer
    , cardRemoveFrameBuffer
+   -- * Low-level
+   , FbCmd2Struct(..)
+   , FbDirtyStruct(..)
    )
 where
 

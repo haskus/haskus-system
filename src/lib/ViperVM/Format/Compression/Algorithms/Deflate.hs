@@ -3,10 +3,16 @@
 -- | Implement DEFLATE (de)compression algorithm
 --
 -- http://www.ietf.org/rfc/rfc1951.txt
+--
+-- TODO: the function `putFixedCode` is currently exported to avoid a compiler
+-- warning. We should implement the whole compression algorithms and export a
+-- "compress" method instead.
 module ViperVM.Format.Compression.Algorithms.Deflate
    ( decompress
    , makeHuffmanCodes
    , makeBitGetFromCodes
+   -- * Internal functions
+   , putFixedCode
    )
 where
 

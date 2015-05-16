@@ -13,6 +13,8 @@ module ViperVM.Arch.Linux.Graphics.Controller
    , cardControllerFromID
    , ControllerStruct(..)
    , fromControllerStruct
+   , ControllerLutStruct(..)
+   , PageFlipStruct(..)
    )
 where
 

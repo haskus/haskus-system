@@ -15,6 +15,13 @@ module ViperVM.Arch.Linux.Graphics.Mode
    , emptyModeStruct
    , fromModeStruct
    , toModeStruct
+   , GetPropStruct(..)
+   , SetPropStruct(..)
+   , toPropType
+   , fromPropType
+   , PropEnumStruct(..)
+   , GetBlobStruct(..)
+   , ModeCmdStruct(..)
    )
 where
 

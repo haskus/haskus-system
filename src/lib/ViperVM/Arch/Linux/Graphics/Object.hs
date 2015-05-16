@@ -3,6 +3,10 @@
 -- | Object
 module ViperVM.Arch.Linux.Graphics.Object
    ( ObjectType(..)
+   , toObjectType
+   , fromObjectType
+   , GetObjPropStruct (..)
+   , SetObjPropStruct (..)
    )
 where
 

@@ -2,7 +2,9 @@
 
 -- | Plane
 module ViperVM.Arch.Linux.Graphics.Plane
-   (
+   ( SetPlaneStruct (..)
+   , GetPlaneStruct (..)
+   , GetPlaneResStruct (..)
    )
 where
 

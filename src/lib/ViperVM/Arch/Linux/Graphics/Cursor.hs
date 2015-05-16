@@ -3,7 +3,8 @@
 -- | Cursor
 module ViperVM.Arch.Linux.Graphics.Cursor
    ( CursorMode(..)
-
+   , CursorStruct(..)
+   , Cursor2Struct(..)
    )
 where
 
