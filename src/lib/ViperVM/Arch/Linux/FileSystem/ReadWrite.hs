@@ -22,7 +22,7 @@ import Data.Word (Word64, Word32)
 import Foreign.CStorable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array (withArray)
-import Foreign.Ptr (Ptr, castPtr)
+import Foreign.Ptr (Ptr, castPtr, plusPtr)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 
 import GHC.Generics (Generic)
@@ -128,5 +128,11 @@ readByteString fd size = do
 
 -- | Write a bytestring
 writeByteString :: FileDescriptor -> ByteString -> SysRet Word64
-writeByteString fd bs = unsafeUseAsCStringLen bs $ \(ptr,len) ->
-   sysWrite fd ptr (fromIntegral len)
+writeByteString fd bs = unsafeUseAsCStringLen bs (go 0)
+   where
+      go n (ptr,0)   = return (Right n)
+      go n (ptr,len) = do
+         c <- sysWrite fd ptr (fromIntegral len)
+         case c of
+            Left err -> return (Left err)
+            Right c' -> go (n+c') (ptr `plusPtr` fromIntegral c', len - fromIntegral c')
