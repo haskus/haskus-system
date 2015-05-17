@@ -7,6 +7,7 @@ where
 
 import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Terminal
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.System.SysFS
 import ViperVM.Arch.Linux.FileSystem
@@ -47,6 +48,7 @@ systemInit path = do
 
       -- create device directory
       sysTry "Create device directory" $ createDir devicePath
+      sysTry "Mount devfs" $ mountDevFS sysMount devicePath
       devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
       return (System devfd (SysFS sysfs))
