@@ -23,14 +23,14 @@ import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 
 data Section = Section
-   { sectionNameIndex :: Word64
+   { sectionNameIndex :: Word32
    , sectionType      :: SectionType
    , sectionFlags     :: SectionFlags
    , sectionAddr      :: Word64
    , sectionOffset    :: Word64
    , sectionSize      :: Word64
-   , sectionLink      :: Word64
-   , sectionInfo      :: Word64
+   , sectionLink      :: Word32
+   , sectionInfo      :: Word32
    , sectionAlignment :: Word64
    , sectionEntrySize :: Word64
    } deriving (Show)
@@ -47,33 +47,33 @@ parseSectionTable bs h pre = fmap f offs
 
 getSection :: PreHeader -> Get Section
 getSection i = do
-   let (_,_,_,gwN) = getGetters i
+   let (_,gw32,_,gwN) = getGetters i
    Section
-      <$> gwN
-      <*> (toEnum . fromIntegral <$> gwN)
+      <$> gw32
+      <*> (toEnum . fromIntegral <$> gw32)
       <*> (BitSet.fromBits <$> gwN)
       <*> gwN
       <*> gwN
       <*> gwN
-      <*> gwN
-      <*> gwN
+      <*> gw32
+      <*> gw32
       <*> gwN
       <*> gwN
 
 putSection :: PreHeader -> Section -> Put
 putSection i s = do
-   let (_,_,_, pwN) = getPutters i
+   let (_,pw32,_,pwN) = getPutters i
 
-   pwN (sectionNameIndex s)
-   pwN (fromIntegral . fromEnum . sectionType $ s)
-   pwN (BitSet.toBits (sectionFlags s))
-   pwN (sectionAddr s)
-   pwN (sectionOffset s)
-   pwN (sectionSize s)
-   pwN (sectionLink s)
-   pwN (sectionInfo s)
-   pwN (sectionAlignment s)
-   pwN (sectionEntrySize s)
+   pw32 (sectionNameIndex s)
+   pw32 (fromIntegral . fromEnum . sectionType $ s)
+   pwN  (BitSet.toBits (sectionFlags s))
+   pwN  (sectionAddr s)
+   pwN  (sectionOffset s)
+   pwN  (sectionSize s)
+   pw32 (sectionLink s)
+   pw32 (sectionInfo s)
+   pwN  (sectionAlignment s)
+   pwN  (sectionEntrySize s)
 
 data SectionType
    = SectionTypeNone                    -- ^ Section header table entry unused
