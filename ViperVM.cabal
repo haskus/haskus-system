@@ -143,6 +143,9 @@ library
 
     ViperVM.Format.CPIO
     ViperVM.Format.Elf
+    ViperVM.Format.Elf.PreHeader
+    ViperVM.Format.Elf.Header
+    ViperVM.Format.Elf.Section
     ViperVM.Format.Compression.Algorithms.Huffman
     ViperVM.Format.Compression.Algorithms.LZ77
     ViperVM.Format.Compression.Algorithms.Deflate
