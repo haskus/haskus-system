@@ -150,6 +150,9 @@ library
     ViperVM.Format.Compression.Algorithms.LZ77
     ViperVM.Format.Compression.Algorithms.Deflate
     ViperVM.Format.Compression.GZip
+    ViperVM.Format.Binary.BitOps
+    ViperVM.Format.Binary.BitOrder
+    ViperVM.Format.Binary.BitGet
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
