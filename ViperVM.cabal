@@ -153,6 +153,7 @@ library
     ViperVM.Format.Binary.BitOps
     ViperVM.Format.Binary.BitOrder
     ViperVM.Format.Binary.BitGet
+    ViperVM.Format.Binary.BitField
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
