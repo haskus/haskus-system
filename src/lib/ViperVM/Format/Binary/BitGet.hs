@@ -2,6 +2,7 @@
 
 module ViperVM.Format.Binary.BitGet
    ( BitGetState(..)
+   , incBitGetStateOffset
    , readBool
    , readWord
    , readWordChecked
@@ -28,6 +29,14 @@ data BitGetState = BitGetState
    , bitGetStateBitOffset  :: {-# UNPACK #-} !Int        -- ^ Bit offset (0-7)
    , bitGetStateBitOrder   ::                !BitOrder   -- ^ Bit order
    } deriving (Show)
+
+-- | Increment the current bit offset
+incBitGetStateOffset :: Int -> BitGetState -> BitGetState
+incBitGetStateOffset o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
+   where
+      !o' = (n+o)
+      !d  = byteOffset o'
+      !n' = bitOffset o'
 
 -- | Read a single bit
 readBool :: BitGetState -> Bool
