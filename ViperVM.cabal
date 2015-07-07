@@ -31,6 +31,7 @@ library
     ViperVM.Arch.Linux.Terminal
     ViperVM.Arch.Linux.FileDescriptor
     ViperVM.Arch.Linux.FileSystem
+    ViperVM.Arch.Linux.FileSystem.Flush
     ViperVM.Arch.Linux.FileSystem.Directory
     ViperVM.Arch.Linux.FileSystem.Mount
     ViperVM.Arch.Linux.FileSystem.Notification
