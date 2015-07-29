@@ -48,7 +48,7 @@ systemInit path = do
 
       -- create device directory
       sysTry "Create device directory" $ createDir devicePath
-      sysTry "Mount devfs" $ mountDevFS sysMount devicePath
+      sysTry "Mount tmpfs" $ mountTmpFS sysMount devicePath
       devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
       return (System devfd (SysFS sysfs))

@@ -11,6 +11,7 @@ module ViperVM.Arch.Linux.Terminal
    , sysCatch
    , sysCatchFail
    , runCatch
+   , runCatchFail
    )
    where
 
@@ -54,7 +55,7 @@ readChar fd = fmap (head . BS.unpack) <$> readByteString fd 1
 sysCatch :: Show a => Either (String,a) b -> IO (Either a b)
 sysCatch a = case a of
    Left (str,err) -> do
-      writeStrLn stdout $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
+      _ <- writeStrLn stdout $ "Error while trying to " ++ str ++ " (" ++ show err ++ ")"
       return (Left err)
    Right r -> return (Right r)
 
@@ -69,4 +70,9 @@ runCatch :: Show a => EitherT (String,a) IO b -> IO (Either a b)
 runCatch x = do
    ret <- runEitherT x
    sysCatch ret
+
+runCatchFail :: Show a => EitherT (String,a) IO b -> IO b
+runCatchFail x = do
+   ret <- runEitherT x
+   sysCatchFail ret
 

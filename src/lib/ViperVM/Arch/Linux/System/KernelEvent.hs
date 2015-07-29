@@ -95,9 +95,9 @@ parseKernelEvent bs = r
 
       subsys  = fields Map.! "SUBSYSTEM"
 
-      -- remove mandatory fields for the "detais" field
+      -- remove mandatory fields from the "details" field
       details = Map.delete "SUBSYSTEM" 
-              $ Map.delete "ACTION" 
+              . Map.delete "ACTION" 
               $ Map.delete "DEVPATH" fields
 
       toTuple (x:y:_) = (x,y)
