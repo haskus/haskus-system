@@ -168,7 +168,7 @@ library
   build-depends:       
     base                >= 4.8,
     containers          == 0.5.*,
-    list-t              == 0.2.*,
+    list-t              == 0.4.*,
     stm                 == 2.4.*,
     stm-containers      == 0.2.*,
     stm-linkedlist      == 0.1.*,
@@ -192,7 +192,7 @@ library
     unix                == 2.7.*,
     criterion           == 1.1.*,
     c-storable-deriving == 0.1.2,
-    fixed-vector        == 0.7.*,
+    fixed-vector        == 0.8.*,
     binary              == 0.7.*,
     binary-bits         == 0.6,
     utf8-string         == 1.*,
@@ -256,7 +256,7 @@ executable ViperWeb
     blaze-markup     == 0.7.*,
     transformers     == 0.4.*,
     network          == 2.6.*,
-    file-embed       == 0.0.8.*,
+    file-embed       == 0.0.9.*,
     bytestring       == 0.10.*
 
 executable TestKernels
