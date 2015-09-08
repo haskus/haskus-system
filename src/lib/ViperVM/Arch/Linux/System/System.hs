@@ -2,6 +2,7 @@
 module ViperVM.Arch.Linux.System.System
    ( System(..)
    , systemInit
+   , openDevice
    )
 where
 
@@ -52,3 +53,18 @@ systemInit path = do
       devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
       return (System devfd (SysFS sysfs))
+
+-- | Open a device
+--
+-- Linux doesn't provide an API to open a device directly from its major and
+-- minor numbers. Instead we must create a special device file with mknod in
+-- the VFS and open it. This is what this function does. Additionally, we
+-- remove the file once it is opened.
+openDevice :: System -> DeviceType -> Device -> SysRet FileDescriptor
+openDevice system typ dev = do
+
+   let name = "./dummy"
+
+   runCatch $ do
+      nod <- sysTry "Create device special file" $ createDeviceFile (systemDevFS system) name typ BitSet.empty dev
+      sysTry "Open device special file" $ sysOpenAt (systemDevFS system) name [OpenReadWrite] BitSet.empty

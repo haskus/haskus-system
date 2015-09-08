@@ -48,6 +48,8 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSyncFS
    , sysCreateSpecialFile
    , sysCreateSpecialFileAt
+   , DeviceType(..)
+   , createDeviceFile
    )
 where
 
@@ -561,3 +563,14 @@ sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
    withCString path $ \path' ->
       with dev' $ \dev'' ->
          onSuccess (syscall_mknodat fd path' mode dev'') (const ())
+
+data DeviceType = CharDevice | BlockDevice
+   deriving (Show,Eq,Ord)
+
+-- | Create a device special file
+createDeviceFile :: FileDescriptor -> FilePath -> DeviceType -> FilePermissions -> Device -> SysRet ()
+createDeviceFile fd path typ perm dev = sysCreateSpecialFileAt fd path typ' perm (Just dev)
+   where
+      typ' = case typ of
+         CharDevice  -> FileTypeCharDevice
+         BlockDevice -> FileTypeBlockDevice
