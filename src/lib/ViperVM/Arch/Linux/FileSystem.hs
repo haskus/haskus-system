@@ -36,6 +36,7 @@ module ViperVM.Arch.Linux.FileSystem
    , sysLink
    , sysSymlink
    , sysUnlink
+   , sysUnlinkAt
    , sysChangePermission
    , sysChangePermissionPath
    , sysChangeOwnership
@@ -308,6 +309,10 @@ sysSymlink src dest =
 sysUnlink :: FilePath -> SysRet ()
 sysUnlink path = withCString path $ \path' ->
    onSuccess (syscall_unlink path') (const ())
+
+sysUnlinkAt :: FileDescriptor -> FilePath -> Bool -> SysRet ()
+sysUnlinkAt (FileDescriptor fd) path rmdir = withCString path $ \path' ->
+   onSuccess (syscall_unlinkat fd path' (if rmdir then 0x200 else 0)) (const ())
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->

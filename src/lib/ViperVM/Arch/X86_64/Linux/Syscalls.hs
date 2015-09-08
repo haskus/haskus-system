@@ -96,6 +96,7 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    , syscall_truncate
    , syscall_umask
    , syscall_unlink
+   , syscall_unlinkat
    )
    where
 
@@ -566,6 +567,11 @@ syscall_mknodat :: FD -> CString -> Word64 -> Ptr a -> IO Int64
 syscall_mknodat = syscall4 259
 {-# INLINE syscall_mknodat #-}
 
+-- | unlinkat
+syscall_unlinkat :: FD -> CString -> Word -> IO Int64
+syscall_unlinkat = syscall3 263
+{-# INLINE syscall_unlinkat #-}
+
 -- | accept4
 syscall_accept4 :: FD -> Ptr a -> Int -> Word64 -> IO Int64
 syscall_accept4 = syscall4 288
@@ -770,7 +776,6 @@ syscall_getcpu = syscall3 309
 260	common	fchownat		sys_fchownat
 261	common	futimesat		sys_futimesat
 262	common	newfstatat		sys_newfstatat
-263	common	unlinkat		sys_unlinkat
 264	common	renameat		sys_renameat
 265	common	linkat			sys_linkat
 266	common	symlinkat		sys_symlinkat

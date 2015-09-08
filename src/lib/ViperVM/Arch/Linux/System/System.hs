@@ -63,8 +63,12 @@ systemInit path = do
 openDevice :: System -> DeviceType -> Device -> SysRet FileDescriptor
 openDevice system typ dev = do
 
-   let name = "./dummy"
+   let 
+      devname = "./dummy"
+      devfd   = systemDevFS system
 
    runCatch $ do
-      nod <- sysTry "Create device special file" $ createDeviceFile (systemDevFS system) name typ BitSet.empty dev
-      sysTry "Open device special file" $ sysOpenAt (systemDevFS system) name [OpenReadWrite] BitSet.empty
+      sysTry "Create device special file" $ createDeviceFile devfd devname typ BitSet.empty dev
+      fd  <- sysTry "Open device special file" $ sysOpenAt devfd devname [OpenReadWrite] BitSet.empty
+      sysTry "Remove device special file" $ sysUnlinkAt devfd devname False
+      return fd
