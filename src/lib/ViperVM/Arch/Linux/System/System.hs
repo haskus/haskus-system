@@ -3,6 +3,7 @@ module ViperVM.Arch.Linux.System.System
    ( System(..)
    , systemInit
    , openDevice
+   , openDeviceDir
    )
 where
 
@@ -10,7 +11,6 @@ import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Terminal
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.Linux.System.SysFS
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
@@ -20,7 +20,7 @@ import Control.Monad (void)
 
 data System = System
    { systemDevFS  :: FileDescriptor    -- ^ root of the tmpfs used to create device nodes
-   , systemSysFS  :: SysFS             -- ^ systemfs
+   , systemSysFS  :: FileDescriptor    -- ^ systemfs (SysFS)
    }
 
 
@@ -45,14 +45,14 @@ systemInit path = do
       -- mount sysfs
       sysTry "Create system directory" $ createDir systemPath
       sysTry "Mount sysfs" $ mountSysFS sysMount systemPath
-      sysfs <- sysTry "Open sysfs directory" $ sysOpen systemPath [OpenReadOnly] BitSet.empty
+      sysfd <- sysTry "Open sysfs directory" $ sysOpen systemPath [OpenReadOnly] BitSet.empty
 
       -- create device directory
       sysTry "Create device directory" $ createDir devicePath
       sysTry "Mount tmpfs" $ mountTmpFS sysMount devicePath
       devfd <- sysTry "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
-      return (System devfd (SysFS sysfs))
+      return (System devfd sysfd)
 
 -- | Open a device
 --
@@ -72,3 +72,13 @@ openDevice system typ dev = do
       fd  <- sysTry "Open device special file" $ sysOpenAt devfd devname [OpenReadWrite] BitSet.empty
       sysTry "Remove device special file" $ sysUnlinkAt devfd devname False
       return fd
+
+-- | Find device path by number (major, minor)
+openDeviceDir :: System -> DeviceType -> Device -> SysRet FileDescriptor
+openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path [OpenReadOnly,OpenDirectory] BitSet.empty
+   where
+      path = "./dev/" ++ typ' ++ "/" ++ ids
+      typ' = case typ of
+         CharDevice  -> "char"
+         BlockDevice -> "block"
+      ids  = show (deviceMajor dev) ++ ":" ++ show (deviceMinor dev)

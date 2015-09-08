@@ -11,7 +11,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Capability
 
 import ViperVM.Arch.Linux.System.Graphics
-import ViperVM.Arch.Linux.System.SysFS
+import ViperVM.Arch.Linux.System.System
 
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.Memory
@@ -45,9 +45,10 @@ main = do
          Right v  -> return (Right v))
 
    ret <- runEitherT $ do
-      sysfs <- try "Load SysFS" $ fmap SysFS <$> sysOpen "/sys" [OpenReadOnly] BitSet.empty
+      sysfs <- try "Load SysFS" $ sysOpen "/sys" [OpenReadOnly] BitSet.empty
+      devfs <- try "Load DevFS" $ sysOpen "/dev" [OpenReadOnly] BitSet.empty
 
-      cards <- try "Load graphic cards" $ loadGraphicCards sysfs
+      cards <- try "Load graphic cards" $ loadGraphicCards (System devfs sysfs)
 
       liftIO $ do
          putStrLn "Graphic cards:"

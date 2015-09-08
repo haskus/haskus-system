@@ -67,7 +67,6 @@ library
     ViperVM.Arch.Linux.Input.Sync
 
     ViperVM.Arch.Linux.System.System
-    ViperVM.Arch.Linux.System.SysFS
     ViperVM.Arch.Linux.System.KernelEvent
     ViperVM.Arch.Linux.System.Topology
     ViperVM.Arch.Linux.System.Graphics

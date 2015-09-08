@@ -5,7 +5,7 @@ module ViperVM.Arch.Linux.System.Graphics
    )
 where
 
-import ViperVM.Arch.Linux.System.SysFS
+import ViperVM.Arch.Linux.System.System
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
@@ -36,10 +36,10 @@ data GraphicCard = GraphicCard
 -- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
 -- identifier. The this directory, the dev file contains device major/minor to
 -- create appropriate device node.
-loadGraphicCards :: SysFS -> SysRet [GraphicCard]
-loadGraphicCards sysfs = do
+loadGraphicCards :: System -> SysRet [GraphicCard]
+loadGraphicCards system = do
    -- open drm directory
-   withOpenAt (sysfsDescriptor sysfs) "class/drm" [OpenReadOnly] BitSet.empty $ \fd -> runEitherT $ do
+   withOpenAt (systemSysFS system) "class/drm" [OpenReadOnly] BitSet.empty $ \fd -> runEitherT $ do
 
       -- detect cardN directories
       -- FIXME: the fd is not closed in case of error
