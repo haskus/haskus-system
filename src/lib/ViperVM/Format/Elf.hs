@@ -148,8 +148,8 @@ getRelocationEntries elf sec =
       -- get table of bytestrings
       bss  = getTable elf sec
       -- read symbol entry
-      rel  = runGet (getRelocationEntry (elfPreHeader elf) False)
-      rela = runGet (getRelocationEntry (elfPreHeader elf) True)
+      rel  = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) False)
+      rela = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) True)
 
 -- | Find section with name
 findSectionWithName :: Elf -> Text -> Maybe Section

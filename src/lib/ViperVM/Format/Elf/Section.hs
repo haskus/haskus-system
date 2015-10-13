@@ -20,7 +20,6 @@ module ViperVM.Format.Elf.Section
    , putSymbolEntry
    -- * Relocation
    , RelocationEntry (..)
-   , RelocationType (..)
    , getRelocationEntry
    , putRelocationEntry
    -- * Internal
@@ -41,6 +40,7 @@ import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
+import ViperVM.Format.Elf.Relocations
 
 type SectionIndex = Word32
 
@@ -477,20 +477,15 @@ data RelocationEntry = RelocationEntry
    }
    deriving (Show)
 
-data RelocationType
-   = RelocType Word32
-   deriving (Show)
 
-
-
-getRelocationEntry :: PreHeader -> Bool -> Get RelocationEntry
-getRelocationEntry i withAddend = do
+getRelocationEntry :: PreHeader -> Header -> Bool -> Get RelocationEntry
+getRelocationEntry i h withAddend = do
    let (_,_,_,gwN) = getGetters i
    
    addr <- gwN
    info <- gwN
    let
-      typ = RelocType $ case preHeaderWordSize i of
+      typ = toRelocType (headerArch h) $ case preHeaderWordSize i of
          WordSize32 -> fromIntegral (info .&. 0xff)
          WordSize64 -> fromIntegral (info .&. 0xffffffff)
 
@@ -509,7 +504,7 @@ putRelocationEntry i withAddend rel = do
    let 
       (_,_,_,pwN) = getPutters i
       sym = relocSymbolIndex rel
-      RelocType typ = relocType rel
+      typ = fromRelocType (relocType rel)
       info = case preHeaderWordSize i of
          WordSize32 -> (fromIntegral sym `shiftL` 8) 
                        .|. (fromIntegral typ .&. 0xff)
