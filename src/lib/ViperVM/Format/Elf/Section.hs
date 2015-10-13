@@ -2,6 +2,7 @@ module ViperVM.Format.Elf.Section
    ( Section (..)
    , SectionFlag (..)
    , SectionType (..)
+   , SectionIndex
    , SectionFlags
    , getSection
    , putSection
@@ -22,8 +23,10 @@ import qualified ViperVM.Utils.BitSet as BitSet
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 
+type SectionIndex = Word32
+
 data Section = Section
-   { sectionNameIndex :: Word32
+   { sectionNameIndex :: SectionIndex
    , sectionType      :: SectionType
    , sectionFlags     :: SectionFlags
    , sectionAddr      :: Word64

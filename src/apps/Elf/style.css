@@ -8,3 +8,7 @@ td, th {
    padding-left: 1em;
    padding-right: 1em;
 }
+
+.invalid {
+   text-decoration:italic;
+}

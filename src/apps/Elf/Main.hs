@@ -11,10 +11,11 @@ import ViperVM.Format.Elf.Section
 
 import Control.Monad (when)
 import Data.Foldable (msum, forM_)
-import Text.Printf
+import Data.Text.Format
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
+import qualified Data.Text.Lazy.IO as Text
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 
@@ -26,7 +27,7 @@ main = do
 
 server :: FilePath -> Elf -> Conf -> IO ()
 server pth elf conf = do
-   putStrLn (printf "Starting Web server at localhost:%d" (port conf))
+   Text.putStrLn (format "Starting Web server at localhost: {}" (Only $ port conf))
 
    let ok' = ok . toResponse . renderBS . appTemplate
 
@@ -47,8 +48,14 @@ welcomePage pth elf = do
    showHeader (elfHeader elf)
    h2_ "Sections"
    forM_ (elfSections elf `zip` [0..] ) $ \(s,i) -> do
-      h3_ . toHtml $ "Section " ++ show (i :: Int)
-      showSection s
+      let name = case extractSectionNameByIndex elf (sectionNameIndex s) of
+            Just str -> toHtml str
+            Nothing  -> span_ [class_ "invalid"] "Invalid section name"
+      h3_ $ do
+         toHtml $ format "Section {} \"" (Only (i :: Int))
+         name
+         "\""
+      showSection elf s
 
 showPreHeader :: PreHeader -> Html ()
 showPreHeader ph = table_ $ do
@@ -117,8 +124,8 @@ showHeader h = table_ $ do
       td_ . toHtml $ "Section " ++ show (headerSectionNameIndex h)
 
 
-showSection :: Section -> Html ()
-showSection s = table_ $ do
+showSection :: Elf -> Section -> Html ()
+showSection elf s = table_ $ do
    tr_ $ do
       th_ "Name index"
       td_ . toHtml $ show (sectionNameIndex s)
@@ -149,6 +156,13 @@ showSection s = table_ $ do
    tr_ $ do
       th_ "Entry size"
       td_ . toHtml $ show (sectionEntrySize s)
+   case sectionType s of
+      SectionTypeSTRTAB -> tr_ $ do
+         th_ "Strings"
+         let strs = extractSectionStrings elf s
+         td_ $ ul_ $ forM_ strs $ \(i,str) -> do
+            li_ . toHtml $ format "{} - \"{}\"" (i,str)
+      _ -> return ()
 
 appTemplate :: Html () -> Html ()
 appTemplate doc = do
