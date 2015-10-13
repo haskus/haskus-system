@@ -168,14 +168,21 @@ showSection elf s = table_ $ do
       SectionTypeSYMTAB -> tr_ $ do
          th_ "Symbols"
          let syms = getSectionSymbols elf s
-         td_ $ showSymbols syms
+         td_ $ showSymbols elf syms
       _ -> return ()
 
-showSymbols :: [SymbolEntry] -> Html ()
-showSymbols ss = do
+showSymbols :: Elf -> [SymbolEntry] -> Html ()
+showSymbols elf ss = do
+   let 
+      symtab = findSectionWithName elf ".strtab"
+      getSymName idx = case (idx,symtab) of
+         (0, _)        -> Nothing
+         (_, Just sec) -> extractStringFromSection elf sec idx
+         (_, Nothing)  -> Nothing
+         
    table_ $ do
       tr_ $ do
-         th_ "Name index"
+         th_ "(index) Name"
          th_ "Binding"
          th_ "Type"
          th_ "Visibility"
@@ -183,11 +190,47 @@ showSymbols ss = do
          th_ "Value"
          th_ "Size"
       forM_ ss $ \s -> tr_ $ do
-         td_ . toHtml $ show (symbolNameIndex s)
-         td_ . toHtml $ show (symbolBinding s)
-         td_ . toHtml $ show (symbolType s)
-         td_ . toHtml $ show (symbolVisibility s)
-         td_ . toHtml $ show (symbolInfo s)
+         td_ $ do
+            let idx = symbolNameIndex s
+            case getSymName idx of
+               Nothing   -> do
+                  toHtml $ format "({}) " (Only idx)
+                  span_ [class_ "invalid"] "None"
+               Just name -> do
+                  toHtml $ format "({}) {}" (idx, name)
+
+         td_ $ case symbolBinding s of
+            SymbolBindingLocal      -> span_ [class_ "sym_local"]  "Local"
+            SymbolBindingGlobal     -> span_ [class_ "sym_global"] "Global"
+            SymbolBindingWeak       -> span_ [class_ "sym_weak"]   "Weak"
+            SymbolBindingUnknown v  -> toHtml $ format "Unknown ({})" (Only v)
+
+         td_ $ case symbolType s of
+            SymbolTypeNone          -> "None"
+            SymbolTypeData          -> "Data"
+            SymbolTypeCode          -> "Code"
+            SymbolTypeSection       -> "Section"
+            SymbolTypeFile          -> "File"
+            SymbolTypeCommonData    -> "Data (common)"
+            SymbolTypeTLSData       -> "Data (TLS)"
+            SymbolTypeUnknown v     -> toHtml $ format "Unknown ({})" (Only v)
+
+         td_ $ case symbolVisibility s of
+            SymbolVisibilityDefault    -> "Default"
+            SymbolVisibilityInternal   -> "Internal"
+            SymbolVisibilityHidden     -> "Hidden"
+            SymbolVisibilityProtected  -> "Protected"
+
+         td_ $ case symbolInfo s of
+            SymbolInfoUndefined           -> span_ [class_ "sym_undefined"] "Undefined"
+            SymbolInfoAbsolute            -> span_ [class_ "sym_absolute"] "Absolute"
+            SymbolInfoCommon              -> "Common"
+            SymbolInfoIndexInExtraTable   -> "In extra table"
+            SymbolInfoSectionBeforeAll    -> "Before all others sections"
+            SymbolInfoSectionAfterAll     -> "After all others sections"
+            SymbolInfoSectionIndex v      -> toHtml $ format "In section {}" (Only v)
+            SymbolInfoUnknown v           -> toHtml $ format "Unknown ({})" (Only v)
+
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
 

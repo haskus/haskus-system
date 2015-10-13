@@ -5,8 +5,11 @@ module ViperVM.Format.Elf
    , readElf
    , extractSectionContent
    , extractSectionStrings
+   , extractStringFromSection
    , extractSectionNameByIndex
+   , getSectionNames
    , getSectionSymbols
+   , findSectionWithName
    )
 where
 
@@ -15,6 +18,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Binary.Get
 import Data.Text (Text)
+import Data.Maybe (listToMaybe)
 import qualified Data.Text.Encoding as Text
 
 import ViperVM.Format.Elf.PreHeader
@@ -70,13 +74,9 @@ extractSectionStrings elf sec =
       sumSzs = scanl (+) 0 szs
 
 
-extractSectionNameByIndex :: Elf -> SectionIndex -> Maybe Text
-extractSectionNameByIndex elf idx = res
+extractStringFromSection :: Elf -> Section -> SectionIndex -> Maybe Text
+extractStringFromSection elf sec idx = res
    where
-      -- Find the section containing section names
-      secIdx = headerSectionNameIndex (elfHeader elf)
-      sec    = elfSections elf !! fromIntegral secIdx
-
       -- Check that section type is valid and index is within range
       res = case (sectionSize sec, sectionType sec) of
          (sz,SectionTypeSTRTAB)
@@ -90,6 +90,18 @@ extractSectionNameByIndex elf idx = res
          $ LBS.drop (fromIntegral idx)
          $ extractSectionContent elf s
 
+
+extractSectionNameByIndex :: Elf -> SectionIndex -> Maybe Text
+extractSectionNameByIndex elf idx = extractStringFromSection elf sec idx
+   where
+      -- Find the section containing section names
+      secIdx = headerSectionNameIndex (elfHeader elf)
+      sec    = elfSections elf !! fromIntegral secIdx
+
+getSectionNames :: Elf -> [(Section, Maybe Text)]
+getSectionNames elf = [ (sec, f sec) | sec <- elfSections elf]
+   where
+      f = extractSectionNameByIndex elf . sectionNameIndex
 
 getSectionSymbols :: Elf -> Section -> [SymbolEntry]
 getSectionSymbols elf sec =
@@ -114,3 +126,9 @@ getSectionSymbols elf sec =
       -- read symbols
       syms = fmap rd offs
 
+-- | Find section with name
+findSectionWithName :: Elf -> Text -> Maybe Section
+findSectionWithName elf name = listToMaybe . fmap fst . filter p $ names
+   where
+      p x   = snd x == Just name
+      names = getSectionNames elf

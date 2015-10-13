@@ -10,5 +10,25 @@ td, th {
 }
 
 .invalid {
-   text-decoration:italic;
+   font-style:italic;
+}
+
+.sym_undefined {
+   color: blue;
+}
+
+.sym_absolute {
+   color: brown;
+}
+
+.sym_global {
+   color: green;
+}
+
+.sym_local {
+   color: black;
+}
+
+.sym_weak {
+   color: red;
 }
