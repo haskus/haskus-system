@@ -51,8 +51,9 @@ getPreHeader = do
             2 -> return BigEndian
             _ -> error "Invalid encoding")
       <*> (getWord8 >>= \case
-            1 -> return 1
-            v -> error $ "Invalid ELF version " ++ show v)
+            v
+               | v == elfCurrentVersion -> return elfCurrentVersion
+               | otherwise  -> error $ "Invalid ELF version " ++ show v)
       <*> (toEnum . fromIntegral <$> getWord8)
       <*> (getWord8 <* skip 7) -- skip padding bytes (16 - already read bytes)
 

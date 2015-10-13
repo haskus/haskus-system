@@ -16,7 +16,7 @@ import ViperVM.Format.Elf.Section
 
 -- | Structure representing a ELF file
 data Elf = Elf
-   { elfPreHeader :: PreHeader        -- ^ Pre-header informations
+   { elfPreHeader :: PreHeader   -- ^ Pre-header
    , elfHeader    :: Header      -- ^ Header
    , elfSections  :: [Section]   -- ^ Sections
    } deriving (Show)
@@ -32,5 +32,3 @@ parseElf bs = Elf pre hdr sections
 -- | Read a ELF file
 readElf :: FilePath -> IO Elf
 readElf path = parseElf <$> LBS.readFile path
-
-
