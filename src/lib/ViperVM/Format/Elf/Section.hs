@@ -181,6 +181,7 @@ data SectionFlag
    | SectionFlagOS_NonConforming  -- ^ Non-standard OS specific handling required
    | SectionFlagGROUP             -- ^ Section is member of a group.
    | SectionFlagTLS               -- ^ Section hold thread-local data.
+   | SectionFlagCompressed        -- ^ Section with compressed data
    | SectionFlagOrdered           -- ^ Special ordering requirement
    | SectionFlagExclude           -- ^ Section is excluded unless referenced or allocated (Solaris).
    | SectionFlagOther Word        -- ^ Other flags
@@ -198,6 +199,7 @@ instance Enum SectionFlag where
       SectionFlagOS_NonConforming   -> 8
       SectionFlagGROUP              -> 9
       SectionFlagTLS                -> 10
+      SectionFlagCompressed         -> 11
       SectionFlagOrdered            -> 30
       SectionFlagExclude            -> 31
       SectionFlagOther v            -> fromIntegral v
@@ -212,6 +214,7 @@ instance Enum SectionFlag where
       8  -> SectionFlagOS_NonConforming
       9  -> SectionFlagGROUP
       10 -> SectionFlagTLS
+      11 -> SectionFlagCompressed
       30 -> SectionFlagOrdered
       31 -> SectionFlagExclude
       v  -> SectionFlagOther (fromIntegral v)
