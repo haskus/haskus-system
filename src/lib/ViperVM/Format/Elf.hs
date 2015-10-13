@@ -9,7 +9,10 @@ module ViperVM.Format.Elf
    , extractSectionNameByIndex
    , getSectionNames
    , getSectionSymbols
+   , getRelocationEntries
    , findSectionWithName
+   , FullSectionType (..)
+   , getFullSectionType
    )
 where
 
@@ -103,28 +106,50 @@ getSectionNames elf = [ (sec, f sec) | sec <- elfSections elf]
    where
       f = extractSectionNameByIndex elf . sectionNameIndex
 
-getSectionSymbols :: Elf -> Section -> [SymbolEntry]
-getSectionSymbols elf sec =
-      case sectionType sec of
-         SectionTypeSYMTAB -> syms
-         _                 -> error "Invalid section type"
+getTable :: Elf -> Section -> [ByteString]
+getTable elf sec = bss
    where
-      -- section content
+      -- content of the section
       content = extractSectionContent elf sec
       -- size of a single entry
-      symsize = fromIntegral (getSymbolEntrySize (elfPreHeader elf))
+      size = case fromIntegral (sectionEntrySize sec) of
+         0 -> error "Invalid table section: entry size is null"
+         x -> x
       -- size of the section
       secsize = fromIntegral (sectionSize sec)
       -- number of entries
       n = if secsize /= 0
-         then secsize `div` symsize
+         then secsize `div` size
          else 0
       -- offsets in the section
-      offs = [0, symsize .. (n-1) * symsize]
-      -- read symbol entry at specific offset
-      rd off = runGet (getSymbolEntry (elfPreHeader elf)) (LBS.drop off content)
-      -- read symbols
-      syms = fmap rd offs
+      offs = [0, size .. (n-1) * size]
+      -- read entries
+      bss = fmap (\off -> LBS.take size $ LBS.drop off content) offs
+
+getSectionSymbols :: Elf -> Section -> [SymbolEntry]
+getSectionSymbols elf sec =
+      case sectionType sec of
+         SectionTypeSYMTAB -> fmap rd bss
+         _                 -> error "Invalid section type"
+   where
+      -- get table of bytestrings
+      bss = getTable elf sec
+      -- read symbol entry
+      rd = runGet (getSymbolEntry (elfPreHeader elf))
+
+
+getRelocationEntries :: Elf -> Section -> [RelocationEntry]
+getRelocationEntries elf sec = 
+      case sectionType sec of
+         SectionTypeREL    -> fmap rel bss
+         SectionTypeRELA   -> fmap rela bss
+         _                 -> error "Invalid section type"
+   where
+      -- get table of bytestrings
+      bss  = getTable elf sec
+      -- read symbol entry
+      rel  = runGet (getRelocationEntry (elfPreHeader elf) False)
+      rela = runGet (getRelocationEntry (elfPreHeader elf) True)
 
 -- | Find section with name
 findSectionWithName :: Elf -> Text -> Maybe Section
@@ -132,3 +157,27 @@ findSectionWithName elf name = listToMaybe . fmap fst . filter p $ names
    where
       p x   = snd x == Just name
       names = getSectionNames elf
+
+-- | Fields are reused depending on the section types. This type gives a meaningful section type
+data FullSectionType
+   = SectionTypeRelocation
+      { relocSectionHasAddend     :: Bool     -- ^ Indicate whether addends are present
+      , relocSectionSymbolTable   :: Section  -- ^ Section containing symbols to relocate
+      , relocSectionTargetSection :: Section  -- ^ Section to modify
+      }
+   | BasicSectionType SectionType
+   deriving (Show)
+
+
+getFullSectionType :: Elf -> Section -> FullSectionType
+getFullSectionType elf sec =
+   let getSec i = elfSections elf !! fromIntegral i in
+   case sectionType sec of
+      SectionTypeREL    -> SectionTypeRelocation False
+                              (getSec $ sectionInfo sec)
+                              (getSec $ sectionLink sec)
+      SectionTypeRELA   -> SectionTypeRelocation True
+                              (getSec $ sectionInfo sec)
+                              (getSec $ sectionLink sec)
+      t                 -> BasicSectionType t
+

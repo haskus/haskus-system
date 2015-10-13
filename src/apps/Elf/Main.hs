@@ -156,19 +156,30 @@ showSection elf s = table_ $ do
    tr_ $ do
       th_ "Entry size"
       td_ . toHtml $ show (sectionEntrySize s)
-   case sectionType s of
+
+   case getFullSectionType elf s of
       -- Show string table
-      SectionTypeSTRTAB -> tr_ $ do
+      BasicSectionType SectionTypeSTRTAB -> tr_ $ do
          th_ "Strings"
          let strs = extractSectionStrings elf s
          td_ $ ul_ $ forM_ strs $ \(i,str) -> do
             li_ . toHtml $ format "{} - \"{}\"" (i,str)
 
       -- Show symbol table
-      SectionTypeSYMTAB -> tr_ $ do
+      BasicSectionType SectionTypeSYMTAB -> tr_ $ do
          th_ "Symbols"
          let syms = getSectionSymbols elf s
          td_ $ showSymbols elf syms
+
+      -- Show relocation entries
+      typ@(SectionTypeRelocation {}) -> tr_ $ do
+         th_ "Relocation entries"
+         let es = getRelocationEntries elf s
+         td_ $ showRelocationEntries elf 
+                  (relocSectionHasAddend typ)
+                  (relocSectionSymbolTable typ)
+                  es
+
       _ -> return ()
 
 showSymbols :: Elf -> [SymbolEntry] -> Html ()
@@ -233,6 +244,25 @@ showSymbols elf ss = do
 
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
+
+showRelocationEntries :: Elf -> Bool -> Section -> [RelocationEntry] -> Html ()
+showRelocationEntries elf withAddend symSection es = do
+   table_ $ do
+      tr_ $ do
+         th_ "Address"
+         th_ "Type"
+         th_ "Symbol index"
+         when withAddend $ th_ "Addend"
+      forM_ es $ \e -> tr_ $ do
+         td_ . toHtml $ show (relocAddress e)
+         td_ . toHtml $ show (relocType e)
+         td_ $ do
+            let idx = relocSymbolIndex e
+            toHtml $ show idx
+         case (withAddend, relocAddend e) of
+            (True, Just x) -> td_ . toHtml $ show x
+            _              -> return ()
+
 
 appTemplate :: Html () -> Html ()
 appTemplate doc = do

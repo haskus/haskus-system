@@ -17,8 +17,12 @@ module ViperVM.Format.Elf.Section
    , SymbolVisibility (..)
    , SymbolInfo (..)
    , getSymbolEntry
-   , getSymbolEntrySize
    , putSymbolEntry
+   -- * Relocation
+   , RelocationEntry (..)
+   , RelocationType (..)
+   , getRelocationEntry
+   , putRelocationEntry
    -- * Internal
    , parseSectionTable
    )
@@ -27,6 +31,7 @@ where
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Word
+import Data.Int
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Bits
@@ -237,6 +242,7 @@ instance EnumBitSet SectionFlag
 
 type SectionFlags = BitSet Word64 SectionFlag
 
+
 data CompressionType
    = CompressionZLIB
    | CompressionUnknown Word32
@@ -436,11 +442,6 @@ getSymbolEntry i = do
       ifo  = toEnum (fromIntegral sec)
    return (SymbolEntry name bind typ visi ifo value size)
 
-getSymbolEntrySize :: PreHeader -> Int
-getSymbolEntrySize i = case preHeaderWordSize i of
-   WordSize32 -> 16
-   WordSize64 -> 24
-
 putSymbolEntry :: PreHeader -> SymbolEntry -> Put
 putSymbolEntry i (SymbolEntry name bind typ visi ifo value size) = do
    let 
@@ -467,4 +468,58 @@ putSymbolEntry i (SymbolEntry name bind typ visi ifo value size) = do
          pwN value
          pwN size
 
+
+data RelocationEntry = RelocationEntry
+   { relocAddress       :: Word64
+   , relocType          :: RelocationType
+   , relocSymbolIndex   :: Word32
+   , relocAddend        :: Maybe Int64
+   }
+   deriving (Show)
+
+data RelocationType
+   = RelocType Word32
+   deriving (Show)
+
+
+
+getRelocationEntry :: PreHeader -> Bool -> Get RelocationEntry
+getRelocationEntry i withAddend = do
+   let (_,_,_,gwN) = getGetters i
+   
+   addr <- gwN
+   info <- gwN
+   let
+      typ = RelocType $ case preHeaderWordSize i of
+         WordSize32 -> fromIntegral (info .&. 0xff)
+         WordSize64 -> fromIntegral (info .&. 0xffffffff)
+
+      sym = case preHeaderWordSize i of
+         WordSize32 -> fromIntegral (info `shiftR` 8)
+         WordSize64 -> fromIntegral (info `shiftR` 32)
+
+   ad <- if withAddend
+      then (Just . fromIntegral <$> gwN) 
+      else return Nothing
+
+   return $ RelocationEntry addr typ sym ad
+
+putRelocationEntry :: PreHeader -> Bool -> RelocationEntry -> Put
+putRelocationEntry i withAddend rel = do
+   let 
+      (_,_,_,pwN) = getPutters i
+      sym = relocSymbolIndex rel
+      RelocType typ = relocType rel
+      info = case preHeaderWordSize i of
+         WordSize32 -> (fromIntegral sym `shiftL` 8) 
+                       .|. (fromIntegral typ .&. 0xff)
+         WordSize64 -> (fromIntegral sym `shiftL` 32) 
+                       .|. (fromIntegral typ .&. 0xffffffff)
+
+   pwN (relocAddress rel)
+   pwN info
+   case (withAddend, relocAddend rel) of
+      (True, Just x)   -> pwN (fromIntegral x)
+      (False, Nothing) -> return ()
+      _                -> error "Addend not found"
 
