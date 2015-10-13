@@ -6,6 +6,10 @@ module ViperVM.Format.Elf.Section
    , SectionFlags
    , getSection
    , putSection
+   , SectionCompression (..)
+   , CompressionType (..)
+   , getSectionCompression
+   , putSectionCompression
    -- * Internal
    , parseSectionTable
    )
@@ -222,3 +226,51 @@ instance Enum SectionFlag where
 instance EnumBitSet SectionFlag
 
 type SectionFlags = BitSet Word64 SectionFlag
+
+data CompressionType
+   = CompressionZLIB
+   | CompressionUnknown Word32
+   deriving (Show)
+
+instance Enum CompressionType where
+   fromEnum x = case x of
+      CompressionZLIB      -> 1
+      CompressionUnknown v -> fromIntegral v
+   
+   toEnum x = case x of
+      1 -> CompressionZLIB
+      v -> CompressionUnknown (fromIntegral v)
+
+
+data SectionCompression = SectionCompression
+   { sectionCompressionType       :: CompressionType  -- ^ Compression type
+   , sectionCompressionSize       :: Word64           -- ^ Uncompressed data size
+   , sectionCompressionAlignement :: Word64           -- ^ Uncompressed data alignment
+   } deriving (Show)
+
+getSectionCompression :: PreHeader -> Get SectionCompression
+getSectionCompression i = do
+   let (_,gw32,gw64,_) = getGetters i
+   case preHeaderWordSize i of
+      WordSize32 -> SectionCompression
+         <$> fmap (toEnum . fromIntegral) gw32
+         <*> fmap fromIntegral gw32
+         <*> fmap fromIntegral gw32
+      WordSize64 -> SectionCompression
+         <$> fmap (toEnum . fromIntegral) (gw32 <* skip 4)
+         <*> gw64
+         <*> gw64
+
+putSectionCompression :: PreHeader -> SectionCompression -> Put
+putSectionCompression i (SectionCompression typ sz align) = do
+   let (_,pw32,pw64,_) = getPutters i
+   case preHeaderWordSize i of
+      WordSize32 -> do
+         pw32 (fromIntegral (fromEnum typ))
+         pw32 (fromIntegral sz)
+         pw32 (fromIntegral align)
+      WordSize64 -> do
+         pw32 (fromIntegral (fromEnum typ))
+         pw32 0 -- reserved word
+         pw64 sz
+         pw64 align
