@@ -157,12 +157,39 @@ showSection elf s = table_ $ do
       th_ "Entry size"
       td_ . toHtml $ show (sectionEntrySize s)
    case sectionType s of
+      -- Show string table
       SectionTypeSTRTAB -> tr_ $ do
          th_ "Strings"
          let strs = extractSectionStrings elf s
          td_ $ ul_ $ forM_ strs $ \(i,str) -> do
             li_ . toHtml $ format "{} - \"{}\"" (i,str)
+
+      -- Show symbol table
+      SectionTypeSYMTAB -> tr_ $ do
+         th_ "Symbols"
+         let syms = getSectionSymbols elf s
+         td_ $ showSymbols syms
       _ -> return ()
+
+showSymbols :: [SymbolEntry] -> Html ()
+showSymbols ss = do
+   table_ $ do
+      tr_ $ do
+         th_ "Name index"
+         th_ "Binding"
+         th_ "Type"
+         th_ "Visibility"
+         th_ "Info"
+         th_ "Value"
+         th_ "Size"
+      forM_ ss $ \s -> tr_ $ do
+         td_ . toHtml $ show (symbolNameIndex s)
+         td_ . toHtml $ show (symbolBinding s)
+         td_ . toHtml $ show (symbolType s)
+         td_ . toHtml $ show (symbolVisibility s)
+         td_ . toHtml $ show (symbolInfo s)
+         td_ . toHtml $ show (symbolValue s)
+         td_ . toHtml $ show (symbolSize s)
 
 appTemplate :: Html () -> Html ()
 appTemplate doc = do

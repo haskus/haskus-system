@@ -6,6 +6,7 @@ module ViperVM.Format.Elf
    , extractSectionContent
    , extractSectionStrings
    , extractSectionNameByIndex
+   , getSectionSymbols
    )
 where
 
@@ -88,3 +89,28 @@ extractSectionNameByIndex elf idx = res
          $ LBS.takeWhile (/=0)
          $ LBS.drop (fromIntegral idx)
          $ extractSectionContent elf s
+
+
+getSectionSymbols :: Elf -> Section -> [SymbolEntry]
+getSectionSymbols elf sec =
+      case sectionType sec of
+         SectionTypeSYMTAB -> syms
+         _                 -> error "Invalid section type"
+   where
+      -- section content
+      content = extractSectionContent elf sec
+      -- size of a single entry
+      symsize = fromIntegral (getSymbolEntrySize (elfPreHeader elf))
+      -- size of the section
+      secsize = fromIntegral (sectionSize sec)
+      -- number of entries
+      n = if secsize /= 0
+         then secsize `div` symsize
+         else 0
+      -- offsets in the section
+      offs = [0, symsize .. (n-1) * symsize]
+      -- read symbol entry at specific offset
+      rd off = runGet (getSymbolEntry (elfPreHeader elf)) (LBS.drop off content)
+      -- read symbols
+      syms = fmap rd offs
+
