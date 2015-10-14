@@ -8,6 +8,7 @@ import ViperVM.Format.Elf
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
+import qualified ViperVM.Utils.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
 import Data.Foldable (forM_)
@@ -16,6 +17,7 @@ import Data.Maybe (listToMaybe)
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
+import qualified Data.List as List
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.IO as Text
 import qualified Data.ByteString.Char8 as C
@@ -157,7 +159,7 @@ showSection elf secnum s = do
          td_ . toHtml $ show (sectionType s)
       tr_ $ do
          th_ "Flags"
-         td_ . toHtml $ show (sectionFlags s)
+         td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
       tr_ $ do
          th_ "Address"
          td_ . toHtml $ show (sectionAddr s)
