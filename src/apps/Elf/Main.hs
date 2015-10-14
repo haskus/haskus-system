@@ -9,12 +9,14 @@ import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
 
-import Control.Monad (when)
-import Data.Foldable (msum, forM_)
+import Control.Monad (when, msum, mzero, MonadPlus)
+import Data.Foldable (forM_)
 import Data.Text.Format
+import Data.Maybe (listToMaybe)
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
+import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.IO as Text
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
@@ -34,10 +36,30 @@ server pth elf conf = do
    simpleHTTP conf $ msum
       [ dir "css" $ dir "style.css" $ ok css
 
---      , dir "test" $ nullDir >> ok' testPage
+      -- Section specific
+      , dir "section" $ path $ \secnum -> do
+         -- retrieve section by index
+         sec <- getSectionByIndex elf secnum
+         msum
+            -- dump section content
+            [ dir "content" $ do
+               -- select suggested output filename by the browser
+               let filename = format "section{}.bin" (Only secnum)
+                   disp     = format "attachment; filename=\"{}\"" (Only filename)
+               ok 
+                  $ addHeader "Content-Disposition" (Text.unpack disp)
+                  $ toResponseBS (C.pack "application/octet-stream") $ extractSectionContent elf sec
+            ]
+
 
       , nullDir >> ok' (welcomePage pth elf)
       ]
+
+getSectionByIndex :: MonadPlus m => Elf -> Int -> m Section
+getSectionByIndex elf idx = 
+   case listToMaybe (drop idx (elfSections elf)) of
+      Nothing -> mzero
+      Just x  -> return x
 
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
@@ -55,7 +77,7 @@ welcomePage pth elf = do
          toHtml $ format "Section {} \"" (Only (i :: Int))
          name
          "\""
-      showSection elf s
+      showSection elf i s
 
 showPreHeader :: PreHeader -> Html ()
 showPreHeader ph = table_ $ do
@@ -124,63 +146,69 @@ showHeader h = table_ $ do
       td_ . toHtml $ "Section " ++ show (headerSectionNameIndex h)
 
 
-showSection :: Elf -> Section -> Html ()
-showSection elf s = table_ $ do
-   tr_ $ do
-      th_ "Name index"
-      td_ . toHtml $ show (sectionNameIndex s)
-   tr_ $ do
-      th_ "Type"
-      td_ . toHtml $ show (sectionType s)
-   tr_ $ do
-      th_ "Flags"
-      td_ . toHtml $ show (sectionFlags s)
-   tr_ $ do
-      th_ "Address"
-      td_ . toHtml $ show (sectionAddr s)
-   tr_ $ do
-      th_ "Offset"
-      td_ . toHtml $ show (sectionOffset s)
-   tr_ $ do
-      th_ "Size"
-      td_ . toHtml $ show (sectionSize s)
-   tr_ $ do
-      th_ "Link"
-      td_ . toHtml $ show (sectionLink s)
-   tr_ $ do
-      th_ "Info"
-      td_ . toHtml $ show (sectionInfo s)
-   tr_ $ do
-      th_ "Alignment"
-      td_ . toHtml $ show (sectionAlignment s)
-   tr_ $ do
-      th_ "Entry size"
-      td_ . toHtml $ show (sectionEntrySize s)
+showSection :: Elf -> Int -> Section -> Html ()
+showSection elf secnum s = do
+   table_ $ do
+      tr_ $ do
+         th_ "Name index"
+         td_ . toHtml $ show (sectionNameIndex s)
+      tr_ $ do
+         th_ "Type"
+         td_ . toHtml $ show (sectionType s)
+      tr_ $ do
+         th_ "Flags"
+         td_ . toHtml $ show (sectionFlags s)
+      tr_ $ do
+         th_ "Address"
+         td_ . toHtml $ show (sectionAddr s)
+      tr_ $ do
+         th_ "Offset"
+         td_ . toHtml $ show (sectionOffset s)
+      tr_ $ do
+         th_ "Size"
+         td_ . toHtml $ show (sectionSize s)
+      tr_ $ do
+         th_ "Link"
+         td_ . toHtml $ show (sectionLink s)
+      tr_ $ do
+         th_ "Info"
+         td_ . toHtml $ show (sectionInfo s)
+      tr_ $ do
+         th_ "Alignment"
+         td_ . toHtml $ show (sectionAlignment s)
+      tr_ $ do
+         th_ "Entry size"
+         td_ . toHtml $ show (sectionEntrySize s)
 
-   case getFullSectionType elf s of
-      -- Show string table
-      BasicSectionType SectionTypeSTRTAB -> tr_ $ do
-         th_ "Strings"
-         let strs = extractSectionStrings elf s
-         td_ $ ul_ $ forM_ strs $ \(i,str) -> do
-            li_ . toHtml $ format "{} - \"{}\"" (i,str)
+      case getFullSectionType elf s of
+         -- Show string table
+         BasicSectionType SectionTypeSTRTAB -> tr_ $ do
+            th_ "Strings"
+            let strs = extractSectionStrings elf s
+            td_ $ ul_ $ forM_ strs $ \(i,str) -> do
+               li_ . toHtml $ format "{} - \"{}\"" (i,str)
 
-      -- Show symbol table
-      BasicSectionType SectionTypeSYMTAB -> tr_ $ do
-         th_ "Symbols"
-         let syms = getSectionSymbols elf s
-         td_ $ showSymbols elf syms
+         -- Show symbol table
+         BasicSectionType SectionTypeSYMTAB -> tr_ $ do
+            th_ "Symbols"
+            let syms = getSectionSymbols elf s
+            td_ $ showSymbols elf syms
 
-      -- Show relocation entries
-      typ@(SectionTypeRelocation {}) -> tr_ $ do
-         th_ "Relocation entries"
-         let es = getRelocationEntries elf s
-         td_ $ showRelocationEntries elf 
-                  (relocSectionHasAddend typ)
-                  (relocSectionSymbolTable typ)
-                  es
+         -- Show relocation entries
+         typ@(SectionTypeRelocation {}) -> tr_ $ do
+            th_ "Relocation entries"
+            let es = getRelocationEntries elf s
+            td_ $ showRelocationEntries elf 
+                     (relocSectionHasAddend typ)
+                     (relocSectionSymbolTable typ)
+                     es
 
-      _ -> return ()
+         _ -> return ()
+   let contentPath = Text.toStrict $ format "/section/{}/content/" (Only secnum)
+   br_ []
+   div_ $ do
+      "Download: "
+      a_ [href_ contentPath] "raw"
 
 showSymbols :: Elf -> [SymbolEntry] -> Html ()
 showSymbols elf ss = do
