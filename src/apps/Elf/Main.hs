@@ -178,7 +178,7 @@ showSection elf secnum secname s = do
          td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
       tr_ $ do
          th_ "Address"
-         td_ . toHtml $ show (sectionAddr s)
+         td_ . toHtml $ hexStr (sectionAddr s)
       tr_ $ do
          th_ "Offset"
          td_ . toHtml $ show (sectionOffset s)
@@ -203,8 +203,13 @@ showSection elf secnum secname s = do
          BasicSectionType SectionTypeSTRTAB -> tr_ $ do
             th_ "Strings"
             let strs = extractSectionStrings elf s
-            td_ $ ul_ $ forM_ strs $ \(i,str) -> do
-               li_ . toHtml $ format "{} - \"{}\"" (i,str)
+            td_ $ table_ $ do
+               tr_ $ do
+                  th_ "Offset"
+                  th_ "Value"
+               forM_ strs $ \(i,str) -> tr_ $ do
+                  td_ (toHtml (show i))
+                  td_ (toHtml str)
 
          -- Show symbol table
          BasicSectionType SectionTypeSYMTAB -> tr_ $ do
