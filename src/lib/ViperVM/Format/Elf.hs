@@ -6,11 +6,14 @@ module ViperVM.Format.Elf
    , extractSectionContent
    , extractSectionStrings
    , extractStringFromSection
-   , extractSectionNameByIndex
+   , getSectionNameByIndex
+   , getSectionByIndex
+   , getSectionNameSection
+   , getSectionName
    , getSectionNames
    , getSectionSymbols
    , getRelocationEntries
-   , findSectionWithName
+   , findSectionByName
    , extractZCATable
    , FullSectionType (..)
    , getFullSectionType
@@ -21,8 +24,10 @@ import Data.Int
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Binary.Get
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector
 import Data.Text (Text)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (fromJust)
 import qualified Data.Text.Encoding as Text
 
 import ViperVM.Format.Elf.PreHeader
@@ -34,10 +39,10 @@ import ViperVM.Format.Elf.Intel
 
 -- | Structure representing a ELF file
 data Elf = Elf
-   { elfPreHeader :: PreHeader   -- ^ Pre-header
-   , elfHeader    :: Header      -- ^ Header
-   , elfSections  :: [Section]   -- ^ Sections
-   , elfContent   :: ByteString  -- ^ Whole content
+   { elfPreHeader :: PreHeader      -- ^ Pre-header
+   , elfHeader    :: Header         -- ^ Header
+   , elfSections  :: Vector Section -- ^ Sections
+   , elfContent   :: ByteString     -- ^ Whole content
    } deriving (Show)
 
 -- | Parse the ELF format
@@ -97,18 +102,35 @@ extractStringFromSection elf sec idx = res
          $ LBS.drop (fromIntegral idx)
          $ extractSectionContent elf s
 
+-- | Get a section by index
+getSectionByIndex :: Integral a => Elf -> a -> Maybe Section
+getSectionByIndex elf i = 
+   elfSections elf Vector.!? fromIntegral i
 
-extractSectionNameByIndex :: Elf -> SectionIndex -> Maybe Text
-extractSectionNameByIndex elf idx = extractStringFromSection elf sec idx
-   where
-      -- Find the section containing section names
-      secIdx = headerSectionNameIndex (elfHeader elf)
-      sec    = elfSections elf !! fromIntegral secIdx
 
-getSectionNames :: Elf -> [(Section, Maybe Text)]
-getSectionNames elf = [ (sec, f sec) | sec <- elfSections elf]
+-- | Return the section containing section names (if any)
+getSectionNameSection :: Elf -> Maybe Section
+getSectionNameSection elf = do
+   -- Find the section containing section names
+   let secIdx = headerSectionNameIndex (elfHeader elf)
+   getSectionByIndex elf secIdx
+
+getSectionNameByIndex :: Elf -> SectionIndex -> Maybe Text
+getSectionNameByIndex elf idx = do
+   -- Find the section containing section names
+   sec <- getSectionNameSection elf
+   -- extract section name for the index idx
+   extractStringFromSection elf sec idx
+
+-- | Return the name of a section
+getSectionName :: Elf -> Section -> Maybe Text
+getSectionName elf = getSectionNameByIndex elf . sectionNameIndex
+
+-- | Return all the section names
+getSectionNames :: Elf -> Vector (Section, Maybe Text)
+getSectionNames elf = fmap f (elfSections elf)
    where
-      f = extractSectionNameByIndex elf . sectionNameIndex
+      f x = (x, getSectionName elf x)
 
 getTable :: Elf -> Section -> [ByteString]
 getTable elf sec = bss
@@ -156,11 +178,10 @@ getRelocationEntries elf sec =
       rela = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) True)
 
 -- | Find section with name
-findSectionWithName :: Elf -> Text -> Maybe Section
-findSectionWithName elf name = listToMaybe . fmap fst . filter p $ names
+findSectionByName :: Elf -> Text -> Maybe Section
+findSectionByName elf name = Vector.find p (elfSections elf)
    where
-      p x   = snd x == Just name
-      names = getSectionNames elf
+      p x   = getSectionName elf x == Just name
 
 -- | Fields are reused depending on the section types. This type gives a meaningful section type
 data FullSectionType
@@ -180,7 +201,7 @@ extractZCATable elf s = getZCATable (LBS.toStrict bs)
 
 getFullSectionType :: Elf -> Section -> FullSectionType
 getFullSectionType elf sec =
-   let getSec i = elfSections elf !! fromIntegral i in
+   let getSec i = fromJust (getSectionByIndex elf i) in
    case sectionType sec of
       SectionTypeREL    -> SectionTypeRelocation False
                               (getSec $ sectionInfo sec)

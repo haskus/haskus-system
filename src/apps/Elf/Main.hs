@@ -16,11 +16,11 @@ import qualified ViperVM.Utils.BitSet as BitSet
 import Control.Monad (when, msum, mzero, MonadPlus)
 import Data.Foldable (forM_)
 import Data.Text.Format
-import Data.Maybe (listToMaybe)
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
 import Data.Text (Text)
+import qualified Data.Vector as Vector
 import qualified Data.List as List
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.IO as Text
@@ -46,12 +46,12 @@ server pth elf conf = do
       -- Section specific
       , dir "section" $ path $ \secnum -> do
          -- retrieve section by index
-         sec <- getSectionByIndex elf secnum
+         sec <- lookupMaybe (getSectionByIndex elf secnum)
          msum
             -- dump section content
             [ dir "content" $ do
                -- select suggested output filename by the browser
-               let filename = format "section{}.bin" (Only secnum)
+               let filename = format "section{}.bin" (Only (secnum :: Int))
                    disp     = format "attachment; filename=\"{}\"" (Only filename)
                ok 
                   $ addHeader "Content-Disposition" (Text.unpack disp)
@@ -62,11 +62,9 @@ server pth elf conf = do
       , nullDir >> ok' (welcomePage pth elf)
       ]
 
-getSectionByIndex :: MonadPlus m => Elf -> Int -> m Section
-getSectionByIndex elf idx = 
-   case listToMaybe (drop idx (elfSections elf)) of
-      Nothing -> mzero
-      Just x  -> return x
+-- | Return the value in a Maybe or mzero in MonadPlus
+lookupMaybe :: MonadPlus m => Maybe a -> m a
+lookupMaybe = maybe mzero return
 
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
@@ -76,9 +74,9 @@ welcomePage pth elf = do
    h2_ "Header"
    showHeader (elfHeader elf)
    h2_ "Sections"
-   forM_ (elfSections elf `zip` [0..] ) $ \(s,i) -> do
+   forM_ (Vector.indexed (elfSections elf)) $ \(i,s) -> do
       let
-         secname = extractSectionNameByIndex elf (sectionNameIndex s) 
+         secname = getSectionName elf s
          name = case secname of
             Just str -> toHtml str
             Nothing  -> span_ [class_ "invalid"] "Invalid section name"
@@ -276,7 +274,7 @@ showZCATable t =
 showSymbols :: Elf -> [SymbolEntry] -> Html ()
 showSymbols elf ss = do
    let 
-      symtab = findSectionWithName elf ".strtab"
+      symtab = findSectionByName elf ".strtab"
       getSymName idx = case (idx,symtab) of
          (0, _)        -> Nothing
          (_, Just sec) -> extractStringFromSection elf sec idx

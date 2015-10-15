@@ -18,6 +18,8 @@ where
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Word
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector
 import Data.Binary.Get
 import Data.Binary.Put
 
@@ -42,7 +44,7 @@ data Section = Section
    , sectionEntrySize :: Word64
    } deriving (Show)
 
-parseSectionTable :: ByteString -> Header -> PreHeader -> [Section]
+parseSectionTable :: ByteString -> Header -> PreHeader -> Vector Section
 parseSectionTable bs h pre = fmap f offs
    where
       f o  = runGet (getSection pre) (LBS.drop o bs')
@@ -50,7 +52,7 @@ parseSectionTable bs h pre = fmap f offs
       bs'  = LBS.drop off bs
       sz   = fromIntegral $ headerSectionEntrySize h
       cnt  = fromIntegral $ headerSectionEntryCount h
-      offs = [ sz * i | i <- [0..cnt-1]]
+      offs = Vector.fromList [ sz * i | i <- [0..cnt-1]]
 
 getSection :: PreHeader -> Get Section
 getSection i = do
