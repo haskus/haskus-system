@@ -3,7 +3,7 @@ module ViperVM.Format.Elf
    ( Elf (..)
    , parseElf
    , readElf
-   , extractSectionContent
+   , getSectionContentLBS
    , extractSectionStrings
    , extractStringFromSection
    , getSectionNameByIndex
@@ -33,6 +33,7 @@ import qualified Data.Text.Encoding as Text
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
+import ViperVM.Format.Elf.Segment
 import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
 import ViperVM.Format.Elf.Intel
@@ -42,24 +43,26 @@ data Elf = Elf
    { elfPreHeader :: PreHeader      -- ^ Pre-header
    , elfHeader    :: Header         -- ^ Header
    , elfSections  :: Vector Section -- ^ Sections
+   , elfSegments  :: Vector Segment -- ^ Segments
    , elfContent   :: ByteString     -- ^ Whole content
    } deriving (Show)
 
 -- | Parse the ELF format
 parseElf :: ByteString -> Elf
-parseElf bs = Elf pre hdr sections bs
+parseElf bs = Elf pre hdr sections segments bs
    where
       pre      = runGet getPreHeader bs
       hdr      = runGet (skip 16 >> getHeader pre) bs
-      sections = parseSectionTable bs hdr pre
+      sections = getSectionTable bs hdr pre
+      segments = getSegmentTable bs hdr pre
 
 -- | Read a ELF file
 readElf :: FilePath -> IO Elf
 readElf path = parseElf <$> LBS.readFile path
 
 
-extractSectionContent :: Elf -> Section -> ByteString
-extractSectionContent elf s = LBS.take sz (LBS.drop off bs)
+getSectionContentLBS :: Elf -> Section -> ByteString
+getSectionContentLBS elf s = LBS.take sz (LBS.drop off bs)
    where
       bs  = elfContent elf
       sz  = fromIntegral $ sectionSize s 
@@ -76,7 +79,7 @@ extractSectionStrings elf sec =
          _                 -> error "Invalid section type"
    where
       -- section content
-      content = extractSectionContent elf sec
+      content = getSectionContentLBS elf sec
       -- bytestring list: drop last \0 and split at every other \0
       ss  = LBS.split 0 (LBS.init content)
       -- string list: convert bytestrings to texts
@@ -100,7 +103,7 @@ extractStringFromSection elf sec idx = res
          $ LBS.toStrict
          $ LBS.takeWhile (/=0)
          $ LBS.drop (fromIntegral idx)
-         $ extractSectionContent elf s
+         $ getSectionContentLBS elf s
 
 -- | Get a section by index
 getSectionByIndex :: Integral a => Elf -> a -> Maybe Section
@@ -136,7 +139,7 @@ getTable :: Elf -> Section -> [ByteString]
 getTable elf sec = bss
    where
       -- content of the section
-      content = extractSectionContent elf sec
+      content = getSectionContentLBS elf sec
       -- size of a single entry
       size = case fromIntegral (sectionEntrySize sec) of
          0 -> error "Invalid table section: entry size is null"
@@ -197,7 +200,7 @@ extractZCATable :: Elf -> Section -> ZCATable
 extractZCATable elf s = getZCATable (LBS.toStrict bs)
    where
       -- raw section
-      bs = extractSectionContent elf s
+      bs = getSectionContentLBS elf s
 
 getFullSectionType :: Elf -> Section -> FullSectionType
 getFullSectionType elf sec =

@@ -8,6 +8,7 @@ import ViperVM.Format.Elf
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
+import ViperVM.Format.Elf.Segment
 import ViperVM.Format.Elf.Intel
 import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
@@ -55,7 +56,8 @@ server pth elf conf = do
                    disp     = format "attachment; filename=\"{}\"" (Only filename)
                ok 
                   $ addHeader "Content-Disposition" (Text.unpack disp)
-                  $ toResponseBS (C.pack "application/octet-stream") $ extractSectionContent elf sec
+                  $ toResponseBS (C.pack "application/octet-stream")
+                  $ getSectionContentLBS elf sec
             ]
 
 
@@ -66,6 +68,9 @@ server pth elf conf = do
 lookupMaybe :: MonadPlus m => Maybe a -> m a
 lookupMaybe = maybe mzero return
 
+hexStr :: Integral a => a -> Text.Text
+hexStr a = format "0x{}" (Only $ hex a)
+
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
    p_ . toHtml $ "Info about: " ++ pth
@@ -74,17 +79,9 @@ welcomePage pth elf = do
    h2_ "Header"
    showHeader (elfHeader elf)
    h2_ "Sections"
-   forM_ (Vector.indexed (elfSections elf)) $ \(i,s) -> do
-      let
-         secname = getSectionName elf s
-         name = case secname of
-            Just str -> toHtml str
-            Nothing  -> span_ [class_ "invalid"] "Invalid section name"
-      h3_ $ do
-         toHtml $ format "Section {} \"" (Only (i :: Int))
-         name
-         "\""
-      showSection elf i secname s
+   showSections elf
+   h2_ "Segments"
+   showSegments elf
 
 showPreHeader :: PreHeader -> Html ()
 showPreHeader ph = table_ $ do
@@ -123,7 +120,7 @@ showHeader h = table_ $ do
       td_ . toHtml $ show (headerVersion h)
    tr_ $ do
       th_ "Entry address"
-      td_ . toHtml $ format "0x{}" (Only $ hex (headerEntryAddress h))
+      td_ . toHtml $ hexStr (headerEntryAddress h)
    tr_ $ do
       th_ "Segment table offset"
       td_ . toHtml $ show (headerSegmentTableOffset h)
@@ -152,6 +149,20 @@ showHeader h = table_ $ do
       th_ "Section names entry index"
       td_ . toHtml $ "Section " ++ show (headerSectionNameIndex h)
 
+
+showSections :: Elf -> Html ()
+showSections elf =
+   forM_ (Vector.indexed (elfSections elf)) $ \(i,s) -> do
+      let
+         secname = getSectionName elf s
+         name = case secname of
+            Just str -> toHtml str
+            Nothing  -> span_ [class_ "invalid"] "Invalid section name"
+      h3_ $ do
+         toHtml $ format "Section {} \"" (Only (i :: Int))
+         name
+         "\""
+      showSection elf i secname s
 
 showSection :: Elf -> Int -> Maybe Text -> Section -> Html ()
 showSection elf secnum secname s = do
@@ -227,6 +238,30 @@ showSection elf secnum secname s = do
       "Download: "
       a_ [href_ contentPath] "raw"
 
+showSegments :: Elf -> Html ()
+showSegments elf = do
+   let segs = elfSegments elf
+   table_ $ do
+      tr_ $ do
+         th_ "Index"
+         th_ "Type"
+         th_ "Flags"
+         th_ "Offset"
+         th_ "Virtual address"
+         th_ "Physical address"
+         th_ "Size in the file"
+         th_ "Size in memory"
+         th_ "Alignment"
+      forM_ (Vector.indexed segs) $ \(i,seg) -> tr_ $ do
+         td_ . toHtml $ show i
+         td_ . toHtml $ show (segmentType seg)
+         td_ . toHtml $ show (segmentFlags seg)
+         td_ . toHtml $ show (segmentOffset seg)
+         td_ . toHtml $ hexStr (segmentVirtualAddress seg)
+         td_ . toHtml $ hexStr (segmentPhysicalAddress seg)
+         td_ . toHtml $ show (segmentSizeInFile seg)
+         td_ . toHtml $ show (segmentSizeInMemory seg)
+         td_ . toHtml $ show (segmentAlignment seg)
 
 showZCATable :: ZCATable -> Html ()
 showZCATable t =
@@ -266,7 +301,7 @@ showZCATable t =
                th_ "Name"
                th_ "Value"
             forM_ (zcaEntries t) $ \e -> tr_ $ do
-               td_ $ toHtml $ format "0x{}" (Only . hex $ zcaIP e)
+               td_ $ toHtml $ hexStr (zcaIP e)
                td_ $ toHtml $ zcaName e
                td_ $ toHtml $ show (BS.unpack (zcaValue e))
          

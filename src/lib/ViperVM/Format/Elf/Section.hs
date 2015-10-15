@@ -5,13 +5,14 @@ module ViperVM.Format.Elf.Section
    , SectionIndex
    , SectionFlags
    , getSection
+   , getFirstSection
    , putSection
    , SectionCompression (..)
    , CompressionType (..)
    , getSectionCompression
    , putSectionCompression
    -- * Internal
-   , parseSectionTable
+   , getSectionTable
    )
 where
 
@@ -44,15 +45,21 @@ data Section = Section
    , sectionEntrySize :: Word64
    } deriving (Show)
 
-parseSectionTable :: ByteString -> Header -> PreHeader -> Vector Section
-parseSectionTable bs h pre = fmap f offs
+getSectionTable :: ByteString -> Header -> PreHeader -> Vector Section
+getSectionTable bs h pre = fmap f offs
    where
       f o  = runGet (getSection pre) (LBS.drop o bs')
       off  = fromIntegral $ headerSectionTableOffset h
       bs'  = LBS.drop off bs
       sz   = fromIntegral $ headerSectionEntrySize h
       cnt  = fromIntegral $ headerSectionEntryCount h
-      offs = Vector.fromList [ sz * i | i <- [0..cnt-1]]
+      offs = Vector.fromList [ 0, sz .. (cnt-1) * sz]
+
+-- | Return the first section that can contain special values for segments
+getFirstSection :: ByteString -> Header -> PreHeader -> Section
+getFirstSection bs hdr pre = runGet (getSection pre) (LBS.drop off bs)
+   where
+      off  = fromIntegral $ headerSectionTableOffset hdr
 
 getSection :: PreHeader -> Get Section
 getSection i = do
