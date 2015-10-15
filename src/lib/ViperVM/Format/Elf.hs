@@ -11,6 +11,7 @@ module ViperVM.Format.Elf
    , getSectionSymbols
    , getRelocationEntries
    , findSectionWithName
+   , extractZCATable
    , FullSectionType (..)
    , getFullSectionType
    )
@@ -27,6 +28,7 @@ import qualified Data.Text.Encoding as Text
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
+import ViperVM.Format.Elf.Intel
 
 -- | Structure representing a ELF file
 data Elf = Elf
@@ -168,6 +170,11 @@ data FullSectionType
    | BasicSectionType SectionType
    deriving (Show)
 
+extractZCATable :: Elf -> Section -> ZCATable
+extractZCATable elf s = getZCATable (LBS.toStrict bs)
+   where
+      -- raw section
+      bs = extractSectionContent elf s
 
 getFullSectionType :: Elf -> Section -> FullSectionType
 getFullSectionType elf sec =
@@ -180,4 +187,5 @@ getFullSectionType elf sec =
                               (getSec $ sectionInfo sec)
                               (getSec $ sectionLink sec)
       t                 -> BasicSectionType t
+
 

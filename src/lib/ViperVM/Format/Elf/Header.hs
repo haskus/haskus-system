@@ -54,7 +54,7 @@ putHeader i h = do
 
 -- | Header
 -- We use 64 bits fields for both 32 and 64 bit formats. These are truncated or
--- zero-extended in case of 32 bit.
+-- zero-extended in the 32 bits case.
 data Header = Header
    { headerType               :: Type
    , headerArch               :: Arch

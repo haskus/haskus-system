@@ -8,6 +8,7 @@ import ViperVM.Format.Elf
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
+import ViperVM.Format.Elf.Intel
 import qualified ViperVM.Utils.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
@@ -17,11 +18,13 @@ import Data.Maybe (listToMaybe)
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
+import Data.Text (Text)
 import qualified Data.List as List
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.IO as Text
 import qualified Data.ByteString.Char8 as C
-import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString as BS
 
 main :: IO ()
 main = do
@@ -72,14 +75,16 @@ welcomePage pth elf = do
    showHeader (elfHeader elf)
    h2_ "Sections"
    forM_ (elfSections elf `zip` [0..] ) $ \(s,i) -> do
-      let name = case extractSectionNameByIndex elf (sectionNameIndex s) of
+      let
+         secname = extractSectionNameByIndex elf (sectionNameIndex s) 
+         name = case secname of
             Just str -> toHtml str
             Nothing  -> span_ [class_ "invalid"] "Invalid section name"
       h3_ $ do
          toHtml $ format "Section {} \"" (Only (i :: Int))
          name
          "\""
-      showSection elf i s
+      showSection elf i secname s
 
 showPreHeader :: PreHeader -> Html ()
 showPreHeader ph = table_ $ do
@@ -148,8 +153,8 @@ showHeader h = table_ $ do
       td_ . toHtml $ "Section " ++ show (headerSectionNameIndex h)
 
 
-showSection :: Elf -> Int -> Section -> Html ()
-showSection elf secnum s = do
+showSection :: Elf -> Int -> Maybe Text -> Section -> Html ()
+showSection elf secnum secname s = do
    table_ $ do
       tr_ $ do
          th_ "Name index"
@@ -200,17 +205,71 @@ showSection elf secnum s = do
          typ@(SectionTypeRelocation {}) -> tr_ $ do
             th_ "Relocation entries"
             let es = getRelocationEntries elf s
-            td_ $ showRelocationEntries elf 
+            td_ $ showRelocationEntries
                      (relocSectionHasAddend typ)
-                     (relocSectionSymbolTable typ)
                      es
 
+         -- Show Intel debug opt
+         BasicSectionType SectionTypePROGBITS
+            | secname == Just ".debug_opt_report" -> tr_ $ do
+               th_ "Intel ZCA table"
+               let zca = extractZCATable elf s
+               td_ $ do
+                  showZCATable zca
+
          _ -> return ()
+
+
+
    let contentPath = Text.toStrict $ format "/section/{}/content/" (Only secnum)
    br_ []
    div_ $ do
       "Download: "
       a_ [href_ contentPath] "raw"
+
+
+showZCATable :: ZCATable -> Html ()
+showZCATable t =
+   table_ $ do
+      tr_ $ do
+         th_ "Version major"
+         td_ . toHtml $ show (zcaVersionMajor (zcaHeader t))
+      tr_ $ do
+         th_ "Version minor"
+         td_ . toHtml $ show (zcaVersionMinor (zcaHeader t))
+      tr_ $ do
+         th_ "Entry table offset"
+         td_ . toHtml $ show (zcaEntryOffset (zcaHeader t))
+      tr_ $ do
+         th_ "Entry table count"
+         td_ . toHtml $ show (zcaEntryCount (zcaHeader t))
+      tr_ $ do
+         th_ "String table offset"
+         td_ . toHtml $ show (zcaStringsOffset (zcaHeader t))
+      tr_ $ do
+         th_ "String table size"
+         td_ . toHtml $ show (zcaStringsSize (zcaHeader t))
+      tr_ $ do
+         th_ "Value table offset"
+         td_ . toHtml $ show (zcaExprsOffset (zcaHeader t))
+      tr_ $ do
+         th_ "Value table size"
+         td_ . toHtml $ show (zcaExprsSize (zcaHeader t))
+      tr_ $ do
+         th_ "Unknown 2"
+         td_ . toHtml $ show (zcaStuff1 (zcaHeader t))
+      tr_ $ do
+         th_ "Entries"
+         td_ $ table_ $ do
+            tr_ $ do
+               th_ "Offset"
+               th_ "Name"
+               th_ "Value"
+            forM_ (zcaEntries t) $ \e -> tr_ $ do
+               td_ $ toHtml $ format "0x{}" (Only . hex $ zcaIP e)
+               td_ $ toHtml $ zcaName e
+               td_ $ toHtml $ show (BS.unpack (zcaValue e))
+         
 
 showSymbols :: Elf -> [SymbolEntry] -> Html ()
 showSymbols elf ss = do
@@ -275,8 +334,8 @@ showSymbols elf ss = do
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
 
-showRelocationEntries :: Elf -> Bool -> Section -> [RelocationEntry] -> Html ()
-showRelocationEntries elf withAddend symSection es = do
+showRelocationEntries :: Bool -> [RelocationEntry] -> Html ()
+showRelocationEntries withAddend es = do
    table_ $ do
       tr_ $ do
          th_ "Address"
@@ -309,5 +368,7 @@ appTemplate doc = do
    doc
 
 css :: Response
-css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/Elf/style.css"))
+css = toResponseBS
+   (C.pack "text/css")
+   (LBS.fromStrict $(embedFile "src/apps/Elf/style.css"))
 
