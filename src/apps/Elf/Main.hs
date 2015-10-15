@@ -255,13 +255,21 @@ showSegments elf = do
       forM_ (Vector.indexed segs) $ \(i,seg) -> tr_ $ do
          td_ . toHtml $ show i
          td_ . toHtml $ show (segmentType seg)
-         td_ . toHtml $ show (segmentFlags seg)
+         td_ $ do
+            let flags = BitSet.toList (segmentFlags seg)
+                spc   = toHtmlRaw ("&nbsp;&nbsp;&nbsp;" :: Text)
+            if SegmentFlagReadable   `elem` flags then " R " else spc
+            if SegmentFlagWritable   `elem` flags then " W " else spc
+            if SegmentFlagExecutable `elem` flags then " X " else spc
          td_ . toHtml $ show (segmentOffset seg)
          td_ . toHtml $ hexStr (segmentVirtualAddress seg)
          td_ . toHtml $ hexStr (segmentPhysicalAddress seg)
          td_ . toHtml $ show (segmentSizeInFile seg)
          td_ . toHtml $ show (segmentSizeInMemory seg)
-         td_ . toHtml $ show (segmentAlignment seg)
+         td_ $ do
+            let alg = segmentAlignment seg
+            toHtml $ show alg
+            toHtml $ " (2^" ++ show (round (logBase 2 (fromIntegral alg) :: Float) :: Int) ++ ")"
 
 showZCATable :: ZCATable -> Html ()
 showZCATable t =
