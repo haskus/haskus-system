@@ -28,6 +28,8 @@ import qualified Data.Text.Encoding as Text
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
+import ViperVM.Format.Elf.Symbol
+import ViperVM.Format.Elf.Relocation
 import ViperVM.Format.Elf.Intel
 
 -- | Structure representing a ELF file

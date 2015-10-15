@@ -40,7 +40,7 @@ putHeader i h = do
    pw16 (fromIntegral . fromEnum . headerType $ h)
    pw16 (fromIntegral . fromEnum . headerArch $ h)
    pw32 (headerVersion h)
-   pwN  (headerEntry h)
+   pwN  (headerEntryAddress h)
    pwN  (headerSegmentTableOffset h)
    pwN  (headerSectionTableOffset h)
    pw32 (headerFlags h)
@@ -56,19 +56,19 @@ putHeader i h = do
 -- We use 64 bits fields for both 32 and 64 bit formats. These are truncated or
 -- zero-extended in the 32 bits case.
 data Header = Header
-   { headerType               :: Type
-   , headerArch               :: Arch
-   , headerVersion            :: Word32
-   , headerEntry              :: Word64
-   , headerSegmentTableOffset :: Word64
-   , headerSectionTableOffset :: Word64
-   , headerFlags              :: Word32
-   , headerHeaderSize         :: Word16
-   , headerSegmentEntrySize   :: Word16
-   , headerSegmentEntryCount  :: Word16
-   , headerSectionEntrySize   :: Word16
-   , headerSectionEntryCount  :: Word16
-   , headerSectionNameIndex   :: Word16
+   { headerType               :: Type     -- ^ Type of file
+   , headerArch               :: Arch     -- ^ Target architecture
+   , headerVersion            :: Word32   -- ^ Version
+   , headerEntryAddress       :: Word64   -- ^ Entry point address (for executable files)
+   , headerSegmentTableOffset :: Word64   -- ^ Offset of the segment table
+   , headerSectionTableOffset :: Word64   -- ^ Offset of the section table
+   , headerFlags              :: Word32   -- ^ Flags
+   , headerHeaderSize         :: Word16   -- ^ Size of the header
+   , headerSegmentEntrySize   :: Word16   -- ^ Size of a segment entry
+   , headerSegmentEntryCount  :: Word16   -- ^ Number of segment entries
+   , headerSectionEntrySize   :: Word16   -- ^ Size of a section entry
+   , headerSectionEntryCount  :: Word16   -- ^ Number of section entries
+   , headerSectionNameIndex   :: Word16   -- ^ Index of the section containing section names
    } deriving (Show)
 
 data Type

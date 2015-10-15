@@ -146,7 +146,9 @@ library
     ViperVM.Format.Elf.PreHeader
     ViperVM.Format.Elf.Header
     ViperVM.Format.Elf.Section
-    ViperVM.Format.Elf.Relocations
+    ViperVM.Format.Elf.Symbol
+    ViperVM.Format.Elf.Relocation
+    ViperVM.Format.Elf.RelocationType
     ViperVM.Format.Elf.Intel
     ViperVM.Format.Compression.Algorithms.Huffman
     ViperVM.Format.Compression.Algorithms.LZ77

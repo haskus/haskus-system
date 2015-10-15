@@ -1,5 +1,5 @@
 -- | Relocation types found in ELF binary files
-module ViperVM.Format.Elf.Relocations
+module ViperVM.Format.Elf.RelocationType
    ( toRelocType
    , fromRelocType
    , RelocationType (..)

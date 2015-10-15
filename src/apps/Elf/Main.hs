@@ -9,6 +9,8 @@ import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.Section
 import ViperVM.Format.Elf.Intel
+import ViperVM.Format.Elf.Symbol
+import ViperVM.Format.Elf.Relocation
 import qualified ViperVM.Utils.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
@@ -123,7 +125,7 @@ showHeader h = table_ $ do
       td_ . toHtml $ show (headerVersion h)
    tr_ $ do
       th_ "Entry address"
-      td_ . toHtml $ show (headerEntry h)
+      td_ . toHtml $ format "0x{}" (Only $ hex (headerEntryAddress h))
    tr_ $ do
       th_ "Segment table offset"
       td_ . toHtml $ show (headerSegmentTableOffset h)
