@@ -215,7 +215,12 @@ showSection elf secnum secname s = do
          BasicSectionType SectionTypeSYMTAB -> tr_ $ do
             th_ "Symbols"
             let syms = getSectionSymbols elf s
-            td_ $ showSymbols elf syms
+            td_ $ showSymbols elf s syms
+
+         BasicSectionType SectionTypeDYNSYM -> tr_ $ do
+            th_ "Dynamic symbols"
+            let syms = getSectionSymbols elf s
+            td_ $ showSymbols elf s syms
 
          -- Show relocation entries
          typ@(SectionTypeRelocation {}) -> tr_ $ do
@@ -319,10 +324,10 @@ showZCATable t =
                td_ $ toHtml $ show (BS.unpack (zcaValue e))
          
 
-showSymbols :: Elf -> [SymbolEntry] -> Html ()
-showSymbols elf ss = do
+showSymbols :: Elf -> Section -> [SymbolEntry] -> Html ()
+showSymbols elf symSec ss = do
    let 
-      symtab = findSectionByName elf ".strtab"
+      symtab = getSectionByIndex elf (sectionLink symSec)
       getSymName idx = case (idx,symtab) of
          (0, _)        -> Nothing
          (_, Just sec) -> extractStringFromSection elf sec idx

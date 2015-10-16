@@ -159,6 +159,7 @@ getSectionSymbols :: Elf -> Section -> [SymbolEntry]
 getSectionSymbols elf sec =
       case sectionType sec of
          SectionTypeSYMTAB -> fmap rd bss
+         SectionTypeDYNSYM -> fmap rd bss
          _                 -> error "Invalid section type"
    where
       -- get table of bytestrings
