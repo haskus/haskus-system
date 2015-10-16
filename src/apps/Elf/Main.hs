@@ -25,6 +25,7 @@ import Data.Text (Text)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
 import qualified Data.Text.Lazy as Text
+import qualified Data.Text.Lazy.Encoding as Text
 import qualified Data.Text.Lazy.IO as Text
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
@@ -230,6 +231,12 @@ showSection elf secnum secname s = do
             let des = getDynamicEntries elf s
             td_ $ showDynamicEntries des
 
+         -- Show interpreter path
+         BasicSectionType SectionTypePROGBITS
+            | getSectionName elf s == Just ".interp" -> tr_ $ do
+               th_ "Interpreter path"
+               let c = getSectionContentLBS elf s
+               td_ . toHtml $ Text.decodeUtf8 c
 
          -- Show relocation entries
          typ@(SectionTypeRelocation {}) -> tr_ $ do
@@ -405,7 +412,7 @@ showRelocationEntries withAddend es = do
          th_ "Symbol index"
          when withAddend $ th_ "Addend"
       forM_ es $ \e -> tr_ $ do
-         td_ . toHtml $ show (relocAddress e)
+         td_ . toHtml $ hexStr (relocAddress e)
          td_ . toHtml $ show (relocType e)
          td_ $ do
             let idx = relocSymbolIndex e
