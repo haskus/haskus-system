@@ -150,6 +150,7 @@ library
     ViperVM.Format.Elf.Symbol
     ViperVM.Format.Elf.Relocation
     ViperVM.Format.Elf.RelocationType
+    ViperVM.Format.Elf.Dynamic
     ViperVM.Format.Elf.Intel
     ViperVM.Format.Compression.Algorithms.Huffman
     ViperVM.Format.Compression.Algorithms.LZ77

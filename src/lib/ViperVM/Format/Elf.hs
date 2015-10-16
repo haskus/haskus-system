@@ -13,6 +13,7 @@ module ViperVM.Format.Elf
    , getSectionNames
    , getSectionSymbols
    , getRelocationEntries
+   , getDynamicEntries
    , findSectionByName
    , extractZCATable
    , FullSectionType (..)
@@ -36,6 +37,7 @@ import ViperVM.Format.Elf.Section
 import ViperVM.Format.Elf.Segment
 import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
+import ViperVM.Format.Elf.Dynamic
 import ViperVM.Format.Elf.Intel
 
 -- | Structure representing a ELF file
@@ -180,6 +182,17 @@ getRelocationEntries elf sec =
       -- read symbol entry
       rel  = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) False)
       rela = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) True)
+
+getDynamicEntries :: Elf -> Section -> [DynamicEntry]
+getDynamicEntries elf sec =
+      case sectionType sec of
+         SectionTypeDYNAMIC -> fmap rd bss
+         _                  -> error "Invalid section type"
+   where
+      -- get table of bytestrings
+      bss = getTable elf sec
+      -- read symbol entry
+      rd = runGet (getDynamicEntry (elfPreHeader elf))
 
 -- | Find section with name
 findSectionByName :: Elf -> Text -> Maybe Section

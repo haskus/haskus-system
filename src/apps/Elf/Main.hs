@@ -12,6 +12,7 @@ import ViperVM.Format.Elf.Segment
 import ViperVM.Format.Elf.Intel
 import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
+import ViperVM.Format.Elf.Dynamic
 import qualified ViperVM.Utils.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
@@ -217,10 +218,18 @@ showSection elf secnum secname s = do
             let syms = getSectionSymbols elf s
             td_ $ showSymbols elf s syms
 
+         -- Show dynamic symbol table
          BasicSectionType SectionTypeDYNSYM -> tr_ $ do
             th_ "Dynamic symbols"
             let syms = getSectionSymbols elf s
             td_ $ showSymbols elf s syms
+
+         -- Show dynamic info
+         BasicSectionType SectionTypeDYNAMIC -> tr_ $ do
+            th_ "Dynamic information"
+            let des = getDynamicEntries elf s
+            td_ $ showDynamicEntries des
+
 
          -- Show relocation entries
          typ@(SectionTypeRelocation {}) -> tr_ $ do
@@ -404,6 +413,16 @@ showRelocationEntries withAddend es = do
          case (withAddend, relocAddend e) of
             (True, Just x) -> td_ . toHtml $ show x
             _              -> return ()
+
+showDynamicEntries :: [DynamicEntry] -> Html ()
+showDynamicEntries es = do
+   table_ $ do
+      tr_ $ do
+         th_ "Type"
+         th_ "Value"
+      forM_ es $ \e -> tr_ $ do
+         td_ . toHtml $ show (dynType e)
+         td_ . toHtml $ hexStr (dynValue e)
 
 
 appTemplate :: Html () -> Html ()
