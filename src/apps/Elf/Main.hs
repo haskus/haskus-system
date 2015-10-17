@@ -21,6 +21,7 @@ import Data.Text.Format
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
+import Data.Word
 import Data.Text (Text)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
@@ -246,6 +247,12 @@ showSection elf secnum secname s = do
                      (relocSectionHasAddend typ)
                      es
 
+         -- Show version needed entries
+         BasicSectionType SectionTypeGNU_verneed -> tr_ $ do
+            th_ "Version needed entries"
+            let es = getVersionNeededEntries elf s
+            td_ $ showVersionNeededEntries es
+
          -- Show Intel debug opt
          BasicSectionType SectionTypePROGBITS
             | secname == Just ".debug_opt_report" -> tr_ $ do
@@ -421,15 +428,105 @@ showRelocationEntries withAddend es = do
             (True, Just x) -> td_ . toHtml $ show x
             _              -> return ()
 
+showVersionNeededEntries :: [VersionNeeded] -> Html ()
+showVersionNeededEntries es = do
+   table_ $ do
+      tr_ $ do
+         th_ "Version"
+         th_ "File name"
+         th_ "Versions"
+      forM_ es $ \e -> tr_ $ do
+         td_ . toHtml $ show (vnVersion e)
+         td_ . toHtml $ vnFileName e
+         td_ . toHtml $ show (vnEntries e)
+
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do
+   let
+      showFlags :: (Show a, BitSet.EnumBitSet a) => BitSet.BitSet Word64 a -> Html ()
+      showFlags = toHtml . concat . List.intersperse ", " . fmap show . BitSet.toList
+
    table_ $ do
       tr_ $ do
          th_ "Type"
          th_ "Value"
       forM_ es $ \e -> tr_ $ do
-         td_ . toHtml $ show (dynType e)
-         td_ . toHtml $ hexStr (dynValue e)
+         case e of
+            DynEntryRaw raw -> do
+               td_ . toHtml $ show (rawDynType raw)
+               td_ . toHtml $ hexStr (rawDynValue raw)
+            DynEntryNone -> do
+               td_ "None"
+               td_ ""
+            DynEntryFlags flags -> do
+               td_ "Flags"
+               td_ $ showFlags flags
+            DynEntryStateFlags flags -> do
+               td_ "State flags"
+               td_ $ showFlags flags
+            DynEntryPositionalFlags flags -> do
+               td_ "Positional flags"
+               td_ $ showFlags flags
+            DynEntryFeatureSelection features -> do
+               td_ "Feature selection"
+               td_ $ showFlags features
+            DynEntryNeededLibrary lib -> do
+               td_ "Needed library"
+               td_ . toHtml $ lib
+            DynEntryStringTableAddress addr -> do
+               td_ "String table address"
+               td_ . toHtml $ hexStr addr
+            DynEntryStringTableSize sz -> do
+               td_ "String table size"
+               td_ . toHtml $ format "{} bytes" (Only sz)
+            DynEntrySymbolTableAddress addr -> do
+               td_ "Symbol table address"
+               td_ . toHtml $ hexStr addr
+            DynEntrySymbolEntrySize sz -> do
+               td_ "Symbol entry size"
+               td_ . toHtml $ format "{} bytes" (Only sz)
+            DynEntryInitFunctionAddress addr -> do
+               td_ "Init function address"
+               td_ . toHtml $ hexStr addr
+            DynEntryFiniFunctionAddress addr -> do
+               td_ "Fini function address"
+               td_ . toHtml $ hexStr addr
+            DynEntryInitFunctionArrayAddress addr -> do
+               td_ "Init function array address"
+               td_ . toHtml $ hexStr addr
+            DynEntryFiniFunctionArrayAddress addr -> do
+               td_ "Fini function array address"
+               td_ . toHtml $ hexStr addr
+            DynEntryInitFunctionArraySize sz -> do
+               td_ "Init function array size"
+               td_ . toHtml $ format "{} bytes" (Only sz)
+            DynEntryFiniFunctionArraySize sz -> do
+               td_ "Fini function array size"
+               td_ . toHtml $ format "{} bytes" (Only sz)
+            DynEntrySymbolHashTableAddress addr -> do
+               td_ "Symbol hash table address"
+               td_ . toHtml $ hexStr addr
+            DynEntryGNUSymbolHashTableAddress addr -> do
+               td_ "GNU symbol hash table address"
+               td_ . toHtml $ hexStr addr
+            DynEntryPLTRelocAddress addr -> do
+               td_ "PLT relocations address"
+               td_ . toHtml $ hexStr addr
+            DynEntryPLTGOTAddress addr -> do
+               td_ "PLT GOT address"
+               td_ . toHtml $ hexStr addr
+            DynEntryPLTRelocSize sz -> do
+               td_ "Size of PLT relocations"
+               td_ . toHtml $ format "{} bytes" (Only sz)
+            DynEntryRelocaAddress addr -> do
+               td_ "Relocations with addend address"
+               td_ . toHtml $ hexStr addr
+            DynEntryRelocaSize sz -> do
+               td_ "Size of relocations with addend"
+               td_ . toHtml $ format "{} bytes" (Only sz)
+            DynEntryRelocaEntrySize sz -> do
+               td_ "Size of a relocation with addend entry"
+               td_ . toHtml $ format "{} bytes" (Only sz)
 
 
 appTemplate :: Html () -> Html ()

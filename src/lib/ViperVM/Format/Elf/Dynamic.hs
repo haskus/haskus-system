@@ -1,35 +1,38 @@
 module ViperVM.Format.Elf.Dynamic
-   ( DynamicEntry (..)
-   , getDynamicEntry
-   , putDynamicEntry
+   ( RawDynamicEntry (..)
+   , getRawDynamicEntry
+   , putRawDynamicEntry
+   , DynamicEntryFlag (..)
+   , DynamicEntryFlags
+   , DynamicEntryType (..)
+   , DynamicStateFlag (..)
+   , DynamicStateFlags
+   , DynamicFeature (..)
+   , DynamicFeatures
+   , DynamicPositionalFlag (..)
+   , DynamicPositionalFlags
    )
 where
 
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as LBS
 import Data.Word
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
 import Data.Binary.Get
 import Data.Binary.Put
 
 import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
-import qualified ViperVM.Utils.BitSet as BitSet
 
 import ViperVM.Format.Elf.PreHeader
-import ViperVM.Format.Elf.Header
 
-data DynamicEntry = DynamicEntry
-   { dynType   :: DynamicEntryType
-   , dynValue  :: Word64
+data RawDynamicEntry = RawDynamicEntry
+   { rawDynType   :: DynamicEntryType
+   , rawDynValue  :: Word64
    }
-   deriving (Show)
+   deriving (Show,Eq)
 
 data DynamicEntryType
    = DynTypeNone                     -- ^ Marks end of dynamic section
    | DynTypeNeededLibraryName        -- ^ Name of needed library
    | DynTypePLTRelocSize             -- ^ Size in bytes of PLT relocs
-   | DynTypePLTGOT                   -- ^ Processor defined value
+   | DynTypePLTGOTAddress            -- ^ Processor defined value
    | DynTypeSymbolHashTableAddress   -- ^ Address of symbol hash table
    | DynTypeStringTableAddress       -- ^ Address of string table
    | DynTypeSymbolTableAddress       -- ^ Address of symbol table
@@ -51,14 +54,14 @@ data DynamicEntryType
    | DynTypeRelocatableText          -- ^ Reloc might modify .text 
    | DynTypePLTRelocAddress          -- ^ Address of PLT relocs 
    | DynTypeBindNow                  -- ^ Process relocations of object 
-   | DynTypeInitFunctionArray        -- ^ Array with addresses of init fct 
-   | DynTypeFiniFunctionArray        -- ^ Array with addresses of fini fct 
+   | DynTypeInitFunctionArrayAddress -- ^ Array with addresses of init fct 
+   | DynTypeFiniFunctionArrayAddress -- ^ Array with addresses of fini fct 
    | DynTypeInitFunctionArraySize    -- ^ Size in bytes of InitFunctionArray
    | DynTypeFiniFunctionArraySize    -- ^ Size in bytes of FinFunctionArray
    | DynTypeLibrarySearchPath        -- ^ Library search path 
    | DynTypeFlags                    -- ^ Flags for the object being loaded 
-   | DynTypeEncoding                 -- ^ Start of encoded range 
-   | DynTypePreInitFunctionArray     -- ^ Array with addresses of preinit fct
+   -- | DynTypeEncoding              -- ^ Start of encoded range 
+   | DynTypePreInitFunctionArrayAddress -- ^ Array with addresses of preinit fct
    | DynTypePreInitFunctionArraySize -- ^ Size in bytes of PreInitFunctionArray
 
    | DynTypeGNUPrelinkedTimestamp    -- ^ Prelinking timestamp 
@@ -69,11 +72,11 @@ data DynamicEntryType
    | DynTypeMoveEntrySize
    | DynTypeMoveSize
    | DynTypeFeatureSelection         -- ^ Feature selection (DTF_*).  
-   | DynTypePositionalFlag           -- ^ Flags effecting the following dynamic entry
+   | DynTypePositionalFlags          -- ^ Flags effecting the following dynamic entry
    | DynTypeSymbolInfoSize           -- ^ Size of syminfo table (in bytes) 
    | DynTypeSymbolInfoEntrySize      -- ^ Sizeo of syminfo entry
 
-   | DynTypeGNUHashTable             -- ^ GNU-style hash table.  
+   | DynTypeGNUHashTableAddress      -- ^ GNU-style hash table.  
    | DynTypeTLSDescPLT
    | DynTypeTLSDescGOT
    | DynTypeGNUConflictSection       -- ^ Start of conflict section 
@@ -99,27 +102,27 @@ data DynamicEntryType
    | DynTypeGetValuesFrom            -- ^ Shared object to get values from 
 
    | DynTypeUnknown Word64           -- ^ Unknown dynamic type
-   deriving (Show)
+   deriving (Show,Eq)
 
-getDynamicEntry :: PreHeader -> Get DynamicEntry
-getDynamicEntry pre = do
+getRawDynamicEntry :: PreHeader -> Get RawDynamicEntry
+getRawDynamicEntry pre = do
    let (_,_,_,gwN) = getGetters pre
-   DynamicEntry
+   RawDynamicEntry
       <$> (toDynamicEntryType <$> gwN)
       <*> gwN
 
-putDynamicEntry :: PreHeader -> DynamicEntry -> Put
-putDynamicEntry pre de = do
+putRawDynamicEntry :: PreHeader -> RawDynamicEntry -> Put
+putRawDynamicEntry pre de = do
    let (_,_,_,pwN) = getPutters pre
-   pwN (fromDynamicEntryType $ dynType de)
-   pwN (dynValue de)
+   pwN (fromDynamicEntryType $ rawDynType de)
+   pwN (rawDynValue de)
 
 fromDynamicEntryType :: DynamicEntryType -> Word64
 fromDynamicEntryType x = case x of
    DynTypeNone                     -> 0
    DynTypeNeededLibraryName        -> 1
    DynTypePLTRelocSize             -> 2
-   DynTypePLTGOT                   -> 3
+   DynTypePLTGOTAddress            -> 3
    DynTypeSymbolHashTableAddress   -> 4
    DynTypeStringTableAddress       -> 5
    DynTypeSymbolTableAddress       -> 6
@@ -141,14 +144,14 @@ fromDynamicEntryType x = case x of
    DynTypeRelocatableText          -> 22
    DynTypePLTRelocAddress          -> 23
    DynTypeBindNow                  -> 24
-   DynTypeInitFunctionArray        -> 25
-   DynTypeFiniFunctionArray        -> 26
+   DynTypeInitFunctionArrayAddress -> 25
+   DynTypeFiniFunctionArrayAddress -> 26
    DynTypeInitFunctionArraySize    -> 27
    DynTypeFiniFunctionArraySize    -> 28
    DynTypeLibrarySearchPath        -> 29
    DynTypeFlags                    -> 30
    --DynTypeEncoding               -> 32
-   DynTypePreInitFunctionArray     -> 32
+   DynTypePreInitFunctionArrayAddress -> 32
    DynTypePreInitFunctionArraySize -> 33
    
    DynTypeGNUPrelinkedTimestamp    -> 0x6ffffdf5
@@ -159,11 +162,11 @@ fromDynamicEntryType x = case x of
    DynTypeMoveEntrySize            -> 0x6ffffdfa 
    DynTypeMoveSize                 -> 0x6ffffdfb
    DynTypeFeatureSelection         -> 0x6ffffdfc
-   DynTypePositionalFlag           -> 0x6ffffdfd
+   DynTypePositionalFlags          -> 0x6ffffdfd
    DynTypeSymbolInfoSize           -> 0x6ffffdfe
    DynTypeSymbolInfoEntrySize      -> 0x6ffffdff
    
-   DynTypeGNUHashTable             -> 0x6ffffef5
+   DynTypeGNUHashTableAddress      -> 0x6ffffef5
    DynTypeTLSDescPLT               -> 0x6ffffef6
    DynTypeTLSDescGOT               -> 0x6ffffef7
    DynTypeGNUConflictSection       -> 0x6ffffef8
@@ -191,75 +194,143 @@ fromDynamicEntryType x = case x of
 
 toDynamicEntryType :: Word64 -> DynamicEntryType
 toDynamicEntryType x = case x of
-   0               -> DynTypeNone                     
-   1               -> DynTypeNeededLibraryName        
-   2               -> DynTypePLTRelocSize             
-   3               -> DynTypePLTGOT                   
-   4               -> DynTypeSymbolHashTableAddress   
-   5               -> DynTypeStringTableAddress       
-   6               -> DynTypeSymbolTableAddress       
-   7               -> DynTypeRelocaAddress            
-   8               -> DynTypeRelocaSize               
-   9               -> DynTypeRelocaEntrySize          
-   10              -> DynTypeStringTableSize          
-   11              -> DynTypeSymbolEntrySize          
-   12              -> DynTypeInitFunctionAddress      
-   13              -> DynTypeFiniFunctionAddress      
-   14              -> DynTypeSharedObjectName         
-   15              -> DynTypeLibrarySearchPathOld     
-   16              -> DynTypeSymbolic                 
-   17              -> DynTypeRelocAddress             
-   18              -> DynTypeRelocSize                
-   19              -> DynTypeRelocEntrySize           
-   20              -> DynTypePLTRelocType             
-   21              -> DynTypeDebug                    
-   22              -> DynTypeRelocatableText          
-   23              -> DynTypePLTRelocAddress          
-   24              -> DynTypeBindNow                  
-   25              -> DynTypeInitFunctionArray        
-   26              -> DynTypeFiniFunctionArray        
-   27              -> DynTypeInitFunctionArraySize    
-   28              -> DynTypeFiniFunctionArraySize    
-   29              -> DynTypeLibrarySearchPath        
-   30              -> DynTypeFlags                    
-   --32            -> DynTypeEncoding               
-   32              -> DynTypePreInitFunctionArray     
-   33              -> DynTypePreInitFunctionArraySize 
-               
-   0x6ffffdf5      -> DynTypeGNUPrelinkedTimestamp    
-   0x6ffffdf6      -> DynTypeGNUConflictSize          
-   0x6ffffdf7      -> DynTypeGNULibraryListSize       
-   0x6ffffdf8      -> DynTypeChecksum                 
-   0x6ffffdf9      -> DynTypePLTPaddingSize           
-   0x6ffffdfa      -> DynTypeMoveEntrySize            
-   0x6ffffdfb      -> DynTypeMoveSize                 
-   0x6ffffdfc      -> DynTypeFeatureSelection         
-   0x6ffffdfd      -> DynTypePositionalFlag           
-   0x6ffffdfe      -> DynTypeSymbolInfoSize           
-   0x6ffffdff      -> DynTypeSymbolInfoEntrySize      
-               
-   0x6ffffef5      -> DynTypeGNUHashTable             
-   0x6ffffef6      -> DynTypeTLSDescPLT               
-   0x6ffffef7      -> DynTypeTLSDescGOT               
-   0x6ffffef8      -> DynTypeGNUConflictSection       
-   0x6ffffef9      -> DynTypeGNULibraryList           
-   0x6ffffefa      -> DynTypeConfigInfo               
-   0x6ffffefb      -> DynTypeDependencyAuditing       
-   0x6ffffefc      -> DynTypeObjectAuditing           
-   0x6ffffefd      -> DynTypePLTPadding               
-   0x6ffffefe      -> DynTypeMoveTable                
-   0x6ffffeff      -> DynTypeSymbolInfoTable          
-               
-   0x6ffffff0      -> DynTypeSymbolVersion            
-   0x6ffffff9      -> DynTypeRelocaCount              
-   0x6ffffffa      -> DynTypeRelocCount               
-   0x6ffffffb      -> DynTypeStateFlags               
-   0x6ffffffc      -> DynTypeVersionDefinitionTable   
-   0x6ffffffd      -> DynTypeVersionDefinitionCount   
-   0x6ffffffe      -> DynTypeVersionNeededTable       
-   0x6fffffff      -> DynTypeVersionNeededCount       
-               
-   0x7ffffffd      -> DynTypeLoadBefore               
-   0x7fffffff      -> DynTypeGetValuesFrom            
-   
+   0               -> DynTypeNone
+   1               -> DynTypeNeededLibraryName
+   2               -> DynTypePLTRelocSize
+   3               -> DynTypePLTGOTAddress
+   4               -> DynTypeSymbolHashTableAddress
+   5               -> DynTypeStringTableAddress
+   6               -> DynTypeSymbolTableAddress
+   7               -> DynTypeRelocaAddress
+   8               -> DynTypeRelocaSize
+   9               -> DynTypeRelocaEntrySize
+   10              -> DynTypeStringTableSize
+   11              -> DynTypeSymbolEntrySize
+   12              -> DynTypeInitFunctionAddress
+   13              -> DynTypeFiniFunctionAddress
+   14              -> DynTypeSharedObjectName
+   15              -> DynTypeLibrarySearchPathOld
+   16              -> DynTypeSymbolic
+   17              -> DynTypeRelocAddress
+   18              -> DynTypeRelocSize
+   19              -> DynTypeRelocEntrySize
+   20              -> DynTypePLTRelocType
+   21              -> DynTypeDebug
+   22              -> DynTypeRelocatableText
+   23              -> DynTypePLTRelocAddress
+   24              -> DynTypeBindNow
+   25              -> DynTypeInitFunctionArrayAddress
+   26              -> DynTypeFiniFunctionArrayAddress
+   27              -> DynTypeInitFunctionArraySize
+   28              -> DynTypeFiniFunctionArraySize
+   29              -> DynTypeLibrarySearchPath
+   30              -> DynTypeFlags
+   --32            -> DynTypeEncoding
+   32              -> DynTypePreInitFunctionArrayAddress
+   33              -> DynTypePreInitFunctionArraySize
+
+   0x6ffffdf5      -> DynTypeGNUPrelinkedTimestamp
+   0x6ffffdf6      -> DynTypeGNUConflictSize
+   0x6ffffdf7      -> DynTypeGNULibraryListSize
+   0x6ffffdf8      -> DynTypeChecksum
+   0x6ffffdf9      -> DynTypePLTPaddingSize
+   0x6ffffdfa      -> DynTypeMoveEntrySize
+   0x6ffffdfb      -> DynTypeMoveSize
+   0x6ffffdfc      -> DynTypeFeatureSelection
+   0x6ffffdfd      -> DynTypePositionalFlags
+   0x6ffffdfe      -> DynTypeSymbolInfoSize
+   0x6ffffdff      -> DynTypeSymbolInfoEntrySize
+
+   0x6ffffef5      -> DynTypeGNUHashTableAddress
+   0x6ffffef6      -> DynTypeTLSDescPLT
+   0x6ffffef7      -> DynTypeTLSDescGOT
+   0x6ffffef8      -> DynTypeGNUConflictSection
+   0x6ffffef9      -> DynTypeGNULibraryList
+   0x6ffffefa      -> DynTypeConfigInfo
+   0x6ffffefb      -> DynTypeDependencyAuditing
+   0x6ffffefc      -> DynTypeObjectAuditing
+   0x6ffffefd      -> DynTypePLTPadding
+   0x6ffffefe      -> DynTypeMoveTable
+   0x6ffffeff      -> DynTypeSymbolInfoTable
+
+   0x6ffffff0      -> DynTypeSymbolVersion
+   0x6ffffff9      -> DynTypeRelocaCount
+   0x6ffffffa      -> DynTypeRelocCount
+   0x6ffffffb      -> DynTypeStateFlags
+   0x6ffffffc      -> DynTypeVersionDefinitionTable
+   0x6ffffffd      -> DynTypeVersionDefinitionCount
+   0x6ffffffe      -> DynTypeVersionNeededTable
+   0x6fffffff      -> DynTypeVersionNeededCount
+
+   0x7ffffffd      -> DynTypeLoadBefore
+   0x7fffffff      -> DynTypeGetValuesFrom
+
    v               -> DynTypeUnknown v
+
+
+-- | Dynamic entry flags (DynTypeFlags)
+data DynamicEntryFlag
+   = DynFlagOrigin            -- ^ Object may use DF_ORIGIN
+   | DynFlagSymbolic          -- ^ Symbol resolutions starts here
+   | DynFlagHasTextRelocation -- ^ Object contains text relocations
+   | DynFlagBindNow           -- ^ No lazy binding for this object
+   | DynFlagStaticTLS         -- ^ Module uses the static TLS model
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet DynamicEntryFlag
+
+type DynamicEntryFlags = BitSet Word64 DynamicEntryFlag
+
+-- | Dynamic state flags (DynTypeStateFlags)
+data DynamicStateFlag
+   = DynStateFlagNow                        -- ^ Set RTLD_NOW for this object.  
+   | DynStateFlagGlobal                     -- ^ Set RTLD_GLOBAL for this object.  
+   | DynStateFlagGroup                      -- ^ Set RTLD_GROUP for this object.  
+   | DynStateFlagNoDelete                   -- ^ Set RTLD_NODELETE for this object.
+   | DynStateFlagLoadFilter                 -- ^ Trigger filtee loading at runtime.
+   | DynStateFlagInitFirst                  -- ^ Set RTLD_INITFIRST for this object
+   | DynStateFlagNoOpen                     -- ^ Set RTLD_NOOPEN for this object.  
+   | DynStateFlagOrigin                     -- ^ $ORIGIN must be handled.  
+   | DynStateFlagDirect                     -- ^ Direct binding enabled.  
+   | DynStateFlagTrans
+   | DynStateFlagInterpose                  -- ^ Object is used to interpose.  
+   | DynStateFlagIgnoreDefaultLibrarySearch -- ^ Ignore default lib search path.  
+   | DynStateFlagNoDump                     -- ^ Object can't be dldump'ed.  
+   | DynStateFlagAlternativeConfig          -- ^ Configuration alternative created.
+   | DynStateFlagEndFiltee                  -- ^ Filtee terminates filters search. 
+   | DynStateFlagDispRelocDNE               -- ^ Disp reloc applied at build time. 
+   | DynStateFlagDispRelocPND               -- ^ Disp reloc applied at run-time.  
+   | DynStateFlagNoDirect                   -- ^ Object has no-direct binding. 
+   | DynStateFlagIgnoreMultipleDef
+   | DynStateFlagNoKSymbols
+   | DynStateFlagNoHeader
+   | DynStateFlagEdited                     -- ^ Object is modified after built.  
+   | DynStateFlagNoReloc                    -- ^ 
+   | DynStateFlagSymbolInterposers          -- ^ Object has individual interposers.  
+   | DynStateFlagGlobalAudit                -- ^ Global auditing required.  
+   | DynStateFlagSingletonSymbols           -- ^ Singleton symbols are used.  
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet DynamicStateFlag
+
+type DynamicStateFlags = BitSet Word64 DynamicStateFlag
+
+-- | Features
+data DynamicFeature
+   = DynFeatureParInit
+   | DynFeatureConfExp
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet DynamicFeature
+
+type DynamicFeatures = BitSet Word64 DynamicFeature
+
+-- | Dynamic positional flags affecting only the next entry
+data DynamicPositionalFlag
+   = DynPositionalFlagLazyLoad   -- ^ Lazyload following object
+   | DynPositionalFlagGroupPerm  -- ^ Symbols from next object are not generally available
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet DynamicPositionalFlag
+
+type DynamicPositionalFlags = BitSet Word64 DynamicPositionalFlag

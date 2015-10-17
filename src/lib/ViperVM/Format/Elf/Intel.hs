@@ -89,11 +89,11 @@ getZCATableHeader = do
 
 
 data ZCATableEntry = ZCATableEntry
-   { zcaIP              :: Word64   -- ^ Instruction pointer on entry
-   , zcaNameIndex       :: Word32   -- ^ Offset in bytes into strings table
-   , zcaName            :: Text     -- ^ Entry string
-   , zcaValueIndex      :: Word32   -- ^ Offset in bytes into expression table
-   , zcaValue           :: BS.ByteString -- ^ Values
+   { zcaIP              :: Word64         -- ^ Instruction pointer on entry
+   , zcaNameIndex       :: Word32         -- ^ Offset in bytes into strings table
+   , zcaName            :: Text           -- ^ Entry string
+   , zcaValueIndex      :: Word32         -- ^ Offset in bytes into expression table
+   , zcaValue           :: BS.ByteString  -- ^ Values
    }
    deriving (Show)
 
@@ -146,8 +146,8 @@ getZCAValues hdr bs es = values
       -- sizes
       szs    = fmap (uncurry (-)) (offs' `zip` offs)
          where offs' = tail offs ++ [fromIntegral $ zcaExprsSize hdr]
-      -- values
-      update e sz = e { zcaValue = BS.take sz $ BS.drop off raw }
+      -- values: we drop the first byte of the value (value size)
+      update e sz = e { zcaValue = BS.drop 1 $ BS.take sz $ BS.drop off raw }
          where off = fromIntegral $ zcaValueIndex e
 
       values = fmap (uncurry update) (es `zip` szs)
