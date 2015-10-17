@@ -40,6 +40,7 @@ import Data.Binary.Get
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Data.Text (Text)
+import Control.Monad (when)
 import Data.Maybe (fromJust)
 import qualified Data.Text.Encoding as Text
 
@@ -280,8 +281,27 @@ data Note = Note
    }
    deriving (Show)
 
+
+-- | Get a sequence of entries. Each entry is aligned to the given number of bytes
+getEntriesWithAlignment :: Int -> Get a -> Get [a]
+getEntriesWithAlignment alignment getter = rec
+   where
+      rec = isEmpty >>= \case
+         True  -> return []
+         False -> do
+            e <- getter
+            rds <- bytesRead
+            let toSkip = fromIntegral alignment - (rds `mod` fromIntegral alignment)
+            empty <- isEmpty
+            when (toSkip /= 0 && not empty) $
+               skip (fromIntegral toSkip)
+            es <- rec
+            return (e:es)
+         
+
+-- | Get note entries
 getNoteEntries :: Elf -> Section -> [Note]
-getNoteEntries elf sec = [note]
+getNoteEntries elf sec = runGet (getEntriesWithAlignment 4 getter) bs
    where
       -- content of the section
       bs = getSectionContentLBS elf sec
@@ -293,7 +313,6 @@ getNoteEntries elf sec = [note]
          desc <- LBS.fromStrict 
                   <$> getByteString (fromIntegral $ rawnoteDescriptorSize raw)
          return (Note name desc (rawnoteType raw))
-      note = runGet getter bs
 
 -- | Find section with name
 findSectionByName :: Elf -> Text -> Maybe Section
