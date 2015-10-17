@@ -153,6 +153,7 @@ library
     ViperVM.Format.Elf.Dynamic
     ViperVM.Format.Elf.Version
     ViperVM.Format.Elf.Note
+    ViperVM.Format.Elf.Move
     ViperVM.Format.Elf.Intel
     ViperVM.Format.Compression.Algorithms.Huffman
     ViperVM.Format.Compression.Algorithms.LZ77
