@@ -253,6 +253,12 @@ showSection elf secnum secname s = do
             let es = getVersionNeededEntries elf s
             td_ $ showVersionNeededEntries es
 
+         -- Show notes
+         BasicSectionType SectionTypeNOTE -> tr_ $ do
+            th_ "Notes"
+            let es = getNoteEntries elf s
+            td_ $ showNoteEntries es
+
          -- Show Intel debug opt
          BasicSectionType SectionTypePROGBITS
             | secname == Just ".debug_opt_report" -> tr_ $ do
@@ -450,6 +456,18 @@ showVersionNeededEntries es = do
                   td_ . toHtml $ show (vnaHash v)
                   td_ . toHtml $ show (vnaFlags v)
                   td_ . toHtml $ show (vnaOther v)
+
+showNoteEntries :: [Note] -> Html ()
+showNoteEntries es = do
+   table_ $ do
+      tr_ $ do
+         th_ "Name"
+         th_ "Type"
+         th_ "Descriptor"
+      forM_ es $ \e -> tr_ $ do
+         td_ . toHtml $ noteName e
+         td_ . toHtml $ show (noteType e)
+         td_ . toHtml $ show (LBS.unpack $ noteDescriptor e)
 
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do

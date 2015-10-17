@@ -19,12 +19,15 @@ module ViperVM.Format.Elf
    , extractZCATable
    , FullSectionType (..)
    , getFullSectionType
-   -- * Dynamic section
+     -- * Dynamic section
    , DynamicEntry (..)
    , getDynamicEntry
-   -- * Version needed section
+     -- * Version needed section
    , VersionNeeded (..)
    , VersionNeededAuxiliary (..)
+     -- * Notes
+   , Note (..)
+   , getNoteEntries
    )
 where
 
@@ -32,6 +35,7 @@ import Data.Int
 import Data.Word
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString as BS
 import Data.Binary.Get
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
@@ -49,6 +53,7 @@ import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
 import ViperVM.Format.Elf.Dynamic
 import ViperVM.Format.Elf.Version
+import ViperVM.Format.Elf.Note
 import ViperVM.Format.Elf.Intel
 
 -- | Structure representing a ELF file
@@ -267,6 +272,28 @@ getVersionNeededEntries elf sec =
             tableBS = LBS.drop (fromIntegral $ rvnAuxTable e) bs
       -- list of VersionNeeded
       vns = fmap makeVN raws
+
+data Note = Note
+   { noteName        :: Text
+   , noteDescriptor  :: LBS.ByteString
+   , noteType        :: Word32
+   }
+   deriving (Show)
+
+getNoteEntries :: Elf -> Section -> [Note]
+getNoteEntries elf sec = [note]
+   where
+      -- content of the section
+      bs = getSectionContentLBS elf sec
+      -- getter
+      getter = do
+         raw  <- getRawNote (elfPreHeader elf)
+         name <- Text.decodeUtf8 . BS.init 
+                  <$> getByteString (fromIntegral $ rawnoteNameLength raw)
+         desc <- LBS.fromStrict 
+                  <$> getByteString (fromIntegral $ rawnoteDescriptorSize raw)
+         return (Note name desc (rawnoteType raw))
+      note = runGet getter bs
 
 -- | Find section with name
 findSectionByName :: Elf -> Text -> Maybe Section
