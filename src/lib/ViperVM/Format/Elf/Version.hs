@@ -1,4 +1,4 @@
--- | Version definition sections
+-- | Version sections
 module ViperVM.Format.Elf.Version
    ( -- * Version definition
      VersionDefinition (..)
