@@ -48,8 +48,8 @@ data SegmentType
    | SegmentTypeSharedLib              -- ^ Reserved
    | SegmentTypeSegmentHeader          -- ^ Entry for header table itself
    | SegmentTypeTLS                    -- ^ Thread-local storage segment
-   | SegmentTypeGNU_EH_FRAME           -- ^ GCC .eh_frame_hdr segment
-   | SegmentTypeGNU_STACK              -- ^ Indicates stack executability
+   | SegmentTypeGNU_EH_Frame           -- ^ GCC .eh_frame_hdr segment
+   | SegmentTypeGNU_Stack              -- ^ Indicates stack executability
    | SegmentTypeGNU_ReadOnlyAfterReloc -- ^ Read-only after relocation
    | SegmentTypeSunBSS                 -- ^ Sun Specific segment
    | SegmentTypeSunStack               -- ^ Sun stack segment
@@ -76,8 +76,8 @@ instance Enum SegmentType where
       SegmentTypeSharedLib              -> 5
       SegmentTypeSegmentHeader          -> 6
       SegmentTypeTLS                    -> 7
-      SegmentTypeGNU_EH_FRAME           -> 0x6474e550
-      SegmentTypeGNU_STACK              -> 0x6474e551
+      SegmentTypeGNU_EH_Frame           -> 0x6474e550
+      SegmentTypeGNU_Stack              -> 0x6474e551
       SegmentTypeGNU_ReadOnlyAfterReloc -> 0x6474e552
       SegmentTypeSunBSS                 -> 0x6ffffffa
       SegmentTypeSunStack               -> 0x6ffffffb
@@ -92,8 +92,8 @@ instance Enum SegmentType where
       5            -> SegmentTypeSharedLib
       6            -> SegmentTypeSegmentHeader
       7            -> SegmentTypeTLS
-      0x6474e550   -> SegmentTypeGNU_EH_FRAME
-      0x6474e551   -> SegmentTypeGNU_STACK
+      0x6474e550   -> SegmentTypeGNU_EH_Frame
+      0x6474e551   -> SegmentTypeGNU_Stack
       0x6474e552   -> SegmentTypeGNU_ReadOnlyAfterReloc
       0x6ffffffa   -> SegmentTypeSunBSS
       0x6ffffffb   -> SegmentTypeSunStack

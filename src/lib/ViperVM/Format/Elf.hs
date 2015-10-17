@@ -24,6 +24,7 @@ module ViperVM.Format.Elf
    , getDynamicEntry
    -- * Version needed section
    , VersionNeeded (..)
+   , VersionNeededAuxiliary (..)
    )
 where
 

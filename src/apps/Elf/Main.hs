@@ -438,7 +438,18 @@ showVersionNeededEntries es = do
       forM_ es $ \e -> tr_ $ do
          td_ . toHtml $ show (vnVersion e)
          td_ . toHtml $ vnFileName e
-         td_ . toHtml $ show (vnEntries e)
+         td_ . table_ $ do
+            tr_ $ do
+               th_ "Name"
+               th_ "Hash"
+               th_ "Flags"
+               th_ "Other"
+            forM_ (vnEntries e) $ \v -> do
+               tr_ $ do
+                  td_ . toHtml $ vnaName v
+                  td_ . toHtml $ show (vnaHash v)
+                  td_ . toHtml $ show (vnaFlags v)
+                  td_ . toHtml $ show (vnaOther v)
 
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do
