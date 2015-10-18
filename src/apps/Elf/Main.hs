@@ -13,6 +13,9 @@ import ViperVM.Format.Elf.Intel
 import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
 import ViperVM.Format.Elf.Dynamic
+
+import ViperVM.Format.Dwarf
+
 import qualified ViperVM.Utils.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
@@ -281,6 +284,13 @@ showSection elf secnum secname s = do
                let c = getDebugTypeFromSection elf s
                td_ . toHtml $ show c
 
+         -- Show debug abbrev
+         BasicSectionType SectionTypePROGBITS
+            | getSectionName elf s == Just ".debug_abbrev" -> tr_ $ do
+               th_ "Debug abbreviations"
+               let c = getDebugAbbrevFromSection elf s
+               td_ $ showDebugAbbrev c
+
          _ -> return ()
 
 
@@ -482,6 +492,26 @@ showNoteEntries es = do
          td_ . toHtml $ noteName e
          td_ . toHtml $ show (noteType e)
          td_ . toHtml $ show (LBS.unpack $ noteDescriptor e)
+
+showDebugAbbrev :: [DebugAbbrevEntry] -> Html ()
+showDebugAbbrev es = do
+   table_ $ do
+      tr_ $ do
+         th_ "Code"
+         th_ "Tag"
+         th_ "Has children"
+         th_ "Attributes"
+      forM_ es $ \e -> tr_ $ do
+         td_ . toHtml $ show (debugAbbrevCode e)
+         td_ . toHtml $ show (debugAbbrevTag e)
+         td_ . toHtml $ show (debugAbbrevHasChildren e)
+         td_ . table_ $ do
+            tr_ $ do
+               th_ "Attribute"
+               th_ "Form"
+            forM_ (debugAbbrevAttributes e) $ \att -> tr_ $ do
+               td_ . toHtml . show $ debugAbbrevAttr att
+               td_ . toHtml . show $ debugAbbrevAttrForm att
 
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do

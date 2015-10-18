@@ -39,6 +39,7 @@ module ViperVM.Format.Elf
      -- * Debug sections
    , getDebugInfoFromSection
    , getDebugTypeFromSection
+   , getDebugAbbrevFromSection
      -- * Intel specific sections
    , getZCATableFromSection
    )
@@ -515,6 +516,11 @@ getDebugTypeFromSection :: Elf -> Section -> [DebugType]
 getDebugTypeFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugType endian)) bs
    where
       endian = preHeaderEndianness (elfPreHeader elf)
+      bs = getSectionContentLBS elf sec
+
+getDebugAbbrevFromSection :: Elf -> Section -> [DebugAbbrevEntry]
+getDebugAbbrevFromSection elf sec = runGet getDebugAbbrevEntries bs
+   where
       bs = getSectionContentLBS elf sec
 
 

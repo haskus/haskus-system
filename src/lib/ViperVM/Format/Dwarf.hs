@@ -15,6 +15,9 @@ module ViperVM.Format.Dwarf
    , putFormat
    , getUnitLength
    , putUnitLength
+   -- * Debug entry
+   , DebugEntry (..)
+   , getDebugEntry
    -- * Debug info
    , CompilationUnitHeader (..)
    , getCompilationUnitHeader
@@ -27,6 +30,11 @@ module ViperVM.Format.Dwarf
    , putTypeUnitHeader
    , DebugType (..)
    , getDebugType
+   -- * Abbreviations
+   , DebugAbbrevEntry (..)
+   , DebugAbbrevAttribute (..)
+   , getDebugAbbrevEntry
+   , getDebugAbbrevEntries
    )
 where
 
@@ -34,8 +42,10 @@ import Data.Word
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.ByteString (ByteString)
+import Data.Maybe (fromJust,isJust)
 
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.VariableLength
 
 -- DWARF 4
 -- =======
@@ -794,6 +804,64 @@ data DebugType = DebugType
    }
    deriving (Show)
 
+
+data DebugEntry = DebugEntry
+   { debugEntryAbbrevCode     :: Word64
+   --, debugEntryAttribute      :: [DebugAttribute]
+   }
+   deriving (Show)
+
+
+-- | Get while True (read and discard the ending element)
+getWhile :: (a -> Bool) -> Get a -> Get [a]
+getWhile cond getter = rec []
+   where
+      rec xs = do
+         x <- getter
+         if cond x
+            then rec (x:xs)
+            else return (reverse xs)
+
+getDebugEntry :: Get DebugEntry
+getDebugEntry = do
+   code <- getULEB128
+   return $ DebugEntry code
+
+data DebugAbbrevEntry = DebugAbbrevEntry
+   { debugAbbrevCode         :: Word64
+   , debugAbbrevTag          :: Tag
+   , debugAbbrevHasChildren  :: Bool
+   , debugAbbrevAttributes   :: [DebugAbbrevAttribute]
+   }
+   deriving (Show)
+
+data DebugAbbrevAttribute = DebugAbbrevAttribute
+   { debugAbbrevAttr      :: Attribute
+   , debugAbbrevAttrForm  :: Form
+   }
+   deriving (Show)
+
+getAbbrevAttribute :: Get (Maybe DebugAbbrevAttribute)
+getAbbrevAttribute = do
+   attr <- getULEB128
+   form <- getULEB128
+   return $ case (attr,form) of
+      (0,0) -> Nothing
+      _     -> Just (DebugAbbrevAttribute (toAttribute attr) (toForm form))
+
+-- | Read an entry except if the code is 0 (discard it)
+getDebugAbbrevEntry :: Get (Maybe DebugAbbrevEntry)
+getDebugAbbrevEntry = do
+   code <- getULEB128
+   if code == 0
+      then return Nothing
+      else fmap Just $ DebugAbbrevEntry code
+               <$> (toTag <$> getULEB128)
+               <*> ((== 1) <$> getWord8)
+               <*> (fmap fromJust <$> getWhile isJust getAbbrevAttribute)
+         
+getDebugAbbrevEntries :: Get [DebugAbbrevEntry]
+getDebugAbbrevEntries = fmap fromJust <$> getWhile isJust getDebugAbbrevEntry
 
 getDebugInfo :: Endianness -> Get DebugInfo
 getDebugInfo endian = do
