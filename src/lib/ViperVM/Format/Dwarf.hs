@@ -15,11 +15,18 @@ module ViperVM.Format.Dwarf
    , putFormat
    , getUnitLength
    , putUnitLength
+   -- * Debug info
    , CompilationUnitHeader (..)
    , getCompilationUnitHeader
    , putCompilationUnitHeader
    , DebugInfo (..)
    , getDebugInfo
+   -- * Debug type
+   , TypeUnitHeader (..)
+   , getTypeUnitHeader
+   , putTypeUnitHeader
+   , DebugType (..)
+   , getDebugType
    )
 where
 
@@ -657,17 +664,24 @@ data DwarfFormat
 
 -- | Compilation unit header
 data CompilationUnitHeader = CompilationUnitHeader
-   { cuhEndianness   :: Endianness     -- ^ The endianness is not part of the
-                                       -- header (it is given by the ELF header 
-                                       -- for instance) but we store it here for
-                                       -- convenience
-   , cuhDwarfFormat  :: DwarfFormat
-   , cuhUnitLength   :: Word64
-   , cuhVersion      :: Word16
-   , cuhAbbrevOffset :: Word64
-   , cuhAddressSize  :: Word8
+   { cuhDwarfFormat     :: DwarfFormat
+   , cuhUnitLength      :: Word64
+   , cuhVersion         :: Word16
+   , cuhAbbrevOffset    :: Word64
+   , cuhAddressSize     :: Word8
    }
    deriving (Show,Eq)
+
+data TypeUnitHeader = TypeUnitHeader
+   { tuhDwarfFormat     :: DwarfFormat
+   , tuhUnitLength      :: Word64
+   , tuhVersion         :: Word16
+   , tuhAbbrevOffset    :: Word64
+   , tuhAddressSize     :: Word8
+   , tuhTypeSignature   :: Word64
+   , tuhTypeOffset      :: Word64
+   }
+   deriving(Show,Eq)
 
 -- | Return getters
 getGetters :: Endianness -> DwarfFormat -> (Get Word8, Get Word16, Get Word32, Get Word64, Get Word64)
@@ -726,21 +740,46 @@ getCompilationUnitHeader endian = do
    let (gw8,gw16,_,_,gwN) = getGetters endian format
    
    CompilationUnitHeader
-      endian
       format
       len
       <$> gw16
       <*> gwN
       <*> gw8
 
-putCompilationUnitHeader :: CompilationUnitHeader -> Put
-putCompilationUnitHeader cuh = do
-   let (pw8,pw16,_,_,pwN) = getPutters (cuhEndianness cuh) (cuhDwarfFormat cuh)
+putCompilationUnitHeader :: Endianness -> CompilationUnitHeader -> Put
+putCompilationUnitHeader endian cuh = do
+   let (pw8,pw16,_,_,pwN) = getPutters endian (cuhDwarfFormat cuh)
 
-   putUnitLength (cuhEndianness cuh) (cuhDwarfFormat cuh) (cuhUnitLength cuh)
+   putUnitLength endian (cuhDwarfFormat cuh) (cuhUnitLength cuh)
    pw16 (cuhVersion cuh)
    pwN  (cuhAbbrevOffset cuh)
    pw8  (cuhAddressSize cuh)
+
+getTypeUnitHeader :: Endianness -> Get TypeUnitHeader
+getTypeUnitHeader endian = do
+   (format,len) <- getUnitLength endian
+   let (gw8,gw16,_,gw64,gwN) = getGetters endian format
+   
+   TypeUnitHeader
+      format
+      len
+      <$> gw16
+      <*> gwN
+      <*> gw8
+      <*> gw64
+      <*> gwN
+
+putTypeUnitHeader :: Endianness -> TypeUnitHeader -> Put
+putTypeUnitHeader endian tuh = do
+   let (pw8,pw16,_,pw64,pwN) = getPutters endian (tuhDwarfFormat tuh)
+
+   putUnitLength endian (tuhDwarfFormat tuh) (tuhUnitLength tuh)
+   pw16 (tuhVersion tuh)
+   pwN  (tuhAbbrevOffset tuh)
+   pw8  (tuhAddressSize tuh)
+   pw64 (tuhTypeSignature tuh)
+   pwN  (tuhTypeOffset tuh)
+
 
 
 data DebugInfo = DebugInfo
@@ -748,6 +787,13 @@ data DebugInfo = DebugInfo
    , debugInfoContent               :: ByteString
    }
    deriving (Show)
+
+data DebugType = DebugType
+   { debugTypeUnitHeader            :: TypeUnitHeader
+   , debugTypeContent               :: ByteString
+   }
+   deriving (Show)
+
 
 getDebugInfo :: Endianness -> Get DebugInfo
 getDebugInfo endian = do
@@ -758,3 +804,13 @@ getDebugInfo endian = do
             Dwarf64 -> fromIntegral (cuhUnitLength cuh) - 11
    bs <- getByteString len
    return $ DebugInfo cuh bs
+
+getDebugType :: Endianness -> Get DebugType
+getDebugType endian = do
+   tuh <- getTypeUnitHeader endian
+   -- the length in the header excludes only itself
+   let len = case tuhDwarfFormat tuh of
+            Dwarf32 -> fromIntegral (tuhUnitLength tuh) - 19
+            Dwarf64 -> fromIntegral (tuhUnitLength tuh) - 27
+   bs <- getByteString len
+   return $ DebugType tuh bs

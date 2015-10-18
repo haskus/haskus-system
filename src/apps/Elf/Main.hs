@@ -267,11 +267,18 @@ showSection elf secnum secname s = do
                td_ $ do
                   showZCATable zca
 
-         -- Show debug
+         -- Show debug info
          BasicSectionType SectionTypePROGBITS
             | getSectionName elf s == Just ".debug_info" -> tr_ $ do
                th_ "Debug info"
                let c = getDebugInfoFromSection elf s
+               td_ . toHtml $ show c
+
+         -- Show debug type
+         BasicSectionType SectionTypePROGBITS
+            | getSectionName elf s == Just ".debug_type" -> tr_ $ do
+               th_ "Debug type"
+               let c = getDebugTypeFromSection elf s
                td_ . toHtml $ show c
 
          _ -> return ()
