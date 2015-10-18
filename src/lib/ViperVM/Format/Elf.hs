@@ -36,6 +36,8 @@ module ViperVM.Format.Elf
      -- * Notes sections
    , Note (..)
    , getNoteEntriesFromSection
+     -- * Debug sections
+   , getDebugInfoFromSection
      -- * Intel specific sections
    , getZCATableFromSection
    )
@@ -66,6 +68,8 @@ import ViperVM.Format.Elf.Dynamic
 import ViperVM.Format.Elf.Version
 import ViperVM.Format.Elf.Note
 import ViperVM.Format.Elf.Intel
+
+import ViperVM.Format.Dwarf
 
 -- | Structure representing a ELF file
 --
@@ -496,6 +500,17 @@ getNoteEntriesFromSection elf sec = runGet (getEntriesWithAlignment 4 getter) bs
          desc <- LBS.fromStrict 
                   <$> getByteString (fromIntegral $ rawnoteDescriptorSize raw)
          return (Note name desc (rawnoteType raw))
+
+--------------------------------------------------------------
+-- Debug sections
+--------------------------------------------------------------
+getDebugInfoFromSection :: Elf -> Section -> [DebugInfo]
+getDebugInfoFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugInfo endian)) bs
+   where
+      endian = preHeaderEndianness (elfPreHeader elf)
+      bs = getSectionContentLBS elf sec
+   
+
 
 --------------------------------------------------------------
 -- Intel specific sections

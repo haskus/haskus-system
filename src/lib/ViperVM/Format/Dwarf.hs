@@ -18,12 +18,16 @@ module ViperVM.Format.Dwarf
    , CompilationUnitHeader (..)
    , getCompilationUnitHeader
    , putCompilationUnitHeader
+   , DebugInfo (..)
+   , getDebugInfo
    )
 where
 
 import Data.Word
 import Data.Binary.Get
 import Data.Binary.Put
+import Data.ByteString (ByteString)
+
 import ViperVM.Format.Binary.Endianness
 
 -- DWARF 4
@@ -737,3 +741,20 @@ putCompilationUnitHeader cuh = do
    pw16 (cuhVersion cuh)
    pwN  (cuhAbbrevOffset cuh)
    pw8  (cuhAddressSize cuh)
+
+
+data DebugInfo = DebugInfo
+   { debugInfoCompilationUnitHeader :: CompilationUnitHeader
+   , debugInfoContent               :: ByteString
+   }
+   deriving (Show)
+
+getDebugInfo :: Endianness -> Get DebugInfo
+getDebugInfo endian = do
+   cuh <- getCompilationUnitHeader endian
+   -- the length in the header excludes only itself
+   let len = case cuhDwarfFormat cuh of
+            Dwarf32 -> fromIntegral (cuhUnitLength cuh) - 7
+            Dwarf64 -> fromIntegral (cuhUnitLength cuh) - 11
+   bs <- getByteString len
+   return $ DebugInfo cuh bs
