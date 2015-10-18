@@ -155,14 +155,19 @@ library
     ViperVM.Format.Elf.Note
     ViperVM.Format.Elf.Move
     ViperVM.Format.Elf.Intel
+
+    ViperVM.Format.Dwarf
+
     ViperVM.Format.Compression.Algorithms.Huffman
     ViperVM.Format.Compression.Algorithms.LZ77
     ViperVM.Format.Compression.Algorithms.Deflate
     ViperVM.Format.Compression.GZip
+
     ViperVM.Format.Binary.BitOps
     ViperVM.Format.Binary.BitOrder
     ViperVM.Format.Binary.BitGet
     ViperVM.Format.Binary.BitField
+    ViperVM.Format.Binary.VariableLength
 
     ViperVM.Library.Library
     ViperVM.Library.Kernel
