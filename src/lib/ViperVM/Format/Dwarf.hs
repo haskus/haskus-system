@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase, TupleSections #-}
 module ViperVM.Format.Dwarf
    ( Entry (..)
    , Tag (..)
@@ -6,10 +7,24 @@ module ViperVM.Format.Dwarf
    , Attribute (..)
    , fromAttribute
    , toAttribute
+   , Form (..)
+   , toForm
+   , fromForm
+   , DwarfFormat (..)
+   , getFormat
+   , putFormat
+   , getUnitLength
+   , putUnitLength
+   , CompilationUnitHeader (..)
+   , getCompilationUnitHeader
+   , putCompilationUnitHeader
    )
 where
 
 import Data.Word
+import Data.Binary.Get
+import Data.Binary.Put
+import ViperVM.Format.Binary.Endianness
 
 -- DWARF 4
 -- =======
@@ -599,21 +614,23 @@ toForm x = case x of
    0x18  -> FormExprLoc
    0x19  -> FormFlagPresent
    0x20  -> FormRefSig8
+   _     -> error "Unknown form entry"
 
 
 -- Attribute classes
-
-data ClassAddress          = ClassAddress
-data ClassBlock            = ClassBlock
-data ClassConstant         = ClassConstant
-data ClassExprLoc          = ClassExprLoc
-data ClassFlag             = ClassFlag
-data ClassLinePointer      = ClassLinePointer
-data ClassLocListPointer   = ClassLocListPointer
-data ClassMacroPointer     = ClassMacroPointer
-data ClassRangeListPointer = ClassRangeListPointer
-data ClassReference        = ClassReference
-data ClassString           = ClassString
+--data ClassAddress          = ClassAddress
+--data ClassBlock            = ClassBlock
+--data ClassConstant         = ClassConstant
+--data ClassExprLoc          = ClassExprLoc
+--data ClassFlag             = ClassFlag
+--data ClassLinePointer      = ClassLinePointer
+--data ClassLocListPointer   = ClassLocListPointer
+--data ClassMacroPointer     = ClassMacroPointer
+--data ClassRangeListPointer = ClassRangeListPointer
+--data ClassReference        = ClassReference
+--data ClassString           = ClassString
+--
+--TODO
 
 
 -- DWARF expressions
@@ -625,3 +642,98 @@ data ClassString           = ClassString
 -- All DWARF operations are encoded as a stream of opcodes that are each
 -- followed by zero or more literal operands. The number of operands is
 -- determined by the opcode.
+--
+-- TODO
+
+
+data DwarfFormat
+   = Dwarf32 
+   | Dwarf64
+   deriving (Show,Eq)
+
+-- | Compilation unit header
+data CompilationUnitHeader = CompilationUnitHeader
+   { cuhEndianness   :: Endianness     -- ^ The endianness is not part of the
+                                       -- header (it is given by the ELF header 
+                                       -- for instance) but we store it here for
+                                       -- convenience
+   , cuhDwarfFormat  :: DwarfFormat
+   , cuhUnitLength   :: Word64
+   , cuhVersion      :: Word16
+   , cuhAbbrevOffset :: Word64
+   , cuhAddressSize  :: Word8
+   }
+   deriving (Show,Eq)
+
+-- | Return getters
+getGetters :: Endianness -> DwarfFormat -> (Get Word8, Get Word16, Get Word32, Get Word64, Get Word64)
+getGetters endian format = (gw8,gw16,gw32,gw64,gwN)
+   where
+      ExtendedWordGetters gw8 gw16 gw32 gw64 gwN = getExtendedWordGetters endian ws
+      ws = case format of
+         Dwarf64 -> WordSize64
+         Dwarf32 -> WordSize32
+
+-- | Return putters
+getPutters :: Endianness -> DwarfFormat -> (Word8 -> Put, Word16 -> Put, Word32 -> Put, Word64 -> Put, Word64 -> Put)
+getPutters endian format = (pw8,pw16,pw32,pw64,pwN)
+   where
+      ExtendedWordPutters pw8 pw16 pw32 pw64 pwN = getExtendedWordPutters endian ws
+      ws = case format of
+         Dwarf64 -> WordSize64
+         Dwarf32 -> WordSize32
+
+getFormat :: Endianness -> Get DwarfFormat
+getFormat endian = do
+   let WordGetters _ _ gw32 _ = getWordGetters endian
+   lookAhead gw32 >>= \case
+      0xffffffff         -> skip 4 >> return Dwarf64
+      l | l < 0xfffffff0 -> return Dwarf32
+        | otherwise      -> error $ "Invalid unit length ("++show l++")"
+
+putFormat :: Endianness -> DwarfFormat -> Put
+putFormat endian format = do
+   let WordPutters _ _ pw32 _  = getWordPutters endian
+   case format of
+      Dwarf64 -> pw32 0xffffffff
+      Dwarf32 -> return ()
+
+getUnitLength :: Endianness -> Get (DwarfFormat,Word64)
+getUnitLength endian = do
+   format <- getFormat endian
+   let (_,_,_,_,gwN) = getGetters endian format
+   len <- gwN
+   return (format,len)
+
+putUnitLength :: Endianness -> DwarfFormat -> Word64 -> Put
+putUnitLength endian format len = do
+   putFormat endian format
+   let (_,_,_,_,pwN) = getPutters endian format
+   -- check and store unit length
+   case format of
+      Dwarf32 
+         | len > 0xfffffff0 -> error $ "Invalid unit length in 32-bit format ("++show len++")"
+      _                     -> pwN len
+   
+
+getCompilationUnitHeader :: Endianness -> Get CompilationUnitHeader
+getCompilationUnitHeader endian = do
+   (format,len) <- getUnitLength endian
+   let (gw8,gw16,_,_,gwN) = getGetters endian format
+   
+   CompilationUnitHeader
+      endian
+      format
+      len
+      <$> gw16
+      <*> gwN
+      <*> gw8
+
+putCompilationUnitHeader :: CompilationUnitHeader -> Put
+putCompilationUnitHeader cuh = do
+   let (pw8,pw16,_,_,pwN) = getPutters (cuhEndianness cuh) (cuhDwarfFormat cuh)
+
+   putUnitLength (cuhEndianness cuh) (cuhDwarfFormat cuh) (cuhUnitLength cuh)
+   pw16 (cuhVersion cuh)
+   pwN  (cuhAbbrevOffset cuh)
+   pw8  (cuhAddressSize cuh)

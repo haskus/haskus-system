@@ -19,7 +19,7 @@ import Data.Ord (comparing)
 import Text.Printf
 import System.IO.Unsafe
 
-import ViperVM.Arch.Common.Endianness
+import ViperVM.Format.Binary.Endianness
 import ViperVM.Arch.Common.Errors
 import qualified ViperVM.Arch.Posix.Malloc as Posix
 import qualified ViperVM.Arch.X86_64.Cpuid as C

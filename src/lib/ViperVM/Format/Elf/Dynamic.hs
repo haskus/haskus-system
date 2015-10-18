@@ -106,14 +106,14 @@ data DynamicEntryType
 
 getRawDynamicEntry :: PreHeader -> Get RawDynamicEntry
 getRawDynamicEntry pre = do
-   let (_,_,_,gwN) = getGetters pre
+   let (_,_,_,_,gwN) = getGetters pre
    RawDynamicEntry
       <$> (toDynamicEntryType <$> gwN)
       <*> gwN
 
 putRawDynamicEntry :: PreHeader -> RawDynamicEntry -> Put
 putRawDynamicEntry pre de = do
-   let (_,_,_,pwN) = getPutters pre
+   let (_,_,_,_,pwN) = getPutters pre
    pwN (fromDynamicEntryType $ rawDynType de)
    pwN (rawDynValue de)
 

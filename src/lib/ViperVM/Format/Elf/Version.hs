@@ -80,7 +80,7 @@ toVersionIndex x = case x of
 
 getVersionDefinition :: PreHeader -> Get VersionDefinition
 getVersionDefinition pre = do
-   let (gw16,gw32,_,_) = getGetters pre
+   let (_,gw16,gw32,_,_) = getGetters pre
 
    VersionDefinition
       <$> (toEnum . fromIntegral <$> gw16)
@@ -93,7 +93,7 @@ getVersionDefinition pre = do
 
 putVersionDefinition :: PreHeader -> VersionDefinition -> Put
 putVersionDefinition pre vd = do
-   let (pw16,pw32,_,_) = getPutters pre
+   let (_,pw16,pw32,_,_) = getPutters pre
 
    pw16 (fromIntegral . fromEnum $ vdVersion vd)
    pw16 (BitSet.toBits $ vdFlags vd)
@@ -124,7 +124,7 @@ type VersionNeededVersion = VersionDefinitionVersion
 
 getRawVersionNeeded :: PreHeader -> Get RawVersionNeeded
 getRawVersionNeeded pre = do
-   let (gw16,gw32,_,_) = getGetters pre
+   let (_,gw16,gw32,_,_) = getGetters pre
 
    RawVersionNeeded
       <$> (toEnum . fromIntegral <$> gw16)
@@ -135,7 +135,7 @@ getRawVersionNeeded pre = do
 
 putRawVersionNeeded :: PreHeader -> RawVersionNeeded -> Put
 putRawVersionNeeded pre vn = do
-   let (pw16,pw32,_,_) = getPutters pre
+   let (_,pw16,pw32,_,_) = getPutters pre
 
    pw16 (fromIntegral . fromEnum $ rvnVersion vn)
    pw16 (rvnAuxCount vn)
@@ -156,7 +156,7 @@ data RawVersionNeededAuxiliary = RawVersionNeededAuxiliary
 
 getRawVersionNeededAuxiliary :: PreHeader -> Get RawVersionNeededAuxiliary
 getRawVersionNeededAuxiliary pre = do
-   let (gw16,gw32,_,_) = getGetters pre
+   let (_,gw16,gw32,_,_) = getGetters pre
 
    RawVersionNeededAuxiliary
       <$> gw32
@@ -167,7 +167,7 @@ getRawVersionNeededAuxiliary pre = do
 
 putRawVersionNeededAuxiliary :: PreHeader -> RawVersionNeededAuxiliary -> Put
 putRawVersionNeededAuxiliary pre aux = do
-   let (pw16,pw32,_,_) = getPutters pre
+   let (_,pw16,pw32,_,_) = getPutters pre
 
    pw32 (rvnaHash aux)
    pw16 (rvnaFlags aux)

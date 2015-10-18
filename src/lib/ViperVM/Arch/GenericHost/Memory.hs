@@ -11,7 +11,7 @@ import Data.Word (Word8, Word32)
 import Foreign.Ptr (castPtr, Ptr)
 import Foreign.Storable (poke)
 
-import ViperVM.Arch.Common.Endianness
+import ViperVM.Format.Binary.Endianness
 
 -- | Detect the endianness of the host memory
 getMemoryEndianness :: IO Endianness

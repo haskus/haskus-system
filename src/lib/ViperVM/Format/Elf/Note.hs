@@ -22,7 +22,7 @@ data RawNote = RawNote
 
 getRawNote :: PreHeader -> Get RawNote
 getRawNote pre = do
-   let (_,gw32,_,_) = getGetters pre
+   let (_,_,gw32,_,_) = getGetters pre
 
    RawNote
       <$> gw32
@@ -31,7 +31,7 @@ getRawNote pre = do
 
 putRawNote :: PreHeader -> RawNote -> Put
 putRawNote pre note = do
-   let (_,pw32,_,_) = getPutters pre
+   let (_,_,pw32,_,_) = getPutters pre
 
    pw32 (rawnoteNameLength note)
    pw32 (rawnoteDescriptorSize note)

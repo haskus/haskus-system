@@ -27,7 +27,7 @@ data RelocationEntry = RelocationEntry
 
 getRelocationEntry :: PreHeader -> Header -> Bool -> Get RelocationEntry
 getRelocationEntry i h withAddend = do
-   let (_,_,_,gwN) = getGetters i
+   let (_,_,_,_,gwN) = getGetters i
    
    addr <- gwN
    info <- gwN
@@ -49,7 +49,7 @@ getRelocationEntry i h withAddend = do
 putRelocationEntry :: PreHeader -> Bool -> RelocationEntry -> Put
 putRelocationEntry i withAddend rel = do
    let 
-      (_,_,_,pwN) = getPutters i
+      (_,_,_,_,pwN) = getPutters i
       sym = relocSymbolIndex rel
       typ = fromRelocType (relocType rel)
       info = case preHeaderWordSize i of

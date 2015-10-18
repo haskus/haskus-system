@@ -10,7 +10,7 @@ where
 
 import ViperVM.Platform.Types (Memory(..),Data(..))
 import ViperVM.Arch.Common.Errors (AllocError(..))
-import ViperVM.Arch.Common.Endianness (Endianness(..))
+import ViperVM.Format.Binary.Endianness (Endianness(..))
 import ViperVM.Platform.Memory
 import ViperVM.Platform.Memory.Layout
 import ViperVM.Platform.Memory.Region

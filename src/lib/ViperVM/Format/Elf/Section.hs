@@ -63,7 +63,7 @@ getFirstSection bs hdr pre = runGet (getSection pre) (LBS.drop off bs)
 
 getSection :: PreHeader -> Get Section
 getSection i = do
-   let (_,gw32,_,gwN) = getGetters i
+   let (_,_,gw32,_,gwN) = getGetters i
    Section
       <$> gw32
       <*> (toEnum . fromIntegral <$> gw32)
@@ -78,7 +78,7 @@ getSection i = do
 
 putSection :: PreHeader -> Section -> Put
 putSection i s = do
-   let (_,pw32,_,pwN) = getPutters i
+   let (_,_,pw32,_,pwN) = getPutters i
 
    pw32 (sectionNameIndex s)
    pw32 (fromIntegral . fromEnum . sectionType $ s)
@@ -261,30 +261,30 @@ data SectionCompression = SectionCompression
 
 getSectionCompression :: PreHeader -> Get SectionCompression
 getSectionCompression i = do
-   let (_,gw32,gw64,_) = getGetters i
+   let (_,_,gw32,_,gwN) = getGetters i
    case preHeaderWordSize i of
       WordSize32 -> SectionCompression
          <$> fmap (toEnum . fromIntegral) gw32
-         <*> fmap fromIntegral gw32
-         <*> fmap fromIntegral gw32
+         <*> gwN
+         <*> gwN
       WordSize64 -> SectionCompression
          <$> fmap (toEnum . fromIntegral) (gw32 <* skip 4)
-         <*> gw64
-         <*> gw64
+         <*> gwN
+         <*> gwN
 
 putSectionCompression :: PreHeader -> SectionCompression -> Put
 putSectionCompression i (SectionCompression typ sz align) = do
-   let (_,pw32,pw64,_) = getPutters i
+   let (_,_,pw32,_,pwN) = getPutters i
    case preHeaderWordSize i of
       WordSize32 -> do
          pw32 (fromIntegral (fromEnum typ))
-         pw32 (fromIntegral sz)
-         pw32 (fromIntegral align)
+         pwN sz
+         pwN align
       WordSize64 -> do
          pw32 (fromIntegral (fromEnum typ))
          pw32 0 -- reserved word
-         pw64 sz
-         pw64 align
+         pwN sz
+         pwN align
 
 
 

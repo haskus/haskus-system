@@ -103,7 +103,7 @@ instance Enum SegmentType where
 
 getSegment :: PreHeader -> Get Segment
 getSegment hdr = do
-   let (_,gw32,_,gwN) = getGetters hdr
+   let (_,_,gw32,_,gwN) = getGetters hdr
    case preHeaderWordSize hdr of
       WordSize32 -> do
          typ   <- toEnum . fromIntegral <$> gw32
@@ -129,7 +129,7 @@ getSegment hdr = do
 putSegment :: PreHeader -> Segment -> Put
 putSegment hdr s = do
    let 
-      (_,pw32,_,pwN) = getPutters hdr
+      (_,_,pw32,_,pwN) = getPutters hdr
       typ   = fromIntegral . fromEnum . segmentType $ s
       flags = BitSet.toBits (segmentFlags s)
 

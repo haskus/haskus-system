@@ -6,7 +6,7 @@ module ViperVM.Platform.PlatformInfo
    )
 where
 
-import ViperVM.Arch.Common.Endianness
+import ViperVM.Format.Binary.Endianness
 import ViperVM.Platform.Types (Memory(..), Proc(..), Network(..))
 import ViperVM.Platform.Drivers
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)

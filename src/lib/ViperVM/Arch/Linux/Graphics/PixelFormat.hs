@@ -8,7 +8,7 @@ module ViperVM.Arch.Linux.Graphics.PixelFormat
    )
 where
 
-import ViperVM.Arch.Common.Endianness
+import ViperVM.Format.Binary.Endianness
 import Data.Word
 import Data.Char (ord)
 import Data.Bits

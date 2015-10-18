@@ -27,7 +27,7 @@ data MoveEntry = MoveEntry
 
 getMoveEntry :: PreHeader -> Get MoveEntry
 getMoveEntry pre = do
-   let (gw16,_,gw64,gwN) = getGetters pre
+   let (_,gw16,_,gw64,gwN) = getGetters pre
 
    value <- gw64
    info  <- gwN
@@ -43,7 +43,7 @@ getMoveEntry pre = do
 putMoveEntry :: PreHeader -> MoveEntry -> Put
 putMoveEntry pre e = do
    let 
-      (pw16,_,pw64,pwN) = getPutters pre
+      (_,pw16,_,pw64,pwN) = getPutters pre
       info = (moveSymbolIndex e `shiftL` 8)
              .|. (fromIntegral $ moveSymbolSize e)
 

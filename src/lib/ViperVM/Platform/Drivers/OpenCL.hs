@@ -24,7 +24,7 @@ import Text.Printf
 import System.IO.Unsafe
 
 import qualified ViperVM.Utils.BitSet as BitSet
-import ViperVM.Arch.Common.Endianness
+import ViperVM.Format.Binary.Endianness
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.TransferResult

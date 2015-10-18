@@ -37,7 +37,7 @@ import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Bindings
 
-import ViperVM.Arch.Common.Endianness
+import ViperVM.Format.Binary.Endianness
 
 import Data.Word (Word64)
 import Data.Ord (comparing)

@@ -290,7 +290,7 @@ instance Enum Arch where
 
 getHeader :: PreHeader -> Get Header
 getHeader i = do
-   let (gw16,gw32,_,gwN) = getGetters i
+   let (_,gw16,gw32,_,gwN) = getGetters i
 
    Header
       <$> (toEnum . fromIntegral <$> gw16)
@@ -309,7 +309,7 @@ getHeader i = do
 
 putHeader :: PreHeader -> Header -> Put
 putHeader i h = do
-   let (pw16,pw32,_, pwN) = getPutters i
+   let (_,pw16,pw32,_, pwN) = getPutters i
 
    pw16 (fromIntegral . fromEnum . headerType $ h)
    pw16 (fromIntegral . fromEnum . headerArch $ h)

@@ -144,22 +144,22 @@ instance Enum SymbolInfo where
 
 getSymbolEntry :: PreHeader -> Get SymbolEntry
 getSymbolEntry i = do
-   let (gw16,gw32,_,gwN) = getGetters i
+   let (gw8,gw16,gw32,_,gwN) = getGetters i
    
    (name,value,size,info,other,sec) <- case preHeaderWordSize i of
       WordSize32 -> do
          name  <- gw32
          value <- gwN
          size  <- gwN
-         info  <- getWord8
-         other <- getWord8
+         info  <- gw8
+         other <- gw8
          sec   <- gw16
          return (name,value,size,info,other,sec)
 
       WordSize64 -> do
          name  <- gw32
-         info  <- getWord8
-         other <- getWord8
+         info  <- gw8
+         other <- gw8
          sec   <- gw16
          value <- gwN
          size  <- gwN
@@ -174,7 +174,7 @@ getSymbolEntry i = do
 putSymbolEntry :: PreHeader -> SymbolEntry -> Put
 putSymbolEntry i (SymbolEntry name bind typ visi ifo value size) = do
    let 
-      (pw16,pw32,_,pwN) = getPutters i
+      (pw8,pw16,pw32,_,pwN) = getPutters i
       info = (fromIntegral (fromEnum bind) `shiftL` 4) 
          .|. (fromIntegral (fromEnum typ) .&. 0x0f)
       other = fromIntegral (fromEnum visi) .&. 0x03
@@ -185,14 +185,14 @@ putSymbolEntry i (SymbolEntry name bind typ visi ifo value size) = do
          pw32 name
          pwN value
          pwN size
-         putWord8 info
-         putWord8 other
+         pw8 info
+         pw8 other
          pw16 sec
 
       WordSize64 -> do
          pw32 name
-         putWord8 info
-         putWord8 other
+         pw8 info
+         pw8 other
          pw16 sec
          pwN value
          pwN size
