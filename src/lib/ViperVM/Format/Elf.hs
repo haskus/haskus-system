@@ -3,35 +3,44 @@ module ViperVM.Format.Elf
    ( Elf (..)
    , parseElf
    , readElf
-   , getSectionContentLBS
-   , extractSectionStrings
-   , extractStringFromSection
-   , getSectionNameByIndex
+     -- * Sections
    , getSectionByIndex
-   , getSectionNameSection
-   , getSectionName
-   , getSectionNames
-   , getSectionSymbols
-   , getRelocationEntries
-   , getDynamicEntries
-   , getVersionNeededEntries
+   , getSectionContentLBS
+   , getEntriesWithAlignment
+   , getEntriesAndOffsetWithAlignment
+   , getEntryTableFromSection
+   , getEntryListFromSection
    , findSectionByName
-   , extractZCATable
    , FullSectionType (..)
    , getFullSectionType
-     -- * Dynamic section
+     -- ** Strings sections
+   , getStringsFromSection
+   , getStringFromSection
+     -- ** Section names
+   , getSectionNameByIndex
+   , getSectionNamesSection
+   , getSectionName
+   , getSectionNames
+     -- ** Symbols sections
+   , getSymbolsFromSection
+     -- ** Relocation sections
+   , getRelocationEntriesFromSection
+     -- ** Dynamic sections
    , DynamicEntry (..)
    , getDynamicEntry
-     -- * Version needed section
+   , getDynamicEntriesFromSection
+     -- ** Version sections
    , VersionNeeded (..)
    , VersionNeededAuxiliary (..)
-     -- * Notes
+   , getVersionNeededEntriesFromSection
+     -- * Notes sections
    , Note (..)
-   , getNoteEntries
+   , getNoteEntriesFromSection
+     -- * Intel specific sections
+   , getZCATableFromSection
    )
 where
 
-import Data.Int
 import Data.Word
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
@@ -40,7 +49,8 @@ import Data.Binary.Get
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Data.Text (Text)
-import Control.Monad (when)
+import Control.Monad (when, forM)
+import Control.Arrow (second)
 import Data.Maybe (fromJust)
 import qualified Data.Text.Encoding as Text
 
@@ -58,6 +68,14 @@ import ViperVM.Format.Elf.Note
 import ViperVM.Format.Elf.Intel
 
 -- | Structure representing a ELF file
+--
+-- An ELF file starts with a PreHeader that contains the magic number and that
+-- describes how the remaining of the file has to be decoded (e.g. endianness,
+-- word size).
+--
+-- Then comes the Header which mentions the target architecture, the type of
+-- ELF file, some flags, etc. It also gives information on where to find
+-- section and segment tables in the file.
 data Elf = Elf
    { elfPreHeader :: PreHeader      -- ^ Pre-header
    , elfHeader    :: Header         -- ^ Header
@@ -66,7 +84,7 @@ data Elf = Elf
    , elfContent   :: ByteString     -- ^ Whole content
    } deriving (Show)
 
--- | Parse the ELF format
+-- | Parse a ByteString to retrieve ELF headers and tables.
 parseElf :: ByteString -> Elf
 parseElf bs = Elf pre hdr sections segments bs
    where
@@ -75,11 +93,22 @@ parseElf bs = Elf pre hdr sections segments bs
       sections = getSectionTable bs hdr pre
       segments = getSegmentTable bs hdr pre
 
--- | Read a ELF file
+-- | Lazily read an ELF file
 readElf :: FilePath -> IO Elf
 readElf path = parseElf <$> LBS.readFile path
 
 
+--------------------------------------------------------------
+-- SECTIONS
+--------------------------------------------------------------
+
+-- | Get a section by index
+getSectionByIndex :: Integral a => Elf -> a -> Maybe Section
+getSectionByIndex elf i = 
+   elfSections elf Vector.!? fromIntegral i
+
+
+-- | Returns the content of a section as a lazy ByteString
 getSectionContentLBS :: Elf -> Section -> ByteString
 getSectionContentLBS elf s = LBS.take sz (LBS.drop off bs)
    where
@@ -87,29 +116,112 @@ getSectionContentLBS elf s = LBS.take sz (LBS.drop off bs)
       sz  = fromIntegral $ sectionSize s 
       off = fromIntegral $ sectionOffset s 
    
+-- | Get a sequence of entries. Each entry is aligned to the given number of bytes
+getEntriesWithAlignment :: Int -> Get a -> Get [a]
+getEntriesWithAlignment alignment getter = rec
+   where
+      rec = isEmpty >>= \case
+         True  -> return []
+         False -> do
+            e <- getter
+            rds <- bytesRead
+            let toSkip = fromIntegral alignment - (rds `mod` fromIntegral alignment)
+            empty <- isEmpty
+            when (fromIntegral toSkip /= alignment && toSkip /= 0 && not empty) $
+               skip (fromIntegral toSkip)
+            es <- rec
+            return (e:es)
 
-extractSectionStrings :: Elf -> Section -> [(Int64,Text)]
-extractSectionStrings elf sec = 
+-- | Get a sequence of aligned entries with their offset
+getEntriesAndOffsetWithAlignment :: Int -> Get a -> Get [(Word64,a)]
+getEntriesAndOffsetWithAlignment alignment getter = 
+      getEntriesWithAlignment alignment getter'
+   where
+      getter' = (,) <$> (fromIntegral <$> bytesRead) <*> getter
+         
+-- | Return a sequence of entries from a section. The entry size is given by
+-- the sectionEntrySize field
+getEntryTableFromSection :: Elf -> Section -> (Get a) -> [a]
+getEntryTableFromSection elf sec getter = runGet (forM [1..cnt] (const getter)) bs
+   where
+      -- content of the section
+      bs = getSectionContentLBS elf sec
+      -- size of a single entry
+      size = case fromIntegral (sectionEntrySize sec) of
+         0 -> error "Invalid table section: entry size is null"
+         x -> x
+      -- size of the section
+      secsize = fromIntegral (sectionSize sec)
+      -- number of entries
+      cnt = if secsize /= 0
+         then secsize `div` size
+         else (0 :: Word64)
+
+
+-- | Get a linked list of entries
+-- 'next' returns the next address
+getEntryList :: Integral b => Get a -> (a -> b) -> b -> LBS.ByteString -> [a]
+getEntryList get next current bs = case next e of
+      0           -> [e]
+      nextOffset  -> e : getEntryList get next (current + nextOffset) bs
+   where
+      -- read current entity
+      e = runGet get $ LBS.drop (fromIntegral current) bs
+
+-- | Get a linked list of entries from a section
+-- 'next' returns the next address
+getEntryListFromSection :: Integral b => Elf -> Section -> Get a -> (a -> b) -> [a]
+getEntryListFromSection elf sec get next = 
+   getEntryList get next 0 (getSectionContentLBS elf sec)
+
+-- | Fields are reused depending on the section types. This type gives a meaningful section type
+data FullSectionType
+   = SectionTypeRelocation
+      { relocSectionHasAddend     :: Bool     -- ^ Indicate whether addends are present
+      , relocSectionSymbolTable   :: Section  -- ^ Section containing symbols to relocate
+      , relocSectionTargetSection :: Section  -- ^ Section to modify
+      }
+   | BasicSectionType SectionType
+   deriving (Show)
+
+-- | Convert a raw section into a more complete section data type
+getFullSectionType :: Elf -> Section -> FullSectionType
+getFullSectionType elf sec =
+   let getSec i = fromJust (getSectionByIndex elf i) in
+   case sectionType sec of
+      SectionTypeREL    -> SectionTypeRelocation False
+                              (getSec $ sectionInfo sec)
+                              (getSec $ sectionLink sec)
+      SectionTypeRELA   -> SectionTypeRelocation True
+                              (getSec $ sectionInfo sec)
+                              (getSec $ sectionLink sec)
+      t                 -> BasicSectionType t
+
+
+
+--------------------------------------------------------------
+-- String sections
+--------------------------------------------------------------
+
+
+-- | Extract strings from a strings section
+getStringsFromSection :: Elf -> Section -> [(Word64,Text)]
+getStringsFromSection elf sec = 
       case sectionType sec of
-         SectionTypeSTRTAB -> 
-            case LBS.last content of
-               0 -> sumSzs `zip` ss'
-               c   -> error $ "Last symbol in section is not NUL but " ++ show c
+         SectionTypeSTRTAB -> fmap f (runGet getter bs)
          _                 -> error "Invalid section type"
    where
       -- section content
-      content = getSectionContentLBS elf sec
-      -- bytestring list: drop last \0 and split at every other \0
-      ss  = LBS.split 0 (LBS.init content)
-      -- string list: convert bytestrings to texts
-      ss' = fmap (Text.decodeUtf8 . LBS.toStrict) ss 
-      -- raw (bytestring) size for each string: prefix sum
-      szs = fmap (\x -> LBS.length x + 1) ss
-      sumSzs = scanl (+) 0 szs
+      bs = getSectionContentLBS elf sec
+      -- getter for a bytestring ending with NUL and its offset
+      getter = getEntriesAndOffsetWithAlignment 1 getLazyByteStringNul
+      -- convert a bytestring into text
+      f = second (Text.decodeUtf8 . LBS.toStrict)
 
 
-extractStringFromSection :: Elf -> Section -> SectionIndex -> Maybe Text
-extractStringFromSection elf sec idx = res
+
+getStringFromSection :: Elf -> Section -> SectionIndex -> Maybe Text
+getStringFromSection elf sec idx = res
    where
       -- Check that section type is valid and index is within range
       res = case (sectionSize sec, sectionType sec) of
@@ -124,29 +236,34 @@ extractStringFromSection elf sec idx = res
          $ LBS.drop (fromIntegral idx)
          $ getSectionContentLBS elf s
 
--- | Get a section by index
-getSectionByIndex :: Integral a => Elf -> a -> Maybe Section
-getSectionByIndex elf i = 
-   elfSections elf Vector.!? fromIntegral i
+--------------------------------------------------------------
+-- Section names
+--------------------------------------------------------------
 
+-- Names of the sections are stored in a Strings section. The ELF header
+-- contains the index of this section.
 
 -- | Return the section containing section names (if any)
-getSectionNameSection :: Elf -> Maybe Section
-getSectionNameSection elf = do
+getSectionNamesSection :: Elf -> Maybe Section
+getSectionNamesSection elf = do
    -- Find the section containing section names
    let secIdx = headerSectionNameIndex (elfHeader elf)
    getSectionByIndex elf secIdx
 
+
+-- | Return the name of a section from its index
 getSectionNameByIndex :: Elf -> SectionIndex -> Maybe Text
 getSectionNameByIndex elf idx = do
-   -- Find the section containing section names
-   sec <- getSectionNameSection elf
+   -- find the section containing section names
+   sec <- getSectionNamesSection elf
    -- extract section name for the index idx
-   extractStringFromSection elf sec idx
+   getStringFromSection elf sec idx
+
 
 -- | Return the name of a section
 getSectionName :: Elf -> Section -> Maybe Text
 getSectionName elf = getSectionNameByIndex elf . sectionNameIndex
+
 
 -- | Return all the section names
 getSectionNames :: Elf -> Vector (Section, Maybe Text)
@@ -154,201 +271,63 @@ getSectionNames elf = fmap f (elfSections elf)
    where
       f x = (x, getSectionName elf x)
 
-getTable :: Elf -> Section -> [ByteString]
-getTable elf sec = bss
-   where
-      -- content of the section
-      content = getSectionContentLBS elf sec
-      -- size of a single entry
-      size = case fromIntegral (sectionEntrySize sec) of
-         0 -> error "Invalid table section: entry size is null"
-         x -> x
-      -- size of the section
-      secsize = fromIntegral (sectionSize sec)
-      -- number of entries
-      n = if secsize /= 0
-         then secsize `div` size
-         else 0
-      -- offsets in the section
-      offs = [0, size .. (n-1) * size]
-      -- read entries
-      bss = fmap (\off -> LBS.take size $ LBS.drop off content) offs
-
-getSectionSymbols :: Elf -> Section -> [SymbolEntry]
-getSectionSymbols elf sec =
-      case sectionType sec of
-         SectionTypeSYMTAB -> fmap rd bss
-         SectionTypeDYNSYM -> fmap rd bss
-         _                 -> error "Invalid section type"
-   where
-      -- get table of bytestrings
-      bss = getTable elf sec
-      -- read symbol entry
-      rd = runGet (getSymbolEntry (elfPreHeader elf))
-
-
-getRelocationEntries :: Elf -> Section -> [RelocationEntry]
-getRelocationEntries elf sec = 
-      case sectionType sec of
-         SectionTypeREL    -> fmap rel bss
-         SectionTypeRELA   -> fmap rela bss
-         _                 -> error "Invalid section type"
-   where
-      -- get table of bytestrings
-      bss  = getTable elf sec
-      -- read symbol entry
-      rel  = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) False)
-      rela = runGet (getRelocationEntry (elfPreHeader elf) (elfHeader elf) True)
-
-getDynamicEntries :: Elf -> Section -> [DynamicEntry]
-getDynamicEntries elf sec =
-      case sectionType sec of
-         SectionTypeDYNAMIC -> fmap rd bss
-         _                  -> error "Invalid section type"
-   where
-      -- get table of bytestrings
-      bss = getTable elf sec
-      -- read symbol entry
-      rd = runGet (getDynamicEntry elf sec)
-
-data VersionNeeded = VersionNeeded
-   { vnVersion       :: VersionNeededVersion       -- ^ Version of structure
-   , vnFileName      :: Text                       -- ^ Dependency file name
-   , vnEntries       :: [VersionNeededAuxiliary]   -- ^ Versions
-   }
-   deriving (Show,Eq)
-
-
-data VersionNeededAuxiliary = VersionNeededAuxiliary
-   { vnaHash   :: Word32   -- ^ Hash value of dependency name
-   , vnaFlags  :: Word16   -- ^ Dependency specific information
-   , vnaOther  :: Word16   -- ^ Unused
-   , vnaName   :: Text     -- ^ Dependency name
-   }
-   deriving (Show,Eq)
-
-
--- | Get a linked list of a
--- 'next' returns the next address
-getList :: Integral b => Get a -> (a -> b) -> b -> LBS.ByteString -> [a]
-getList get next current bs = case next e of
-      0           -> [e]
-      nextOffset  -> e : getList get next (current + nextOffset) bs
-   where
-      -- read current entity
-      e = runGet get $ LBS.drop (fromIntegral current) bs
-
-getVersionNeededEntries :: Elf -> Section -> [VersionNeeded]
-getVersionNeededEntries elf sec =
-      case sectionType sec of
-         SectionTypeGNU_verneed -> vns
-         _                      -> error "Invalid section type"
-   where
-      -- associated strings section
-      stringSec  = getSectionByIndex elf (sectionLink sec)
-      -- get a string from the string section by index
-      getStr idx = do
-         s   <- stringSec
-         str <- extractStringFromSection elf s (fromIntegral idx)
-         return str
-      -- unsafe version
-      getStr_    = fromJust . getStr
-      -- content of the section
-      bs = getSectionContentLBS elf sec
-      -- list of RawVersionNeeded
-      raws = getList (getRawVersionNeeded (elfPreHeader elf)) rvnNext 0 bs
-      -- create VersionNeededAuxiliary from RawVersionNeededAuxiliary
-      makeVNA e = VersionNeededAuxiliary
-            (rvnaHash e)
-            (rvnaFlags e)
-            (rvnaOther e)
-            (getStr_ $ rvnaName e)
-      -- create VersionNeeded from RawVersionNeeded
-      makeVN e = VersionNeeded 
-            (rvnVersion e) 
-            (getStr_ (rvnFileName e)) 
-            (fmap makeVNA auxs)
-         where
-            auxs = getList (getRawVersionNeededAuxiliary (elfPreHeader elf)) rvnaNext 0 tableBS
-            tableBS = LBS.drop (fromIntegral $ rvnAuxTable e) bs
-      -- list of VersionNeeded
-      vns = fmap makeVN raws
-
-data Note = Note
-   { noteName        :: Text
-   , noteDescriptor  :: LBS.ByteString
-   , noteType        :: Word32
-   }
-   deriving (Show)
-
-
--- | Get a sequence of entries. Each entry is aligned to the given number of bytes
-getEntriesWithAlignment :: Int -> Get a -> Get [a]
-getEntriesWithAlignment alignment getter = rec
-   where
-      rec = isEmpty >>= \case
-         True  -> return []
-         False -> do
-            e <- getter
-            rds <- bytesRead
-            let toSkip = fromIntegral alignment - (rds `mod` fromIntegral alignment)
-            empty <- isEmpty
-            when (toSkip /= 0 && not empty) $
-               skip (fromIntegral toSkip)
-            es <- rec
-            return (e:es)
-         
-
--- | Get note entries
-getNoteEntries :: Elf -> Section -> [Note]
-getNoteEntries elf sec = runGet (getEntriesWithAlignment 4 getter) bs
-   where
-      -- content of the section
-      bs = getSectionContentLBS elf sec
-      -- getter
-      getter = do
-         raw  <- getRawNote (elfPreHeader elf)
-         name <- Text.decodeUtf8 . BS.init 
-                  <$> getByteString (fromIntegral $ rawnoteNameLength raw)
-         desc <- LBS.fromStrict 
-                  <$> getByteString (fromIntegral $ rawnoteDescriptorSize raw)
-         return (Note name desc (rawnoteType raw))
-
 -- | Find section with name
 findSectionByName :: Elf -> Text -> Maybe Section
 findSectionByName elf name = Vector.find p (elfSections elf)
    where
       p x   = getSectionName elf x == Just name
 
--- | Fields are reused depending on the section types. This type gives a meaningful section type
-data FullSectionType
-   = SectionTypeRelocation
-      { relocSectionHasAddend     :: Bool     -- ^ Indicate whether addends are present
-      , relocSectionSymbolTable   :: Section  -- ^ Section containing symbols to relocate
-      , relocSectionTargetSection :: Section  -- ^ Section to modify
-      }
-   | BasicSectionType SectionType
-   deriving (Show)
 
-extractZCATable :: Elf -> Section -> ZCATable
-extractZCATable elf s = getZCATable (LBS.toStrict bs)
+--------------------------------------------------------------
+-- Symbols sections
+--------------------------------------------------------------
+
+-- | Get symbols from a section
+getSymbolsFromSection :: Elf -> Section -> [SymbolEntry]
+getSymbolsFromSection elf sec =
+      case sectionType sec of
+         SectionTypeSYMTAB -> es
+         SectionTypeDYNSYM -> es
+         _                 -> error "Invalid section type"
    where
-      -- raw section
-      bs = getSectionContentLBS elf s
+      -- getter for a symbol entry
+      getter = getSymbolEntry (elfPreHeader elf)
+      -- get table of entries
+      es = getEntryTableFromSection elf sec getter
 
-getFullSectionType :: Elf -> Section -> FullSectionType
-getFullSectionType elf sec =
-   let getSec i = fromJust (getSectionByIndex elf i) in
-   case sectionType sec of
-      SectionTypeREL    -> SectionTypeRelocation False
-                              (getSec $ sectionInfo sec)
-                              (getSec $ sectionLink sec)
-      SectionTypeRELA   -> SectionTypeRelocation True
-                              (getSec $ sectionInfo sec)
-                              (getSec $ sectionLink sec)
-      t                 -> BasicSectionType t
+--------------------------------------------------------------
+-- Relocations sections
+--------------------------------------------------------------
+
+-- | Get relocation entries from a section
+getRelocationEntriesFromSection :: Elf -> Section -> [RelocationEntry]
+getRelocationEntriesFromSection elf sec = 
+      case sectionType sec of
+         SectionTypeREL    -> f rel
+         SectionTypeRELA   -> f rela
+         _                 -> error "Invalid section type"
+   where
+      -- getter for a relocation entry
+      rel  = getRelocationEntry (elfPreHeader elf) (elfHeader elf) False
+      rela = getRelocationEntry (elfPreHeader elf) (elfHeader elf) True
+      -- get table of entries
+      f  = getEntryTableFromSection elf sec
 
 
+--------------------------------------------------------------
+-- Dynamic sections
+--------------------------------------------------------------
+
+getDynamicEntriesFromSection :: Elf -> Section -> [DynamicEntry]
+getDynamicEntriesFromSection elf sec =
+      case sectionType sec of
+         SectionTypeDYNAMIC -> es
+         _                  -> error "Invalid section type"
+   where
+      -- getter for a dynamic entry
+      getter = getDynamicEntry elf sec
+      -- get table of entries
+      es = getEntryTableFromSection elf sec getter
 
 -- | Entry in the .dynamic section
 data DynamicEntry
@@ -388,7 +367,7 @@ toDynamicEntry elf sec raw =
       -- get a string from the string section by index
       getStr idx = do
          s   <- stringSec
-         str <- extractStringFromSection elf s (fromIntegral idx)
+         str <- getStringFromSection elf s (fromIntegral idx)
          return str
       -- unsafe version
       getStr_    = fromJust . getStr
@@ -422,7 +401,111 @@ toDynamicEntry elf sec raw =
       DynTypeRelocaEntrySize           -> DynEntryRelocaEntrySize v
       _                                -> DynEntryRaw raw
 
+-- | Getter for a single dynamic entry
 getDynamicEntry :: Elf -> Section -> Get DynamicEntry
 getDynamicEntry elf sec = toDynamicEntry elf sec <$> getRawDynamicEntry pre
    where
       pre = elfPreHeader elf
+
+--------------------------------------------------------------
+-- Version sections
+--------------------------------------------------------------
+
+data VersionNeeded = VersionNeeded
+   { vnVersion       :: VersionNeededVersion       -- ^ Version of structure
+   , vnFileName      :: Text                       -- ^ Dependency file name
+   , vnEntries       :: [VersionNeededAuxiliary]   -- ^ Versions
+   }
+   deriving (Show,Eq)
+
+
+data VersionNeededAuxiliary = VersionNeededAuxiliary
+   { vnaHash   :: Word32   -- ^ Hash value of dependency name
+   , vnaFlags  :: Word16   -- ^ Dependency specific information
+   , vnaOther  :: Word16   -- ^ Unused
+   , vnaName   :: Text     -- ^ Dependency name
+   }
+   deriving (Show,Eq)
+
+-- | Get version needed entries from a section
+getVersionNeededEntriesFromSection :: Elf -> Section -> [VersionNeeded]
+getVersionNeededEntriesFromSection elf sec =
+      case sectionType sec of
+         SectionTypeGNU_verneed -> vns
+         _                      -> error "Invalid section type"
+   where
+      -- associated strings section
+      stringSec  = getSectionByIndex elf (sectionLink sec)
+      -- get a string from the string section by index
+      getStr idx = do
+         s   <- stringSec
+         str <- getStringFromSection elf s (fromIntegral idx)
+         return str
+      -- unsafe version
+      getStr_    = fromJust . getStr
+      -- list of RawVersionNeeded
+      raws = getEntryListFromSection elf sec 
+               (getRawVersionNeeded (elfPreHeader elf)) 
+               rvnNext
+      -- section content
+      bs = getSectionContentLBS elf sec
+      -- create VersionNeededAuxiliary from RawVersionNeededAuxiliary
+      makeVNA e = VersionNeededAuxiliary
+            (rvnaHash e)
+            (rvnaFlags e)
+            (rvnaOther e)
+            (getStr_ $ rvnaName e)
+      -- create VersionNeeded from RawVersionNeeded
+      makeVN e = VersionNeeded 
+            (rvnVersion e) 
+            (getStr_ (rvnFileName e)) 
+            (fmap makeVNA auxs)
+         where
+            auxs    = getEntryList 
+                        (getRawVersionNeededAuxiliary (elfPreHeader elf)) 
+                        rvnaNext 
+                        0 
+                        tableBS
+            tableBS = LBS.drop (fromIntegral $ rvnAuxTable e) bs
+      -- list of VersionNeeded
+      vns = fmap makeVN raws
+
+--------------------------------------------------------------
+-- Note sections
+--------------------------------------------------------------
+
+data Note = Note
+   { noteName        :: Text
+   , noteDescriptor  :: LBS.ByteString
+   , noteType        :: Word32
+   }
+   deriving (Show)
+
+
+-- | Get note entries
+getNoteEntriesFromSection :: Elf -> Section -> [Note]
+getNoteEntriesFromSection elf sec = runGet (getEntriesWithAlignment 4 getter) bs
+   where
+      -- content of the section
+      bs = getSectionContentLBS elf sec
+      -- getter
+      getter = do
+         raw  <- getRawNote (elfPreHeader elf)
+         name <- Text.decodeUtf8 . BS.init 
+                  <$> getByteString (fromIntegral $ rawnoteNameLength raw)
+         desc <- LBS.fromStrict 
+                  <$> getByteString (fromIntegral $ rawnoteDescriptorSize raw)
+         return (Note name desc (rawnoteType raw))
+
+--------------------------------------------------------------
+-- Intel specific sections
+--------------------------------------------------------------
+
+-- | Return ZCA table (e.g. optimization report)
+getZCATableFromSection :: Elf -> Section -> ZCATable
+getZCATableFromSection elf s = getZCATable (LBS.toStrict bs)
+   where
+      -- raw section
+      bs = getSectionContentLBS elf s
+
+

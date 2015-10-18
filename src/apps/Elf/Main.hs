@@ -205,7 +205,7 @@ showSection elf secnum secname s = do
          -- Show string table
          BasicSectionType SectionTypeSTRTAB -> tr_ $ do
             th_ "Strings"
-            let strs = extractSectionStrings elf s
+            let strs = getStringsFromSection elf s
             td_ $ table_ $ do
                tr_ $ do
                   th_ "Offset"
@@ -217,19 +217,19 @@ showSection elf secnum secname s = do
          -- Show symbol table
          BasicSectionType SectionTypeSYMTAB -> tr_ $ do
             th_ "Symbols"
-            let syms = getSectionSymbols elf s
+            let syms = getSymbolsFromSection elf s
             td_ $ showSymbols elf s syms
 
          -- Show dynamic symbol table
          BasicSectionType SectionTypeDYNSYM -> tr_ $ do
             th_ "Dynamic symbols"
-            let syms = getSectionSymbols elf s
+            let syms = getSymbolsFromSection elf s
             td_ $ showSymbols elf s syms
 
          -- Show dynamic info
          BasicSectionType SectionTypeDYNAMIC -> tr_ $ do
             th_ "Dynamic information"
-            let des = getDynamicEntries elf s
+            let des = getDynamicEntriesFromSection elf s
             td_ $ showDynamicEntries des
 
          -- Show interpreter path
@@ -242,7 +242,7 @@ showSection elf secnum secname s = do
          -- Show relocation entries
          typ@(SectionTypeRelocation {}) -> tr_ $ do
             th_ "Relocation entries"
-            let es = getRelocationEntries elf s
+            let es = getRelocationEntriesFromSection elf s
             td_ $ showRelocationEntries
                      (relocSectionHasAddend typ)
                      es
@@ -250,20 +250,20 @@ showSection elf secnum secname s = do
          -- Show version needed entries
          BasicSectionType SectionTypeGNU_verneed -> tr_ $ do
             th_ "Version needed entries"
-            let es = getVersionNeededEntries elf s
+            let es = getVersionNeededEntriesFromSection elf s
             td_ $ showVersionNeededEntries es
 
          -- Show notes
          BasicSectionType SectionTypeNOTE -> tr_ $ do
             th_ "Notes"
-            let es = getNoteEntries elf s
+            let es = getNoteEntriesFromSection elf s
             td_ $ showNoteEntries es
 
          -- Show Intel debug opt
          BasicSectionType SectionTypePROGBITS
             | secname == Just ".debug_opt_report" -> tr_ $ do
                th_ "Intel ZCA table"
-               let zca = extractZCATable elf s
+               let zca = getZCATableFromSection elf s
                td_ $ do
                   showZCATable zca
 
@@ -359,7 +359,7 @@ showSymbols elf symSec ss = do
       symtab = getSectionByIndex elf (sectionLink symSec)
       getSymName idx = case (idx,symtab) of
          (0, _)        -> Nothing
-         (_, Just sec) -> extractStringFromSection elf sec idx
+         (_, Just sec) -> getStringFromSection elf sec idx
          (_, Nothing)  -> Nothing
          
    table_ $ do

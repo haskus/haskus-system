@@ -14,45 +14,7 @@ import Data.Binary.Put
 
 import ViperVM.Format.Elf.PreHeader
 
-getHeader :: PreHeader -> Get Header
-getHeader i = do
-   let (gw16,gw32,_,gwN) = getGetters i
-
-   Header
-      <$> (toEnum . fromIntegral <$> gw16)
-      <*> (toEnum . fromIntegral <$> gw16)
-      <*> gw32
-      <*> gwN
-      <*> gwN
-      <*> gwN
-      <*> gw32
-      <*> gw16
-      <*> gw16
-      <*> gw16
-      <*> gw16
-      <*> gw16
-      <*> gw16
-
-putHeader :: PreHeader -> Header -> Put
-putHeader i h = do
-   let (pw16,pw32,_, pwN) = getPutters i
-
-   pw16 (fromIntegral . fromEnum . headerType $ h)
-   pw16 (fromIntegral . fromEnum . headerArch $ h)
-   pw32 (headerVersion h)
-   pwN  (headerEntryAddress h)
-   pwN  (headerSegmentTableOffset h)
-   pwN  (headerSectionTableOffset h)
-   pw32 (headerFlags h)
-   pw16 (headerHeaderSize h)
-   pw16 (headerSegmentEntrySize h)
-   pw16 (headerSegmentEntryCount h)
-   pw16 (headerSectionEntrySize h)
-   pw16 (headerSectionEntryCount h)
-   pw16 (headerSectionNameIndex h)
-
-
--- | Header
+-- | ELF Header
 -- We use 64 bits fields for both 32 and 64 bit formats. These are truncated or
 -- zero-extended in the 32 bits case.
 data Header = Header
@@ -325,4 +287,43 @@ instance Enum Arch where
       189 -> ArchMICROBLAZE
       191 -> ArchTILEGX
       v   -> ArchCustom (fromIntegral v)
+
+getHeader :: PreHeader -> Get Header
+getHeader i = do
+   let (gw16,gw32,_,gwN) = getGetters i
+
+   Header
+      <$> (toEnum . fromIntegral <$> gw16)
+      <*> (toEnum . fromIntegral <$> gw16)
+      <*> gw32
+      <*> gwN
+      <*> gwN
+      <*> gwN
+      <*> gw32
+      <*> gw16
+      <*> gw16
+      <*> gw16
+      <*> gw16
+      <*> gw16
+      <*> gw16
+
+putHeader :: PreHeader -> Header -> Put
+putHeader i h = do
+   let (pw16,pw32,_, pwN) = getPutters i
+
+   pw16 (fromIntegral . fromEnum . headerType $ h)
+   pw16 (fromIntegral . fromEnum . headerArch $ h)
+   pw32 (headerVersion h)
+   pwN  (headerEntryAddress h)
+   pwN  (headerSegmentTableOffset h)
+   pwN  (headerSectionTableOffset h)
+   pw32 (headerFlags h)
+   pw16 (headerHeaderSize h)
+   pw16 (headerSegmentEntrySize h)
+   pw16 (headerSegmentEntryCount h)
+   pw16 (headerSectionEntrySize h)
+   pw16 (headerSectionEntryCount h)
+   pw16 (headerSectionNameIndex h)
+
+
 
