@@ -82,8 +82,8 @@ putSLEB128 a = rec a
 
 
 -- | Get a bytestring containing a decoded LEB128 string
-getLEB128BS :: Get ByteString
-getLEB128BS = rec (emptyBitPutState BB)
+getLEB128BS :: BitOrder -> Get ByteString
+getLEB128BS bo = rec (emptyBitPutState bo)
    where
       rec state = do
          w      <- getWord8
