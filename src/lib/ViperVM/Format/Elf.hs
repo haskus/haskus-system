@@ -508,12 +508,14 @@ getNoteEntriesFromSection elf sec = runGet (getEntriesWithAlignment 4 getter) bs
 -- Debug sections
 --------------------------------------------------------------
 getDebugInfoFromSection :: Elf -> Section -> [DebugInfo]
-getDebugInfoFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugInfo endian abbrevBS)) bs
+getDebugInfoFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugInfo endian secAbbrev secStrings)) bs
    where
-      endian = preHeaderEndianness (elfPreHeader elf)
-      bs = getSectionContentLBS elf sec
-      Just secAbbrev = findSectionByName elf (Text.pack ".debug_abbrev")
-      abbrevBS = getSectionContentLBS elf secAbbrev
+      endian         = preHeaderEndianness (elfPreHeader elf)
+      bs             = getSectionContentLBS elf sec
+      -- section containing abbreviations
+      Just secAbbrev = getSectionContentLBS elf <$> findSectionByName elf (Text.pack ".debug_abbrev")
+      -- section containing debug strings
+      secStrings     = getSectionContentLBS elf <$> findSectionByName elf (Text.pack ".debug_str")
    
 getDebugTypeFromSection :: Elf -> Section -> [DebugType]
 getDebugTypeFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugType endian)) bs
