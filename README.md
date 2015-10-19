@@ -37,8 +37,8 @@ ELFWeb program can be used to navigate into a ELF binary file. Use your Web
 browser to see the result.
 
 ```bash
-ELFWeb -p 8020 ./mybinary &
-firefox http://localhost:8020
+$ ELFWeb -p 8020 ./mybinary &
+$ firefox http://localhost:8020
 ```
 
 ### Platform Web
@@ -48,8 +48,8 @@ networks). It can also be used to perform basic operations (e.g. memory
 allocation/release) for test purpose.
 
 ```bash
-PlatformWeb -p 8020
-firefox http://localhost:8020
+$ PlatformWeb -p 8020
+$ firefox http://localhost:8020
 ```
 
 ### GUnzip
@@ -57,8 +57,8 @@ firefox http://localhost:8020
 Simple decompressor for the GZip format.
 
 ```bash
-tar czf test.tgz # some files...
-gunzip test.tgz
+$ tar czf test.tgz # some files...
+$ gunzip test.tgz
 ```
 
 
@@ -67,6 +67,6 @@ gunzip test.tgz
 Dump kernel system events (i.e. changes into the system tree) on standard output.
 
 ```bash
-udev
-# try plugging or unplugging a device (USB key, etc.)
+$ udev
+$ # try plugging or unplugging a device (USB key, etc.)
 ```
