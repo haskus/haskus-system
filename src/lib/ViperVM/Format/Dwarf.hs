@@ -17,7 +17,9 @@ module ViperVM.Format.Dwarf
    , putUnitLength
    -- * Debug entry
    , DebugEntry (..)
+   , DebugAttribute (..)
    , getDebugEntry
+   , getDebugEntries
    -- * Debug info
    , CompilationUnitHeader (..)
    , getCompilationUnitHeader
@@ -39,10 +41,17 @@ module ViperVM.Format.Dwarf
 where
 
 import Data.Word
+import Data.Int
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.ByteString (ByteString)
 import Data.Maybe (fromJust,isJust)
+
+import Control.Monad (forM)
+
+import Data.Text (Text)
+import qualified Data.Text.Encoding as Text
+import qualified Data.ByteString.Lazy as LBS
 
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.VariableLength
@@ -565,7 +574,7 @@ data Form
    | FormData1
    | FormFlag
    | FormSData
-   | FormStrp
+   | FormStringPointer
    | FormUData
    | FormRefAddress
    | FormRef1
@@ -594,7 +603,7 @@ fromForm x = case x of
    FormData1         -> 0x0b
    FormFlag          -> 0x0c
    FormSData         -> 0x0d
-   FormStrp          -> 0x0e
+   FormStringPointer -> 0x0e
    FormUData         -> 0x0f
    FormRefAddress    -> 0x10
    FormRef1          -> 0x11
@@ -622,7 +631,7 @@ toForm x = case x of
    0x0b  -> FormData1
    0x0c  -> FormFlag
    0x0d  -> FormSData
-   0x0e  -> FormStrp
+   0x0e  -> FormStringPointer
    0x0f  -> FormUData
    0x10  -> FormRefAddress
    0x11  -> FormRef1
@@ -794,7 +803,7 @@ putTypeUnitHeader endian tuh = do
 
 data DebugInfo = DebugInfo
    { debugInfoCompilationUnitHeader :: CompilationUnitHeader
-   , debugInfoContent               :: ByteString
+   , debugInfoEntries               :: [DebugEntry]
    }
    deriving (Show)
 
@@ -807,7 +816,15 @@ data DebugType = DebugType
 
 data DebugEntry = DebugEntry
    { debugEntryAbbrevCode     :: Word64
-   --, debugEntryAttribute      :: [DebugAttribute]
+   , debugEntryTag            :: Tag
+   , debugEntryHasChildren    :: Bool
+   , debugEntryAttributes     :: [DebugAttribute]
+   }
+   deriving (Show)
+
+data DebugAttribute = DebugAttribute
+   { debugAttrName   :: Attribute
+   , debugAttrValue  :: AttributeValue
    }
    deriving (Show)
 
@@ -822,11 +839,46 @@ getWhile cond getter = rec []
             then rec (x:xs)
             else return (reverse xs)
 
-getDebugEntry :: Get DebugEntry
-getDebugEntry = do
-   code <- getULEB128
-   return $ DebugEntry code
+-- | Repeat the getter to read the whole bytestring
+getWhole :: Get a -> Get [a]
+getWhole getter = rec []
+   where
+      rec xs = do
+         cond <- isEmpty
+         if cond
+            then return (reverse xs)
+            else do
+               x <- getter
+               rec (x:xs)
 
+getDebugEntry :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Get (Maybe DebugEntry)
+getDebugEntry endian cuh abbrevs = do
+   let 
+      addressSize = cuhAddressSize cuh
+      format      = cuhDwarfFormat cuh
+
+   -- get abbrev code
+   code <- getULEB128
+   if code == 0
+      then return Nothing
+      else do
+         -- find corresponding abbrev
+         -- TODO: use a hash map instead
+         let abbrev = head (filter (\x -> debugAbbrevCode x == code) abbrevs)
+         -- read attributes values
+         attrs <- forM (debugAbbrevAttributes abbrev) $ \att -> do
+            value <- getValueFromForm addressSize endian format (debugAbbrevAttrForm att)
+            return $ DebugAttribute (debugAbbrevAttrName att) value
+         return . Just $ DebugEntry code 
+                           (debugAbbrevTag abbrev) 
+                           (debugAbbrevHasChildren abbrev)
+                           attrs 
+
+getDebugEntries :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Get [DebugEntry]
+getDebugEntries endian cuh abbrevs = 
+   fmap fromJust . filter isJust <$> getWhole (getDebugEntry endian cuh abbrevs)
+
+-- | Entry in the abbreviation table (section .debug_abbrev)
 data DebugAbbrevEntry = DebugAbbrevEntry
    { debugAbbrevCode         :: Word64
    , debugAbbrevTag          :: Tag
@@ -836,7 +888,7 @@ data DebugAbbrevEntry = DebugAbbrevEntry
    deriving (Show)
 
 data DebugAbbrevAttribute = DebugAbbrevAttribute
-   { debugAbbrevAttr      :: Attribute
+   { debugAbbrevAttrName  :: Attribute
    , debugAbbrevAttrForm  :: Form
    }
    deriving (Show)
@@ -863,15 +915,67 @@ getDebugAbbrevEntry = do
 getDebugAbbrevEntries :: Get [DebugAbbrevEntry]
 getDebugAbbrevEntries = fmap fromJust <$> getWhile isJust getDebugAbbrevEntry
 
-getDebugInfo :: Endianness -> Get DebugInfo
-getDebugInfo endian = do
+data AttributeValue
+   = AttrValueAddress           ByteString
+   | AttrValueBlock             ByteString
+   | AttrValueUnsignedConstant  Word64
+   | AttrValueSignedConstant    Int64
+   | AttrValueDwarfExpr         ByteString
+   | AttrValueFlag              Bool
+   | AttrValueOffset            Word64       -- ^ Offset in another section
+   | AttrValueRelativeReference Word64       -- ^ Offset in the compilation unit
+   | AttrValueAbsoluteReference Word64       -- ^ Offset from the beginning of the .debug_info section
+   | AttrValueTypeReference     Word64       -- ^ Type reference (i.e. signature in the .debug_type section)
+   | AttrValueString            Text         -- ^ String
+   | AttrValueStringPointer     Word64       -- ^ String pointer in the .string_ptr section
+   deriving (Show)
+
+getValueFromForm :: Word8 -> Endianness -> DwarfFormat -> Form -> Get AttributeValue
+getValueFromForm addressSize endian format form = do
+   let (gw8,gw16,gw32,gw64,gwN) = getGetters endian format
+   case form of
+      FormAddress       -> AttrValueAddress           <$> getByteString (fromIntegral addressSize)
+      FormBlock1        -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw8))
+      FormBlock2        -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw16))
+      FormBlock4        -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw32))
+      FormBlock         -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> (getULEB128 :: Get Word64)))
+      FormData1         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw8)
+      FormData2         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw16)
+      FormData4         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw32)
+      FormData8         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw64)
+      FormUData         -> AttrValueUnsignedConstant  <$> getULEB128
+      FormSData         -> AttrValueSignedConstant    <$> getSLEB128
+      FormExprLoc       -> AttrValueDwarfExpr         <$> (getByteString =<< (fromIntegral  <$> (getULEB128 :: Get Word64)))
+      FormFlag          -> AttrValueFlag              <$> ((/= 0) <$> gw8)
+      FormFlagPresent   -> return (AttrValueFlag True)
+      FormSecOffset     -> AttrValueOffset            <$> gwN
+      FormRef1          -> AttrValueRelativeReference <$> (fromIntegral <$> gw8)
+      FormRef2          -> AttrValueRelativeReference <$> (fromIntegral <$> gw16)
+      FormRef4          -> AttrValueRelativeReference <$> (fromIntegral <$> gw32)
+      FormRef8          -> AttrValueRelativeReference <$> (fromIntegral <$> gw64)
+      FormRefUData      -> AttrValueRelativeReference <$> getULEB128
+      FormRefAddress    -> AttrValueAbsoluteReference <$> gwN
+      FormRefSig8       -> AttrValueTypeReference     <$> gw64
+      FormString        -> AttrValueString            <$> (Text.decodeUtf8 . LBS.toStrict <$> getLazyByteStringNul)
+      FormStringPointer -> AttrValueStringPointer     <$> gwN
+      FormIndirect      -> getValueFromForm addressSize endian format =<< (toForm <$> getULEB128)
+
+getDebugInfo :: Endianness -> LBS.ByteString -> Get DebugInfo
+getDebugInfo endian secAbbrevs = do
    cuh <- getCompilationUnitHeader endian
    -- the length in the header excludes only itself
    let len = case cuhDwarfFormat cuh of
             Dwarf32 -> fromIntegral (cuhUnitLength cuh) - 7
             Dwarf64 -> fromIntegral (cuhUnitLength cuh) - 11
-   bs <- getByteString len
-   return $ DebugInfo cuh bs
+   -- get abbreviations
+   let 
+      abbrevBS = LBS.drop (fromIntegral $ cuhAbbrevOffset cuh) secAbbrevs
+      abbrevs = runGet getDebugAbbrevEntries abbrevBS
+
+   -- get entries
+   entries <- isolate len $ getDebugEntries endian cuh abbrevs
+
+   return $ DebugInfo cuh entries
 
 getDebugType :: Endianness -> Get DebugType
 getDebugType endian = do

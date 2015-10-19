@@ -275,7 +275,7 @@ showSection elf secnum secname s = do
             | getSectionName elf s == Just ".debug_info" -> tr_ $ do
                th_ "Debug info"
                let c = getDebugInfoFromSection elf s
-               td_ . toHtml $ show c
+               td_ $ showDebugInfo c
 
          -- Show debug type
          BasicSectionType SectionTypePROGBITS
@@ -510,8 +510,48 @@ showDebugAbbrev es = do
                th_ "Attribute"
                th_ "Form"
             forM_ (debugAbbrevAttributes e) $ \att -> tr_ $ do
-               td_ . toHtml . show $ debugAbbrevAttr att
+               td_ . toHtml . show $ debugAbbrevAttrName att
                td_ . toHtml . show $ debugAbbrevAttrForm att
+
+showDebugInfo :: [DebugInfo] -> Html ()
+showDebugInfo dis = do
+   forM_ dis $ \di -> table_ $ do
+      let cuh = debugInfoCompilationUnitHeader di
+      tr_ $ do
+         th_ "Format"
+         td_ . toHtml $ show (cuhDwarfFormat cuh)
+      tr_ $ do
+         th_ "Compilation unit length"
+         td_ . toHtml $ show (cuhUnitLength cuh)
+      tr_ $ do
+         th_ "DWARF version"
+         td_ . toHtml $ show (cuhVersion cuh)
+      tr_ $ do
+         th_ "Offset in abbreviation table"
+         td_ . toHtml $ show (cuhAbbrevOffset cuh)
+      tr_ $ do
+         th_ "Address size"
+         td_ . toHtml $ show (cuhAddressSize cuh)
+      tr_ $ do
+         th_ "Entries"
+         td_ $ table_ $ do
+            tr_ $ do
+               th_ "Abbrev code"
+               th_ "Tag"
+               th_ "Has children"
+               th_ "Attributes"
+            forM_ (debugInfoEntries di) $ \e -> tr_ $ do
+               td_ . toHtml $ show (debugEntryAbbrevCode e)
+               td_ . toHtml $ show (debugEntryTag e)
+               td_ . toHtml $ show (debugEntryHasChildren e)
+               td_ $ table_ $ do
+                  tr_ $ do
+                     th_ "Name"
+                     th_ "Value"
+                  forM_ (debugEntryAttributes e) $ \att -> tr_ $ do
+                     td_ . toHtml $ show (debugAttrName att)
+                     td_ . toHtml $ show (debugAttrValue att)
+
 
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do

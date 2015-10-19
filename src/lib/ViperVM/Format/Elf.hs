@@ -52,10 +52,11 @@ import qualified Data.ByteString as BS
 import Data.Binary.Get
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
-import Data.Text (Text)
 import Control.Monad (when, forM)
 import Control.Arrow (second)
 import Data.Maybe (fromJust)
+import Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 
 import qualified ViperVM.Utils.BitSet as BitSet
@@ -507,10 +508,12 @@ getNoteEntriesFromSection elf sec = runGet (getEntriesWithAlignment 4 getter) bs
 -- Debug sections
 --------------------------------------------------------------
 getDebugInfoFromSection :: Elf -> Section -> [DebugInfo]
-getDebugInfoFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugInfo endian)) bs
+getDebugInfoFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugInfo endian abbrevBS)) bs
    where
       endian = preHeaderEndianness (elfPreHeader elf)
       bs = getSectionContentLBS elf sec
+      Just secAbbrev = findSectionByName elf (Text.pack ".debug_abbrev")
+      abbrevBS = getSectionContentLBS elf secAbbrev
    
 getDebugTypeFromSection :: Elf -> Section -> [DebugType]
 getDebugTypeFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugType endian)) bs
