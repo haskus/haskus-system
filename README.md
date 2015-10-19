@@ -36,8 +36,10 @@ superfluous compilations.
 ELFWeb program can be used to navigate into a ELF binary file. Use your Web
 browser to see the result.
 
-> ELFWeb -p 8020 ./mybinary &
-> firefox http://localhost:8020
+```bash
+ELFWeb -p 8020 ./mybinary &
+firefox http://localhost:8020
+```
 
 ### Platform Web
 
@@ -45,20 +47,26 @@ PlatformWeb gives basic information about the platform (memories, processors,
 networks). It can also be used to perform basic operations (e.g. memory
 allocation/release) for test purpose.
 
-> PlatformWeb -p 8020
-> firefox http://localhost:8020
+```bash
+PlatformWeb -p 8020
+firefox http://localhost:8020
+```
 
 ### GUnzip
 
 Simple decompressor for the GZip format.
 
-> tar czf test.tgz # some files...
-> gunzip test.tgz
+```bash
+tar czf test.tgz # some files...
+gunzip test.tgz
+```
 
 
 ### udev
 
 Dump kernel system events (i.e. changes into the system tree) on standard output.
 
-> udev
-> # try plugging or unplugging a device (USB key, etc.)
+```bash
+udev
+# try plugging or unplugging a device (USB key, etc.)
+```
