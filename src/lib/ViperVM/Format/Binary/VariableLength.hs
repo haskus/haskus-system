@@ -83,12 +83,12 @@ putSLEB128 a = rec a
 
 -- | Get a bytestring containing a decoded LEB128 string
 getLEB128BS :: BitOrder -> Get ByteString
-getLEB128BS bo = rec (emptyBitPutState bo)
+getLEB128BS bo = rec (newBitPutState bo)
    where
       rec state = do
          w      <- getWord8
          let state2 = putBits 7 w state
          case testBit w 7 of
             True  -> rec state2
-            False -> return (getBitPutBS state2)
+            False -> return (getBitPutLBS state2)
 

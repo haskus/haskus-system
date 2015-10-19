@@ -1,9 +1,10 @@
 module ViperVM.Format.Binary.BitPut
    ( BitPutState(..)
-   , emptyBitPutState
+   , newBitPutState
    , putBits
    , putBitsBS
    , getBitPutBS
+   , getBitPutLBS
    )
 where
 
@@ -28,8 +29,8 @@ data BitPutState = BitPutState
    , bitPutStateBitOrder         :: !BitOrder      -- ^ Bit order
    }
 
-emptyBitPutState :: BitOrder -> BitPutState
-emptyBitPutState = BitPutState B.empty 0 0
+newBitPutState :: BitOrder -> BitPutState
+newBitPutState = BitPutState B.empty 0 0
 
 putBits :: (Num a, Bits a, Integral a) => Int -> a -> BitPutState -> BitPutState
 putBits n w s@(BitPutState builder b o bo) = s'
@@ -57,10 +58,10 @@ putBits n w s@(BitPutState builder b o bo) = s'
       -- bits of the returned value
       selectBits :: (Num a, Bits a, Integral a) => a -> Word8
       selectBits x = fromIntegral $ case bo of
-         BB ->                       mask cn $ x `shiftR` (n-cn)
-         LB -> reverseLeastBits cn $ mask cn $ x `shiftR` (n-cn)
-         LL ->                       mask cn x
-         BL -> reverseLeastBits cn $ mask cn x
+         BB ->                       maskLeastBits cn $ x `shiftR` (n-cn)
+         LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` (n-cn)
+         LL ->                       maskLeastBits cn x
+         BL -> reverseLeastBits cn $ maskLeastBits cn x
 
       -- shift left at the correct position
       shl :: Word8 -> Word8
@@ -104,5 +105,8 @@ flushIncomplete s@(BitPutState b w o bo)
   | o == 0 = s
   | otherwise = (BitPutState (b `mappend` B.singleton w) 0 0 bo)
 
-getBitPutBS :: BitPutState -> LBS.ByteString
-getBitPutBS = B.toLazyByteString . bitPutStateBuilder . flushIncomplete 
+getBitPutLBS :: BitPutState -> LBS.ByteString
+getBitPutLBS = B.toLazyByteString . bitPutStateBuilder . flushIncomplete 
+
+getBitPutBS :: BitPutState -> BS.ByteString
+getBitPutBS = LBS.toStrict . getBitPutLBS

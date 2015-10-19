@@ -2,8 +2,8 @@
 
 module ViperVM.Format.Binary.BitGet
    ( BitGetState(..)
-   , incBitGetStateOffset
-   , readBool
+   , newBitGetState
+   , skipBits
    , readWord
    , readWordChecked
    , readByteString
@@ -30,21 +30,17 @@ data BitGetState = BitGetState
    , bitGetStateBitOrder   ::                !BitOrder   -- ^ Bit order
    } deriving (Show)
 
+-- | Create a new BitGetState
+newBitGetState :: BitOrder -> ByteString -> BitGetState
+newBitGetState bo bs = BitGetState bs 0 bo
+
 -- | Increment the current bit offset
-incBitGetStateOffset :: Int -> BitGetState -> BitGetState
-incBitGetStateOffset o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
+skipBits :: Int -> BitGetState -> BitGetState
+skipBits o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
    where
       !o' = (n+o)
       !d  = byteOffset o'
       !n' = bitOffset o'
-
--- | Read a single bit
-readBool :: BitGetState -> Bool
-readBool (BitGetState bs o bo) = case bo of
-   BB -> testBit (BS.unsafeHead bs) (7-o)
-   BL -> testBit (BS.unsafeHead bs) (7-o)
-   LL -> testBit (BS.unsafeHead bs) o
-   LB -> testBit (BS.unsafeHead bs) o
 
 -- | Extract a range of bits from (ws :: ByteString)
 --
@@ -53,7 +49,7 @@ extract :: (Num a, Bits a) => BitOrder -> ByteString -> Int -> Int -> a
 extract bo bs o n     
    | n == 0            = zeroBits
    | BS.length bs == 0 = error "Empty ByteString"
-   | otherwise         = rev . mask n . foldlWithIndex' f 0 $ bs
+   | otherwise         = rev . maskLeastBits n . foldlWithIndex' f 0 $ bs
    where 
       -- BS.foldl' with index
       foldlWithIndex' op b = fst . BS.foldl' g (b,0)
