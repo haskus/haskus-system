@@ -914,8 +914,8 @@ putTypeUnitHeader endian tuh = do
 
 
 data DebugInfo = DebugInfo
-   { debugInfoCompilationUnitHeader :: CompilationUnitHeader
-   , debugInfoEntries               :: [DebugEntry]
+   { debugInfoCompilationUnitHeader :: CompilationUnitHeader   -- ^ Header
+   , debugInfoEntries               :: [Maybe DebugEntry]      -- ^ Entries (NULL entries are used as siblings group delimiter)
    }
    deriving (Show)
 
@@ -986,9 +986,9 @@ getDebugEntry endian cuh abbrevs strings = do
                            (debugAbbrevHasChildren abbrev)
                            attrs 
 
-getDebugEntries :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe LBS.ByteString -> Get [DebugEntry]
+getDebugEntries :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe LBS.ByteString -> Get [Maybe DebugEntry]
 getDebugEntries endian cuh abbrevs strings = 
-   fmap fromJust . filter isJust <$> getWhole (getDebugEntry endian cuh abbrevs strings)
+   getWhole (getDebugEntry endian cuh abbrevs strings)
 
 -- | Entry in the abbreviation table (section .debug_abbrev)
 data DebugAbbrevEntry = DebugAbbrevEntry

@@ -540,17 +540,20 @@ showDebugInfo dis = do
                th_ "Tag"
                th_ "Has children"
                th_ "Attributes"
-            forM_ (debugInfoEntries di) $ \e -> tr_ $ do
-               td_ . toHtml $ show (debugEntryAbbrevCode e)
-               td_ . toHtml $ show (debugEntryTag e)
-               td_ . toHtml $ show (debugEntryHasChildren e)
-               td_ $ table_ $ do
-                  tr_ $ do
-                     th_ "Name"
-                     th_ "Value"
-                  forM_ (debugEntryAttributes e) $ \att -> tr_ $ do
-                     td_ . toHtml $ show (debugAttrName att)
-                     td_ . toHtml $ show (debugAttrValue att)
+            forM_ (debugInfoEntries di) $ \ent -> 
+               case ent of
+                  Nothing -> tr_ $ td_ [colspan_ "4"] "NULL entry"
+                  Just e  -> tr_ $ do
+                     td_ . toHtml $ show (debugEntryAbbrevCode e)
+                     td_ . toHtml $ show (debugEntryTag e)
+                     td_ . toHtml $ show (debugEntryHasChildren e)
+                     td_ $ table_ $ do
+                        tr_ $ do
+                           th_ "Name"
+                           th_ "Value"
+                        forM_ (debugEntryAttributes e) $ \att -> tr_ $ do
+                           td_ . toHtml $ show (debugAttrName att)
+                           td_ . toHtml $ show (debugAttrValue att)
 
 
 showDynamicEntries :: [DynamicEntry] -> Html ()
