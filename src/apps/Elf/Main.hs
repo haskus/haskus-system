@@ -25,6 +25,7 @@ import Happstack.Server
 import Lucid
 import Data.FileEmbed
 import Data.Word
+import Data.Tree (drawTree)
 import Data.Text (Text)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
@@ -554,6 +555,9 @@ showDebugInfo dis = do
                         forM_ (debugEntryAttributes e) $ \att -> tr_ $ do
                            td_ . toHtml $ show (debugAttrName att)
                            td_ . toHtml $ show (debugAttrValue att)
+      tr_ $ do
+         th_ "Entry tree"
+         td_ . pre_ . toHtml . drawTree . fmap show $ debugEntryTree (debugInfoEntries di)
 
 
 showDynamicEntries :: [DynamicEntry] -> Html ()

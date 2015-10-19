@@ -20,6 +20,7 @@ module ViperVM.Format.Dwarf
    , DebugAttribute (..)
    , getDebugEntry
    , getDebugEntries
+   , debugEntryTree
    -- * Debug info
    , CompilationUnitHeader (..)
    , getCompilationUnitHeader
@@ -42,6 +43,7 @@ where
 
 import Data.Word
 import Data.Int
+import Data.Tree (Tree(..))
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.ByteString (ByteString)
@@ -939,6 +941,26 @@ data DebugAttribute = DebugAttribute
    , debugAttrValue  :: AttributeValue
    }
    deriving (Show)
+
+-- | Build a tree from a list of DebugEntry (with Nothing = NULL etnries)
+--
+-- The first entry must be valid and the top level must not be a forest
+debugEntryTree :: [Maybe DebugEntry] -> Tree DebugEntry
+debugEntryTree es = case rec es of
+      ([x],[]) -> x
+      ([],[])  -> error "Cannot make a tree from the Debug entries: there is no entry"
+      (_,[])   -> error "Cannot make a tree from the Debug entries: they form a forest"
+      (_,_)    -> error "Cannot make a tree from the Debug entries: there are remaining entries"
+   where
+      rec :: [Maybe DebugEntry] -> ([Tree DebugEntry], [Maybe DebugEntry])
+      rec (Just x:xs)
+         | debugEntryHasChildren x = let (cs,r) = rec xs 
+                                         (ss,r2) = rec r
+                                      in (Node x cs : ss, r2)
+         | otherwise               = let (cs,r) = rec xs in (Node x [] : cs, r)
+      rec (Nothing:xs)             = ([],xs)
+      rec []                       = ([],[])
+
 
 
 -- | Get while True (read and discard the ending element)
