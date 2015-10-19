@@ -8,12 +8,12 @@ where
 
 import Prelude hiding (takeWhile)
 
-import Data.Attoparsec.ByteString.Char8
-import qualified Data.ByteString as BS
-import Data.ByteString (ByteString)
+import Text.Megaparsec
+import Text.Megaparsec.ByteString
+import Text.Megaparsec.Lexer hiding (space)
+
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Text.Encoding (decodeUtf8)
 import Control.Monad (void)
 
 data ControlGroupEntry = ControlGroupEntry
@@ -24,21 +24,24 @@ data ControlGroupEntry = ControlGroupEntry
 
 -- | Read /proc/[pid]/cgroup
 readControlGroup :: FilePath -> IO [ControlGroupEntry]
-readControlGroup = fmap parseControlGroup . BS.readFile
+readControlGroup p = do
+   r <- parseFromFile parseControlGroup p
+   case r of
+      Right v  -> return v
+      Left err -> error ("control group parsing error: "++ show err)
 
 -- | Read /proc/[pid]/maps files
-parseControlGroup :: ByteString -> [ControlGroupEntry]
-parseControlGroup bs = do
-   case parseOnly parseFile bs of
-      Right v  -> v
-      Left err -> error ("control group parsing error: "++ err)
-
+parseControlGroup :: Parser [ControlGroupEntry]
+parseControlGroup = parseFile
    where
-      parseFile = (parseLine `sepBy'` endOfLine)
+      parseFile = do
+         es <- many parseLine
+         eof
+         return es
       parseLine = do
-         hier <- decimal
+         hier <- fromIntegral <$> decimal
          void (char ':')
-         subs <- Text.splitOn (Text.pack ",") . decodeUtf8 <$> takeWhile (/= ':')
+         subs <- Text.splitOn (Text.pack ",") . Text.pack <$> someTill anyChar (char ':')
          void (char ':')
-         own  <- decodeUtf8 <$> takeWhile (/= '\n')
+         own  <- Text.pack <$> manyTill anyChar eol
          return $ ControlGroupEntry hier subs own

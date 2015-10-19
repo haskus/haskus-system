@@ -14,18 +14,18 @@ module ViperVM.Arch.Linux.System.Topology
    )
 where
 
-import Data.Attoparsec.ByteString.Char8
+import Text.Megaparsec
+import Text.Megaparsec.ByteString
+import Text.Megaparsec.Lexer hiding (space)
+
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Text.Encoding (decodeUtf8)
 import System.Directory
 import Data.List (isPrefixOf,stripPrefix)
 import Control.Monad (void,forM)
-import Control.Applicative ((<|>))
 import Data.Word
-import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack)
-import qualified Data.ByteString as BS
 import Data.Bits
 import Data.Maybe (fromJust,mapMaybe)
 import Data.Map (Map)
@@ -39,39 +39,50 @@ data CPUMap = CPUMap (V.Vector Word32) deriving (Show)
 
 -- | Read cpumap files
 readMemInfo :: FilePath -> IO (Map Text Word64)
-readMemInfo = fmap parseMemInfo . BS.readFile
-
--- | Read meminfo files
-parseMemInfo :: ByteString -> Map Text Word64
-parseMemInfo bs = case parseOnly parseFile bs of
-      Right v  -> Map.fromList v
+readMemInfo p = do
+   r <- parseFromFile parseMemInfo p
+   case r of
+      Right v  -> return v
       Left err -> error ("meminfo parsing error: " ++ show err)
+   
 
+parseMemInfo :: Parser (Map Text Word64)
+parseMemInfo = parseFile
    where
-      parseFile = parseLine `sepBy` endOfLine
+      parseFile = do
+         es <- manyTill parseLine eof
+         return (Map.fromList es)
+
+      parseLine :: Parser (Text, Word64)
       parseLine = do
-         void (string (pack "Node "))
-         skipMany1 digit
+         void (string "Node ")
+         void decimal
          void (char ' ')
-         lbl <- takeTill (== ':')
-         skipMany1 space
-         value <- decimal
-         kb <- (string (pack " kB") *> return (*1024)) <|> return id
-         return (decodeUtf8 lbl, kb value)
+         lbl <- someTill anyChar (char ':')
+         space
+         value <- fromIntegral <$> decimal
+         kb <- (string " kB" *> return (*1024)) <|> return id
+         void eol
+         return (decodeUtf8 (pack lbl), kb value)
 
 
 -- | Read cpumap files
 readCPUMap :: FilePath -> IO CPUMap
-readCPUMap = fmap parseCPUMap . BS.readFile
+readCPUMap p = do
+   r <- parseFromFile parseCPUMap p
+   case r of
+      Right v  -> return v
+      Left err -> error ("cpumap parsing error: " ++ show err)
 
 -- | Parse CPU map files
-parseCPUMap :: ByteString -> CPUMap
-parseCPUMap bs = case parseOnly parseFile bs of
-      Left err -> error ("cpumap parsing error: " ++ show err)
-      Right v  -> CPUMap . V.fromList . reverse . dropWhile (==0) $ v
-
+parseCPUMap :: Parser CPUMap
+parseCPUMap = parseFile
    where
-      parseFile = hexadecimal `sepBy1` (char ',') <* endOfLine
+      parseFile = do
+         es <- (fromIntegral <$> hexadecimal) `sepBy1` (char ',')
+         void eol
+         void eof
+         return $ CPUMap . V.fromList . reverse . dropWhile (==0) $ es
 
 -- | Check that a CPU belongs to a CPU Map
 member :: Word -> CPUMap -> Bool
@@ -123,7 +134,12 @@ nodeMemoryStatus :: NodeMemory -> IO (Word64,Word64)
 nodeMemoryStatus (NodeMemory path) = do
    infos <- readMemInfo path
 
-   return (infos Map.! Text.pack "MemTotal", infos Map.! Text.pack "MemFree")
+   let
+      lookupEntry e = case Map.lookup (Text.pack e) infos of
+         Just x  -> x
+         Nothing -> error $ "Cannot find \"" ++ e ++ "\" entry in file: " ++ show path
+
+   return (lookupEntry "MemTotal", lookupEntry "MemFree")
 
 -- | Return a list of CPU numbers from a map in a node
 nodeCPUs :: Node -> [Word]

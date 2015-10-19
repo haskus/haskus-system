@@ -101,4 +101,4 @@ Make ViperVM manage out-of-core memories such as disks.
 ### Check-pointing ###
 
 Support automatic check-pointing by storing state (remaining computation and
-required buffers) in disk.
+required buffers) on disk.

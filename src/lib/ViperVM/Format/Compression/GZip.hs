@@ -30,6 +30,7 @@ data Member = Member
    , memberCRC32        :: Word32
    , memberSize         :: Word32   -- ^ uncompressed input size (module 1^32)
    }
+   deriving (Show)
 
 
 -- | Decompress the members of the archive

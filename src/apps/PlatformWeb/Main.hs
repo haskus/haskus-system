@@ -2,6 +2,8 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+import CmdLine (Options(..), getOptions)
+
 import ViperVM.Platform.Host as V
 import ViperVM.Platform.PlatformInfo
 import ViperVM.Platform.Loading
@@ -24,7 +26,6 @@ import Control.Concurrent.STM
 
 import Control.Monad (msum, forM_, guard, mzero)
 import Control.Monad.Trans.Class (lift)
-import System.Environment
 import Text.Printf
 import Network.Socket (withSocketsDo)
 import Data.Maybe (listToMaybe, isJust)
@@ -40,15 +41,14 @@ import qualified Data.ByteString.Lazy as L
 main :: IO ()
 main = withSocketsDo $ do
 
+   opts <- getOptions
+
    -- Loading platform
    hst <- loadPlatform defaultConfig {
       enableOpenCLCPUs = False
    }
 
-   getArgs >>= \case
-      []  -> server (nullConf { port = 8000}) hst
-      [p] -> server (nullConf { port = read p}) hst
-      _   -> putStrLn =<< (printf "Usage: %s [PORT]" <$> getProgName)
+   server (nullConf {port = optport opts}) hst
 
 
 server :: Conf -> V.Host -> IO ()
@@ -77,7 +77,7 @@ server conf hst = do
       ]
 
 css :: Response
-css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/Web/style.css"))
+css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/PlatformWeb/style.css"))
 
 -- | Template of all pages
 appTemplate :: V.Host -> String -> Html -> Html
