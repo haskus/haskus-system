@@ -647,22 +647,6 @@ toForm x = case x of
    _     -> error "Unknown form entry"
 
 
--- Attribute classes
---data ClassAddress          = ClassAddress
---data ClassBlock            = ClassBlock
---data ClassConstant         = ClassConstant
---data ClassExprLoc          = ClassExprLoc
---data ClassFlag             = ClassFlag
---data ClassLinePointer      = ClassLinePointer
---data ClassLocListPointer   = ClassLocListPointer
---data ClassMacroPointer     = ClassMacroPointer
---data ClassRangeListPointer = ClassRangeListPointer
---data ClassReference        = ClassReference
---data ClassString           = ClassString
---
---TODO
-
-
 -- DWARF expressions
 --
 -- DWARF expressions describe how to compute a value or name a location during
@@ -674,8 +658,136 @@ toForm x = case x of
 -- determined by the opcode.
 --
 -- TODO
+data DwarfExpr
+   = ExprAddr Word64
+   | ExprDeref
+   | ExprUnsignedConstant Word64
+   | ExprSignedConstant   Int64
+   | ExprDup
+   | ExprDrop
+   | ExprOver
+   | ExprPick Word8
+   | ExprSwap
+   | ExprRot
+   | ExprXDeref
+   | ExprAbs
+   | ExprAnd
+   | ExprDiv
+   | ExprMinus
+   | ExprMod
+   | ExprMul
+   | ExprNegate
+   | ExprNot
+   | ExprOr
+   | ExprPlus
+   | ExprPlusUnsignedConstant Word64
+   | ExprShiftLeft
+   | ExprShiftRight
+   | ExprShiftRightA
+   | ExprXor
+   | ExprSkip Int16
+   | ExprBra Int16
+   | ExprEq
+   | ExprGE
+   | ExprGT
+   | ExprLE
+   | ExprLT
+   | ExprNE
+   | ExprLiteral Word8
+   | ExprRegister Word8
+   | ExprBaseRegister Word64
+   | ExprExtReg Word64
+   | ExprFBReg Int64
+   | ExprExtBaseReg Word64 Int64
+   | ExprPiece Word64
+   | ExprDerefSize Word8
+   | ExprExtDerefSize Word8
+   | ExprNop
+   | ExprPushObjectAddress
+   | ExprCall Word64
+   | ExprCallRef Word64
+   | ExprFormTLSAddress
+   | ExprCallFrameCFA
+   | ExprBitPiece Word64 Word64
+   | ExprImplicitValue Word64 ByteString
+   | ExprStackValue
+   | ExprCustom Word8
+   deriving (Show)
+
+getDwarfExpr :: Endianness -> DwarfFormat -> Get DwarfExpr
+getDwarfExpr endian format = do
+
+   let (gw8,gw16,gw32,gw64,gwN) = getGetters endian format
+   code <- gw8
+   case code of
+      0x03 -> ExprAddr <$> gwN
+      0x06 -> return ExprDeref
+      0x08 -> ExprUnsignedConstant . fromIntegral <$> gw8
+      0x09 -> ExprSignedConstant   . fromIntegral <$> (fromIntegral <$> gw8 :: Get Int8)
+      0x0a -> ExprUnsignedConstant . fromIntegral <$> gw16
+      0x0b -> ExprSignedConstant   . fromIntegral <$> (fromIntegral <$> gw16 :: Get Int16)
+      0x0c -> ExprUnsignedConstant . fromIntegral <$> gw32
+      0x0d -> ExprSignedConstant   . fromIntegral <$> (fromIntegral <$> gw32 :: Get Int32)
+      0x0e -> ExprUnsignedConstant . fromIntegral <$> gw64
+      0x0f -> ExprSignedConstant   . fromIntegral <$> (fromIntegral <$> gw64 :: Get Int64)
+      0x10 -> ExprUnsignedConstant                <$> getULEB128
+      0x11 -> ExprSignedConstant                  <$> getSLEB128
+      0x12 -> return ExprDup
+      0x13 -> return ExprDrop
+      0x14 -> return ExprOver
+      0x15 -> ExprPick <$> gw8
+      0x16 -> return ExprSwap
+      0x17 -> return ExprRot
+      0x18 -> return ExprXDeref
+      0x19 -> return ExprAbs
+      0x1a -> return ExprAnd
+      0x1b -> return ExprDiv
+      0x1c -> return ExprMinus
+      0x1d -> return ExprMod
+      0x1e -> return ExprMul
+      0x1f -> return ExprNegate
+      0x20 -> return ExprNot
+      0x21 -> return ExprOr
+      0x22 -> return ExprPlus
+      0x23 -> ExprPlusUnsignedConstant <$> getULEB128
+      0x24 -> return ExprShiftLeft
+      0x25 -> return ExprShiftRight
+      0x26 -> return ExprShiftRightA
+      0x27 -> return ExprXor
+      0x28 -> ExprSkip <$> (fromIntegral <$> gw16 :: Get Int16)
+      0x29 -> ExprBra  <$> (fromIntegral <$> gw16 :: Get Int16)
+      0x2a -> return ExprEq
+      0x2b -> return ExprGE
+      0x2c -> return ExprGT
+      0x2d -> return ExprLE
+      0x2e -> return ExprLT
+      0x2f -> return ExprNE
+      x
+         | x >= 0x30 && x <= 0x4f -> return $ ExprLiteral (fromIntegral x - 0x30)
+         | x >= 0x50 && x <= 0x6f -> return $ ExprRegister (fromIntegral x - 0x50)
+         | x >= 0x70 && x <= 0x8f -> ExprBaseRegister <$> getSLEB128
+      0x90 -> ExprExtReg <$> getULEB128
+      0x91 -> ExprFBReg  <$> getSLEB128
+      0x92 -> ExprExtBaseReg <$> getULEB128 <*> getSLEB128
+      0x93 -> ExprPiece <$> getULEB128
+      0x94 -> ExprDerefSize <$> gw8
+      0x95 -> ExprExtDerefSize <$> gw8
+      0x96 -> return ExprNop
+      0x97 -> return ExprPushObjectAddress
+      0x98 -> ExprCall . fromIntegral <$> gw16
+      0x99 -> ExprCall . fromIntegral <$> gw32
+      0x9a -> ExprCallRef <$> gwN
+      0x9b -> return ExprFormTLSAddress
+      0x9c -> return ExprCallFrameCFA
+      0x9d -> ExprBitPiece <$> getULEB128 <*> getULEB128
+      0x9e -> do
+         sz <- getULEB128 :: Get Word64
+         ExprImplicitValue sz <$> getByteString (fromIntegral sz)
+      0x9f -> return ExprStackValue
+      x    -> return $ ExprCustom (fromIntegral x)
 
 
+-- | DWARF format (32-bit or 64-bit)
 data DwarfFormat
    = Dwarf32 
    | Dwarf64
@@ -920,7 +1032,7 @@ data AttributeValue
    | AttrValueBlock             ByteString
    | AttrValueUnsignedConstant  Word64
    | AttrValueSignedConstant    Int64
-   | AttrValueDwarfExpr         ByteString
+   | AttrValueDwarfExpr         [DwarfExpr]
    | AttrValueFlag              Bool
    | AttrValueOffset            Word64                -- ^ Offset in another section
    | AttrValueRelativeReference Word64                -- ^ Offset in the compilation unit
@@ -945,7 +1057,9 @@ getValueFromForm addressSize endian format strings form = do
       FormData8         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw64)
       FormUData         -> AttrValueUnsignedConstant  <$> getULEB128
       FormSData         -> AttrValueSignedConstant    <$> getSLEB128
-      FormExprLoc       -> AttrValueDwarfExpr         <$> (getByteString =<< (fromIntegral  <$> (getULEB128 :: Get Word64)))
+      FormExprLoc       -> do
+         sz <- fromIntegral  <$> (getULEB128 :: Get Word64)
+         AttrValueDwarfExpr <$> isolate sz (getWhole (getDwarfExpr endian format))
       FormFlag          -> AttrValueFlag              <$> ((/= 0) <$> gw8)
       FormFlagPresent   -> return (AttrValueFlag True)
       FormSecOffset     -> AttrValueOffset            <$> gwN
