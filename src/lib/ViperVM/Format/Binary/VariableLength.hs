@@ -4,6 +4,7 @@ module ViperVM.Format.Binary.VariableLength
    , putULEB128
    , getSLEB128
    , putSLEB128
+   , getLEB128BS
    )
 where
 
@@ -12,6 +13,10 @@ import Data.Word
 import Data.Bits
 import Data.Binary.Get
 import Data.Binary.Put
+import Data.ByteString.Lazy (ByteString)
+
+import ViperVM.Format.Binary.BitPut
+import ViperVM.Format.Binary.BitOrder
 
 -- Unsigned Little Endian Base 128 (ULEB128)
 -- The word is splitted in chunks of 7 bits, starting from least significant
@@ -74,4 +79,16 @@ putSLEB128 a = rec a
                else do
                   putWord8 (fromIntegral w .|. 0x80)
                   putWord8 (fromIntegral ext .&. 0x7f)   -- sign byte
+
+
+-- | Get a bytestring containing a decoded LEB128 string
+getLEB128BS :: Get ByteString
+getLEB128BS = rec (emptyBitPutState BB)
+   where
+      rec state = do
+         w      <- getWord8
+         let state2 = putBits 7 w state
+         case testBit w 7 of
+            True  -> rec state2
+            False -> return (getBitPutBS state2)
 
