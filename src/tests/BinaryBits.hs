@@ -12,6 +12,9 @@ import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.VariableLength
 
 tests :: IO [Test]
 tests = return
@@ -23,7 +26,7 @@ tests = return
       , testProperty "Bits to string (Word32)"           (prop_bits_to_string :: Word32 -> Bool)
       , testProperty "Bits to string (Word64)"           (prop_bits_to_string :: Word64 -> Bool)
       ]
-   , testGroup "bit put/bit get"
+   , testGroup "Bit put/bit get"
       [ testProperty "Bit put/get Word8  - 8  bits"      (prop_reverse_word 8  :: Word8  -> ArbitraryBitOrder -> Bool)
       , testProperty "Bit put/get Word16 - 16 bits"      (prop_reverse_word 16 :: Word16 -> ArbitraryBitOrder -> Bool)
       , testProperty "Bit put/get Word32 - 32 bits"      (prop_reverse_word 32 :: Word32 -> ArbitraryBitOrder -> Bool)
@@ -32,6 +35,12 @@ tests = return
       , testProperty "Bit put/get Word16 - [1,16] bits"  (prop_reverse_word_size :: Size16 -> Word16  -> ArbitraryBitOrder -> Bool)
       , testProperty "Bit put/get Word32 - [1,32] bits"  (prop_reverse_word_size :: Size32 -> Word32  -> ArbitraryBitOrder -> Bool)
       , testProperty "Bit put/get Word64 - [1,64] bits"  (prop_reverse_word_size :: Size64 -> Word64  -> ArbitraryBitOrder -> Bool)
+      ]
+   , testGroup "Variable length (LEB128)"
+      [ testProperty "Put/Get reverse (Word8)"           (prop_uleb128_reverse :: Word8 -> Bool)
+      , testProperty "Put/Get reverse (Word16)"          (prop_uleb128_reverse :: Word16 -> Bool)
+      , testProperty "Put/Get reverse (Word32)"          (prop_uleb128_reverse :: Word32 -> Bool)
+      , testProperty "Put/Get reverse (Word64)"          (prop_uleb128_reverse :: Word64 -> Bool)
       ]
    ]
 
@@ -83,3 +92,10 @@ prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
 
 prop_reverse_word_size :: (Integral a, Bits a, Size s) => s -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word_size n w bo = prop_reverse_word (fromSize n) w bo
+
+
+prop_uleb128_reverse :: (Integral a, Bits a) => a -> Bool
+prop_uleb128_reverse w = w == dec
+   where
+      enc = runPut (putULEB128 w)
+      dec = runGet getULEB128 enc

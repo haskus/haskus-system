@@ -175,6 +175,8 @@ library
     ViperVM.Format.Binary.BitPut
     ViperVM.Format.Binary.BitField
     ViperVM.Format.Binary.Endianness
+    ViperVM.Format.Binary.Get
+    ViperVM.Format.Binary.Put
     ViperVM.Format.Binary.VariableLength
 
 
