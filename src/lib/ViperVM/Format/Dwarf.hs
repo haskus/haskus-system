@@ -1,20 +1,24 @@
 {-# LANGUAGE LambdaCase, TupleSections #-}
 module ViperVM.Format.Dwarf
    ( Entry (..)
-   , Tag (..)
-   , fromTag
-   , toTag
+   , DwarfFormat (..)
+   , getFormat
+   , putFormat
+   , getUnitLength
+   , putUnitLength
+   -- * Attributes
    , Attribute (..)
    , fromAttribute
    , toAttribute
    , Form (..)
    , toForm
    , fromForm
-   , DwarfFormat (..)
-   , getFormat
-   , putFormat
-   , getUnitLength
-   , putUnitLength
+   , Tag (..)
+   , fromTag
+   , toTag
+   , Encoding (..)
+   , toEncoding
+   , fromEncoding
    -- * Debug entry
    , DebugEntry (..)
    , DebugAttribute (..)
@@ -1001,7 +1005,7 @@ getDebugEntry endian cuh abbrevs strings = do
          let abbrev = head (filter (\x -> debugAbbrevCode x == code) abbrevs)
          -- read attributes values
          attrs <- forM (debugAbbrevAttributes abbrev) $ \att -> do
-            value <- getValueFromForm addressSize endian format strings (debugAbbrevAttrForm att)
+            value <- getAttributeValue addressSize endian format strings (debugAbbrevAttrName att) (debugAbbrevAttrForm att)
             return $ DebugAttribute (debugAbbrevAttrName att) value
          return . Just $ DebugEntry code 
                            (debugAbbrevTag abbrev) 
@@ -1049,6 +1053,21 @@ getDebugAbbrevEntry = do
 getDebugAbbrevEntries :: Get [DebugAbbrevEntry]
 getDebugAbbrevEntries = fmap fromJust <$> getWhile isJust getDebugAbbrevEntry
 
+data RawAttributeValue
+   = RawAttrValueAddress           ByteString
+   | RawAttrValueBlock             ByteString
+   | RawAttrValueUnsignedConstant  Word64
+   | RawAttrValueSignedConstant    Int64
+   | RawAttrValueDwarfExpr         [DwarfExpr]
+   | RawAttrValueFlag              Bool
+   | RawAttrValueOffset            Word64          -- ^ Offset in another section
+   | RawAttrValueRelativeReference Word64          -- ^ Offset in the compilation unit
+   | RawAttrValueAbsoluteReference Word64          -- ^ Offset from the beginning of the .debug_info section
+   | RawAttrValueTypeReference     Word64          -- ^ Type reference (i.e. signature in the .debug_type section)
+   | RawAttrValueString            Text            -- ^ String
+   | RawAttrValueStringPointer     Word64          -- ^ String pointer in the .debug_str section
+   deriving (Show)
+
 data AttributeValue
    = AttrValueAddress           ByteString
    | AttrValueBlock             ByteString
@@ -1061,45 +1080,126 @@ data AttributeValue
    | AttrValueAbsoluteReference Word64                -- ^ Offset from the beginning of the .debug_info section
    | AttrValueTypeReference     Word64                -- ^ Type reference (i.e. signature in the .debug_type section)
    | AttrValueString            Text                  -- ^ String
-   | AttrValueStringPointer     Word64 (Maybe Text)   -- ^ String pointer in the .debug_str section
+   | AttrValueEncoding          Encoding
    deriving (Show)
 
-getValueFromForm :: Word8 -> Endianness -> DwarfFormat -> Maybe LBS.ByteString -> Form -> Get AttributeValue
-getValueFromForm addressSize endian format strings form = do
-   let (gw8,gw16,gw32,gw64,gwN) = getGetters endian format
-   case form of
-      FormAddress       -> AttrValueAddress           <$> getByteString (fromIntegral addressSize)
-      FormBlock1        -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw8))
-      FormBlock2        -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw16))
-      FormBlock4        -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw32))
-      FormBlock         -> AttrValueBlock             <$> (getByteString =<< (fromIntegral <$> (getULEB128 :: Get Word64)))
-      FormData1         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw8)
-      FormData2         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw16)
-      FormData4         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw32)
-      FormData8         -> AttrValueUnsignedConstant  <$> (fromIntegral <$> gw64)
-      FormUData         -> AttrValueUnsignedConstant  <$> getULEB128
-      FormSData         -> AttrValueSignedConstant    <$> getSLEB128
-      FormExprLoc       -> do
-         sz <- fromIntegral  <$> (getULEB128 :: Get Word64)
-         AttrValueDwarfExpr <$> isolate sz (getWhole (getDwarfExpr endian format))
-      FormFlag          -> AttrValueFlag              <$> ((/= 0) <$> gw8)
-      FormFlagPresent   -> return (AttrValueFlag True)
-      FormSecOffset     -> AttrValueOffset            <$> gwN
-      FormRef1          -> AttrValueRelativeReference <$> (fromIntegral <$> gw8)
-      FormRef2          -> AttrValueRelativeReference <$> (fromIntegral <$> gw16)
-      FormRef4          -> AttrValueRelativeReference <$> (fromIntegral <$> gw32)
-      FormRef8          -> AttrValueRelativeReference <$> (fromIntegral <$> gw64)
-      FormRefUData      -> AttrValueRelativeReference <$> getULEB128
-      FormRefAddress    -> AttrValueAbsoluteReference <$> gwN
-      FormRefSig8       -> AttrValueTypeReference     <$> gw64
-      FormString        -> AttrValueString            <$> (Text.decodeUtf8 . LBS.toStrict <$> getLazyByteStringNul)
-      FormStringPointer -> do
-         -- offset in .debug_str section
-         off <- gwN
+data Encoding
+   = EncodingAddress
+   | EncodingBoolean
+   | EncodingComplexFloat
+   | EncodingFloat
+   | EncodingSigned
+   | EncodingSignedChar
+   | EncodingUnsigned
+   | EncodingUnsignedChar
+   | EncodingImaginaryFloat
+   | EncodingPackedDecimal
+   | EncodingNumericString
+   | EncodingEdited
+   | EncodingSignedFixed
+   | EncodingUnsignedFixed
+   | EncodingDecimalFloat
+   | EncodingUTF
+   | EncodingCustom Word8
+   deriving (Show,Eq)
+
+toEncoding :: Word8 -> Encoding
+toEncoding x = case x of
+   0x01  -> EncodingAddress
+   0x02  -> EncodingBoolean
+   0x03  -> EncodingComplexFloat
+   0x04  -> EncodingFloat
+   0x05  -> EncodingSigned
+   0x06  -> EncodingSignedChar
+   0x07  -> EncodingUnsigned
+   0x08  -> EncodingUnsignedChar
+   0x09  -> EncodingImaginaryFloat
+   0x0a  -> EncodingPackedDecimal
+   0x0b  -> EncodingNumericString
+   0x0c  -> EncodingEdited
+   0x0d  -> EncodingSignedFixed
+   0x0e  -> EncodingUnsignedFixed
+   0xf   -> EncodingDecimalFloat
+   0x10  -> EncodingUTF
+   _     -> EncodingCustom x
+
+fromEncoding :: Encoding -> Word8
+fromEncoding x = case x of
+   EncodingAddress         -> 0x01
+   EncodingBoolean         -> 0x02
+   EncodingComplexFloat    -> 0x03
+   EncodingFloat           -> 0x04
+   EncodingSigned          -> 0x05
+   EncodingSignedChar      -> 0x06
+   EncodingUnsigned        -> 0x07
+   EncodingUnsignedChar    -> 0x08
+   EncodingImaginaryFloat  -> 0x09
+   EncodingPackedDecimal   -> 0x0a
+   EncodingNumericString   -> 0x0b
+   EncodingEdited          -> 0x0c
+   EncodingSignedFixed     -> 0x0d
+   EncodingUnsignedFixed   -> 0x0e
+   EncodingDecimalFloat    -> 0xf
+   EncodingUTF             -> 0x10
+   EncodingCustom v        -> v
+
+
+-- | Attribute value
+getAttributeValue :: Word8 -> Endianness -> DwarfFormat -> Maybe LBS.ByteString -> Attribute -> Form -> Get AttributeValue
+getAttributeValue addressSize endian format strings att form = do
+   raw <- getValueFromForm addressSize endian format form
+   case raw of
+      RawAttrValueAddress x            -> return $ AttrValueAddress x            
+      RawAttrValueBlock x              -> return $ AttrValueBlock x              
+      RawAttrValueUnsignedConstant x
+         | att == AttrEncoding         -> return $ AttrValueEncoding (toEncoding (fromIntegral x))
+         | otherwise                   -> return $ AttrValueUnsignedConstant x   
+      RawAttrValueSignedConstant x     -> return $ AttrValueSignedConstant x     
+      RawAttrValueDwarfExpr x          -> return $ AttrValueDwarfExpr x          
+      RawAttrValueFlag x               -> return $ AttrValueFlag x               
+      RawAttrValueOffset x             -> return $ AttrValueOffset x             
+      RawAttrValueRelativeReference x  -> return $ AttrValueRelativeReference x  
+      RawAttrValueAbsoluteReference x  -> return $ AttrValueAbsoluteReference x  
+      RawAttrValueTypeReference x      -> return $ AttrValueTypeReference x      
+      RawAttrValueString x             -> return $ AttrValueString x             
+      RawAttrValueStringPointer off    -> do
          -- read the string
          let str = Text.decodeUtf8 . LBS.toStrict . runGet getLazyByteStringNul . LBS.drop (fromIntegral off) <$> strings
-         return (AttrValueStringPointer off str)
-      FormIndirect      -> getValueFromForm addressSize endian format strings =<< (toForm <$> getULEB128)
+         return (AttrValueString (fromJust str))
+
+
+-- | Get raw attribute value from form only
+getValueFromForm :: Word8 -> Endianness -> DwarfFormat -> Form -> Get RawAttributeValue
+getValueFromForm addressSize endian format form = do
+   let (gw8,gw16,gw32,gw64,gwN) = getGetters endian format
+   case form of
+      FormAddress       -> RawAttrValueAddress           <$> getByteString (fromIntegral addressSize)
+      FormBlock1        -> RawAttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw8))
+      FormBlock2        -> RawAttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw16))
+      FormBlock4        -> RawAttrValueBlock             <$> (getByteString =<< (fromIntegral <$> gw32))
+      FormBlock         -> RawAttrValueBlock             <$> (getByteString =<< (fromIntegral <$> (getULEB128 :: Get Word64)))
+      FormData1         -> RawAttrValueUnsignedConstant  <$> (fromIntegral <$> gw8)
+      FormData2         -> RawAttrValueUnsignedConstant  <$> (fromIntegral <$> gw16)
+      FormData4         -> RawAttrValueUnsignedConstant  <$> (fromIntegral <$> gw32)
+      FormData8         -> RawAttrValueUnsignedConstant  <$> (fromIntegral <$> gw64)
+      FormUData         -> RawAttrValueUnsignedConstant  <$> getULEB128
+      FormSData         -> RawAttrValueSignedConstant    <$> getSLEB128
+      FormExprLoc       -> do
+         sz <- fromIntegral    <$> (getULEB128 :: Get Word64)
+         RawAttrValueDwarfExpr <$> isolate sz (getWhole (getDwarfExpr endian format))
+      FormFlag          -> RawAttrValueFlag              <$> ((/= 0) <$> gw8)
+      FormFlagPresent   -> return (RawAttrValueFlag True)
+      FormSecOffset     -> RawAttrValueOffset            <$> gwN
+      FormRef1          -> RawAttrValueRelativeReference <$> (fromIntegral <$> gw8)
+      FormRef2          -> RawAttrValueRelativeReference <$> (fromIntegral <$> gw16)
+      FormRef4          -> RawAttrValueRelativeReference <$> (fromIntegral <$> gw32)
+      FormRef8          -> RawAttrValueRelativeReference <$> (fromIntegral <$> gw64)
+      FormRefUData      -> RawAttrValueRelativeReference <$> getULEB128
+      FormRefAddress    -> RawAttrValueAbsoluteReference <$> gwN
+      FormRefSig8       -> RawAttrValueTypeReference     <$> gw64
+      FormString        -> RawAttrValueString            <$> (Text.decodeUtf8 . LBS.toStrict <$> getLazyByteStringNul)
+      FormStringPointer -> RawAttrValueStringPointer     <$> gwN
+      FormIndirect      -> getValueFromForm addressSize endian format =<< (toForm <$> getULEB128)
 
 getDebugInfo :: Endianness -> LBS.ByteString -> Maybe LBS.ByteString -> Get DebugInfo
 getDebugInfo endian secAbbrevs strings = do
