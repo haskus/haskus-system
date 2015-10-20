@@ -4,9 +4,9 @@ module ViperVM.Format.Binary.BitGet
    ( BitGetState(..)
    , newBitGetState
    , skipBits
-   , readWord
-   , readWordChecked
-   , readByteString
+   , getBits
+   , getBitsChecked
+   , getBitsBS
    )
 where
 
@@ -76,19 +76,21 @@ extract bo bs o n
          LL -> id
 
 
--- | Generic readWord
-readWord :: (Num a, Bits a) => Int -> BitGetState -> a
-readWord n (BitGetState bs o bo)
+-- | Read the given number of bits and put the result in a word
+getBits :: (Num a, Bits a) => Int -> BitGetState -> a
+getBits n (BitGetState bs o bo)
    | n == 0    = 0
    | otherwise = extract bo (BS.unsafeTake nbytes bs) o n
    where nbytes = byteOffset (o+n+7)
 
--- | Check that the number of bits to read is not greater than the first parameter
-readWordChecked :: (Num a, Bits a) => Int -> Int -> BitGetState -> a
-readWordChecked m n s
+-- | Perform some checks before calling getBits
+--
+-- Check that the number of bits to read is not greater than the first parameter
+getBitsChecked :: (Num a, FiniteBits a) => Int -> Int -> BitGetState -> a
+getBitsChecked m n s
    | n > m     = error $ "Tried to read more than " ++ show m ++ " bits (" ++ show n ++")"
-   | otherwise = readWord n s
-{-# INLINE readWordChecked #-}
+   | otherwise = getBits n s
+{-# INLINE getBitsChecked #-}
 
 
 -- | Read the given number of bytes and return them in Big-Endian order
@@ -98,8 +100,8 @@ readWordChecked m n s
 --    LL: LMNOPxxx DEFGHIJK xxxxxABC -> ABCDEFGH IJKLMNOP
 --    BL: xxxPONML KJIHGFED CBAxxxxx -> ABCDEFGH IJKLMNOP
 --    LB: EDCBAxxx MLKJIHGF xxxxxPON -> ABCDEFGH IJKLMNOP
-readByteString :: Int -> BitGetState -> ByteString
-readByteString n (BitGetState bs o bo) =
+getBitsBS :: Int -> BitGetState -> ByteString
+getBitsBS n (BitGetState bs o bo) =
    let 
       bs'  = BS.unsafeTake (n+1) bs
       bs'' = BS.unsafeTake n bs
@@ -109,9 +111,9 @@ readByteString n (BitGetState bs o bo) =
       (0,LL) -> BS.reverse bs''
       (0,LB) -> rev bs''
       (0,BL) -> rev . BS.reverse $ bs''
-      (_,LL) -> readByteString n (BitGetState (BS.reverse bs') (8-o) BB)
-      (_,BL) -> rev . BS.reverse $ readByteString n (BitGetState bs' o BB)
-      (_,LB) -> rev . BS.reverse $ readByteString n (BitGetState bs' o LL)
+      (_,LL) -> getBitsBS n (BitGetState (BS.reverse bs') (8-o) BB)
+      (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs' o BB)
+      (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs' o LL)
       (_,BB) -> unsafePerformIO $ do
          let len = n+1
          ptr <- mallocBytes len

@@ -87,8 +87,8 @@ prop_bits_to_string x = bitsFromString (bitsToString x) == x
 prop_reverse_word :: (Integral a, Bits a) => Int -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
    where
-      enc = getBitPutBS $ putBits n w $ newBitPutState bo
-      dec = readWord n  $ newBitGetState bo enc
+      enc = getBitPutBS  $ putBits n w $ newBitPutState bo
+      dec = getBits n $ newBitGetState bo enc
 
 prop_reverse_word_size :: (Integral a, Bits a, Size s) => s -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word_size n w bo = prop_reverse_word (fromSize n) w bo
