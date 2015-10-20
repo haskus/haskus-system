@@ -12,6 +12,8 @@ module ViperVM.Format.Binary.BitPut
    , runBitPutT
    , putBitsM
    , putBitsBSM
+   , changeBitPutOrder
+   , withBitPutOrder
    )
 where
 
@@ -135,3 +137,21 @@ putBitsM n w = modify (putBits n w)
 
 putBitsBSM :: Monad m => BS.ByteString -> BitPutT m ()
 putBitsBSM bs = modify (putBitsBS bs)
+
+-- | Change the current bit ordering
+--
+-- Be careful to change the outer bit ordering (B* to L* or the inverse) only
+-- on bytes boundaries! Otherwise, you will write the same bits more than once.
+changeBitPutOrder :: Monad m => BitOrder -> BitPutT m ()
+changeBitPutOrder bo = modify (\s -> s { bitPutStateBitOrder = bo })
+
+-- | Change the bit ordering for the wrapped BitPut
+--
+-- Be careful, this function uses changeBitPutOrder internally.
+withBitPutOrder :: Monad m => BitOrder -> BitPutT m a -> BitPutT m a
+withBitPutOrder bo m = do
+   bo' <- gets bitPutStateBitOrder
+   changeBitPutOrder bo
+   v <- m
+   changeBitPutOrder bo'
+   return v

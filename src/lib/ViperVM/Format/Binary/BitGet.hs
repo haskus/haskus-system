@@ -15,6 +15,8 @@ module ViperVM.Format.Binary.BitGet
    , skipBitsM
    , getBitsM
    , getBitsCheckedM
+   , changeBitGetOrder
+   , withBitGetOrder
    )
 where
 
@@ -163,5 +165,23 @@ getBitsCheckedM :: (Num a, Bits a, Monad m) => Int -> Int -> BitGetT m a
 getBitsCheckedM m n = do
    v <- gets (getBitsChecked m n)
    skipBitsM n
+   return v
+
+-- | Change the current bit ordering
+--
+-- Be careful to change the outer bit ordering (B* to L* or the inverse) only
+-- on bytes boundaries! Otherwise, you will read the same bits more than once.
+changeBitGetOrder :: Monad m => BitOrder -> BitGetT m ()
+changeBitGetOrder bo = modify (\s -> s { bitGetStateBitOrder = bo })
+
+-- | Change the bit ordering for the wrapped BitGet
+--
+-- Be careful, this function uses changeBitGetOrder internally.
+withBitGetOrder :: Monad m => BitOrder -> BitGetT m a -> BitGetT m a
+withBitGetOrder bo m = do
+   bo' <- gets bitGetStateBitOrder
+   changeBitGetOrder bo
+   v <- m
+   changeBitGetOrder bo'
    return v
 
