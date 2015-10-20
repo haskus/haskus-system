@@ -5,11 +5,20 @@ module ViperVM.Format.Binary.BitPut
    , putBitsBS
    , getBitPutBS
    , getBitPutLBS
+   -- * Monadic
+   , BitPut
+   , BitPutT
+   , runBitPut
+   , runBitPutT
+   , putBitsM
+   , putBitsBSM
    )
 where
 
 import qualified Data.Binary.Builder as B
 import Data.Binary.Builder ( Builder )
+import Control.Monad.State
+import Control.Monad.Identity
 
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
@@ -110,3 +119,19 @@ getBitPutLBS = B.toLazyByteString . bitPutStateBuilder . flushIncomplete
 
 getBitPutBS :: BitPutState -> BS.ByteString
 getBitPutBS = LBS.toStrict . getBitPutLBS
+
+
+type BitPutT m a = StateT BitPutState m a
+type BitPut a    = BitPutT Identity a
+
+runBitPutT :: Monad m => BitOrder -> BitPutT m a -> m BS.ByteString
+runBitPutT bo m = getBitPutBS <$> execStateT m (newBitPutState bo)
+
+runBitPut :: BitOrder -> BitPut a -> BS.ByteString
+runBitPut bo m = runIdentity (runBitPutT bo m)
+
+putBitsM :: (Monad m, Num a, Bits a, Integral a) => Int -> a -> BitPutT m ()
+putBitsM n w = modify (putBits n w)
+
+putBitsBSM :: Monad m => BS.ByteString -> BitPutT m ()
+putBitsBSM bs = modify (putBitsBS bs)

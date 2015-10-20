@@ -7,6 +7,14 @@ module ViperVM.Format.Binary.BitGet
    , getBits
    , getBitsChecked
    , getBitsBS
+   -- * Monadic
+   , BitGet
+   , BitGetT
+   , runBitGet
+   , runBitGetT
+   , skipBitsM
+   , getBitsM
+   , getBitsCheckedM
    )
 where
 
@@ -18,7 +26,8 @@ import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr (plusPtr)
 import Foreign.Storable (poke)
 import System.IO.Unsafe (unsafePerformIO)
-import Control.Monad (foldM_)
+import Control.Monad.State
+import Control.Monad.Identity
 
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
@@ -34,13 +43,17 @@ data BitGetState = BitGetState
 newBitGetState :: BitOrder -> ByteString -> BitGetState
 newBitGetState bo bs = BitGetState bs 0 bo
 
--- | Increment the current bit offset
+-- | Skip the given number of bits from the input
 skipBits :: Int -> BitGetState -> BitGetState
 skipBits o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
    where
       !o' = (n+o)
       !d  = byteOffset o'
       !n' = bitOffset o'
+
+-- | Skip the given number of bits from the input (monadic version)
+skipBitsM :: Monad m => Int -> BitGetT m ()
+skipBitsM = modify . skipBits
 
 -- | Extract a range of bits from (ws :: ByteString)
 --
@@ -86,12 +99,11 @@ getBits n (BitGetState bs o bo)
 -- | Perform some checks before calling getBits
 --
 -- Check that the number of bits to read is not greater than the first parameter
-getBitsChecked :: (Num a, FiniteBits a) => Int -> Int -> BitGetState -> a
+getBitsChecked :: (Num a, Bits a) => Int -> Int -> BitGetState -> a
 getBitsChecked m n s
    | n > m     = error $ "Tried to read more than " ++ show m ++ " bits (" ++ show n ++")"
    | otherwise = getBits n s
 {-# INLINE getBitsChecked #-}
-
 
 -- | Read the given number of bytes and return them in Big-Endian order
 --
@@ -126,3 +138,30 @@ getBitsBS n (BitGetState bs o bo) =
                return r'
          foldM_ f 0 [1..len]
          BS.unsafeInit <$> BS.unsafePackMallocCStringLen (ptr,len)
+
+
+
+
+type BitGetT m a = StateT BitGetState m a
+type BitGet a    = BitGetT Identity a
+
+runBitGetT :: Monad m => BitOrder -> BitGetT m a -> BS.ByteString -> m a
+runBitGetT bo m bs = evalStateT m (newBitGetState bo bs)
+
+runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
+runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
+
+-- | Read the given number of bits and put the result in a word
+getBitsM :: (Num a, Bits a, Monad m) => Int -> BitGetT m a
+getBitsM n = do
+   v <- gets (getBits n)
+   skipBitsM n
+   return v
+
+-- | Perform some checks before calling getBitsM
+getBitsCheckedM :: (Num a, Bits a, Monad m) => Int -> Int -> BitGetT m a
+getBitsCheckedM m n = do
+   v <- gets (getBitsChecked m n)
+   skipBitsM n
+   return v
+

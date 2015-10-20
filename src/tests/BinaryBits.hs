@@ -35,6 +35,8 @@ tests = return
       , testProperty "Bit put/get Word16 - [1,16] bits"  (prop_reverse_word_size :: Size16 -> Word16  -> ArbitraryBitOrder -> Bool)
       , testProperty "Bit put/get Word32 - [1,32] bits"  (prop_reverse_word_size :: Size32 -> Word32  -> ArbitraryBitOrder -> Bool)
       , testProperty "Bit put/get Word64 - [1,64] bits"  (prop_reverse_word_size :: Size64 -> Word64  -> ArbitraryBitOrder -> Bool)
+      , testProperty "Monadic BitPut/BitGet, two parts of two Word64"
+         (prop_split_word :: Size64 -> Size64 -> Word64 -> Word64 -> ArbitraryBitOrder -> Bool)
       ]
    , testGroup "Variable length (LEB128)"
       [ testProperty "Put/Get reverse (Word8)"           (prop_uleb128_reverse :: Word8 -> Bool)
@@ -78,22 +80,42 @@ newtype BitString = BitString String deriving (Show)
 instance Arbitrary BitString where
    arbitrary = fmap BitString $ vectorOf 64 (elements ['0','1'])
 
+-- | Test that a random BitString (i.e. a string with length 64 and only
+-- composed of 0s and 1s) can be converted into a Word64 and back into a string
 prop_bits_from_string :: BitString -> Bool
 prop_bits_from_string (BitString s) = bitsToString (bitsFromString s :: Word64) == s
 
+-- | Test that a word can be converted into a BitString and back
 prop_bits_to_string :: FiniteBits a => a -> Bool
 prop_bits_to_string x = bitsFromString (bitsToString x) == x
 
+-- | Test that words of the given length can be written and read back with
+-- BitGet/BitPut. Test every bit ordering.
 prop_reverse_word :: (Integral a, Bits a) => Int -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
    where
       enc = getBitPutBS  $ putBits n w $ newBitPutState bo
       dec = getBits n $ newBitGetState bo enc
 
+-- | Test that words with arbitrary (but still valid) lengths can be written and
+-- read back with BitGet/BitPut. Test every bit ordering.
 prop_reverse_word_size :: (Integral a, Bits a, Size s) => s -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word_size n w bo = prop_reverse_word (fromSize n) w bo
 
+-- | Write two parts of two words and read them back
+prop_split_word :: (Num a, Integral a, FiniteBits a, Num b, Integral b, FiniteBits b, Size s1, Size s2) => s1 -> s2 -> a -> b -> ArbitraryBitOrder -> Bool
+prop_split_word s1 s2 w1 w2 (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut bo enc)
+   where
+      enc = do
+         putBitsM (fromSize s1) w1
+         putBitsM (fromSize s2) w2
+      dec = do
+         v1 <- getBitsM (fromSize s1)
+         v2 <- getBitsM (fromSize s2)
+         return (v1 == maskLeastBits (fromSize s1) w1 && v2 == maskLeastBits (fromSize s2) w2)
 
+-- | Test that ULEB128 decoder can read back what has been written with ULEB128
+-- encoder
 prop_uleb128_reverse :: (Integral a, Bits a) => a -> Bool
 prop_uleb128_reverse w = w == dec
    where
