@@ -11,6 +11,7 @@ module ViperVM.Format.Binary.BitPut
    , runBitPut
    , runBitPutT
    , putBitsM
+   , putBitBoolM
    , putBitsBSM
    , changeBitPutOrder
    , withBitPutOrder
@@ -134,6 +135,9 @@ runBitPut bo m = runIdentity (runBitPutT bo m)
 
 putBitsM :: (Monad m, Num a, Bits a, Integral a) => Int -> a -> BitPutT m ()
 putBitsM n w = modify (putBits n w)
+
+putBitBoolM :: (Monad m) => Bool -> BitPutT m ()
+putBitBoolM b = putBitsM 1 (if b then 1 else  0 :: Word)
 
 putBitsBSM :: Monad m => BS.ByteString -> BitPutT m ()
 putBitsBSM bs = modify (putBitsBS bs)

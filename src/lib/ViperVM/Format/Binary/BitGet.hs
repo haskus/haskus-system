@@ -15,6 +15,7 @@ module ViperVM.Format.Binary.BitGet
    , skipBitsM
    , getBitsM
    , getBitsCheckedM
+   , getBitBoolM
    , changeBitGetOrder
    , withBitGetOrder
    )
@@ -166,6 +167,12 @@ getBitsCheckedM m n = do
    v <- gets (getBitsChecked m n)
    skipBitsM n
    return v
+
+-- | Get a bit and convert it into a Bool
+getBitBoolM :: (Monad m) => BitGetT m Bool
+getBitBoolM = do
+   v <- getBitsM 1
+   return ((v :: Word) == 1)
 
 -- | Change the current bit ordering
 --
