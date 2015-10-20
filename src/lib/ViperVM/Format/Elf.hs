@@ -49,7 +49,7 @@ import Data.Word
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
-import Data.Binary.Get
+import ViperVM.Format.Binary.Get
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Control.Monad (when, forM)

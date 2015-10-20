@@ -14,8 +14,8 @@ module ViperVM.Format.Elf.PreHeader
 where
 
 import Data.Word
-import Data.Binary.Get
-import Data.Binary.Put
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 import Control.Monad (when)
 
 import ViperVM.Format.Binary.Endianness

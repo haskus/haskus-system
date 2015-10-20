@@ -36,7 +36,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
-import Data.Binary.Get
+import ViperVM.Format.Binary.Get
 import Control.Monad (when, forM)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS

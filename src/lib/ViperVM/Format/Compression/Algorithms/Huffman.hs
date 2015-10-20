@@ -41,8 +41,8 @@ import Data.Tuple (swap)
 import Data.Bits (xor,shiftL,shiftR,testBit)
 import Data.Binary.Bits.Get as BitGet
 import Data.Binary.Bits.Put
-import Data.Binary.Get as Get
-import Data.Binary.Put
+import ViperVM.Format.Binary.Get as Get
+import ViperVM.Format.Binary.Put
 import qualified Data.ByteString.Lazy as BS
 import Control.Arrow (first)
 

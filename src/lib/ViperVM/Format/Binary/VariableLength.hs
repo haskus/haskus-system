@@ -11,10 +11,10 @@ where
 import Data.Int
 import Data.Word
 import Data.Bits
-import Data.Binary.Get
-import Data.Binary.Put
 import Data.ByteString.Lazy (ByteString)
 
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitOrder
 

@@ -14,8 +14,8 @@ module ViperVM.Format.CPIO
 where
 
 import Data.Word
-import Data.Binary.Put
-import Data.Binary.Get
+import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.Get
 import Data.ByteString (ByteString)
 import Data.ByteString.UTF8 (fromString,toString)
 import qualified Data.ByteString as BS

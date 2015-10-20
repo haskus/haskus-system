@@ -48,8 +48,8 @@ where
 import Data.Word
 import Data.Int
 import Data.Tree (Tree(..))
-import Data.Binary.Get
-import Data.Binary.Put
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 import Data.ByteString (ByteString)
 import Data.Maybe (fromJust,isJust)
 
@@ -966,28 +966,6 @@ debugEntryTree es = case rec es of
       rec []                       = ([],[])
 
 
-
--- | Get while True (read and discard the ending element)
-getWhile :: (a -> Bool) -> Get a -> Get [a]
-getWhile cond getter = rec []
-   where
-      rec xs = do
-         x <- getter
-         if cond x
-            then rec (x:xs)
-            else return (reverse xs)
-
--- | Repeat the getter to read the whole bytestring
-getWhole :: Get a -> Get [a]
-getWhole getter = rec []
-   where
-      rec xs = do
-         cond <- isEmpty
-         if cond
-            then return (reverse xs)
-            else do
-               x <- getter
-               rec (x:xs)
 
 getDebugEntry :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe LBS.ByteString -> Get (Maybe DebugEntry)
 getDebugEntry endian cuh abbrevs strings = do

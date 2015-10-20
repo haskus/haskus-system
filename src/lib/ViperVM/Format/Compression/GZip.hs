@@ -11,7 +11,7 @@ import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 
 import Data.Foldable (toList)
 import Data.Word
-import Data.Binary.Get
+import ViperVM.Format.Binary.Get
 import Data.Binary.Bits.Get (block,bool,runBitGet,skipBits)
 import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 (unpack)

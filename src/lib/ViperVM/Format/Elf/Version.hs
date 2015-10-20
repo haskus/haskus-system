@@ -21,8 +21,8 @@ module ViperVM.Format.Elf.Version
 where
 
 import Data.Word
-import Data.Binary.Get
-import Data.Binary.Put
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 
 import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
 import qualified ViperVM.Utils.BitSet as BitSet

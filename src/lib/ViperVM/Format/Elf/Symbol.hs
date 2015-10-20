@@ -10,9 +10,9 @@ module ViperVM.Format.Elf.Symbol
 where
 
 import Data.Word
-import Data.Binary.Get
-import Data.Binary.Put
 import Data.Bits
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 
 import ViperVM.Format.Elf.PreHeader
 

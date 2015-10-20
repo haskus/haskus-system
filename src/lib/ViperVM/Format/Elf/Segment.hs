@@ -16,8 +16,8 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
-import Data.Binary.Get
-import Data.Binary.Put
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 
 import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
 import qualified ViperVM.Utils.BitSet as BitSet

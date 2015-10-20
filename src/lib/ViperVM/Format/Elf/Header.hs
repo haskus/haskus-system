@@ -9,9 +9,8 @@ module ViperVM.Format.Elf.Header
 where
 
 import Data.Word
-import Data.Binary.Get
-import Data.Binary.Put
-
+import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Put
 import ViperVM.Format.Elf.PreHeader
 
 -- | ELF Header
