@@ -12,6 +12,7 @@ import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
+import ViperVM.Format.Binary.BitReverse
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.VariableLength
@@ -43,6 +44,11 @@ tests = return
       , testProperty "Put/Get reverse (Word16)"          (prop_uleb128_reverse :: Word16 -> Bool)
       , testProperty "Put/Get reverse (Word32)"          (prop_uleb128_reverse :: Word32 -> Bool)
       , testProperty "Put/Get reverse (Word64)"          (prop_uleb128_reverse :: Word64 -> Bool)
+      ]
+   , testGroup "Reverse bits"
+      [ testProperty "Reverse bits in a Word8"               (reverseBits 0x28 == 0x14)
+      , testProperty "Reverse bits in a Word8 is bijective"  (isBijective reverseBits)
+      , testProperty "Reverse bits with a table in a Word8 is bijective"  (isBijective reverseBitsTable)
       ]
    ]
 
@@ -121,3 +127,7 @@ prop_uleb128_reverse w = w == dec
    where
       enc = runPut (putULEB128 w)
       dec = runGet getULEB128 enc
+
+-- | Ensure a function is bijective
+isBijective :: Eq a => (a -> a) -> a -> Bool
+isBijective f w = w == (f (f w))

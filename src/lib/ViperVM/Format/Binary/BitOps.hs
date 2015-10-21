@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module ViperVM.Format.Binary.BitOps
    ( makeMask
    , maskLeastBits
@@ -37,7 +38,6 @@ bitOffset n = makeMask 3 .&. n
 byteOffset :: Int -> Int
 byteOffset n = n `shiftR` 3
 {-# INLINE byteOffset #-}
-
 
 -- | Reverse the @n@ least important bits of the given value. The higher bits
 -- are set to 0.
