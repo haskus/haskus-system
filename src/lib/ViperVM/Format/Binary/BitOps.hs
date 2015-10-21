@@ -1,9 +1,9 @@
-{-# LANGUAGE BangPatterns #-}
 module ViperVM.Format.Binary.BitOps
    ( makeMask
    , maskLeastBits
    , bitOffset
    , byteOffset
+   , reverseBitsWord8
    , reverseLeastBits
    , bitsToString
    , bitsFromString
@@ -13,6 +13,8 @@ where
 import Data.Word
 import Data.Bits
 import Data.List (foldl')
+
+import ViperVM.Format.Binary.BitReverse
 
 -- | makeMask 3 = 00000111
 makeMask :: (Bits a, Num a) => Int -> a
@@ -70,3 +72,10 @@ bitsFromString xs = foldl' b zeroBits (reverse xs `zip` [0..])
       b x ('0',i) = clearBit x i
       b x ('1',i) = setBit x i
       b _ (c,_)   = error $ "Invalid character in the string: " ++ [c]
+
+-- | Reverse bits in a Word8
+--
+-- The different implementation are in ViperVM.Format.Binary.BitReverse.  The
+-- current one has been selected through benchmarking (see ViperVM benchmarks).
+reverseBitsWord8 :: Word8 -> Word8
+reverseBitsWord8 = reverseBits4Ops

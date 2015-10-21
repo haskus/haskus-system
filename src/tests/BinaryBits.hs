@@ -45,10 +45,20 @@ tests = return
       , testProperty "Put/Get reverse (Word32)"          (prop_uleb128_reverse :: Word32 -> Bool)
       , testProperty "Put/Get reverse (Word64)"          (prop_uleb128_reverse :: Word64 -> Bool)
       ]
-   , testGroup "Reverse bits"
-      [ testProperty "Reverse bits in a Word8"               (reverseBits 0x28 == 0x14)
-      , testProperty "Reverse bits in a Word8 is bijective"  (isBijective reverseBits)
-      , testProperty "Reverse bits with a table in a Word8 is bijective"  (isBijective reverseBitsTable)
+   , testGroup "Reverse bits (Word8)"
+      [ testProperty "Reverse bits in a Word8"  (reverseBitsWord8 0x28 == 0x14)
+      , testProperty "Bijective: obvious"       (isBijective (reverseBitsObvious :: Word8 -> Word8))
+      , testProperty "Bijective: 3Ops"          (isBijective reverseBits3Ops)
+      , testProperty "Bijective: 4Ops"          (isBijective reverseBits4Ops)
+      , testProperty "Bijective: lookup table"  (isBijective reverseBitsTable)
+      , testProperty "Bijective: 7Ops"          (isBijective reverseBits7Ops)
+      , testProperty "Bijective: 5LgN"          (isBijective (reverseBits5LgN :: Word8 -> Word8))
+      , testProperty "Equivalent: obvious"      (isEquivalent reverseBitsWord8 reverseBitsObvious)
+      , testProperty "Equivalent: 3Ops"         (isEquivalent reverseBitsWord8 reverseBits3Ops)
+      , testProperty "Equivalent: 4Ops"         (isEquivalent reverseBitsWord8 reverseBits4Ops)
+      , testProperty "Equivalent: lookup table" (isEquivalent reverseBitsWord8 reverseBitsTable)
+      , testProperty "Equivalent: 7Ops"         (isEquivalent reverseBitsWord8 reverseBits7Ops)
+      , testProperty "Equivalent: 5LgN"         (isEquivalent reverseBitsWord8 reverseBits5LgN)
       ]
    ]
 
@@ -131,3 +141,7 @@ prop_uleb128_reverse w = w == dec
 -- | Ensure a function is bijective
 isBijective :: Eq a => (a -> a) -> a -> Bool
 isBijective f w = w == (f (f w))
+
+-- | Ensure that two functions return the same thing for the same input
+isEquivalent :: Eq b => (a -> b) -> (a -> b) -> a -> Bool
+isEquivalent f g x = (f x) == (g x)
