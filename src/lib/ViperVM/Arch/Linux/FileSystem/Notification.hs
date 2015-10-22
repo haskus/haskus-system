@@ -19,7 +19,7 @@ import Data.Word (Word64, Word16)
 import Data.Int (Int64,Int32)
 import GHC.Generics (Generic)
 
-import ViperVM.Utils.BitSet (EnumBitSet, BitSet, fromBits, toBits)
+import ViperVM.Format.Binary.BitSet (EnumBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls

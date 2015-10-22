@@ -24,8 +24,8 @@ import qualified Data.Vector as Vector
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 
-import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
-import qualified ViperVM.Utils.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet (EnumBitSet,BitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header

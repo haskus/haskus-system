@@ -14,7 +14,7 @@ import Data.Word
 import Data.Int
 import GHC.Generics (Generic)
 
-import ViperVM.Utils.BitSet
+import ViperVM.Format.Binary.BitSet
 
 data CursorMode
    = CursorModeBO

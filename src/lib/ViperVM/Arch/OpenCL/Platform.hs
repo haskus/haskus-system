@@ -25,7 +25,7 @@ module ViperVM.Arch.OpenCL.Platform
    )
 where
 
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity

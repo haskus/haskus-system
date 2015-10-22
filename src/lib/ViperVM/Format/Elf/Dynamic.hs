@@ -18,7 +18,7 @@ import Data.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 
-import ViperVM.Utils.BitSet (EnumBitSet,BitSet)
+import ViperVM.Format.Binary.BitSet (EnumBitSet,BitSet)
 
 import ViperVM.Format.Elf.PreHeader
 

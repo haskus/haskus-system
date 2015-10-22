@@ -59,7 +59,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header

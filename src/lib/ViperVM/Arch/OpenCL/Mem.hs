@@ -14,8 +14,8 @@ module ViperVM.Arch.OpenCL.Mem
    )
 where
 
-import qualified ViperVM.Utils.BitSet as BitSet
-import ViperVM.Utils.BitSet (EnumBitSet, BitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet (EnumBitSet, BitSet)
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity

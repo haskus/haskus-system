@@ -139,7 +139,6 @@ library
     ViperVM.Arch.Posix.Malloc
 
     ViperVM.Utils.Hash
-    ViperVM.Utils.BitSet
     ViperVM.Utils.EmbedByteString
 
     ViperVM.STM.TMap
@@ -170,6 +169,7 @@ library
     ViperVM.Format.Compression.Algorithms.Deflate
     ViperVM.Format.Compression.GZip
 
+    ViperVM.Format.Binary.BitSet
     ViperVM.Format.Binary.BitOps
     ViperVM.Format.Binary.BitOps.BitReverse
     ViperVM.Format.Binary.BitOrder

@@ -14,7 +14,7 @@ module ViperVM.Arch.OpenCL.CommandQueue
    )
 where
 
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library

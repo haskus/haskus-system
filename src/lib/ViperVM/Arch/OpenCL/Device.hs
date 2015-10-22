@@ -28,8 +28,8 @@ module ViperVM.Arch.OpenCL.Device
    )
 where
 
-import qualified ViperVM.Utils.BitSet as BitSet
-import ViperVM.Utils.BitSet (BitSet, EnumBitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet (BitSet, EnumBitSet)
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity

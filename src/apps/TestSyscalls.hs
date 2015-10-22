@@ -16,7 +16,7 @@ import ViperVM.Arch.Linux.Input.Device
 import ViperVM.Arch.Linux.Input.Keys
 import ViperVM.Arch.Linux.Input.LEDs
 import ViperVM.Arch.Linux.Input.Repeat
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 
 import Foreign.C.String (withCString)

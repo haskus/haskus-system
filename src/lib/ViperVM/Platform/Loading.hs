@@ -10,7 +10,7 @@ import Data.Foldable (forM_)
 import Data.Traversable (forM)
 import qualified ListT
 
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.Memory as Generic

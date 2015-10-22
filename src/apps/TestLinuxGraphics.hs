@@ -16,7 +16,7 @@ import ViperVM.Arch.Linux.System.System
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.Memory
 import ViperVM.Arch.Linux.ErrorCode
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)

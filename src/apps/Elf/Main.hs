@@ -16,7 +16,7 @@ import ViperVM.Format.Elf.Dynamic
 
 import ViperVM.Format.Dwarf
 
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
 import Data.Foldable (forM_)

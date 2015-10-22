@@ -30,7 +30,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Utils.BitSet
+import ViperVM.Format.Binary.BitSet
 
 -- | Video controller
 --

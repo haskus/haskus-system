@@ -11,7 +11,7 @@ where
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Process (ProcessID(..))
-import ViperVM.Utils.BitSet
+import ViperVM.Format.Binary.BitSet
 
 import Data.Word
 import Data.Int

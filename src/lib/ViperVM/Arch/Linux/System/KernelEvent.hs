@@ -8,7 +8,7 @@ module ViperVM.Arch.Linux.System.KernelEvent
    )
 where
 
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.Network
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor

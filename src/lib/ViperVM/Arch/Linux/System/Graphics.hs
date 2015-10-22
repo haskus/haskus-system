@@ -10,7 +10,7 @@ import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.ErrorCode
-import qualified ViperVM.Utils.BitSet as BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import Prelude hiding (init,tail)
 import Control.Monad.Trans.Either

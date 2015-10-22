@@ -10,7 +10,7 @@
 --    * We use countTrailingZeros instead of iterating on the
 --    number of bits
 --    * We add a typeclass EnumBitSet
-module ViperVM.Utils.BitSet
+module ViperVM.Format.Binary.BitSet
    ( BitSet (..)
    , EnumBitSet (..)
    , null

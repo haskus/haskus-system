@@ -17,8 +17,8 @@ import Foreign.Storable
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Utils.BitSet (EnumBitSet, BitSet)
-import qualified ViperVM.Utils.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet (EnumBitSet, BitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 
 data SendReceiveFlag

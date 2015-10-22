@@ -26,8 +26,8 @@ import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
-import qualified ViperVM.Utils.BitSet as BitSet
-import ViperVM.Utils.BitSet (BitSet, EnumBitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet (BitSet, EnumBitSet)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor

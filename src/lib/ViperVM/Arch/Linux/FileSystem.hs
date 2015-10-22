@@ -68,8 +68,8 @@ import Data.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
 
 import GHC.Generics (Generic)
 
-import ViperVM.Utils.BitSet
-import qualified ViperVM.Utils.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor

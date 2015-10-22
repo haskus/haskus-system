@@ -16,8 +16,8 @@ import Foreign.C.String (withCString)
 import Foreign.Ptr (Ptr,nullPtr)
 import Data.Word
 
-import ViperVM.Utils.BitSet
-import qualified ViperVM.Utils.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 
