@@ -204,10 +204,7 @@ prop_split_word s1 s2 w1 w2 (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut
 -- | Test that ULEB128 decoder can read back what has been written with ULEB128
 -- encoder
 prop_uleb128_reverse :: (Integral a, Bits a) => a -> Bool
-prop_uleb128_reverse w = w == dec
-   where
-      enc = runPut (putULEB128 w)
-      dec = runGet getULEB128 enc
+prop_uleb128_reverse w = w == runGet getULEB128 (runPut (putULEB128 w))
 
 -- | Ensure a function is bijective
 isBijective :: Eq a => (a -> a) -> a -> Bool
