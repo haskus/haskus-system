@@ -44,20 +44,8 @@ byteOffset n = n `shiftR` 3
 
 -- | Reverse the @n@ least important bits of the given value. The higher bits
 -- are set to 0.
-reverseLeastBits :: Bits a => Int -> a -> a
-reverseLeastBits n value = rec value n zeroBits
-   where
-      -- rec v i r, where
-      --    v is orginal value shifted
-      --    i is the remaining number of bits
-      --    r is current value
-      rec :: Bits b => b -> Int -> b -> b
-      rec v 0 r 
-         | v == zeroBits = r
-      rec v i r
-         | v == zeroBits = r `shiftL` i  -- fill remaining bits with 0
-         | otherwise     = rec (v `shiftR` 1) (i-1) ((r `shiftL` 1) .|. (v .&. bit 0))
-
+reverseLeastBits :: (FiniteBits a, BitReversable a) => Int -> a -> a
+reverseLeastBits n value = reverseBits value `shiftR` (finiteBitSize value - n)
 
 
 bitsToString :: FiniteBits a => a -> String
@@ -95,3 +83,5 @@ instance BitReversable Word32 where
 instance BitReversable Word64 where
    reverseBits = reverseBits5LgN
 
+instance BitReversable Word where
+   reverseBits = reverseBits5LgN

@@ -61,7 +61,7 @@ skipBitsM = modify . skipBits
 -- | Extract a range of bits from (ws :: ByteString)
 --
 -- Constraint: 8 * (length ws -1 ) < o+n <= 8 * length ws
-extract :: (Num a, Bits a) => BitOrder -> ByteString -> Int -> Int -> a
+extract :: (Num a, FiniteBits a, BitReversable a) => BitOrder -> ByteString -> Int -> Int -> a
 extract bo bs o n     
    | n == 0            = zeroBits
    | BS.length bs == 0 = error "Empty ByteString"
@@ -93,7 +93,7 @@ extract bo bs o n
 
 
 -- | Read the given number of bits and put the result in a word
-getBits :: (Num a, Bits a) => Int -> BitGetState -> a
+getBits :: (Num a, FiniteBits a, BitReversable a) => Int -> BitGetState -> a
 getBits n (BitGetState bs o bo)
    | n == 0    = 0
    | otherwise = extract bo (BS.unsafeTake nbytes bs) o n
@@ -102,7 +102,7 @@ getBits n (BitGetState bs o bo)
 -- | Perform some checks before calling getBits
 --
 -- Check that the number of bits to read is not greater than the first parameter
-getBitsChecked :: (Num a, Bits a) => Int -> Int -> BitGetState -> a
+getBitsChecked :: (Num a, FiniteBits a, BitReversable a) => Int -> Int -> BitGetState -> a
 getBitsChecked m n s
    | n > m     = error $ "Tried to read more than " ++ show m ++ " bits (" ++ show n ++")"
    | otherwise = getBits n s
@@ -155,14 +155,14 @@ runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
 
 -- | Read the given number of bits and put the result in a word
-getBitsM :: (Num a, Bits a, Monad m) => Int -> BitGetT m a
+getBitsM :: (Num a, FiniteBits a, BitReversable a, Monad m) => Int -> BitGetT m a
 getBitsM n = do
    v <- gets (getBits n)
    skipBitsM n
    return v
 
 -- | Perform some checks before calling getBitsM
-getBitsCheckedM :: (Num a, Bits a, Monad m) => Int -> Int -> BitGetT m a
+getBitsCheckedM :: (Num a, FiniteBits a, BitReversable a, Monad m) => Int -> Int -> BitGetT m a
 getBitsCheckedM m n = do
    v <- gets (getBitsChecked m n)
    skipBitsM n

@@ -152,7 +152,7 @@ prop_bits_to_string x = bitsFromString (bitsToString x) == x
 
 -- | Test that words of the given length can be written and read back with
 -- BitGet/BitPut. Test every bit ordering.
-prop_reverse_word :: (Integral a, Bits a) => Int -> a -> ArbitraryBitOrder -> Bool
+prop_reverse_word :: (Integral a, FiniteBits a, BitReversable a) => Int -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
    where
       enc = getBitPutBS  $ putBits n w $ newBitPutState bo
@@ -160,11 +160,13 @@ prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
 
 -- | Test that words with arbitrary (but still valid) lengths can be written and
 -- read back with BitGet/BitPut. Test every bit ordering.
-prop_reverse_word_size :: (Integral a, Bits a, Size s) => s -> a -> ArbitraryBitOrder -> Bool
+prop_reverse_word_size :: (Integral a, FiniteBits a, BitReversable a, Size s) => s -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word_size n w bo = prop_reverse_word (fromSize n) w bo
 
 -- | Write two parts of two words and read them back
-prop_split_word :: (Num a, Integral a, FiniteBits a, Num b, Integral b, FiniteBits b, Size s1, Size s2) => s1 -> s2 -> a -> b -> ArbitraryBitOrder -> Bool
+prop_split_word :: (Num a, Integral a, FiniteBits a, BitReversable a,
+                    Num b, Integral b, FiniteBits b, BitReversable b,
+                    Size s1, Size s2) => s1 -> s2 -> a -> b -> ArbitraryBitOrder -> Bool
 prop_split_word s1 s2 w1 w2 (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut bo enc)
    where
       enc = do

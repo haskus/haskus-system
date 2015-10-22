@@ -44,7 +44,7 @@ data BitPutState = BitPutState
 newBitPutState :: BitOrder -> BitPutState
 newBitPutState = BitPutState B.empty 0 0
 
-putBits :: (Num a, Bits a, Integral a) => Int -> a -> BitPutState -> BitPutState
+putBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => Int -> a -> BitPutState -> BitPutState
 putBits n w s@(BitPutState builder b o bo) = s'
    where
       -- number of bits that will be stored in the current byte
@@ -68,7 +68,7 @@ putBits n w s@(BitPutState builder b o bo) = s'
       -- Select bits to store in the current byte.
       -- Put them in the correct order and return them in the least-significant
       -- bits of the returned value
-      selectBits :: (Num a, Bits a, Integral a) => a -> Word8
+      selectBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => a -> Word8
       selectBits x = fromIntegral $ case bo of
          BB ->                       maskLeastBits cn $ x `shiftR` (n-cn)
          LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` (n-cn)
@@ -133,7 +133,7 @@ runBitPutT bo m = getBitPutBS <$> execStateT m (newBitPutState bo)
 runBitPut :: BitOrder -> BitPut a -> BS.ByteString
 runBitPut bo m = runIdentity (runBitPutT bo m)
 
-putBitsM :: (Monad m, Num a, Bits a, Integral a) => Int -> a -> BitPutT m ()
+putBitsM :: (Monad m, Num a, FiniteBits a, BitReversable a, Integral a) => Int -> a -> BitPutT m ()
 putBitsM n w = modify (putBits n w)
 
 putBitBoolM :: (Monad m) => Bool -> BitPutT m ()
