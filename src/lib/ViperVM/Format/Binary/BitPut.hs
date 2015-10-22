@@ -18,8 +18,8 @@ module ViperVM.Format.Binary.BitPut
    )
 where
 
-import qualified Data.Binary.Builder as B
-import Data.Binary.Builder ( Builder )
+import Data.Serialize.Builder (Builder)
+import qualified Data.Serialize.Builder as B
 import Control.Monad.State
 import Control.Monad.Identity
 

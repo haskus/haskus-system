@@ -39,7 +39,6 @@ import qualified Data.Text.Encoding as Text
 import ViperVM.Format.Binary.Get
 import Control.Monad (when, forM)
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as LBS
 
 
 data ZCATable = ZCATable
@@ -119,7 +118,7 @@ getZCATableEntries hdr bs = es
       strs = getZCAStringTable hdr bs
       -- decode entries
       getEntries = forM [1..zcaEntryCount hdr] (const $ getZCATableEntry strs)
-      es = runGet getEntries (LBS.fromStrict raw)
+      es = runGetOrFail getEntries raw
 
 
 getZCAStringTable :: ZCATableHeader -> BS.ByteString -> Map Int Text
@@ -156,7 +155,7 @@ getZCATable :: BS.ByteString -> ZCATable
 getZCATable bs = zca
    where
       -- ZCA table header
-      hdr  = runGet getZCATableHeader (LBS.fromStrict bs)
+      hdr  = runGetOrFail getZCATableHeader bs
       -- ZCA table entries
       es   = getZCATableEntries hdr bs
       -- table

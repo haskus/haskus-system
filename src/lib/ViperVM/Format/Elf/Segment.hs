@@ -11,8 +11,8 @@ module ViperVM.Format.Elf.Segment
    )
 where
 
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as LBS
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
@@ -169,9 +169,9 @@ getSegmentCount bs hdr pre =
 getSegmentTable :: ByteString -> Header -> PreHeader -> Vector Segment
 getSegmentTable bs h pre = fmap f offs
    where
-      f o  = runGet (getSegment pre) (LBS.drop o bs')
+      f o  = runGetOrFail (getSegment pre) (BS.drop o bs')
       off  = fromIntegral $ headerSegmentTableOffset h
-      bs'  = LBS.drop off bs
+      bs'  = BS.drop off bs
       sz   = fromIntegral $ headerSegmentEntrySize h
       cnt  = fromIntegral $ getSegmentCount bs h pre
       offs = Vector.fromList [ 0, sz .. (cnt-1) * sz]

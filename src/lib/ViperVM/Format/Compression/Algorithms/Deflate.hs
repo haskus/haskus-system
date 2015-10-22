@@ -22,9 +22,9 @@ import Data.Word
 import Data.Maybe (fromJust)
 import Data.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import Control.Monad (when,replicateM)
-import Data.Binary.Bits.Get
-import Data.Binary.Bits.Put
-import Data.Binary.Bits.BitOrder
+import ViperVM.Format.Binary.BitGet
+import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.BitPut
 import qualified Data.ByteString as BS
 import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
@@ -39,7 +39,7 @@ import ViperVM.Format.Compression.Algorithms.Huffman
 
 -- | Decompress all blocks
 decompress :: BitGet (Seq Word8)
-decompress = withBitOrder LL (rec Seq.empty)
+decompress = withBitGetOrder LL (rec Seq.empty)
    where
       rec s = getBlock s >>= \case
          (s',True)  -> return s' -- Final block
@@ -78,24 +78,24 @@ data Compression
 --
 -- If compression type == 3 (not supposed to happen), then toEnum will fail
 getBlockHeader :: BitGet (Bool,Compression)
-getBlockHeader = block $ (,)
-   <$> fmap (/=0)                   (word8 1)
-   <*> fmap (toEnum . fromIntegral) (word8 2)
+getBlockHeader = (,)
+   <$> getBitBoolM
+   <*> (toEnum . fromIntegral <$> (getBitsM 2 :: BitGet Word8))
 
 
 -- | Read an uncompressed block
 getRawBlock :: BitGet (Seq Word8)
 getRawBlock = do
    -- align on the next byte boundary
-   alignByte
+   skipBitsToAlignOnWord8M
    -- Two bytes: len and nlen
    -- @nlen@ is the one's complement of len
    -- @len@ is the number of raw bytes that follow
-   (len,nlen) <- block $ (,) <$> word8 8 <*> word8 8
+   (len,nlen) <- (,) <$> (getBitsM 8 :: BitGet Word8) <*> getBitsM 8
    when (len /= nlen `xor` 0xFF) $
       error "Invalid uncompressed block length"
    -- Read raw data
-   bs <- withBitOrder BB $ getByteString (fromIntegral len)
+   bs <- withBitGetOrder BB $ getBitsBSM (fromIntegral len)
    return (Seq.fromList (BS.unpack bs))
 
 -- | A block is a sequence of tokens
@@ -117,7 +117,7 @@ decodeBlock getToken s = getToken >>= \case
          w  = Seq.fromList (take len ss) 
 
 -- | Create a getToken getter
-makeGetToken :: BitGet Int -> BitGet Word8 -> BitGet (Token Word8)
+makeGetToken :: BitGet Word -> BitGet Word8 -> BitGet (Token Word8)
 makeGetToken getCode getDistCode = do
    code <- getCode
    case code of
@@ -153,9 +153,9 @@ getDynamicToken = do
 getTables :: BitGet ([Word8],[Word8])
 getTables = do
    -- Get the number of entries in each table
-   nlits  <- fromIntegral . (+257) <$> getWord16 5    -- # of literal/length codes [257..286]
-   ndist  <- fromIntegral . (+1)   <$> getWord8 5     -- # of distance codes [1..32]
-   nclen  <- fromIntegral . (+4)   <$> getWord8 4     -- # of RLE code lengths [4..19]
+   nlits  <- fromIntegral . (+257) <$> (getBitsM 5 :: BitGet Word16) -- # of literal/length codes [257..286]
+   ndist  <- fromIntegral . (+1)   <$> (getBitsM 5 :: BitGet Word8)  -- # of distance codes [1..32]
+   nclen  <- fromIntegral . (+4)   <$> (getBitsM 4 :: BitGet Word8)  -- # of RLE code lengths [4..19]
 
    -- Get the table decoder
    getTable <- getTableDecoder nclen
@@ -185,7 +185,7 @@ instance Ord RLECode where
 getTableDecoder :: Int -> BitGet (Int -> BitGet [Word8])
 getTableDecoder nclen = do
    -- Get 3-bit lengths
-   clens <- replicateM nclen (getWord8 3)
+   clens <- replicateM nclen (getBitsM 3 :: BitGet Word8)
    -- The first RLE tokens are the most used ones. The last ones may be missing
    -- in the table. This way, instead of wasting 3 bits to indicate that a RLE
    -- token is not used in the block, the nclen can be shortened to remove the
@@ -211,18 +211,18 @@ makeRLEDecoder get = rec []
       rec xs n = get >>= \case
          Value x     -> rec (x:xs) (n-1)
          Repeat2bits -> do
-            rep <- fromIntegral . (+3) <$> getWord8 2
+            rep <- fromIntegral . (+3) <$> (getBitsM 2 :: BitGet Word8)
             rec (replicate rep (head xs) ++ xs) (n-rep)
          Repeat3bits -> do
-            rep <- fromIntegral . (+3) <$> getWord8 3
+            rep <- fromIntegral . (+3) <$> (getBitsM 3 :: BitGet Word8)
             rec (replicate rep 0 ++ xs) (n-rep)
          Repeat7bits -> do
-            rep <- fromIntegral . (+11) <$> getWord16 7
+            rep <- fromIntegral . (+11) <$> (getBitsM 7 :: BitGet Word16)
             rec (replicate rep 0 ++ xs) (n-rep)
 
 
 -- | Read the length for the Copy token with the fixed Huffman compression
-getFixedLength :: Int -> BitGet Int
+getFixedLength :: Word -> BitGet Int
 getFixedLength code = case code of
    x | x <= 260 -> return (fromIntegral code - 254)
 
@@ -233,18 +233,18 @@ getFixedLength code = case code of
    --       4*(1-2^n)/(1-2) + r*(2^n) + e + 7
    --
    -- It simplifies to: (4+r)*2^n + e + 3
-   x | x <= 284 -> f <$> getWord16 n
+   x | x <= 284 -> f <$> (getBitsM n :: BitGet Word16)
          where 
             (n,r) = (code-261) `divMod` 4
             r'    = fromIntegral r
-            f e   = fromIntegral $ (4+r') * (1 `shiftL` n) + e + 3
+            f e   = fromIntegral $ (4+r') * (1 `shiftL` fromIntegral n) + e + 3
 
    285 -> return 258
    _   -> error $ "Invalid length code: " ++ show code
 
 -- | Read distance code with the fixed Huffman compression
 getFixedDistanceCode :: BitGet Word8
-getFixedDistanceCode = withBitOrder LB (getWord8 5)
+getFixedDistanceCode = withBitGetOrder LB (getBitsM 5 :: BitGet Word8)
 
 
 -- | Read the distance for the Copy token with the fixed Huffman compression
@@ -252,69 +252,69 @@ getDistance :: Word8 -> BitGet Int
 getDistance = \case
    x | x <= 1 -> return (fromIntegral x + 1)
 
-      -- The magic formula is very similar to the one in 'getFixedLength'
+   -- The magic formula is very similar to the one in 'getFixedLength'
    --       2*(1-2^n)/(1-2) + r*(2^n) + e + 1
    --
    -- It simplifies to: (r+2) * 2^n + e + 1
-   x -> f <$> getWord32 n
+   x -> f <$> (getBitsM n :: BitGet Word32)
          where 
             (n,r) = (fromIntegral x-2) `divMod` 2
             r'    = fromIntegral r
-            f e   = fromIntegral $ (r'+2) * (1 `shiftL` n) + e + 1
+            f e   = fromIntegral $ (r'+2) * (1 `shiftL` fromIntegral n) + e + 1
 
 
 -- | Put the token code with the fixed Huffman compression
-putFixedCode :: Int -> BitPut ()
+putFixedCode :: Word -> BitPut ()
 putFixedCode code
    | code <= 143 = do -- A
          -- 8 bit code, starting from 00110000 to 10111111
-         let c = fromIntegral code + 48
-         putWord8 8 c
+         let c = code + 48
+         putBitsM 8 c
 
    | code <= 255 = do -- B
          -- 9 bit code, starting from 110010000 to 111111111
-         let c = fromIntegral (code-144) + 400
-         putWord16 9 c
+         let c = code-144 + 400
+         putBitsM 9 c
 
    | code <= 279 = do -- C
          -- 7 bit code, starting from 0000000 to 0010111
-         let c = fromIntegral (code-256)
-         putWord8 7 c
+         let c = code-256
+         putBitsM 7 c
 
    | code <= 287 = do -- D
          -- 8 bit code, starting from 11000000 to 11000111
-         let c = fromIntegral (code-280) + 192
-         putWord8 8 c
+         let c = code-280 + 192
+         putBitsM 8 c
 
    | otherwise = error "Invalid code"
 
 
 -- | Get the token code with the fixed Huffman compression
-getFixedCode :: BitGet Int
+getFixedCode :: BitGet Word
 getFixedCode = fromIntegral <$> do
-   b <- getWord16 4
+   b <- getBitsM 4
 
       -- D
    if | b  == 0xC -> do
-            b2 <- getWord16 4
-            let r = (b `shiftL` 4) .|. b2
+            b2 <- getBitsM 4
+            let r = (b `shiftL` 4) .|. (b2 :: Word16)
             return (r - 192 + 280)
 
       -- B
       | b .&. 0xC == 0xC -> do
-            b2 <- getWord16 5
+            b2 <- getBitsM 5
             let r  = (b `shiftL` 5) .|. b2
             return (r - 400 + 144)
 
       -- C
       | (b .&. 0xC == 0) && (testBit b 0 /= testBit b 1) -> do
-            b2 <- getWord16 3
+            b2 <- getBitsM 3
             let r = (b `shiftL` 3) .|. b2
             return (r + 256)
 
       -- A
       | otherwise -> do
-            b2 <- getWord16 4
+            b2 <- getBitsM 4
             let r = (b `shiftL` 4) .|. b2
             return (r - 48)
 

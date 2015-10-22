@@ -57,7 +57,7 @@ import Control.Monad (forM)
 
 import Data.Text (Text)
 import qualified Data.Text.Encoding as Text
-import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString as BS
 
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.VariableLength
@@ -967,7 +967,7 @@ debugEntryTree es = case rec es of
 
 
 
-getDebugEntry :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe LBS.ByteString -> Get (Maybe DebugEntry)
+getDebugEntry :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe BS.ByteString -> Get (Maybe DebugEntry)
 getDebugEntry endian cuh abbrevs strings = do
    let 
       addressSize = cuhAddressSize cuh
@@ -990,7 +990,7 @@ getDebugEntry endian cuh abbrevs strings = do
                            (debugAbbrevHasChildren abbrev)
                            attrs 
 
-getDebugEntries :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe LBS.ByteString -> Get [Maybe DebugEntry]
+getDebugEntries :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe BS.ByteString -> Get [Maybe DebugEntry]
 getDebugEntries endian cuh abbrevs strings = 
    getWhole (getDebugEntry endian cuh abbrevs strings)
 
@@ -1123,7 +1123,7 @@ fromEncoding x = case x of
 
 
 -- | Attribute value
-getAttributeValue :: Word8 -> Endianness -> DwarfFormat -> Maybe LBS.ByteString -> Attribute -> Form -> Get AttributeValue
+getAttributeValue :: Word8 -> Endianness -> DwarfFormat -> Maybe BS.ByteString -> Attribute -> Form -> Get AttributeValue
 getAttributeValue addressSize endian format strings att form = do
    raw <- getValueFromForm addressSize endian format form
    case raw of
@@ -1142,7 +1142,7 @@ getAttributeValue addressSize endian format strings att form = do
       RawAttrValueString x             -> return $ AttrValueString x             
       RawAttrValueStringPointer off    -> do
          -- read the string
-         let str = Text.decodeUtf8 . LBS.toStrict . runGet getLazyByteStringNul . LBS.drop (fromIntegral off) <$> strings
+         let str = Text.decodeUtf8 . runGetOrFail getByteStringNul . BS.drop (fromIntegral off) <$> strings
          return (AttrValueString (fromJust str))
 
 
@@ -1175,11 +1175,11 @@ getValueFromForm addressSize endian format form = do
       FormRefUData      -> RawAttrValueRelativeReference <$> getULEB128
       FormRefAddress    -> RawAttrValueAbsoluteReference <$> gwN
       FormRefSig8       -> RawAttrValueTypeReference     <$> gw64
-      FormString        -> RawAttrValueString            <$> (Text.decodeUtf8 . LBS.toStrict <$> getLazyByteStringNul)
+      FormString        -> RawAttrValueString            <$> (Text.decodeUtf8 <$> getByteStringNul)
       FormStringPointer -> RawAttrValueStringPointer     <$> gwN
       FormIndirect      -> getValueFromForm addressSize endian format =<< (toForm <$> getULEB128)
 
-getDebugInfo :: Endianness -> LBS.ByteString -> Maybe LBS.ByteString -> Get DebugInfo
+getDebugInfo :: Endianness -> BS.ByteString -> Maybe BS.ByteString -> Get DebugInfo
 getDebugInfo endian secAbbrevs strings = do
    cuh <- getCompilationUnitHeader endian
    -- the length in the header excludes only itself
@@ -1188,8 +1188,8 @@ getDebugInfo endian secAbbrevs strings = do
             Dwarf64 -> fromIntegral (cuhUnitLength cuh) - 11
    -- get abbreviations
    let 
-      abbrevBS = LBS.drop (fromIntegral $ cuhAbbrevOffset cuh) secAbbrevs
-      abbrevs = runGet getDebugAbbrevEntries abbrevBS
+      abbrevBS = BS.drop (fromIntegral $ cuhAbbrevOffset cuh) secAbbrevs
+      abbrevs = runGetOrFail getDebugAbbrevEntries abbrevBS
 
    -- get entries
    entries <- isolate len $ getDebugEntries endian cuh abbrevs strings

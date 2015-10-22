@@ -1,4 +1,4 @@
-import qualified Data.ByteString.Lazy as BS
+import qualified Data.ByteString as BS
 import qualified ViperVM.Format.Compression.GZip as GZip
 import Data.Foldable (forM_)
 import Control.Monad (when)

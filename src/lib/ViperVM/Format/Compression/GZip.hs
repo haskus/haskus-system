@@ -12,13 +12,13 @@ import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 
 import Data.Foldable (toList)
 import Data.Word
-import ViperVM.Format.Binary.Get
-import Data.Binary.Bits.Get (runBitGet)
+import ViperVM.Format.Binary.Get as Get
+import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitSet (BitSet,EnumBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import Control.Monad (when)
-import Data.ByteString.Lazy.Char8 (unpack)
-import Data.ByteString.Lazy (pack,ByteString)
+import Data.ByteString.Char8 (unpack)
+import Data.ByteString (pack,ByteString)
 import Text.Printf
 
 data Member = Member 
@@ -38,13 +38,13 @@ data Member = Member
 
 -- | Decompress the members of the archive
 decompress :: ByteString -> [Member]
-decompress = runGet decompressGet
+decompress = runGetOrFail decompressGet
 
 -- | Decompress the members of the archive
 decompressGet :: Get [Member]
 decompressGet = rec []
    where
-      rec xs = isEmpty >>= \case
+      rec xs = Get.isEmpty >>= \case
          True  -> return (reverse xs)
          False -> do
             x <- getMember
@@ -73,23 +73,23 @@ getMember = do
       skip (fromIntegral xlen)
 
    name <- if BitSet.member flags FlagName
-      then unpack <$> getLazyByteStringNul
+      then unpack <$> getByteStringNul
       else return ""
 
    comment <- if BitSet.member flags FlagComment
-      then unpack <$> getLazyByteStringNul
+      then unpack <$> getByteStringNul
       else return ""
 
    crc <- if BitSet.member flags FlagCRC
       then getWord16le
       else return 0
 
-   content <- runBitGet D.decompress
+   getBitGet BB D.decompress $ \content -> do
 
-   crc32 <- getWord32le
-   isize <- getWord32le
-      
-   return $ Member flags mtime xfl os name comment (pack (toList content)) crc crc32 isize
+      crc32 <- getWord32le
+      isize <- getWord32le
+         
+      return $ Member flags mtime xfl os name comment (pack (toList content)) crc crc32 isize
       
 
 

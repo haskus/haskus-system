@@ -5,6 +5,7 @@ module ViperVM.Format.Binary.BitGet
    , newBitGetState
    , isEmpty
    , skipBits
+   , skipBitsToAlignOnWord8
    , getBits
    , getBitsChecked
    , getBitsBS
@@ -19,6 +20,7 @@ module ViperVM.Format.Binary.BitGet
    , resumeBitGetPartial
    , isEmptyM
    , skipBitsM
+   , skipBitsToAlignOnWord8M
    , getBitsM
    , getBitsCheckedM
    , getBitBoolM
@@ -64,6 +66,12 @@ skipBits o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
       !o' = (n+o)
       !d  = fromIntegral $ byteOffset o'
       !n' = bitOffset o'
+
+-- | Skip the required number of bits to be aligned on 8-bits
+skipBitsToAlignOnWord8 :: BitGetState -> BitGetState
+skipBitsToAlignOnWord8 s = case bitGetStateBitOffset s of
+   0 -> s
+   n -> skipBits (8-n) s
 
 -- | Read the given number of bits and put the result in a word
 getBits :: (Integral a, FiniteBits a, BitReversable a) => Word -> BitGetState -> a
@@ -172,6 +180,11 @@ isEmptyM = gets isEmpty
 -- | Skip the given number of bits from the input (monadic version)
 skipBitsM :: Monad m => Word -> BitGetT m ()
 skipBitsM = modify . skipBits
+
+
+-- | Skip the required number of bits to be aligned on 8-bits (monadic version)
+skipBitsToAlignOnWord8M :: Monad m =>  BitGetT m ()
+skipBitsToAlignOnWord8M = modify skipBitsToAlignOnWord8
 
 -- | Read the given number of bits and put the result in a word
 getBitsM :: (Integral a, FiniteBits a, BitReversable a, Monad m) => Word -> BitGetT m a

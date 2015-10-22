@@ -1,5 +1,4 @@
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as LBS
 import ViperVM.Format.Compression.Algorithms.Huffman
 
 import Text.Printf
@@ -23,5 +22,5 @@ main = do
    BS.writeFile "out.huff" wbs
 
    putStrLn "Reading back:"
-   bs <- LBS.readFile "out.huff"
+   bs <- BS.readFile "out.huff"
    putStrLn (fromBinaryLen True tree (length xs) bs)

@@ -51,12 +51,10 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Tuple (swap)
 import Data.Bits
-import Data.Binary.Bits.Get as BitGet
-import ViperVM.Format.Binary.Get as Get
 import ViperVM.Format.Binary.BitPut
+import ViperVM.Format.Binary.BitGet as BitGet
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps (reverseLeastBits)
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString      as BS
 import Control.Arrow (first)
 
@@ -128,8 +126,8 @@ computeHuffmanTreeFromCodes = rec . fmap (first codeReverseBits)
       ff ep lp rp [] = (ep,lp,rp)
       ff ep lp rp ((c,v):ps)
          | codeLength c == 0 = ff (v:ep) lp rp ps
-         | codeTestBit c 0   = ff ep ((codeShiftR 1 c,v):lp) rp ps
-         | otherwise         = ff ep lp ((codeShiftR 1 c,v):rp) ps
+         | codeTestBit c 0   = ff ep lp ((codeShiftR 1 c,v):rp) ps
+         | otherwise         = ff ep ((codeShiftR 1 c,v):lp) rp ps
 
 --------------------------------------------------
 -- Coding table
@@ -188,33 +186,35 @@ makeBitGet leftIsZero tree = rec tree
       rec (Leaf x)   = return (Just x)
       rec Empty      = return Nothing
       rec (Node l r) = do
-         empty <- BitGet.isEmpty
+         empty <- BitGet.isEmptyM
          if empty
             then return Nothing
             else do
-               b <- getBool
+               b <- getBitBoolM
                if b `xor` leftIsZero
                   then rec l
                   else rec r
 
 -- | Convert a binary sequence into a token sequence
-fromBinary :: Bool -> Tree a -> LBS.ByteString -> [a]
-fromBinary leftIsZero tree = runGet (runBitGet (g []))
+fromBinary :: Bool -> Tree a -> BS.ByteString -> [a]
+fromBinary leftIsZero tree bs = rec (runBitGetPartial BB bg bs)
    where
-      bg    = makeBitGet leftIsZero tree
-      g xs  = bg >>= \case
-         Nothing -> return (reverse xs)
-         Just x  -> g (x:xs)
+      -- BitGet for a single element
+      bg              = makeBitGet leftIsZero tree
+      -- build the list of elements lazily
+      rec (Nothing,_) = []
+      rec (Just v,s)  = v : rec (resumeBitGetPartial bg s)
 
 -- | Convert a binary sequence into a delimited token sequence
-fromBinaryLen :: Bool -> Tree a -> Int -> LBS.ByteString -> [a]
-fromBinaryLen leftIsZero tree n = runGet (runBitGet (g [] n))
+fromBinaryLen :: Bool -> Tree a -> Int -> BS.ByteString -> [a]
+fromBinaryLen leftIsZero tree n bs = rec n (runBitGetPartial BB bg bs)
    where
-      bg     = makeBitGet leftIsZero tree
-      g xs 0 = return (reverse xs)
-      g xs m = bg >>= \case
-         Nothing -> return (reverse xs)
-         Just x  -> g (x:xs) (m-1)
+      -- BitGet for a single element
+      bg                = makeBitGet leftIsZero tree
+      -- build the list of elements lazily
+      rec 0 _           = []
+      rec _ (Nothing,_) = []
+      rec m (Just v,s)  = v : rec (m-1) (resumeBitGetPartial bg s)
 
 
 -- | Put a code

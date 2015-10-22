@@ -5,7 +5,7 @@ module ViperVM.Format.Elf
    , readElf
      -- * Sections
    , getSectionByIndex
-   , getSectionContentLBS
+   , getSectionContentBS
    , getEntriesWithAlignment
    , getEntriesAndOffsetWithAlignment
    , getEntryTableFromSection
@@ -46,13 +46,12 @@ module ViperVM.Format.Elf
 where
 
 import Data.Word
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as LBS
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import ViperVM.Format.Binary.Get
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
-import Control.Monad (when, forM)
+import Control.Monad (forM)
 import Control.Arrow (second)
 import Data.Maybe (fromJust)
 import Data.Text (Text)
@@ -95,14 +94,14 @@ data Elf = Elf
 parseElf :: ByteString -> Elf
 parseElf bs = Elf pre hdr sections segments bs
    where
-      pre      = runGet getPreHeader bs
-      hdr      = runGet (skip 16 >> getHeader pre) bs
+      pre      = runGetOrFail getPreHeader bs
+      hdr      = runGetOrFail (skip 16 >> getHeader pre) bs
       sections = getSectionTable bs hdr pre
       segments = getSegmentTable bs hdr pre
 
 -- | Lazily read an ELF file
 readElf :: FilePath -> IO Elf
-readElf path = parseElf <$> LBS.readFile path
+readElf path = parseElf <$> BS.readFile path
 
 
 --------------------------------------------------------------
@@ -116,43 +115,37 @@ getSectionByIndex elf i =
 
 
 -- | Returns the content of a section as a lazy ByteString
-getSectionContentLBS :: Elf -> Section -> ByteString
-getSectionContentLBS elf s = LBS.take sz (LBS.drop off bs)
+getSectionContentBS :: Elf -> Section -> ByteString
+getSectionContentBS elf s = BS.take sz (BS.drop off bs)
    where
       bs  = elfContent elf
       sz  = fromIntegral $ sectionSize s 
       off = fromIntegral $ sectionOffset s 
    
--- | Get a sequence of entries. Each entry is aligned to the given number of bytes
-getEntriesWithAlignment :: Int -> Get a -> Get [a]
-getEntriesWithAlignment alignment getter = rec
+-- | Get a sequence of entries. Each entry is aligned to the given number of
+-- bytes. The first entry must be correctly aligned.
+getEntriesAndOffsetWithAlignment :: Int -> Get a -> Get [(Word64,a)]
+getEntriesAndOffsetWithAlignment alignment getter = rec 0
    where
-      rec = isEmpty >>= \case
+      rec n = isEmpty >>= \case
          True  -> return []
          False -> do
-            e <- getter
-            rds <- bytesRead
-            let toSkip = fromIntegral alignment - (rds `mod` fromIntegral alignment)
-            empty <- isEmpty
-            when (fromIntegral toSkip /= alignment && toSkip /= 0 && not empty) $
-               skip (fromIntegral toSkip)
-            es <- rec
-            return (e:es)
+            (cnt,e) <- countBytes $ alignAfter alignment getter
+            es <- rec (fromIntegral cnt)
+            return ((n,e):es)
 
 -- | Get a sequence of aligned entries with their offset
-getEntriesAndOffsetWithAlignment :: Int -> Get a -> Get [(Word64,a)]
-getEntriesAndOffsetWithAlignment alignment getter = 
-      getEntriesWithAlignment alignment getter'
-   where
-      getter' = (,) <$> (fromIntegral <$> bytesRead) <*> getter
+getEntriesWithAlignment :: Int -> Get a -> Get [a]
+getEntriesWithAlignment alignment getter = 
+      fmap snd <$> getEntriesAndOffsetWithAlignment alignment getter
          
 -- | Return a sequence of entries from a section. The entry size is given by
 -- the sectionEntrySize field
 getEntryTableFromSection :: Elf -> Section -> (Get a) -> [a]
-getEntryTableFromSection elf sec getter = runGet (forM [1..cnt] (const getter)) bs
+getEntryTableFromSection elf sec getter = runGetOrFail (forM [1..cnt] (const getter)) bs
    where
       -- content of the section
-      bs = getSectionContentLBS elf sec
+      bs = getSectionContentBS elf sec
       -- size of a single entry
       size = case fromIntegral (sectionEntrySize sec) of
          0 -> error "Invalid table section: entry size is null"
@@ -167,19 +160,19 @@ getEntryTableFromSection elf sec getter = runGet (forM [1..cnt] (const getter)) 
 
 -- | Get a linked list of entries
 -- 'next' returns the next address
-getEntryList :: Integral b => Get a -> (a -> b) -> b -> LBS.ByteString -> [a]
+getEntryList :: Integral b => Get a -> (a -> b) -> b -> BS.ByteString -> [a]
 getEntryList get next current bs = case next e of
       0           -> [e]
       nextOffset  -> e : getEntryList get next (current + nextOffset) bs
    where
       -- read current entity
-      e = runGet get $ LBS.drop (fromIntegral current) bs
+      e = runGetOrFail get $ BS.drop (fromIntegral current) bs
 
 -- | Get a linked list of entries from a section
 -- 'next' returns the next address
 getEntryListFromSection :: Integral b => Elf -> Section -> Get a -> (a -> b) -> [a]
 getEntryListFromSection elf sec get next = 
-   getEntryList get next 0 (getSectionContentLBS elf sec)
+   getEntryList get next 0 (getSectionContentBS elf sec)
 
 -- | Fields are reused depending on the section types. This type gives a meaningful section type
 data FullSectionType
@@ -215,15 +208,15 @@ getFullSectionType elf sec =
 getStringsFromSection :: Elf -> Section -> [(Word64,Text)]
 getStringsFromSection elf sec = 
       case sectionType sec of
-         SectionTypeSTRTAB -> fmap f (runGet getter bs)
+         SectionTypeSTRTAB -> fmap f (runGetOrFail getter bs)
          _                 -> error "Invalid section type"
    where
       -- section content
-      bs = getSectionContentLBS elf sec
+      bs = getSectionContentBS elf sec
       -- getter for a bytestring ending with NUL and its offset
-      getter = getEntriesAndOffsetWithAlignment 1 getLazyByteStringNul
+      getter = getEntriesAndOffsetWithAlignment 1 getByteStringNul
       -- convert a bytestring into text
-      f = second (Text.decodeUtf8 . LBS.toStrict)
+      f = second Text.decodeUtf8
 
 
 
@@ -238,10 +231,9 @@ getStringFromSection elf sec idx = res
 
       -- extract the string
       extractStr s = Text.decodeUtf8
-         $ LBS.toStrict
-         $ LBS.takeWhile (/=0)
-         $ LBS.drop (fromIntegral idx)
-         $ getSectionContentLBS elf s
+         $ BS.takeWhile (/=0)
+         $ BS.drop (fromIntegral idx)
+         $ getSectionContentBS elf s
 
 --------------------------------------------------------------
 -- Section names
@@ -455,7 +447,7 @@ getVersionNeededEntriesFromSection elf sec =
                (getRawVersionNeeded (elfPreHeader elf)) 
                rvnNext
       -- section content
-      bs = getSectionContentLBS elf sec
+      bs = getSectionContentBS elf sec
       -- create VersionNeededAuxiliary from RawVersionNeededAuxiliary
       makeVNA e = VersionNeededAuxiliary
             (rvnaHash e)
@@ -473,7 +465,7 @@ getVersionNeededEntriesFromSection elf sec =
                         rvnaNext 
                         0 
                         tableBS
-            tableBS = LBS.drop (fromIntegral $ rvnAuxTable e) bs
+            tableBS = BS.drop (fromIntegral $ rvnAuxTable e) bs
       -- list of VersionNeeded
       vns = fmap makeVN raws
 
@@ -483,7 +475,7 @@ getVersionNeededEntriesFromSection elf sec =
 
 data Note = Note
    { noteName        :: Text
-   , noteDescriptor  :: LBS.ByteString
+   , noteDescriptor  :: BS.ByteString
    , noteType        :: Word32
    }
    deriving (Show)
@@ -491,42 +483,41 @@ data Note = Note
 
 -- | Get note entries
 getNoteEntriesFromSection :: Elf -> Section -> [Note]
-getNoteEntriesFromSection elf sec = runGet (getEntriesWithAlignment 4 getter) bs
+getNoteEntriesFromSection elf sec = runGetOrFail (getEntriesWithAlignment 4 getter) bs
    where
       -- content of the section
-      bs = getSectionContentLBS elf sec
+      bs = getSectionContentBS elf sec
       -- getter
       getter = do
          raw  <- getRawNote (elfPreHeader elf)
          name <- Text.decodeUtf8 . BS.init 
                   <$> getByteString (fromIntegral $ rawnoteNameLength raw)
-         desc <- LBS.fromStrict 
-                  <$> getByteString (fromIntegral $ rawnoteDescriptorSize raw)
+         desc <- getByteString (fromIntegral $ rawnoteDescriptorSize raw)
          return (Note name desc (rawnoteType raw))
 
 --------------------------------------------------------------
 -- Debug sections
 --------------------------------------------------------------
 getDebugInfoFromSection :: Elf -> Section -> [DebugInfo]
-getDebugInfoFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugInfo endian secAbbrev secStrings)) bs
+getDebugInfoFromSection elf sec = runGetOrFail (getEntriesWithAlignment 1 (getDebugInfo endian secAbbrev secStrings)) bs
    where
       endian         = preHeaderEndianness (elfPreHeader elf)
-      bs             = getSectionContentLBS elf sec
+      bs             = getSectionContentBS elf sec
       -- section containing abbreviations
-      Just secAbbrev = getSectionContentLBS elf <$> findSectionByName elf (Text.pack ".debug_abbrev")
+      Just secAbbrev = getSectionContentBS elf <$> findSectionByName elf (Text.pack ".debug_abbrev")
       -- section containing debug strings
-      secStrings     = getSectionContentLBS elf <$> findSectionByName elf (Text.pack ".debug_str")
+      secStrings     = getSectionContentBS elf <$> findSectionByName elf (Text.pack ".debug_str")
    
 getDebugTypeFromSection :: Elf -> Section -> [DebugType]
-getDebugTypeFromSection elf sec = runGet (getEntriesWithAlignment 1 (getDebugType endian)) bs
+getDebugTypeFromSection elf sec = runGetOrFail (getEntriesWithAlignment 1 (getDebugType endian)) bs
    where
       endian = preHeaderEndianness (elfPreHeader elf)
-      bs = getSectionContentLBS elf sec
+      bs = getSectionContentBS elf sec
 
 getDebugAbbrevFromSection :: Elf -> Section -> [DebugAbbrevEntry]
-getDebugAbbrevFromSection elf sec = runGet getDebugAbbrevEntries bs
+getDebugAbbrevFromSection elf sec = runGetOrFail getDebugAbbrevEntries bs
    where
-      bs = getSectionContentLBS elf sec
+      bs = getSectionContentBS elf sec
 
 
 --------------------------------------------------------------
@@ -535,9 +526,9 @@ getDebugAbbrevFromSection elf sec = runGet getDebugAbbrevEntries bs
 
 -- | Return ZCA table (e.g. optimization report)
 getZCATableFromSection :: Elf -> Section -> ZCATable
-getZCATableFromSection elf s = getZCATable (LBS.toStrict bs)
+getZCATableFromSection elf s = getZCATable bs
    where
       -- raw section
-      bs = getSectionContentLBS elf s
+      bs = getSectionContentBS elf s
 
 

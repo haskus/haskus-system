@@ -30,7 +30,7 @@ import Data.Text (Text)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
 import qualified Data.Text.Lazy as Text
-import qualified Data.Text.Lazy.Encoding as Text
+import qualified Data.Text.Encoding as Text
 import qualified Data.Text.Lazy.IO as Text
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
@@ -64,7 +64,8 @@ server pth elf conf = do
                ok 
                   $ addHeader "Content-Disposition" (Text.unpack disp)
                   $ toResponseBS (C.pack "application/octet-stream")
-                  $ getSectionContentLBS elf sec
+                  $ LBS.fromStrict
+                  $ getSectionContentBS elf sec
             ]
 
 
@@ -240,7 +241,7 @@ showSection elf secnum secname s = do
          BasicSectionType SectionTypePROGBITS
             | getSectionName elf s == Just ".interp" -> tr_ $ do
                th_ "Interpreter path"
-               let c = getSectionContentLBS elf s
+               let c = getSectionContentBS elf s
                td_ . toHtml $ Text.decodeUtf8 c
 
          -- Show relocation entries
@@ -492,7 +493,7 @@ showNoteEntries es = do
       forM_ es $ \e -> tr_ $ do
          td_ . toHtml $ noteName e
          td_ . toHtml $ show (noteType e)
-         td_ . toHtml $ show (LBS.unpack $ noteDescriptor e)
+         td_ . toHtml $ show (BS.unpack $ noteDescriptor e)
 
 showDebugAbbrev :: [DebugAbbrevEntry] -> Html ()
 showDebugAbbrev es = do
