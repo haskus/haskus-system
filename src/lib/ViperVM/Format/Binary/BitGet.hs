@@ -13,6 +13,10 @@ module ViperVM.Format.Binary.BitGet
    , BitGetT
    , runBitGet
    , runBitGetT
+   , runBitGetPartialT
+   , runBitGetPartial
+   , resumeBitGetPartialT
+   , resumeBitGetPartial
    , isEmptyM
    , skipBitsM
    , getBitsM
@@ -149,6 +153,18 @@ runBitGetT bo m bs = evalStateT m (newBitGetState bo bs)
 
 runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
+
+runBitGetPartialT :: Monad m => BitOrder -> BitGetT m a -> BS.ByteString -> m (a, BitGetState)
+runBitGetPartialT bo m bs = runStateT m (newBitGetState bo bs)
+
+runBitGetPartial :: BitOrder -> BitGet a -> BS.ByteString -> (a, BitGetState)
+runBitGetPartial bo m bs = runIdentity (runBitGetPartialT bo m bs)
+
+resumeBitGetPartialT :: Monad m => BitGetT m a -> BitGetState -> m (a, BitGetState)
+resumeBitGetPartialT = runStateT 
+
+resumeBitGetPartial :: BitGet a -> BitGetState -> (a,BitGetState)
+resumeBitGetPartial m s = runIdentity (resumeBitGetPartialT m s)
 
 isEmptyM :: Monad m => BitGetT m Bool
 isEmptyM = gets isEmpty
