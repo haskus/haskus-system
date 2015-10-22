@@ -16,6 +16,7 @@ module ViperVM.Format.Binary.BitGet
    , getBitsM
    , getBitsCheckedM
    , getBitBoolM
+   , getBitsBSM
    , changeBitGetOrder
    , withBitGetOrder
    )
@@ -101,32 +102,35 @@ getBitsChecked m n s
 --    LL: LMNOPxxx DEFGHIJK xxxxxABC -> ABCDEFGH IJKLMNOP
 --    BL: xxxPONML KJIHGFED CBAxxxxx -> ABCDEFGH IJKLMNOP
 --    LB: EDCBAxxx MLKJIHGF xxxxxPON -> ABCDEFGH IJKLMNOP
-getBitsBS :: Int -> BitGetState -> ByteString
+getBitsBS :: Word -> BitGetState -> ByteString
 getBitsBS n (BitGetState bs o bo) =
-   let 
-      bs'  = BS.unsafeTake (n+1) bs
-      bs'' = BS.unsafeTake n bs
-      rev  = BS.map reverseBits
-   in case (o,bo) of
-      (0,BB) ->                    bs''
-      (0,LL) ->       BS.reverse $ bs''
-      (0,LB) -> rev $              bs''
-      (0,BL) -> rev $ BS.reverse $ bs''
-      (_,LL) ->                    getBitsBS n (BitGetState (BS.reverse bs') (8-o)  BB)
-      (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     BB)
-      (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     LL)
-      (_,BB) -> unsafePerformIO $ do
-         let len = n+1
-         ptr <- mallocBytes len
-         let f r i = do
-               let
-                  w  = BS.unsafeIndex bs (len-i)
-                  w' = (w `shiftL` fromIntegral o) .|. r
-                  r' = w `shiftR` (8-fromIntegral o)
-               poke (ptr `plusPtr` (len-i)) w'
-               return r'
-         foldM_ f 0 [1..len]
-         BS.unsafeInit <$> BS.unsafePackMallocCStringLen (ptr,len)
+   if n == 0
+      then BS.empty
+      else
+         let 
+            bs'  = BS.unsafeTake (fromIntegral n+1) bs
+            bs'' = BS.unsafeTake (fromIntegral n) bs
+            rev  = BS.map reverseBits
+         in case (o,bo) of
+            (0,BB) ->                    bs''
+            (0,LL) ->       BS.reverse $ bs''
+            (0,LB) -> rev $              bs''
+            (0,BL) -> rev $ BS.reverse $ bs''
+            (_,LL) ->                    getBitsBS n (BitGetState (BS.reverse bs') (8-o)  BB)
+            (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     BB)
+            (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     LL)
+            (_,BB) -> unsafePerformIO $ do
+               let len = fromIntegral n+1
+               ptr <- mallocBytes len
+               let f r i = do
+                     let
+                        w  = BS.unsafeIndex bs (len-i)
+                        w' = (w `shiftL` fromIntegral o) .|. r
+                        r' = w `shiftR` (8-fromIntegral o)
+                     poke (ptr `plusPtr` (len-i)) w'
+                     return r'
+               foldM_ f 0 [1..len]
+               BS.unsafeInit <$> BS.unsafePackMallocCStringLen (ptr,len)
 
 
 
@@ -163,6 +167,13 @@ getBitBoolM :: (Monad m) => BitGetT m Bool
 getBitBoolM = do
    v <- getBitsM 1
    return ((v :: Word) == 1)
+
+-- | Get the given number of Word8
+getBitsBSM :: (Monad m) => Word -> BitGetT m BS.ByteString
+getBitsBSM n = do
+   bs <- gets (getBitsBS n)
+   skipBitsM (8*n)
+   return bs
 
 -- | Change the current bit ordering
 --

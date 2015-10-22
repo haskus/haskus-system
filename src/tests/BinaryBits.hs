@@ -3,10 +3,11 @@ module BinaryBits where
 import Distribution.TestSuite (Test,testGroup)
 import Distribution.TestSuite.QuickCheck (testProperty)
 import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Gen (elements,choose,vectorOf)
+import Test.QuickCheck.Gen (elements,choose,vectorOf,listOf,resize)
 
 import Data.Word
 import Data.Bits
+import qualified Data.ByteString as BS
 
 import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet
@@ -38,6 +39,7 @@ tests = return
       , testProperty "Bit put/get Word64 - [1,64] bits"  (prop_reverse_word_size :: Size64 -> Word64  -> ArbitraryBitOrder -> Bool)
       , testProperty "Monadic BitPut/BitGet, two parts of two Word64"
          (prop_split_word :: Size64 -> Size64 -> Word64 -> Word64 -> ArbitraryBitOrder -> Bool)
+      , testProperty "Monadic BitPut/BitGet, bytestring with offset" prop_reverse_bs
       ]
    , testGroup "Variable length (LEB128)"
       [ testProperty "Put/Get reverse (Word8)"           (prop_uleb128_reverse :: Word8 -> Bool)
@@ -117,6 +119,14 @@ instance Arbitrary ArbitraryBitOrder where
       LB -> fmap ArbitraryBitOrder [BB]
       BB -> fmap ArbitraryBitOrder []
 
+newtype ArbitraryByteString = ArbitraryByteString BS.ByteString deriving (Show)
+
+instance Arbitrary ArbitraryByteString where
+   arbitrary                       = ArbitraryByteString . BS.pack <$> resize 50 (listOf arbitrary)
+   shrink (ArbitraryByteString bs)
+      | BS.null bs = []
+      | otherwise  = [ArbitraryByteString $ BS.take (BS.length bs `div` 2) bs]
+
 class Size x where
    fromSize :: x -> Word
 
@@ -157,6 +167,20 @@ prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
    where
       enc = getBitPutBS  $ putBits n w $ newBitPutState bo
       dec = getBits n $ newBitGetState bo enc
+
+-- | Test that a ByteString can be written and read back with
+-- BitGet/BitPut. Test every bit ordering.
+prop_reverse_bs :: Word64 -> Size64 -> ArbitraryByteString -> ArbitraryBitOrder -> Bool
+prop_reverse_bs w s (ArbitraryByteString bs) (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut bo enc)
+   where
+      len = BS.length bs
+      enc = do
+         putBitsM (fromSize s) w
+         putBitsBSM bs
+      dec = do
+         w2  <- getBitsM (fromSize s)
+         bs' <- getBitsBSM (fromIntegral len)
+         return (bs == bs' && w2 == maskLeastBits (fromSize s) w)
 
 -- | Test that words with arbitrary (but still valid) lengths can be written and
 -- read back with BitGet/BitPut. Test every bit ordering.

@@ -270,6 +270,7 @@ test-suite tests
       ,  Cabal
       ,  cabal-test-quickcheck   >= 0.1
       ,  QuickCheck              >= 2.8
+      ,  bytestring
 
 Benchmark bench-BitReverse
    type:               exitcode-stdio-1.0

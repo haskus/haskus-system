@@ -109,7 +109,7 @@ putBitsBS bs s
       (BitPutState _ _ _ BL)       -> putBitsBS (BS.unsafeInit bs) (putBits 8 (BS.unsafeLast bs) s)
       (BitPutState _ _ _ LB)       -> putBitsBS (BS.unsafeTail bs) (putBits 8 (BS.unsafeHead bs) s)
    where
-      rev    = BS.map (reverseLeastBits 8)
+      rev    = BS.map reverseBits
 
 
 flushIncomplete :: BitPutState -> BitPutState
