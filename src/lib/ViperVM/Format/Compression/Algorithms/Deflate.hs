@@ -363,4 +363,4 @@ makeHuffmanCodes = rec emptyCode [] . msort
 
 -- | Create a Huffman code getter from a list of codes
 makeBitGetFromCodes :: (Show a, Show b, Ord a, Ord b, Num b) => [(a,b)] -> BitGet a
-makeBitGetFromCodes = fmap fromJust . makeBitGet True . buildTreeFromCodes . makeHuffmanCodes 
+makeBitGetFromCodes = fmap fromJust . makeBitGet True . computeHuffmanTreeFromCodes . makeHuffmanCodes 

@@ -3,6 +3,7 @@
 module ViperVM.Format.Binary.BitGet
    ( BitGetState(..)
    , newBitGetState
+   , isEmpty
    , skipBits
    , getBits
    , getBitsChecked
@@ -12,6 +13,7 @@ module ViperVM.Format.Binary.BitGet
    , BitGetT
    , runBitGet
    , runBitGetT
+   , isEmptyM
    , skipBitsM
    , getBitsM
    , getBitsCheckedM
@@ -46,6 +48,10 @@ data BitGetState = BitGetState
 -- | Create a new BitGetState
 newBitGetState :: BitOrder -> ByteString -> BitGetState
 newBitGetState bo bs = BitGetState bs 0 bo
+
+-- | Indicate that the source is empty
+isEmpty :: BitGetState -> Bool
+isEmpty (BitGetState bs o _) = o == 0 && BS.null bs
 
 -- | Skip the given number of bits from the input
 skipBits :: Word -> BitGetState -> BitGetState
@@ -143,6 +149,9 @@ runBitGetT bo m bs = evalStateT m (newBitGetState bo bs)
 
 runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
+
+isEmptyM :: Monad m => BitGetT m Bool
+isEmptyM = gets isEmpty
 
 -- | Skip the given number of bits from the input (monadic version)
 skipBitsM :: Monad m => Word -> BitGetT m ()
