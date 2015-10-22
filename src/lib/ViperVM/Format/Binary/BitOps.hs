@@ -14,7 +14,7 @@ import Data.Word
 import Data.Bits
 import Data.List (foldl')
 
-import ViperVM.Format.Binary.BitReverse
+import ViperVM.Format.Binary.BitOps.BitReverse
 
 -- | makeMask 3 = 00000111
 makeMask :: (Bits a, Num a) => Int -> a

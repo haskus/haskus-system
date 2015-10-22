@@ -171,7 +171,7 @@ library
     ViperVM.Format.Compression.GZip
 
     ViperVM.Format.Binary.BitOps
-    ViperVM.Format.Binary.BitReverse
+    ViperVM.Format.Binary.BitOps.BitReverse
     ViperVM.Format.Binary.BitOrder
     ViperVM.Format.Binary.BitGet
     ViperVM.Format.Binary.BitPut

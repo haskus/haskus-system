@@ -12,7 +12,7 @@ import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
-import ViperVM.Format.Binary.BitReverse
+import ViperVM.Format.Binary.BitOps.BitReverse
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.VariableLength

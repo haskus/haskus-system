@@ -1,6 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TemplateHaskell #-}
-module ViperVM.Format.Binary.BitReverse
+
+-- | Reverse bits
+--
+-- There are several algorithms performing the same thing here. There are
+-- benchmarks for them in ViperVM's "bench" directory. The fastest one for the
+-- current architecture should be selected in ViperVM.Format.Binary.BitOps. If
+-- you find that another algorithm is faster on your architecture, please
+-- report it.
+module ViperVM.Format.Binary.BitOps.BitReverse
    ( reverseBitsObvious
    , reverseBits3Ops
    , reverseBits4Ops
@@ -14,7 +22,7 @@ import qualified Data.ByteString as BS
 import Data.Bits
 import Data.Word
 
--- Algorithms and explanations taken from:
+-- Algorithms and explanations adapted from:
 -- http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64Bits
 
 -- Reverse the bits the obvious way
@@ -40,6 +48,7 @@ import Data.Word
 -- suggested a better version that loops while v is not 0, so rather than
 -- iterating over all bits it stops early. 
 
+-- | Obvious recursive verion
 reverseBitsObvious :: FiniteBits a => a -> a
 reverseBitsObvious x = rec x (x `shiftR` 1) (finiteBitSize x - 1)
    where
@@ -197,6 +206,7 @@ reverseBits7Ops b' = fromIntegral x'
 -- September 13, 2005. Veldmeijer mentioned that the first version could do
 -- without ANDS in the last line on March 19, 2006. 
 
+-- | "Parallel" recursive version
 reverseBits5LgN :: FiniteBits a => a -> a
 reverseBits5LgN x = rec (finiteBitSize x `shiftR` 1) (complement zeroBits) x
    where
