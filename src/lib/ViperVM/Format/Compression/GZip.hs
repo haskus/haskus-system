@@ -1,7 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module ViperVM.Format.Compression.GZip
    ( Member(..)
-   , Flags(..)
+   , Flag(..)
+   , Flags
    , decompressGet
    , decompress
    )
@@ -12,7 +13,9 @@ import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 import Data.Foldable (toList)
 import Data.Word
 import ViperVM.Format.Binary.Get
-import Data.Binary.Bits.Get (block,bool,runBitGet,skipBits)
+import ViperVM.Utils.BitSet (BitSet,EnumBitSet)
+import Data.Binary.Bits.Get (runBitGet)
+import qualified ViperVM.Utils.BitSet as BitSet
 import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.ByteString.Lazy (pack,ByteString)
@@ -60,24 +63,24 @@ getMember = do
    when (comp /= 8) $
       error "Unknown compression method"
 
-   flags <- getFlags
+   flags <- BitSet.fromBits <$> getWord8
    mtime <- getWord32le   -- modification time
    xfl   <- getWord8      -- extra flags
    os    <- getWord8      -- os
 
-   when (flagExtra flags) $ do
+   when (BitSet.member flags FlagExtra) $ do
       xlen <- getWord16le
       skip (fromIntegral xlen)
 
-   name <- if flagName flags
+   name <- if BitSet.member flags FlagName
       then unpack <$> getLazyByteStringNul
       else return ""
 
-   comment <- if flagComment flags
+   comment <- if BitSet.member flags FlagComment
       then unpack <$> getLazyByteStringNul
       else return ""
 
-   crc <- if flagCRC flags
+   crc <- if BitSet.member flags FlagCRC
       then getWord16le
       else return 0
 
@@ -90,16 +93,15 @@ getMember = do
       
 
 
-data Flags = Flags
-   { flagComment :: Bool
-   , flagName    :: Bool
-   , flagExtra   :: Bool
-   , flagCRC     :: Bool
-   , flagText    :: Bool
-   } deriving (Show)
+data Flag
+   = FlagText
+   | FlagCRC
+   | FlagExtra
+   | FlagName
+   | FlagComment
+   deriving (Show,Eq,Enum)
 
--- | Read flags
-getFlags :: Get Flags
-getFlags = runBitGet $ do
-   skipBits 3
-   block $ Flags <$> bool <*> bool <*> bool <*> bool <*> bool
+instance EnumBitSet Flag
+
+type Flags = BitSet Word8 Flag
+
