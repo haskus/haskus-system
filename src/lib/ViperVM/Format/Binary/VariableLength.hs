@@ -11,7 +11,7 @@ where
 import Data.Int
 import Data.Word
 import Data.Bits
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString (ByteString)
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
@@ -90,5 +90,5 @@ getLEB128BS bo = rec (newBitPutState bo)
          let state2 = putBits 7 w state
          case testBit w 7 of
             True  -> rec state2
-            False -> return (getBitPutLBS state2)
+            False -> return (getBitPutBS state2)
 
