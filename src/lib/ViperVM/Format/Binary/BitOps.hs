@@ -3,10 +3,11 @@ module ViperVM.Format.Binary.BitOps
    , maskLeastBits
    , bitOffset
    , byteOffset
-   , reverseBitsWord8
+   , reverseBitsGeneric
    , reverseLeastBits
    , bitsToString
    , bitsFromString
+   , BitReversable (..)
    )
 where
 
@@ -73,9 +74,24 @@ bitsFromString xs = foldl' b zeroBits (reverse xs `zip` [0..])
       b x ('1',i) = setBit x i
       b _ (c,_)   = error $ "Invalid character in the string: " ++ [c]
 
--- | Reverse bits in a Word8
---
--- The different implementation are in ViperVM.Format.Binary.BitReverse.  The
--- current one has been selected through benchmarking (see ViperVM benchmarks).
-reverseBitsWord8 :: Word8 -> Word8
-reverseBitsWord8 = reverseBits4Ops
+
+-- | Reverse bits in a Word
+reverseBitsGeneric :: (FiniteBits a, Integral a) => a -> a
+reverseBitsGeneric = liftReverseBits reverseBits4Ops
+
+-- | Data whose bits can be reversed
+class BitReversable w where
+   reverseBits :: w -> w
+
+instance BitReversable Word8 where
+   reverseBits = reverseBits4Ops
+
+instance BitReversable Word16 where
+   reverseBits = reverseBits5LgN
+
+instance BitReversable Word32 where
+   reverseBits = reverseBits5LgN
+
+instance BitReversable Word64 where
+   reverseBits = reverseBits5LgN
+

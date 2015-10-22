@@ -15,6 +15,7 @@ module ViperVM.Format.Binary.BitOps.BitReverse
    , reverseBitsTable
    , reverseBits7Ops
    , reverseBits5LgN
+   , liftReverseBits
    )
 where
 
@@ -91,6 +92,8 @@ reverseBits3Ops x = fromIntegral x'
    where
       !x' = ((fromIntegral x * 0x0202020202 :: Word64) .&. 0x010884422010) `mod` 1023
 
+{-# INLINE reverseBits3Ops #-}
+
 -- Reverse the bits in a byte with 4 operations (64-bit multiply, no division) 
 -- ===========================================================================
 --
@@ -139,12 +142,16 @@ reverseBits4Ops x = fromIntegral x'
    where
       !x' = (((fromIntegral x * 0x80200802 :: Word64) .&. 0x0884422110) * 0x0101010101) `shiftR` 32
 
+{-# INLINE reverseBits4Ops #-}
+
 -- Reverse bits using a lookup table
 -- =================================
 
 -- | Reverse bits using a lookup table
 reverseBitsTable :: Word8 -> Word8
 reverseBitsTable x = bitsTable `BS.index` (fromIntegral x)
+
+{-# INLINE reverseBitsTable #-}
 
 -- fill the table by using another method
 bitsTable :: BS.ByteString
@@ -167,6 +174,7 @@ reverseBits7Ops b' = fromIntegral x'
       b   = fromIntegral b' :: Word32
       !x' = ((((b * 0x0802) .&. 0x22110) .|. ((b * 0x8020) .&. 0x88440)) * 0x10101) `shiftR` 16
 
+{-# INLINE reverseBits7Ops #-}
 
 -- Reverse an N-bit quantity in parallel in 5 * lg(N) operations
 -- =============================================================
@@ -223,3 +231,25 @@ reverseBits5LgN x = rec (finiteBitSize x `shiftR` 1) (complement zeroBits) x
 {-# SPECIALIZE reverseBits5LgN :: Word16 -> Word16 #-}
 {-# SPECIALIZE reverseBits5LgN :: Word32 -> Word32 #-}
 {-# SPECIALIZE reverseBits5LgN :: Word64 -> Word64 #-}
+
+
+
+-- | Convert a function working on Word8 to one working on any Word
+--
+-- The number of bits in the Word must be a multiple of 8
+liftReverseBits :: (FiniteBits a, Integral a) => (Word8 -> Word8) -> a -> a
+liftReverseBits f w = rec zeroBits 0
+   where
+      nb = finiteBitSize w `shiftR` 3 -- div 8
+      f' = fromIntegral . f . fromIntegral
+      rec !v !o
+         | o == nb    = v
+         | otherwise = rec v' (o+1)
+               where
+                  -- multiplication by 8 replaced with (`shiftL` 3)
+                  v' = v .|. ((f' (w `shiftR` (o `shiftL` 3))) `shiftL` ((nb-1-o) `shiftL` 3))
+
+{-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word8  -> Word8  #-}
+{-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word16 -> Word16 #-}
+{-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word32 -> Word32 #-}
+{-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word64 -> Word64 #-}
