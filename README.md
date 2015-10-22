@@ -9,8 +9,8 @@ x86-64 architecture and Linux for now. From the bottom up:
   ByteString, etc.)
 * ViperVM.Format.Compression: some compression algorithms and containers
 * ViperVM.Format.CPIO: CPIO archive format
-* ViperVM.Format.{Elf,Dwarf}: ELF object format and DWARF debugging information
-  format
+* ViperVM.Format.Elf: ELF object format
+* ViperVM.Format.Dwarf: DWARF debugging information format
 
 ## Linux system calls
 
