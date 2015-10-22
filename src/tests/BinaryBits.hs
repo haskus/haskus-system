@@ -118,12 +118,12 @@ instance Arbitrary ArbitraryBitOrder where
       BB -> fmap ArbitraryBitOrder []
 
 class Size x where
-   fromSize :: x -> Int
+   fromSize :: x -> Word
 
-newtype Size8  = Size8  Int deriving (Show)
-newtype Size16 = Size16 Int deriving (Show)
-newtype Size32 = Size32 Int deriving (Show)
-newtype Size64 = Size64 Int deriving (Show)
+newtype Size8  = Size8  Word deriving (Show)
+newtype Size16 = Size16 Word deriving (Show)
+newtype Size32 = Size32 Word deriving (Show)
+newtype Size64 = Size64 Word deriving (Show)
 
 instance Size Size8  where fromSize (Size8  x) = x
 instance Size Size16 where fromSize (Size16 x) = x
@@ -152,7 +152,7 @@ prop_bits_to_string x = bitsFromString (bitsToString x) == x
 
 -- | Test that words of the given length can be written and read back with
 -- BitGet/BitPut. Test every bit ordering.
-prop_reverse_word :: (Integral a, FiniteBits a, BitReversable a) => Int -> a -> ArbitraryBitOrder -> Bool
+prop_reverse_word :: (Integral a, FiniteBits a, BitReversable a) => Word -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
    where
       enc = getBitPutBS  $ putBits n w $ newBitPutState bo

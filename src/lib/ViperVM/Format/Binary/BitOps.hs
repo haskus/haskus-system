@@ -18,34 +18,39 @@ import Data.List (foldl')
 import ViperVM.Format.Binary.BitOps.BitReverse
 
 -- | makeMask 3 = 00000111
-makeMask :: (Bits a, Num a) => Int -> a
-makeMask n = (1 `shiftL` fromIntegral n) - 1
-{-# SPECIALIZE makeMask :: Int -> Int #-}
-{-# SPECIALIZE makeMask :: Int -> Word #-}
-{-# SPECIALIZE makeMask :: Int -> Word8 #-}
-{-# SPECIALIZE makeMask :: Int -> Word16 #-}
-{-# SPECIALIZE makeMask :: Int -> Word32 #-}
-{-# SPECIALIZE makeMask :: Int -> Word64 #-}
+makeMask :: (FiniteBits a) => Word -> a
+makeMask n = x' `shiftR` (finiteBitSize x - fromIntegral n)
+   where
+      x = complement zeroBits
+      x' = if isSigned x 
+               then error "Cannot use makeMask with a signed type"
+               else x
+{-# SPECIALIZE makeMask :: Word -> Int #-}
+{-# SPECIALIZE makeMask :: Word -> Word #-}
+{-# SPECIALIZE makeMask :: Word -> Word8 #-}
+{-# SPECIALIZE makeMask :: Word -> Word16 #-}
+{-# SPECIALIZE makeMask :: Word -> Word32 #-}
+{-# SPECIALIZE makeMask :: Word -> Word64 #-}
 
 -- | Keep only the n least-significant bits of the given value
-maskLeastBits :: (Bits a, Num a) => Int -> a -> a
+maskLeastBits :: (FiniteBits a) => Word -> a -> a
 maskLeastBits n v = v .&. makeMask n
 {-# INLINE maskLeastBits #-}
 
 -- | Compute bit offset (equivalent to x `mod` 8 but faster)
-bitOffset :: Int -> Int
+bitOffset :: Word -> Word
 bitOffset n = makeMask 3 .&. n
 {-# INLINE bitOffset #-}
 
 -- | Compute byte offset (equivalent to x `div` 8 but faster)
-byteOffset :: Int -> Int
+byteOffset :: Word -> Word
 byteOffset n = n `shiftR` 3
 {-# INLINE byteOffset #-}
 
 -- | Reverse the @n@ least important bits of the given value. The higher bits
 -- are set to 0.
-reverseLeastBits :: (FiniteBits a, BitReversable a) => Int -> a -> a
-reverseLeastBits n value = reverseBits value `shiftR` (finiteBitSize value - n)
+reverseLeastBits :: (FiniteBits a, BitReversable a) => Word -> a -> a
+reverseLeastBits n value = reverseBits value `shiftR` (finiteBitSize value - fromIntegral n)
 
 
 bitsToString :: FiniteBits a => a -> String

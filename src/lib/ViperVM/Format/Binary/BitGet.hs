@@ -38,7 +38,7 @@ import ViperVM.Format.Binary.BitOps
 -- | BitGet state
 data BitGetState = BitGetState
    { bitGetStateInput      :: {-# UNPACK #-} !ByteString -- ^ Input
-   , bitGetStateBitOffset  :: {-# UNPACK #-} !Int        -- ^ Bit offset (0-7)
+   , bitGetStateBitOffset  :: {-# UNPACK #-} !Word       -- ^ Bit offset (0-7)
    , bitGetStateBitOrder   ::                !BitOrder   -- ^ Bit order
    } deriving (Show)
 
@@ -47,62 +47,48 @@ newBitGetState :: BitOrder -> ByteString -> BitGetState
 newBitGetState bo bs = BitGetState bs 0 bo
 
 -- | Skip the given number of bits from the input
-skipBits :: Int -> BitGetState -> BitGetState
+skipBits :: Word -> BitGetState -> BitGetState
 skipBits o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
    where
       !o' = (n+o)
-      !d  = byteOffset o'
+      !d  = fromIntegral $ byteOffset o'
       !n' = bitOffset o'
 
--- | Skip the given number of bits from the input (monadic version)
-skipBitsM :: Monad m => Int -> BitGetT m ()
-skipBitsM = modify . skipBits
-
--- | Extract a range of bits from (ws :: ByteString)
---
--- Constraint: 8 * (length ws -1 ) < o+n <= 8 * length ws
-extract :: (Num a, FiniteBits a, BitReversable a) => BitOrder -> ByteString -> Int -> Int -> a
-extract bo bs o n     
-   | n == 0            = zeroBits
-   | BS.length bs == 0 = error "Empty ByteString"
-   | otherwise         = rev . maskLeastBits n . foldlWithIndex' f 0 $ bs
-   where 
-      -- BS.foldl' with index
-      foldlWithIndex' op b = fst . BS.foldl' g (b,0)
-         where g (b',i) w = (op b' w i, (i+1))
-
-      -- 'or' correctly shifted words
-      f b w i = b .|. (fromIntegral w `shift` off i)
-
-      -- co-offset
-      r = BS.length bs * 8 - (o + n)
-
-      -- shift offset depending on the byte position (0..B.length-1)
-      off i = case bo of
-         LL -> 8*i - o
-         LB -> 8*i - o
-         BB -> (BS.length bs -1 - i) * 8 - r
-         BL -> (BS.length bs -1 - i) * 8 - r
-
-      -- reverse bits if necessary
-      rev = case bo of
-         LB -> reverseLeastBits n
-         BL -> reverseLeastBits n
-         BB -> id
-         LL -> id
-
-
 -- | Read the given number of bits and put the result in a word
-getBits :: (Num a, FiniteBits a, BitReversable a) => Int -> BitGetState -> a
-getBits n (BitGetState bs o bo)
-   | n == 0    = 0
-   | otherwise = extract bo (BS.unsafeTake nbytes bs) o n
-   where nbytes = byteOffset (o+n+7)
+getBits :: (Integral a, FiniteBits a, BitReversable a) => Word -> BitGetState -> a
+getBits nbits (BitGetState bs off bo) = rec zeroBits 0 bs off nbits
+   where
+      -- w   = current result
+      -- n   = number of valid bits in w
+      -- i   = input bytestring
+      -- r   = number of remaining bits to read
+      -- o   = bit offset in input bytestring
+      rec w _ _ _ 0 = w
+      rec w n i o r = rec nw (n+nb) (BS.tail i) o' (r-nb)
+         where 
+            -- current Word8
+            c  = BS.head i
+            -- number of bits to take from the current Word8
+            nb = min (8-o) r
+            -- bits taken from the current Word8 and put in correct order in least-significant bits
+            tc = fromIntegral $ case bo of
+                  BB -> maskLeastBits nb $               c `shiftR` (8 - fromIntegral nb - fromIntegral o)
+                  BL -> maskLeastBits nb $ (reverseBits c) `shiftR` (fromIntegral o)
+                  LB -> maskLeastBits nb $ (reverseBits c) `shiftR` (8 - fromIntegral nb - fromIntegral o)
+                  LL -> maskLeastBits nb $               c `shiftR` (fromIntegral o)
+            -- mix new bits with the current result
+            nw = case bo of
+                  BB -> (w `shiftL` fromIntegral nb) .|. tc
+                  LB -> (w `shiftL` fromIntegral nb) .|. tc
+                  BL -> (tc `shiftL` fromIntegral n) .|. w
+                  LL -> (tc `shiftL` fromIntegral n) .|. w
+            -- new offset ((o + nb) `mod` 8)
+            o' = bitOffset (o + nb)
 
 -- | Perform some checks before calling getBits
 --
 -- Check that the number of bits to read is not greater than the first parameter
-getBitsChecked :: (Num a, FiniteBits a, BitReversable a) => Int -> Int -> BitGetState -> a
+getBitsChecked :: (Integral a, FiniteBits a, BitReversable a) => Word -> Word -> BitGetState -> a
 getBitsChecked m n s
    | n > m     = error $ "Tried to read more than " ++ show m ++ " bits (" ++ show n ++")"
    | otherwise = getBits n s
@@ -135,8 +121,8 @@ getBitsBS n (BitGetState bs o bo) =
          let f r i = do
                let
                   w  = BS.unsafeIndex bs (len-i)
-                  w' = (w `shiftL` o) .|. r
-                  r' = w `shiftR` (8-o)
+                  w' = (w `shiftL` fromIntegral o) .|. r
+                  r' = w `shiftR` (8-fromIntegral o)
                poke (ptr `plusPtr` (len-i)) w'
                return r'
          foldM_ f 0 [1..len]
@@ -154,15 +140,19 @@ runBitGetT bo m bs = evalStateT m (newBitGetState bo bs)
 runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
 
+-- | Skip the given number of bits from the input (monadic version)
+skipBitsM :: Monad m => Word -> BitGetT m ()
+skipBitsM = modify . skipBits
+
 -- | Read the given number of bits and put the result in a word
-getBitsM :: (Num a, FiniteBits a, BitReversable a, Monad m) => Int -> BitGetT m a
+getBitsM :: (Integral a, FiniteBits a, BitReversable a, Monad m) => Word -> BitGetT m a
 getBitsM n = do
    v <- gets (getBits n)
    skipBitsM n
    return v
 
 -- | Perform some checks before calling getBitsM
-getBitsCheckedM :: (Num a, FiniteBits a, BitReversable a, Monad m) => Int -> Int -> BitGetT m a
+getBitsCheckedM :: (Integral a, FiniteBits a, BitReversable a, Monad m) => Word -> Word -> BitGetT m a
 getBitsCheckedM m n = do
    v <- gets (getBitsChecked m n)
    skipBitsM n

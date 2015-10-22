@@ -19,8 +19,8 @@ where
 --    - LB: XWVEDCBA xxxxxxZY
 --    - LL: XYZABCDE xxxxxxVW
 data BitOrder
-   = BB  -- ^ Big-endian bytes and bits
-   | LB  -- ^ Little-endian bytes, big-endian bits
-   | BL  -- ^ Big-endian bytes, little-endian bits
-   | LL  -- ^ Little-endian bytes and bits
+   = BB
+   | LB
+   | BL
+   | LL
    deriving (Show,Eq)

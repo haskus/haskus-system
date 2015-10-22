@@ -37,14 +37,14 @@ import Data.Word
 data BitPutState = BitPutState
    { bitPutStateBuilder          :: !Builder       -- ^ Builder
    , bitPutStateCurrent          :: !Word8         -- ^ Current byte
-   , bitPutStateOffset           :: !Int           -- ^ Current offset
+   , bitPutStateOffset           :: !Word          -- ^ Current offset
    , bitPutStateBitOrder         :: !BitOrder      -- ^ Bit order
    }
 
 newBitPutState :: BitOrder -> BitPutState
 newBitPutState = BitPutState B.empty 0 0
 
-putBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => Int -> a -> BitPutState -> BitPutState
+putBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => Word -> a -> BitPutState -> BitPutState
 putBits n w s@(BitPutState builder b o bo) = s'
    where
       -- number of bits that will be stored in the current byte
@@ -61,8 +61,8 @@ putBits n w s@(BitPutState builder b o bo) = s'
       -- Word containing the remaining (n-cn) bits to store in its LSB
       w' = case bo of
          BB -> w
-         BL -> w `shiftR` cn
-         LL -> w `shiftR` cn
+         BL -> w `shiftR` fromIntegral cn
+         LL -> w `shiftR` fromIntegral cn
          LB -> w
 
       -- Select bits to store in the current byte.
@@ -70,18 +70,18 @@ putBits n w s@(BitPutState builder b o bo) = s'
       -- bits of the returned value
       selectBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => a -> Word8
       selectBits x = fromIntegral $ case bo of
-         BB ->                       maskLeastBits cn $ x `shiftR` (n-cn)
-         LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` (n-cn)
+         BB ->                       maskLeastBits cn $ x `shiftR` (fromIntegral $ n-cn)
+         LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` (fromIntegral $ n-cn)
          LL ->                       maskLeastBits cn x
          BL -> reverseLeastBits cn $ maskLeastBits cn x
 
       -- shift left at the correct position
       shl :: Word8 -> Word8
       shl x = case bo of
-         BB -> x `shiftL` (8-o-cn)
-         BL -> x `shiftL` (8-o-cn)
-         LL -> x `shiftL` o
-         LB -> x `shiftL` o
+         BB -> x `shiftL` (8 - fromIntegral o - fromIntegral cn)
+         BL -> x `shiftL` (8 - fromIntegral o - fromIntegral cn)
+         LL -> x `shiftL` fromIntegral o
+         LB -> x `shiftL` fromIntegral o
 
       -- flush the current byte if it is full
       flush s2@(BitPutState b2 w2 o2 bo2)
@@ -133,7 +133,7 @@ runBitPutT bo m = getBitPutBS <$> execStateT m (newBitPutState bo)
 runBitPut :: BitOrder -> BitPut a -> BS.ByteString
 runBitPut bo m = runIdentity (runBitPutT bo m)
 
-putBitsM :: (Monad m, Num a, FiniteBits a, BitReversable a, Integral a) => Int -> a -> BitPutT m ()
+putBitsM :: (Monad m, Num a, FiniteBits a, BitReversable a, Integral a) => Word -> a -> BitPutT m ()
 putBitsM n w = modify (putBits n w)
 
 putBitBoolM :: (Monad m) => Bool -> BitPutT m ()
