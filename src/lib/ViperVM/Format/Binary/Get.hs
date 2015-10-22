@@ -47,7 +47,7 @@ getRemaining = do
    getBytes r
 
 
--- | Count the number of bytes consummed by a getter
+-- | Count the number of bytes consumed by a getter
 countBytes :: Get a -> Get (Int, a)
 countBytes g = do
    cnt0 <- remaining
@@ -69,13 +69,11 @@ alignAfter alignment getter = do
 getByteStringNul :: Get BS.ByteString
 getByteStringNul = do
    bs <- lookAhead $ getRemaining
-   let
-      v = case BS.elemIndex 0 bs of
-            Nothing -> bs
-            Just i  -> BS.take (i-1) bs 
-   uncheckedSkip (BS.length v)
+   let v = BS.takeWhile (/= 0) bs
+   uncheckedSkip (BS.length v + 1)
    return v
 
+-- | Run a getter and throw an exception on error
 runGetOrFail :: Get a -> BS.ByteString -> a
 runGetOrFail g bs = case runGet g bs of
    Left err -> error err

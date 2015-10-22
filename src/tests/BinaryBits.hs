@@ -1,13 +1,18 @@
-module BinaryBits where
+module BinaryBits 
+   ( binaryBitsTests
+   )
+where
 
 import Distribution.TestSuite (Test,testGroup)
 import Distribution.TestSuite.QuickCheck (testProperty)
 import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Gen (elements,choose,vectorOf,listOf,resize)
+import Test.QuickCheck.Gen (elements,choose,vectorOf)
 
 import Data.Word
 import Data.Bits
 import qualified Data.ByteString as BS
+
+import Common
 
 import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet
@@ -18,8 +23,8 @@ import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.VariableLength
 
-tests :: IO [Test]
-tests = return
+binaryBitsTests :: Test
+binaryBitsTests = testGroup "Binary bits" $
    [ testGroup "Bits to/from string"
       [ testProperty "Bits from string \"01010011\" (Word8)" (bitsFromString "01010011" == (83 :: Word8))
       , testProperty "Bits from string reverse (Word64)" prop_bits_from_string
@@ -119,14 +124,6 @@ instance Arbitrary ArbitraryBitOrder where
       LB -> fmap ArbitraryBitOrder [BB]
       BB -> fmap ArbitraryBitOrder []
 
-newtype ArbitraryByteString = ArbitraryByteString BS.ByteString deriving (Show)
-
-instance Arbitrary ArbitraryByteString where
-   arbitrary                       = ArbitraryByteString . BS.pack <$> resize 50 (listOf arbitrary)
-   shrink (ArbitraryByteString bs)
-      | BS.null bs = []
-      | otherwise  = [ArbitraryByteString $ BS.take (BS.length bs `div` 2) bs]
-
 class Size x where
    fromSize :: x -> Word
 
@@ -205,11 +202,3 @@ prop_split_word s1 s2 w1 w2 (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut
 -- encoder
 prop_uleb128_reverse :: (Integral a, Bits a) => a -> Bool
 prop_uleb128_reverse w = w == runGetOrFail getULEB128 (runPut (putULEB128 w))
-
--- | Ensure a function is bijective
-isBijective :: Eq a => (a -> a) -> a -> Bool
-isBijective f w = w == (f (f w))
-
--- | Ensure that two functions return the same thing for the same input
-isEquivalent :: Eq b => (a -> b) -> (a -> b) -> a -> Bool
-isEquivalent f g x = (f x) == (g x)
