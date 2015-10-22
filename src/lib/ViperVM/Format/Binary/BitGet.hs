@@ -61,8 +61,8 @@ getBits nbits (BitGetState bs off bo) = rec zeroBits 0 bs off nbits
       -- w   = current result
       -- n   = number of valid bits in w
       -- i   = input bytestring
-      -- r   = number of remaining bits to read
       -- o   = bit offset in input bytestring
+      -- r   = number of remaining bits to read
       rec w _ _ _ 0 = w
       rec w n i o r = rec nw (n+nb) (BS.tail i) o' (r-nb)
          where 
@@ -94,7 +94,7 @@ getBitsChecked m n s
    | otherwise = getBits n s
 {-# INLINE getBitsChecked #-}
 
--- | Read the given number of bytes and return them in Big-Endian order
+-- | Read the given number of Word8 and return them in a ByteString
 --
 -- Examples:
 --    BB: xxxABCDE FGHIJKLM NOPxxxxx -> ABCDEFGH IJKLMNOP
@@ -106,15 +106,15 @@ getBitsBS n (BitGetState bs o bo) =
    let 
       bs'  = BS.unsafeTake (n+1) bs
       bs'' = BS.unsafeTake n bs
-      rev  = BS.map (reverseLeastBits 8)
+      rev  = BS.map reverseBits
    in case (o,bo) of
-      (0,BB) -> bs''
-      (0,LL) -> BS.reverse bs''
-      (0,LB) -> rev bs''
-      (0,BL) -> rev . BS.reverse $ bs''
-      (_,LL) -> getBitsBS n (BitGetState (BS.reverse bs') (8-o) BB)
-      (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs' o BB)
-      (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs' o LL)
+      (0,BB) ->                    bs''
+      (0,LL) ->       BS.reverse $ bs''
+      (0,LB) -> rev $              bs''
+      (0,BL) -> rev $ BS.reverse $ bs''
+      (_,LL) ->                    getBitsBS n (BitGetState (BS.reverse bs') (8-o)  BB)
+      (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     BB)
+      (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     LL)
       (_,BB) -> unsafePerformIO $ do
          let len = n+1
          ptr <- mallocBytes len
