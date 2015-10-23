@@ -19,6 +19,18 @@ module ViperVM.Format.Dwarf
    , Encoding (..)
    , toEncoding
    , fromEncoding
+   , Endianity (..)
+   , toEndianity
+   , fromEndianity
+   , DecimalSign (..)
+   , toDecimalSign
+   , fromDecimalSign
+   , Accessibility (..)
+   , toAccessibility
+   , fromAccessibility
+   , Visibility (..)
+   , toVisibility
+   , fromVisibility
    -- * Debug entry
    , DebugEntry (..)
    , DebugAttribute (..)
@@ -1059,7 +1071,101 @@ data AttributeValue
    | AttrValueTypeReference     Word64                -- ^ Type reference (i.e. signature in the .debug_type section)
    | AttrValueString            Text                  -- ^ String
    | AttrValueEncoding          Encoding
+   | AttrValueEndianity         Endianity
+   | AttrValueDecimalSign       DecimalSign
+   | AttrValueAccessibility     Accessibility
+   | AttrValueVisibility        Visibility
    deriving (Show)
+
+data Visibility
+   = VisibilityLocal
+   | VisibilityExported
+   | VisibilityQualified
+   | VisibilityCustom Word8
+   deriving (Show,Eq)
+
+toVisibility :: Word8 -> Visibility
+toVisibility x = case x of
+   0x01 -> VisibilityLocal
+   0x02 -> VisibilityExported
+   0x03 -> VisibilityQualified
+   v    -> VisibilityCustom v
+
+fromVisibility :: Visibility -> Word8
+fromVisibility x = case x of
+   VisibilityLocal      -> 0x01
+   VisibilityExported   -> 0x02
+   VisibilityQualified  -> 0x03
+   VisibilityCustom v   -> v
+
+data Accessibility
+   = AccessibilityPublic
+   | AccessibilityProtected
+   | AccessibilityPrivate
+   | AccessibilityCustom Word8
+   deriving (Show,Eq)
+
+toAccessibility :: Word8 -> Accessibility
+toAccessibility x = case x of
+   0x01 -> AccessibilityPublic
+   0x02 -> AccessibilityProtected
+   0x03 -> AccessibilityPrivate
+   v    -> AccessibilityCustom v
+
+fromAccessibility :: Accessibility -> Word8
+fromAccessibility x = case x of
+   AccessibilityPublic     -> 0x01
+   AccessibilityProtected  -> 0x02
+   AccessibilityPrivate    -> 0x03
+   AccessibilityCustom v   -> v
+
+data DecimalSign
+   = DecimalSignUnsigned
+   | DecimalSignLeadingOverpunch
+   | DecimalSignTrailingOverpunch
+   | DecimalSignLeadingSeparate
+   | DecimalSignTrailingSeparate
+   | DecimalSignCustom Word8
+   deriving (Show,Eq)
+
+toDecimalSign :: Word8 -> DecimalSign
+toDecimalSign x = case x of
+   0x01 -> DecimalSignUnsigned
+   0x02 -> DecimalSignLeadingOverpunch
+   0x03 -> DecimalSignTrailingOverpunch
+   0x04 -> DecimalSignLeadingSeparate
+   0x05 -> DecimalSignTrailingSeparate
+   v    -> DecimalSignCustom v
+
+fromDecimalSign :: DecimalSign -> Word8
+fromDecimalSign x = case x of
+   DecimalSignUnsigned           -> 0x01
+   DecimalSignLeadingOverpunch   -> 0x02
+   DecimalSignTrailingOverpunch  -> 0x03
+   DecimalSignLeadingSeparate    -> 0x04
+   DecimalSignTrailingSeparate   -> 0x05
+   DecimalSignCustom v           -> v
+
+data Endianity
+   = EndianDefault
+   | EndianBig
+   | EndianLittle
+   | EndianCustom Word8
+   deriving (Show,Eq)
+
+toEndianity :: Word8 -> Endianity
+toEndianity x = case x of
+   0x00 -> EndianDefault
+   0x01 -> EndianBig
+   0x02 -> EndianLittle
+   v    -> EndianCustom v
+
+fromEndianity :: Endianity -> Word8
+fromEndianity x = case x of
+   EndianDefault  -> 0x00
+   EndianBig      -> 0x01
+   EndianLittle   -> 0x02
+   EndianCustom v -> v
 
 data Encoding
    = EncodingAddress
@@ -1131,6 +1237,10 @@ getAttributeValue addressSize endian format strings att form = do
       RawAttrValueBlock x              -> return $ AttrValueBlock x              
       RawAttrValueUnsignedConstant x
          | att == AttrEncoding         -> return $ AttrValueEncoding (toEncoding (fromIntegral x))
+         | att == AttrEndianity        -> return $ AttrValueEndianity (toEndianity (fromIntegral x))
+         | att == AttrDecimalSign      -> return $ AttrValueDecimalSign (toDecimalSign (fromIntegral x))
+         | att == AttrAccessibility    -> return $ AttrValueAccessibility (toAccessibility (fromIntegral x))
+         | att == AttrVisibility       -> return $ AttrValueVisibility (toVisibility (fromIntegral x))
          | otherwise                   -> return $ AttrValueUnsignedConstant x   
       RawAttrValueSignedConstant x     -> return $ AttrValueSignedConstant x     
       RawAttrValueDwarfExpr x          -> return $ AttrValueDwarfExpr x          
