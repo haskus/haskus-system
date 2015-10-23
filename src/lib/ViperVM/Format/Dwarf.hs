@@ -31,6 +31,24 @@ module ViperVM.Format.Dwarf
    , Visibility (..)
    , toVisibility
    , fromVisibility
+   , Virtuality (..)
+   , toVirtuality
+   , fromVirtuality
+   , Language (..)
+   , toLanguage
+   , fromLanguage
+   , CaseSensitivity (..)
+   , toCaseSensitivity
+   , fromCaseSensitivity
+   , CallingConvention (..)
+   , toCallingConvention
+   , fromCallingConvention
+   , Inlining (..)
+   , toInlining
+   , fromInlining
+   , ArrayOrdering (..)
+   , toArrayOrdering
+   , fromArrayOrdering
    -- * Debug entry
    , DebugEntry (..)
    , DebugAttribute (..)
@@ -1075,7 +1093,197 @@ data AttributeValue
    | AttrValueDecimalSign       DecimalSign
    | AttrValueAccessibility     Accessibility
    | AttrValueVisibility        Visibility
+   | AttrValueVirtuality        Virtuality
+   | AttrValueLanguage          Language
+   | AttrValueCaseSensitivity   CaseSensitivity
+   | AttrValueCallingConvention CallingConvention
+   | AttrValueInlining          Inlining
+   | AttrValueArrayOrdering     ArrayOrdering
    deriving (Show)
+
+data ArrayOrdering
+   = ArrayOrderingRowMajor
+   | ArrayOrderingColMajor
+   | ArrayOrderingCustom Word8
+   deriving (Show,Eq)
+
+toArrayOrdering :: Word8 -> ArrayOrdering
+toArrayOrdering x = case x of
+   0x00 -> ArrayOrderingRowMajor
+   0x01 -> ArrayOrderingColMajor
+   v    -> ArrayOrderingCustom v
+
+fromArrayOrdering :: ArrayOrdering -> Word8
+fromArrayOrdering x = case x of
+   ArrayOrderingRowMajor  -> 0x00
+   ArrayOrderingColMajor  -> 0x01
+   ArrayOrderingCustom v  -> v
+
+data Inlining
+   = InliningNotInlined
+   | InliningInlined
+   | InliningDeclaredNotInlined
+   | InliningDeclaredInlined
+   | InliningCustom Word8
+   deriving (Show,Eq)
+
+toInlining :: Word8 -> Inlining
+toInlining x = case x of
+   0x00 -> InliningNotInlined
+   0x01 -> InliningInlined
+   0x02 -> InliningDeclaredNotInlined
+   0x03 -> InliningDeclaredInlined
+   v    -> InliningCustom v
+
+fromInlining :: Inlining -> Word8
+fromInlining x = case x of
+   InliningNotInlined         -> 0x00
+   InliningInlined            -> 0x01
+   InliningDeclaredNotInlined -> 0x02
+   InliningDeclaredInlined    -> 0x03
+   InliningCustom v           -> v
+   
+
+data CallingConvention
+   = CallingConventionNormal
+   | CallingConventionProgram
+   | CallingConventionNoCall
+   | CallingConventionCustom Word8
+   deriving (Show,Eq)
+
+toCallingConvention :: Word8 -> CallingConvention
+toCallingConvention x = case x of
+   0x01 -> CallingConventionNormal
+   0x02 -> CallingConventionProgram
+   0x03 -> CallingConventionNoCall
+   v    -> CallingConventionCustom v
+   
+fromCallingConvention :: CallingConvention -> Word8
+fromCallingConvention x = case x of
+   CallingConventionNormal    -> 0x01
+   CallingConventionProgram   -> 0x02
+   CallingConventionNoCall    -> 0x03
+   CallingConventionCustom v  -> v
+   
+
+data CaseSensitivity
+   = CaseSensitive
+   | CaseUp
+   | CaseDown
+   | CaseInsensitive
+   | CaseCustom Word8
+   deriving (Show,Eq)
+
+toCaseSensitivity :: Word8 -> CaseSensitivity
+toCaseSensitivity x = case x of
+   0x00 -> CaseSensitive
+   0x01 -> CaseUp
+   0x02 -> CaseDown
+   0x03 -> CaseInsensitive
+   v    -> CaseCustom v
+
+fromCaseSensitivity :: CaseSensitivity -> Word8
+fromCaseSensitivity x = case x of
+   CaseSensitive     -> 0x00
+   CaseUp            -> 0x01
+   CaseDown          -> 0x02
+   CaseInsensitive   -> 0x03
+   CaseCustom v      -> v
+   
+
+data Language
+   = LanguageC89
+   | LanguageC
+   | LanguageAda83
+   | LanguageCPlusPlus
+   | LanguageCobol74
+   | LanguageCobol85
+   | LanguageFortran77
+   | LanguageFortran90
+   | LanguagePascal83
+   | LanguageModula2
+   | LanguageJava
+   | LanguageC99
+   | LanguageAda95
+   | LanguageFortran95
+   | LanguagePLI
+   | LanguageObjectiveC
+   | LanguageObjectiveCPlusPlus
+   | LanguageUPC
+   | LanguageD
+   | LanguagePython
+   | LanguageCustom Word16
+   deriving (Show,Eq)
+
+toLanguage :: Word16 -> Language
+toLanguage x = case x of
+   0x01 -> LanguageC89
+   0x02 -> LanguageC
+   0x03 -> LanguageAda83
+   0x04 -> LanguageCPlusPlus
+   0x05 -> LanguageCobol74
+   0x06 -> LanguageCobol85
+   0x07 -> LanguageFortran77
+   0x08 -> LanguageFortran90
+   0x09 -> LanguagePascal83
+   0x0a -> LanguageModula2
+   0x0b -> LanguageJava
+   0x0c -> LanguageC99
+   0x0d -> LanguageAda95
+   0x0e -> LanguageFortran95
+   0x0f -> LanguagePLI
+   0x10 -> LanguageObjectiveC
+   0x11 -> LanguageObjectiveCPlusPlus
+   0x12 -> LanguageUPC
+   0x13 -> LanguageD
+   0x14 -> LanguagePython
+   v    -> LanguageCustom v
+
+fromLanguage :: Language -> Word16
+fromLanguage x = case x of
+   LanguageC89                -> 0x01
+   LanguageC                  -> 0x02
+   LanguageAda83              -> 0x03
+   LanguageCPlusPlus          -> 0x04
+   LanguageCobol74            -> 0x05
+   LanguageCobol85            -> 0x06
+   LanguageFortran77          -> 0x07
+   LanguageFortran90          -> 0x08
+   LanguagePascal83           -> 0x09
+   LanguageModula2            -> 0x0a
+   LanguageJava               -> 0x0b
+   LanguageC99                -> 0x0c
+   LanguageAda95              -> 0x0d
+   LanguageFortran95          -> 0x0e
+   LanguagePLI                -> 0x0f
+   LanguageObjectiveC         -> 0x10
+   LanguageObjectiveCPlusPlus -> 0x11
+   LanguageUPC                -> 0x12
+   LanguageD                  -> 0x13
+   LanguagePython             -> 0x14
+   LanguageCustom v           -> v
+
+data Virtuality
+   = VirtualityNone
+   | VirtualityVirtual
+   | VirtualityPureVirtual
+   | VirtualityCustom Word8
+   deriving (Show,Eq)
+
+toVirtuality :: Word8 -> Virtuality
+toVirtuality x = case x of
+   0x00 -> VirtualityNone
+   0x01 -> VirtualityVirtual
+   0x02 -> VirtualityPureVirtual
+   v    -> VirtualityCustom v
+
+fromVirtuality :: Virtuality -> Word8
+fromVirtuality x = case x of
+   VirtualityNone        -> 0x00
+   VirtualityVirtual     -> 0x01
+   VirtualityPureVirtual -> 0x02
+   VirtualityCustom v    -> v
+   
 
 data Visibility
    = VisibilityLocal
@@ -1233,23 +1441,29 @@ getAttributeValue :: Word8 -> Endianness -> DwarfFormat -> Maybe BS.ByteString -
 getAttributeValue addressSize endian format strings att form = do
    raw <- getValueFromForm addressSize endian format form
    case raw of
-      RawAttrValueAddress x            -> return $ AttrValueAddress x            
-      RawAttrValueBlock x              -> return $ AttrValueBlock x              
+      RawAttrValueAddress x               -> return $ AttrValueAddress x            
+      RawAttrValueBlock x                 -> return $ AttrValueBlock x              
       RawAttrValueUnsignedConstant x
-         | att == AttrEncoding         -> return $ AttrValueEncoding (toEncoding (fromIntegral x))
-         | att == AttrEndianity        -> return $ AttrValueEndianity (toEndianity (fromIntegral x))
-         | att == AttrDecimalSign      -> return $ AttrValueDecimalSign (toDecimalSign (fromIntegral x))
-         | att == AttrAccessibility    -> return $ AttrValueAccessibility (toAccessibility (fromIntegral x))
-         | att == AttrVisibility       -> return $ AttrValueVisibility (toVisibility (fromIntegral x))
-         | otherwise                   -> return $ AttrValueUnsignedConstant x   
-      RawAttrValueSignedConstant x     -> return $ AttrValueSignedConstant x     
-      RawAttrValueDwarfExpr x          -> return $ AttrValueDwarfExpr x          
-      RawAttrValueFlag x               -> return $ AttrValueFlag x               
-      RawAttrValueOffset x             -> return $ AttrValueOffset x             
-      RawAttrValueRelativeReference x  -> return $ AttrValueRelativeReference x  
-      RawAttrValueAbsoluteReference x  -> return $ AttrValueAbsoluteReference x  
-      RawAttrValueTypeReference x      -> return $ AttrValueTypeReference x      
-      RawAttrValueString x             -> return $ AttrValueString x             
+         | att == AttrEncoding            -> return $ AttrValueEncoding (toEncoding (fromIntegral x))
+         | att == AttrEndianity           -> return $ AttrValueEndianity (toEndianity (fromIntegral x))
+         | att == AttrDecimalSign         -> return $ AttrValueDecimalSign (toDecimalSign (fromIntegral x))
+         | att == AttrAccessibility       -> return $ AttrValueAccessibility (toAccessibility (fromIntegral x))
+         | att == AttrVisibility          -> return $ AttrValueVisibility (toVisibility (fromIntegral x))
+         | att == AttrVirtuality          -> return $ AttrValueVirtuality (toVirtuality (fromIntegral x))
+         | att == AttrLanguage            -> return $ AttrValueLanguage (toLanguage (fromIntegral x))
+         | att == AttrIdentifierCase      -> return $ AttrValueCaseSensitivity (toCaseSensitivity (fromIntegral x))
+         | att == AttrCallingConvention   -> return $ AttrValueCallingConvention (toCallingConvention (fromIntegral x))
+         | att == AttrInline              -> return $ AttrValueInlining (toInlining (fromIntegral x))
+         | att == AttrOrdering            -> return $ AttrValueArrayOrdering (toArrayOrdering (fromIntegral x))
+         | otherwise                      -> return $ AttrValueUnsignedConstant x   
+      RawAttrValueSignedConstant x        -> return $ AttrValueSignedConstant x     
+      RawAttrValueDwarfExpr x             -> return $ AttrValueDwarfExpr x          
+      RawAttrValueFlag x                  -> return $ AttrValueFlag x               
+      RawAttrValueOffset x                -> return $ AttrValueOffset x             
+      RawAttrValueRelativeReference x     -> return $ AttrValueRelativeReference x  
+      RawAttrValueAbsoluteReference x     -> return $ AttrValueAbsoluteReference x  
+      RawAttrValueTypeReference x         -> return $ AttrValueTypeReference x      
+      RawAttrValueString x                -> return $ AttrValueString x             
       RawAttrValueStringPointer off    -> do
          -- read the string
          let str = Text.decodeUtf8 . runGetOrFail getByteStringNul . BS.drop (fromIntegral off) <$> strings
