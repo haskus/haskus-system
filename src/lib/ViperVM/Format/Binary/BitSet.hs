@@ -1,15 +1,40 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | A bit set based on Enum to name the bits. Use bitwise operations and
--- minimal storage.
+-- minimal storage in a safer way.
 --
 -- Similar to Data.Bitset.Generic from bitset package, but
---    * We don't have the Num constraint
---    * We dont use the deprecated bitSize function
---    * We use countTrailingZeros instead of iterating on the
---    number of bits
---    * We add a typeclass EnumBitSet
+--
+--     * We don't have the Num constraint
+--     * We dont use the deprecated bitSize function
+--     * We use countTrailingZeros instead of iterating on the
+--     number of bits
+--     * We add a typeclass EnumBitSet
+--
+-- Example:
+--
+-- @
+-- data Flag
+--    = FlagXXX
+--    | FlagYYY
+--    | FlagWWW
+--    deriving (Show,Eq,Enum)
+--
+-- instance 'EnumBitSet' Flag
+--
+-- -- Adapt the backing type, here we choose Word16
+-- type Flags = 'BitSet' Word16 Flag
+-- @
+--
+-- Then you can convert (for free) a Word16 into Flags with 'fromBits' and
+-- convert back with 'toBits'.
+--
+-- You can check if a flag is set or not with 'member' and 'notMember' and get
+-- a list of set flags with 'toList'. You can 'insert' or 'delete' flags. You
+-- can also perform set operations such as 'union' and 'intersection'.
+--
 module ViperVM.Format.Binary.BitSet
    ( BitSet (..)
    , EnumBitSet (..)
@@ -34,18 +59,14 @@ import Data.Bits
 import Data.Foldable (foldl')
 import Foreign.Storable
 
--- | Count trailing zeros. Return Nothing if all the bits are cleared
-myCountTrailingZeros :: (FiniteBits b) => b -> Maybe Int
-myCountTrailingZeros x = 
-   if x == zeroBits
-      then Nothing
-      else Just (countTrailingZeros x)
-
 -- | A bit set: use bitwise operations (fast!) and minimal storage (sizeOf
 -- basetype)
 --
 -- b is the base type (Bits b)
 -- a is the element type (Enum a)
+--
+-- The elements in the Enum a are flags corresponding to each bit of b starting
+-- from the least-significant bit.
 newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable)
 
 instance (Show a, EnumBitSet a, FiniteBits b) => Show (BitSet b a) where
@@ -104,10 +125,9 @@ notMember b e = not (member b e)
 elems :: (Enum a, FiniteBits b) => BitSet b a -> [a]
 elems (BitSet b) = go b
    where
-      go c = case myCountTrailingZeros c of
-         Nothing -> []
-         Just e  -> toEnum e : go (clearBit c e)
-
+      go !c
+         | c == zeroBits = []
+         | otherwise     = let e = countTrailingZeros c in toEnum e : go (clearBit c e)
 
 -- | Intersection of two sets
 intersection :: Bits b => BitSet b a -> BitSet b a -> BitSet b a
@@ -122,6 +142,8 @@ union (BitSet b1) (BitSet b2) = BitSet (b1 .|. b2)
 {-# INLINE union #-}
 
 
+-- | Indicate that an Enum is used as flags in a BitSet.
+-- Default method implementations should be enough.
 class Enum a => EnumBitSet a where
    -- | Convert a list of enum elements into a bitset Warning: b
    -- must have enough bits to store the given elements! (we don't
