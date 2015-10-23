@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | Kernel events are sent by the kernel to indicate that something
 -- changed in the device tree (e.g. device (un)plugged, moved, etc.)
 module ViperVM.Arch.Linux.System.KernelEvent
@@ -16,16 +18,18 @@ import ViperVM.Arch.Linux.Network.SendReceive
 
 import Control.Monad.Trans.Either
 import qualified Data.ByteString as BS
+import Data.Map (Map)
 import qualified Data.Map as Map
-import qualified Data.ByteString.UTF8 as UTF8
-import Data.List.Split
+import Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
 
 -- | A kernel event
 data KernelEvent = KernelEvent
    { kernelEventAction    :: KernelEventAction     -- ^ What happened
-   , kernelEventDevPath   :: String                -- ^ Concerned device
-   , kernelEventSubSystem :: String                -- ^ Device subsystem
-   , kernelEventDetails   :: Map.Map String String -- ^ Event details
+   , kernelEventDevPath   :: Text                  -- ^ Concerned device
+   , kernelEventSubSystem :: Text                  -- ^ Device subsystem
+   , kernelEventDetails   :: Map Text Text         -- ^ Event details
    } deriving Show
 
 -- | Kernel event type of action
@@ -36,7 +40,7 @@ data KernelEventAction
    | ActionOnline          -- ^ A device is now on-line
    | ActionOffline         -- ^ A device is now off-line
    | ActionMove            -- ^ A device has been moved
-   | ActionOther String    -- ^ Other action
+   | ActionOther Text      -- ^ Other action
    deriving (Show)
 
 -- | Create a socket for kernel events
@@ -70,17 +74,17 @@ receiveKernelEvent fd = runEitherT $ do
 parseKernelEvent :: BS.ByteString -> Maybe KernelEvent
 parseKernelEvent bs = r
    where
-      bss = fmap UTF8.toString (BS.split 0 bs)
+      bss = fmap Text.decodeUtf8 (BS.split 0 bs)
       r = case bss of
             -- filter out injected libudev events
             ("libudev":_) -> Nothing
             _             -> Just (KernelEvent action devpath subsys details)
 
       -- parse fields
-      fields = Map.fromList                  -- create Map from (key,value) tuples
-             . fmap (toTuple . splitOn "=")  -- split "key=value"
-             . filter (/= "")                -- drop empty lines
-             $ tail bss                      -- drop the first line (it contains redundant info)
+      fields = Map.fromList                      -- create Map from (key,value) tuples
+             . fmap (toTuple . Text.splitOn "=")  -- split "key=value"
+             . filter Text.null                  -- drop empty lines
+             $ tail bss                          -- drop the first line (it contains redundant info)
 
       action = case fields Map.! "ACTION" of
          "add"    -> ActionAdd

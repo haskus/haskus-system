@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Module implementing the CPIO format (used by Linux initramfs)
 --
@@ -17,11 +18,14 @@ import Data.Word
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Get
 import Data.ByteString (ByteString)
-import Data.ByteString.UTF8 (fromString,toString)
+import Data.Text (Text)
+import qualified Data.Text.Read as Text
+import qualified Data.Text.Encoding as Text
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as B8
 import Control.Monad (when)
 import Data.Foldable (forM_)
-import Numeric (showHex,readHex)
+import Numeric (showHex)
 
 
 {- We only consider the "new" CPIO format because the old ones are deprecated.
@@ -110,17 +114,17 @@ data FileDesc = FileDesc
 putNumber :: Word64 -> Put
 putNumber x = putByteString bs
    where
-      bs = fromString (replicate (8-len) '0' ++ s)
+      bs = BS.replicate (8-len) 0 `BS.append` B8.pack s
       s = showHex x ""
       len = length s
 
 -- | Read a number stored as a 8-bytes hexadecimal string
 getNumber :: Get Word64
-getNumber = readHex' . toString <$> getByteString 8
+getNumber = readHex' . Text.decodeUtf8 <$> getByteString 8
    where
-      readHex' n = case readHex n of
-         ((num,""):_) -> num
-         _            -> error $ "Invalid hexadecimal number: " ++ n
+      readHex' n = case Text.hexadecimal n of
+         Right (num,_)-> num
+         Left err     -> error $ "Invalid hexadecimal number: " ++ show n ++ "(" ++ err ++ ")"
 
 
 -- | Return the number of padding bytes to pad to 4
@@ -140,10 +144,10 @@ skipPad4 n = skip (pad4 n)
 -- | Put a file in the archive
 --
 -- * path is the path in the archive
-putFile :: FileDesc -> String -> ByteString -> Put
+putFile :: FileDesc -> Text -> ByteString -> Put
 putFile (FileDesc {..}) path content = do
    -- Write magic number
-   putByteString (fromString "070701")
+   putByteString (B8.pack "070701")
    -- Put file description
    putNumber fileInode
    putNumber fileMode
@@ -157,11 +161,11 @@ putFile (FileDesc {..}) path content = do
    putNumber fileRDevMajor
    putNumber fileRDevMinor
    -- put the length of the UTF8 encoded string, not the Haskell string
-   let bspath = fromString path
-   putNumber (fromIntegral $ BS.length bspath)
+   let bspath = Text.encodeUtf8 path
+   putNumber (fromIntegral $ BS.length bspath + 1)
    putNumber 0 -- checksum
    -- Put file name
-   putByteString (fromString path)
+   putByteString bspath
    putWord8 0x00 -- ending NUL byte
    putPad4 (110 + BS.length bspath + 1)
    -- Put file contents
@@ -175,18 +179,18 @@ putTrailer = putFile desc "TRAILER!!!" BS.empty
       desc = FileDesc 0 0 0 0 0 0 0 0 0 0
 
 -- | Put files in archive (with archive ending marker)
-putFiles :: [(FileDesc,String,ByteString)] -> Put
+putFiles :: [(FileDesc,Text,ByteString)] -> Put
 putFiles files = do
    forM_ files $ \(desc,name,bs) -> putFile desc name bs
    putTrailer
 
 -- | Get a file from the archive
-getFile :: Get (FileDesc,String,ByteString)
+getFile :: Get (FileDesc,Text,ByteString)
 getFile = do
    -- Read magic number
-   magic <- toString <$> getByteString 6
+   magic <- Text.decodeUtf8 <$> getByteString 6
    when (magic /= "070701") $
-      error ("File format not supported (invalid magic number: " ++ magic ++ ")")
+      error ("File format not supported (invalid magic number: " ++ show magic ++ ")")
    -- Read file description
    ino  <- getNumber
    mode <- getNumber
@@ -202,7 +206,7 @@ getFile = do
    nameLength <- getNumber -- includes NUL byte
    _ <- getNumber -- read checksum
    -- Read file name
-   fileName <- toString <$> getByteString (fromIntegral nameLength - 1)
+   fileName <- Text.decodeUtf8 <$> getByteString (fromIntegral nameLength - 1)
    skip 1 -- skip \0 byte
    skipPad4 (110 + nameLength)
    -- Read content
@@ -213,7 +217,7 @@ getFile = do
    return (fd, fileName, content)
 
 -- | Get all the files from the archive
-getFiles :: Get [(FileDesc,String,ByteString)]
+getFiles :: Get [(FileDesc,Text,ByteString)]
 getFiles = rec []
    where 
       rec xs = do
