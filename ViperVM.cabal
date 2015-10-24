@@ -213,6 +213,7 @@ library
 
   c-sources: 
     src/lib/ViperVM/Arch/X86_64/Linux/syscall.c
+    src/lib/ViperVM/Arch/X86_64/cpuid.c
 
   cc-options: -O3
 
@@ -230,7 +231,6 @@ library
       ,  system-fileio             >= 0.3
       ,  system-filepath           >= 0.4
       ,  pureMD5                   >= 2.1
-      ,  cpuid                     >= 0.2
       ,  text                      >= 1.2
       ,  filepath                  >= 1.4
       ,  either                    >= 4.4

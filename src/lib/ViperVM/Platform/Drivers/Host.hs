@@ -17,7 +17,7 @@ import Foreign.Ptr (Ptr,castPtr)
 import Data.Word (Word64)
 import Data.Ord (comparing)
 import Text.Printf
-import System.IO.Unsafe
+import qualified Data.Text as Text
 
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Arch.Common.Errors
@@ -56,7 +56,7 @@ hostProcUID p = printf "Host Proc %d:%d" (hostProcNode p) (hostProcIndex p)
 
 -- | Processor model
 hostProcModel :: Proc -> String
-hostProcModel _ = printf "%s - %s" (unsafePerformIO  C.procVendor) (unsafePerformIO C.procName)
+hostProcModel _ = printf "%s - %s" (Text.unpack C.procVendor) (Text.unpack C.procBrand)
 
 -- | Unique buffer ID
 hostBufferUID :: Buffer -> String

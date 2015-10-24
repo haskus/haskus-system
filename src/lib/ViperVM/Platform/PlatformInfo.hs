@@ -9,6 +9,7 @@ where
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Platform.Types (Memory(..), Proc(..), Network(..))
 import ViperVM.Platform.Drivers
+import qualified ViperVM.Platform.Drivers.Host as H
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
 import Data.Word (Word64)
@@ -34,7 +35,7 @@ procInfo proc = printf fmt typ
       fmt = "Proc - %s"
       typ = case procPeer proc of
          OpenCLProc {} -> "OpenCL"
-         HostProc {}   -> "CPU"
+         HostProc p    -> "CPU - " ++ H.hostProcModel p
 
 -- | Return network info string
 networkInfo :: Network -> String
