@@ -8,6 +8,7 @@ module ViperVM.Format.Binary.BitOps
    , bitsToString
    , bitsFromString
    , BitReversable (..)
+   , getBitRange
    )
 where
 
@@ -16,6 +17,7 @@ import Data.Bits
 import Data.List (foldl')
 
 import ViperVM.Format.Binary.BitOps.BitReverse
+import ViperVM.Format.Binary.BitOrder
 
 -- | makeMask 3 = 00000111
 makeMask :: (FiniteBits a) => Word -> a
@@ -90,3 +92,20 @@ instance BitReversable Word64 where
 
 instance BitReversable Word where
    reverseBits = reverseBits5LgN
+
+
+
+-- | Take n bits at offset o and put them in the least-significant
+-- bits of the result
+getBitRange :: (BitReversable b, FiniteBits b) => BitOrder -> Word -> Word -> b -> b
+getBitRange bo o n c = case bo of
+      BB -> maskLeastBits n $ c `shiftR` d
+      BL -> maskLeastBits n $ (reverseBits c) `shiftR` o'
+      LB -> maskLeastBits n $ (reverseBits c) `shiftR` d
+      LL -> maskLeastBits n $ c `shiftR` o'
+   where 
+      o' = fromIntegral o
+      d  = finiteBitSize c - fromIntegral n - fromIntegral o
+
+{-# INLINE getBitRange #-}
+

@@ -90,11 +90,7 @@ getBits nbits (BitGetState bs off bo) = rec zeroBits 0 bs off nbits
             -- number of bits to take from the current Word8
             nb = min (8-o) r
             -- bits taken from the current Word8 and put in correct order in least-significant bits
-            tc = fromIntegral $ case bo of
-                  BB -> maskLeastBits nb $               c `shiftR` (8 - fromIntegral nb - fromIntegral o)
-                  BL -> maskLeastBits nb $ (reverseBits c) `shiftR` (fromIntegral o)
-                  LB -> maskLeastBits nb $ (reverseBits c) `shiftR` (8 - fromIntegral nb - fromIntegral o)
-                  LL -> maskLeastBits nb $               c `shiftR` (fromIntegral o)
+            tc = fromIntegral $ getBitRange bo o nb c
             -- mix new bits with the current result
             nw = case bo of
                   BB -> (w `shiftL` fromIntegral nb) .|. tc

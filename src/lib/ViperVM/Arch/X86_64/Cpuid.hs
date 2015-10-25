@@ -17,14 +17,20 @@ module ViperVM.Arch.X86_64.Cpuid
    , cpuid
    , procVendor
    , procBrand
+   , ProcModelField(..)
+   , procModel
    )
    where
 
 import Data.Text (Text)
+import Data.Bits
 import qualified Data.Text.Encoding as Text
 import qualified Data.ByteString as BS
 
 import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.BitOps
+import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.BitFields
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -94,3 +100,29 @@ procBrand = Text.decodeUtf8 $ BS.takeWhile (/= 0) $ runPut $ do
    f 0x80000002
    f 0x80000003
    f 0x80000004
+
+
+data ProcModelField
+   = SteppingId
+   | ModelId
+   | FamilyId
+   | ProcessorType
+   deriving (Enum,Eq,Show)
+
+instance EnumBitField ProcModelField where
+   getBitField x b = case x of
+      SteppingId  -> getBitRange LL 0 4 b
+      ModelId     -> let fam = getBitRange LL 8 4 b in
+         if fam == 0x06 || fam == 0x0f
+            then (getBitRange LL 16 4 b `shiftL` 4) .|. getBitRange LL 4 4 b
+            else getBitRange LL 4 4 b
+      FamilyId    ->  let fam = getBitRange LL 8 4 b in
+         if fam == 0x0f
+            then (getBitRange LL 20 4 b `shiftL` 4) .|. fam
+            else fam
+      ProcessorType -> getBitRange LL 12 2 b
+
+procModel :: BitFields Word32 ProcModelField
+procModel = BitFields a
+   where 
+      (a,_,_,_) = cpuid 0x01
