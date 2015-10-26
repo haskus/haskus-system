@@ -731,7 +731,7 @@ data DwarfExpr
    | ExprNE
    | ExprLiteral Word8
    | ExprRegister Word8
-   | ExprBaseRegister Word64
+   | ExprBaseRegister Word8 Word64
    | ExprExtReg Word64
    | ExprFBReg Int64
    | ExprExtBaseReg Word64 Int64
@@ -747,7 +747,7 @@ data DwarfExpr
    | ExprBitPiece Word64 Word64
    | ExprImplicitValue Word64 ByteString
    | ExprStackValue
-   | ExprCustom Word8
+   | ExprCustom ByteString
    deriving (Show)
 
 getDwarfExpr :: Endianness -> DwarfFormat -> Get DwarfExpr
@@ -801,7 +801,7 @@ getDwarfExpr endian format = do
       x
          | x >= 0x30 && x <= 0x4f -> return $ ExprLiteral (fromIntegral x - 0x30)
          | x >= 0x50 && x <= 0x6f -> return $ ExprRegister (fromIntegral x - 0x50)
-         | x >= 0x70 && x <= 0x8f -> ExprBaseRegister <$> getSLEB128
+         | x >= 0x70 && x <= 0x8f -> ExprBaseRegister (fromIntegral x - 0x70) <$> getSLEB128
       0x90 -> ExprExtReg <$> getULEB128
       0x91 -> ExprFBReg  <$> getSLEB128
       0x92 -> ExprExtBaseReg <$> getULEB128 <*> getSLEB128
@@ -820,7 +820,7 @@ getDwarfExpr endian format = do
          sz <- getULEB128 :: Get Word64
          ExprImplicitValue sz <$> getByteString (fromIntegral sz)
       0x9f -> return ExprStackValue
-      x    -> return $ ExprCustom (fromIntegral x)
+      x    -> ExprCustom . BS.cons x <$> getRemaining
 
 
 -- | DWARF format (32-bit or 64-bit)
@@ -1490,7 +1490,7 @@ getValueFromForm addressSize endian format form = do
       FormUData         -> RawAttrValueUnsignedConstant  <$> getULEB128
       FormSData         -> RawAttrValueSignedConstant    <$> getSLEB128
       FormExprLoc       -> do
-         sz <- fromIntegral    <$> (getULEB128 :: Get Word64)
+         sz <- fromIntegral <$> (getULEB128 :: Get Word64)
          RawAttrValueDwarfExpr <$> isolate sz (getWhole (getDwarfExpr endian format))
       FormFlag          -> RawAttrValueFlag              <$> ((/= 0) <$> gw8)
       FormFlagPresent   -> return (RawAttrValueFlag True)

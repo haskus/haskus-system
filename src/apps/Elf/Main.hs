@@ -52,12 +52,16 @@ server pth elf conf = do
       [ dir "css" $ dir "style.css" $ ok css
 
       -- Section specific
+      , dir "section" $ nullDir >> ok' (sectionsPage pth elf)
+      
       , dir "section" $ path $ \secnum -> do
          -- retrieve section by index
          sec <- lookupMaybe (getSectionByIndex elf secnum)
          msum
+            [ nullDir >> ok' (sectionPage pth elf secnum sec) 
+            
             -- dump section content
-            [ dir "content" $ do
+            , dir "content" $ do
                -- select suggested output filename by the browser
                let filename = format "section{}.bin" (Only (secnum :: Int))
                    disp     = format "attachment; filename=\"{}\"" (Only filename)
@@ -68,6 +72,8 @@ server pth elf conf = do
                   $ getSectionContentBS elf sec
             ]
 
+      -- Segment specific
+      , dir "segment" $ nullDir >> ok' (segmentsPage pth elf)
 
       , nullDir >> ok' (welcomePage pth elf)
       ]
@@ -90,6 +96,33 @@ welcomePage pth elf = do
    showSections elf
    h2_ "Segments"
    showSegments elf
+
+sectionsPage :: FilePath -> Elf -> Html ()
+sectionsPage pth elf = do
+   p_ . toHtml $ "Info about: " ++ pth
+   h2_ "Sections"
+   showSections elf
+
+segmentsPage :: FilePath -> Elf -> Html ()
+segmentsPage pth elf = do
+   p_ . toHtml $ "Info about: " ++ pth
+   h2_ "Segments"
+   showSegments elf
+
+sectionPage :: FilePath -> Elf -> Int -> Section -> Html ()
+sectionPage pth elf i s = do
+   p_ . toHtml $ "Info about: " ++ pth
+   h2_ "Section"
+   let
+      secname = getSectionName elf s
+      name = case secname of
+         Just str -> toHtml str
+         Nothing  -> span_ [class_ "invalid"] "Invalid section name"
+   h3_ $ do
+      toHtml $ format "Section {} \"" (Only (i :: Int))
+      name
+      "\""
+   showSection elf i secname s
 
 showPreHeader :: PreHeader -> Html ()
 showPreHeader ph = table_ $ do

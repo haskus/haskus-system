@@ -141,7 +141,7 @@ getEntriesWithAlignment alignment getter =
          
 -- | Return a sequence of entries from a section. The entry size is given by
 -- the sectionEntrySize field
-getEntryTableFromSection :: Elf -> Section -> (Get a) -> [a]
+getEntryTableFromSection :: Elf -> Section -> Get a -> [a]
 getEntryTableFromSection elf sec getter = runGetOrFail (forM [1..cnt] (const getter)) bs
    where
       -- content of the section
