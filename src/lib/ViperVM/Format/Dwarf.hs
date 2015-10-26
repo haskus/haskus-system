@@ -1212,6 +1212,7 @@ data Language
    | LanguageUPC
    | LanguageD
    | LanguagePython
+   | LanguageHaskell
    | LanguageCustom Word16
    deriving (Show,Eq)
 
@@ -1237,6 +1238,7 @@ toLanguage x = case x of
    0x12 -> LanguageUPC
    0x13 -> LanguageD
    0x14 -> LanguagePython
+   0x18 -> LanguageHaskell
    v    -> LanguageCustom v
 
 fromLanguage :: Language -> Word16
@@ -1261,6 +1263,7 @@ fromLanguage x = case x of
    LanguageUPC                -> 0x12
    LanguageD                  -> 0x13
    LanguagePython             -> 0x14
+   LanguageHaskell            -> 0x18
    LanguageCustom v           -> v
 
 data Virtuality
