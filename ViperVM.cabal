@@ -56,6 +56,12 @@ library
 
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.Syscalls
+    ViperVM.Arch.X86_64.Assembler.RexPrefix
+    ViperVM.Arch.X86_64.Assembler.LegacyPrefix
+    ViperVM.Arch.X86_64.Assembler.Mode
+    ViperVM.Arch.X86_64.Assembler.Size
+    ViperVM.Arch.X86_64.Assembler.Decoder
+    ViperVM.Arch.X86_64.Assembler.Insns
 
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll

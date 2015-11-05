@@ -409,7 +409,10 @@ showZCATable t =
             forM_ (zcaEntries t) $ \e -> tr_ $ do
                td_ $ toHtml $ hexStr (zcaIP e)
                td_ $ toHtml $ zcaName e
-               td_ $ toHtml $ show (BS.unpack (zcaValue e))
+               td_ $ do
+                  "["
+                  toHtml . Text.concat . List.intersperse "," . fmap hexStr . BS.unpack $ zcaValue e
+                  "]"
          
 
 showSymbols :: Elf -> Section -> [SymbolEntry] -> Html ()
