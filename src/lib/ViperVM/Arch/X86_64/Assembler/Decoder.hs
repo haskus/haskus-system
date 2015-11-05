@@ -1,11 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 module ViperVM.Arch.X86_64.Assembler.Decoder
-   ( decode
+   ( Instruction(..)
+   , decode
    , decodeMany
-   , InstructionSet(..)
-   , DecodeError(..)
-   , Instruction(..)
    ) where
 
 import Data.Word
@@ -14,7 +12,6 @@ import qualified Data.Map as Map
 import Data.List (nub)
 import ViperVM.Format.Binary.Get (Get)
 import qualified ViperVM.Format.Binary.Get as G
---import Control.Conditional ((<&&>), (<||>), whenM)
 import Control.Monad.State
 import Control.Monad.Trans.Either
 
@@ -24,54 +21,13 @@ import ViperVM.Arch.X86_64.Assembler.RexPrefix
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Insns
-import ViperVM.Arch.X86_64.Assembler.ModRM
+import ViperVM.Arch.X86_64.Assembler.X86Dec
+import ViperVM.Arch.X86_64.Assembler.X87
 
 data Instruction
    = InsnX87 X87Instruction
    deriving (Show,Eq)
 
-data DecodeError
-   = ErrInsnTooLong                 -- ^ Instruction is more than 15 bytes long
-   | ErrTooManyLegacyPrefixes       -- ^ More than 4 legacy prefixes
-   | ErrInvalidLegacyPrefixGroups   -- ^ More than 1 legacy prefix for a single group
-   | ErrUnknownOpcode [Word8]       -- ^ Unrecognized opcode
-   deriving (Show,Eq)
-
-type X86DecStateT = StateT X86State Get
-type X86Dec a     = EitherT DecodeError X86DecStateT a
-
-data InstructionSet
-   = SetVEX
-   | SetEVEX
-   | SetXOP
-   | Set3DNow
-   | SetSMAP
-   | SetX87
-   deriving (Show,Eq)
-
-
--- The decoder is an automaton whose state is represented by X86State
-data X86State = X86State
-   { stateMode             :: X86Mode            -- ^ Architecture execution mode
-   , stateSets             :: [InstructionSet]   -- ^ Available instruction sets
-
-   , stateSegAddrSize      :: AddressSize        -- ^ Segment address size
-   , stateSegOperandSize   :: OperandSize        -- ^ Segment operand size
-
-   , stateByteCount        :: Int                -- ^ Number of bytes read (used to fail when > 15)
-   }
-
--- | Get X86 Mode
-getMode :: X86Dec X86Mode
-getMode = stateMode <$> lift get
-
--- | Get allowed instruction sets
-getAllowedSets :: X86Dec [InstructionSet]
-getAllowedSets = stateSets <$> lift get
-
--- | Get current address size
-getAddressSize :: X86Dec AddressSize
-getAddressSize = stateSegAddrSize <$> lift get
 
 -- | Decode several instruction (until the end of the stream)
 decodeMany :: X86Mode -> [InstructionSet] -> AddressSize -> OperandSize -> Get [Either DecodeError Instruction]
@@ -94,110 +50,6 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
          , stateSegOperandSize      = defOprndSize
          , stateByteCount           = 0
          }
-
--------------------------------------------------------------------------------
--- INSTRUCTION SIZE
---
--- A x86 instruction may be at most 15 bytes in length. We define the following
--- functions to ensure that when we read a byte, it is accounted. If we read
--- more than 15 bytes, we fail with the appropriate error
-
--- | Read some bytes
-next :: Int -> Get a -> X86Dec a
-next n getter = do
-   -- Test that we don't read more than 15 bytes
-   bc <- stateByteCount <$> lift get
-   if bc + n > 15
-      then left ErrInsnTooLong
-      else do
-         -- try to do the actual read
-         w <- lift (lift getter)
-         -- store the new number of bytes
-         lift $ modify (\y -> y {stateByteCount = bc +n})
-         right w
-
-lookAhead :: Int -> Get a -> X86Dec a
-lookAhead n getter = do
-   -- Test that we don't read more than 15 bytes
-   bc <- stateByteCount <$> lift get
-   if bc + n > 15
-      then left ErrInsnTooLong
-      else lift (lift (G.lookAhead getter))
-
--- | Read 1 byte
-nextWord8 :: X86Dec Word8
-nextWord8 = next 1 G.getWord8
-
--- | Read 2 bytes
-nextWord16 :: X86Dec Word16
-nextWord16 = next 2 G.getWord16le
-
--- | Read 4 bytes
-nextWord32 :: X86Dec Word32
-nextWord32 = next 4 G.getWord32le
-
--- | Read 8 bytes
-nextWord64 :: X86Dec Word64
-nextWord64 = next 8 G.getWord64le
-
--- | Read 1 byte
-lookWord8 :: X86Dec Word8
-lookWord8 = lookAhead 1 G.getWord8
-
--- | Read 2 bytes
-lookWord16 :: X86Dec Word16
-lookWord16 = lookAhead 2 G.getWord16le
-
--- | Read 4 bytes
-lookWord32 :: X86Dec Word32
-lookWord32 = lookAhead 4 G.getWord32le
-
--- | Read 8 bytes
-lookWord64 :: X86Dec Word64
-lookWord64 = lookAhead 8 G.getWord64le
-
--- | Read 1 byte
-skipWord8 :: X86Dec ()
-skipWord8 = void nextWord8
-
--- | Read 2 bytes
-skipWord16 :: X86Dec ()
-skipWord16 = void nextWord16
-
--- | Read 4 bytes
-skipWord32 :: X86Dec ()
-skipWord32 = void nextWord32
-
--- | Read 8 bytes
-skipWord64 :: X86Dec ()
-skipWord64 = void nextWord64
-
--- | Get operand from a ModRM
-getOperand :: AddressSize -> ModRM -> X86Dec Op
-getOperand asize m = do
-   let
-      getDisp = case useDisplacement asize m of
-         Nothing      -> return 0
-         Just Size8   -> fromIntegral <$> nextWord8
-         Just Size16  -> fromIntegral <$> nextWord16
-         Just Size32  ->                  nextWord32
-         Just s       -> error $ "Invalid displacement size: " ++ show s
-
-
-   case rmMode asize m of
-      RMRegister  -> right . OpReg $ rmField m
-      RMBaseIndex -> OpAddr . AddrBaseDisp . BaseDisp (rmField m) <$> getDisp
-      RMSIB       -> OpAddr . AddrScaleBaseIndex <$> do
-         sib <- SIB <$> nextWord8
-         disp <- getDisp
-         return (ScaleIndexBase (baseField sib) (indexField sib) (scaleField sib) disp)
-
-getAddr :: AddressSize -> ModRM -> X86Dec Addr
-getAddr asize m = do
-   op <- getOperand asize m
-   case op of
-      OpAddr a -> right a
-      OpReg _  -> error "Not an address operand"
 
 {-
    Note [Legacy prefixes]
@@ -342,16 +194,6 @@ decodeLegacyPrefixes = rec 0 []
 
 
 
--------------------------------------------------------------------------------
--- LEGACY OPERANDS (ModRM and SIB)
---
--- Depending on the decoded opcode and prefixes, we may need to decode some
--- operands. Legacy operands can be a combination of registers, memory address,
--- immediate value. Of course, not all the combinations are allowed.
-
-
-
-
 ---- ------------------------------------------------------------------
 ----                         VEX PREFIX
 ---- ------------------------------------------------------------------
@@ -448,56 +290,6 @@ decodeLegacyPrefixes = rec 0 []
 --
 --   modify (\y -> y { stateOpcode = op })
 --   
---
----- | Try to identify the opcode from the given set of instructions
---identifyOpcode :: [InsnDesc] -> X86Dec ()
---identifyOpcode insns = do
---   op <- stateOpcode <$> get
---
---   -- Prepare instruction list
---   let 
---      masks = Map.fromListWith (++) $ fmap insnOpcodeMask insns `zip` fmap return insns
---      makeMap is = Map.fromListWith (++) $ fmap insnOpcode is `zip` fmap return is
---      masks' = Map.map makeMap masks
---   
---   -- Apply masks to opcode and find the matching one if any
---   let 
---      maskLast [] m     = []
---      maskLast [a] m    = [a .&. m]
---      maskLast (x:xs) m = x : maskLast xs m
---
---   let candidates = Map.foldMapWithKey (\mask is -> Map.findWithDefault [] (maskLast op mask) is) masks'
---
---   desc <- case candidates of
---      []  -> error "Cannot match instruction"
---      [i] -> return i
---      is -> do
---         -- filter candidates that use opcode extension in ModRM
---         let
---            isOpcodeExt (F_OpcodeExt _) = True
---            isOpcodeExt _               = False
---            opcodeExtFlag i = filter isOpcodeExt (insnFlags i)
---
---            isValid i = case opcodeExtFlag i of
---               [] -> return (Just i)
---               [F_OpcodeExt r] -> do
---                  requireModRM
---                  ext <- regField . fromJust . stateModRM <$> get
---                  if r == ext then return (Just i) else return Nothing
---               _               -> error $ "Instruction with several opcode extensions: " ++ show i
---
---         is' <- catMaybes <$> traverse isValid is
---
---         -- check that only one candidate left
---         case is' of
---            []  -> error "Cannot match any instruction"
---            [i] -> return i
---            _   -> error $ "Too many instruction candidates left: " ++ show is'
---
---   modify (\y -> y {stateInsnDesc = Just desc})
---            
---
---
 --
 -----------------------------------------------------------------------
 ---- MODRM, SIB, DISPLACEMENT
@@ -744,142 +536,8 @@ decodeInsn = do
 
    case opcode of
       -- X87 instructions
-      [x] | SetX87 `elem` allowedSets && x .&. 0xF8 == 0xD8 -> do
-         y <- lookWord8
-         fmap InsnX87 $ case (x,y) of
-            -- instructions without parameters
-            (0xD9, 0xD0) -> skipWord8 >> right FNOP
-            (0xD9, 0xE1) -> skipWord8 >> right FABS
-            (0xD9, 0xE0) -> skipWord8 >> right FCHS
-            (0xD9, 0xE5) -> skipWord8 >> right FXAM
-            (0xD9, 0xE8) -> skipWord8 >> right FLD1
-            (0xD9, 0xE9) -> skipWord8 >> right FLDL2T
-            (0xD9, 0xEA) -> skipWord8 >> right FLDL2E
-            (0xD9, 0xEB) -> skipWord8 >> right FLDPI
-            (0xD9, 0xEC) -> skipWord8 >> right FLDLG2
-            (0xD9, 0xED) -> skipWord8 >> right FLDLN2
-            (0xD9, 0xEE) -> skipWord8 >> right FLDZ
-            (0xD9, 0xF0) -> skipWord8 >> right F2XM1
-            (0xD9, 0xF1) -> skipWord8 >> right FYL2X
-            (0xD9, 0xF2) -> skipWord8 >> right FPTAN
-            (0xD9, 0xF3) -> skipWord8 >> right FPATAN
-            (0xD9, 0xF4) -> skipWord8 >> right FXTRACT
-            (0xD9, 0xF5) -> skipWord8 >> right FPREM1
-            (0xD9, 0xF6) -> skipWord8 >> right FDECSTP
-            (0xD9, 0xF7) -> skipWord8 >> right FINCSTP
-            (0xD9, 0xF8) -> skipWord8 >> right FPREM
-            (0xD9, 0xF9) -> skipWord8 >> right FYL2XP1
-            (0xD9, 0xFA) -> skipWord8 >> right FSQRT
-            (0xD9, 0xFB) -> skipWord8 >> right FSINCOS
-            (0xD9, 0xFC) -> skipWord8 >> right FRNDINT
-            (0xD9, 0xFD) -> skipWord8 >> right FSCALE
-            (0xD9, 0xFE) -> skipWord8 >> right FSIN
-            (0xD9, 0xFF) -> skipWord8 >> right FCOS
-            (0xDB, 0xE2) -> skipWord8 >> right FNCLEX
-            (0xDA, 0xE9) -> skipWord8 >> right FUCOMPP
-            (0xDD, 0xE4) -> skipWord8 >> right FTST
-            (0xDE, 0xD9) -> skipWord8 >> right FCOMPP
-            (0xDF, 0xE0) -> skipWord8 >> right FNSTSW_ax
-            -- instructions with ModRM
-            _ -> do
-               let m = ModRM y
-               case (x,regField m,rmRegMode m) of
-                  (0xD8, 0, True ) -> skipWord8 >> FADD_st0_sti      . ST        <$> right (rmField m)
-                  (0xD8, 0, False) -> skipWord8 >> FADD_m32          . M32FP     <$> getAddr asize m
-                  (0xD9, 0, True ) -> skipWord8 >> FLD_st            . ST        <$> right (rmField m)
-                  (0xD9, 0, False) -> skipWord8 >> FLD_m32           . M32FP     <$> getAddr asize m
-                  (0xDA, 0, False) -> skipWord8 >> FIADD_m32         . M32INT    <$> getAddr asize m
-                  (0xDB, 0, False) -> skipWord8 >> FILD_m32          . M32INT    <$> getAddr asize m
-                  (0xDC, 0, True ) -> skipWord8 >> FADD_sti_st0      . ST        <$> right (rmField m)
-                  (0xDC, 0, False) -> skipWord8 >> FADD_m64          . M64FP     <$> getAddr asize m
-                  (0xDD, 0, False) -> skipWord8 >> FLD_m64           . M64FP     <$> getAddr asize m
-                  (0xDD, 0, True ) -> skipWord8 >> FFREE             . ST        <$> right (rmField m)
-                  (0xDE, 0, True ) -> skipWord8 >> FADDP_sti_st0     . ST        <$> right (rmField m)
-                  (0xDE, 0, False) -> skipWord8 >> FIADD_m16         . M16INT    <$> getAddr asize m
-                  (0xDF, 0, False) -> skipWord8 >> FILD_m16          . M16INT    <$> getAddr asize m
-
-                  (0xD8, 1, False) -> skipWord8 >> FMUL_m32          . M32FP     <$> getAddr asize m
-                  (0xD8, 1, True ) -> skipWord8 >> FMUL_st0_sti      . ST        <$> right (rmField m)
-                  (0xD9, 1, True ) -> skipWord8 >> FXCH              . ST        <$> right (rmField m)
-                  (0xDA, 1, False) -> skipWord8 >> FIMUL_m32         . M32INT    <$> getAddr asize m
-                  (0xDC, 1, True ) -> skipWord8 >> FMUL_sti_st0      . ST        <$> right (rmField m)
-                  (0xDC, 1, False) -> skipWord8 >> FMUL_m64          . M64FP     <$> getAddr asize m
-                  (0xDE, 1, True ) -> skipWord8 >> FMULP_sti_st0     . ST        <$> right (rmField m)
-                  (0xDE, 1, False) -> skipWord8 >> FIMUL_m16         . M16INT    <$> getAddr asize m
-
-                  (0xDF, 2, False) -> skipWord8 >> FIST_m16          . M16INT    <$> getAddr asize m
-                  (0xDB, 2, False) -> skipWord8 >> FIST_m32          . M32INT    <$> getAddr asize m
-                  (0xD8, 2, True ) -> skipWord8 >> FCOM_st           . ST        <$> right (rmField m)
-                  (0xD8, 2, False) -> skipWord8 >> FCOM_m32          . M32FP     <$> getAddr asize m
-                  (0xD9, 2, False) -> skipWord8 >> FST_m32           . M32FP     <$> getAddr asize m
-                  (0xDA, 2, False) -> skipWord8 >> FICOM_m32         . M32INT    <$> getAddr asize m
-                  (0xDC, 2, False) -> skipWord8 >> FCOM_m64          . M64FP     <$> getAddr asize m
-                  (0xDD, 2, False) -> skipWord8 >> FST_m64           . M64FP     <$> getAddr asize m
-                  (0xDD, 2, True ) -> skipWord8 >> FST_st            . ST        <$> right (rmField m)
-                  (0xDE, 2, False) -> skipWord8 >> FICOM_m16         . M16INT    <$> getAddr asize m
-
-                  (0xD8, 3, True ) -> skipWord8 >> FCOMP_st          . ST        <$> right (rmField m)
-                  (0xD8, 3, False) -> skipWord8 >> FCOMP_m32         . M32FP     <$> getAddr asize m
-                  (0xD9, 3, False) -> skipWord8 >> FSTP_m32          . M32FP     <$> getAddr asize m
-                  (0xDA, 3, False) -> skipWord8 >> FICOMP_m32        . M32INT    <$> getAddr asize m
-                  (0xDB, 3, False) -> skipWord8 >> FISTP_m32         . M32INT    <$> getAddr asize m
-                  (0xDC, 3, False) -> skipWord8 >> FCOMP_m64         . M64FP     <$> getAddr asize m
-                  (0xDD, 3, True ) -> skipWord8 >> FSTP_st           . ST        <$> right (rmField m)
-                  (0xDD, 3, False) -> skipWord8 >> FSTP_m64          . M64FP     <$> getAddr asize m
-                  (0xDE, 3, False) -> skipWord8 >> FICOMP_m16        . M16INT    <$> getAddr asize m
-                  (0xDF, 3, False) -> skipWord8 >> FISTP_m16         . M16INT    <$> getAddr asize m
-
-                  (0xD8, 4, True ) -> skipWord8 >> FSUB_st0_st0_sti  . ST        <$> right (rmField m)
-                  (0xD8, 4, False) -> skipWord8 >> FSUB_st0_st0_m32  . M32FP     <$> getAddr asize m
-                  (0xD9, 4, False) -> skipWord8 >> FLDENV            . MENV      <$> getAddr asize m
-                  (0xDA, 4, False) -> skipWord8 >> FISUB_m32         . M32INT    <$> getAddr asize m
-                  (0xDC, 4, False) -> skipWord8 >> FSUB_st0_st0_m64  . M64FP     <$> getAddr asize m
-                  (0xDC, 4, True ) -> skipWord8 >> FSUB_sti_st0_sti  . ST        <$> right (rmField m)
-                  (0xDD, 4, True ) -> skipWord8 >> FUCOM             . ST        <$> right (rmField m)
-                  (0xDD, 4, False) -> skipWord8 >> FRSTOR            . MSTATE    <$> getAddr asize m
-                  (0xDE, 4, True ) -> skipWord8 >> FSUBP_sti_sti_st0 . ST        <$> right (rmField m)
-                  (0xDE, 4, False) -> skipWord8 >> FISUB_m16         . M16INT    <$> getAddr asize m
-                  (0xDF, 4, False) -> skipWord8 >> FBLD              . M80DEC    <$> getAddr asize m
-
-                  (0xD8, 5, True ) -> skipWord8 >> FSUB_st0_sti_st0  . ST        <$> right (rmField m)
-                  (0xD8, 5, False) -> skipWord8 >> FSUB_st0_m32_st0  . M32FP     <$> getAddr asize m
-                  (0xD9, 5, False) -> skipWord8 >> FLDCW             . MCW       <$> getAddr asize m
-                  (0xDA, 5, False) -> skipWord8 >> FISUBR_m32        . M32INT    <$> getAddr asize m
-                  (0xDB, 5, False) -> skipWord8 >> FLD_m80           . M80FP     <$> getAddr asize m
-                  (0xDB, 5, True ) -> skipWord8 >> FUCOMI            . ST        <$> right (rmField m)
-                  (0xDC, 5, False) -> skipWord8 >> FSUB_st0_m64_st0  . M64FP     <$> getAddr asize m
-                  (0xDC, 5, True ) -> skipWord8 >> FSUB_sti_sti_st0  . ST        <$> right (rmField m)
-                  (0xDD, 5, True ) -> skipWord8 >> FUCOMP            . ST        <$> right (rmField m)
-                  (0xDE, 5, True ) -> skipWord8 >> FSUBP_st0_st0_sti . ST        <$> right (rmField m)
-                  (0xDE, 5, False) -> skipWord8 >> FISUBR_m16        . M16INT    <$> getAddr asize m
-                  (0xDF, 5, True ) -> skipWord8 >> FUCOMIP           . ST        <$> right (rmField m)
-                  (0xDF, 5, False) -> skipWord8 >> FILD_m64          . M64INT    <$> getAddr asize m
-
-                  (0xD8, 6, True ) -> skipWord8 >> FDIV_st0_st0_sti  . ST        <$> right (rmField m)
-                  (0xD8, 6, False) -> skipWord8 >> FDIV_m32          . M32FP     <$> getAddr asize m
-                  (0xD9, 6, False) -> skipWord8 >> FNSTENV           . MENV      <$> getAddr asize m
-                  (0xDA, 6, False) -> skipWord8 >> FIDIV_m32         . M32INT    <$> getAddr asize m
-                  (0xDC, 6, True ) -> skipWord8 >> FDIV_sti_st0_sti  . ST        <$> right (rmField m)
-                  (0xDC, 6, False) -> skipWord8 >> FDIV_m64          . M64FP     <$> getAddr asize m
-                  (0xDD, 6, False) -> skipWord8 >> FNSAVE            . MSTATE    <$> getAddr asize m
-                  (0xDE, 6, True ) -> skipWord8 >> FDIVRP            . ST        <$> right (rmField m)
-                  (0xDE, 6, False) -> skipWord8 >> FIDIV_m16         . M16INT    <$> getAddr asize m
-                  (0xDF, 6, False) -> skipWord8 >> FBSTP             . M80BCD    <$> getAddr asize m
-                  (0xDF, 6, True ) -> skipWord8 >> FCOMIP            . ST        <$> right (rmField m)
-
-                  (0xD8, 7, True ) -> skipWord8 >> FDIV_st0_sti_st0  . ST        <$> right (rmField m)
-                  (0xD8, 7, False) -> skipWord8 >> FDIVR_m32         . M32FP     <$> getAddr asize m
-                  (0xD9, 7, False) -> skipWord8 >> FNSTCW            . MCW       <$> getAddr asize m
-                  (0xDA, 7, False) -> skipWord8 >> FIDIVR_m32        . M32INT    <$> getAddr asize m
-                  (0xDB, 7, False) -> skipWord8 >> FSTP_m80          . M80FP     <$> getAddr asize m
-                  (0xDC, 7, True ) -> skipWord8 >> FDIV_sti_sti_st0  . ST        <$> right (rmField m)
-                  (0xDC, 7, False) -> skipWord8 >> FDIVR_m64         . M64FP     <$> getAddr asize m
-                  (0xDD, 7, False) -> skipWord8 >> FNSTSW            . MSW       <$> getAddr asize m
-                  (0xDE, 7, True ) -> skipWord8 >> FDIVP             . ST        <$> right (rmField m)
-                  (0xDE, 7, False) -> skipWord8 >> FIDIVR_m16        . M16INT    <$> getAddr asize m
-                  (0xDF, 7, False) -> skipWord8 >> FISTP_m64         . M64INT    <$> getAddr asize m
-
-                  _                -> left $ ErrUnknownOpcode [x]
+      [x] |  SetX87 `elem` allowedSets 
+          && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ getX87 easize x
 
 
       -- 3DNow! instructions
