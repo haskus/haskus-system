@@ -60,8 +60,8 @@ data Register
    deriving (Show,Eq)
 
 regFromCode :: RegFamily -> Maybe Size -> Bool -> Word8 -> Register
-regFromCode fm sz hasRex code = case fm of
-   RF_GPR -> case (fromJust sz, code, hasRex) of
+regFromCode fm sz useExtRegs code = case fm of
+   RF_GPR -> case (fromJust sz, code, useExtRegs) of
       (Size8, 0, _)     -> R_AL
       (Size8, 1, _)     -> R_CL
       (Size8, 2, _)     -> R_DL
@@ -74,14 +74,14 @@ regFromCode fm sz hasRex code = case fm of
       (Size8, 6, False) -> R_DH
       (Size8, 7, True)  -> R_DIL
       (Size8, 7, False) -> R_BH
-      (Size8, 8, _)     -> R_R8B
-      (Size8, 9, _)     -> R_R9B
-      (Size8,10, _)     -> R_R10B
-      (Size8,11, _)     -> R_R11B
-      (Size8,12, _)     -> R_R12B
-      (Size8,13, _)     -> R_R13B
-      (Size8,14, _)     -> R_R14B
-      (Size8,15, _)     -> R_R15B
+      (Size8, 8, True)  -> R_R8B
+      (Size8, 9, True)  -> R_R9B
+      (Size8,10, True)  -> R_R10B
+      (Size8,11, True)  -> R_R11B
+      (Size8,12, True)  -> R_R12B
+      (Size8,13, True)  -> R_R13B
+      (Size8,14, True)  -> R_R14B
+      (Size8,15, True)  -> R_R15B
 
       (Size16, 0, _)    -> R_AX
       (Size16, 1, _)    -> R_CX
@@ -91,14 +91,14 @@ regFromCode fm sz hasRex code = case fm of
       (Size16, 5, _)    -> R_BP
       (Size16, 6, _)    -> R_SI
       (Size16, 7, _)    -> R_DI
-      (Size16, 8, _)    -> R_R8W
-      (Size16, 9, _)    -> R_R9W
-      (Size16,10, _)    -> R_R10W
-      (Size16,11, _)    -> R_R11W
-      (Size16,12, _)    -> R_R12W
-      (Size16,13, _)    -> R_R13W
-      (Size16,14, _)    -> R_R14W
-      (Size16,15, _)    -> R_R15W
+      (Size16, 8, True) -> R_R8W
+      (Size16, 9, True) -> R_R9W
+      (Size16,10, True) -> R_R10W
+      (Size16,11, True) -> R_R11W
+      (Size16,12, True) -> R_R12W
+      (Size16,13, True) -> R_R13W
+      (Size16,14, True) -> R_R14W
+      (Size16,15, True) -> R_R15W
 
       (Size32, 0, _)    -> R_EAX
       (Size32, 1, _)    -> R_ECX
@@ -108,14 +108,14 @@ regFromCode fm sz hasRex code = case fm of
       (Size32, 5, _)    -> R_EBP
       (Size32, 6, _)    -> R_ESI
       (Size32, 7, _)    -> R_EDI
-      (Size32, 8, _)    -> R_R8D
-      (Size32, 9, _)    -> R_R9D
-      (Size32,10, _)    -> R_R10D
-      (Size32,11, _)    -> R_R11D
-      (Size32,12, _)    -> R_R12D
-      (Size32,13, _)    -> R_R13D
-      (Size32,14, _)    -> R_R14D
-      (Size32,15, _)    -> R_R15D
+      (Size32, 8, True) -> R_R8D
+      (Size32, 9, True) -> R_R9D
+      (Size32,10, True) -> R_R10D
+      (Size32,11, True) -> R_R11D
+      (Size32,12, True) -> R_R12D
+      (Size32,13, True) -> R_R13D
+      (Size32,14, True) -> R_R14D
+      (Size32,15, True) -> R_R15D
 
       (Size64, 0, _)    -> R_RAX
       (Size64, 1, _)    -> R_RCX
@@ -125,14 +125,14 @@ regFromCode fm sz hasRex code = case fm of
       (Size64, 5, _)    -> R_RBP
       (Size64, 6, _)    -> R_RSI
       (Size64, 7, _)    -> R_RDI
-      (Size64, 8, _)    -> R_R8
-      (Size64, 9, _)    -> R_R9
-      (Size64,10, _)    -> R_R10
-      (Size64,11, _)    -> R_R11
-      (Size64,12, _)    -> R_R12
-      (Size64,13, _)    -> R_R13
-      (Size64,14, _)    -> R_R14
-      (Size64,15, _)    -> R_R15
+      (Size64, 8, True) -> R_R8
+      (Size64, 9, True) -> R_R9
+      (Size64,10, True) -> R_R10
+      (Size64,11, True) -> R_R11
+      (Size64,12, True) -> R_R12
+      (Size64,13, True) -> R_R13
+      (Size64,14, True) -> R_R14
+      (Size64,15, True) -> R_R15
       _ -> error $ "Invalid GPR register index: " ++ show code
 
 
@@ -140,19 +140,19 @@ regFromCode fm sz hasRex code = case fm of
       then R_ST code
       else error $ "Invalid X87 register index: " ++ show code
 
-   RF_MMX -> if code <= 15
+   RF_MMX -> if code <= (if useExtRegs then 15 else 7)
       then R_MMX (code .&. 0x07)
       else error $ "Invalid MMX register index: " ++ show code
 
-   RF_XMM -> if code <= 15
+   RF_XMM -> if code <= (if useExtRegs then 15 else 7)
       then R_XMM code
       else error $ "Invalid XMM register index: " ++ show code
 
-   RF_YMM -> if code <= 15
+   RF_YMM -> if code <= (if useExtRegs then 15 else 7)
       then R_YMM code
       else error $ "Invalid YMM register index: " ++ show code
 
-   RF_ZMM -> if code <= 31
+   RF_ZMM -> if code <= (if useExtRegs then 15 else 7)
       then R_ZMM code
       else error $ "Invalid ZMM register index: " ++ show code
 
@@ -165,19 +165,19 @@ regFromCode fm sz hasRex code = case fm of
       5  -> R_GS
       _ -> error $ "Invalid segment register index: " ++ show code
 
-   RF_CTRL -> if code <= 15
+   RF_CTRL -> if code <= (if useExtRegs then 15 else 7)
       then R_CR code
       else error $ "Invalid CR register index: " ++ show code
 
-   RF_DBG -> if code <= 15
+   RF_DBG -> if code <= (if useExtRegs then 15 else 7)
       then R_DR code
       else error $ "Invalid DR register index: " ++ show code
 
    RF_VEC -> case sz of
-      Just Size64  -> regFromCode RF_MMX Nothing hasRex code
-      Just Size128 -> regFromCode RF_XMM Nothing hasRex code
-      Just Size256 -> regFromCode RF_YMM Nothing hasRex code
-      Just Size512 -> regFromCode RF_ZMM Nothing hasRex code
+      Just Size64  -> regFromCode RF_MMX Nothing useExtRegs code
+      Just Size128 -> regFromCode RF_XMM Nothing useExtRegs code
+      Just Size256 -> regFromCode RF_YMM Nothing useExtRegs code
+      Just Size512 -> regFromCode RF_ZMM Nothing useExtRegs code
       Just s       -> error $ "Invalid vector size: " ++ show s
       Nothing      -> error "Vector register without size"
 

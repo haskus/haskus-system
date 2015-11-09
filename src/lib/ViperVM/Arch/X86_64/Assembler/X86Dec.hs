@@ -5,8 +5,17 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , DecodeError(..)
    , getMode
    , getAllowedSets
+   , getLegacyPrefixes
    , getAddressSize
    , getOperandSize
+   , getBaseRegExt
+   , getIndexRegExt
+   , getRegExt
+   , getUseExtRegs
+   , assertNoRex
+   , assertNoVex
+   , assertNoXop
+   , assertNoLegacyPrefix
    , next
    , lookAhead
    , nextWord8
@@ -25,6 +34,7 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
 where
 
 import Data.Word
+import qualified Data.List as List
 import ViperVM.Format.Binary.Get (Get)
 import qualified ViperVM.Format.Binary.Get as G
 import Control.Monad.State
@@ -34,10 +44,17 @@ import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Size
 
 data DecodeError
-   = ErrInsnTooLong                 -- ^ Instruction is more than 15 bytes long
-   | ErrTooManyLegacyPrefixes       -- ^ More than 4 legacy prefixes
-   | ErrInvalidLegacyPrefixGroups   -- ^ More than 1 legacy prefix for a single group
-   | ErrUnknownOpcode [Word8]       -- ^ Unrecognized opcode
+   = ErrInsnTooLong                    -- ^ Instruction is more than 15 bytes long
+   | ErrTooManyLegacyPrefixes          -- ^ More than 4 legacy prefixes
+   | ErrInvalidLegacyPrefixGroups      -- ^ More than 1 legacy prefix for a single group
+   | ErrUnknownOpcode [Word8]          -- ^ Unrecognized opcode
+   | ErrRexPrefixBeforeVex             -- ^ REX prefix found before VEX prefix
+   | ErrLegacyPrefixBeforeVex [Word8]  -- ^ Invalid legacy prefixes found before VEX prefix
+   | ErrLegacyPrefixBeforeXop [Word8]  -- ^ Invalid legacy prefixes found before XOP prefix
+   | ErrRexPrefixBeforeXop             -- ^ REX prefix found before XOP prefix
+   | ErrVexPrefixBeforeXop             -- ^ VEX prefix found before XOP prefix
+   | ErrXopPrefixBeforeVex             -- ^ XOP prefix found before VEX prefix
+   | ErrVexEscapedOpcode               -- ^ VEX prefix found with escaped opcode (more than 1 byte)
    deriving (Show,Eq)
 
 type X86DecStateT = StateT X86State Get
@@ -57,11 +74,24 @@ data X86State = X86State
    { stateMode             :: X86Mode            -- ^ Architecture execution mode
    , stateSets             :: [InstructionSet]   -- ^ Available instruction sets
 
-   , stateSegAddrSize      :: AddressSize        -- ^ Segment address size
-   , stateSegOperandSize   :: OperandSize        -- ^ Segment operand size
+   , stateAddressSize      :: AddressSize        -- ^ Address size
+   , stateOperandSize      :: OperandSize        -- ^ Operand size
 
    , stateByteCount        :: Int                -- ^ Number of bytes read (used to fail when > 15)
+   , stateLegacyPrefixes   :: [Word8]            -- ^ Legacy prefixes
+   , stateBaseRegExt       :: Word8              -- ^ Extension for the base register
+   , stateIndexRegExt      :: Word8              -- ^ Extension for the index register
+   , stateRegExt           :: Word8              -- ^ Extension for a register operand
+   , stateUseExtRegs       :: Bool               -- ^ Indicate if extended 64-bit registers have to be used
+   , stateHasRexPrefix     :: Bool               -- ^ Indicate that a REX prefix has been read
+   , stateMapSelect        :: [Word8]            -- ^ Map selection
+   , stateHasVexPrefix     :: Bool               -- ^ Indicate that a VEX prefix has been read
+   , stateHasXopPrefix     :: Bool               -- ^ Indicate that a XOP prefix has been read
+   , stateOpcodeExtE       :: Maybe Bool         -- ^ Opcode extension in VEX/XOP.E
+   , stateAdditionalOp     :: Maybe Word8        -- ^ Additional operand (VEX.vvvv)
    }
+
+
 
 -- | Get X86 Mode
 getMode :: X86Dec X86Mode
@@ -71,13 +101,61 @@ getMode = stateMode <$> lift get
 getAllowedSets :: X86Dec [InstructionSet]
 getAllowedSets = stateSets <$> lift get
 
+-- | Get legacy prefixes
+getLegacyPrefixes :: X86Dec [Word8]
+getLegacyPrefixes = stateLegacyPrefixes <$> lift get
+
 -- | Get current address size
 getAddressSize :: X86Dec AddressSize
-getAddressSize = stateSegAddrSize <$> lift get
+getAddressSize = stateAddressSize <$> lift get
 
 -- | Get current operand size
 getOperandSize :: X86Dec OperandSize
-getOperandSize = stateSegOperandSize <$> lift get
+getOperandSize = stateOperandSize <$> lift get
+
+getBaseRegExt :: X86Dec Word8
+getBaseRegExt = stateBaseRegExt <$> lift get
+
+getIndexRegExt :: X86Dec Word8
+getIndexRegExt = stateIndexRegExt <$> lift get
+
+getRegExt :: X86Dec Word8
+getRegExt = stateRegExt <$> lift get
+
+getUseExtRegs :: X86Dec Bool
+getUseExtRegs = stateUseExtRegs <$> lift get
+
+-- | Assert that no Rex prefix has been decoded
+assertNoRex :: DecodeError -> X86Dec ()
+assertNoRex err = do
+   hasRex <- stateHasRexPrefix <$> lift get
+   if hasRex
+      then left err
+      else right ()
+
+-- | Assert that no Vex prefix has been decoded
+assertNoVex :: DecodeError -> X86Dec ()
+assertNoVex err = do
+   hasVex <- stateHasVexPrefix <$> lift get
+   if hasVex
+      then left err
+      else right ()
+
+-- | Assert that no Xop prefix has been decoded
+assertNoXop :: DecodeError -> X86Dec ()
+assertNoXop err = do
+   hasXop <- stateHasXopPrefix <$> lift get
+   if hasXop
+      then left err
+      else right ()
+
+-- | Assert that no legacy prefix in the list has been decoded
+assertNoLegacyPrefix :: ([Word8] -> DecodeError) -> [Word8] -> X86Dec ()
+assertNoLegacyPrefix err ps = do
+   ps' <- getLegacyPrefixes
+   case ps `List.intersect` ps' of
+      [] -> right ()
+      xs -> left (err xs)
 
 -------------------------------------------------------------------------------
 -- INSTRUCTION SIZE

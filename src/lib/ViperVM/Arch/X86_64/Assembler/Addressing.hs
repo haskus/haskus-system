@@ -1,18 +1,24 @@
 module ViperVM.Arch.X86_64.Assembler.Addressing
    ( Addr(..)
-   , AddrParams(..)
    , getAddr
+   , getRegRegister
+   , getRMRegister
+   , effectiveOperandSize
+   , getEffectiveAddressSize
    )
 where
 
 import Data.Bits
 import Data.Word
+import Data.Maybe
 
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Registers
 import ViperVM.Arch.X86_64.Assembler.X86Dec
+import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
+import ViperVM.Arch.X86_64.Assembler.RexPrefix
 
 -- The X86 architecture supports different kinds of memory addressing. The
 -- available addressing modes depend on the execution mode.
@@ -32,19 +38,14 @@ data Addr = Addr
    }
    deriving (Show,Eq)
 
--- | Parameters for an addressing
-data AddrParams = AddrParams
-   { addrParamBaseExt         :: Word8       -- ^ Extension for the base register
-   , addrParamIndexExt        :: Word8       -- ^ Extension for the index register
-   , addrParamUseExtRegisters :: Bool        -- ^ Indicate if extended regsiters have to be used
-   , addrParamAddressSize     :: AddressSize -- ^ Address size
-   }
-   deriving (Show,Eq)
-
 -- | Read the memory addressing in r/m field
-getAddr :: AddrParams -> ModRM -> X86Dec Addr
-getAddr (AddrParams baseExt indexExt useExtendedRegisters asize) modrm = do
-   mode <- getMode
+getAddr :: ModRM -> X86Dec Addr
+getAddr modrm = do
+   baseExt  <- getBaseRegExt
+   indexExt <- getIndexRegExt
+   useExtendedRegisters <- getUseExtRegs
+   asize    <- getAddressSize
+   mode     <- getMode
 
    -- depending on the r/m field in ModRM and on the address size, we know if
    -- we must read a SIB byte
@@ -109,3 +110,64 @@ getAddr (AddrParams baseExt indexExt useExtendedRegisters asize) modrm = do
 
             -- if there is a scale, it is in sib
             scale = scaleField <$> sib
+
+getRegister :: RegFamily -> Maybe Size -> Word8 -> X86Dec Register
+getRegister fm size code = do
+   useExtRegs <- getUseExtRegs
+   return (regFromCode fm size useExtRegs code)
+
+getRMRegister :: RegFamily -> Maybe Size -> ModRM -> X86Dec Register
+getRMRegister fm size modrm = do
+   ext <- getBaseRegExt
+   getRegister fm size ((ext `shiftL` 3) .|. rmField modrm)
+
+getRegRegister :: RegFamily -> Maybe Size -> ModRM -> X86Dec Register
+getRegRegister fm size modrm = do
+   ext <- getRegExt
+   getRegister fm size ((ext `shiftL` 3) .|. regField modrm)
+
+-- | Return effective operand size
+--
+-- See Table 1-2 "Operand-Size Overrides" in AMD Manual v3
+effectiveOperandSize :: X86Mode -> [LegacyPrefix] -> Maybe Rex -> OperandSize -> OperandSize
+effectiveOperandSize mode prefixes rex defaultSize = 
+   let 
+      isOverrided = PrefixOperandSizeOverride `elem` prefixes
+      rexw = fromMaybe False (fmap rexW rex)
+   in case (mode, defaultSize, isOverrided, rexw) of
+      (LongMode Long64bitMode, _, _, True)         -> OpSize64
+      (LongMode Long64bitMode, def, False, False)  -> def
+      (LongMode Long64bitMode, _, True, False)     -> OpSize16
+      (_, def, False, _) 
+         | def `elem` [OpSize16,OpSize32]          -> def
+      (_, OpSize32, True, _)                       -> OpSize16
+      (_, OpSize16, True, _)                       -> OpSize32
+      _ -> error "Invalid combination of modes and operand sizes"
+
+-- | Return effective address size
+--
+-- See Table 1-1 "Address-Size Overrides" in AMD Manual v3
+--
+-- The prefix also changes the size of RCX when it is implicitly accessed
+--
+-- Address size for implicit accesses to the stack segment is determined by D
+-- bit in the stack segment descriptor or is 64 bit in 64 bit mode.
+--
+getEffectiveAddressSize :: X86Dec AddressSize
+getEffectiveAddressSize = do
+   mode        <- getMode
+   asize       <- getAddressSize
+   prefixes    <- fmap toLegacyPrefix <$> getLegacyPrefixes
+
+   let isOverrided = PrefixAddressSizeOverride `elem` prefixes
+   
+   return $ case (mode, asize, isOverrided) of
+      (LongMode Long64bitMode, _, False)     -> AddrSize64
+      (LongMode Long64bitMode, _, True)      -> AddrSize32
+      (_, AddrSize16, False)                 -> AddrSize16
+      (_, AddrSize32, False)                 -> AddrSize32
+      (_, AddrSize32, True)                  -> AddrSize16
+      (_, AddrSize16, True)                  -> AddrSize32
+      _ -> error "Invalid combination of modes and address sizes"
+   
+

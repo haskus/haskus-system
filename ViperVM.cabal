@@ -57,6 +57,7 @@ library
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.Syscalls
     ViperVM.Arch.X86_64.Assembler.RexPrefix
+    ViperVM.Arch.X86_64.Assembler.VexPrefix
     ViperVM.Arch.X86_64.Assembler.LegacyPrefix
     ViperVM.Arch.X86_64.Assembler.Mode
     ViperVM.Arch.X86_64.Assembler.Size

@@ -28,6 +28,17 @@ import ViperVM.Arch.X86_64.Assembler.Addressing
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import Control.Monad.Trans.Either
 
+{- Note [FPU (x87)]
+   ~~~~~~~~~~~~~~~~
+
+ x87 floating-point instructions are encoded with two bytes. The first 5 bits
+ are fixed: 11011 xxx xxxxxxxx
+
+ The second byte is a kind of ModRM but which can be used differently to
+ extend the first opcode byte. 
+    
+-}
+
 newtype M32FP  = M32FP Addr deriving (Show,Eq)
 newtype M64FP  = M64FP Addr deriving (Show,Eq)
 newtype M16INT = M16INT Addr deriving (Show,Eq)
@@ -184,9 +195,8 @@ data X87Instruction
    | FYL2XP1
    deriving (Show,Eq)
 
-getX87 :: AddrParams -> Word8 -> X86Dec X87Instruction
-getX87 aparams x = do
-   let getAddr' = getAddr aparams
+getX87 :: Word8 -> X86Dec X87Instruction
+getX87 x = do
    y <- lookWord8
    case (x,y) of
       -- instructions without parameters
@@ -224,102 +234,116 @@ getX87 aparams x = do
       (0xDF, 0xE0) -> skipWord8 >> right FNSTSW_ax
       -- instructions with ModRM
       _ -> do
-         let m = ModRM y
+         let 
+            m         = ModRM y
+            getReg    = getRMRegister RF_X87 Nothing m
+            getM32FP  = M32FP  <$> getAddr m
+            getM64FP  = M64FP  <$> getAddr m
+            getM80FP  = M80FP  <$> getAddr m
+            getM16INT = M16INT <$> getAddr m
+            getM32INT = M32INT <$> getAddr m
+            getM64INT = M64INT <$> getAddr m
+            getM80DEC = M80DEC <$> getAddr m
+            getM80BCD = M80BCD <$> getAddr m
+            getMCW    = MCW    <$> getAddr m
+            getMSW    = MSW    <$> getAddr m
+            getMENV   = MENV   <$> getAddr m
+            getMSTATE = MSTATE <$> getAddr m
          case (x,regField m,rmRegMode m) of
-            (0xD8, 0, True ) -> skipWord8 >> FADD_st0_sti      . R_ST      <$> right (rmField m)
-            (0xD8, 0, False) -> skipWord8 >> FADD_m32          . M32FP     <$> getAddr' m
-            (0xD9, 0, True ) -> skipWord8 >> FLD_st            . R_ST      <$> right (rmField m)
-            (0xD9, 0, False) -> skipWord8 >> FLD_m32           . M32FP     <$> getAddr' m
-            (0xDA, 0, False) -> skipWord8 >> FIADD_m32         . M32INT    <$> getAddr' m
-            (0xDB, 0, False) -> skipWord8 >> FILD_m32          . M32INT    <$> getAddr' m
-            (0xDC, 0, True ) -> skipWord8 >> FADD_sti_st0      . R_ST      <$> right (rmField m)
-            (0xDC, 0, False) -> skipWord8 >> FADD_m64          . M64FP     <$> getAddr' m
-            (0xDD, 0, False) -> skipWord8 >> FLD_m64           . M64FP     <$> getAddr' m
-            (0xDD, 0, True ) -> skipWord8 >> FFREE             . R_ST      <$> right (rmField m)
-            (0xDE, 0, True ) -> skipWord8 >> FADDP_sti_st0     . R_ST      <$> right (rmField m)
-            (0xDE, 0, False) -> skipWord8 >> FIADD_m16         . M16INT    <$> getAddr' m
-            (0xDF, 0, False) -> skipWord8 >> FILD_m16          . M16INT    <$> getAddr' m
+            (0xD8, 0, True ) -> skipWord8 >> FADD_st0_sti      <$> getReg
+            (0xD8, 0, False) -> skipWord8 >> FADD_m32          <$> getM32FP
+            (0xD9, 0, True ) -> skipWord8 >> FLD_st            <$> getReg
+            (0xD9, 0, False) -> skipWord8 >> FLD_m32           <$> getM32FP
+            (0xDA, 0, False) -> skipWord8 >> FIADD_m32         <$> getM32INT
+            (0xDB, 0, False) -> skipWord8 >> FILD_m32          <$> getM32INT
+            (0xDC, 0, True ) -> skipWord8 >> FADD_sti_st0      <$> getReg
+            (0xDC, 0, False) -> skipWord8 >> FADD_m64          <$> getM64FP
+            (0xDD, 0, False) -> skipWord8 >> FLD_m64           <$> getM64FP
+            (0xDD, 0, True ) -> skipWord8 >> FFREE             <$> getReg
+            (0xDE, 0, True ) -> skipWord8 >> FADDP_sti_st0     <$> getReg
+            (0xDE, 0, False) -> skipWord8 >> FIADD_m16         <$> getM16INT
+            (0xDF, 0, False) -> skipWord8 >> FILD_m16          <$> getM16INT
 
-            (0xD8, 1, False) -> skipWord8 >> FMUL_m32          . M32FP     <$> getAddr' m
-            (0xD8, 1, True ) -> skipWord8 >> FMUL_st0_sti      . R_ST      <$> right (rmField m)
-            (0xD9, 1, True ) -> skipWord8 >> FXCH              . R_ST      <$> right (rmField m)
-            (0xDA, 1, False) -> skipWord8 >> FIMUL_m32         . M32INT    <$> getAddr' m
-            (0xDC, 1, True ) -> skipWord8 >> FMUL_sti_st0      . R_ST      <$> right (rmField m)
-            (0xDC, 1, False) -> skipWord8 >> FMUL_m64          . M64FP     <$> getAddr' m
-            (0xDE, 1, True ) -> skipWord8 >> FMULP_sti_st0     . R_ST      <$> right (rmField m)
-            (0xDE, 1, False) -> skipWord8 >> FIMUL_m16         . M16INT    <$> getAddr' m
+            (0xD8, 1, False) -> skipWord8 >> FMUL_m32          <$> getM32FP
+            (0xD8, 1, True ) -> skipWord8 >> FMUL_st0_sti      <$> getReg
+            (0xD9, 1, True ) -> skipWord8 >> FXCH              <$> getReg
+            (0xDA, 1, False) -> skipWord8 >> FIMUL_m32         <$> getM32INT
+            (0xDC, 1, True ) -> skipWord8 >> FMUL_sti_st0      <$> getReg
+            (0xDC, 1, False) -> skipWord8 >> FMUL_m64          <$> getM64FP
+            (0xDE, 1, True ) -> skipWord8 >> FMULP_sti_st0     <$> getReg
+            (0xDE, 1, False) -> skipWord8 >> FIMUL_m16         <$> getM16INT
 
-            (0xDF, 2, False) -> skipWord8 >> FIST_m16          . M16INT    <$> getAddr' m
-            (0xDB, 2, False) -> skipWord8 >> FIST_m32          . M32INT    <$> getAddr' m
-            (0xD8, 2, True ) -> skipWord8 >> FCOM_st           . R_ST      <$> right (rmField m)
-            (0xD8, 2, False) -> skipWord8 >> FCOM_m32          . M32FP     <$> getAddr' m
-            (0xD9, 2, False) -> skipWord8 >> FST_m32           . M32FP     <$> getAddr' m
-            (0xDA, 2, False) -> skipWord8 >> FICOM_m32         . M32INT    <$> getAddr' m
-            (0xDC, 2, False) -> skipWord8 >> FCOM_m64          . M64FP     <$> getAddr' m
-            (0xDD, 2, False) -> skipWord8 >> FST_m64           . M64FP     <$> getAddr' m
-            (0xDD, 2, True ) -> skipWord8 >> FST_st            . R_ST      <$> right (rmField m)
-            (0xDE, 2, False) -> skipWord8 >> FICOM_m16         . M16INT    <$> getAddr' m
+            (0xDF, 2, False) -> skipWord8 >> FIST_m16          <$> getM16INT
+            (0xDB, 2, False) -> skipWord8 >> FIST_m32          <$> getM32INT
+            (0xD8, 2, True ) -> skipWord8 >> FCOM_st           <$> getReg
+            (0xD8, 2, False) -> skipWord8 >> FCOM_m32          <$> getM32FP
+            (0xD9, 2, False) -> skipWord8 >> FST_m32           <$> getM32FP
+            (0xDA, 2, False) -> skipWord8 >> FICOM_m32         <$> getM32INT
+            (0xDC, 2, False) -> skipWord8 >> FCOM_m64          <$> getM64FP
+            (0xDD, 2, False) -> skipWord8 >> FST_m64           <$> getM64FP
+            (0xDD, 2, True ) -> skipWord8 >> FST_st            <$> getReg
+            (0xDE, 2, False) -> skipWord8 >> FICOM_m16         <$> getM16INT
 
-            (0xD8, 3, True ) -> skipWord8 >> FCOMP_st          . R_ST      <$> right (rmField m)
-            (0xD8, 3, False) -> skipWord8 >> FCOMP_m32         . M32FP     <$> getAddr' m
-            (0xD9, 3, False) -> skipWord8 >> FSTP_m32          . M32FP     <$> getAddr' m
-            (0xDA, 3, False) -> skipWord8 >> FICOMP_m32        . M32INT    <$> getAddr' m
-            (0xDB, 3, False) -> skipWord8 >> FISTP_m32         . M32INT    <$> getAddr' m
-            (0xDC, 3, False) -> skipWord8 >> FCOMP_m64         . M64FP     <$> getAddr' m
-            (0xDD, 3, True ) -> skipWord8 >> FSTP_st           . R_ST      <$> right (rmField m)
-            (0xDD, 3, False) -> skipWord8 >> FSTP_m64          . M64FP     <$> getAddr' m
-            (0xDE, 3, False) -> skipWord8 >> FICOMP_m16        . M16INT    <$> getAddr' m
-            (0xDF, 3, False) -> skipWord8 >> FISTP_m16         . M16INT    <$> getAddr' m
+            (0xD8, 3, True ) -> skipWord8 >> FCOMP_st          <$> getReg
+            (0xD8, 3, False) -> skipWord8 >> FCOMP_m32         <$> getM32FP
+            (0xD9, 3, False) -> skipWord8 >> FSTP_m32          <$> getM32FP
+            (0xDA, 3, False) -> skipWord8 >> FICOMP_m32        <$> getM32INT
+            (0xDB, 3, False) -> skipWord8 >> FISTP_m32         <$> getM32INT
+            (0xDC, 3, False) -> skipWord8 >> FCOMP_m64         <$> getM64FP
+            (0xDD, 3, True ) -> skipWord8 >> FSTP_st           <$> getReg
+            (0xDD, 3, False) -> skipWord8 >> FSTP_m64          <$> getM64FP
+            (0xDE, 3, False) -> skipWord8 >> FICOMP_m16        <$> getM16INT
+            (0xDF, 3, False) -> skipWord8 >> FISTP_m16         <$> getM16INT
 
-            (0xD8, 4, True ) -> skipWord8 >> FSUB_st0_st0_sti  . R_ST      <$> right (rmField m)
-            (0xD8, 4, False) -> skipWord8 >> FSUB_st0_st0_m32  . M32FP     <$> getAddr' m
-            (0xD9, 4, False) -> skipWord8 >> FLDENV            . MENV      <$> getAddr' m
-            (0xDA, 4, False) -> skipWord8 >> FISUB_m32         . M32INT    <$> getAddr' m
-            (0xDC, 4, False) -> skipWord8 >> FSUB_st0_st0_m64  . M64FP     <$> getAddr' m
-            (0xDC, 4, True ) -> skipWord8 >> FSUB_sti_st0_sti  . R_ST      <$> right (rmField m)
-            (0xDD, 4, True ) -> skipWord8 >> FUCOM             . R_ST      <$> right (rmField m)
-            (0xDD, 4, False) -> skipWord8 >> FRSTOR            . MSTATE    <$> getAddr' m
-            (0xDE, 4, True ) -> skipWord8 >> FSUBP_sti_sti_st0 . R_ST      <$> right (rmField m)
-            (0xDE, 4, False) -> skipWord8 >> FISUB_m16         . M16INT    <$> getAddr' m
-            (0xDF, 4, False) -> skipWord8 >> FBLD              . M80DEC    <$> getAddr' m
+            (0xD8, 4, True ) -> skipWord8 >> FSUB_st0_st0_sti  <$> getReg
+            (0xD8, 4, False) -> skipWord8 >> FSUB_st0_st0_m32  <$> getM32FP
+            (0xD9, 4, False) -> skipWord8 >> FLDENV            <$> getMENV
+            (0xDA, 4, False) -> skipWord8 >> FISUB_m32         <$> getM32INT
+            (0xDC, 4, False) -> skipWord8 >> FSUB_st0_st0_m64  <$> getM64FP
+            (0xDC, 4, True ) -> skipWord8 >> FSUB_sti_st0_sti  <$> getReg
+            (0xDD, 4, True ) -> skipWord8 >> FUCOM             <$> getReg
+            (0xDD, 4, False) -> skipWord8 >> FRSTOR            <$> getMSTATE
+            (0xDE, 4, True ) -> skipWord8 >> FSUBP_sti_sti_st0 <$> getReg
+            (0xDE, 4, False) -> skipWord8 >> FISUB_m16         <$> getM16INT
+            (0xDF, 4, False) -> skipWord8 >> FBLD              <$> getM80DEC
 
-            (0xD8, 5, True ) -> skipWord8 >> FSUB_st0_sti_st0  . R_ST      <$> right (rmField m)
-            (0xD8, 5, False) -> skipWord8 >> FSUB_st0_m32_st0  . M32FP     <$> getAddr' m
-            (0xD9, 5, False) -> skipWord8 >> FLDCW             . MCW       <$> getAddr' m
-            (0xDA, 5, False) -> skipWord8 >> FISUBR_m32        . M32INT    <$> getAddr' m
-            (0xDB, 5, False) -> skipWord8 >> FLD_m80           . M80FP     <$> getAddr' m
-            (0xDB, 5, True ) -> skipWord8 >> FUCOMI            . R_ST      <$> right (rmField m)
-            (0xDC, 5, False) -> skipWord8 >> FSUB_st0_m64_st0  . M64FP     <$> getAddr' m
-            (0xDC, 5, True ) -> skipWord8 >> FSUB_sti_sti_st0  . R_ST      <$> right (rmField m)
-            (0xDD, 5, True ) -> skipWord8 >> FUCOMP            . R_ST      <$> right (rmField m)
-            (0xDE, 5, True ) -> skipWord8 >> FSUBP_st0_st0_sti . R_ST      <$> right (rmField m)
-            (0xDE, 5, False) -> skipWord8 >> FISUBR_m16        . M16INT    <$> getAddr' m
-            (0xDF, 5, True ) -> skipWord8 >> FUCOMIP           . R_ST      <$> right (rmField m)
-            (0xDF, 5, False) -> skipWord8 >> FILD_m64          . M64INT    <$> getAddr' m
+            (0xD8, 5, True ) -> skipWord8 >> FSUB_st0_sti_st0  <$> getReg
+            (0xD8, 5, False) -> skipWord8 >> FSUB_st0_m32_st0  <$> getM32FP
+            (0xD9, 5, False) -> skipWord8 >> FLDCW             <$> getMCW
+            (0xDA, 5, False) -> skipWord8 >> FISUBR_m32        <$> getM32INT
+            (0xDB, 5, False) -> skipWord8 >> FLD_m80           <$> getM80FP
+            (0xDB, 5, True ) -> skipWord8 >> FUCOMI            <$> getReg
+            (0xDC, 5, False) -> skipWord8 >> FSUB_st0_m64_st0  <$> getM64FP
+            (0xDC, 5, True ) -> skipWord8 >> FSUB_sti_sti_st0  <$> getReg
+            (0xDD, 5, True ) -> skipWord8 >> FUCOMP            <$> getReg
+            (0xDE, 5, True ) -> skipWord8 >> FSUBP_st0_st0_sti <$> getReg
+            (0xDE, 5, False) -> skipWord8 >> FISUBR_m16        <$> getM16INT
+            (0xDF, 5, True ) -> skipWord8 >> FUCOMIP           <$> getReg
+            (0xDF, 5, False) -> skipWord8 >> FILD_m64          <$> getM64INT
 
-            (0xD8, 6, True ) -> skipWord8 >> FDIV_st0_st0_sti  . R_ST      <$> right (rmField m)
-            (0xD8, 6, False) -> skipWord8 >> FDIV_m32          . M32FP     <$> getAddr' m
-            (0xD9, 6, False) -> skipWord8 >> FNSTENV           . MENV      <$> getAddr' m
-            (0xDA, 6, False) -> skipWord8 >> FIDIV_m32         . M32INT    <$> getAddr' m
-            (0xDC, 6, True ) -> skipWord8 >> FDIV_sti_st0_sti  . R_ST      <$> right (rmField m)
-            (0xDC, 6, False) -> skipWord8 >> FDIV_m64          . M64FP     <$> getAddr' m
-            (0xDD, 6, False) -> skipWord8 >> FNSAVE            . MSTATE    <$> getAddr' m
-            (0xDE, 6, True ) -> skipWord8 >> FDIVRP            . R_ST      <$> right (rmField m)
-            (0xDE, 6, False) -> skipWord8 >> FIDIV_m16         . M16INT    <$> getAddr' m
-            (0xDF, 6, False) -> skipWord8 >> FBSTP             . M80BCD    <$> getAddr' m
-            (0xDF, 6, True ) -> skipWord8 >> FCOMIP            . R_ST      <$> right (rmField m)
+            (0xD8, 6, True ) -> skipWord8 >> FDIV_st0_st0_sti  <$> getReg
+            (0xD8, 6, False) -> skipWord8 >> FDIV_m32          <$> getM32FP
+            (0xD9, 6, False) -> skipWord8 >> FNSTENV           <$> getMENV
+            (0xDA, 6, False) -> skipWord8 >> FIDIV_m32         <$> getM32INT
+            (0xDC, 6, True ) -> skipWord8 >> FDIV_sti_st0_sti  <$> getReg
+            (0xDC, 6, False) -> skipWord8 >> FDIV_m64          <$> getM64FP
+            (0xDD, 6, False) -> skipWord8 >> FNSAVE            <$> getMSTATE
+            (0xDE, 6, True ) -> skipWord8 >> FDIVRP            <$> getReg
+            (0xDE, 6, False) -> skipWord8 >> FIDIV_m16         <$> getM16INT
+            (0xDF, 6, False) -> skipWord8 >> FBSTP             <$> getM80BCD
+            (0xDF, 6, True ) -> skipWord8 >> FCOMIP            <$> getReg
 
-            (0xD8, 7, True ) -> skipWord8 >> FDIV_st0_sti_st0  . R_ST      <$> right (rmField m)
-            (0xD8, 7, False) -> skipWord8 >> FDIVR_m32         . M32FP     <$> getAddr' m
-            (0xD9, 7, False) -> skipWord8 >> FNSTCW            . MCW       <$> getAddr' m
-            (0xDA, 7, False) -> skipWord8 >> FIDIVR_m32        . M32INT    <$> getAddr' m
-            (0xDB, 7, False) -> skipWord8 >> FSTP_m80          . M80FP     <$> getAddr' m
-            (0xDC, 7, True ) -> skipWord8 >> FDIV_sti_sti_st0  . R_ST      <$> right (rmField m)
-            (0xDC, 7, False) -> skipWord8 >> FDIVR_m64         . M64FP     <$> getAddr' m
-            (0xDD, 7, False) -> skipWord8 >> FNSTSW            . MSW       <$> getAddr' m
-            (0xDE, 7, True ) -> skipWord8 >> FDIVP             . R_ST      <$> right (rmField m)
-            (0xDE, 7, False) -> skipWord8 >> FIDIVR_m16        . M16INT    <$> getAddr' m
-            (0xDF, 7, False) -> skipWord8 >> FISTP_m64         . M64INT    <$> getAddr' m
+            (0xD8, 7, True ) -> skipWord8 >> FDIV_st0_sti_st0  <$> getReg
+            (0xD8, 7, False) -> skipWord8 >> FDIVR_m32         <$> getM32FP
+            (0xD9, 7, False) -> skipWord8 >> FNSTCW            <$> getMCW
+            (0xDA, 7, False) -> skipWord8 >> FIDIVR_m32        <$> getM32INT
+            (0xDB, 7, False) -> skipWord8 >> FSTP_m80          <$> getM80FP
+            (0xDC, 7, True ) -> skipWord8 >> FDIV_sti_sti_st0  <$> getReg
+            (0xDC, 7, False) -> skipWord8 >> FDIVR_m64         <$> getM64FP
+            (0xDD, 7, False) -> skipWord8 >> FNSTSW            <$> getMSW
+            (0xDE, 7, True ) -> skipWord8 >> FDIVP             <$> getReg
+            (0xDE, 7, False) -> skipWord8 >> FIDIVR_m16        <$> getM16INT
+            (0xDF, 7, False) -> skipWord8 >> FISTP_m64         <$> getM64INT
 
             _                -> left $ ErrUnknownOpcode [x]
 
