@@ -21,8 +21,6 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , skipWord16
    , skipWord32
    , skipWord64
-   , getOperand
-   , getAddr
    )
 where
 
@@ -34,8 +32,6 @@ import Control.Monad.Trans.Either
 
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Insns
-import ViperVM.Arch.X86_64.Assembler.ModRM
 
 data DecodeError
    = ErrInsnTooLong                 -- ^ Instruction is more than 15 bytes long
@@ -159,31 +155,3 @@ skipWord32 = void nextWord32
 -- | Read 8 bytes
 skipWord64 :: X86Dec ()
 skipWord64 = void nextWord64
-
--- | Get operand from a ModRM
-getOperand :: AddressSize -> ModRM -> X86Dec Op
-getOperand asize m = do
-   let
-      getDisp = case useDisplacement asize m of
-         Nothing      -> return 0
-         Just Size8   -> fromIntegral <$> nextWord8
-         Just Size16  -> fromIntegral <$> nextWord16
-         Just Size32  ->                  nextWord32
-         Just s       -> error $ "Invalid displacement size: " ++ show s
-
-
-   case rmMode asize m of
-      RMRegister  -> right . OpReg $ rmField m
-      RMBaseIndex -> OpAddr . AddrBaseDisp . BaseDisp (rmField m) <$> getDisp
-      RMSIB       -> OpAddr . AddrScaleBaseIndex <$> do
-         sib <- SIB <$> nextWord8
-         disp <- getDisp
-         return (ScaleIndexBase (baseField sib) (indexField sib) (scaleField sib) disp)
-
-getAddr :: AddressSize -> ModRM -> X86Dec Addr
-getAddr asize m = do
-   op <- getOperand asize m
-   case op of
-      OpAddr a -> right a
-      OpReg _  -> error "Not an address operand"
-

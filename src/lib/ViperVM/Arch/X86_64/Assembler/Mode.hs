@@ -8,6 +8,7 @@ module ViperVM.Arch.X86_64.Assembler.Mode
    , getModeInfo
    , is64bitMode
    , is32bitMode
+   , isLongMode
    ) where
 
 
@@ -76,3 +77,8 @@ is32bitMode :: X86Mode -> Bool
 is32bitMode (LongMode CompatibilityMode) = True
 is32bitMode (LegacyMode ProtectedMode) = True
 is32bitMode _ = False
+
+-- | Indicate if it is Long mode
+isLongMode :: X86Mode -> Bool
+isLongMode (LongMode _) = True
+isLongMode _ = False

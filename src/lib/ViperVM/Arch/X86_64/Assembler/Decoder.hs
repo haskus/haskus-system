@@ -23,6 +23,7 @@ import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Insns
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.X87
+import ViperVM.Arch.X86_64.Assembler.Addressing
 
 data Instruction
    = InsnX87 X87Instruction
@@ -172,24 +173,6 @@ decodeLegacyPrefixes = rec 0 []
  The second byte is a kind of ModRM but which can be used differently to
  extend the first opcode byte. 
     
-    Variation 1: 11011 0x1 111xxxxx : 6-bit opcode extension
-
-    Variation 2: 11011 dp/mf 0 mod CC r/p r/m
-       - CC (2bits): opcode extension 
-       - r/p (1bit): case CC of
-             00 -> r/p is opcode extension. 
-             01 -> r/p is pop bit
-             _  -> r/p reverses the operand order
-       - mod (2bits): usual mod
-       - r/m (3bits): usual r/m (registers are ST(i))
-       - dp/mf: case mod of
-          11 -> dp is direction bit (ST(0) or ST(i)) and pop bit
-          _  -> mf is memory format
-                   00 -> 32-bit real
-                   10 -> 64-bit real
-                   01 -> 32-bit integer
-                   11 -> 16-bit integer
-    3 others forms (TODO)
 -}
 
 
@@ -290,50 +273,6 @@ decodeLegacyPrefixes = rec 0 []
 --
 --   modify (\y -> y { stateOpcode = op })
 --   
---
------------------------------------------------------------------------
----- MODRM, SIB, DISPLACEMENT
------------------------------------------------------------------------
---   
----- | Decode ModRM byte, SIB byte and displacement
---requireModRM :: X86Dec ()
---requireModRM = whenM (isNothing . stateModRM <$> get) $ do
---
---   addrSize <- getEffectiveAddressSize
---
---   modrm <- ModRM <$> nextByte
---
---   sib <- if useSIB addrSize modrm
---      then Just . SIB <$> nextByte
---      else return Nothing
---
---   disp <- traverse getSizedValue (useDisplacement addrSize modrm)
---
---   s <- get
---   put $ s 
---      { stateModRM = Just modrm
---      , stateSIB   = sib
---      , stateDisplacement = disp
---      }
---
----- | Check if ModRM is required by the operands and decode it
---decodeModRM :: X86Dec ()
---decodeModRM = do
---   insn <- fromJust . stateInsnDesc <$> get
---
---   let ops = insnOperands insn
---
---   -- Check if ModRM is required and read it
---   let needModRM x = case x of
---         Enc_Reg  -> True
---         Enc_R128 -> True
---         Enc_RV   -> True
---         Enc_RM   -> True
---         Enc_RMV  -> True
---         _        -> False
---
---   when (any needModRM ops) requireModRM
---
 --
 -----------------------------------------------------------------------
 ---- IMMEDIATE
@@ -499,16 +438,24 @@ decodeLegacyPrefixes = rec 0 []
 --   Size64 -> SizedValue64 <$> nextWord64le
 
 
+getEffectiveAddressSize :: [Word8] -> X86Dec AddressSize
+getEffectiveAddressSize prefixes = do
+   mode        <- getMode
+   asize       <- getAddressSize
+   return (effectiveAddressSize mode (fmap toLegacyPrefix prefixes) asize)
+
+
 decodeInsn :: X86Dec Instruction
 decodeInsn = do
    allowedSets <- getAllowedSets
-   mode <- getMode
-   asize <- getAddressSize
+   mode        <- getMode
 
-   -- Decode legacy prefixes. See Note [legacy prefixes].
+   -- Decode legacy prefixes. See Note [Legacy prefixes].
    prefixes <- decodeLegacyPrefixes
 
-   let easize = effectiveAddressSize mode (fmap toLegacyPrefix prefixes) asize
+   -- compute the effective address size (i.e. some legacy prefixes can change
+   -- the current address size)
+   easize <- getEffectiveAddressSize prefixes
 
    -- Try to decode a REX prefix. See Note [REX prefix]
    rex <- if not (is64bitMode mode)
@@ -534,10 +481,27 @@ decodeInsn = do
       y    -> right [y]
 
 
+   -- addressing params (if an operand accesses memory)
+   let aparams = case rex of
+         Nothing -> AddrParams
+            { addrParamBaseExt         = 0
+            , addrParamIndexExt        = 0
+            , addrParamUseExtRegisters = False
+            , addrParamAddressSize     = easize
+            }
+         Just x  -> AddrParams
+            { addrParamBaseExt         = rexB x
+            , addrParamIndexExt        = rexX x
+            , addrParamUseExtRegisters = True
+            , addrParamAddressSize     = if rexW x 
+                  then AddrSize64
+                  else easize
+            }
+
    case opcode of
       -- X87 instructions
       [x] |  SetX87 `elem` allowedSets 
-          && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ getX87 easize x
+          && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ getX87 aparams x
 
 
       -- 3DNow! instructions

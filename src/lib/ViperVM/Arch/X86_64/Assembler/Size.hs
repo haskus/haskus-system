@@ -57,7 +57,7 @@ data SizedValue
    | SizedValue16 !Word16
    | SizedValue32 !Word32
    | SizedValue64 !Word64
-   deriving (Show)
+   deriving (Show,Eq)
 
 -- | Return effective operand size
 --

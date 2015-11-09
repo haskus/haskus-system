@@ -152,6 +152,10 @@ regFromCode fm sz hasRex code = case fm of
       then R_YMM code
       else error $ "Invalid YMM register index: " ++ show code
 
+   RF_ZMM -> if code <= 31
+      then R_ZMM code
+      else error $ "Invalid ZMM register index: " ++ show code
+
    RF_SEG -> case code .&. 0x07 of
       0  -> R_ES
       1  -> R_CS
@@ -159,7 +163,7 @@ regFromCode fm sz hasRex code = case fm of
       3  -> R_DS
       4  -> R_FS
       5  -> R_GS
-      _ -> error $ "Invalid MMX register index: " ++ show code
+      _ -> error $ "Invalid segment register index: " ++ show code
 
    RF_CTRL -> if code <= 15
       then R_CR code

@@ -26,10 +26,10 @@ rexR :: Rex -> Bool
 rexR (Rex v) = testBit v 3
 
 -- | Test X bit of REX prefix
-rexX :: Rex -> Bool
-rexX (Rex v) = testBit v 2
+rexX :: Rex -> Word8
+rexX (Rex v) = if testBit v 2 then 1 else 0
 
 -- | Test B bit of REX prefix
-rexB :: Rex -> Bool
-rexB (Rex v) = testBit v 1
+rexB :: Rex -> Word8
+rexB (Rex v) = if testBit v 1 then 1 else 0
 

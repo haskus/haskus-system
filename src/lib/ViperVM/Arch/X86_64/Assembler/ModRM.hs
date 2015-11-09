@@ -2,10 +2,6 @@ module ViperVM.Arch.X86_64.Assembler.ModRM
    ( ModRM(..)
    , SIB(..)
    , Scale(..)
-   , Op(..)
-   , Addr(..)
-   , BaseDisp(..)
-   , ScaleIndexBase(..)
    , RMMode(..)
    , newModRM
    , rmField
@@ -18,7 +14,6 @@ module ViperVM.Arch.X86_64.Assembler.ModRM
    , scaleField
    , indexField
    , baseField
-   , rmBaseIndex
    , rmRegMode
    )
 where
@@ -27,7 +22,6 @@ import Data.Word
 import Data.Bits
 
 import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Registers
 
 -- | ModRM byte
 newtype ModRM = ModRM Word8 deriving (Show,Eq)
@@ -41,31 +35,6 @@ data Scale
    | Scale2 
    | Scale4 
    | Scale8 
-   deriving (Show,Eq)
-
-data Op
-   = OpReg Word8
-   | OpAddr Addr
-   deriving (Show,Eq)
-
-data Addr
-   = AddrDirect Word32
-   | AddrBaseDisp BaseDisp
-   | AddrScaleBaseIndex ScaleIndexBase
-   deriving (Show,Eq)
-
-data BaseDisp = BaseDisp
-   { bdBase :: Word8
-   , bdDisp :: Word32
-   }
-   deriving (Show,Eq)
-
-data ScaleIndexBase = ScaleIndexBase
-   { sibBase  :: Word8
-   , sibIndex :: Word8
-   , sibScale :: Scale
-   , sibDisp  :: Word32
-   }
    deriving (Show,Eq)
 
 -- | Mode for the R/M field
@@ -112,35 +81,6 @@ rmMode sz rm = case (sz, modField rm, rmField rm) of
 rmRegMode :: ModRM -> Bool
 rmRegMode rm = modField rm == 3
 
--- | Get base/index registers
-rmBaseIndex :: AddressSize -> ModRM -> (Maybe Register, Maybe Register)
-rmBaseIndex sz rm = case rmMode sz rm of
-   RMBaseIndex -> case sz of
-      AddrSize16 -> case (modField rm, rmField rm) of
-         (_,0) -> (Just R_BX,  Just R_SI)
-         (_,1) -> (Just R_BX,  Just R_DI)
-         (_,2) -> (Just R_BP,  Just R_SI)
-         (_,3) -> (Just R_BP,  Just R_DI)
-         (_,4) -> (Nothing,    Just R_SI)
-         (_,5) -> (Nothing,    Just R_DI)
-         (0,6) -> (Nothing,    Nothing)
-         (_,6) -> (Just R_BP,  Nothing)
-         (_,7) -> (Just R_BX,  Nothing)
-         (_,_) -> error "Invalid R/M field value"
-      _ -> case (modField rm, rmField rm) of
-         (_,0) -> (Just R_EAX, Nothing)
-         (_,1) -> (Just R_ECX, Nothing)
-         (_,2) -> (Just R_EDX, Nothing)
-         (_,3) -> (Just R_EBX, Nothing)
-         (_,4) -> (Nothing,    Nothing) -- SIB
-         (0,5) -> (Nothing,    Nothing)
-         (_,5) -> (Just R_EBP, Nothing)
-         (_,6) -> (Just R_ESI, Nothing)
-         (_,7) -> (Just R_EDI, Nothing)
-         (0,_) -> error "Invalid R/M field value"
-   RMSIB -> error "Given R/M field uses SIB byte"
-   RMRegister -> error "Given R/M field is a register"
-
 -- | Indicate if displacement bytes follow
 useDisplacement :: AddressSize -> ModRM -> Maybe Size
 useDisplacement sz modrm = case (sz,modField modrm,rmField modrm) of
@@ -171,6 +111,7 @@ scaleField (SIB x) = case x `shiftR` 6 of
    1 -> Scale2
    2 -> Scale4
    3 -> Scale8
+   _ -> error "Invalid scaling factor"
 
 -- | Get SIB index field
 indexField :: SIB -> Word8
