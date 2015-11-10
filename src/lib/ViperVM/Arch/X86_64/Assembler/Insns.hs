@@ -293,7 +293,7 @@ instructions =
                          ]]
 
    , i "Add with carry with immediate" "ADC" [0x80]
-         [OpExt 2, Legacy, LongMode, Lockable, Sizable 0, SignExtendableImm8 2]
+         [OpExt 2, Legacy, LongMode, Lockable, Sizable 0, SignExtendableImm8 1]
          [Read [CF], Set [OF,SF,ZF,AF,CF,PF]]
          [LegacyEncoding [ op    RW    T_RM     E_ModRM
                          , op    RO    T_Imm    E_Imm
@@ -321,7 +321,7 @@ instructions =
                          ]]
 
    , i "Add with immediate" "ADD" [0x80]
-         [OpExt 0, Legacy, LongMode, Lockable, Sizable 0, SignExtendableImm8 2]
+         [OpExt 0, Legacy, LongMode, Lockable, Sizable 0, SignExtendableImm8 1]
          [Set [OF,SF,ZF,AF,CF,PF]]
          [LegacyEncoding [ op    RW    T_RM     E_ModRM
                          , op    RO    T_Imm    E_Imm

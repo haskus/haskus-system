@@ -2,6 +2,7 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    ( InstructionSet(..)
    , X86Dec
    , X86State(..)
+   , VectorLength (..)
    , DecodeError(..)
    , getMode
    , getAllowedSets
@@ -12,6 +13,7 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , getIndexRegExt
    , getRegExt
    , getUseExtRegs
+   , getOpSize64
    , assertNoRex
    , assertNoVex
    , assertNoXop
@@ -79,17 +81,21 @@ data X86State = X86State
 
    , stateByteCount        :: Int                -- ^ Number of bytes read (used to fail when > 15)
    , stateLegacyPrefixes   :: [Word8]            -- ^ Legacy prefixes
-   , stateBaseRegExt       :: Word8              -- ^ Extension for the base register
-   , stateIndexRegExt      :: Word8              -- ^ Extension for the index register
-   , stateRegExt           :: Word8              -- ^ Extension for a register operand
-   , stateUseExtRegs       :: Bool               -- ^ Indicate if extended 64-bit registers have to be used
+   , stateBaseRegExt       :: Word8              -- ^ Extension for the base register (REX.B)
+   , stateIndexRegExt      :: Word8              -- ^ Extension for the index register (REX.X)
+   , stateRegExt           :: Word8              -- ^ Extension for a register operand (REX.R)
+   , stateOpSize64         :: Bool               -- ^ Indicate if the operand size is forced to 64-bit (REX.W)
+   , stateUseExtRegs       :: Bool               -- ^ Indicate if extended 64-bit registers have to be used (e.g. a REX prefix has been read)
    , stateHasRexPrefix     :: Bool               -- ^ Indicate that a REX prefix has been read
    , stateMapSelect        :: [Word8]            -- ^ Map selection
    , stateHasVexPrefix     :: Bool               -- ^ Indicate that a VEX prefix has been read
    , stateHasXopPrefix     :: Bool               -- ^ Indicate that a XOP prefix has been read
    , stateOpcodeExtE       :: Maybe Bool         -- ^ Opcode extension in VEX/XOP.E
    , stateAdditionalOp     :: Maybe Word8        -- ^ Additional operand (VEX.vvvv)
+   , stateVectorLength     :: Maybe VectorLength -- ^ Vector length (VEX.L)
    }
+
+data VectorLength = VL128 | VL256 deriving (Show,Eq)
 
 
 
@@ -124,6 +130,9 @@ getRegExt = stateRegExt <$> lift get
 
 getUseExtRegs :: X86Dec Bool
 getUseExtRegs = stateUseExtRegs <$> lift get
+
+getOpSize64 :: X86Dec Bool
+getOpSize64 = stateOpSize64 <$> lift get
 
 -- | Assert that no Rex prefix has been decoded
 assertNoRex :: DecodeError -> X86Dec ()

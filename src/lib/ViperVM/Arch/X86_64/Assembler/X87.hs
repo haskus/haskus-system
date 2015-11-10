@@ -14,7 +14,7 @@ module ViperVM.Arch.X86_64.Assembler.X87
    , MCW(..)
    , MSW(..)
    , MENV(..)
-   , getX87
+   , decodeX87
    , getX87Info
    )
 where
@@ -195,8 +195,8 @@ data X87Instruction
    | FYL2XP1
    deriving (Show,Eq)
 
-getX87 :: Word8 -> X86Dec X87Instruction
-getX87 x = do
+decodeX87 :: Word8 -> X86Dec X87Instruction
+decodeX87 x = do
    y <- lookWord8
    case (x,y) of
       -- instructions without parameters

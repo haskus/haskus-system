@@ -52,6 +52,7 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
          , stateBaseRegExt          = 0
          , stateIndexRegExt         = 0
          , stateRegExt              = 0
+         , stateOpSize64            = False
          , stateUseExtRegs          = False
          , stateHasRexPrefix        = False
          , stateMapSelect           = []
@@ -59,6 +60,7 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
          , stateHasXopPrefix        = False
          , stateOpcodeExtE          = Nothing
          , stateAdditionalOp        = Nothing
+         , stateVectorLength        = Nothing
          }
 
          
@@ -116,7 +118,6 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
 decodeInsn :: X86Dec Instruction
 decodeInsn = do
    allowedSets <- getAllowedSets
-   mode        <- getMode
 
    decodeLegacyPrefixes
    decodeREX
@@ -141,7 +142,7 @@ decodeInsn = do
    case opcode of
       -- X87 instructions
       [x] |  SetX87 `elem` allowedSets 
-          && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ getX87 x
+          && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ decodeX87 x
 
 
       -- 3DNow! instructions

@@ -78,7 +78,7 @@ decodeREX = do
             , stateRegExt       = rexR rex
             , stateUseExtRegs   = True
             , stateAddressSize  = AddrSize64
-            , stateOperandSize  = OpSize64
+            , stateOpSize64     = rexW rex
             , stateHasRexPrefix = True
             })
 

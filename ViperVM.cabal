@@ -66,6 +66,7 @@ library
     ViperVM.Arch.X86_64.Assembler.Addressing
     ViperVM.Arch.X86_64.Assembler.X86Dec
     ViperVM.Arch.X86_64.Assembler.X87
+    ViperVM.Arch.X86_64.Assembler.Instructions
 
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll

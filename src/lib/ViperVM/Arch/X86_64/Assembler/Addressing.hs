@@ -3,14 +3,15 @@ module ViperVM.Arch.X86_64.Assembler.Addressing
    , getAddr
    , getRegRegister
    , getRMRegister
-   , effectiveOperandSize
+   , Op(..)
+   , getRMOp
+   , getEffectiveOperandSize
    , getEffectiveAddressSize
    )
 where
 
 import Data.Bits
 import Data.Word
-import Data.Maybe
 
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.ModRM
@@ -18,7 +19,6 @@ import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Registers
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
-import ViperVM.Arch.X86_64.Assembler.RexPrefix
 
 -- The X86 architecture supports different kinds of memory addressing. The
 -- available addressing modes depend on the execution mode.
@@ -126,20 +126,35 @@ getRegRegister fm size modrm = do
    ext <- getRegExt
    getRegister fm size ((ext `shiftL` 3) .|. regField modrm)
 
+data Op
+   = OpReg Register
+   | OpMem Addr
+   | OpImm SizedValue
+   deriving (Show,Eq)
+
+getRMOp :: RegFamily -> Maybe Size -> ModRM -> X86Dec Op
+getRMOp fm size m = case rmRegMode m of
+   True  -> OpReg <$> getRMRegister fm size m
+   False -> OpMem <$> getAddr m
+
 -- | Return effective operand size
 --
 -- See Table 1-2 "Operand-Size Overrides" in AMD Manual v3
-effectiveOperandSize :: X86Mode -> [LegacyPrefix] -> Maybe Rex -> OperandSize -> OperandSize
-effectiveOperandSize mode prefixes rex defaultSize = 
-   let 
-      isOverrided = PrefixOperandSizeOverride `elem` prefixes
-      rexw = fromMaybe False (fmap rexW rex)
-   in case (mode, defaultSize, isOverrided, rexw) of
+getEffectiveOperandSize :: X86Dec OperandSize
+getEffectiveOperandSize = do
+   mode     <- getMode
+   prefixes <- fmap toLegacyPrefix <$> getLegacyPrefixes
+   osize    <- getOperandSize
+   opSize64 <- getOpSize64
+
+   let isOverrided = PrefixOperandSizeOverride `elem` prefixes
+
+   return $ case (mode, osize, isOverrided, opSize64) of
       (LongMode Long64bitMode, _, _, True)         -> OpSize64
       (LongMode Long64bitMode, def, False, False)  -> def
       (LongMode Long64bitMode, _, True, False)     -> OpSize16
-      (_, def, False, _) 
-         | def `elem` [OpSize16,OpSize32]          -> def
+      (_, OpSize16, False, _)                      -> OpSize16
+      (_, OpSize32, False, _)                      -> OpSize32
       (_, OpSize32, True, _)                       -> OpSize16
       (_, OpSize16, True, _)                       -> OpSize32
       _ -> error "Invalid combination of modes and operand sizes"

@@ -18,7 +18,6 @@ import Control.Monad.State
 
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.Size
 
 data Vex
    = Vex2 !Word8
@@ -129,9 +128,9 @@ decodeVexXop vex = do
       , stateRegExt           = case vexR vex of
                                  True  -> 1
                                  False -> 0
-      , stateOperandSize      = case vexW vex of
-                                 Just True -> OpSize64
-                                 _         -> stateOperandSize s
+      , stateOpSize64         = case vexW vex of
+                                 Just True -> True
+                                 _         -> stateOpSize64 s
       , stateOpcodeExtE       = vexW vex
       , stateMapSelect        = vexMapSelect vex
       , stateAdditionalOp     = Just (vexVVVV vex)
@@ -141,5 +140,8 @@ decodeVexXop vex = do
                                  2 -> [0xF3]
                                  3 -> [0xF2]
                                  _ -> error "Invalid PP in VEX prefix"
+      , stateVectorLength     = case vexL vex of
+                                 False -> Just VL128
+                                 True  -> Just VL256
       })
 
