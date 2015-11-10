@@ -13,13 +13,19 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , insnOpcodeMap
    , instructions
    , requireModRM
+   , PTree(..)
+   , makeParser
    )
 where
 
 import Data.Word
+import Data.Bits
+import Data.List (groupBy)
+import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.List ((\\), foldl')
+import Data.Tree
 
 data X86Insn = X86Insn
    { iDesc        :: String
@@ -212,6 +218,13 @@ data Encoding
    | Vex VexLW [Operand]
    deriving (Show)
 
+getOperandEncodings :: X86Insn -> [OperandEnc]
+getOperandEncodings i = do
+   enc <- iEncoding i
+   case enc of
+      LegacyEncoding ops -> fmap opEnc ops
+      Vex _ ops          -> fmap opEnc ops
+   
 
 -- | Indicate if an instruction requires ModRM
 requireModRM :: X86Insn -> Bool
@@ -1453,3 +1466,76 @@ instructions =
 
    ]
 
+
+
+makeParser :: [X86Insn] -> Tree PTree
+makeParser insns = makeTree insns
+   where
+      -- generate multiple opcodes from insn properties and encodings
+      multiOpcode :: X86Insn -> [X86Insn]
+      multiOpcode i = fmap (\o' -> i {iOpcode = ini ++ [o']}) ops
+         where
+            ops = o : recProp [] (iProperties i) ++
+                      recEnc [] (getOperandEncodings i)
+
+            o   = last (iOpcode i)
+            ini = init (iOpcode i)
+
+            recEnc os [] = os
+            recEnc os (e:es) = recEnc os' es
+               where
+                  os' = case e of
+                     E_OpReg -> fmap (o+) [1..7] ++ os
+                     E_OpCC  -> fmap (o+) [1..15] ++ os
+                     _       -> os
+
+            recProp os []     = os
+            recProp os (p:ps) = recProp (os' ++ os) ps
+               where 
+                  os' = case p of
+                     Sizable n -> [setBit o n]
+
+                     SignExtendableImm8 n -> [setBit o' n]
+                        where
+                           --find associated Sizable
+                           isSizable (Sizable _) = True
+                           isSizable _           = False
+                           Sizable szb = head (filter isSizable (iProperties i))
+                           o' = setBit o szb
+
+                     Reversable n -> [setBit o n]
+
+                     _  -> []
+
+      -- drop the first opcode of all the given instructions
+      dropOpcode []     = []
+      dropOpcode (i:is) = 
+         case iOpcode i of
+            [] -> dropOpcode is
+            o' -> (i { iOpcode = tail o'}) : dropOpcode is
+
+      cmp x y = tst x == tst y
+      tst = head . iOpcode
+
+      rec :: [X86Insn] -> [Tree PTree]
+      rec is = (leaves ++ gs)
+         where
+            (ls,ns) = List.partition (null . iOpcode) is
+
+            leaves = fmap (\x -> Node (PInsn x) []) ls
+
+            -- instruction grouped by first opcode
+            gs = fmap f $ groupBy cmp ns
+
+            f :: [X86Insn] -> Tree PTree
+            f xs = Node (POp (head (iOpcode (head xs)))) (rec (dropOpcode xs))
+
+      makeTree :: [X86Insn] -> Tree PTree
+      makeTree is = Node PRoot (rec (concatMap multiOpcode is))
+
+
+data PTree
+   = PInsn X86Insn
+   | POp Word8
+   | PRoot
+   deriving (Show)
