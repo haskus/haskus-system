@@ -15,7 +15,7 @@ module ViperVM.Arch.X86_64.Assembler.X87
    , MSW(..)
    , MENV(..)
    , decodeX87
-   , getX87Info
+--   , getX87Info
    )
 where
 
@@ -347,33 +347,33 @@ decodeX87 x = do
 
             _                -> left $ ErrUnknownOpcode [x]
 
-getX87Info :: X87Instruction -> X87Insn
-getX87Info x = case x of
-   F2XM1                   -> x87_f2xm1
-   FABS                    -> x87_fabs
-   FADD_m32 _              -> x87_fadd
-   FADD_m64 _              -> x87_fadd
-   FADD_st0_sti _          -> x87_fadd
-   FADD_sti_st0 _          -> x87_fadd
+-- getX87Info :: X87Instruction -> X87Insn
+-- getX87Info x = case x of
+--    F2XM1                   -> x87_f2xm1
+--    FABS                    -> x87_fabs
+--    FADD_m32 _              -> x87_fadd
+--    FADD_m64 _              -> x87_fadd
+--    FADD_st0_sti _          -> x87_fadd
+--    FADD_sti_st0 _          -> x87_fadd
 --    FADDP_sti_sto _         -> x87_faddp
 --    FADDP                   -> x87_faddp
 --    FIADD_m32 _             -> x87_fiadd
 --    FIADD_m16 _             -> x87_fiadd
-   FBLD _                  -> x87_fbld
-   FBSTP _                 -> x87_fbstp
-   FCHS                    -> x87_fchs
-   FNCLEX                  -> x87_fnclex
-   FCMOVB _                -> x87_fcmovb
-   FCMOVE _                -> x87_fcmove
-   FCMOVBE _               -> x87_fcmovbe
-   FCMOVU _                -> x87_fcmovu
-   FCMOVNB _               -> x87_fcmovnb
-   FCMOVNE _               -> x87_fcmovne
-   FCMOVNBE _              -> x87_fcmovnbe
-   FCMOVNU _               -> x87_fcmovnu
-   FCOM_m32 _              -> x87_fcom
-   FCOM_m64 _              -> x87_fcom
-   FCOM_st _               -> x87_fcom
+--    FBLD _                  -> x87_fbld
+--    FBSTP _                 -> x87_fbstp
+--    FCHS                    -> x87_fchs
+--    FNCLEX                  -> x87_fnclex
+--    FCMOVB _                -> x87_fcmovb
+--    FCMOVE _                -> x87_fcmove
+--    FCMOVBE _               -> x87_fcmovbe
+--    FCMOVU _                -> x87_fcmovu
+--    FCMOVNB _               -> x87_fcmovnb
+--    FCMOVNE _               -> x87_fcmovne
+--    FCMOVNBE _              -> x87_fcmovnbe
+--    FCMOVNU _               -> x87_fcmovnu
+--    FCOM_m32 _              -> x87_fcom
+--    FCOM_m64 _              -> x87_fcom
+--    FCOM_st _               -> x87_fcom
 --    FCOMP_m32 _             -> x87_fcomp
 --    FCOMP_m64 _             -> x87_fcomp
 --    FCOMP_st _              -> x87_fcomp
@@ -495,159 +495,159 @@ data X87Flag
    deriving (Show,Eq)
 
 
-op :: AccessMode -> OperandType -> OperandEnc -> Operand
-op = Operand
+--op :: AccessMode -> OperandType -> OperandEnc -> Operand
+--op = Operand
 
 
-x87 :: String -> String -> [Properties] -> [FlagOp X87Flag] -> [FlagOp Flag] -> [Encoding] -> X87Insn
-x87 = X87Insn
-
-x87_f2xm1 :: X87Insn
-x87_f2xm1 = x87
-   "FPU compute 2^x - 1" "F2XM1"
-   [Legacy, LongMode, Extension FPU]
-   [ Set [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RW    T_ST0    E_Implicit ]]
-
-x87_fabs :: X87Insn
-x87_fabs = x87
-   "FPU absolute value" "FABS"
-   [Legacy, LongMode, Extension FPU]
-   [ Zero [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RW    T_ST0    E_Implicit ]]
-
-x87_fadd :: X87Insn
-x87_fadd = x87
-   "FPU add" "FADD"
-   [Legacy, LongMode, Reversable 2, FPUPop 1, FPUMemFormat, OpExt 0x0, Extension FPU]
-   [ Set [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RW    T_ST0    E_Implicit 
-                   , op    RO    T_STMem  E_ModRM
-                   ]]
-
-x87_fbld :: X87Insn
-x87_fbld = x87
-   "FPU load binary coded decimal" "FBLD"
-   [Legacy, LongMode, Extension FPU, OpExt 0x4]
-   [ Set [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RO    T_M80dec E_ModRM ]]
-
-x87_fbstp :: X87Insn
-x87_fbstp = x87
-   "Store BCD integer and pop" "FBSTP"
-   [Legacy, LongMode, Extension FPU, OpExt 0x6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RO    T_ST0    E_Implicit
-                   , op    WO    T_M80dec E_ModRM
-                   ]]
-
-x87_fchs :: X87Insn
-x87_fchs = x87
-   "FPU change sign" "FCHS"
-   [Legacy, LongMode, Extension FPU]
-   [ Zero [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RW    T_ST0    E_Implicit ]]
-
-x87_fnclex :: X87Insn
-x87_fnclex = x87
-   "FPU clear exceptions" "FNCLEX"
-   [Legacy, LongMode, Extension FPU]
-   [ Undef [C0,C1,C2,C3]]
-   []
-   [LegacyEncoding []]
-
-x87_fcmovb :: X87Insn
-x87_fcmovb = x87
-   "FPU conditional move if below" "FCMOVB"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [Read [CF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmove :: X87Insn
-x87_fcmove = x87
-   "FPU conditional move if equal" "FCMOVE"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [ZF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmovbe :: X87Insn
-x87_fcmovbe = x87
-   "FPU conditional move if below or equal" "FCMOVBE"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [CF,ZF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmovu :: X87Insn
-x87_fcmovu = x87
-   "FPU conditional move if unordered" "FCMOVU"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [PF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmovnb :: X87Insn
-x87_fcmovnb = x87
-   "FPU conditional move if not below" "FCMOVNB"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [CF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmovne :: X87Insn
-x87_fcmovne = x87
-   "FPU conditional move if not equal" "FCMOVNE"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [ZF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmovnbe :: X87Insn
-x87_fcmovnbe = x87
-   "FPU conditional move if not below or equal" "FCMOVNBE"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [CF,ZF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcmovnu :: X87Insn
-x87_fcmovnu = x87
-   "FPU conditional move if not unordered" "FCMOVNU"
-   [Legacy, LongMode, Extension FPU, Arch IntelP6]
-   [ Set [C1], Undef [C0,C2,C3]]
-   [ Read [PF]]
-   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
-                   , op    RO    T_ST     E_OpReg
-                   ]]
-
-x87_fcom :: X87Insn
-x87_fcom = x87
-   "FPU compare" "FCOM"
-   [Legacy, LongMode, FPUPop 8, FPUMemFormat, OpExt 0x2, Extension FPU]
-   [ Set [C1], Undef [C0,C2,C3]]
-   []
-   [LegacyEncoding [ op    RO    T_ST0    E_Implicit 
-                   , op    RO    T_STMem  E_ModRM
-                   ]]
+--x87 :: String -> String -> [Properties] -> [FlagOp X87Flag] -> [FlagOp Flag] -> [Encoding] -> X87Insn
+--x87 = X87Insn
+--
+--x87_f2xm1 :: X87Insn
+--x87_f2xm1 = x87
+--   "FPU compute 2^x - 1" "F2XM1"
+--   [Legacy, LongMode, Extension FPU]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RW    T_ST0    E_Implicit ]]
+--
+--x87_fabs :: X87Insn
+--x87_fabs = x87
+--   "FPU absolute value" "FABS"
+--   [Legacy, LongMode, Extension FPU]
+--   [ Zero [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RW    T_ST0    E_Implicit ]]
+--
+--x87_fadd :: X87Insn
+--x87_fadd = x87
+--   "FPU add" "FADD"
+--   [Legacy, LongMode, Reversable 2, FPUPop 1, FPUMemFormat, OpExt 0x0, Extension FPU]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RW    T_ST0    E_Implicit 
+--                   , op    RO    T_STMem  E_ModRM
+--                   ]]
+--
+--x87_fbld :: X87Insn
+--x87_fbld = x87
+--   "FPU load binary coded decimal" "FBLD"
+--   [Legacy, LongMode, Extension FPU, OpExt 0x4]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RO    T_M80dec E_ModRM ]]
+--
+--x87_fbstp :: X87Insn
+--x87_fbstp = x87
+--   "Store BCD integer and pop" "FBSTP"
+--   [Legacy, LongMode, Extension FPU, OpExt 0x6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RO    T_ST0    E_Implicit
+--                   , op    WO    T_M80dec E_ModRM
+--                   ]]
+--
+--x87_fchs :: X87Insn
+--x87_fchs = x87
+--   "FPU change sign" "FCHS"
+--   [Legacy, LongMode, Extension FPU]
+--   [ Zero [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RW    T_ST0    E_Implicit ]]
+--
+--x87_fnclex :: X87Insn
+--x87_fnclex = x87
+--   "FPU clear exceptions" "FNCLEX"
+--   [Legacy, LongMode, Extension FPU]
+--   [ Undef [C0,C1,C2,C3]]
+--   []
+--   [LegacyEncoding []]
+--
+--x87_fcmovb :: X87Insn
+--x87_fcmovb = x87
+--   "FPU conditional move if below" "FCMOVB"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [Read [CF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmove :: X87Insn
+--x87_fcmove = x87
+--   "FPU conditional move if equal" "FCMOVE"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [ZF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmovbe :: X87Insn
+--x87_fcmovbe = x87
+--   "FPU conditional move if below or equal" "FCMOVBE"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [CF,ZF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmovu :: X87Insn
+--x87_fcmovu = x87
+--   "FPU conditional move if unordered" "FCMOVU"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [PF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmovnb :: X87Insn
+--x87_fcmovnb = x87
+--   "FPU conditional move if not below" "FCMOVNB"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [CF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmovne :: X87Insn
+--x87_fcmovne = x87
+--   "FPU conditional move if not equal" "FCMOVNE"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [ZF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmovnbe :: X87Insn
+--x87_fcmovnbe = x87
+--   "FPU conditional move if not below or equal" "FCMOVNBE"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [CF,ZF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcmovnu :: X87Insn
+--x87_fcmovnu = x87
+--   "FPU conditional move if not unordered" "FCMOVNU"
+--   [Legacy, LongMode, Extension FPU, Arch IntelP6]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   [ Read [PF]]
+--   [LegacyEncoding [ op    WO    T_ST0    E_Implicit 
+--                   , op    RO    T_ST     E_OpReg
+--                   ]]
+--
+--x87_fcom :: X87Insn
+--x87_fcom = x87
+--   "FPU compare" "FCOM"
+--   [Legacy, LongMode, FPUPop 8, FPUMemFormat, OpExt 0x2, Extension FPU]
+--   [ Set [C1], Undef [C0,C2,C3]]
+--   []
+--   [LegacyEncoding [ op    RO    T_ST0    E_Implicit 
+--                   , op    RO    T_STMem  E_ModRM
+--                   ]]
