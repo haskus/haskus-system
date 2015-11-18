@@ -154,11 +154,11 @@ putSegment hdr s = do
          pwN  (segmentAlignment s)
 
 -- | If the number of segment doesn't fit int 16 bits, then
--- 'headerSectionEntryCount' is set to 0xffff and the field 'sectionInfo' of
+-- 'headerSegmentEntryCount' is set to 0xffff and the field 'sectionInfo' of
 -- section 0 contains the effective value.
 getSegmentCount :: ByteString -> Header -> PreHeader -> Word64
 getSegmentCount bs hdr pre = 
-   if (headerSectionEntryCount hdr /= 0xffff)
+   if (headerSegmentEntryCount hdr /= 0xffff)
       then fromIntegral (headerSegmentEntryCount hdr)
       else fromIntegral (sectionInfo sec)
    where
@@ -167,7 +167,10 @@ getSegmentCount bs hdr pre =
             
 -- | Return the table of segments
 getSegmentTable :: ByteString -> Header -> PreHeader -> Vector Segment
-getSegmentTable bs h pre = fmap f offs
+getSegmentTable bs h pre = 
+      if cnt == 0
+         then Vector.empty
+         else fmap f offs
    where
       f o  = runGetOrFail (getSegment pre) (BS.drop o bs')
       off  = fromIntegral $ headerSegmentTableOffset h
