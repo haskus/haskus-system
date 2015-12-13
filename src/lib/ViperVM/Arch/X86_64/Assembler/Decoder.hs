@@ -22,6 +22,7 @@ import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Insns
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.X87
+import ViperVM.Arch.X86_64.Assembler.Addressing
 
 data Instruction
    = InsnX87 X87Instruction
@@ -119,56 +120,57 @@ decodeInsn :: X86Dec Instruction
 decodeInsn = do
    allowedSets <- getAllowedSets
 
-   decodeLegacyPrefixes
+   ps <- decodeLegacyPrefixes False False
+   modify (\y -> y { stateLegacyPrefixes = ps })
    decodeREX
    decodeVEX
    decodeXOP
 
    -- Decode legacy opcode. See Note [Legacy opcodes]
-   opcode <- nextWord8 >>= \case
+   (opcodeMap,opcode) <- nextWord8 >>= \case
       -- escaped opcode
       0x0F -> do
          assertNoVex ErrVexEscapedOpcode
          nextWord8 >>= \case
-            0x0F | Set3DNow `elem` allowedSets -> right [0x0F,0x0F]
-            0x38 -> nextWord8 >>= \y -> right [0x0F,0x38,y]
-            0x3A -> nextWord8 >>= \y -> right [0x0F,0x3A,y]
-            0x01 -> nextWord8 >>= \y -> right [0x0F,0x01,y]
-            y    -> right [0x0F,y]
+            0x0F | Set3DNow `elem` allowedSets -> right (Map3DNow, 0x00)
+            0x38 -> nextWord8 >>= \y -> right (Map0F38,y)
+            0x3A -> nextWord8 >>= \y -> right (Map0F3A,y)
+            0x01 -> nextWord8 >>= \y -> right (Map0F01,y)
+            y    -> right (Map0F,y)
       -- Decode unescaped opcode
-      y    -> right [y]
+      y    -> right (MapPrimary,y)
 
 
-   case opcode of
+   case (opcodeMap,opcode) of
       -- X87 instructions
-      [x] |  SetX87 `elem` allowedSets 
-          && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ decodeX87 x
+      (MapPrimary,x) | SetX87 `elem` allowedSets 
+                       && x .&. 0xF8 == 0xD8        -> fmap InsnX87 $ decodeX87 x
 
 
       -- 3DNow! instructions
-      [0x0F,0x0F] | Set3DNow `elem` allowedSets -> do
+      (Map3DNow,_) | Set3DNow `elem` allowedSets -> do
          -- read ModRM
          -- TODO
          -- read 3DNow! opcode
-         opcode' <- nextWord8 >>= \x -> return (opcode ++ [x])
+         opcode' <- nextWord8
          undefined
 
       -- normal instructions
-      x -> do
+      (m,x) -> do
          -- try to identify the opcode
-         insns <- case Map.lookup opcode insnOpcodeMap of
-                     Nothing -> left (ErrUnknownOpcode opcode)
-                     Just i  -> right i
+         --insns <- case Map.lookup opcode insnOpcodeMap of
+         --            Nothing -> left (ErrUnknownOpcode opcode)
+         --            Just i  -> right i
 
-         -- filter instructions
-         let insns' = filter (\i -> Extension AVX `notElem` iProperties i) insns
-         -- TODO
-         let insn = undefined
+         ---- filter instructions
+         --let insns' = filter (\i -> Extension AVX `notElem` iProperties i) insns
+         ---- TODO
+         --let insn = undefined
 
          -- decode ModRM byte.
-         modrm <- if requireModRM insn
-                     then Just <$> nextWord8
-                     else return Nothing
+         --modrm <- if requireModRM insn
+         --            then Just <$> nextWord8
+         --            else return Nothing
 
          -- decode SIB byte
          -- TODO
@@ -180,3 +182,54 @@ decodeInsn = do
          -- TODO
 
          undefined
+
+data InsnInstance =
+   InsnInstance X86Insn (Maybe OperandSize) [Op]
+   deriving (Show)
+
+legacyParsing :: [X86Insn] -> X86Dec (Maybe InsnInstance)
+legacyParsing is = do
+
+   -- Filter instructions that use legacy encoding and that are available in
+   -- the current mode
+   let
+      is' :: [(LegEnc,X86Insn)]
+      is' = [(e,i) | i <- is,
+                     -- TODO: check mode and arch
+                     LegacyEncoding e <- iEncoding i]
+   
+   -- some instructions have fields in their opcode (Sizable, Sign-extension,
+   -- Direction, etc.). Generate the full list of opcodes
+   let
+      -- set a bit on the last opcode byte
+      setLaspOpcodeBit [] _     = error "Empty opcode"
+      setLaspOpcodeBit [o] n    = [setBit o n]
+      setLaspOpcodeBit (o:os) n = setLaspOpcodeBit os n
+
+   --   case legEncOpcodeFields e of
+
+   --   genOpcodes i (Sizable n)  = 
+   -- TODO
+
+   -- create an opcode tree
+   -- TODO
+
+   -- parse opcode
+   -- TODO
+
+   -- check if ModRM is required (if it is, it should be by all instructions to
+   -- avoid ambiguity).
+   -- TODO
+
+   -- check opcode extension if required
+   -- TODO
+
+   -- some instructions are distinguished by the parameter types (i.e.
+   -- ModRM.mod). We check it here
+   -- TODO
+
+   -- there should be a single instruction remaining. Decode its parameters
+   -- TODO
+
+   undefined
+   

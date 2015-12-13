@@ -60,6 +60,9 @@ library
     ViperVM.Arch.X86_64.Assembler.VexPrefix
     ViperVM.Arch.X86_64.Assembler.LegacyPrefix
     ViperVM.Arch.X86_64.Assembler.Mode
+    ViperVM.Arch.X86_64.Assembler.ModRM
+    ViperVM.Arch.X86_64.Assembler.Registers
+    ViperVM.Arch.X86_64.Assembler.RegisterFile
     ViperVM.Arch.X86_64.Assembler.Size
     ViperVM.Arch.X86_64.Assembler.Decoder
     ViperVM.Arch.X86_64.Assembler.Insns
@@ -335,6 +338,25 @@ executable PlatformWeb
       ,  file-embed           >= 0.0.9
       ,  bytestring           >= 0.10
       ,  optparse-applicative >= 0.12
+
+executable X86Web
+   main-is:             Main.hs
+   hs-source-dirs:      src/apps/X86Web
+   other-modules:       Paths_ViperVM
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  ViperVM
+      ,  happstack-server     >= 7.4
+      ,  blaze-html           >= 0.8
+      ,  blaze-markup         >= 0.7
+      ,  transformers         >= 0.4
+      ,  network              >= 2.6
+      ,  file-embed           >= 0.0.9
+      ,  bytestring           >= 0.10
+      ,  optparse-applicative >= 0.12
+
 
 executable ElfWeb
    hs-source-dirs:      src/apps/Elf

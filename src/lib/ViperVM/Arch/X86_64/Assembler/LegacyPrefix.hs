@@ -9,10 +9,12 @@ module ViperVM.Arch.X86_64.Assembler.LegacyPrefix
    ) where
 
 import Data.Word
-import Data.List (nub)
+import Data.Maybe (isJust)
 import Data.Foldable (traverse_)
 import Control.Monad.State
 import Control.Monad.Trans.Either
+import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector.Unboxed.Mutable as V
 
 import ViperVM.Format.Binary.Put
 import ViperVM.Arch.X86_64.Assembler.X86Dec
@@ -40,27 +42,28 @@ import ViperVM.Arch.X86_64.Assembler.X86Dec
 
 -- | Identify if the byte is a legacy prefix
 isLegacyPrefix :: Word8 -> Bool
-isLegacyPrefix x = x `elem` [0x66,0x67,0x2E,0x3E,0x26,0x64,0x65,0x36,0xF0,0xF3,0xF2]
+isLegacyPrefix = isJust . legacyPrefixGroup
+
 
 -- | Get the legacy prefix group
-legacyPrefixGroup :: Word8 -> Int
+legacyPrefixGroup :: Word8 -> Maybe Int
 legacyPrefixGroup x = case x of
    -- group 1
-   0xF0  -> 1
-   0xF3  -> 1
-   0xF2  -> 1
+   0xF0  -> Just 1
+   0xF3  -> Just 1
+   0xF2  -> Just 1
    -- group 2
-   0x26  -> 2
-   0x2E  -> 2
-   0x36  -> 2
-   0x3E  -> 2
-   0x64  -> 2
-   0x65  -> 2
+   0x26  -> Just 2
+   0x2E  -> Just 2
+   0x36  -> Just 2
+   0x3E  -> Just 2
+   0x64  -> Just 2
+   0x65  -> Just 2
    -- group 3
-   0x66  -> 3
+   0x66  -> Just 3
    -- group 4
-   0x67  -> 4
-   _     -> error "Not a legacy prefix"
+   0x67  -> Just 4
+   _     -> Nothing
 
 
 data LegacyPrefix
@@ -124,27 +127,27 @@ putLegacyPrefix p = putWord8 $ case p of
 
 
 -- | Decode legacy prefixes. See Note [Legacy prefixes].
-decodeLegacyPrefixes :: X86Dec ()
-decodeLegacyPrefixes = do
-      ps <- rec 0 [] 
-      modify (\y -> y { stateLegacyPrefixes = ps })
+--
+-- If allowMultiple is set, more than one prefix is allowed per group, but only
+-- the last one is taken into account.
+--
+-- If allowMoreThan4 is set, more than 4 prefixes can be used (it requires
+-- allowMultiple)
+decodeLegacyPrefixes :: Bool -> Bool -> X86Dec [Word8]
+decodeLegacyPrefixes allowMultiple allowMoreThan4 = do
+      rec 0 (V.fromList [0,0,0,0])
    where
-      rec :: Int -> [Word8] -> X86Dec [Word8]
+      rec :: Int -> V.Vector Word8 -> X86Dec [Word8]
+      rec n _
+         | n > 4 && not allowMoreThan4 = left ErrTooManyLegacyPrefixes
+
       rec n xs = do
          x <- lookWord8
 
-         if not (isLegacyPrefix x)
-            then do
-               -- We check that there is a single prefix per group at most
-               let groups = fmap legacyPrefixGroup xs
-               if length groups == length (nub groups)
-                  then right $ reverse xs
-                  else left ErrInvalidLegacyPrefixGroups
-            else do
-               -- Skip prefix byte
-               skipWord8
-               -- We check that there is less than 4 prefixes
-               if n + 1 > 4
-                  then left ErrTooManyLegacyPrefixes
-                  else rec (n+1) (x:xs)
+         case legacyPrefixGroup x of
+            Nothing -> return $ V.toList $ V.filter (/= 0) xs
 
+            Just g  -> case xs V.! g of
+               y | y /= 0 && not allowMultiple 
+                  -> left ErrInvalidLegacyPrefixGroups
+               _  -> skipWord8 >> rec (n+1) (V.modify (\v -> V.write v g x) xs)
