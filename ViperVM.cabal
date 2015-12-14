@@ -133,6 +133,7 @@ library
     ViperVM.Arch.Linux.Graphics.Options
     ViperVM.Arch.Linux.Graphics.PixelFormat
     ViperVM.Arch.Linux.Graphics.Plane
+    ViperVM.Arch.Linux.Graphics.Helper
 
     ViperVM.Arch.OpenCL.All
     ViperVM.Arch.OpenCL.Bindings

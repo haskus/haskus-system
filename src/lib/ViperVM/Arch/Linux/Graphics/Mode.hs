@@ -166,7 +166,8 @@ fromModeStruct (ModeStruct {..}) =
 
 toModeStruct :: Mode -> ModeStruct
 toModeStruct (Mode {..}) =
-   let modeName' = Vec.fromList (fmap castCharToCChar modeName)
+   let
+      modeName' = Vec.fromList (fmap castCharToCChar (modeName ++ replicate 32 '\0'))
 
    in ModeStruct
       { miClock      = modeClock

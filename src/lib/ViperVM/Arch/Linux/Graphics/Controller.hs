@@ -6,8 +6,7 @@
 -- Controllers are called CRTC in original terminology
 module ViperVM.Arch.Linux.Graphics.Controller
    ( Controller(..)
-   , setController
-   , cardSetController
+   , setController'
    , PageFlip(..)
    , cardControllers
    -- * Low level
@@ -91,9 +90,8 @@ cardControllerFromID card crtcid = withCard card $ \ioctl fd -> do
 
    fmap (fromControllerStruct card) <$> ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
 
--- | Set Controller
-setController :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
-setController ioctl fd crtcid fb conns mode = do
+setController' :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
+setController' ioctl fd crtcid fb conns mode = do
    let
       ControllerID cid = crtcid
       conns' = fmap (\(ConnectorID i) -> i) conns
@@ -114,9 +112,6 @@ setController ioctl fd crtcid fb conns mode = do
             }
 
       fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
-
-cardSetController :: Card -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
-cardSetController card = withCard card setController 
 
 -- | Data matching the C structure drm_mode_crtc_lut
 data ControllerLutStruct = ControllerLutStruct
