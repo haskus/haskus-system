@@ -12,15 +12,12 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , AccessMode(..)
    , Encoding(..)
    , LegEnc(..)
+   , VexEnc (..)
    , isLegacyEncoding
    , isVexEncoding
    , instructions
    , legEncRequireModRM
    , OpcodeMap(..)
-   , OperandEnc (..)
-   , Encoding (..)
-   , LegEnc (..)
-   , VexEnc (..)
    , LegacyOpcodeFields(..)
    , getLegacyOpcodes
    , FlaggedOpcode(..)
@@ -31,12 +28,8 @@ where
 
 import Data.Word
 import Data.Bits
-import Data.List (groupBy)
-import qualified Data.List as List
-import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.List ((\\), foldl')
-import Data.Tree
+import Data.List ((\\))
 import qualified Data.Vector as V
 import Data.Maybe (isJust)
 
@@ -126,7 +119,7 @@ data OperandEnc
    | E_Implicit   -- ^ Implicit
    | E_VexV       -- ^ Operand stored in Vex.vvvv field
    | E_OpReg      -- ^ Operand stored in opcode 3 last bits
-   deriving (Show)
+   deriving (Show,Eq)
 
 data OperandType
    -- Immediates
@@ -286,13 +279,6 @@ legacyEncoding a b c d e f g = LegacyEncoding $ LegEnc a b c d e f g
 vexEncoding :: Maybe Word8 -> OpcodeMap -> Word8 -> VexLW -> [Operand] -> Encoding
 vexEncoding a b c d e = VexEncoding $ VexEnc a b c d e
 
-
-getOperandEncodings :: X86Insn -> [OperandEnc]
-getOperandEncodings x = do
-   enc <- iEncoding x
-   case enc of
-      LegacyEncoding le  -> fmap opEnc (legEncParams le)
-      VexEncoding    ve  -> fmap opEnc (vexEncParams ve)
 
 legEncRequireModRM :: LegEnc -> Bool
 legEncRequireModRM e = hasOpExt || hasOps
@@ -2390,78 +2376,6 @@ i_vextractps = i "Extract packed single precision floating-point value" "VEXTRAC
 
 
 
---makeParser :: [X86Insn] -> Tree PTree
---makeParser insns = makeTree insns
---   where
---      -- generate multiple opcodes from insn properties and encodings
---      multiOpcode :: X86Insn -> [X86Insn]
---      multiOpcode i = fmap (\o' -> i {iOpcode = ini ++ [o']}) ops
---         where
---            ops = o : recProp [] (iProperties i) ++
---                      recEnc [] (getOperandEncodings i)
---
---            o   = last (iOpcode i)
---            ini = init (iOpcode i)
---
---            recEnc os [] = os
---            recEnc os (e:es) = recEnc os' es
---               where
---                  os' = case e of
---                     E_OpReg -> fmap (o+) [1..7] ++ os
---                     _       -> os
---
---            recProp os []     = os
---            recProp os (p:ps) = recProp (os' ++ os) ps
---               where 
---                  os' = case p of
---                     Sizable n -> [setBit o n]
---
---                     SignExtendableImm8 n -> [setBit o' n]
---                        where
---                           --find associated Sizable
---                           isSizable (Sizable _) = True
---                           isSizable _           = False
---                           Sizable szb = head (filter isSizable (iProperties i))
---                           o' = setBit o szb
---
---                     Reversable n -> [setBit o n]
---
---                     _  -> []
---
---      -- drop the first opcode of all the given instructions
---      dropOpcode []     = []
---      dropOpcode (i:is) = 
---         case iOpcode i of
---            [] -> dropOpcode is
---            o' -> (i { iOpcode = tail o'}) : dropOpcode is
---
---      cmp x y = tst x == tst y
---      tst = head . iOpcode
---
---      rec :: [X86Insn] -> [Tree PTree]
---      rec is = (leaves ++ gs)
---         where
---            (ls,ns) = List.partition (null . iOpcode) is
---
---            leaves = fmap (\x -> Node (PInsn x) []) ls
---
---            -- instruction grouped by first opcode
---            gs = fmap f $ groupBy cmp ns
---
---            f :: [X86Insn] -> Tree PTree
---            f xs = Node (POpcode (head (iOpcode (head xs)))) (rec (dropOpcode xs))
---
---      makeTree :: [X86Insn] -> Tree PTree
---      makeTree is = Node PRoot (rec (concatMap multiOpcode is))
---
---
---data PTree
---   = PRoot           -- ^ Root of the parsing tree
---   | POpcode Word8   -- ^ Parse opcode byte
---   | PInsn X86Insn   -- ^ Candidate instruction
---   deriving (Show)
-
-
 data FlaggedOpcode = FlaggedOpcode
    { fgOpcode        :: Word8
    , fgReversed      :: Bool
@@ -2477,10 +2391,6 @@ getLegacyOpcodes e = os
       rv = reversable         (legEncOpcodeFields e)
       se = signExtendableImm8 (legEncOpcodeFields e)
       oc = legEncOpcode e
-      testOp = \case
-         E_OpReg -> True
-         _       -> False
-      op = any testOp $ fmap opEnc (legEncParams e)
    
       os' = orig : szb ++ opb
       -- with reversable bit set
@@ -2504,7 +2414,7 @@ getLegacyOpcodes e = os
             , FlaggedOpcode (setBit (setBit oc x) y) False True True
             ]
       -- with operand in the last 3 bits of the opcode
-      opb = case op of
+      opb = case any ((==) E_OpReg) $ fmap opEnc (legEncParams e) of
          False -> []
          True  ->  fmap (\x -> FlaggedOpcode (oc+x) False False False) [1..7]
 
