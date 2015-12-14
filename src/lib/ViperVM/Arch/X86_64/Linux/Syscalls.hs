@@ -44,6 +44,7 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    , syscall_pipe
    , syscall_msync
    , syscall_reboot
+   , syscall_init_module
    , syscall_exit
    , syscall_getcpu
    , syscall_sched_yield
@@ -523,6 +524,11 @@ syscall_reboot :: Word64 -> Word64 -> Word64 -> CString -> IO Int64
 syscall_reboot = syscall4 169
 {-# INLINE syscall_reboot #-}
 
+-- | init_module
+syscall_init_module :: Ptr () -> Word64 -> CString -> IO Int64
+syscall_init_module = syscall3 175
+{-# INLINE syscall_init_module #-}
+
 -- | gettid
 syscall_gettid :: IO Int64
 syscall_gettid = syscall0 186
@@ -703,7 +709,6 @@ syscall_finit_module = syscall3 313
 172	common	iopl			stub_iopl
 173	common	ioperm			sys_ioperm
 174	64	create_module
-175	common	init_module		sys_init_module
 176	common	delete_module		sys_delete_module
 177	64	get_kernel_syms
 178	64	query_module
