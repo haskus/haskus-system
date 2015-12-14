@@ -57,6 +57,7 @@ loadGraphicCards system = do
                   major <- fromIntegral <$> decimal
                   void (char ':')
                   minor <- fromIntegral <$> decimal
+                  void eol
                   return (Device major minor)
                dev = case parseMaybe parseDevFile content of
                   Nothing -> error "Invalid dev file format"
