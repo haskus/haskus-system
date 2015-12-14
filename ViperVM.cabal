@@ -356,6 +356,7 @@ executable X86Web
       ,  file-embed           >= 0.0.9
       ,  bytestring           >= 0.10
       ,  optparse-applicative >= 0.12
+      ,  vector               >= 0.10
 
 
 executable ElfWeb

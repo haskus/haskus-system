@@ -14,6 +14,8 @@ import Numeric
 import Happstack.Server
 import Data.Word
 import Data.Bits
+import qualified Data.List as List
+import qualified Data.Vector as V
 
 import Text.Blaze.Html5 ((!), toHtml, docTypeHtml, Html, toValue)
 import qualified Text.Blaze.Html5.Attributes as A
@@ -37,6 +39,11 @@ server conf = do
       
         -- CSS 
         dir "css" $ dir "style.css" $ ok css
+
+      , dir "all" $ nullDir >> (ok . toResponse . appTemplate "List all" $ showAll)
+      , dir "maps" $ nullDir >> (ok . toResponse . appTemplate "Maps" $ showMaps)
+
+      , dir "insn" $ path $ \mnemo -> (ok . toResponse . appTemplate mnemo $ showInsnByMnemo mnemo)
 
         -- Show welcome screen
       , nullDir >> (ok . toResponse . appTemplate "Welcome" $ showWelcome)
@@ -62,7 +69,24 @@ appTemplate title bdy = docTypeHtml $ do
 
 -- | Welcoming screen
 showWelcome :: Html
-showWelcome = forM_ X86.instructions $ \i -> do
+showWelcome = do
+   H.h2 (toHtml "Instructions")
+   H.ul $ do
+      H.li $ H.a (toHtml "List all") ! A.href (toValue "/all")
+      H.li $ H.a (toHtml "Tables")   ! A.href (toValue "/maps")
+
+showInsnByMnemo :: String -> Html
+showInsnByMnemo mnemo = do
+   let is = filter (\i -> X86.iMnemonic i == mnemo) X86.instructions
+   forM_ is showInsn
+
+-- | List all instructions
+showAll :: Html
+showAll = forM_ X86.instructions showInsn
+
+-- | Show an instruction
+showInsn :: X86.X86Insn -> Html
+showInsn i = do
    H.h2 $ toHtml $ X86.iMnemonic i ++ " - " ++ X86.iDesc i
    H.h3 (toHtml "Properties")
    H.ul $ forM_ (X86.iProperties i) $ \p -> H.li (toHtml (show p))
@@ -77,33 +101,10 @@ showWelcome = forM_ X86.instructions $ \i -> do
                H.th (toHtml "Mandatory prefix")
                H.th (toHtml "Opcode map")
                H.th (toHtml "Opcode")
-               H.th (toHtml "Opcode extension")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            let
-               sz = X86.sizable            (X86.legEncOpcodeFields e)
-               rv = X86.reversable         (X86.legEncOpcodeFields e)
-               se = X86.signExtendableImm8 (X86.legEncOpcodeFields e)
-               oc = X86.legEncOpcode e
-               testOp = \case
-                  X86.E_OpReg -> True
-                  _           -> False
-               op = any testOp $ fmap X86.opEnc (X86.legEncParams e)
-            showLegEnc oc False False False e
-            case rv of
-               Nothing -> return ()
-               Just x  -> showLegEnc (setBit oc x) True False False e
-            case (sz,se) of
-               (Nothing,Nothing) -> return ()
-               (Nothing,Just _)  -> error "Invalid opcode fields"
-               (Just x,Nothing)  -> showLegEnc (setBit oc x) False True False e
-               (Just x,Just y)   -> do
-                  showLegEnc (setBit oc x) False True False e
-                  showLegEnc (setBit (setBit oc x) y) False True True e
-            -- operand in the last 3 bits of the opcode
-            case op of
-               False -> return ()
-               True  -> forM_ [1..7] $ \x -> showLegEnc (oc+x) False False False e
+            forM_ (X86.getLegacyOpcodes e) $ \x -> do
+               showLegEnc (X86.fgOpcode x) (X86.fgReversed x) (X86.fgSized x) (X86.fgSignExtended x) e
 
 
             ) ! A.class_ (toValue "insn_table")
@@ -157,10 +158,11 @@ showLegEnc oc rv sz se e = H.tr $ do
       Nothing -> H.td (toHtml " ")
       Just p  -> H.td (toHtml (showHex p ""))
    H.td (toHtml (show (X86.legEncOpcodeMap e)))
-   H.td (toHtml (showHex oc ""))
-   case X86.legEncOpcodeExt e of
-      Nothing -> H.td (toHtml " ")
-      Just p  -> H.td (toHtml ("/" ++ (showHex p "")))
+   H.td $ do
+      toHtml (showHex oc "")
+      case X86.legEncOpcodeExt e of
+         Nothing -> return ()
+         Just p  -> toHtml (" /" ++ (showHex p ""))
    H.td (toHtml (show (X86.legEncProperties e)))
    let 
       ops = X86.legEncParams e
@@ -187,3 +189,40 @@ showLegEnc oc rv sz se e = H.tr $ do
             X86.E_VexV      -> "VEX.vvvv"
             X86.E_OpReg     -> "Opcode [2:0]"
       ) ! A.class_ (toValue "insn_table")
+
+
+showMaps :: Html
+showMaps = do
+   H.h1 (toHtml "Legacy encodings")
+   H.h2 (toHtml "Primary opcode map")
+   showMap (X86.buildLegacyOpcodeMap X86.MapPrimary X86.instructions)
+   H.h2 (toHtml "Secondary opcode map")
+   showMap (X86.buildLegacyOpcodeMap X86.Map0F X86.instructions)
+   H.h2 (toHtml "0F38 opcode map")
+   showMap (X86.buildLegacyOpcodeMap X86.Map0F38 X86.instructions)
+   H.h2 (toHtml "0F3A opcode map")
+   showMap (X86.buildLegacyOpcodeMap X86.Map0F3A X86.instructions)
+   H.h2 (toHtml "3DNow! opcode map")
+   showMap (X86.buildLegacyOpcodeMap X86.Map3DNow X86.instructions)
+
+
+showMap :: V.Vector [X86.MapEntry] -> Html
+showMap v = (H.table $ do
+   H.tr $ do
+      H.th (toHtml "Nibble")
+      forM_ [0..15] $ \x -> H.th (toHtml (showHex (x :: Int) ""))
+   forM_ [0..15] $ \h -> H.tr $ do
+      H.th (toHtml (showHex h ""))
+      forM_ [0..15] $ \l -> do
+         let is = v V.! (l `shiftL` 4 + h)
+         H.td $ sequence_
+            $ List.intersperse (toHtml ", ")
+            $ fmap showMnemo 
+            $ List.nub
+            $ fmap (X86.iMnemonic . X86.entryInsn) is
+   ) ! A.class_ (toValue "opcode_map")
+
+showMnemo :: String -> Html
+showMnemo mnemo = do
+   H.a (toHtml mnemo)
+      ! A.href (toValue ("/insn/" ++ mnemo))

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module ViperVM.Arch.X86_64.Assembler.Insns
    ( X86Insn(..)
    , X86Arch(..)
@@ -13,13 +14,17 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , LegEnc(..)
    , isLegacyEncoding
    , instructions
-   , requireModRM
+   , legEncRequireModRM
    , OpcodeMap(..)
    , OperandEnc (..)
    , Encoding (..)
    , LegEnc (..)
    , VexEnc (..)
    , LegacyOpcodeFields(..)
+   , getLegacyOpcodes
+   , FlaggedOpcode(..)
+   , buildLegacyOpcodeMap
+   , MapEntry (..)
    )
 where
 
@@ -32,6 +37,8 @@ import qualified Data.Map as Map
 import Data.List ((\\), foldl')
 import Data.Tree
 import qualified Data.Vector as V
+import Control.Monad (forM_)
+import Data.Maybe (isJust)
 
 data X86Insn = X86Insn
    { iDesc        :: String
@@ -289,21 +296,15 @@ getOperandEncodings x = do
    case enc of
       LegacyEncoding le  -> fmap opEnc (legEncParams le)
       VexEncoding    ve  -> fmap opEnc (vexEncParams ve)
-   
 
--- | Indicate if an instruction requires ModRM
-requireModRM :: X86Insn -> Bool
-requireModRM insn = hasOpExt || hasOps
+legEncRequireModRM :: LegEnc -> Bool
+legEncRequireModRM e = hasOpExt || hasOps
    where
       -- use opcode extension in ModRM.reg 
-      hasOpExt = any matchOpExt (iProperties insn)
+      hasOpExt = isJust (legEncOpcodeExt e)
 
       -- has operands in ModRM
-      hasOps   = any matchLegEnc (iEncoding insn)
-
-      matchOpExt (OpExt _) = True
-      matchOpExt _         = False
-
+      hasOps   = any matchEnc (legEncParams e)
       matchEnc x = case opEnc x of
          E_ModRM     -> True
          E_ModReg    -> True
@@ -313,9 +314,6 @@ requireModRM insn = hasOpExt || hasOps
          E_Implicit  -> False
          E_VexV      -> False
          E_OpReg     -> False
-
-      matchLegEnc (LegacyEncoding le) = any matchEnc (legEncParams le)
-      matchLegEnc _                   = False
 
 i :: String -> String -> [Properties] -> [FlagOp Flag] -> [Encoding] -> X86Insn
 i = X86Insn
@@ -2467,31 +2465,86 @@ i_vextractps = i "Extract packed single precision floating-point value" "VEXTRAC
 --   deriving (Show)
 
 
-data MapEntry = MapEntry
-   { entryHasModRM :: Bool
-   , candidates    :: [X86Insn]
-   }
-
 getLegacyEncodings :: [X86Insn] -> [(LegEnc,X86Insn)]
 getLegacyEncodings = concatMap f 
    where
-      f i = g i (iEncoding i)
-      g i [] = []
-      g i (e:es) = case e of
-         LegacyEncoding ec -> (ec,i) : g i es
-         _                 -> g i es
+      f x = g x (iEncoding x)
+      g _ [] = []
+      g x (e:es) = case e of
+         LegacyEncoding ec -> (ec,x) : g x es
+         _                 -> g x es
+
+data FlaggedOpcode = FlaggedOpcode
+   { fgOpcode        :: Word8
+   , fgReversed      :: Bool
+   , fgSized         :: Bool
+   , fgSignExtended  :: Bool
+   } deriving (Show)
+
+-- | Return the different opcode for an encoding
+getLegacyOpcodes :: LegEnc -> [FlaggedOpcode]
+getLegacyOpcodes e = os
+   where
+      sz = sizable            (legEncOpcodeFields e)
+      rv = reversable         (legEncOpcodeFields e)
+      se = signExtendableImm8 (legEncOpcodeFields e)
+      oc = legEncOpcode e
+      testOp = \case
+         E_OpReg -> True
+         _       -> False
+      op = any testOp $ fmap opEnc (legEncParams e)
+   
+      os' = orig : szb ++ opb
+      -- with reversable bit set
+      os = case rv of
+         Nothing -> os'
+         Just x  -> os' ++ fmap rev os'
+            where
+               rev o = o { fgOpcode   = setBit (fgOpcode o) x
+                         , fgReversed = True
+                         }
+
+      -- original opcode
+      orig = FlaggedOpcode oc False False False
+      -- with sizable and sign-extendable bits
+      szb = case (sz,se) of
+         (Nothing,Nothing) -> []
+         (Nothing,Just _)  -> error "Invalid opcode fields"
+         (Just x,Nothing)  -> [FlaggedOpcode (setBit oc x) False True False]
+         (Just x,Just y)   -> 
+            [ FlaggedOpcode (setBit oc x)            False True False
+            , FlaggedOpcode (setBit (setBit oc x) y) False True True
+            ]
+      -- with operand in the last 3 bits of the opcode
+      opb = case op of
+         False -> []
+         True  ->  fmap (\x -> FlaggedOpcode (oc+x) False False False) [1..7]
+
+
+data MapEntry = MapEntry
+   { entryHasModRM :: Bool
+   , entryInsn     :: X86Insn
+   }
+   deriving (Show)
+
 
 -- | Build the opcode maps
---buildPrimaryOpcodeMap :: [X86Insn] -> V.Vector (Maybe MapEntry)
---buildPrimaryOpcodeMap insns = go encs Map.empty
---   where
---      encs = filter (ff . fst) getLegacyEncodings insns
---
---      ff i = init (legEncOpcode i) == []
---
---      go [] rs     = V.generate 256 (Map.lookup rs)
---      go ((e,i):is) rs = let
---            o = last (legEncOpcode e)
---            e = MapEntry (requireModRM i) [o]
---         in
---            
+buildLegacyOpcodeMap :: OpcodeMap -> [X86Insn] -> V.Vector [MapEntry]
+buildLegacyOpcodeMap omap insns = go encs Map.empty
+   where
+      -- filter opcodes belonging to appropriate map
+      encs = filter (ff . fst) (getLegacyEncodings insns)
+      ff i = legEncOpcodeMap i == omap
+
+      -- get 
+      go [] rs     = V.generate 256 $ \x -> case Map.lookup x rs of
+         Nothing -> []
+         Just xs -> xs
+      go ((e,x):xs) rs = let
+            os = fmap (fromIntegral . fgOpcode) (getLegacyOpcodes e)
+            me = MapEntry (legEncRequireModRM e) x
+         in go xs (insertAll os me rs)
+      
+      insertAll [] _ rs     = rs
+      insertAll (o:os) x rs = insertAll os x (Map.insertWith (++) o [x] rs)
+            

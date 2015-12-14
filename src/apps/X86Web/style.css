@@ -39,3 +39,15 @@ h1 {
    border: 1px solid black;
    text-align: center;
 }
+
+.opcode_map {
+   border: 1px solid black;
+   border-collapse: collapse;
+}
+
+.opcode_map td, th{
+   border: 1px solid black;
+   text-align: center;
+   min-width: 5em;
+}
+
