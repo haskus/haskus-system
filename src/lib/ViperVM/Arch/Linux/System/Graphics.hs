@@ -16,11 +16,6 @@ import Prelude hiding (init,tail)
 import Control.Monad.Trans.Either
 import System.FilePath ((</>))
 import Control.Monad (forM,void)
-import Control.Arrow ((***))
-import qualified Data.ByteString as BS
-import Data.ByteString (init,tail)
-import Data.ByteString.Char8 (unpack)
-import Data.Char (ord)
 import Data.Maybe (isJust)
 
 import Text.Megaparsec
@@ -58,10 +53,14 @@ loadGraphicCards system = do
          EitherT $ withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty $ \devfd -> runEitherT $ do
             content <- EitherT $ readByteString devfd 16 -- 16 bytes should be enough
             let 
-               f = read . unpack
-               sep = fromIntegral (ord ':')
-               (major,minor) = (f *** (f . tail)) (BS.break (== sep) (init content))
-               dev = Device major minor
+               parseDevFile = do
+                  major' <- fromIntegral <$> decimal
+                  void (char ':')
+                  minor' <- fromIntegral <$> decimal
+                  return (major',minor')
+               dev = case parseMaybe parseDevFile content of
+                  Nothing      -> error "Invalid dev file format"
+                  Just (ma,mi) -> Device ma mi
                devid = read (drop 4 dir)
                path  = "class/drm" </> dir
                card  = GraphicCard path dev devid
