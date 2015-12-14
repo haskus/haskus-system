@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, TupleSections #-}
 module ViperVM.Arch.X86_64.Assembler.Insns
    ( X86Insn(..)
    , X86Arch(..)
@@ -13,6 +13,7 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , Encoding(..)
    , LegEnc(..)
    , isLegacyEncoding
+   , isVexEncoding
    , instructions
    , legEncRequireModRM
    , OpcodeMap(..)
@@ -24,7 +25,7 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , getLegacyOpcodes
    , FlaggedOpcode(..)
    , buildLegacyOpcodeMap
-   , MapEntry (..)
+   , buildVexOpcodeMap
    )
 where
 
@@ -37,7 +38,6 @@ import qualified Data.Map as Map
 import Data.List ((\\), foldl')
 import Data.Tree
 import qualified Data.Vector as V
-import Control.Monad (forM_)
 import Data.Maybe (isJust)
 
 data X86Insn = X86Insn
@@ -54,14 +54,7 @@ data Properties
    | FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
-   | FPUPop Int               -- ^ Pop the FPU register if the bit is set (valid if
-                              --   the target is not ST0). If >= 8, then bit is in OpExt
-   | FPUMemFormat             -- ^ Bits 1 and 2 of the opcode indicate the memory format of the memory operand
-                              --       00 -> 32-bit FP
-                              --       10 -> 64-bit FP
-                              --       01 -> 32-bit int
-                              --       11 -> 16-bit int
-   -- encoding
+
    | Lockable                 -- ^ Support LOCK prefix (only if a memory operand in used)
    | DoubleSizable            -- ^ Default size is 32+32 (a pair of registers is used). Can be extended to 64+64 with Rex.W
    | OpExt Word8              -- ^ Opcode extension in the ModRM.reg field
@@ -243,6 +236,10 @@ data Encoding
 isLegacyEncoding :: Encoding -> Bool
 isLegacyEncoding (LegacyEncoding _) = True
 isLegacyEncoding _                  = False
+
+isVexEncoding :: Encoding -> Bool
+isVexEncoding (VexEncoding _) = True
+isVexEncoding _               = False
 
 data LegEnc = LegEnc
    { legEncMandatoryPrefix :: Maybe Word8        -- ^ Mandatory prefix
@@ -2465,15 +2462,6 @@ i_vextractps = i "Extract packed single precision floating-point value" "VEXTRAC
 --   deriving (Show)
 
 
-getLegacyEncodings :: [X86Insn] -> [(LegEnc,X86Insn)]
-getLegacyEncodings = concatMap f 
-   where
-      f x = g x (iEncoding x)
-      g _ [] = []
-      g x (e:es) = case e of
-         LegacyEncoding ec -> (ec,x) : g x es
-         _                 -> g x es
-
 data FlaggedOpcode = FlaggedOpcode
    { fgOpcode        :: Word8
    , fgReversed      :: Bool
@@ -2520,31 +2508,48 @@ getLegacyOpcodes e = os
          False -> []
          True  ->  fmap (\x -> FlaggedOpcode (oc+x) False False False) [1..7]
 
-
-data MapEntry = MapEntry
-   { entryHasModRM :: Bool
-   , entryInsn     :: X86Insn
-   }
-   deriving (Show)
-
-
--- | Build the opcode maps
-buildLegacyOpcodeMap :: OpcodeMap -> [X86Insn] -> V.Vector [MapEntry]
-buildLegacyOpcodeMap omap insns = go encs Map.empty
+getEncodings :: [X86Insn] -> [(Encoding,X86Insn)]
+getEncodings is = concatMap f is
    where
-      -- filter opcodes belonging to appropriate map
-      encs = filter (ff . fst) (getLegacyEncodings insns)
-      ff i = legEncOpcodeMap i == omap
+      f x = fmap (,x) (iEncoding x)
 
-      -- get 
+getVexOpcodes :: VexEnc -> [FlaggedOpcode]
+getVexOpcodes e = [FlaggedOpcode (vexEncOpcode e) False False False]
+
+
+-- | Build a legacy opcode map
+buildLegacyOpcodeMap :: OpcodeMap -> [X86Insn] -> V.Vector [X86Insn]
+buildLegacyOpcodeMap omap insns = buildOpcodeMap encs
+   where
+      encs = filter (ff . fst) (getEncodings insns)
+      ff = \case
+         LegacyEncoding x -> legEncOpcodeMap x == omap 
+         _                -> False
+
+-- | Build a VEX opcode map
+buildVexOpcodeMap :: OpcodeMap -> [X86Insn] -> V.Vector [X86Insn]
+buildVexOpcodeMap omap insns = buildOpcodeMap encs
+   where
+      encs = filter (ff . fst) (getEncodings insns)
+      ff = \case
+         VexEncoding x -> vexEncOpcodeMap x == omap 
+         _             -> False
+            
+            
+-- | Build the opcode maps
+buildOpcodeMap :: [(Encoding,X86Insn)] -> V.Vector [X86Insn]
+buildOpcodeMap encs = go encs Map.empty
+   where
       go [] rs     = V.generate 256 $ \x -> case Map.lookup x rs of
          Nothing -> []
          Just xs -> xs
       go ((e,x):xs) rs = let
-            os = fmap (fromIntegral . fgOpcode) (getLegacyOpcodes e)
-            me = MapEntry (legEncRequireModRM e) x
-         in go xs (insertAll os me rs)
+            os = fmap (fromIntegral . fgOpcode) (getOpcodes e)
+         in go xs (insertAll os x rs)
       
+      getOpcodes = \case
+         LegacyEncoding x -> getLegacyOpcodes x
+         VexEncoding x    -> getVexOpcodes x
+
       insertAll [] _ rs     = rs
       insertAll (o:os) x rs = insertAll os x (Map.insertWith (++) o [x] rs)
-            

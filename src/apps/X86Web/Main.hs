@@ -205,8 +205,16 @@ showMaps = do
    H.h2 (toHtml "3DNow! opcode map")
    showMap (X86.buildLegacyOpcodeMap X86.Map3DNow X86.instructions)
 
+   H.h1 (toHtml "VEX encodings")
+   H.h2 (toHtml "VEX 1 opcode map")
+   showMap (X86.buildVexOpcodeMap (X86.MapVex 0x01) X86.instructions)
+   H.h2 (toHtml "VEX 2 opcode map")
+   showMap (X86.buildVexOpcodeMap (X86.MapVex 0x02) X86.instructions)
+   H.h2 (toHtml "VEX 3 opcode map")
+   showMap (X86.buildVexOpcodeMap (X86.MapVex 0x03) X86.instructions)
 
-showMap :: V.Vector [X86.MapEntry] -> Html
+
+showMap :: V.Vector [X86.X86Insn] -> Html
 showMap v = (H.table $ do
    H.tr $ do
       H.th (toHtml "Nibble")
@@ -219,7 +227,7 @@ showMap v = (H.table $ do
             $ List.intersperse (toHtml ", ")
             $ fmap showMnemo 
             $ List.nub
-            $ fmap (X86.iMnemonic . X86.entryInsn) is
+            $ fmap X86.iMnemonic is
    ) ! A.class_ (toValue "opcode_map")
 
 showMnemo :: String -> Html
