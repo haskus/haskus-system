@@ -54,13 +54,13 @@ loadGraphicCards system = do
             content <- EitherT $ readByteString devfd 16 -- 16 bytes should be enough
             let 
                parseDevFile = do
-                  major' <- fromIntegral <$> decimal
+                  major <- fromIntegral <$> decimal
                   void (char ':')
-                  minor' <- fromIntegral <$> decimal
-                  return (major',minor')
+                  minor <- fromIntegral <$> decimal
+                  return (Device major minor)
                dev = case parseMaybe parseDevFile content of
-                  Nothing      -> error "Invalid dev file format"
-                  Just (ma,mi) -> Device ma mi
+                  Nothing -> error "Invalid dev file format"
+                  Just x  -> x
                devid = read (drop 4 dir)
                path  = "class/drm" </> dir
                card  = GraphicCard path dev devid
