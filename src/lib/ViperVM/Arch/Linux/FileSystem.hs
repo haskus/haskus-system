@@ -431,26 +431,22 @@ instance Storable Device where
                               (y .&. 0xFF) .|.
                               ((y `shiftR` 12) .&. complement 0xFF)
             }
-   poke ptr x = poke (castPtr ptr :: Ptr Word64) (f x)
-      where
-         f (Device major' minor') =
-            let
-               minor = fromIntegral minor' :: Word64
-               major = fromIntegral major' :: Word64
-            in
-            (minor .&. 0xFF) 
-              .|. ((major .&. 0xfff) `shiftL` 8)
-              .|. ((minor .&. complement 0xff) `shiftL` 12)
-              .|. ((major .&. complement 0xfff) `shiftL` 32)
+   poke ptr x = poke (castPtr ptr :: Ptr Word64) (toKernelDevice x)
 
--- | Convert a Device into a Word64
---
--- Device data structure is usually passed as a Word64 parameter
-withDevice :: Device -> (Word64 -> a) -> a
-withDevice dev f = f (v1 .|. v2)
+-- | Convert a Device into a Word64 suitable for the kernel
+toKernelDevice :: Device -> Word64
+toKernelDevice dev =
+      (minor .&. 0xFF) 
+        .|. ((major .&. 0xfff) `shiftL` 8)
+        .|. ((minor .&. complement 0xff) `shiftL` 12)
+        .|. ((major .&. complement 0xfff) `shiftL` 32)
    where
-      v1 = fromIntegral (deviceMajor dev) `shiftL` 32
-      v2 = fromIntegral (deviceMinor dev)
+      minor = fromIntegral (deviceMinor dev) :: Word64
+      major = fromIntegral (deviceMajor dev) :: Word64
+
+-- | Convert a Device into a Word64 suitable for the kernel
+withDevice :: Device -> (Word64 -> a) -> a
+withDevice dev f = f (toKernelDevice dev)
 
 -- | File stat
 --
