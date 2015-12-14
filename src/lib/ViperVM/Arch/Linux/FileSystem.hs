@@ -526,7 +526,6 @@ toStat (StatStruct {..}) =
 -- information are about the link itself
 sysFileStat :: FilePath -> Bool -> SysRet Stat
 sysFileStat path followLink = do
-   putStrLn $ "Size of stat: " ++ show (cSizeOf (undefined :: StatStruct))
    withCString path $ \path' ->
       allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
          let
