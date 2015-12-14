@@ -97,6 +97,7 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    , syscall_umask
    , syscall_unlink
    , syscall_unlinkat
+   , syscall_finit_module
    )
    where
 
@@ -602,6 +603,10 @@ syscall_getcpu :: Ptr Word -> Ptr Word -> Ptr a -> IO Int64
 syscall_getcpu = syscall3 309
 {-# INLINE syscall_getcpu #-}
 
+-- | finit_module
+syscall_finit_module :: FD -> CString -> Int -> IO Int64
+syscall_finit_module = syscall3 313
+{-# INLINE syscall_finit_module #-}
 
 {-
  - Remaining syscalls to wrap
@@ -819,7 +824,6 @@ syscall_getcpu = syscall3 309
 310	64	process_vm_readv	sys_process_vm_readv
 311	64	process_vm_writev	sys_process_vm_writev
 312	common	kcmp			sys_kcmp
-313	common	finit_module		sys_finit_module
 314	common	sched_setattr		sys_sched_setattr
 315	common	sched_getattr		sys_sched_getattr
 316   renameat2

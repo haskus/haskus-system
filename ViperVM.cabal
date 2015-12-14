@@ -86,6 +86,7 @@ library
     ViperVM.Arch.Linux.Info
     ViperVM.Arch.Linux.Ioctl
     ViperVM.Arch.Linux.Memory
+    ViperVM.Arch.Linux.Modules
     ViperVM.Arch.Linux.Network
     ViperVM.Arch.Linux.Network.SendReceive
     ViperVM.Arch.Linux.Pipe
