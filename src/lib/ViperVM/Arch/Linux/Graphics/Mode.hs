@@ -111,7 +111,7 @@ instance Storable ModeStruct where
    peek        = cPeek
 
 emptyModeStruct :: ModeStruct
-emptyModeStruct = ModeStruct 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (Storable (Vec.fromList (replicate 32 (castCharToCChar '\0'))))
+emptyModeStruct = ModeStruct 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (Storable (Vec.replicate (castCharToCChar '\0')))
 
 -- | Display mode
 data Mode = Mode
