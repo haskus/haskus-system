@@ -610,7 +610,7 @@ syscall_getcpu = syscall3 309
 {-# INLINE syscall_getcpu #-}
 
 -- | finit_module
-syscall_finit_module :: FD -> CString -> Int -> IO Int64
+syscall_finit_module :: FD -> CString -> Word -> IO Int64
 syscall_finit_module = syscall3 313
 {-# INLINE syscall_finit_module #-}
 
