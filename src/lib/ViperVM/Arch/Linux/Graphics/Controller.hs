@@ -7,6 +7,7 @@
 module ViperVM.Arch.Linux.Graphics.Controller
    ( Controller(..)
    , setController
+   , cardSetController
    , PageFlip(..)
    , cardControllers
    -- * Low level
@@ -113,6 +114,9 @@ setController ioctl fd crtcid fb conns mode = do
             }
 
       fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
+
+cardSetController :: Card -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
+cardSetController card = withCard card setController 
 
 -- | Data matching the C structure drm_mode_crtc_lut
 data ControllerLutStruct = ControllerLutStruct
