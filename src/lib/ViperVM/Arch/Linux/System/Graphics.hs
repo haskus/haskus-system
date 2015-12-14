@@ -15,13 +15,16 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import Prelude hiding (init,tail)
 import Control.Monad.Trans.Either
 import System.FilePath ((</>))
-import Data.List (isPrefixOf)
-import Control.Monad (forM)
+import Control.Monad (forM,void)
 import Control.Arrow ((***))
 import qualified Data.ByteString as BS
 import Data.ByteString (init,tail)
 import Data.ByteString.Char8 (unpack)
 import Data.Char (ord)
+import Data.Maybe (isJust)
+
+import Text.Megaparsec
+import Text.Megaparsec.Lexer hiding (space)
 
 -- | Graphic card
 data GraphicCard = GraphicCard
@@ -44,7 +47,10 @@ loadGraphicCards system = do
       -- detect cardN directories
       -- FIXME: the fd is not closed in case of error
       dirs <- EitherT $ listDirectory fd
-      let cardDirs = filter ("card" `isPrefixOf`) (fmap entryName dirs)
+      let
+         parseCard = void (string "card" >> decimal)
+         isCard    = isJust . parseMaybe parseCard
+         cardDirs  = filter isCard (fmap entryName dirs)
 
       forM cardDirs $ \dir -> do
          -- read device major and minor in "dev" file
