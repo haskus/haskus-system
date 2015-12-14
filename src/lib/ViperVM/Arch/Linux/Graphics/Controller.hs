@@ -107,6 +107,9 @@ setController' ioctl fd crtcid fb conns mode = do
             , contModeInfo = case mode of
                Nothing -> emptyModeStruct
                Just x  -> toModeStruct x
+            , contModeValid  = case mode of
+               Nothing -> 0
+               Just _  -> 1
             , contConnCount  = fromIntegral (length conns)
             , contSetConnPtr = fromIntegral (ptrToWordPtr conArray)
             }
