@@ -53,6 +53,10 @@ $ ELFWeb -p 8020 ./mybinary &
 $ firefox http://localhost:8020
 ```
 
+## X86 Web
+
+Show info about the x86 instructions recognized by ViperVM.
+
 ## Platform Web
 
 PlatformWeb gives basic information about the platform (memories, processors,

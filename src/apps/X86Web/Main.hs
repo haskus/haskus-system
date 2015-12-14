@@ -10,6 +10,7 @@ import Data.Version
 import Control.Monad
 import Text.Printf
 import Network.Socket (withSocketsDo)
+import Network.HTTP.Base (urlEncode)
 import Numeric
 import Happstack.Server
 import Data.Word
@@ -233,4 +234,4 @@ showMap v = (H.table $ do
 showMnemo :: String -> Html
 showMnemo mnemo = do
    H.a (toHtml mnemo)
-      ! A.href (toValue ("/insn/" ++ mnemo))
+      ! A.href (toValue ("/insn/" ++ urlEncode mnemo))
