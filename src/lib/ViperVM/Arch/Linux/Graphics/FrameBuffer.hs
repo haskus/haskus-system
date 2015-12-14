@@ -52,8 +52,8 @@ data FrameBuffer = FrameBuffer
    }
 
 instance Storable FrameBuffer where
-   sizeOf _    = 5*4 + 8
-   alignment _ = 8
+   sizeOf _    = 4 * 17
+   alignment _ = 4
    peek ptr    = do
       let 
          p = castPtr ptr :: Ptr Word8
