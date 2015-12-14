@@ -13,6 +13,7 @@ module ViperVM.Arch.Linux.FileSystem
    , AccessModes
    , FileLock(..)
    , Device(..)
+   , withDevice
    , Stat(..)
    , sysOpen
    , sysOpenAt
@@ -57,7 +58,6 @@ where
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
-import Foreign.Marshal.Utils (with)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
 import Data.Word (Word64, Word32)
@@ -443,6 +443,15 @@ instance Storable Device where
               .|. ((minor .&. complement 0xff) `shiftL` 12)
               .|. ((major .&. complement 0xfff) `shiftL` 32)
 
+-- | Convert a Device into a Word64
+--
+-- Device data structure is usually passed as a Word64 parameter
+withDevice :: Device -> (Word64 -> a) -> a
+withDevice dev f = f (v1 .|. v2)
+   where
+      v1 = fromIntegral (deviceMajor dev) `shiftL` 32
+      v2 = fromIntegral (deviceMinor dev)
+
 -- | File stat
 --
 -- Warning: the original structure is not portable between different
@@ -553,7 +562,7 @@ sysCreateSpecialFile path typ perm dev = do
       dev' = fromMaybe (Device 0 0) dev
 
    withCString path $ \path' ->
-      with dev' $ \dev'' ->
+      withDevice dev' $ \dev'' ->
          onSuccess (syscall_mknod path' mode dev'') (const ())
 
 -- | Create a special file
@@ -566,7 +575,7 @@ sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
       dev' = fromMaybe (Device 0 0) dev
 
    withCString path $ \path' ->
-      with dev' $ \dev'' ->
+      withDevice dev' $ \dev'' ->
          onSuccess (syscall_mknodat fd path' mode dev'') (const ())
 
 data DeviceType = CharDevice | BlockDevice

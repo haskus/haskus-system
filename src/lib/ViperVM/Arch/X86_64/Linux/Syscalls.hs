@@ -480,7 +480,7 @@ syscall_getppid = syscall0 110
 {-# INLINE syscall_getppid #-}
 
 -- | mknod
-syscall_mknod :: CString -> Word64 -> Ptr a -> IO Int64
+syscall_mknod :: CString -> Word64 -> Word64 -> IO Int64
 syscall_mknod = syscall3 133
 {-# INLINE syscall_mknod #-}
 
@@ -570,7 +570,7 @@ syscall_mkdirat = syscall3 258
 {-# INLINE syscall_mkdirat #-}
 
 -- | mknodat
-syscall_mknodat :: FD -> CString -> Word64 -> Ptr a -> IO Int64
+syscall_mknodat :: FD -> CString -> Word64 -> Word64 -> IO Int64
 syscall_mknodat = syscall4 259
 {-# INLINE syscall_mknodat #-}
 
