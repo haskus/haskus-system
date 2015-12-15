@@ -44,12 +44,13 @@ import Control.Monad.Trans.Either
 
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Size
+import ViperVM.Arch.X86_64.Assembler.Insns
 
 data DecodeError
    = ErrInsnTooLong                    -- ^ Instruction is more than 15 bytes long
    | ErrTooManyLegacyPrefixes          -- ^ More than 4 legacy prefixes
    | ErrInvalidLegacyPrefixGroups      -- ^ More than 1 legacy prefix for a single group
-   | ErrUnknownOpcode [Word8]          -- ^ Unrecognized opcode
+   | ErrUnknownOpcode OpcodeMap Word8  -- ^ Unrecognized opcode
    | ErrRexPrefixBeforeVex             -- ^ REX prefix found before VEX prefix
    | ErrLegacyPrefixBeforeVex [Word8]  -- ^ Invalid legacy prefixes found before VEX prefix
    | ErrLegacyPrefixBeforeXop [Word8]  -- ^ Invalid legacy prefixes found before XOP prefix

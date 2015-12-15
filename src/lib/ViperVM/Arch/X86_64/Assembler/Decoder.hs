@@ -7,17 +7,20 @@ module ViperVM.Arch.X86_64.Assembler.Decoder
    ) where
 
 import Data.Bits
+import Data.Maybe (listToMaybe)
 import qualified Data.Map as Map
 import ViperVM.Format.Binary.Get (Get)
 import qualified ViperVM.Format.Binary.Get as G
 import Control.Monad.State
 import Control.Monad.Trans.Either
+import qualified Data.Vector as V
 
 
 import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
 import ViperVM.Arch.X86_64.Assembler.RexPrefix
 import ViperVM.Arch.X86_64.Assembler.VexPrefix
 import ViperVM.Arch.X86_64.Assembler.Mode
+import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Insns
 import ViperVM.Arch.X86_64.Assembler.X86Dec
@@ -115,7 +118,6 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
 --
 --
 
-
 decodeInsn :: X86Dec Instruction
 decodeInsn = do
    allowedSets <- getAllowedSets
@@ -155,31 +157,63 @@ decodeInsn = do
          opcode' <- nextWord8
          undefined
 
-      -- normal instructions
-      (m,x) -> do
-         -- try to identify the opcode
-         --insns <- case Map.lookup opcode insnOpcodeMap of
-         --            Nothing -> left (ErrUnknownOpcode opcode)
-         --            Just i  -> right i
+      (MapPrimary,x) -> do
+         -- candidate instructions
+         insns <- case opcodeMapPrimary V.! fromIntegral x of
+            [] -> left (ErrUnknownOpcode opcodeMap opcode)
+            xs -> right xs
 
-         ---- filter instructions
-         --let insns' = filter (\i -> Extension AVX `notElem` iProperties i) insns
-         ---- TODO
-         --let insn = undefined
-
-         -- decode ModRM byte.
-         --modrm <- if requireModRM insn
-         --            then Just <$> nextWord8
-         --            else return Nothing
-
-         -- decode SIB byte
+         -- filter invalid instructions given the enabled instruction sets and
+         -- execution modes
          -- TODO
+         insns' <- return insns
 
-         -- decode disp
-         -- TODO
+         modrm <- case (any (requireModRM . fst) insns', all (requireModRM . fst) insns') of
+            (True,True)   -> Just . ModRM <$> nextWord8
+            (False,False) -> return Nothing
+            _             -> error "Some candidates for the same opcode require ModRM, but some others don't. Please fix opcode tables."
 
-         -- decode immediate
-         -- TODO
+         let
+            insns'' = case modrm of
+               Nothing -> insns'
+               Just m  -> filter ((\e -> checkOpcodeExt e && checkOperands e) . fst) insns'
+                  where
+                     -- check opcode extension in ModRM.reg if applicable
+                     checkOpcodeExt e = case encOpcodeExt e of
+                        Just x | regField m /= x -> False
+                        _                        -> True
+
+                     -- some instructions are distinguished by the parameter types (i.e.
+                     -- ModRM.mod). We check it here
+                     checkOperands e = modField m /= 3 || case rmOp of
+                           [x] -> maybeOpTypeReg (opType x)
+                           _   -> False
+                        where
+                           rmOp = filter (\x -> opEnc x == E_ModRM) (encOperands e)
+
+         -- finally find out the instruction
+         let (enc,insn) = case insns'' of
+               [x] -> x
+               []  -> error "No matching instruction found"
+               _   -> error "More than one candidates remaining. Fix the decoder"
+
+         -- Decode operands
+         -- First we read the address (SIB, displacement) encoded in ModRM.rm
+         -- if applicable
+         rmAddr <- case modrm of
+            Just m | not (rmRegMode m) -> Just <$> getAddr m
+            _                          -> return Nothing
+
+         -- Read immediate if any
+         imm <- case hasImmediate enc of
+            True  -> undefined -- TODO read appropriate size
+            False -> return Nothing
+
+         -- associate operands
+         -- (reverse operands if reversable bit is set)
+         ops <- forM (encOperands enc) $ \op -> do
+            -- TODO
+            undefined
 
          undefined
 

@@ -6,12 +6,12 @@ module ViperVM.Arch.X86_64.Assembler.LegacyPrefix
    , putLegacyPrefixes
    , putLegacyPrefix
    , decodeLegacyPrefixes
+   , isLegacyPrefix
    ) where
 
 import Data.Word
 import Data.Maybe (isJust)
 import Data.Foldable (traverse_)
-import Control.Monad.State
 import Control.Monad.Trans.Either
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as V
