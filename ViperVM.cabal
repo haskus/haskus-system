@@ -445,3 +445,13 @@ executable udev
       ,  ViperVM
       ,  either
       ,  transformers
+
+executable Disass
+   main-is:             Disass.hs
+   hs-source-dirs:      src/apps
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  ViperVM
+      ,  bytestring

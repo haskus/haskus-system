@@ -49,19 +49,19 @@ putRexPrefix (Rex x) = putWord8 (x .|. 0x40)
 
 -- | Test W bit of REX prefix
 rexW :: Rex -> Bool
-rexW (Rex v) = testBit v 4
+rexW (Rex v) = testBit v 3
 
 -- | Test R bit of REX prefix
 rexR :: Rex -> Word8
-rexR (Rex v) = if testBit v 3 then 1 else 0
+rexR (Rex v) = if testBit v 2 then 1 else 0
 
 -- | Test X bit of REX prefix
 rexX :: Rex -> Word8
-rexX (Rex v) = if testBit v 2 then 1 else 0
+rexX (Rex v) = if testBit v 1 then 1 else 0
 
 -- | Test B bit of REX prefix
 rexB :: Rex -> Word8
-rexB (Rex v) = if testBit v 1 then 1 else 0
+rexB (Rex v) = if testBit v 0 then 1 else 0
 
 -- | Try to decode a REX prefix. See Note [REX prefix]
 decodeREX :: X86Dec ()

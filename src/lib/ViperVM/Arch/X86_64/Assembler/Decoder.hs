@@ -198,10 +198,29 @@ findInsn opcodeMap opcode = do
       [] -> left (ErrUnknownOpcode opcodeMap opcode)
       xs -> right xs
 
-   -- filter invalid instructions given the enabled instruction sets and
-   -- execution modes
-   -- TODO
-   insns' <- return insns
+   prefixes <- getLegacyPrefixes
+   let
+      -- check that mandatory prefix is here
+      checkMandatoryprefix (enc,_) = case encMandatoryPrefix enc of
+         Nothing -> True
+         Just p  -> p `elem` prefixes
+
+      -- filter invalid instructions given the enabled instruction sets and
+      -- execution modes
+      -- TODO TODO !!!!
+      checkMode _ = True
+      checkISet _ = True
+
+      -- check that remaining prefixes are supported or ignored!
+      -- TODO
+
+      checkAll x = and
+         [ checkMandatoryprefix x
+         , checkMode x
+         , checkISet x
+         ]
+
+      insns' = filter checkAll insns
 
    modrm <- case (any (requireModRM . fst) insns', all (requireModRM . fst) insns') of
       (True,True)   -> Just . ModRM <$> nextWord8
@@ -230,7 +249,7 @@ findInsn opcodeMap opcode = do
    case insns'' of
       [(enc,insn)] -> right (enc,insn,modrm)
       []           -> left (ErrUnknownOpcode opcodeMap opcode)
-      _            -> error "More than one candidate instructions remaining. Fix the decoder"
+      _            -> error $ "More than one candidate instructions remaining. Fix the decoder: " ++ show (fmap snd insns'')
 
 
 -- | Decode operands

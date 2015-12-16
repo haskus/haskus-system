@@ -17,6 +17,7 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , isVexEncoding
    , encOpcodeExt
    , encOperands
+   , encMandatoryPrefix
    , encProperties
    , encSizableBit
    , encSignExtendImmBit
@@ -110,6 +111,10 @@ encOpcodeExt (VexEncoding    e) = vexEncOpcodeExt e
 encOperands :: Encoding -> [OperandSpec]
 encOperands (LegacyEncoding e)  = legEncParams e
 encOperands (VexEncoding    e)  = vexEncParams e
+
+encMandatoryPrefix :: Encoding -> Maybe Word8
+encMandatoryPrefix (LegacyEncoding e) = legEncMandatoryPrefix e
+encMandatoryPrefix (VexEncoding    e) = vexEncMandatoryPrefix e
 
 encProperties :: Encoding -> [Properties]
 encProperties (LegacyEncoding e) = legEncProperties e
