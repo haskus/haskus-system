@@ -27,6 +27,7 @@ import ViperVM.Arch.X86_64.Assembler.Registers
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.Encoding
 import ViperVM.Arch.X86_64.Assembler.Operand
+import ViperVM.Arch.X86_64.Assembler.OperandSize
 import Control.Monad.Trans.Either
 
 {- Note [FPU (x87)]
@@ -237,7 +238,7 @@ decodeX87 x = do
       _ -> do
          let 
             m         = ModRM y
-            getReg    = getRMRegister RF_X87 Nothing m
+            getReg    = getRMRegister OpSize8 T_ST m -- dummy operand size
             getM32FP  = M32FP  <$> getAddr m
             getM64FP  = M64FP  <$> getAddr m
             getM80FP  = M80FP  <$> getAddr m

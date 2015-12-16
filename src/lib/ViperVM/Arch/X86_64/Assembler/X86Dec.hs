@@ -13,6 +13,8 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , getIndexRegExt
    , getRegExt
    , getUseExtRegs
+   , getVectorLength
+   , getAdditionalOperand
    , getOpSize64
    , assertNoRex
    , assertNoVex
@@ -35,11 +37,12 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , decodeLegacyPrefixes
    , getOperandSize
    , getAddr
-   , getRegRegister
-   , getRMRegister
    , getRMOp
+   , getRMRegister
    , getRegOp
    , getEffectiveAddressSize
+   , getOpFromRegId
+   , getImplicitOp
    )
 where
 
@@ -148,6 +151,12 @@ getRegExt = stateRegExt <$> lift get
 
 getUseExtRegs :: X86Dec Bool
 getUseExtRegs = stateUseExtRegs <$> lift get
+
+getVectorLength :: X86Dec (Maybe VectorLength)
+getVectorLength = stateVectorLength <$> lift get
+
+getAdditionalOperand :: X86Dec (Maybe Word8)
+getAdditionalOperand = stateAdditionalOp <$> lift get
 
 getOpSize64 :: X86Dec Bool
 getOpSize64 = stateOpSize64 <$> lift get
@@ -369,29 +378,6 @@ getAddr modrm = do
             -- if there is a scale, it is in sib
             scale = scaleField <$> sib
 
-getRegister :: RegFamily -> Maybe Size -> Word8 -> X86Dec Register
-getRegister fm size code = do
-   useExtRegs <- getUseExtRegs
-   return (regFromCode fm size useExtRegs code)
-
-getRMRegister :: RegFamily -> Maybe Size -> ModRM -> X86Dec Register
-getRMRegister fm size modrm = do
-   ext <- getBaseRegExt
-   getRegister fm size ((ext `shiftL` 3) .|. rmField modrm)
-
-getRegRegister :: RegFamily -> Maybe Size -> ModRM -> X86Dec Register
-getRegRegister fm size modrm = do
-   ext <- getRegExt
-   getRegister fm size ((ext `shiftL` 3) .|. regField modrm)
-
-getRegOp :: RegFamily -> Maybe Size -> ModRM -> X86Dec Op
-getRegOp fm size modrm = OpReg <$> getRegRegister fm size modrm
-
-getRMOp :: RegFamily -> Maybe Size -> ModRM -> X86Dec Op
-getRMOp fm size m = case rmRegMode m of
-   True  -> OpReg <$> getRMRegister fm size m
-   False -> OpMem <$> getAddr m
-
 -- | Return effective address size
 --
 -- See Table 1-1 "Address-Size Overrides" in AMD Manual v3
@@ -418,4 +404,151 @@ getEffectiveAddressSize = do
       (_, AddrSize16, True)                  -> AddrSize32
       _ -> error "Invalid combination of modes and address sizes"
    
+-- | Convert a register identifier into a register
+getFromRegId :: OperandSize -> OperandType -> Word8 -> X86Dec Register
+getFromRegId opSize typ rid = do
+   useExtRegs   <- getUseExtRegs
+   vectorLength <- getVectorLength
+   let 
+      fromCode fm sz = regFromCode fm sz useExtRegs
+      osize = Just (operandSize opSize)
+      sz16  = Just Size16
+      sz32  = Just Size32
+      sz64  = Just Size64
 
+   return $ case typ of
+      T_R      -> fromCode RF_GPR osize rid
+      T_R16    -> fromCode RF_GPR sz16  rid
+      T_R32    -> fromCode RF_GPR sz32  rid
+      T_R16_32 -> case opSize of
+         OpSize16 -> fromCode RF_GPR sz16  rid
+         OpSize32 -> fromCode RF_GPR sz32  rid
+         _        -> error $ "Invalid operand size: " ++ show opSize ++ " (expecting 16 or 32)"
+      T_R32_64 -> case opSize of
+         OpSize32 -> fromCode RF_GPR sz32  rid
+         OpSize64 -> fromCode RF_GPR sz64  rid
+         _        -> error $ "Invalid operand size: " ++ show opSize ++ " (expecting 32 or 64)"
+      T_R16_32_64 -> case opSize of
+         OpSize16 -> fromCode RF_GPR sz16  rid
+         OpSize32 -> fromCode RF_GPR sz32  rid
+         OpSize64 -> fromCode RF_GPR sz64  rid
+         _        -> error $ "Invalid operand size: " ++ show opSize ++ " (expecting 16, 32 or 64)"
+      T_RM     -> fromCode RF_GPR osize rid
+      T_RM16   -> fromCode RF_GPR sz16  rid
+      T_RM32   -> fromCode RF_GPR sz32  rid
+      T_RM16_32 -> case opSize of
+         OpSize16 -> fromCode RF_GPR sz16  rid
+         OpSize32 -> fromCode RF_GPR sz32  rid
+         _        -> error $ "Invalid operand size: " ++ show opSize ++ " (expecting 16 or 32)"
+      T_RM32_64 -> case opSize of
+         OpSize32 -> fromCode RF_GPR sz32  rid
+         OpSize64 -> fromCode RF_GPR sz64  rid
+         _        -> error $ "Invalid operand size: " ++ show opSize ++ " (expecting 32 or 64)"
+      T_RM16_32_64 -> case opSize of
+         OpSize16 -> fromCode RF_GPR sz16  rid
+         OpSize32 -> fromCode RF_GPR sz32  rid
+         OpSize64 -> fromCode RF_GPR sz64  rid
+         _        -> error $ "Invalid operand size: " ++ show opSize ++ " (expecting 16, 32 or 64)"
+
+      T_V64          -> fromCode RF_VEC (Just Size64) rid
+      T_VM64         -> fromCode RF_VEC (Just Size64) rid
+      T_V128         -> fromCode RF_VEC (Just Size128) rid
+      T_VM128        -> fromCode RF_VEC (Just Size128) rid
+      T_V128_Low32   -> fromCode RF_VEC (Just Size128) rid
+      T_VM128_Low32  -> fromCode RF_VEC (Just Size128) rid
+      T_V128_Low64   -> fromCode RF_VEC (Just Size128) rid
+      T_VM128_Low64  -> fromCode RF_VEC (Just Size128) rid
+
+      T_V128_256 -> case vectorLength of
+         Just VL128 -> fromCode RF_VEC (Just Size128) rid
+         Just VL256 -> fromCode RF_VEC (Just Size256) rid
+         Nothing    -> error "Expecting vector length 128 or 256"
+      T_VM128_256 -> case vectorLength of
+         Just VL128 -> fromCode RF_VEC (Just Size128) rid
+         Just VL256 -> fromCode RF_VEC (Just Size256) rid
+         Nothing    -> error "Expecting vector length 128 or 256"
+
+      T_ST  -> fromCode RF_X87 Nothing rid
+
+      _        -> error $ "Not a register operand type: " ++ show typ
+
+getOpFromRegId :: OperandSize -> OperandType -> Word8 -> X86Dec Op
+getOpFromRegId opSize typ rid = OpReg <$> getFromRegId opSize typ rid
+
+getRegOp :: OperandSize -> OperandType -> ModRM -> X86Dec Op
+getRegOp opSize typ modrm = do
+   ext <- getRegExt
+   OpReg <$> getFromRegId opSize typ ((ext `shiftL` 3) .|. regField modrm)
+
+getRMRegister :: OperandSize -> OperandType -> ModRM -> X86Dec Register
+getRMRegister opSize typ modrm = case rmRegMode modrm of
+   True  -> do
+      ext <- getBaseRegExt
+      getFromRegId opSize typ ((ext `shiftL` 3) .|. rmField modrm)
+   False -> error "Expecting register in ModRM.rm"
+
+getRMOp :: OperandSize -> OperandType -> ModRM -> X86Dec Op
+getRMOp opSize typ modrm = case rmRegMode modrm of
+   True  -> OpReg <$> getRMRegister opSize typ modrm
+   False -> OpMem <$> getAddr modrm
+
+getImplicitOp :: OperandSize -> OperandType -> X86Dec Op
+getImplicitOp opSize typ =
+   return $ case typ of
+      T_Accu -> case opSize of
+         OpSize8  -> OpReg R_AL
+         OpSize16 -> OpReg R_AX
+         OpSize32 -> OpReg R_EAX
+         OpSize64 -> OpReg R_RAX
+      T_AX_EAX_RAX -> case opSize of
+         OpSize8  -> error "Invalid operand size"
+         OpSize16 -> OpReg R_AX
+         OpSize32 -> OpReg R_EAX
+         OpSize64 -> OpReg R_RAX
+      T_xDX_xAX -> case opSize of
+         OpSize8  -> OpReg R_AX
+         OpSize16 -> OpRegPair R_DX R_AX
+         OpSize32 -> OpRegPair R_EDX R_EAX
+         OpSize64 -> OpRegPair R_RDX R_RAX
+      T_xCX_xBX -> case opSize of
+         OpSize8  -> error "Invalid operand size"
+         OpSize16 -> OpRegPair R_CX R_BX
+         OpSize32 -> OpRegPair R_ECX R_EBX
+         OpSize64 -> OpRegPair R_RCX R_RBX
+      T_xAX -> case opSize of
+         OpSize8  -> error "Invalid operand size"
+         OpSize16 -> error "Invalid operand size"
+         OpSize32 -> OpReg R_EAX
+         OpSize64 -> OpReg R_RAX
+      T_xBX -> case opSize of
+         OpSize8  -> error "Invalid operand size"
+         OpSize16 -> error "Invalid operand size"
+         OpSize32 -> OpReg R_EBX
+         OpSize64 -> OpReg R_RBX
+      T_xCX -> case opSize of
+         OpSize8  -> error "Invalid operand size"
+         OpSize16 -> error "Invalid operand size"
+         OpSize32 -> OpReg R_ECX
+         OpSize64 -> OpReg R_RCX
+      T_xDX -> case opSize of
+         OpSize8  -> error "Invalid operand size"
+         OpSize16 -> error "Invalid operand size"
+         OpSize32 -> OpReg R_EDX
+         OpSize64 -> OpReg R_RDX
+      T_AL   -> OpReg R_AL
+      T_AX   -> OpReg R_AX
+      T_XMM0 -> OpReg (R_XMM 0)
+      T_rSI -> case opSize of
+         OpSize8  -> OpRegPair R_DS R_SI
+         OpSize16 -> OpRegPair R_DS R_ESI
+         OpSize32 -> error "Invalid operand size"
+         OpSize64 -> error "Invalid operand size"
+      T_rDI -> case opSize of
+         OpSize8  -> OpRegPair R_ES R_DI
+         OpSize16 -> OpRegPair R_ES R_EDI
+         OpSize32 -> error "Invalid operand size"
+         OpSize64 -> error "Invalid operand size"
+
+      T_ST0 -> OpReg (R_ST 0)
+
+      _ -> error $ "Invalid implicit operand type$ " ++ show typ

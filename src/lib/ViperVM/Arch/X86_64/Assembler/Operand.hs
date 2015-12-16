@@ -15,6 +15,7 @@ data Op
    = OpImmediate SizedValue               -- ^ Immediate value
    | OpSignExtendImmediate SizedValue     -- ^ Sign-extended immediate value
    | OpReg Register                       -- ^ Register
+   | OpRegPair Register Register          -- ^ REG:REG
    | OpMem Addr                           -- ^ Memory address
    | OpPtr16_16 !Word16 !Word16           -- ^ Immediate 16:16 ptr
    | OpPtr16_32 !Word16 !Word32           -- ^ Immediate 16:32 ptr
@@ -57,6 +58,9 @@ data OperandType
    | T_R          -- ^ General purpose register
    | T_R16        -- ^ 16-bit general purpose register
    | T_R32        -- ^ 32-bit general purpose register
+   | T_R16_32     -- ^ 16- or 32-bit general purpose register
+   | T_R32_64     -- ^ 32- or 64-bit general purpose register
+   | T_R16_32_64  -- ^ 16-, 32- or 64-bit general purpose register
    | T_RM         -- ^ Register or memory
    | T_RM16       -- ^ 16-bit general purpose register or memory
    | T_RM32       -- ^ 32-bit general purpose register or memory
@@ -64,9 +68,6 @@ data OperandType
    | T_RM32_64    -- ^ 32- or 64-bit general purpose register or memory
    | T_RM16_32_64 -- ^ 16-, 32- or 64-bit general purpose register or memory
    | T_RM64       -- ^ 64-bit general purpose register or memory
-   | T_R16_32     -- ^ 16- or 32-bit general purpose register
-   | T_R32_64     -- ^ 32- or 64-bit general purpose register
-   | T_R16_32_64  -- ^ 16-, 32- or 64-bit general purpose register
 
    -- Memory
    | T_M_PAIR     -- ^ Pair of words in memory (words are operand-size large)

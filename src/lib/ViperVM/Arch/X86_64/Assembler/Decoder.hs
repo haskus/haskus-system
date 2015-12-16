@@ -209,7 +209,9 @@ decodeInsn = do
             _                          -> return Nothing
 
          -- Compute operand size for variable sized operands
-         opSize <- getOperandSize enc
+         opSize <- case encSizableBit enc of
+            Just b | not (testBit opcode b) -> return OpSize8
+            _                               -> getOperandSize enc
 
          -- Read immediate if any
          imm <- case filter (isImmediate . opEnc) (encOperands enc) of
@@ -226,45 +228,40 @@ decodeInsn = do
                      OpSize16 -> Just . OpRel . SizedValue16 <$> nextWord16
                      OpSize32 -> Just . OpRel . SizedValue32 <$> nextWord32
                      OpSize64 -> Just . OpRel . SizedValue32 <$> nextWord32
-                  (E_Imm, T_Imm) -> case (encSizableBit enc, encSignExtendImmBit enc) of
-                     (Just sz, Just se)
-                        | testBit opcode sz && testBit opcode se ->
-                              Just . OpSignExtendImmediate . SizedValue8 <$> nextWord8
-                        | testBit opcode se ->
-                              error "Sign-extend bit set but sizable bit unset"
-                     (Nothing, Just _) ->
-                              error "Invalid encoding: found sign-extend bit without a sizable bit"
-                     (Just sz, _)
-                        | testBit opcode sz -> case opSize of
-                              OpSize16 -> Just . OpImmediate . SizedValue16 <$> nextWord16
-                              OpSize32 -> Just . OpImmediate . SizedValue32 <$> nextWord32
-                              OpSize64 -> Just . OpSignExtendImmediate . SizedValue32 <$> nextWord32
-                              OpSize8  -> error "Invalid operand size for immediate"
-                        | otherwise ->
-                              Just . OpImmediate . SizedValue8 <$> nextWord8
-                     (Nothing,Nothing) ->
-                        error "Variable sized immediate operand without sizable bit"
-                              
+                  (E_Imm, T_Imm) -> case (opSize, encSignExtendImmBit enc) of
+                     (OpSize8, _)
+                        -> Just . OpImmediate . SizedValue8 <$> nextWord8
+                     (_, Just se) | testBit opcode se
+                        -> Just . OpSignExtendImmediate . SizedValue8 <$> nextWord8
+                     (OpSize16,_)
+                        -> Just . OpImmediate . SizedValue16 <$> nextWord16
+                     (OpSize32,_)
+                        -> Just . OpImmediate . SizedValue32 <$> nextWord32
+                     (OpSize64,_)
+                        -> Just . OpSignExtendImmediate . SizedValue32 <$> nextWord32
 
                   _  -> error $ "Don't know how to read immediate operand: " ++ show im
             _    -> error "Invalid encoding (more than one immediate operand)"
 
          -- associate operands
-         --ops <- forM (encOperands enc) $ \op -> do
-         --   case opEnc op of
-         --      x | isImmediate x -> case imm of
-         --         Just (OpReg rid) -> getFromRegId (opType op) rid -- TODO: convert OpRegId into OpReg
-         --         Just o  -> return o
-         --         Nothing -> error "Immediate operand expected, but nothing found"
-         --      E_ModRM -> case modrm of
-         --         Just m  -> getRMOp fam sz m
-         --         Nothing -> error "ModRM expected, but nothing found"
-         --      E_ModReg -> case modrm of
-         --         Just m  -> getRegOp fam sz m
-         --         Nothing -> error "ModRM expected, but nothing found"
-         --      E_Implicit -> getImplicitOp (opType op)
-         --      E_VexV     -> getFromRegId (opType op) (vexVVVV vex)
-         --      E_OpReg    -> getFromRegId (opType op) (opcode .&. 0x07)
+         ops <- forM (encOperands enc) $ \op -> do
+            case opEnc op of
+               x | isImmediate x -> case imm of
+                  Just (OpRegId rid) -> getOpFromRegId opSize (opType op) rid
+                  Just o  -> return o
+                  Nothing -> error "Immediate operand expected, but nothing found"
+               E_ModRM -> case (modrm, rmAddr) of
+                  (_, Just addr) -> return (OpMem addr)
+                  (Just m, _)    -> getRMOp opSize (opType op) m
+                  (Nothing,_)    -> error "ModRM expected, but nothing found"
+               E_ModReg -> case modrm of
+                  Just m  -> getRegOp opSize (opType op) m
+                  Nothing -> error "ModRM expected, but nothing found"
+               E_Implicit -> getImplicitOp opSize (opType op)
+               E_VexV     -> getAdditionalOperand >>= \case
+                  Just vvvv -> getOpFromRegId opSize (opType op) vvvv
+                  Nothing   -> error "Expecting additional operand (VEX.vvvv)"
+               E_OpReg    -> getOpFromRegId opSize (opType op) (opcode .&. 0x07)
 
          --TODO
          -- reverse operands if reversable bit is set
