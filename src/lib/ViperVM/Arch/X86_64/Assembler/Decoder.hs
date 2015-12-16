@@ -178,11 +178,32 @@ decodeInsn = do
 
          -- variants
          let 
-            ps' = fmap toLegacyPrefix ps
-            vlocked  = if encLockable enc && PrefixLock `elem` ps' then [Locked] else []
+            ps'      = fmap toLegacyPrefix ps
+
+            -- Check that a RW memory operand exists for "lock" prefix
+            isRWmemOp (RW,OpMem _) = True
+            isRWmemOp _            = False
+
+            hasRWmemOp = any isRWmemOp (fmap opMode (encOperands enc) `zip` ops)
+
+            -- check if insn is lockable and has a lock prefix
+            vlocked  = if encLockable enc && PrefixLock `elem` ps' && hasRWmemOp
+                        then [Locked]
+                        else []
+
+            -- check if insn is reversable, if the reversable bit is set
+            -- and if there are only registers operands (because it is the only
+            -- case for which there are two different encodings for the same
+            -- instruction:
+            --    ModRM.reg = r1, ModRM.rm = r2, reversed = False
+            --    ModRM.reg = r2, ModRM.rm = r1, reversed = True
+            isRegOp (OpReg _) = True
+            isRegOp _         = False
+            onlyRegOps        = all isRegOp ops
             vreverse = case encReversableBit enc of
-               Just b | testBit opcode b -> [Reversed]
-               _                         -> []
+               Just b | testBit opcode b && onlyRegOps -> [Reversed]
+               _                                       -> []
+
             -- TODO segment override
             -- TODO repeat prefixes
             -- TODO branch hints

@@ -84,7 +84,10 @@ showInsnByMnemo mnemo = do
 
 -- | List all instructions
 showAll :: Html
-showAll = forM_ X86.instructions showInsn
+showAll = do
+   let is = List.nub . fmap X86.iMnemonic $ X86.instructions
+   H.ul $ forM_ is $ \i -> do
+      H.li $ showMnemo i
 
 -- | Show an instruction
 showInsn :: X86.X86Insn -> Html
