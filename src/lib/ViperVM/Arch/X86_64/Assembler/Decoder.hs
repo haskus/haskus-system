@@ -17,6 +17,7 @@ import qualified Data.Vector as V
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.RexPrefix
 import ViperVM.Arch.X86_64.Assembler.VexPrefix
+import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Size
@@ -28,7 +29,7 @@ import ViperVM.Arch.X86_64.Assembler.OperandSize
 
 data Instruction
    = InsnX87 X87Instruction
-   | InsnX86 X86Insn Encoding (Maybe OperandSize) [Op]
+   | InsnX86 X86Insn Encoding (Maybe OperandSize) [Variant] [Op]
    deriving (Show)
 
 
@@ -159,7 +160,7 @@ decodeInsn = do
             -- read 3DNow! opcode
             opcode' <- nextWord8
             let [(enc,insn)] = opcodeMap3DNow V.! fromIntegral opcode'
-            return $ InsnX86 insn enc Nothing ops
+            return $ InsnX86 insn enc Nothing [] ops
 
          | otherwise -> left (ErrInvalidOpcodeMap opcodeMap)
 
@@ -175,7 +176,20 @@ decodeInsn = do
          -- decode operands
          ops <- decodeOperands opSize enc modrm opcode
 
-         return $ InsnX86 insn enc (Just opSize) ops
+         -- variants
+         let 
+            ps' = fmap toLegacyPrefix ps
+            vlocked  = if encLockable enc && PrefixLock `elem` ps' then [Locked] else []
+            vreverse = case encReversableBit enc of
+               Just b | testBit opcode b -> [Reversed]
+               _                         -> []
+            -- TODO segment override
+            -- TODO repeat prefixes
+            -- TODO branch hints
+            -- TODO useless prefixes? (superfluous/multiple REX, etc.)
+            variants = vlocked ++ vreverse
+
+         return $ InsnX86 insn enc (Just opSize) variants ops
 
 
 -- | Try to find the instruction

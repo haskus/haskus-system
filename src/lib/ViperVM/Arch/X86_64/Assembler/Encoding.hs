@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , LegacyOpcodeFields(..)
    , OpcodeMap(..)
    , AccessMode(..)
+   , Variant(..)
    -- * Generic API
    , Encoding(..)
    , isLegacyEncoding
@@ -22,6 +23,7 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , encSizableBit
    , encSignExtendImmBit
    , encReversableBit
+   , encLockable
    , requireModRM
    -- * Legacy encoding
    , LegEnc(..)
@@ -131,6 +133,10 @@ encSignExtendImmBit _                  = Nothing
 encReversableBit :: Encoding -> Maybe Int
 encReversableBit (LegacyEncoding e) = reversable (legEncOpcodeFields e)
 encReversableBit _                  = Nothing
+
+-- | Indicate if LOCK prefix is allowed
+encLockable :: Encoding -> Bool
+encLockable e = Lockable `elem` encProperties e
 
 data LegEnc = LegEnc
    { legEncMandatoryPrefix :: Maybe Word8        -- ^ Mandatory prefix
@@ -244,3 +250,7 @@ data VexLW
    | LWIG   -- ^ Ignore Vex.W and Vex.L
    deriving (Show)
 
+data Variant
+   = Locked       -- ^ Locked memory access
+   | Reversed     -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   deriving (Show,Eq)
