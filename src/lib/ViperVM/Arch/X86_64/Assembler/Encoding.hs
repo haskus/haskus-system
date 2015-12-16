@@ -20,6 +20,7 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , encProperties
    , encSizableBit
    , encSignExtendImmBit
+   , encReversableBit
    , requireModRM
    -- * Legacy encoding
    , LegEnc(..)
@@ -121,6 +122,10 @@ encSizableBit _                  = Nothing
 encSignExtendImmBit :: Encoding -> Maybe Int
 encSignExtendImmBit (LegacyEncoding e) = signExtendableImm8 (legEncOpcodeFields e)
 encSignExtendImmBit _                  = Nothing
+
+encReversableBit :: Encoding -> Maybe Int
+encReversableBit (LegacyEncoding e) = reversable (legEncOpcodeFields e)
+encReversableBit _                  = Nothing
 
 data LegEnc = LegEnc
    { legEncMandatoryPrefix :: Maybe Word8        -- ^ Mandatory prefix

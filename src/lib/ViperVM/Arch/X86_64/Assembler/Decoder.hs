@@ -7,19 +7,13 @@ module ViperVM.Arch.X86_64.Assembler.Decoder
    ) where
 
 import Data.Bits
-import Data.Maybe (listToMaybe)
-import qualified Data.Map as Map
 import ViperVM.Format.Binary.Get (Get)
 import qualified ViperVM.Format.Binary.Get as G
 import Control.Monad.State
 import Control.Monad.Trans.Either
 import qualified Data.Vector as V
 
-import Data.Bits
-import Data.Word
-
 import ViperVM.Arch.X86_64.Assembler.Operand
-import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
 import ViperVM.Arch.X86_64.Assembler.RexPrefix
 import ViperVM.Arch.X86_64.Assembler.VexPrefix
 import ViperVM.Arch.X86_64.Assembler.Mode
@@ -33,7 +27,8 @@ import ViperVM.Arch.X86_64.Assembler.OperandSize
 
 data Instruction
    = InsnX87 X87Instruction
-   deriving (Show,Eq)
+   | InsnX86 X86Insn Encoding OperandSize [Op]
+   deriving (Show)
 
 
 -- | Decode several instruction (until the end of the stream)
@@ -184,20 +179,20 @@ decodeInsn = do
                   where
                      -- check opcode extension in ModRM.reg if applicable
                      checkOpcodeExt e = case encOpcodeExt e of
-                        Just x | regField m /= x -> False
+                        Just b | regField m /= b -> False
                         _                        -> True
 
                      -- some instructions are distinguished by the parameter types (i.e.
                      -- ModRM.mod). We check it here
                      checkOperands e = modField m /= 3 || case rmOp of
-                           [x] -> maybeOpTypeReg (opType x)
+                           [b] -> maybeOpTypeReg (opType b)
                            _   -> False
                         where
-                           rmOp = filter (\x -> opEnc x == E_ModRM) (encOperands e)
+                           rmOp = filter (\b -> opEnc b == E_ModRM) (encOperands e)
 
          -- finally find out the instruction
          (enc,insn) <- case insns'' of
-               [x] -> right x
+               [b] -> right b
                []  -> left (ErrUnknownOpcode opcodeMap opcode)
                _   -> error "More than one candidate instructions remaining. Fix the decoder"
 
@@ -245,11 +240,15 @@ decodeInsn = do
 
          -- associate operands
          ops <- forM (encOperands enc) $ \op -> do
-            case opEnc op of
-               x | isImmediate x -> case imm of
+            let doImm = case imm of
                   Just (OpRegId rid) -> getOpFromRegId opSize (opType op) rid
                   Just o  -> return o
                   Nothing -> error "Immediate operand expected, but nothing found"
+
+            case opEnc op of
+               E_Imm      -> doImm
+               E_Imm8_3_0 -> doImm
+               E_Imm8_7_4 -> doImm
                E_ModRM -> case (modrm, rmAddr) of
                   (_, Just addr) -> return (OpMem addr)
                   (Just m, _)    -> getRMOp opSize (opType op) m
@@ -263,12 +262,9 @@ decodeInsn = do
                   Nothing   -> error "Expecting additional operand (VEX.vvvv)"
                E_OpReg    -> getOpFromRegId opSize (opType op) (opcode .&. 0x07)
 
-         --TODO
          -- reverse operands if reversable bit is set
+         let ops' = case encReversableBit enc of
+               Just b | testBit opcode b -> reverse ops
+               _                         -> ops
 
-         undefined
-
-data InsnInstance =
-   InsnInstance X86Insn (Maybe OperandSize) [Op]
-   deriving (Show)
-
+         return $ InsnX86 insn enc opSize ops'
