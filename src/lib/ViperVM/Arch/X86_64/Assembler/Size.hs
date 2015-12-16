@@ -1,9 +1,7 @@
 module ViperVM.Arch.X86_64.Assembler.Size
    ( Size(..)
-   , OperandSize(..)
    , AddressSize(..)
    , SizedValue(..)
-   , operandSize
    , addressSize
    ) where
 
@@ -18,20 +16,6 @@ data Size
    | Size256
    | Size512
    deriving (Show,Eq)
-
-data OperandSize
-   = OpSize8 
-   | OpSize16 
-   | OpSize32 
-   | OpSize64 
-   deriving (Show,Eq)
-
-operandSize :: OperandSize -> Size
-operandSize op = case op of
-   OpSize8 -> Size8
-   OpSize16 -> Size16
-   OpSize32 -> Size32
-   OpSize64 -> Size64
 
 data AddressSize
    = AddrSize16 

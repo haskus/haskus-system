@@ -8,7 +8,7 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , getAllowedSets
    , getLegacyPrefixes
    , getAddressSize
-   , getOperandSize
+   , getDefaultOperandSize
    , getBaseRegExt
    , getIndexRegExt
    , getRegExt
@@ -32,19 +32,36 @@ module ViperVM.Arch.X86_64.Assembler.X86Dec
    , skipWord16
    , skipWord32
    , skipWord64
+   , decodeLegacyPrefixes
+   , getOperandSize
+   , getAddr
+   , getRegRegister
+   , getRMRegister
+   , getRMOp
+   , getRegOp
+   , getEffectiveAddressSize
    )
 where
 
 import Data.Word
+import Data.Bits
 import qualified Data.List as List
 import ViperVM.Format.Binary.Get (Get)
 import qualified ViperVM.Format.Binary.Get as G
 import Control.Monad.State
 import Control.Monad.Trans.Either
+import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector.Unboxed.Mutable as V
 
 import ViperVM.Arch.X86_64.Assembler.Mode
+import ViperVM.Arch.X86_64.Assembler.ModRM
+import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Insns
+import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.Assembler.Utils
+import ViperVM.Arch.X86_64.Assembler.Registers
+import ViperVM.Arch.X86_64.Assembler.OperandSize
+import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
 
 data DecodeError
    = ErrInsnTooLong                    -- ^ Instruction is more than 15 bytes long
@@ -78,7 +95,7 @@ data X86State = X86State
    , stateSets             :: [InstructionSet]   -- ^ Available instruction sets
 
    , stateAddressSize      :: AddressSize        -- ^ Address size
-   , stateOperandSize      :: OperandSize        -- ^ Operand size
+   , stateDefaultOperandSize :: OperandSize      -- ^ Current default operand size (for legacy / compatibility modes)
 
    , stateByteCount        :: Int                -- ^ Number of bytes read (used to fail when > 15)
    , stateLegacyPrefixes   :: [Word8]            -- ^ Legacy prefixes
@@ -117,8 +134,8 @@ getAddressSize :: X86Dec AddressSize
 getAddressSize = stateAddressSize <$> lift get
 
 -- | Get current operand size
-getOperandSize :: X86Dec OperandSize
-getOperandSize = stateOperandSize <$> lift get
+getDefaultOperandSize :: X86Dec OperandSize
+getDefaultOperandSize = stateDefaultOperandSize <$> lift get
 
 getBaseRegExt :: X86Dec Word8
 getBaseRegExt = stateBaseRegExt <$> lift get
@@ -243,3 +260,162 @@ skipWord32 = void nextWord32
 -- | Read 8 bytes
 skipWord64 :: X86Dec ()
 skipWord64 = void nextWord64
+
+-- | Get operand size for the given instruction encoding
+getOperandSize :: Encoding -> X86Dec OperandSize
+getOperandSize enc = computeOperandSize
+   <$> getMode
+   <*> (fmap toLegacyPrefix <$> getLegacyPrefixes)
+   <*> getDefaultOperandSize
+   <*> getOpSize64
+   <*> return enc
+
+-- | Decode legacy prefixes. See Note [Legacy prefixes].
+--
+-- If allowMultiple is set, more than one prefix is allowed per group, but only
+-- the last one is taken into account.
+--
+-- If allowMoreThan4 is set, more than 4 prefixes can be used (it requires
+-- allowMultiple)
+decodeLegacyPrefixes :: Bool -> Bool -> X86Dec [Word8]
+decodeLegacyPrefixes allowMultiple allowMoreThan4 = do
+      rec 0 (V.fromList [0,0,0,0])
+   where
+      rec :: Int -> V.Vector Word8 -> X86Dec [Word8]
+      rec n _
+         | n > 4 && not allowMoreThan4 = left ErrTooManyLegacyPrefixes
+
+      rec n xs = do
+         x <- lookWord8
+
+         case legacyPrefixGroup x of
+            Nothing -> return $ V.toList $ V.filter (/= 0) xs
+
+            Just g  -> case xs V.! g of
+               y | y /= 0 && not allowMultiple 
+                  -> left ErrInvalidLegacyPrefixGroups
+               _  -> skipWord8 >> rec (n+1) (V.modify (\v -> V.write v g x) xs)
+
+-- | Read the memory addressing in r/m field
+getAddr :: ModRM -> X86Dec Addr
+getAddr modrm = do
+   baseExt  <- getBaseRegExt
+   indexExt <- getIndexRegExt
+   useExtendedRegisters <- getUseExtRegs
+   asize    <- getAddressSize
+   mode     <- getMode
+
+   -- depending on the r/m field in ModRM and on the address size, we know if
+   -- we must read a SIB byte
+   sib   <- case useSIB asize modrm of
+      True  -> Just . SIB <$> nextWord8
+      False -> return Nothing
+
+   -- depending on the mod field and the r/m in ModRM and on the address size,
+   -- we know if we must read a displacement and its size
+   disp <- case useDisplacement asize modrm of
+      Nothing     -> return Nothing
+      Just Size8  -> Just . SizedValue8  <$> nextWord8
+      Just Size16 -> Just . SizedValue16 <$> nextWord16
+      Just Size32 -> Just . SizedValue32 <$> nextWord32
+      Just _      -> error "Invalid displacement size"
+
+   return $ case asize of
+      -- if we are in 16-bit addressing mode, we don't care about the base
+      -- register extension
+      AddrSize16 -> case (modField modrm, rmField modrm) of
+         (_,0) -> Addr (Just R_BX) (Just R_SI) disp Nothing
+         (_,1) -> Addr (Just R_BX) (Just R_DI) disp Nothing
+         (_,2) -> Addr (Just R_BP) (Just R_SI) disp Nothing
+         (_,3) -> Addr (Just R_BP) (Just R_DI) disp Nothing
+         (_,4) -> Addr (Just R_SI) Nothing     disp Nothing
+         (_,5) -> Addr (Just R_DI) Nothing     disp Nothing
+         (0,6) -> Addr Nothing     Nothing     disp Nothing
+         (_,6) -> Addr (Just R_BP) Nothing     disp Nothing
+         (_,7) -> Addr (Just R_BX) Nothing     disp Nothing
+         _     -> error "Invalid 16-bit addressing"
+
+      
+      -- 32-bit and 64-bit addressing
+      _ -> Addr baseReg indexReg disp scale
+         where
+            -- size of the operand
+            sz   = case asize of
+               AddrSize16 -> error "Invalid address size"
+               AddrSize32 -> Size32
+               AddrSize64 -> Size64
+
+            -- associate base/index register
+            makeReg =  regFromCode RF_GPR (Just sz) useExtendedRegisters
+
+            -- the extended base register is either in SIB or in r/m. In some
+            -- cases, there is no base register or it is implicitly RIP/EIP
+            baseReg = case (modField modrm, rmField modrm) of
+               (0,5)
+                  | isLongMode mode -> case asize of
+                     AddrSize32 -> Just R_EIP
+                     AddrSize64 -> Just R_RIP
+                     AddrSize16 -> error "Invalid address size"
+                  | otherwise -> Nothing
+               _ -> Just . makeReg $ (baseExt `shiftL` 3) .|. br
+                  where
+                     br = case sib of
+                        Nothing -> rmField modrm
+                        Just s  -> baseField s
+
+            -- if there is an index field, it is in sib
+            indexReg = makeReg . ((indexExt `shiftL` 3) .|.) . indexField <$> sib
+
+            -- if there is a scale, it is in sib
+            scale = scaleField <$> sib
+
+getRegister :: RegFamily -> Maybe Size -> Word8 -> X86Dec Register
+getRegister fm size code = do
+   useExtRegs <- getUseExtRegs
+   return (regFromCode fm size useExtRegs code)
+
+getRMRegister :: RegFamily -> Maybe Size -> ModRM -> X86Dec Register
+getRMRegister fm size modrm = do
+   ext <- getBaseRegExt
+   getRegister fm size ((ext `shiftL` 3) .|. rmField modrm)
+
+getRegRegister :: RegFamily -> Maybe Size -> ModRM -> X86Dec Register
+getRegRegister fm size modrm = do
+   ext <- getRegExt
+   getRegister fm size ((ext `shiftL` 3) .|. regField modrm)
+
+getRegOp :: RegFamily -> Maybe Size -> ModRM -> X86Dec Op
+getRegOp fm size modrm = OpReg <$> getRegRegister fm size modrm
+
+getRMOp :: RegFamily -> Maybe Size -> ModRM -> X86Dec Op
+getRMOp fm size m = case rmRegMode m of
+   True  -> OpReg <$> getRMRegister fm size m
+   False -> OpMem <$> getAddr m
+
+-- | Return effective address size
+--
+-- See Table 1-1 "Address-Size Overrides" in AMD Manual v3
+--
+-- The prefix also changes the size of RCX when it is implicitly accessed
+--
+-- Address size for implicit accesses to the stack segment is determined by D
+-- bit in the stack segment descriptor or is 64 bit in 64 bit mode.
+--
+getEffectiveAddressSize :: X86Dec AddressSize
+getEffectiveAddressSize = do
+   mode        <- getMode
+   asize       <- getAddressSize
+   prefixes    <- fmap toLegacyPrefix <$> getLegacyPrefixes
+
+   let isOverrided = PrefixAddressSizeOverride `elem` prefixes
+   
+   return $ case (mode, asize, isOverrided) of
+      (LongMode Long64bitMode, _, False)     -> AddrSize64
+      (LongMode Long64bitMode, _, True)      -> AddrSize32
+      (_, AddrSize16, False)                 -> AddrSize16
+      (_, AddrSize32, False)                 -> AddrSize32
+      (_, AddrSize32, True)                  -> AddrSize16
+      (_, AddrSize16, True)                  -> AddrSize32
+      _ -> error "Invalid combination of modes and address sizes"
+   
+

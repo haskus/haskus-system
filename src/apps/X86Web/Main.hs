@@ -3,6 +3,7 @@
 import CmdLine (Options(..), getOptions)
 
 import qualified ViperVM.Arch.X86_64.Assembler.Insns as X86
+import qualified ViperVM.Arch.X86_64.Assembler.Encoding as X86
 
 import Paths_ViperVM
 import Data.FileEmbed

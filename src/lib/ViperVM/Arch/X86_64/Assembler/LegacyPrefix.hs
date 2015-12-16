@@ -5,19 +5,15 @@ module ViperVM.Arch.X86_64.Assembler.LegacyPrefix
    , toLegacyPrefix
    , putLegacyPrefixes
    , putLegacyPrefix
-   , decodeLegacyPrefixes
    , isLegacyPrefix
+   , legacyPrefixGroup
    ) where
 
 import Data.Word
 import Data.Maybe (isJust)
 import Data.Foldable (traverse_)
-import Control.Monad.Trans.Either
-import qualified Data.Vector.Unboxed as V
-import qualified Data.Vector.Unboxed.Mutable as V
 
 import ViperVM.Format.Binary.Put
-import ViperVM.Arch.X86_64.Assembler.X86Dec
 
 {-
    Note [Legacy prefixes]
@@ -124,30 +120,3 @@ putLegacyPrefix p = putWord8 $ case p of
    PrefixLock                 -> 0xF0
    PrefixRepeat RepeatEqual   -> 0xF3
    PrefixRepeat RepeatNotEqual-> 0xF2
-
-
--- | Decode legacy prefixes. See Note [Legacy prefixes].
---
--- If allowMultiple is set, more than one prefix is allowed per group, but only
--- the last one is taken into account.
---
--- If allowMoreThan4 is set, more than 4 prefixes can be used (it requires
--- allowMultiple)
-decodeLegacyPrefixes :: Bool -> Bool -> X86Dec [Word8]
-decodeLegacyPrefixes allowMultiple allowMoreThan4 = do
-      rec 0 (V.fromList [0,0,0,0])
-   where
-      rec :: Int -> V.Vector Word8 -> X86Dec [Word8]
-      rec n _
-         | n > 4 && not allowMoreThan4 = left ErrTooManyLegacyPrefixes
-
-      rec n xs = do
-         x <- lookWord8
-
-         case legacyPrefixGroup x of
-            Nothing -> return $ V.toList $ V.filter (/= 0) xs
-
-            Just g  -> case xs V.! g of
-               y | y /= 0 && not allowMultiple 
-                  -> left ErrInvalidLegacyPrefixGroups
-               _  -> skipWord8 >> rec (n+1) (V.modify (\v -> V.write v g x) xs)

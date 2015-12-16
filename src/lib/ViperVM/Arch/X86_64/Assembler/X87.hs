@@ -24,8 +24,9 @@ import Data.Word
 import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Insns
 import ViperVM.Arch.X86_64.Assembler.Registers
-import ViperVM.Arch.X86_64.Assembler.Addressing
 import ViperVM.Arch.X86_64.Assembler.X86Dec
+import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.Assembler.Operand
 import Control.Monad.Trans.Either
 
 {- Note [FPU (x87)]
