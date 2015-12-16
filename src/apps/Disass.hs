@@ -13,7 +13,16 @@ main = do
    bs <- BS.readFile f
 
    let 
-      g  = decodeMany (LongMode Long64bitMode) [] AddrSize64 OpSize32
-      rs = G.runGetOrFail g bs
+      g  = G.countBytes $ decode (LongMode Long64bitMode) [] AddrSize64 OpSize32
 
-   putStrLn (show rs)
+      go b = do
+         let (n,r) = G.runGetOrFail g b
+         case r of
+            Left x  -> putStrLn $ "Failed: " ++ show x
+            Right x -> putStrLn (show x) >> putStrLn ""
+         let b' = BS.drop n b
+         if BS.null b'
+            then return ()
+            else go b'
+
+   go bs
