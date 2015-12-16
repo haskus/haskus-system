@@ -70,6 +70,7 @@ data DecodeError
    = ErrInsnTooLong                    -- ^ Instruction is more than 15 bytes long
    | ErrTooManyLegacyPrefixes          -- ^ More than 4 legacy prefixes
    | ErrInvalidLegacyPrefixGroups      -- ^ More than 1 legacy prefix for a single group
+   | ErrInvalidOpcodeMap OpcodeMap     -- ^ Invalid opcode map
    | ErrUnknownOpcode OpcodeMap Word8  -- ^ Unrecognized opcode
    | ErrRexPrefixBeforeVex             -- ^ REX prefix found before VEX prefix
    | ErrLegacyPrefixBeforeVex [Word8]  -- ^ Invalid legacy prefixes found before VEX prefix

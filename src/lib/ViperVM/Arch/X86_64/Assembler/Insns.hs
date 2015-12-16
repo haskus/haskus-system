@@ -12,6 +12,7 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , buildLegacyOpcodeMap
    , buildVexOpcodeMap
    , maybeOpTypeReg
+   , amd3DNowEncoding
    -- * Opcode maps
    , opcodeMapPrimary
    , opcodeMap0F
@@ -2336,3 +2337,13 @@ opcodeMapVex2 = buildVexOpcodeMap (MapVex 2) instructions
 
 opcodeMapVex3 :: V.Vector [(Encoding,X86Insn)]
 opcodeMapVex3 = buildVexOpcodeMap (MapVex 3) instructions
+
+-- We use a dummy encoding for 3DNow: because all the instructions use the same
+amd3DNowEncoding :: Encoding
+amd3DNowEncoding =
+   legacyEncoding Nothing Map3DNow 0x0 Nothing
+     opf
+     []
+     [ op    RW    T_V64          E_ModReg
+     , op    RO    T_VM64         E_ModRM
+     ]
