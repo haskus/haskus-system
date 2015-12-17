@@ -63,6 +63,7 @@ library
     ViperVM.Arch.X86_64.Assembler.OperandSize
     ViperVM.Arch.X86_64.Assembler.RexPrefix
     ViperVM.Arch.X86_64.Assembler.VexPrefix
+    ViperVM.Arch.X86_64.Assembler.EvexPrefix
     ViperVM.Arch.X86_64.Assembler.LegacyPrefix
     ViperVM.Arch.X86_64.Assembler.Mode
     ViperVM.Arch.X86_64.Assembler.ModRM

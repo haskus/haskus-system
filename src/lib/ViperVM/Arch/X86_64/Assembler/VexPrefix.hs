@@ -18,10 +18,12 @@ import Control.Monad.State
 
 import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.Mode
+import ViperVM.Arch.X86_64.Assembler.Encoding
 
+-- | A VEX prefix
 data Vex
-   = Vex2 !Word8
-   | Vex3 !Word8 !Word8
+   = Vex2 !Word8           -- ^ Two-byte VEX prefix
+   | Vex3 !Word8 !Word8    -- ^ Three-byte VEX prefix
    deriving (Show)
 
 vexW :: Vex -> Maybe Bool
@@ -56,20 +58,18 @@ vexMMMMM :: Vex -> Maybe Word8
 vexMMMMM (Vex2 _) = Nothing
 vexMMMMM (Vex3 x _) = Just $ x .&. 0x1F
 
-vexMapSelect :: Vex -> [Word8]
+vexMapSelect :: Vex -> OpcodeMap
 vexMapSelect v = case (v, vexMMMMM v) of
-   (Vex2 _, _) -> [0x0F]
-   (_, Just 1) -> [0x0F]
-   (_, Just 2) -> [0x0F,0x38]
-   (_, Just 3) -> [0x0F,0x3A]
+   (Vex2 _, _)                   -> MapVex 1
+   (_, Just n) | n > 0 && n <= 3 -> MapVex n
    _           -> error "Reserved map select in VEX/XOP prefix"
    
 
 -- Try to decode VEX prefixes
 decodeVEX :: X86Dec ()
 decodeVEX = do
-   mode        <- getMode
-   allowedSets <- getAllowedSets
+   mode        <- gets stateMode
+   allowedSets <- gets stateSets
 
    when (SetVEX `elem` allowedSets) $ lookWord8 >>= \x -> do
       when (x .&. 0xFE == 0xC4) $ do
@@ -99,7 +99,7 @@ decodeVex' x = do
 -- XOP is just like Vex3 except that the first byte is 0x8F instead of 0xC4
 decodeXOP :: X86Dec ()
 decodeXOP = do
-   allowedSets <- getAllowedSets
+   allowedSets <- gets stateSets
 
    -- Try to decode XOP prefix
    when (SetXOP `elem` allowedSets) $ lookWord8 >>= \x -> do
@@ -132,7 +132,7 @@ decodeVexXop vex = do
                                  Just True -> True
                                  _         -> stateOpSize64 s
       , stateOpcodeExtE       = vexW vex
-      , stateMapSelect        = vexMapSelect vex
+      , stateOpcodeMap        = vexMapSelect vex
       , stateAdditionalOp     = Just (vexVVVV vex)
       , stateLegacyPrefixes   = stateLegacyPrefixes s ++ case vexPP vex of
                                  0 -> []

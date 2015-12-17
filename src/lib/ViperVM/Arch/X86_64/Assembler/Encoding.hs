@@ -216,6 +216,24 @@ requireModRM enc = case enc of
    LegacyEncoding e -> legEncRequireModRM e
    VexEncoding    e -> vexEncRequireModRM e
 
+{-
+ Note [Opcode maps]
+ ~~~~~~~~~~~~~~~~~~~~~
+
+ Legacy opcodes are up to 3 bytes long. They have the following forms:
+    - 0x0F 0x38 <op>
+    - 0x0F 0x3A <op> 
+    - 0x0F 0x0F (3DNow! 1-byte opcode after (ModRM, [SIB], [Displacement]))
+    - 0x0F <op>
+    - <op>
+
+ The bytes before <op> indicate the opcode map to use.
+
+ To fully identify the instruction, some additional bits of the ModRM byte may
+ be required: opcode extension in ModRM.reg or invalid parameters (i.e. invalid
+ ModRM.mod).
+-}
+
 data OpcodeMap
    = MapPrimary
    | Map0F
@@ -224,8 +242,8 @@ data OpcodeMap
    | Map0F3A
    | Map3DNow
    | MapX87
-   | MapVex Int
-   | MapXop Int
+   | MapVex !Word8
+   | MapXop !Word8
    deriving (Show,Eq)
 
 data OperandSpec = OperandSpec

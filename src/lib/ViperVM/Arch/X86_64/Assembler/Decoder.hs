@@ -50,7 +50,7 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
       initState = X86State 
          { stateMode                = mode
          , stateSets                = sets
-         , stateAddressSize         = defAddrSize
+         , stateDefaultAddressSize  = defAddrSize
          , stateDefaultOperandSize  = defOprndSize
          , stateByteCount           = 0
          , stateLegacyPrefixes      = []
@@ -60,7 +60,7 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
          , stateOpSize64            = False
          , stateUseExtRegs          = False
          , stateHasRexPrefix        = False
-         , stateMapSelect           = []
+         , stateOpcodeMap           = MapPrimary
          , stateHasVexPrefix        = False
          , stateHasXopPrefix        = False
          , stateOpcodeExtE          = Nothing
@@ -68,60 +68,12 @@ decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) i
          , stateVectorLength        = Nothing
          }
 
-         
-{-
- Note [Legacy opcodes]
- ~~~~~~~~~~~~~~~~~~~~~
-
- Legacy opcodes are up to 3 bytes long. They have the following forms:
-    - 0x0F 0x38 <op>
-    - 0x0F 0x3A <op> 
-    - 0x0F 0x0F (3DNow! 1-byte opcode after (ModRM, [SIB], [Displacement]))
-    - 0x0F <op>
-    - <op>
-
- Some additional bits of the ModRM byte may be required to fully identify the
- opcode
--}
-
-   
-
-
-
-
-
---
----- ------------------------------------------------------------------
-----                        EVEX PREFIX
----- ------------------------------------------------------------------
---
----- | Decode an EVEX prefix
---decodePrefixEvex :: X86Dec ()
---decodePrefixEvex = do
---   let
---      smallCheck = (== 0x62) <$> lookaheadByte
---      -- EVEX prefixes are supported in 32-bit mode
---      -- They overload BOUND opcodes so that the first two bits
---      -- of what would be ModRM are invalid (11b) for BOUND
---      fullCheck  = smallCheck <&&> ((== 0xC0) . (.&. 0xC0) . snd <$> lookaheadWord16)
---
---   hasEvex <- (test64BitMode <&&> smallCheck) <||> (test32BitMode <&&> fullCheck)
---
---   when hasEvex $ do
---      consumeByte
---      v <- Evex <$> nextByte <*> nextByte <*> nextByte
---      modify (\y -> y { stateEvexPrefix = Just v })
---
---
----- | Test if an EVEX prefix is present
---hasEvexPrefix :: X86Dec Bool
---hasEvexPrefix = isJust . stateEvexPrefix <$> get
---
---
+setOpcodeMap :: OpcodeMap -> X86Dec ()
+setOpcodeMap m = modify (\y -> y { stateOpcodeMap = m })
 
 decodeInsn :: X86Dec Instruction
 decodeInsn = do
-   allowedSets <- getAllowedSets
+   allowedSets <- gets stateSets
 
    ps <- decodeLegacyPrefixes False False
    modify (\y -> y { stateLegacyPrefixes = ps })
@@ -129,20 +81,31 @@ decodeInsn = do
    decodeVEX
    decodeXOP
 
-   -- Decode legacy opcode. See Note [Legacy opcodes]
-   (opcodeMap,opcode) <- nextWord8 >>= \case
+   -- Decode opcode
+   opcode <- nextWord8 >>= \case
       -- escaped opcode
       0x0F -> do
          assertNoVex ErrVexEscapedOpcode
          nextWord8 >>= \case
-            0x0F | Set3DNow `elem` allowedSets -> right (Map3DNow, 0x00)
-            0x38 -> nextWord8 >>= \y -> right (Map0F38,y)
-            0x3A -> nextWord8 >>= \y -> right (Map0F3A,y)
-            0x01 -> nextWord8 >>= \y -> right (Map0F01,y)
-            y    -> right (Map0F,y)
+            0x0F | Set3DNow `elem` allowedSets -> do
+               setOpcodeMap Map3DNow
+               right 0x00  -- we return a dummy opcode for now
+            0x38 -> nextWord8 >>= \y -> do
+               setOpcodeMap Map0F38
+               right y
+            0x3A -> nextWord8 >>= \y -> do
+               setOpcodeMap Map0F3A
+               right y
+            0x01 -> nextWord8 >>= \y -> do
+               setOpcodeMap Map0F01
+               right y
+            y    -> do
+               setOpcodeMap Map0F
+               right y
       -- Decode unescaped opcode
-      y    -> right (MapPrimary,y)
+      y    -> right y
 
+   opcodeMap <- gets stateOpcodeMap
 
    case opcodeMap of
       -- X87 instructions
@@ -233,7 +196,7 @@ findInsn opcodeMap opcode = do
       [] -> left (ErrUnknownOpcode opcodeMap opcode)
       xs -> right xs
 
-   prefixes <- getLegacyPrefixes
+   prefixes <- gets stateLegacyPrefixes
    let
       -- check that mandatory prefix is here
       checkMandatoryprefix (enc,_) = case encMandatoryPrefix enc of
@@ -346,7 +309,7 @@ decodeOperands opSize enc modrm opcode = do
             Just m  -> getRegOp opSize (opType op) m
             Nothing -> error "ModRM expected, but nothing found"
          E_Implicit -> getImplicitOp opSize (opType op)
-         E_VexV     -> getAdditionalOperand >>= \case
+         E_VexV     -> gets stateAdditionalOp >>= \case
             Just vvvv -> getOpFromRegId opSize (opType op) vvvv
             Nothing   -> error "Expecting additional operand (VEX.vvvv)"
          E_OpReg    -> getOpFromRegId opSize (opType op) (opcode .&. 0x07)
