@@ -214,7 +214,7 @@ findInsn opcodeMap opcode = do
 
       insns' = filter checkAll insns
 
-   modrm <- case (any (requireModRM . fst) insns', all (requireModRM . fst) insns') of
+   modrm <- case (any (encRequireModRM . fst) insns', all (encRequireModRM . fst) insns') of
       (True,True)   -> Just . ModRM <$> nextWord8
       (False,False) -> return Nothing
       _             -> error "Some candidates for the same opcode require ModRM, but some others don't. Please fix opcode tables."

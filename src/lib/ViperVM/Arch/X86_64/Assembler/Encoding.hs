@@ -16,7 +16,9 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , Encoding(..)
    , isLegacyEncoding
    , isVexEncoding
+   , encOpcode
    , encOpcodeExt
+   , encOpcodeMap
    , encOperands
    , encMandatoryPrefix
    , encProperties
@@ -24,14 +26,12 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , encSignExtendImmBit
    , encReversableBit
    , encLockable
-   , requireModRM
+   , encRequireModRM
    -- * Legacy encoding
    , LegEnc(..)
-   , legEncRequireModRM
    -- * VEX encoding
    , VexEnc (..)
    , VexLW (..)
-   , vexEncRequireModRM
    )
 where
 
@@ -106,9 +106,17 @@ isVexEncoding :: Encoding -> Bool
 isVexEncoding (VexEncoding _) = True
 isVexEncoding _               = False
 
+encOpcode :: Encoding -> Word8
+encOpcode (LegacyEncoding e) = legEncOpcode e
+encOpcode (VexEncoding    e) = vexEncOpcode e
+
 encOpcodeExt :: Encoding -> Maybe Word8
 encOpcodeExt (LegacyEncoding e) = legEncOpcodeExt e
 encOpcodeExt (VexEncoding    e) = vexEncOpcodeExt e
+
+encOpcodeMap :: Encoding -> OpcodeMap
+encOpcodeMap (LegacyEncoding e) = legEncOpcodeMap e
+encOpcodeMap (VexEncoding    e) = vexEncOpcodeMap e
 
 encOperands :: Encoding -> [OperandSpec]
 encOperands (LegacyEncoding e)  = legEncParams e
@@ -175,14 +183,14 @@ data LegacyOpcodeFields = LegacyOpcodeFields
    }
    deriving (Show,Eq)
 
-legEncRequireModRM :: LegEnc -> Bool
-legEncRequireModRM e = hasOpExt || hasOps
+encRequireModRM :: Encoding -> Bool
+encRequireModRM e = hasOpExt || hasOps
    where
       -- use opcode extension in ModRM.reg 
-      hasOpExt = isJust (legEncOpcodeExt e)
+      hasOpExt = isJust (encOpcodeExt e)
 
       -- has operands in ModRM
-      hasOps   = any matchEnc (legEncParams e)
+      hasOps   = any matchEnc (encOperands e)
       matchEnc x = case opEnc x of
          E_ModRM     -> True
          E_ModReg    -> True
@@ -192,29 +200,6 @@ legEncRequireModRM e = hasOpExt || hasOps
          E_Implicit  -> False
          E_VexV      -> False
          E_OpReg     -> False
-
-vexEncRequireModRM :: VexEnc -> Bool
-vexEncRequireModRM e = hasOpExt || hasOps
-   where
-      -- use opcode extension in ModRM.reg 
-      hasOpExt = isJust (vexEncOpcodeExt e)
-
-      -- has operands in ModRM
-      hasOps   = any matchEnc (vexEncParams e)
-      matchEnc x = case opEnc x of
-         E_ModRM     -> True
-         E_ModReg    -> True
-         E_Imm       -> False
-         E_Imm8_7_4  -> False
-         E_Imm8_3_0  -> False
-         E_Implicit  -> False
-         E_VexV      -> False
-         E_OpReg     -> False
-
-requireModRM :: Encoding -> Bool
-requireModRM enc = case enc of
-   LegacyEncoding e -> legEncRequireModRM e
-   VexEncoding    e -> vexEncRequireModRM e
 
 {-
  Note [Opcode maps]
