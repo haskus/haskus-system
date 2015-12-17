@@ -57,6 +57,7 @@ library
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.Syscalls
     ViperVM.Arch.X86_64.MicroArch
+    ViperVM.Arch.X86_64.Assembler.Insn
     ViperVM.Arch.X86_64.Assembler.Utils
     ViperVM.Arch.X86_64.Assembler.Operand
     ViperVM.Arch.X86_64.Assembler.Encoding

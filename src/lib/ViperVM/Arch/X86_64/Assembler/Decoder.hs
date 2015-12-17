@@ -1,8 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 module ViperVM.Arch.X86_64.Assembler.Decoder
-   ( Instruction(..)
-   , decode
+   ( decode
    , decodeMany
    ) where
 
@@ -26,12 +25,7 @@ import ViperVM.Arch.X86_64.Assembler.X86Dec
 import ViperVM.Arch.X86_64.Assembler.X87
 import ViperVM.Arch.X86_64.Assembler.Encoding
 import ViperVM.Arch.X86_64.Assembler.OperandSize
-
-data Instruction
-   = InsnX87 X87Instruction
-   | InsnX86 X86Insn Encoding (Maybe OperandSize) [Variant] [Op]
-   deriving (Show)
-
+import ViperVM.Arch.X86_64.Assembler.Insn
 
 -- | Decode several instruction (until the end of the stream)
 decodeMany :: X86Mode -> [InstructionSet] -> AddressSize -> OperandSize -> Get [Either DecodeError Instruction]
