@@ -42,35 +42,35 @@ decode :: X86Mode -> [InstructionSet] -> AddressSize -> OperandSize -> Get (Eith
 decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) initState
    where
       initState = X86State 
-         { stateMode                = mode
-         , stateSets                = sets
-         , stateDefaultAddressSize  = defAddrSize
-         , stateDefaultOperandSize  = defOprndSize
-         , stateByteCount           = 0
-         , stateLegacyPrefixes      = []
-         , stateBaseRegExt          = 0
-         , stateIndexRegExt         = 0
-         , stateRegExt              = 0
-         , stateOpSize64            = False
-         , stateUseExtRegs          = False
-         , stateHasRexPrefix        = False
-         , stateOpcodeMap           = MapPrimary
-         , stateHasVexPrefix        = False
-         , stateHasXopPrefix        = False
-         , stateOpcodeExtE          = Nothing
-         , stateAdditionalOp        = Nothing
-         , stateVectorLength        = Nothing
+         { decStateMode                = mode
+         , decStateSets                = sets
+         , decStateDefaultAddressSize  = defAddrSize
+         , decStateDefaultOperandSize  = defOprndSize
+         , decStateByteCount           = 0
+         , decStateLegacyPrefixes      = []
+         , decStateBaseRegExt          = 0
+         , decStateIndexRegExt         = 0
+         , decStateRegExt              = 0
+         , decStateOpSize64            = False
+         , decStateUseExtRegs          = False
+         , decStateHasRexPrefix        = False
+         , decStateOpcodeMap           = MapPrimary
+         , decStateHasVexPrefix        = False
+         , decStateHasXopPrefix        = False
+         , decStateOpcodeExtE          = Nothing
+         , decStateAdditionalOp        = Nothing
+         , decStateVectorLength        = Nothing
          }
 
 setOpcodeMap :: OpcodeMap -> X86Dec ()
-setOpcodeMap m = modify (\y -> y { stateOpcodeMap = m })
+setOpcodeMap m = modify (\y -> y { decStateOpcodeMap = m })
 
 decodeInsn :: X86Dec Instruction
 decodeInsn = do
-   allowedSets <- gets stateSets
+   allowedSets <- gets decStateSets
 
    ps <- decodeLegacyPrefixes False False
-   modify (\y -> y { stateLegacyPrefixes = ps })
+   modify (\y -> y { decStateLegacyPrefixes = ps })
    decodeREX
    decodeVEX
    decodeXOP
@@ -99,7 +99,7 @@ decodeInsn = do
       -- Decode unescaped opcode
       y    -> right y
 
-   opcodeMap <- gets stateOpcodeMap
+   opcodeMap <- gets decStateOpcodeMap
 
    case opcodeMap of
       -- X87 instructions
@@ -190,7 +190,7 @@ findInsn opcodeMap opcode = do
       [] -> left (ErrUnknownOpcode opcodeMap opcode)
       xs -> right xs
 
-   prefixes <- gets stateLegacyPrefixes
+   prefixes <- gets decStateLegacyPrefixes
    let
       -- check that mandatory prefix is here
       checkMandatoryprefix (enc,_) = case encMandatoryPrefix enc of
@@ -303,7 +303,7 @@ decodeOperands opSize enc modrm opcode = do
             Just m  -> getRegOp opSize (opType op) m
             Nothing -> error "ModRM expected, but nothing found"
          E_Implicit -> getImplicitOp opSize (opType op)
-         E_VexV     -> gets stateAdditionalOp >>= \case
+         E_VexV     -> gets decStateAdditionalOp >>= \case
             Just vvvv -> getOpFromRegId opSize (opType op) vvvv
             Nothing   -> error "Expecting additional operand (VEX.vvvv)"
          E_OpReg    -> getOpFromRegId opSize (opType op) (opcode .&. 0x07)

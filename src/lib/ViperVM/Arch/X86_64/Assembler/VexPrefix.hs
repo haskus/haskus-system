@@ -68,8 +68,8 @@ vexMapSelect v = case (v, vexMMMMM v) of
 -- Try to decode VEX prefixes
 decodeVEX :: X86Dec ()
 decodeVEX = do
-   mode        <- gets stateMode
-   allowedSets <- gets stateSets
+   mode        <- gets decStateMode
+   allowedSets <- gets decStateSets
 
    when (SetVEX `elem` allowedSets) $ lookWord8 >>= \x -> do
       when (x .&. 0xFE == 0xC4) $ do
@@ -91,7 +91,7 @@ decodeVex' x = do
      0xC4 -> Vex3 <$> nextWord8 <*> nextWord8
      0xC5 -> Vex2 <$> nextWord8
      _    -> error "Invalid VEX prefix"
-  modify (\s -> s { stateHasVexPrefix = True})
+  modify (\s -> s { decStateHasVexPrefix = True})
   decodeVexXop vex
 
 -- | Decode a XOP prefix
@@ -99,7 +99,7 @@ decodeVex' x = do
 -- XOP is just like Vex3 except that the first byte is 0x8F instead of 0xC4
 decodeXOP :: X86Dec ()
 decodeXOP = do
-   allowedSets <- gets stateSets
+   allowedSets <- gets decStateSets
 
    -- Try to decode XOP prefix
    when (SetXOP `elem` allowedSets) $ lookWord8 >>= \x -> do
@@ -109,7 +109,7 @@ decodeXOP = do
          assertNoLegacyPrefix ErrLegacyPrefixBeforeXop [0xF0,0x66,0xF3,0xF2]
          skipWord8
          vex <- Vex3 <$> nextWord8 <*> nextWord8
-         modify (\y -> y { stateHasXopPrefix = True})
+         modify (\y -> y { decStateHasXopPrefix = True})
          decodeVexXop vex
 
 
@@ -117,31 +117,31 @@ decodeXOP = do
 decodeVexXop :: Vex -> X86Dec ()
 decodeVexXop vex = do
    modify (\s -> s
-      { stateBaseRegExt       = case vexB vex of
-                                 Nothing    -> stateBaseRegExt s
-                                 Just True  -> 1
-                                 Just False -> 0
-      , stateIndexRegExt      = case vexX vex of
-                                 Nothing    -> stateIndexRegExt s
-                                 Just True  -> 1
-                                 Just False -> 0
-      , stateRegExt           = case vexR vex of
-                                 True  -> 1
-                                 False -> 0
-      , stateOpSize64         = case vexW vex of
-                                 Just True -> True
-                                 _         -> stateOpSize64 s
-      , stateOpcodeExtE       = vexW vex
-      , stateOpcodeMap        = vexMapSelect vex
-      , stateAdditionalOp     = Just (vexVVVV vex)
-      , stateLegacyPrefixes   = stateLegacyPrefixes s ++ case vexPP vex of
-                                 0 -> []
-                                 1 -> [0x66]
-                                 2 -> [0xF3]
-                                 3 -> [0xF2]
-                                 _ -> error "Invalid PP in VEX prefix"
-      , stateVectorLength     = case vexL vex of
-                                 False -> Just VL128
-                                 True  -> Just VL256
+      { decStateBaseRegExt       = case vexB vex of
+                                    Nothing    -> decStateBaseRegExt s
+                                    Just True  -> 1
+                                    Just False -> 0
+      , decStateIndexRegExt      = case vexX vex of
+                                    Nothing    -> decStateIndexRegExt s
+                                    Just True  -> 1
+                                    Just False -> 0
+      , decStateRegExt           = case vexR vex of
+                                    True  -> 1
+                                    False -> 0
+      , decStateOpSize64         = case vexW vex of
+                                    Just True -> True
+                                    _         -> decStateOpSize64 s
+      , decStateOpcodeExtE       = vexW vex
+      , decStateOpcodeMap        = vexMapSelect vex
+      , decStateAdditionalOp     = Just (vexVVVV vex)
+      , decStateLegacyPrefixes   = decStateLegacyPrefixes s ++ case vexPP vex of
+                                    0 -> []
+                                    1 -> [0x66]
+                                    2 -> [0xF3]
+                                    3 -> [0xF2]
+                                    _ -> error "Invalid PP in VEX prefix"
+      , decStateVectorLength     = case vexL vex of
+                                    False -> Just VL128
+                                    True  -> Just VL256
       })
 

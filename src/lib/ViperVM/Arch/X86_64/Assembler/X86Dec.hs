@@ -83,26 +83,26 @@ data InstructionSet
 
 -- The decoder is an automaton whose state is represented by X86State
 data X86State = X86State
-   { stateMode               :: X86Mode            -- ^ Architecture execution mode
-   , stateSets               :: [InstructionSet]   -- ^ Available instruction sets
+   { decStateMode               :: X86Mode            -- ^ Architecture execution mode
+   , decStateSets               :: [InstructionSet]   -- ^ Available instruction sets
 
-   , stateDefaultAddressSize :: AddressSize        -- ^ Current default address size
-   , stateDefaultOperandSize :: OperandSize        -- ^ Current default operand size (for legacy / compatibility modes)
+   , decStateDefaultAddressSize :: AddressSize        -- ^ Current default address size
+   , decStateDefaultOperandSize :: OperandSize        -- ^ Current default operand size (for legacy / compatibility modes)
 
-   , stateByteCount          :: Int                -- ^ Number of bytes read (used to fail when > 15)
-   , stateLegacyPrefixes     :: [Word8]            -- ^ Legacy prefixes
-   , stateBaseRegExt         :: Word8              -- ^ Extension for the base register (REX.B)
-   , stateIndexRegExt        :: Word8              -- ^ Extension for the index register (REX.X)
-   , stateRegExt             :: Word8              -- ^ Extension for a register operand (REX.R)
-   , stateOpSize64           :: Bool               -- ^ Indicate if the operand size is forced to 64-bit (REX.W)
-   , stateUseExtRegs         :: Bool               -- ^ Indicate if extended 64-bit registers have to be used (e.g. a REX prefix has been read)
-   , stateHasRexPrefix       :: Bool               -- ^ Indicate that a REX prefix has been read
-   , stateOpcodeMap          :: OpcodeMap          -- ^ Opcode map
-   , stateHasVexPrefix       :: Bool               -- ^ Indicate that a VEX prefix has been read
-   , stateHasXopPrefix       :: Bool               -- ^ Indicate that a XOP prefix has been read
-   , stateOpcodeExtE         :: Maybe Bool         -- ^ Opcode extension in VEX/XOP.E
-   , stateAdditionalOp       :: Maybe Word8        -- ^ Additional operand (VEX.vvvv)
-   , stateVectorLength       :: Maybe VectorLength -- ^ Vector length (VEX.L)
+   , decStateByteCount          :: Int                -- ^ Number of bytes read (used to fail when > 15)
+   , decStateLegacyPrefixes     :: [Word8]            -- ^ Legacy prefixes
+   , decStateBaseRegExt         :: Word8              -- ^ Extension for the base register (REX.B)
+   , decStateIndexRegExt        :: Word8              -- ^ Extension for the index register (REX.X)
+   , decStateRegExt             :: Word8              -- ^ Extension for a register operand (REX.R)
+   , decStateOpSize64           :: Bool               -- ^ Indicate if the operand size is forced to 64-bit (REX.W)
+   , decStateUseExtRegs         :: Bool               -- ^ Indicate if extended 64-bit registers have to be used (e.g. a REX prefix has been read)
+   , decStateHasRexPrefix       :: Bool               -- ^ Indicate that a REX prefix has been read
+   , decStateOpcodeMap          :: OpcodeMap          -- ^ Opcode map
+   , decStateHasVexPrefix       :: Bool               -- ^ Indicate that a VEX prefix has been read
+   , decStateHasXopPrefix       :: Bool               -- ^ Indicate that a XOP prefix has been read
+   , decStateOpcodeExtE         :: Maybe Bool         -- ^ Opcode extension in VEX/XOP.E
+   , decStateAdditionalOp       :: Maybe Word8        -- ^ Additional operand (VEX.vvvv)
+   , decStateVectorLength       :: Maybe VectorLength -- ^ Vector length (VEX.L)
    }
 
 data VectorLength = VL128 | VL256 deriving (Show,Eq)
@@ -110,7 +110,7 @@ data VectorLength = VL128 | VL256 deriving (Show,Eq)
 -- | Assert that no Rex prefix has been decoded
 assertNoRex :: DecodeError -> X86Dec ()
 assertNoRex err = do
-   hasRex <- stateHasRexPrefix <$> lift get
+   hasRex <- gets decStateHasRexPrefix
    if hasRex
       then left err
       else right ()
@@ -118,7 +118,7 @@ assertNoRex err = do
 -- | Assert that no Vex prefix has been decoded
 assertNoVex :: DecodeError -> X86Dec ()
 assertNoVex err = do
-   hasVex <- stateHasVexPrefix <$> lift get
+   hasVex <- gets decStateHasVexPrefix
    if hasVex
       then left err
       else right ()
@@ -126,7 +126,7 @@ assertNoVex err = do
 -- | Assert that no Xop prefix has been decoded
 assertNoXop :: DecodeError -> X86Dec ()
 assertNoXop err = do
-   hasXop <- stateHasXopPrefix <$> lift get
+   hasXop <- gets decStateHasXopPrefix
    if hasXop
       then left err
       else right ()
@@ -134,7 +134,7 @@ assertNoXop err = do
 -- | Assert that no legacy prefix in the list has been decoded
 assertNoLegacyPrefix :: ([Word8] -> DecodeError) -> [Word8] -> X86Dec ()
 assertNoLegacyPrefix err ps = do
-   ps' <- gets stateLegacyPrefixes
+   ps' <- gets decStateLegacyPrefixes
    case ps `List.intersect` ps' of
       [] -> right ()
       xs -> left (err xs)
@@ -150,20 +150,20 @@ assertNoLegacyPrefix err ps = do
 next :: Int -> Get a -> X86Dec a
 next n getter = do
    -- Test that we don't read more than 15 bytes
-   bc <- stateByteCount <$> lift get
+   bc <- gets decStateByteCount
    if bc + n > 15
       then left ErrInsnTooLong
       else do
          -- try to do the actual read
          w <- lift (lift getter)
          -- store the new number of bytes
-         lift $ modify (\y -> y {stateByteCount = bc +n})
+         lift $ modify (\y -> y {decStateByteCount = bc +n})
          right w
 
 lookAhead :: Int -> Get a -> X86Dec a
 lookAhead n getter = do
    -- Test that we don't read more than 15 bytes
-   bc <- stateByteCount <$> lift get
+   bc <- gets decStateByteCount
    if bc + n > 15
       then left ErrInsnTooLong
       else lift (lift (G.lookAhead getter))
@@ -219,10 +219,10 @@ skipWord64 = void nextWord64
 -- | Get operand size for the given instruction encoding
 getOperandSize :: Encoding -> X86Dec OperandSize
 getOperandSize enc = computeOperandSize
-   <$> gets stateMode
-   <*> (fmap toLegacyPrefix <$> gets stateLegacyPrefixes)
-   <*> gets stateDefaultOperandSize
-   <*> gets stateOpSize64
+   <$> gets decStateMode
+   <*> (fmap toLegacyPrefix <$> gets decStateLegacyPrefixes)
+   <*> gets decStateDefaultOperandSize
+   <*> gets decStateOpSize64
    <*> return enc
 
 -- | Decode legacy prefixes. See Note [Legacy prefixes].
@@ -254,11 +254,11 @@ decodeLegacyPrefixes allowMultiple allowMoreThan4 = do
 -- | Read the memory addressing in r/m field
 getAddr :: ModRM -> X86Dec Addr
 getAddr modrm = do
-   baseExt  <- gets stateBaseRegExt
-   indexExt <- gets stateIndexRegExt
-   useExtendedRegisters <- gets stateUseExtRegs
-   asize    <- gets stateDefaultAddressSize
-   mode     <- gets stateMode
+   baseExt  <- gets decStateBaseRegExt
+   indexExt <- gets decStateIndexRegExt
+   useExtendedRegisters <- gets decStateUseExtRegs
+   asize    <- gets decStateDefaultAddressSize
+   mode     <- gets decStateMode
 
    -- depending on the r/m field in ModRM and on the address size, we know if
    -- we must read a SIB byte
@@ -335,9 +335,9 @@ getAddr modrm = do
 --
 getEffectiveAddressSize :: X86Dec AddressSize
 getEffectiveAddressSize = do
-   mode        <- gets stateMode
-   asize       <- gets stateDefaultAddressSize
-   prefixes    <- fmap toLegacyPrefix <$> gets stateLegacyPrefixes
+   mode        <- gets decStateMode
+   asize       <- gets decStateDefaultAddressSize
+   prefixes    <- fmap toLegacyPrefix <$> gets decStateLegacyPrefixes
 
    let isOverrided = PrefixAddressSizeOverride `elem` prefixes
    
@@ -353,8 +353,8 @@ getEffectiveAddressSize = do
 -- | Convert a register identifier into a register
 getFromRegId :: OperandSize -> OperandType -> Word8 -> X86Dec Register
 getFromRegId opSize typ rid = do
-   useExtRegs   <- gets stateUseExtRegs
-   vectorLength <- gets stateVectorLength
+   useExtRegs   <- gets decStateUseExtRegs
+   vectorLength <- gets decStateVectorLength
    let 
       fromCode fm sz = regFromCode fm sz useExtRegs
       osize = Just (operandSize opSize)
@@ -423,13 +423,13 @@ getOpFromRegId opSize typ rid = OpReg <$> getFromRegId opSize typ rid
 
 getRegOp :: OperandSize -> OperandType -> ModRM -> X86Dec Op
 getRegOp opSize typ modrm = do
-   ext <- gets stateRegExt
+   ext <- gets decStateRegExt
    OpReg <$> getFromRegId opSize typ ((ext `shiftL` 3) .|. regField modrm)
 
 getRMRegister :: OperandSize -> OperandType -> ModRM -> X86Dec Register
 getRMRegister opSize typ modrm = case rmRegMode modrm of
    True  -> do
-      ext <- gets stateBaseRegExt
+      ext <- gets decStateBaseRegExt
       getFromRegId opSize typ ((ext `shiftL` 3) .|. rmField modrm)
    False -> error "Expecting register in ModRM.rm"
 

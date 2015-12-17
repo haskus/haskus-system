@@ -66,19 +66,19 @@ rexB (Rex v) = if testBit v 0 then 1 else 0
 -- | Try to decode a REX prefix. See Note [REX prefix]
 decodeREX :: X86Dec ()
 decodeREX = do
-   mode <- gets stateMode
+   mode <- gets decStateMode
 
    when (is64bitMode mode) $ lookWord8 >>= \x -> do
       when (x .&. 0xF0 == 0x40) $ do
          skipWord8
          let rex = Rex x
          modify (\y -> y
-            { stateBaseRegExt          = rexB rex
-            , stateIndexRegExt         = rexX rex
-            , stateRegExt              = rexR rex
-            , stateUseExtRegs          = True
-            , stateDefaultAddressSize  = AddrSize64
-            , stateOpSize64            = rexW rex
-            , stateHasRexPrefix        = True
+            { decStateBaseRegExt          = rexB rex
+            , decStateIndexRegExt         = rexX rex
+            , decStateRegExt              = rexR rex
+            , decStateUseExtRegs          = True
+            , decStateDefaultAddressSize  = AddrSize64
+            , decStateOpSize64            = rexW rex
+            , decStateHasRexPrefix        = True
             })
 
