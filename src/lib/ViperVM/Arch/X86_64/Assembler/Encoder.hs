@@ -8,8 +8,12 @@ where
 import ViperVM.Arch.X86_64.Assembler.Insn
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.Assembler.Operand
+import ViperVM.Arch.X86_64.Assembler.Registers
+import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Format.Binary.Put
 
+import Control.Monad (when)
 import Control.Monad.State
 import Control.Monad.Trans.Either
 import Data.Maybe (maybeToList)
@@ -64,7 +68,15 @@ encode (InsnX86 _ enc opSize variant ops) = do
          -- TODO
 
          -- opcode map
-         -- TODO
+         case encOpcodeMap enc of
+            Map0F      -> emitWord8 0x0F
+            Map0F01    -> emitWord8 0x0F >> emitWord8 0x01
+            Map0F3A    -> emitWord8 0x0F >> emitWord8 0x3A
+            Map0F38    -> emitWord8 0x0F >> emitWord8 0x38
+            Map3DNow   -> emitWord8 0x0F >> emitWord8 0x0F
+            MapPrimary -> return ()
+            MapX87     -> return ()
+            m          -> error $ "Cannot encode opcode map with legacy encoding: " ++ show m
 
       VexEncoding _ -> do
          -- VEX prefix
@@ -73,18 +85,45 @@ encode (InsnX86 _ enc opSize variant ops) = do
    
    -- opcode
    let
-      opExt  = case filter ((==) E_OpReg . opEnc . fst) (encOperands enc `zip` ops) of
-                  []      -> 0x00
-                  [(e,x)] -> undefined -- TODO: find reg code
-                  _       -> error "Encoding with more than one E_OpReg operand encoding"
+      -- add operand in opcode if any
+      isOpReg = (==) E_OpReg . opEnc . fst 
+      opExt   = case fmap snd $ filter isOpReg (encOperands enc `zip` ops) of
+                  [OpReg r] -> regToCode r
+                  [_]       -> error "Operand stored in opcode is not a register"
+                  []        -> 0x00
+                  _         -> error "Encoding with more than one E_OpReg operand encoding"
       opcode = encOpcode enc .|. opExt
       -- TODO: set sizable, signExtend and reversed bits if relevant
    emitWord8 opcode
 
    -- operands
+   when (encRequireModRM enc) $ do
+      let 
+         isModRegEnc x = case opEnc (fst x) of
+            E_ModReg -> True
+            _        -> False
+      
+         reg = case encOpcodeExt enc of
+               Just n  -> n
+               Nothing -> case fmap snd $ filter isModRegEnc (encOperands enc `zip` ops) of
+                  [OpReg r] -> regToCode r .&. 0x07
+                  [op]      -> error $ "Invalid operand for ModRM.reg: "++show op
+                  []        -> error "Don't know how to fill ModRM.reg"
+                  _         -> error "More than one ModRM.reg operand"
+
+         -- TODO
+         md = 0
+         rm = 0
+
+      let (ModRM modrm) = newModRM md rm reg
+      emitWord8 modrm
+
    -- TODO
 
+   -- TODO: check that we don't encode invalid register when REX prefix is used
    -- TODO: return offset and type of memory operand (for linker fixup)
+
+   -- immediate operand
 
    -- 3DNow opcode
    case encOpcodeMap enc of

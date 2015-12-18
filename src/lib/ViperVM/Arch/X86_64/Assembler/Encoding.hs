@@ -260,6 +260,7 @@ data VexLW
    deriving (Show)
 
 data Variant
-   = Locked       -- ^ Locked memory access
-   | Reversed     -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   = Locked        -- ^ Locked memory access
+   | Reversed      -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   | ExplicitParam -- ^ A variant exists with an implicit parameter, but the explicit variant is used
    deriving (Show,Eq)

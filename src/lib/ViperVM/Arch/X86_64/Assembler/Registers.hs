@@ -4,6 +4,7 @@ module ViperVM.Arch.X86_64.Assembler.Registers
    , RegFamily(..)
    , getRegisterFile
    , regFromCode
+   , regToCode
    )
 where
 
@@ -181,6 +182,94 @@ regFromCode fm sz useExtRegs code = case fm of
       Just s       -> error $ "Invalid vector size: " ++ show s
       Nothing      -> error "Vector register without size"
 
+
+regToCode :: Register -> Word8
+regToCode r = case r of
+   R_AL     -> 0
+   R_BL     -> 3
+   R_CL     -> 1
+   R_DL     -> 2
+   R_AH     -> 4
+   R_BH     -> 7
+   R_CH     -> 5
+   R_DH     -> 6
+   R_AX     -> 0
+   R_BX     -> 3
+   R_CX     -> 1
+   R_DX     -> 2
+   R_BP     -> 5
+   R_SP     -> 4
+   R_DI     -> 7
+   R_SI     -> 6
+   R_BPL    -> 5
+   R_SPL    -> 4
+   R_DIL    -> 7
+   R_SIL    -> 6
+   R_EAX    -> 0
+   R_EBX    -> 3
+   R_ECX    -> 1
+   R_EDX    -> 2
+   R_EBP    -> 5
+   R_ESP    -> 4
+   R_EDI    -> 7
+   R_ESI    -> 6
+   R_RAX    -> 0
+   R_RBX    -> 3
+   R_RCX    -> 1
+   R_RDX    -> 2
+   R_RBP    -> 5
+   R_RSP    -> 4
+   R_RDI    -> 7
+   R_RSI    -> 6
+   R_R8     -> 8
+   R_R9     -> 9
+   R_R10    -> 10
+   R_R11    -> 11
+   R_R12    -> 12
+   R_R13    -> 13
+   R_R14    -> 14
+   R_R15    -> 15
+   R_R8B    -> 8
+   R_R9B    -> 9
+   R_R10B   -> 10
+   R_R11B   -> 11
+   R_R12B   -> 12
+   R_R13B   -> 13
+   R_R14B   -> 14
+   R_R15B   -> 15
+   R_R8W    -> 8
+   R_R9W    -> 9
+   R_R10W   -> 10
+   R_R11W   -> 11
+   R_R12W   -> 12
+   R_R13W   -> 13
+   R_R14W   -> 14
+   R_R15W   -> 15
+   R_R8D    -> 8
+   R_R9D    -> 9
+   R_R10D   -> 10
+   R_R11D   -> 11
+   R_R12D   -> 12
+   R_R13D   -> 13
+   R_R14D   -> 14
+   R_R15D   -> 15
+   R_ST x   -> x
+   R_CR x   -> x
+   R_DR x   -> x
+   R_MMX x  -> x
+   R_XMM x  -> x
+   R_YMM x  -> x
+   R_ZMM x  -> x
+   R_CS     -> 1
+   R_DS     -> 3
+   R_ES     -> 0
+   R_FS     -> 4
+   R_GS     -> 5
+   R_SS     -> 2
+   R_IP     -> error "Cannot encode IP register explicitly"
+   R_EIP    -> error "Cannot encode EIP register explicitly"
+   R_RIP    -> error "Cannot encode RIP register explicitly"
+   
 
 -- | Return X86 register file for the selected mode
 getRegisterFile :: X86Mode -> RegisterFile
