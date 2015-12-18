@@ -45,6 +45,10 @@ encode (InsnX87 _) = undefined --TODO
 
 encode (InsnX86 _ enc opSize variant ops) = do
 
+   -- check that the instruction can be encoded in the current mode
+   -- and with the enabled instruction sets
+   -- TODO
+
    case enc of
       LegacyEncoding _ -> do
          -- legacy prefixes

@@ -3,6 +3,7 @@
 -- | Instruction encodings
 module ViperVM.Arch.X86_64.Assembler.Encoding
    ( Properties(..)
+   , EncodingProperties(..)
    , X86Extension(..)
    , OperandSpec(..)
    , OperandEnc(..)
@@ -40,19 +41,23 @@ import Data.Maybe (isJust)
 import ViperVM.Arch.X86_64.MicroArch
 import ViperVM.Arch.X86_64.Assembler.Operand
 
+-- | Instruction properties
 data Properties
+   = FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
+   deriving (Show,Eq)
+
+-- | Encoding properties
+data EncodingProperties
    = LongModeSupport          -- ^ Supported in 64 bit mode
    | LegacyModeSupport        -- ^ Supported in legacy/compatibility mode
-   | FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
-   | Extension X86Extension   -- ^ Required CPU extension
-   | Arch X86Arch             -- ^ Instruction added starting at the given arch
-
    | Lockable                 -- ^ Support LOCK prefix (only if a memory operand
                               --   is used)
    | DoubleSizable            -- ^ Default size is 32+32 (a pair of registers is used)
                               --   Can be extended to 64+64 with Rex.W
    | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
                               --   instruction in LongMode
+   | Extension X86Extension   -- ^ Required CPU extension
+   | Arch X86Arch             -- ^ Instruction added starting at the given arch
    deriving (Show,Eq)
 
 data X86Extension
@@ -126,7 +131,7 @@ encMandatoryPrefix :: Encoding -> Maybe Word8
 encMandatoryPrefix (LegacyEncoding e) = legEncMandatoryPrefix e
 encMandatoryPrefix (VexEncoding    e) = vexEncMandatoryPrefix e
 
-encProperties :: Encoding -> [Properties]
+encProperties :: Encoding -> [EncodingProperties]
 encProperties (LegacyEncoding e) = legEncProperties e
 encProperties (VexEncoding    _) = []
 
@@ -147,23 +152,24 @@ encLockable :: Encoding -> Bool
 encLockable e = Lockable `elem` encProperties e
 
 data LegEnc = LegEnc
-   { legEncMandatoryPrefix :: Maybe Word8        -- ^ Mandatory prefix
-   , legEncOpcodeMap       :: OpcodeMap          -- ^ Map
-   , legEncOpcode          :: Word8              -- ^ Opcode
-   , legEncOpcodeExt       :: Maybe Word8        -- ^ Opcode extension in ModRM.reg
-   , legEncOpcodeFields    :: LegacyOpcodeFields -- ^ Fields in the opcode
-   , legEncProperties      :: [Properties]       -- ^ Encoding properties
-   , legEncParams          :: [OperandSpec]      -- ^ Operand encoding
+   { legEncMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+   , legEncOpcodeMap       :: OpcodeMap            -- ^ Map
+   , legEncOpcode          :: Word8                -- ^ Opcode
+   , legEncOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+   , legEncOpcodeFields    :: LegacyOpcodeFields   -- ^ Fields in the opcode
+   , legEncProperties      :: [EncodingProperties] -- ^ Encoding properties
+   , legEncParams          :: [OperandSpec]        -- ^ Operand encoding
    }
    deriving (Show)
 
 data VexEnc = VexEnc
-   { vexEncMandatoryPrefix :: Maybe Word8       -- ^ Mandatory prefix
-   , vexEncOpcodeMap       :: OpcodeMap         -- ^ Map
-   , vexEncOpcode          :: Word8             -- ^ Opcode
-   , vexEncOpcodeExt       :: Maybe Word8       -- ^ Opcode extension in ModRM.reg
+   { vexEncMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+   , vexEncOpcodeMap       :: OpcodeMap            -- ^ Map
+   , vexEncOpcode          :: Word8                -- ^ Opcode
+   , vexEncOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
    , vexEncLW              :: VexLW
-   , vexEncParams          :: [OperandSpec]     -- ^ Operand encoding
+   , vexEncProperties      :: [EncodingProperties] -- ^ Encoding properties
+   , vexEncParams          :: [OperandSpec]        -- ^ Operand encoding
    } deriving (Show)
 
 -- | Fields in a legacy opcode
