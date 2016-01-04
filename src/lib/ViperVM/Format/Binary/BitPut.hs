@@ -18,8 +18,8 @@ module ViperVM.Format.Binary.BitPut
    )
 where
 
-import Data.Serialize.Builder (Builder)
-import qualified Data.Serialize.Builder as B
+import Data.ByteString.Builder (Builder)
+import qualified Data.ByteString.Builder as B
 import Control.Monad.State
 import Control.Monad.Identity
 
@@ -42,7 +42,7 @@ data BitPutState = BitPutState
    }
 
 newBitPutState :: BitOrder -> BitPutState
-newBitPutState = BitPutState B.empty 0 0
+newBitPutState = BitPutState mempty 0 0
 
 putBits :: (Integral a, FiniteBits a, BitReversable a) => Word -> a -> BitPutState -> BitPutState
 putBits n w s@(BitPutState builder b o bo) = s'
@@ -85,7 +85,7 @@ putBits n w s@(BitPutState builder b o bo) = s'
 
       -- flush the current byte if it is full
       flush s2@(BitPutState b2 w2 o2 bo2)
-        | o2 == 8   = BitPutState (b2 `mappend` B.singleton w2) 0 0 bo2
+        | o2 == 8   = BitPutState (b2 `mappend` B.word8 w2) 0 0 bo2
         | otherwise = s2
 
 
@@ -100,10 +100,10 @@ putBitsBS :: BS.ByteString -> BitPutState -> BitPutState
 putBitsBS bs s
    | BS.null bs = s
    | otherwise  = case s of
-      (BitPutState builder b 0 BB) -> BitPutState (builder `mappend` B.fromByteString bs) b 0 BB
-      (BitPutState builder b 0 LL) -> BitPutState (builder `mappend` B.fromByteString (BS.reverse bs)) b 0 LL
-      (BitPutState builder b 0 LB) -> BitPutState (builder `mappend` B.fromByteString (rev bs)) b 0 LB
-      (BitPutState builder b 0 BL) -> BitPutState (builder `mappend` B.fromByteString (rev (BS.reverse bs))) b 0 BL
+      (BitPutState builder b 0 BB) -> BitPutState (builder `mappend` B.byteString bs) b 0 BB
+      (BitPutState builder b 0 LL) -> BitPutState (builder `mappend` B.byteString (BS.reverse bs)) b 0 LL
+      (BitPutState builder b 0 LB) -> BitPutState (builder `mappend` B.byteString (rev bs)) b 0 LB
+      (BitPutState builder b 0 BL) -> BitPutState (builder `mappend` B.byteString (rev (BS.reverse bs))) b 0 BL
       (BitPutState _ _ _ BB)       -> putBitsBS (BS.unsafeTail bs) (putBits 8 (BS.unsafeHead bs) s)
       (BitPutState _ _ _ LL)       -> putBitsBS (BS.unsafeInit bs) (putBits 8 (BS.unsafeLast bs) s)
       (BitPutState _ _ _ BL)       -> putBitsBS (BS.unsafeInit bs) (putBits 8 (BS.unsafeLast bs) s)
@@ -115,7 +115,7 @@ putBitsBS bs s
 flushIncomplete :: BitPutState -> BitPutState
 flushIncomplete s@(BitPutState b w o bo)
   | o == 0 = s
-  | otherwise = (BitPutState (b `mappend` B.singleton w) 0 0 bo)
+  | otherwise = (BitPutState (b `mappend` B.word8 w) 0 0 bo)
 
 getBitPutLBS :: BitPutState -> LBS.ByteString
 getBitPutLBS = B.toLazyByteString . bitPutStateBuilder . flushIncomplete 

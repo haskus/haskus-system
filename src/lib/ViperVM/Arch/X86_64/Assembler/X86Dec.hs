@@ -42,7 +42,7 @@ import qualified ViperVM.Format.Binary.Get as G
 import Control.Monad.State
 import Control.Monad.Trans.Either
 import qualified Data.Vector.Unboxed as V
-import qualified Data.Vector.Unboxed.Mutable as V
+import qualified Data.Vector.Unboxed.Mutable as VM
 
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.ModRM
@@ -249,7 +249,7 @@ decodeLegacyPrefixes allowMultiple allowMoreThan4 = do
             Just g  -> case xs V.! g of
                y | y /= 0 && not allowMultiple 
                   -> left ErrInvalidLegacyPrefixGroups
-               _  -> skipWord8 >> rec (n+1) (V.modify (\v -> V.write v g x) xs)
+               _  -> skipWord8 >> rec (n+1) (V.modify (\v -> VM.write v g x) xs)
 
 -- | Read the memory addressing in r/m field
 getAddr :: ModRM -> X86Dec Addr
