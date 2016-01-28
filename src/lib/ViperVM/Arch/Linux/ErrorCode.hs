@@ -5,6 +5,7 @@ module ViperVM.Arch.Linux.ErrorCode
    ( SysRet
    , sysTry
    , infallible
+   , sysDefaultCatch
    , ErrorCode (..)
    , defaultCheck
    , defaultCheckRet
@@ -36,6 +37,13 @@ infallible act = do
    case x of
       Left _  -> error "Invalid assertion (infallible)"
       Right b -> return b
+
+-- | Default catch
+sysDefaultCatch :: SysRet a -> IO a
+sysDefaultCatch f = f >>= \case
+   Left err -> error $ "Failed with error: " ++ show err
+   Right r  -> return r
+
 
 -- | Convert an error code into ErrorCode type
 toErrorCode :: Int64 -> ErrorCode
