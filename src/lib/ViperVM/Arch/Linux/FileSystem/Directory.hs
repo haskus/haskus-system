@@ -117,10 +117,14 @@ listDirectory fd = runEitherT $ do
    where
       bufferSize = 2 * 1024 * 1024
 
+      -- filter unwanted "directories"
+      filtr x = nam /= "." && nam /= ".."
+         where nam = entryName x
+
       rec xs = do
          ls <- sysGetDirectoryEntries fd bufferSize
          case ls of
             Left err -> return (Left err)
             Right [] -> return (Right xs)
-            Right ks -> rec (xs ++ ks)
+            Right ks -> rec (filter filtr ks ++ xs)
 
