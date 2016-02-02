@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- | System
 module ViperVM.Arch.Linux.System.System
    ( System(..)

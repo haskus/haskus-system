@@ -20,9 +20,9 @@ import Data.Text.Lazy as Text
 import Data.Text.Lazy.IO as Text
 import Data.String (fromString)
 import qualified Data.Text.Format as Text
-import Data.Text.Format (Shown(..), Only(..))
 import Control.Monad.State
 import Data.Foldable (traverse_)
+import Text.Printf
 
 import ViperVM.Arch.Linux.ErrorCode
 
@@ -82,13 +82,13 @@ data LogType
    deriving (Show,Eq)
 
 -- | Add a new entry to the log
-sysLog :: LogType -> Text -> Sys ()
-sysLog typ text = sysLogAppend (Log text typ DQ.empty)
+sysLog :: LogType -> String -> Sys ()
+sysLog typ text = sysLogAppend (Log (Text.pack text) typ DQ.empty)
 
 -- | Add a new sequence of actions to the log
-sysLogSequence :: Text -> Sys a -> Sys a
+sysLogSequence :: String -> Sys a -> Sys a
 sysLogSequence text act = do
-   sysLogBegin text
+   sysLogBegin (Text.pack text)
    r <- act
    sysLogEnd
    return r
@@ -157,17 +157,13 @@ sysLogPrint = do
          Text.putStrLn (formatLog i l)
          traverse_ (printLog (i+1)) (logChildren l)
 
-sysAssert :: Text -> Bool -> Sys ()
+sysAssert :: String -> Bool -> Sys ()
 sysAssert text b = case b of
    True -> do
-      let
-         fmt = fromString "{} (success)"
-         msg = Text.format fmt (Only text)
+      let msg = printf "%s (success)" text
       sysLog LogInfo msg
    False -> do
-      let
-         fmt = fromString "{} (assertion failed)"
-         msg = Text.format fmt (Only text)
+      let msg = printf "%s (assertion failed)" text
       sysLog LogError msg
       sysOnError
 
@@ -176,36 +172,28 @@ sysAssert text b = case b of
 ------------------------------------------------
 
 -- | Assert that the given action doesn't fail
-sysCallAssert :: Text -> SysRet a -> Sys a
+sysCallAssert :: String -> SysRet a -> Sys a
 sysCallAssert text act = do
    r <- lift act
    case r of
       Left err -> do
-         let
-            fmt = fromString "{} (failed with {})"
-            msg = Text.format fmt (text, Shown err)
+         let msg = printf "%s (failed with %s)" text (show err)
          sysLog LogError msg
          sysOnError
       Right v  -> do
-         let 
-            fmt = fromString "{} (success)"
-            msg = Text.format fmt (Only text)
+         let msg = printf "%s (success)" text
          sysLog LogInfo msg
          return v
 
 -- | Log a warning if the given action fails
-sysCallWarn :: Text -> SysRet a -> Sys (Either ErrorCode a)
+sysCallWarn :: String -> SysRet a -> Sys (Either ErrorCode a)
 sysCallWarn text act = do
    r <- lift act
    case r of
       Left err -> do
-         let
-            fmt = fromString "{} (failed with {})"
-            msg = Text.format fmt (text, Shown err)
+         let msg = printf "%s (failed with %s)" text (show err)
          sysLog LogWarning msg
       Right _  -> do
-         let 
-            fmt = fromString "{} (success)"
-            msg = Text.format fmt (Only text)
+         let msg = printf "%s (success)" text
          sysLog LogInfo msg
    return r

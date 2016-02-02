@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 

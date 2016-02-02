@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module ViperVM.Arch.Linux.Power
    ( PowerCommand(..)
    , sysPower
