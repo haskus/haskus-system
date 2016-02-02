@@ -7,6 +7,7 @@ module ViperVM.Arch.Linux.Error
    , LogType (..)
    , sysLog
    , sysLogSequence
+   , sysAssert
    , sysCallAssert
    , sysCallWarn
    , sysLogPrint
@@ -156,6 +157,19 @@ sysLogPrint = do
          Text.putStrLn (formatLog i l)
          traverse_ (printLog (i+1)) (logChildren l)
 
+sysAssert :: Text -> Bool -> Sys ()
+sysAssert text b = case b of
+   True -> do
+      let
+         fmt = fromString "{} (success)"
+         msg = Text.format fmt (Only text)
+      sysLog LogInfo msg
+   False -> do
+      let
+         fmt = fromString "{} (assertion failed)"
+         msg = Text.format fmt (Only text)
+      sysLog LogError msg
+      sysOnError
 
 ------------------------------------------------
 -- System calls

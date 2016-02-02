@@ -4,7 +4,6 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.Power
 import ViperVM.Arch.Linux.FileSystem
-import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.System.System
 
@@ -33,14 +32,10 @@ main = do
                   getCard ioctl fd
       cap   <- sysCallAssert "Get GenericBuffer capability" $
                   cardCapability card CapGenericBuffer
-      sysCallAssert "Test GenericBuffer capability" $ return $ if cap == 0
-         then Left ENOENT 
-         else Right ()
+      sysAssert "GenericBuffer capability supported" (cap /= 0)
 
       conns <- liftIO $ cardConnectors card
-      sysCallAssert "Get connectors" $ return $ if null conns 
-         then Left ENOENT 
-         else Right ()
+      sysAssert "Connectors available" (not (null conns))
 
       let
          isValid x  = connectorState x == Connected
