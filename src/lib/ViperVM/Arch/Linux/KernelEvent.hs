@@ -2,7 +2,7 @@
 
 -- | Kernel events are sent by the kernel to indicate that something
 -- changed in the device tree (e.g. device (un)plugged, moved, etc.)
-module ViperVM.Arch.Linux.System.KernelEvent
+module ViperVM.Arch.Linux.KernelEvent
    ( KernelEvent(..)
    , KernelEventAction(..)
    , createKernelEventSocket

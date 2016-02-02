@@ -10,8 +10,8 @@ import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Capability
 
-import ViperVM.Arch.Linux.System.Graphics
-import ViperVM.Arch.Linux.System.System
+import ViperVM.System.Graphics
+import ViperVM.System.System
 
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.Memory

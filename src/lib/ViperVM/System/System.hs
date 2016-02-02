@@ -1,5 +1,5 @@
 -- | System
-module ViperVM.Arch.Linux.System.System
+module ViperVM.System.System
    ( System(..)
    , systemInit
    , openDevice

@@ -5,7 +5,7 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.Power
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.Error
-import ViperVM.Arch.Linux.System.System
+import ViperVM.System.System
 
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Capability

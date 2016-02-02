@@ -1,11 +1,11 @@
 -- | Manage graphics devices in SysFS
-module ViperVM.Arch.Linux.System.Graphics
+module ViperVM.System.Graphics
    ( GraphicCard(..)
    , loadGraphicCards
    )
 where
 
-import ViperVM.Arch.Linux.System.System
+import ViperVM.System.System
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose

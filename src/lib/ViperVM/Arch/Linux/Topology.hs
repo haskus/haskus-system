@@ -1,5 +1,5 @@
 -- | Processor/memory topology
-module ViperVM.Arch.Linux.System.Topology
+module ViperVM.Arch.Linux.Topology
    ( CPUMap(..)
    , parseMemInfo
    , readMemInfo

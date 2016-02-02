@@ -77,14 +77,13 @@ library
     ViperVM.Arch.X86_64.Assembler.X86Dec
     ViperVM.Arch.X86_64.Assembler.X87
 
-    ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.Error
+    ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll
-    ViperVM.Arch.Linux.Terminal
     ViperVM.Arch.Linux.FileDescriptor
     ViperVM.Arch.Linux.FileSystem
-    ViperVM.Arch.Linux.FileSystem.Flush
     ViperVM.Arch.Linux.FileSystem.Directory
+    ViperVM.Arch.Linux.FileSystem.Flush
     ViperVM.Arch.Linux.FileSystem.Mount
     ViperVM.Arch.Linux.FileSystem.Notification
     ViperVM.Arch.Linux.FileSystem.OpenClose
@@ -92,6 +91,7 @@ library
     ViperVM.Arch.Linux.Futex
     ViperVM.Arch.Linux.Info
     ViperVM.Arch.Linux.Ioctl
+    ViperVM.Arch.Linux.KernelEvent
     ViperVM.Arch.Linux.Memory
     ViperVM.Arch.Linux.Modules
     ViperVM.Arch.Linux.Network
@@ -101,7 +101,9 @@ library
     ViperVM.Arch.Linux.Process
     ViperVM.Arch.Linux.Signal
     ViperVM.Arch.Linux.Syscalls
+    ViperVM.Arch.Linux.Terminal
     ViperVM.Arch.Linux.Time
+    ViperVM.Arch.Linux.Topology
     ViperVM.Arch.Linux.Trace
     ViperVM.Arch.Linux.Utils
 
@@ -118,11 +120,6 @@ library
     ViperVM.Arch.Linux.Input.Sound
     ViperVM.Arch.Linux.Input.Switch
     ViperVM.Arch.Linux.Input.Sync
-
-    ViperVM.Arch.Linux.System.System
-    ViperVM.Arch.Linux.System.KernelEvent
-    ViperVM.Arch.Linux.System.Topology
-    ViperVM.Arch.Linux.System.Graphics
 
     ViperVM.Arch.Linux.Process.MemoryMap
     ViperVM.Arch.Linux.Process.ControlGroup
@@ -160,6 +157,9 @@ library
     ViperVM.Arch.OpenCL.Types
 
     ViperVM.Arch.Posix.Malloc
+
+    ViperVM.System.System
+    ViperVM.System.Graphics
 
     ViperVM.Utils.Hash
     ViperVM.Utils.EmbedByteString

@@ -14,7 +14,7 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified ViperVM.Arch.OpenCL.All as CL
 import qualified ViperVM.Arch.GenericHost.Memory as Generic
-import qualified ViperVM.Arch.Linux.System.Topology as Linux
+import qualified ViperVM.Arch.Linux.Topology as Linux
 
 import ViperVM.Platform.Drivers
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
