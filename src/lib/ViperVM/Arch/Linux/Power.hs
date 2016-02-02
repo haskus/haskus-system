@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ViperVM.Arch.Linux.Power
    ( PowerCommand(..)
    , sysPower
@@ -18,6 +20,7 @@ import Foreign.C.String (withCString)
 import Foreign.Ptr (nullPtr)
 
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Arch.Linux.Error
 
 data PowerCommand
    = PowerDisableRebootKeys
@@ -28,6 +31,7 @@ data PowerCommand
    | PowerRestart
    | PowerRestartCommand String
    | PowerHibernate
+   deriving (Show,Eq)
 
 fromPowerCommand :: PowerCommand -> Word64
 fromPowerCommand x = case x of
@@ -68,12 +72,12 @@ executeLoadedKernel :: SysRet ()
 executeLoadedKernel = sysPower PowerKernelExec
 
 -- | Power-off the computer
-powerOff :: SysRet ()
-powerOff = sysPower PowerOff
+powerOff :: Sys ()
+powerOff = sysCallAssert "Powering off" $ sysPower PowerOff
 
 -- | Restart the computer
-restart :: SysRet ()
-restart = sysPower PowerRestart
+restart :: Sys ()
+restart = sysCallAssert "Restarting" $ sysPower PowerRestart
 
 -- | Restart the system with the given command
 restartWithCommand :: String -> SysRet ()
