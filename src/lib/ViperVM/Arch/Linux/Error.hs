@@ -9,16 +9,19 @@ module ViperVM.Arch.Linux.Error
    , sysLogSequence
    , sysCallAssert
    , sysCallWarn
+   , sysLogPrint
    )
 where
 
 import Prelude hiding (log)
 import Data.Dequeue as DQ
 import Data.Text.Lazy as Text
+import Data.Text.Lazy.IO as Text
 import Data.String (fromString)
 import qualified Data.Text.Format as Text
 import Data.Text.Format (Shown(..), Only(..))
 import Control.Monad.State
+import Data.Foldable (traverse_)
 
 import ViperVM.Arch.Linux.ErrorCode
 
@@ -53,8 +56,7 @@ sysOnError = do
    sysLogClose
 
    -- print the log
-   log <- gets sysLogCurrent
-   lift $ print log
+   sysLogPrint
 
    -- fail
    error "System failed"
@@ -131,6 +133,29 @@ sysLogClose :: Sys ()
 sysLogClose = gets sysLogStack >>= \case
    [] -> return ()
    _  -> sysLogEnd >> sysLogClose
+
+-- | Print the log on the standard output
+sysLogPrint :: Sys ()
+sysLogPrint = do
+      -- print the log
+      log <- gets sysLogCurrent
+      lift $ printLog 0 log
+   where
+      formatLog i l = Text.format (fromString "{}--{}- {}{}")
+         ( Text.replicate i (Text.pack "  |")
+         , if DQ.null (logChildren l) then "-" else "+"
+         , Text.pack $ case logType l of
+            LogSequence -> ""
+            LogWarning  -> "Warning: "
+            LogError    -> "Error: "
+            LogDebug    -> "Debug: "
+            LogInfo     -> ""
+         , logValue l
+         )
+      printLog i l = do
+         Text.putStrLn (formatLog i l)
+         traverse_ (printLog (i+1)) (logChildren l)
+
 
 ------------------------------------------------
 -- System calls

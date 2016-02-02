@@ -1,11 +1,11 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.Power
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Terminal
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.System.System
 
 import ViperVM.Arch.Linux.Graphics.Card
@@ -14,7 +14,6 @@ import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Connector
 
-import Control.Monad.Trans.Either
 import Control.Monad.IO.Class (liftIO)
 
 main :: IO ()
@@ -25,22 +24,22 @@ main = do
    let 
       ioctl = drmIoctl sysIoctl
 
-   ret <- runCatch $ do
-      sys   <- sysTry "Initialize System" $ systemInit "/system"
+   runSys' $ sysLogSequence "Init graphics" $ do
+      sys   <- systemInit "/system"
 
-      fd    <- sysTry "Open graphic card descriptor" $
+      fd    <- sysCallAssert "Open graphic card descriptor" $
                   sysOpen "/dev/dri/card0" [OpenReadWrite,CloseOnExec] BitSet.empty
-      card  <- sysTry "Get card information from descriptor" $
+      card  <- sysCallAssert "Get card information from descriptor" $
                   getCard ioctl fd
-      cap   <- sysTry "Get GenericBuffer capability" $
+      cap   <- sysCallAssert "Get GenericBuffer capability" $
                   cardCapability card CapGenericBuffer
-      hoistEither $ if cap == 0
-         then Left ("Test GenericBuffer capability", ENOENT) 
+      sysCallAssert "Test GenericBuffer capability" $ return $ if cap == 0
+         then Left ENOENT 
          else Right ()
 
       conns <- liftIO $ cardConnectors card
-      hoistEither $ if null conns 
-         then Left ("Get connectors", ENOENT) 
+      sysCallAssert "Get connectors" $ return $ if null conns 
+         then Left ENOENT 
          else Right ()
 
       let
@@ -58,29 +57,19 @@ main = do
          bpp    = 32
          dbFlags = 0
 
-      dumb <- sysTry "Create a dumb buffer" $
+      dumb <- sysCallAssert "Create a dumb buffer" $
                   cardCreateGenericBuffer card width height bpp dbFlags
-      return (Right dumb)
 
-   case ret of
-      Left _  -> return ()
-      Right _ -> putStrLn "Screen initialized"
+      liftIO $ putStrLn "Screen initialized"
+      return dumb
 
    putStrLn "Press a key to continue"
    waitKey
 
    putStrLn "And now, shutting down"
-   check $ sysSync
-   check $ sysPower PowerOff
+   -- sysCallAssert "Synchronize files" $ sysSync
+   -- sysCallAssert "Power off" $ sysPower PowerOff
 
 
 waitKey :: IO ()
 waitKey = getChar >> return ()
-
-check :: SysRet a -> IO a
-check f = do
-   r <- f
-   case r of
-      Left err -> do
-         error (show err)
-      Right v -> return v
