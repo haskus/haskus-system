@@ -41,7 +41,26 @@ On top of that, it gives access to Linux subsystems. For now:
   compiled kernels to avoid superfluous compilations, provide statistics about
   their execution times, etc.
 
-# Programs
+# How to build
+
+Use stack commands to build ViperVM:
+
+```bash
+$ stack setup
+$ stack build
+```
+
+# Tests, Benchmarks, Programs
+
+ViperVM comes with several tests, benchmarks and programs.
+
+## Tests
+
+Use ``stack test`` to execute the tests.
+
+## Benchmarks
+
+Use ``stack bench`` to execute the benchmarks.
 
 ## ELF Web
 

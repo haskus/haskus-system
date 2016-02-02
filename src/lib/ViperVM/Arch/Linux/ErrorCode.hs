@@ -49,11 +49,6 @@ sysDefaultCatch f = f >>= \case
 toErrorCode :: Int64 -> ErrorCode
 toErrorCode = toEnum . fromIntegral . (*(-1))
 
--- | Default error checking (if < 0 then error)
-defaultCheck :: Int64 -> Maybe ErrorCode
-defaultCheck x | x < 0     = Just (toErrorCode x)
-               | otherwise = Nothing
-
 -- | Use defaultCheck to check for error and return () otherwise
 --
 -- Similar to LIBC's behavior (return 0 except on error)
@@ -87,6 +82,17 @@ onSuccess sc f = do
 
 onSuccessId :: IO Int64 -> SysRet Int64
 onSuccessId = flip onSuccess id
+
+
+------------------------------------------------
+-- Low-level error codes
+------------------------------------------------
+
+-- | Default error checking (if < 0 then error)
+defaultCheck :: Int64 -> Maybe ErrorCode
+defaultCheck x | x < 0     = Just (toErrorCode x)
+               | otherwise = Nothing
+
 
 -- | Linux error codes
 data ErrorCode
