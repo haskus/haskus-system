@@ -62,8 +62,8 @@ enableRebootKeys :: SysRet ()
 enableRebootKeys = sysPower PowerEnableRebootKeys
 
 -- | Halt the computer
-halt :: SysRet ()
-halt = sysPower PowerHalt
+halt :: Sys ()
+halt = sysCallAssert "Halting" $ sysPower PowerHalt
 
 -- | Execute a kernel previously loaded
 executeLoadedKernel :: SysRet ()
