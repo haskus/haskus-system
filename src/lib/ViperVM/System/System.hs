@@ -128,7 +128,7 @@ listDevicesWithClass system cls filtr = do
       -- read device directory
       readDev fd dir = do
          dev <- withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty readDevFile
-         dev' <- sysCallAssert' "Reading dev file" dev
+         dev' <- sysCallAssert' ("Reading dev file: " ++ dir) dev
          return (clsdir </> dir, dev')
 
       -- read devices in a class
