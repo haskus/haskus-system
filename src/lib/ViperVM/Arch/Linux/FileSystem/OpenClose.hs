@@ -7,18 +7,18 @@ module ViperVM.Arch.Linux.FileSystem.OpenClose
    )
 where
 
-import Control.Monad (void)
-
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileSystem
 
-withOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> (FileDescriptor -> SysRet a) -> SysRet a
+withOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> (FileDescriptor -> Sys a) -> Sys (Either ErrorCode a)
 withOpenAt fd path flags perm act = do
-   sysOpenAt fd path flags perm >>= \case
+   fd1 <- sysCallWarn "Open file" $ sysOpenAt fd path flags perm
+   case fd1 of
       Left err  -> return (Left err)
       Right fd2 -> do
          res <- act fd2
-         void (sysClose fd2)
-         return res
+         sysCallAssert "Close file" $ sysClose fd2
+         return (Right res)
 

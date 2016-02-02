@@ -21,8 +21,7 @@ import ViperVM.Arch.Linux.FileSystem.OpenClose
 import System.FilePath
 
 import Prelude hiding (init,tail)
-import Control.Monad.Trans.Either
-import Control.Monad (forM,void)
+import Control.Monad (void)
 
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
@@ -103,30 +102,44 @@ openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path [OpenReadOnly
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: System -> String -> (String -> Bool) -> SysRet [(FilePath,Device)]
+listDevicesWithClass :: System -> String -> (String -> Bool) -> Sys [(FilePath,Device)]
 listDevicesWithClass system cls filtr = do
    -- open class directory in SysFS
-   let clsdir = "class" </> cls
-   withOpenAt (systemSysFS system) clsdir [OpenReadOnly] BitSet.empty $ \fd -> runEitherT $ do
+   let 
+      clsdir = "class" </> cls
 
-      -- FIXME: the fd is not closed in case of error
-      dirs <- EitherT $ listDirectory fd
-      let dirs'  = filter filtr (fmap entryName dirs)
+      -- read device major and minor in "dev" file
+      -- content format is: MMM:mmm\n (where M is major and m is minor)
+      readDevFile devfd = do
+         content <- sysCallAssert "Read dev file" $
+                     readByteString devfd 16 -- 16 bytes should be enough
+         let 
+            parseDevFile = do
+               major <- fromIntegral <$> decimal
+               void (char ':')
+               minor <- fromIntegral <$> decimal
+               void eol
+               return (Device major minor)
+            dev = case parseMaybe parseDevFile content of
+               Nothing -> error "Invalid dev file format"
+               Just x  -> x
+         return dev
 
-      forM dirs' $ \dir -> do
-         -- read device major and minor in "dev" file
-         -- content format is: MMM:mmm\n (where M is major and m is minor)
-         EitherT $ withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty $ \devfd -> runEitherT $ do
-            content <- EitherT $ readByteString devfd 16 -- 16 bytes should be enough
-            let 
-               parseDevFile = do
-                  major <- fromIntegral <$> decimal
-                  void (char ':')
-                  minor <- fromIntegral <$> decimal
-                  void eol
-                  return (Device major minor)
-               dev = case parseMaybe parseDevFile content of
-                  Nothing -> error "Invalid dev file format"
-                  Just x  -> x
-               path  = clsdir </> dir
-            return (path,dev)
+      -- read device directory
+      readDev fd dir = do
+         dev <- withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty readDevFile
+         dev' <- sysCallAssert' "Reading dev file" dev
+         return (clsdir </> dir, dev')
+
+      -- read devices in a class
+      readDevs :: FileDescriptor -> Sys [(FilePath,Device)]
+      readDevs fd = do
+         dirs <- sysCallAssert "List device directories" $ listDirectory fd
+         let dirs'  = filter filtr (fmap entryName dirs)
+         traverse (readDev fd) dirs'
+
+   devs <- withOpenAt (systemSysFS system) clsdir [OpenReadOnly] BitSet.empty readDevs
+
+   case devs of
+      Left _  -> return []
+      Right v -> return v

@@ -7,7 +7,7 @@ where
 
 import ViperVM.System.System
 import ViperVM.Arch.Linux.FileSystem.OpenClose
-import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Error
 
 import Prelude hiding (init,tail)
 import Control.Monad (void)
@@ -29,9 +29,10 @@ data GraphicCard = GraphicCard
 -- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
 -- identifier. The this directory, the dev file contains device major/minor to
 -- create appropriate device node.
-loadGraphicCards :: System -> SysRet [GraphicCard]
-loadGraphicCards system =
-      fmap (fmap makeCard) <$> listDevicesWithClass system "drm" isCard
+loadGraphicCards :: System -> Sys [GraphicCard]
+loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
+      devs <- listDevicesWithClass system "drm" isCard
+      return $ fmap makeCard devs
    where
       parseCard = void (string "card" >> decimal)
       isCard    = isJust . parseMaybe parseCard

@@ -18,13 +18,12 @@ data InputDevice = InputDevice
    , inputDeviceDev              :: Device            -- ^ Device ID
    , inputDeviceHandle           :: FileDescriptor    -- ^ Descriptor
    , inputDeviceName             :: String            -- ^ Device Name
-   }
+   } deriving (Show)
 
 
 loadInputDevices :: System -> Sys [InputDevice]
-loadInputDevices system = do
-   devs <- sysCallAssert "List input devices" $
-            listDevicesWithClass system "input" (const True)
+loadInputDevices system = sysLogSequence "Load input devices" $ do
+   devs <- listDevicesWithClass system "input" (const True)
    forM devs $ \(devpath,dev) -> do
       fd   <- openDevice system CharDevice dev
       name <- sysCallAssert "Get device name" $
