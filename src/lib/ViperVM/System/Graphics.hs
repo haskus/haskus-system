@@ -1,4 +1,4 @@
--- | Manage graphics devices in SysFS
+-- | Manage graphics devices
 module ViperVM.System.Graphics
    ( GraphicCard(..)
    , loadGraphicCards
@@ -6,16 +6,11 @@ module ViperVM.System.Graphics
 where
 
 import ViperVM.System.System
-import ViperVM.Arch.Linux.FileSystem.Directory
-import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.ErrorCode
-import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import Prelude hiding (init,tail)
-import Control.Monad.Trans.Either
-import System.FilePath ((</>))
-import Control.Monad (forM,void)
+import Control.Monad (void)
 import Data.Maybe (isJust)
 
 import Text.Megaparsec
@@ -35,34 +30,10 @@ data GraphicCard = GraphicCard
 -- identifier. The this directory, the dev file contains device major/minor to
 -- create appropriate device node.
 loadGraphicCards :: System -> SysRet [GraphicCard]
-loadGraphicCards system = do
-   -- open drm directory
-   withOpenAt (systemSysFS system) "class/drm" [OpenReadOnly] BitSet.empty $ \fd -> runEitherT $ do
-
-      -- detect cardN directories
-      -- FIXME: the fd is not closed in case of error
-      dirs <- EitherT $ listDirectory fd
-      let
-         parseCard = void (string "card" >> decimal)
-         isCard    = isJust . parseMaybe parseCard
-         cardDirs  = filter isCard (fmap entryName dirs)
-
-      forM cardDirs $ \dir -> do
-         -- read device major and minor in "dev" file
-         -- content format is: MMM:mmm\n (where M is major and m is minor)
-         EitherT $ withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty $ \devfd -> runEitherT $ do
-            content <- EitherT $ readByteString devfd 16 -- 16 bytes should be enough
-            let 
-               parseDevFile = do
-                  major <- fromIntegral <$> decimal
-                  void (char ':')
-                  minor <- fromIntegral <$> decimal
-                  void eol
-                  return (Device major minor)
-               dev = case parseMaybe parseDevFile content of
-                  Nothing -> error "Invalid dev file format"
-                  Just x  -> x
-               devid = read (drop 4 dir)
-               path  = "class/drm" </> dir
-               card  = GraphicCard path dev devid
-            return card
+loadGraphicCards system =
+      fmap (fmap makeCard) <$> listDevicesWithClass system "drm" isCard
+   where
+      parseCard = void (string "card" >> decimal)
+      isCard    = isJust . parseMaybe parseCard
+      makeCard (path,dev) = GraphicCard path dev devid
+         where  devid = read (drop 4 path)

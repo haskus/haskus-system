@@ -4,6 +4,7 @@ module ViperVM.System.System
    , systemInit
    , openDevice
    , openDeviceDir
+   , listDevicesWithClass
    )
 where
 
@@ -14,8 +15,18 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
+import ViperVM.Arch.Linux.FileSystem.ReadWrite
+import ViperVM.Arch.Linux.FileSystem.OpenClose
 
 import System.FilePath
+
+import Prelude hiding (init,tail)
+import Control.Monad.Trans.Either
+import Control.Monad (forM,void)
+
+import Text.Megaparsec
+import Text.Megaparsec.Lexer hiding (space)
+
 
 data System = System
    { systemDevFS  :: FileDescriptor    -- ^ root of the tmpfs used to create device nodes
@@ -87,3 +98,35 @@ openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path [OpenReadOnly
          CharDevice  -> "char"
          BlockDevice -> "block"
       ids  = show (deviceMajor dev) ++ ":" ++ show (deviceMinor dev)
+
+
+-- | List devices with the given class
+--
+-- TODO: support dynamic asynchronous device adding/removal
+listDevicesWithClass :: System -> String -> (String -> Bool) -> SysRet [(FilePath,Device)]
+listDevicesWithClass system cls filtr = do
+   -- open class directory in SysFS
+   let clsdir = "class" </> cls
+   withOpenAt (systemSysFS system) clsdir [OpenReadOnly] BitSet.empty $ \fd -> runEitherT $ do
+
+      -- FIXME: the fd is not closed in case of error
+      dirs <- EitherT $ listDirectory fd
+      let dirs'  = filter filtr (fmap entryName dirs)
+
+      forM dirs' $ \dir -> do
+         -- read device major and minor in "dev" file
+         -- content format is: MMM:mmm\n (where M is major and m is minor)
+         EitherT $ withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty $ \devfd -> runEitherT $ do
+            content <- EitherT $ readByteString devfd 16 -- 16 bytes should be enough
+            let 
+               parseDevFile = do
+                  major <- fromIntegral <$> decimal
+                  void (char ':')
+                  minor <- fromIntegral <$> decimal
+                  void eol
+                  return (Device major minor)
+               dev = case parseMaybe parseDevFile content of
+                  Nothing -> error "Invalid dev file format"
+                  Just x  -> x
+               path  = clsdir </> dir
+            return (path,dev)
