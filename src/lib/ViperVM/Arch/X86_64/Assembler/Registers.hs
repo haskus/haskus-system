@@ -2,6 +2,7 @@
 module ViperVM.Arch.X86_64.Assembler.Registers 
    ( Register(..)
    , RegFamily(..)
+   , regSupportRex
    , getRegisterFile
    , regFromCode
    , regToCode
@@ -59,6 +60,16 @@ data Register
    | R_GS  | R_SS
    | R_IP  | R_EIP | R_RIP
    deriving (Show,Eq)
+
+-- | Indicate if the register can be encoded with a REX prefix
+regSupportRex :: Register -> Bool
+regSupportRex r = case r of
+   R_AH -> False
+   R_BH -> False
+   R_CH -> False
+   R_DH -> False
+   _    -> True
+   
 
 regFromCode :: RegFamily -> Maybe Size -> Bool -> Word8 -> Register
 regFromCode fm sz useExtRegs code = case fm of

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module ViperVM.Arch.X86_64.Assembler.Encoder
    ( encode
    , EncodeError (..)
@@ -25,10 +26,15 @@ type X86EncStateT = StateT EncodeState PutM
 type X86Enc a     = EitherT EncodeError X86EncStateT a
 
 data EncodeError
-   = EncodeError
+   = EncodeErrorInvalidOperandCount
+   | EncodeErrorREXCannotEncodeRegister
 
 data EncodeState = EncodeState
-   { encStateMode     :: X86Mode
+   { encStateMode          :: X86Mode
+   , encStateRequireREX    :: Maybe Bool
+   , encStateBaseRegExt    :: Maybe Word8    -- ^ REX.B
+   , encStateIndexRegExt   :: Maybe Word8    -- ^ REX.X
+   , encStateRegExt        :: Maybe Word8    -- ^ REX.R
    }
 
 emitWord8 :: Word8 -> X86Enc ()
@@ -53,11 +59,44 @@ encode (InsnX86 _ enc opSize variant ops) = do
    -- and with the enabled instruction sets
    -- TODO
 
+   -- check the number of operands
+   when (length (encOperands enc) /= length ops) $
+      left EncodeErrorInvalidOperandCount
+
+   let
+      -- Indicate if REX prefix is required or not
+      setRequireREX :: Bool -> X86Enc ()
+      setRequireREX b = gets encStateRequireREX >>= \case
+         Nothing        -> modify (\s -> s { encStateRequireREX = Just b })
+         Just b2 
+            | b2 /= b   -> left EncodeErrorREXCannotEncodeRegister
+            | otherwise -> return ()
+
+   forM_ (encOperands enc `zip` ops) $ \(e,op) -> do
+
+      -- check if we need REX prefix to access extended registers
+      case op of
+         OpReg r | (opEnc e == E_ModReg || opEnc e == E_ModRM) -> do
+            let code = regToCode r
+            when (code > 7) $ do
+               setRequireREX True
+               when (opEnc e == E_ModReg) $ modify (\s -> s { encStateRegExt = Just 1 })
+               when (opEnc e == E_ModRM) $ modify (\s -> s { encStateRegExt = Just 1 })
+            when (not (regSupportRex r)) $ setRequireREX False
+
+         --TODO
+         OpMem addr -> undefined
+               
+             
+      
+
    case enc of
       LegacyEncoding _ -> do
          -- legacy prefixes
          let 
+            -- lock
             vlock = if encLockable enc && Locked `elem` variant then [0xF0] else []
+            -- mandatory prefix (put last)
             vmand = maybeToList (encMandatoryPrefix enc)
 
             ps = vlock ++ vmand
