@@ -83,7 +83,7 @@ openDevice system typ dev = do
       sysCallAssert "Create device special file" $
          createDeviceFile devfd devname typ BitSet.empty dev
       fd  <- sysCallAssert "Open device special file" $
-         sysOpenAt devfd devname [OpenReadWrite] BitSet.empty
+         sysOpenAt devfd devname [OpenReadWrite,OpenNonBlocking] BitSet.empty
       sysCallAssert "Remove device special file" $
          sysUnlinkAt devfd devname False
       return fd
