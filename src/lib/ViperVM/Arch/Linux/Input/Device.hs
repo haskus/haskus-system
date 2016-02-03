@@ -5,7 +5,7 @@ module ViperVM.Arch.Linux.Input.Device
    ( DeviceInfo(..)
    , Property(..)
    , DeviceID(..)
-   , DeviceBus(..)
+   , BusType(..)
    , protocolVersion
    , getDriverVersion
    , getDeviceInfo
@@ -27,6 +27,7 @@ import Data.Int
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.C.String (peekCString)
+import Foreign.Ptr
 import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
@@ -42,7 +43,7 @@ protocolVersion = 0x010001
 --
 -- `struct input_id` in C header file
 data DeviceInfo = DeviceInfo
-   { infoBusType :: Word16
+   { infoBusType :: BusType
    , infoVendor  :: Word16
    , infoProduct :: Word16
    , infoVersion :: Word16
@@ -153,7 +154,7 @@ data DeviceID
    | DeviceVersionID
    deriving (Show,Eq,Enum)
 
-data DeviceBus
+data BusType
    = BusPCI
    | BusISAPNP
    | BusUSB
@@ -173,9 +174,10 @@ data DeviceBus
    | BusGSC
    | BusAtari
    | BusSPI
+   | BusUnknown Int
    deriving (Show,Eq)
 
-instance Enum DeviceBus where
+instance Enum BusType where
    fromEnum x = case x of
       BusPCI            -> 0x01
       BusISAPNP         -> 0x02
@@ -196,6 +198,7 @@ instance Enum DeviceBus where
       BusGSC            -> 0x1A
       BusAtari          -> 0x1B
       BusSPI            -> 0x1C
+      BusUnknown n      -> n
    toEnum x = case x of
       0x01 -> BusPCI
       0x02 -> BusISAPNP
@@ -216,5 +219,18 @@ instance Enum DeviceBus where
       0x1A -> BusGSC
       0x1B -> BusAtari
       0x1C -> BusSPI
-      _    -> error "Unknown bus identifier"
+      n    -> BusUnknown n
 
+-- stored in a Word16
+instance Storable BusType where
+   sizeOf _    = 2
+   alignment _ = 2
+   peek ptr    = toEnum . fromIntegral <$> peek (castPtr ptr :: Ptr Word16)
+   poke ptr v  = poke (castPtr ptr :: Ptr Word16)
+                      (fromIntegral (fromEnum v))
+
+instance CStorable BusType where
+   cSizeOf     = sizeOf
+   cAlignment  = alignment
+   cPeek       = peek
+   cPoke       = poke

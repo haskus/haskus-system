@@ -26,6 +26,7 @@ data InputDevice = InputDevice
    , inputDeviceDev              :: Device            -- ^ Device ID
    , inputDeviceHandle           :: FileDescriptor    -- ^ Descriptor
    , inputDeviceName             :: String            -- ^ Device Name
+   , inputDeviceInfo             :: DeviceInfo        -- ^ Device info
    } deriving (Show)
 
 
@@ -37,6 +38,8 @@ loadInputDevices system = sysLogSequence "Load input devices" $ do
    devs <- listDevicesWithClass system "input" isInput
    forM devs $ \(devpath,dev) -> do
       fd   <- openDevice system CharDevice dev
-      name <- sysCallAssert "Get device name" $
-                  Input.getDeviceName sysIoctl fd
-      return (InputDevice devpath dev fd name)
+      InputDevice devpath dev fd
+         <$> (sysCallAssert "Get device name" $
+                  Input.getDeviceName sysIoctl fd)
+         <*> (sysCallAssert "Get device info" $
+                  Input.getDeviceInfo sysIoctl fd)
