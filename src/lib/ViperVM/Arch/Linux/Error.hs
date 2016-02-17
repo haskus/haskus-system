@@ -8,6 +8,8 @@ module ViperVM.Arch.Linux.Error
    , sysLog
    , sysLogSequence
    , sysAssert
+   , sysAssertQuiet
+   , sysError
    , sysCallAssert
    , sysCallAssert'
    , sysCallAssertQuiet
@@ -161,13 +163,24 @@ sysLogPrint = do
 
 sysAssert :: String -> Bool -> Sys ()
 sysAssert text b = case b of
-   True -> do
+   True  -> do
       let msg = printf "%s (success)" text
       sysLog LogInfo msg
    False -> do
       let msg = printf "%s (assertion failed)" text
-      sysLog LogError msg
-      sysOnError
+      sysError msg
+
+sysAssertQuiet :: String -> Bool -> Sys ()
+sysAssertQuiet text b = case b of
+   True  -> return ()
+   False -> do
+      let msg = printf "%s (assertion failed)" text
+      sysError msg
+
+sysError :: String -> Sys a
+sysError text = do
+   sysLog LogError text
+   sysOnError
 
 ------------------------------------------------
 -- System calls
@@ -185,8 +198,7 @@ sysCallAssert' text r = do
    case r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
-         sysLog LogError msg
-         sysOnError
+         sysError msg
       Right v  -> do
          let msg = printf "%s (success)" text
          sysLog LogInfo msg
@@ -199,8 +211,7 @@ sysCallAssertQuiet text act = do
    case r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
-         sysLog LogError msg
-         sysOnError
+         sysError msg
       Right v  -> return v
 
 -- | Log a warning if the given action fails

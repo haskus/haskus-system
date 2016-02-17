@@ -59,9 +59,8 @@ receiveKernelEvent fd = go
       go = do
          msg <- sysCallAssertQuiet "Receive kernel event" $ receiveByteString fd 2048 BitSet.empty
          case parseKernelEvent msg of
-            -- retry if the parsing failed
-            Nothing -> go
             Just m  -> return m
+            Nothing -> sysError "Kernel event is not parsable"
 
 
 -- | Parse a kernel event
