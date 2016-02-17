@@ -2,6 +2,7 @@
 module ViperVM.System.Input
    ( InputDevice(..)
    , loadInputDevices
+   , makeSimpleInputListener
    )
 where
 
@@ -17,7 +18,7 @@ import Control.Concurrent.STM
 import Control.Concurrent
 import Data.Traversable (forM)
 import Prelude hiding (init,tail)
-import Control.Monad (void)
+import Control.Monad (void, forever)
 import Control.Monad.Trans.Class (lift)
 import Data.Maybe (isJust)
 import Foreign.Storable
@@ -77,3 +78,12 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
                   go
       go
    return ch
+
+
+-- | Execute the given callback on each input event
+makeSimpleInputListener :: InputDevice -> (Input.Event -> IO ()) -> Sys ()
+makeSimpleInputListener dev f = do
+   sysLog LogInfo ("Creating simple listener on device " ++ inputDeviceName dev)
+   lift $ do
+      ch <- atomically $ dupTChan (inputDeviceChan dev)
+      void $ forkIO $ forever (atomically (readTChan ch) >>= f)
