@@ -1,5 +1,5 @@
 -- | Transactional list
-module ViperVM.STM.TList
+module ViperVM.Utils.STM.TList
    ( TList
    , TNode
    , empty

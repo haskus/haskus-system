@@ -1,5 +1,5 @@
 -- | Transactionnal graph
-module ViperVM.STM.TGraph
+module ViperVM.Utils.STM.TGraph
    ( deepFirst
    , breadthFirst
    , TNode (..)
@@ -12,8 +12,8 @@ import qualified Data.Set as Set
 import Control.Monad (foldM, foldM_, when, void)
 import Control.Concurrent.STM
 
-import ViperVM.STM.TList (TList)
-import qualified ViperVM.STM.TList as TList
+import ViperVM.Utils.STM.TList (TList)
+import qualified ViperVM.Utils.STM.TList as TList
 
 -- | Deep-first graph traversal
 --

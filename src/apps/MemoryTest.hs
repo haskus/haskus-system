@@ -11,7 +11,7 @@ import qualified ViperVM.Platform.Data.Vector as Vector
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Transfer
 import ViperVM.Platform.TransferBench
-import qualified ViperVM.STM.TSet as TSet
+import qualified ViperVM.Utils.STM.TSet as TSet
 
 main :: IO ()
 main = do

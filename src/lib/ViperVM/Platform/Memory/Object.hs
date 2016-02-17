@@ -14,7 +14,7 @@ import Data.Foldable (traverse_)
 import Control.Monad ((<=<))
 
 import ViperVM.Platform.Types (Data,MultiData,MultiData_(..))
-import ViperVM.STM.TList as TList
+import ViperVM.Utils.STM.TList as TList
 
 -- | A data with possibly more than one instance
 --

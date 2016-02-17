@@ -41,9 +41,9 @@ import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
 import ViperVM.Utils.Hash (hashString)
-import ViperVM.STM.TSet as TSet
-import ViperVM.STM.TMap
-import ViperVM.STM.TList
+import ViperVM.Utils.STM.TSet as TSet
+import ViperVM.Utils.STM.TMap
+import ViperVM.Utils.STM.TList
 
 import ViperVM.Platform.Memory.Layout
 

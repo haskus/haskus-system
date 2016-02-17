@@ -19,8 +19,8 @@ import ViperVM.Platform.Types
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Memory
 
-import qualified ViperVM.STM.TMap as TMap
-import qualified ViperVM.STM.TList as TList
+import qualified ViperVM.Utils.STM.TMap as TMap
+import qualified ViperVM.Utils.STM.TList as TList
 
 import Control.Concurrent.STM
 import Data.Traversable (forM)

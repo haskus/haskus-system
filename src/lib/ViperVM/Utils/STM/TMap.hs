@@ -1,5 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-module ViperVM.STM.TMap
+module ViperVM.Utils.STM.TMap
    ( TMap
    , null
    , size

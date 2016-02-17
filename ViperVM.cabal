@@ -164,11 +164,10 @@ library
 
     ViperVM.Utils.Hash
     ViperVM.Utils.EmbedByteString
-
-    ViperVM.STM.TMap
-    ViperVM.STM.TSet
-    ViperVM.STM.TList
-    ViperVM.STM.TGraph
+    ViperVM.Utils.STM.TMap
+    ViperVM.Utils.STM.TSet
+    ViperVM.Utils.STM.TList
+    ViperVM.Utils.STM.TGraph
 
     ViperVM.Format.CPIO
 

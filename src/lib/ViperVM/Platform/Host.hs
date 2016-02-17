@@ -24,9 +24,9 @@ where
 
 import ViperVM.Platform.Topology
 import ViperVM.Platform.Types
-import ViperVM.STM.TSet (TSet)
-import qualified ViperVM.STM.TSet as TSet
-import ViperVM.STM.TGraph (deepFirst,breadthFirst)
+import ViperVM.Utils.STM.TSet (TSet)
+import qualified ViperVM.Utils.STM.TSet as TSet
+import ViperVM.Utils.STM.TGraph (deepFirst,breadthFirst)
 
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Class

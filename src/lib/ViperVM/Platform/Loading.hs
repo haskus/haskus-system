@@ -29,9 +29,9 @@ import ViperVM.Platform.Types
    , Proc(..)
    )
 import ViperVM.Platform.Config
-import ViperVM.STM.TSet (TSet)
-import qualified ViperVM.STM.TSet as TSet
-import qualified ViperVM.STM.TMap as TMap
+import ViperVM.Utils.STM.TSet (TSet)
+import qualified ViperVM.Utils.STM.TSet as TSet
+import qualified ViperVM.Utils.STM.TMap as TMap
 
 -- | Init a memory
 memoryInit :: MemoryPeer -> IO Memory

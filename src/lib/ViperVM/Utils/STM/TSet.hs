@@ -1,5 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-module ViperVM.STM.TSet
+module ViperVM.Utils.STM.TSet
    ( TSet
    , null
    , size
