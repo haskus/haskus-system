@@ -12,11 +12,10 @@ where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.Network
-import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Network.SendReceive
+import ViperVM.Arch.Linux.Error
 
-import Control.Monad.Trans.Either
 import qualified Data.ByteString as BS
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -44,22 +43,25 @@ data KernelEventAction
    deriving (Show)
 
 -- | Create a socket for kernel events
-createKernelEventSocket :: SysRet FileDescriptor
-createKernelEventSocket = runEitherT $ do
+createKernelEventSocket :: Sys FileDescriptor
+createKernelEventSocket = sysLogSequence "Create kernel event socket" $ do
    -- internally the socket is a Netlink socket dedicated to kernel events
-   fd <- EitherT $ sysSocket (SockTypeNetlink NetlinkTypeKernelEvent) []
+   fd <- sysCallAssert "Create NetLink socket" $ sysSocket (SockTypeNetlink NetlinkTypeKernelEvent) []
    -- bind the socket to any port (i.e. port 0), listen to all multicast groups
-   EitherT $ sysBindNetlink fd 0 0xFFFFFFFF
+   sysCallAssert "Bind the socket" $ sysBindNetlink fd 0 0xFFFFFFFF
    return fd
 
 
 -- | Block until a kernel event is received
-receiveKernelEvent :: FileDescriptor -> SysRet KernelEvent
-receiveKernelEvent fd = runEitherT $ do
-   msg <- parseKernelEvent <$> EitherT (receiveByteString fd 2048 BitSet.empty)
-   case msg of
-      Nothing -> EitherT (receiveKernelEvent fd)
-      Just m  -> return m
+receiveKernelEvent :: FileDescriptor -> Sys KernelEvent
+receiveKernelEvent fd = go
+   where
+      go = do
+         msg <- sysCallAssertQuiet "Receive kernel event" $ receiveByteString fd 2048 BitSet.empty
+         case parseKernelEvent msg of
+            -- retry if the parsing failed
+            Nothing -> go
+            Just m  -> return m
 
 
 -- | Parse a kernel event
@@ -82,8 +84,8 @@ parseKernelEvent bs = r
 
       -- parse fields
       fields = Map.fromList                      -- create Map from (key,value) tuples
-             . fmap (toTuple . Text.splitOn "=")  -- split "key=value"
-             . filter Text.null                  -- drop empty lines
+             . fmap (toTuple . Text.splitOn "=") -- split "key=value"
+             . filter (not . Text.null)          -- drop empty lines
              $ tail bss                          -- drop the first line (it contains redundant info)
 
       action = case fields Map.! "ACTION" of

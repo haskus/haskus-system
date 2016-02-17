@@ -10,6 +10,7 @@ module ViperVM.Arch.Linux.Error
    , sysAssert
    , sysCallAssert
    , sysCallAssert'
+   , sysCallAssertQuiet
    , sysCallWarn
    , sysLogPrint
    )
@@ -190,6 +191,17 @@ sysCallAssert' text r = do
          let msg = printf "%s (success)" text
          sysLog LogInfo msg
          return v
+
+-- | Assert that the given action doesn't fail, log only on error
+sysCallAssertQuiet :: String -> SysRet a -> Sys a
+sysCallAssertQuiet text act = do
+   r <- lift act
+   case r of
+      Left err -> do
+         let msg = printf "%s (failed with %s)" text (show err)
+         sysLog LogError msg
+         sysOnError
+      Right v  -> return v
 
 -- | Log a warning if the given action fails
 sysCallWarn :: String -> SysRet a -> Sys (Either ErrorCode a)
