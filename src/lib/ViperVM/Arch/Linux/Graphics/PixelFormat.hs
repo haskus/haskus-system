@@ -136,7 +136,7 @@ assoc = assoc'
          ]
 
 -- | Bit-depth per plane
-formatBitDepth :: Format -> [Int]
+formatBitDepth :: Format -> [Word32]
 formatBitDepth fmt = case fmt of
    C8           -> [8]
    RGB332       -> [8]
