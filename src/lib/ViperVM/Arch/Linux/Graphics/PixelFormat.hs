@@ -5,6 +5,7 @@ module ViperVM.Arch.Linux.Graphics.PixelFormat
    ( PixelFormat(..)
    , Format(..)
    , Endianness(..)
+   , formatBitDepth
    )
 where
 
@@ -133,6 +134,69 @@ assoc = assoc'
          ,(YUV444      , "YU24")
          ,(YVU444      , "YV24")
          ]
+
+-- | Bit-depth per plane
+formatBitDepth :: Format -> [Int]
+formatBitDepth fmt = case fmt of
+   C8           -> [8]
+   RGB332       -> [8]
+   BGR233       -> [8]
+   XRGB4444     -> [16]
+   XBGR4444     -> [16]
+   RGBX4444     -> [16]
+   BGRX4444     -> [16]
+   ARGB4444     -> [16]
+   ABGR4444     -> [16]
+   RGBA4444     -> [16]
+   BGRA4444     -> [16]
+   XRGB1555     -> [16]
+   XBGR1555     -> [16]
+   RGBX5551     -> [16]
+   BGRX5551     -> [16]
+   ARGB1555     -> [16]
+   ABGR1555     -> [16]
+   RGBA5551     -> [16]
+   BGRA5551     -> [16]
+   RGB565       -> [16]
+   BGR565       -> [16]
+   RGB888       -> [24]
+   BGR888       -> [24]
+   XRGB8888     -> [32]
+   XBGR8888     -> [32]
+   RGBX8888     -> [32]
+   BGRX8888     -> [32]
+   ARGB8888     -> [32]
+   ABGR8888     -> [32]
+   RGBA8888     -> [32]
+   BGRA8888     -> [32]
+   XRGB2101010  -> [32]
+   XBGR2101010  -> [32]
+   RGBX1010102  -> [32]
+   BGRX1010102  -> [32]
+   ARGB2101010  -> [32]
+   ABGR2101010  -> [32]
+   RGBA1010102  -> [32]
+   BGRA1010102  -> [32]
+   YUYV         -> [32]
+   YVYU         -> [32]
+   UYVY         -> [32]
+   VYUY         -> [32]
+   AYUY         -> [32]
+   NV12         -> [8,16]
+   NV21         -> [8,16]
+   NV16         -> [8,16]
+   NV61         -> [8,16]
+   YUV410       -> [8,8,8]
+   YVU410       -> [8,8,8]
+   YUV411       -> [8,8,8]
+   YVU411       -> [8,8,8]
+   YUV420       -> [8,8,8]
+   YVU420       -> [8,8,8]
+   YUV422       -> [8,8,8]
+   YVU422       -> [8,8,8]
+   YUV444       -> [8,8,8]
+   YVU444       -> [8,8,8]
+
 
 -- | Logical pixel format (i.e. without considering storage endianness)
 data Format
