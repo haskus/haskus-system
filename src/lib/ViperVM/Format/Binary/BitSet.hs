@@ -58,6 +58,7 @@ import qualified GHC.Exts as Ext
 import Data.Bits
 import Data.Foldable (foldl')
 import Foreign.Storable
+import Foreign.CStorable
 
 -- | A bit set: use bitwise operations (fast!) and minimal storage (sizeOf
 -- basetype)
@@ -67,7 +68,7 @@ import Foreign.Storable
 --
 -- The elements in the Enum a are flags corresponding to each bit of b starting
 -- from the least-significant bit.
-newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable)
+newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable,CStorable)
 
 instance (Show a, EnumBitSet a, FiniteBits b) => Show (BitSet b a) where
    show b = "fromList " ++ show (toList b)

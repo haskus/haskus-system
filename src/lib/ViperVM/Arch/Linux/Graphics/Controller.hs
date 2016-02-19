@@ -7,14 +7,15 @@
 module ViperVM.Arch.Linux.Graphics.Controller
    ( Controller(..)
    , setController'
-   , PageFlip(..)
+   , switchFrameBuffer'
+   , PageFlipFlag(..)
+   , PageFlipFlags
    , cardControllers
    -- * Low level
    , cardControllerFromID
    , ControllerStruct(..)
    , fromControllerStruct
    , ControllerLutStruct(..)
-   , PageFlipStruct(..)
    )
 where
 
@@ -133,18 +134,19 @@ instance Storable  ControllerLutStruct where
    poke        = cPoke
 
 
-data PageFlip
+data PageFlipFlag
    = PageFlipEvent
    | PageFlipAsync
    deriving (Show,Eq,Enum)
 
-instance EnumBitSet PageFlip
+instance EnumBitSet PageFlipFlag
+type PageFlipFlags = BitSet Word32 PageFlipFlag
 
 -- | Data matching the C structure drm_mode_crtc_page_flip
 data PageFlipStruct = PageFlipStruct
    { pfCrtcId        :: Word32
    , pfFbId          :: Word32
-   , pfFlags         :: Word32
+   , pfFlags         :: PageFlipFlags
    , pfReserved      :: Word32
    , pfUserData      :: Word64
    } deriving Generic
@@ -156,6 +158,18 @@ instance Storable  PageFlipStruct where
    peek        = cPeek
    poke        = cPoke
 
+-- | Switch to another framebuffer for the given controller
+-- without doing a full mode change
+--
+-- Called "mode_page_flip" in the original terminology
+switchFrameBuffer' :: IOCTL -> FileDescriptor -> ControllerID -> FrameBufferID -> PageFlipFlags -> SysRet ()
+switchFrameBuffer' ioctl fd crtcid fb flags = do
+   let
+      ControllerID cid = crtcid
+      FrameBufferID fid = fb
+      s = PageFlipStruct cid fid flags 0 0
+
+   fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xB0 defaultCheck fd s
 
 -- | Get controllers (discard errors)
 cardControllers :: Card -> IO [Controller]
