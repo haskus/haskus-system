@@ -616,6 +616,10 @@ syscall_finit_module = syscall3 313
 
 {-
  - Remaining syscalls to wrap
+ - 
+ - The complete table is in:
+ - linux/arch/x86/entry/syscalls/syscall_64.tbl
+ - in the kernel tree.
  -
 13	64	rt_sigaction		sys_rt_sigaction
 15	64	rt_sigreturn		stub_rt_sigreturn
@@ -837,4 +841,9 @@ syscall_finit_module = syscall3 313
 319   memfd_create
 320   kexec_file_load
 321   bpf
+322	64	execveat		stub_execveat
+323	common	userfaultfd		sys_userfaultfd
+324	common	membarrier		sys_membarrier
+325	common	mlock2			sys_mlock2
+326	common	copy_file_range		sys_copy_file_range
 -}
