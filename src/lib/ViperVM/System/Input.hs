@@ -72,6 +72,9 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
                -- FIXME: we should somehow signal that an error occured and
                -- that we won't report future events (if any)
                Left _  -> return ()
+               -- FIXME: we should keep the read values for the next iteration
+               Right sz2 
+                  | sz2 /= fromIntegral sz -> error "We read an incomplete event"
                Right _ -> do
                   ev <- peek (castPtr ptr :: Ptr Input.Event)
                   atomically $ writeTChan ch ev
