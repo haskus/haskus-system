@@ -17,13 +17,13 @@ import ViperVM.Arch.Linux.Input.Event as Input
 import Control.Concurrent.STM
 import Control.Concurrent
 import Data.Traversable (forM)
+import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
 import Control.Monad (void, forever)
 import Control.Monad.Trans.Class (lift)
 import Data.Maybe (isJust)
 import Foreign.Storable
-import Foreign.Marshal (allocaBytes)
-import Foreign.Ptr
+import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
 
 import Text.Megaparsec
@@ -62,9 +62,10 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
    let
       sz  = sizeOf (undefined :: Input.Event)
       rfd = Fd (fromIntegral lowfd)
+      nb  = 50 -- number of events read at once
 
    ch <- lift $ newBroadcastTChanIO
-   void $ lift $ forkIO $ allocaBytes sz $ \ptr -> do
+   void $ lift $ forkIO $ allocaArray nb $ \ptr -> do
       let go = do
             threadWaitRead rfd
             r <- sysRead fd ptr (fromIntegral sz)
@@ -72,12 +73,9 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
                -- FIXME: we should somehow signal that an error occured and
                -- that we won't report future events (if any)
                Left _  -> return ()
-               -- FIXME: we should keep the read values for the next iteration
-               Right sz2 
-                  | sz2 /= fromIntegral sz -> error "We read an incomplete event"
-               Right _ -> do
-                  ev <- peek (castPtr ptr :: Ptr Input.Event)
-                  atomically $ writeTChan ch ev
+               Right sz2 -> do
+                  evs <- peekArray (fromIntegral sz2 `div` sz) ptr
+                  atomically $ traverse_ (writeTChan ch) evs
                   go
       go
    return ch
