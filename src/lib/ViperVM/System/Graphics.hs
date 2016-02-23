@@ -9,6 +9,9 @@ where
 
 import ViperVM.System.System
 import ViperVM.Arch.Linux.FileSystem.OpenClose
+import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Memory
 
@@ -17,21 +20,31 @@ import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
+import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
 import Prelude hiding (init,tail)
 import Control.Monad (void,forM)
 import Data.Maybe (isJust)
 import Foreign.Ptr
 
+import Control.Concurrent.STM
+import Control.Concurrent
+import Data.Foldable (traverse_)
+import Control.Monad.Trans.Class (lift)
+import Foreign.Marshal (allocaBytes)
+import System.Posix.Types (Fd(..))
+
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
 
 -- | Graphic card
 data GraphicCard = GraphicCard
-   { graphicCardPath    :: FilePath    -- ^ Path to the graphic card in SysFS
-   , graphicCardDev     :: Device      -- ^ Device major/minor to create the device file descriptor
-   , graphicCardID      :: Int         -- ^ Card identifier
-   } deriving (Show)
+   { graphicCardPath    :: FilePath             -- ^ Path to the graphic card in SysFS
+   , graphicCardDev     :: Device               -- ^ Device major/minor to create the device file descriptor
+   , graphicCardID      :: Int                  -- ^ Card identifier
+   , graphicCardHandle  :: FileDescriptor       -- ^ Device handle
+   , graphicCardChan    :: TChan Graphics.Event -- ^ Event stream
+   }
 
 
 -- | Return detected graphic cards
@@ -41,13 +54,40 @@ data GraphicCard = GraphicCard
 -- create appropriate device node.
 loadGraphicCards :: System -> Sys [GraphicCard]
 loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
-      devs <- listDevicesWithClass system "drm" isCard
-      return $ fmap makeCard devs
-   where
+   let
       parseCard = void (string "card" >> decimal)
       isCard    = isJust . parseMaybe parseCard
-      makeCard (path,dev) = GraphicCard path dev devid
-         where  devid = read (drop 4 path)
+
+   devs <- listDevicesWithClass system "drm" isCard
+   forM devs $ \(devpath,dev) -> do
+      fd   <- openDevice system CharDevice dev
+      GraphicCard devpath dev (read (drop 4 devpath)) fd
+         <$> newEventWaiterThread fd
+
+
+-- | Create a new thread reading input events and putting them in a TChan
+newEventWaiterThread :: FileDescriptor -> Sys (TChan Graphics.Event)
+newEventWaiterThread fd@(FileDescriptor lowfd) = do
+   let
+      bufsz = 1000 -- buffer size
+      rfd = Fd (fromIntegral lowfd)
+
+   ch <- lift $ newBroadcastTChanIO
+   void $ lift $ forkIO $ allocaBytes bufsz $ \ptr -> do
+      let go = do
+            threadWaitRead rfd
+            r <- sysRead fd ptr (fromIntegral bufsz)
+            case r of
+               -- FIXME: we should somehow signal that an error occured and
+               -- that we won't report future events (if any)
+               Left _  -> return ()
+               Right sz2 -> do
+                  evs <- peekEvents ptr (fromIntegral sz2)
+                  atomically $ traverse_ (writeTChan ch) evs
+                  go
+      go
+   return ch
+
 
 data MappedPlane = MappedPlane
    { mappedPlaneBuffer  :: GenericBuffer

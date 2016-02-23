@@ -130,6 +130,7 @@ library
     ViperVM.Arch.Linux.Graphics.Controller
     ViperVM.Arch.Linux.Graphics.Cursor
     ViperVM.Arch.Linux.Graphics.Encoder
+    ViperVM.Arch.Linux.Graphics.Event
     ViperVM.Arch.Linux.Graphics.FrameBuffer
     ViperVM.Arch.Linux.Graphics.GenericBuffer
     ViperVM.Arch.Linux.Graphics.Mode
