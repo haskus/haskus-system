@@ -26,6 +26,7 @@ import System.FilePath
 import Prelude hiding (init,tail)
 import Control.Monad (void)
 import Control.Concurrent.STM
+import Data.Maybe (catMaybes)
 
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
@@ -146,15 +147,17 @@ listDevicesWithClass system cls filtr = do
       -- read device directory
       readDev fd dir = do
          dev <- withOpenAt fd (dir </> "dev") [OpenReadOnly] BitSet.empty readDevFile
-         dev' <- sysCallAssert' ("Reading dev file: " ++ dir) dev
-         return (clsdir </> dir, dev')
+         -- skip entries without "dev" file
+         return $ case dev of
+            Left _  -> Nothing
+            Right x -> Just (clsdir </> dir, x)
 
       -- read devices in a class
       readDevs :: FileDescriptor -> Sys [(FilePath,Device)]
       readDevs fd = do
          dirs <- sysCallAssert "List device directories" $ listDirectory fd
          let dirs'  = filter filtr (fmap entryName dirs)
-         traverse (readDev fd) dirs'
+         catMaybes <$> traverse (readDev fd) dirs'
 
    devs <- withOpenAt (systemSysFS system) clsdir [OpenReadOnly] BitSet.empty readDevs
 

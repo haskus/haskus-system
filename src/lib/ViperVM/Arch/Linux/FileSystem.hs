@@ -573,7 +573,10 @@ sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
       withDevice dev' $ \dev'' ->
          onSuccess (syscall_mknodat fd path' mode dev'') (const ())
 
-data DeviceType = CharDevice | BlockDevice
+-- | Device type
+data DeviceType
+   = CharDevice   -- ^ Character device
+   | BlockDevice  -- ^ Block device
    deriving (Show,Eq,Ord)
 
 -- | Create a device special file
