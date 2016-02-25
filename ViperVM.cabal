@@ -163,6 +163,7 @@ library
     ViperVM.System.Graphics
     ViperVM.System.Input
     ViperVM.System.Devices
+    ViperVM.System.Terminal
 
     ViperVM.Utils.Hash
     ViperVM.Utils.EmbedByteString
