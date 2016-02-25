@@ -1,6 +1,7 @@
 -- | System
 module ViperVM.System.System
    ( System(..)
+   , defaultSystemInit
    , systemInit
    , openDevice
    , openDeviceDir
@@ -37,6 +38,9 @@ data System = System
    , systemNetlinkChan :: TChan KernelEvent  -- ^ Netlink events
    }
 
+-- | Initialize the system
+defaultSystemInit :: Sys System
+defaultSystemInit = systemInit "/system"
 
 -- | Create a system object
 --
