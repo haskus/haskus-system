@@ -2,7 +2,6 @@
 module ViperVM.System.Input
    ( InputDevice(..)
    , loadInputDevices
-   , makeSimpleInputListener
    )
 where
 
@@ -79,12 +78,3 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
                   go
       go
    return ch
-
-
--- | Execute the given callback on each input event
-makeSimpleInputListener :: InputDevice -> (Input.Event -> IO ()) -> Sys ()
-makeSimpleInputListener dev f = do
-   sysLog LogInfo ("Creating simple listener on device " ++ inputDeviceName dev)
-   lift $ do
-      ch <- atomically $ dupTChan (inputDeviceChan dev)
-      void $ forkIO $ forever (atomically (readTChan ch) >>= f)

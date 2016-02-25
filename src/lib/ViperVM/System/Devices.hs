@@ -1,7 +1,7 @@
 -- | Manage devices
 module ViperVM.System.Devices
-   ( newKernelEventWaiterThread
-   , makeSimpleDeviceEventListener
+   ( makeKernelEventChannel
+   , onEvent
    )
 where
 
@@ -17,8 +17,8 @@ import System.Posix.Types (Fd(..))
 
 
 -- | Create a new thread reading kernel events and putting them in a TChan
-newKernelEventWaiterThread :: Sys (TChan KernelEvent)
-newKernelEventWaiterThread = do
+makeKernelEventChannel :: Sys (TChan KernelEvent)
+makeKernelEventChannel = do
    fd <- createKernelEventSocket
    ch <- lift $ newBroadcastTChanIO
    let
@@ -32,9 +32,10 @@ newKernelEventWaiterThread = do
    void $ lift $ forkIO go
    return ch
 
-makeSimpleDeviceEventListener :: TChan KernelEvent -> (KernelEvent -> IO ()) -> Sys ()
-makeSimpleDeviceEventListener bch f = do
-   sysLog LogInfo "Creating simple kernel event listener"
+-- | Read events in the given channel forever
+onEvent :: TChan e -> (e -> IO ()) -> Sys ()
+onEvent bch f = do
+   sysLog LogInfo "Creating event listener"
 
    lift $ do
       ch <- atomically $ dupTChan bch

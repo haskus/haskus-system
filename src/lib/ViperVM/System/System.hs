@@ -80,7 +80,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
    -- create netlink reader
-   netlink <- newKernelEventWaiterThread
+   netlink <- makeKernelEventChannel
 
    return (System devfd sysfd procfd netlink)
 
