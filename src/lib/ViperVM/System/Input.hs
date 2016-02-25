@@ -18,17 +18,13 @@ import Control.Concurrent
 import Data.Traversable (forM)
 import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
-import Control.Monad (void, forever)
+import Control.Monad (void)
 import Control.Monad.Trans.Class (lift)
-import Data.Maybe (isJust)
 import Foreign.Storable
 import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
 
-import Text.Megaparsec
-import Text.Megaparsec.Lexer hiding (space)
-
-
+-- | Input device
 data InputDevice = InputDevice
    { inputDevicePath             :: FilePath          -- ^ SysFS path
    , inputDeviceDev              :: Device            -- ^ Device ID
@@ -42,10 +38,7 @@ data InputDevice = InputDevice
 -- | List and load devices with the "input" class
 loadInputDevices :: System -> Sys [InputDevice]
 loadInputDevices system = sysLogSequence "Load input devices" $ do
-   let
-      parseInput = void (string "event" >> decimal)
-      isInput    = isJust . parseMaybe parseInput
-   devs <- listDevicesWithClass system "input" isInput
+   devs <- listDevicesWithClass system "input"
    forM devs $ \(devpath,dev) -> do
       fd   <- openDevice system CharDevice dev
       InputDevice devpath dev fd

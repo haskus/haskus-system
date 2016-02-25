@@ -24,7 +24,6 @@ import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
 import Prelude hiding (init,tail)
 import Control.Monad (void,forM)
-import Data.Maybe (isJust)
 import Foreign.Ptr
 
 import Control.Concurrent.STM
@@ -33,9 +32,6 @@ import Data.Foldable (traverse_)
 import Control.Monad.Trans.Class (lift)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
-
-import Text.Megaparsec
-import Text.Megaparsec.Lexer hiding (space)
 
 -- | Graphic card
 data GraphicCard = GraphicCard
@@ -54,11 +50,8 @@ data GraphicCard = GraphicCard
 -- create appropriate device node.
 loadGraphicCards :: System -> Sys [GraphicCard]
 loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
-   let
-      parseCard = void (string "card" >> decimal)
-      isCard    = isJust . parseMaybe parseCard
 
-   devs <- listDevicesWithClass system "drm" isCard
+   devs <- listDevicesWithClass system "drm"
    forM devs $ \(devpath,dev) -> do
       fd   <- openDevice system CharDevice dev
       GraphicCard devpath dev (read (drop 4 devpath)) fd

@@ -121,8 +121,8 @@ openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path [OpenReadOnly
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: System -> String -> (String -> Bool) -> Sys [(FilePath,Device)]
-listDevicesWithClass system cls filtr = do
+listDevicesWithClass :: System -> String -> Sys [(FilePath,Device)]
+listDevicesWithClass system cls = do
    -- open class directory in SysFS
    let 
       clsdir = "class" </> cls
@@ -156,7 +156,7 @@ listDevicesWithClass system cls filtr = do
       readDevs :: FileDescriptor -> Sys [(FilePath,Device)]
       readDevs fd = do
          dirs <- sysCallAssert "List device directories" $ listDirectory fd
-         let dirs'  = filter filtr (fmap entryName dirs)
+         let dirs'  = fmap entryName dirs
          catMaybes <$> traverse (readDev fd) dirs'
 
    devs <- withOpenAt (systemSysFS system) clsdir [OpenReadOnly] BitSet.empty readDevs
