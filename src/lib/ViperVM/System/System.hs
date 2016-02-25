@@ -17,19 +17,24 @@ import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
+import ViperVM.Arch.Linux.KernelEvent
+import ViperVM.System.Devices
 
 import System.FilePath
 
 import Prelude hiding (init,tail)
 import Control.Monad (void)
+import Control.Concurrent.STM
 
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
 
 
 data System = System
-   { systemDevFS  :: FileDescriptor    -- ^ root of the tmpfs used to create device nodes
-   , systemSysFS  :: FileDescriptor    -- ^ systemfs (SysFS)
+   { systemDevFS       :: FileDescriptor     -- ^ root of the tmpfs used to create device nodes
+   , systemSysFS       :: FileDescriptor     -- ^ SysFS
+   , systemProcFS      :: FileDescriptor     -- ^ procfs
+   , systemNetlinkChan :: TChan KernelEvent  -- ^ Netlink events
    }
 
 
@@ -41,7 +46,8 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 
    let 
       createDir p = sysCreateDirectory Nothing p (BitSet.fromList [PermUserRead,PermUserWrite,PermUserExecute]) False
-      systemPath = path </> "sys"
+      sysfsPath  = path </> "sys"
+      procfsPath = path </> "proc"
       devicePath = path </> "dev"
 
    -- create root path (allowed to fail if it already exists)
@@ -55,16 +61,24 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount path
 
    -- mount sysfs
-   sysCallAssert "Create system directory" $ createDir systemPath
-   sysCallAssert "Mount sysfs" $ mountSysFS sysMount systemPath
-   sysfd <- sysCallAssert "Open sysfs directory" $ sysOpen systemPath [OpenReadOnly] BitSet.empty
+   sysCallAssert "Create sysfs directory" $ createDir sysfsPath
+   sysCallAssert "Mount sysfs" $ mountSysFS sysMount sysfsPath
+   sysfd <- sysCallAssert "Open sysfs directory" $ sysOpen sysfsPath [OpenReadOnly] BitSet.empty
+
+   -- mount procfs
+   sysCallAssert "Create procfs directory" $ createDir procfsPath
+   sysCallAssert "Mount procfs" $ mountProcFS sysMount procfsPath
+   procfd <- sysCallAssert "Open procfs directory" $ sysOpen procfsPath [OpenReadOnly] BitSet.empty
 
    -- create device directory
    sysCallAssert "Create device directory" $ createDir devicePath
    sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount devicePath
    devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath [OpenReadOnly] BitSet.empty
 
-   return (System devfd sysfd)
+   -- create netlink reader
+   netlink <- newKernelEventWaiterThread
+
+   return (System devfd sysfd procfd netlink)
 
 -- | Open a device
 --

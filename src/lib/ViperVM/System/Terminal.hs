@@ -11,6 +11,7 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
 
+-- | Wait for a key to pressed
 waitForKey :: Sys ()
 waitForKey = do
    quitKey <- lift $ atomically $ newTVar False

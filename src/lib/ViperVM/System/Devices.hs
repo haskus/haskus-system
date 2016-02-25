@@ -5,8 +5,6 @@ module ViperVM.System.Devices
    )
 where
 
-
-
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Error
