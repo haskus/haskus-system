@@ -53,7 +53,7 @@ loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
 
    devs <- listDevicesWithClass system "drm"
    forM devs $ \(devpath,dev) -> do
-      fd   <- openDevice system CharDevice dev
+      fd   <- getDeviceHandle system CharDevice dev
       GraphicCard devpath dev (read (drop 4 devpath)) fd
          <$> newEventWaiterThread fd
 

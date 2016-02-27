@@ -40,7 +40,7 @@ loadInputDevices :: System -> Sys [InputDevice]
 loadInputDevices system = sysLogSequence "Load input devices" $ do
    devs <- listDevicesWithClass system "input"
    forM devs $ \(devpath,dev) -> do
-      fd   <- openDevice system CharDevice dev
+      fd   <- getDeviceHandle system CharDevice dev
       InputDevice devpath dev fd
          <$> (sysCallAssert "Get device name" $
                   Input.getDeviceName sysIoctl fd)

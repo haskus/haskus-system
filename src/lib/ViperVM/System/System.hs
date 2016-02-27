@@ -3,7 +3,7 @@ module ViperVM.System.System
    ( System(..)
    , defaultSystemInit
    , systemInit
-   , openDevice
+   , getDeviceHandle
    , openDeviceDir
    , listDevicesWithClass
    )
@@ -85,14 +85,14 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 
    return (System devfd sysfd procfd netlink)
 
--- | Open a device
+-- | Get a handle on a device
 --
 -- Linux doesn't provide an API to open a device directly from its major and
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-openDevice :: System -> DeviceType -> Device -> Sys FileDescriptor
-openDevice system typ dev = do
+getDeviceHandle :: System -> DeviceType -> Device -> Sys FileDescriptor
+getDeviceHandle system typ dev = do
 
    let 
       devname = "./dummy"
