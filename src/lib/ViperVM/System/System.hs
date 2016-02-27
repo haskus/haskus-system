@@ -4,6 +4,7 @@ module ViperVM.System.System
    , defaultSystemInit
    , systemInit
    , getDeviceHandle
+   , releaseDeviceHandle
    , openDeviceDir
    , listDevicesWithClass
    )
@@ -106,6 +107,11 @@ getDeviceHandle system typ dev = do
       sysCallAssert "Remove device special file" $
          sysUnlinkAt devfd devname False
       return fd
+
+-- | Release a device handle
+releaseDeviceHandle :: FileDescriptor -> Sys ()
+releaseDeviceHandle fd = do
+   sysCallAssertQuiet "Close device" $ sysClose fd
 
 -- | Find device path by number (major, minor)
 openDeviceDir :: System -> DeviceType -> Device -> SysRet FileDescriptor
