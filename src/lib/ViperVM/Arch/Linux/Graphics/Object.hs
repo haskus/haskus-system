@@ -1,19 +1,19 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 -- | Object
 module ViperVM.Arch.Linux.Graphics.Object
-   ( ObjectType(..)
+   ( Object(..)
+   , ObjectType(..)
    , toObjectType
    , fromObjectType
-   , GetObjPropStruct (..)
-   , SetObjPropStruct (..)
    )
 where
 
-import Foreign.Storable
-import Foreign.CStorable
 import Data.Word
-import GHC.Generics (Generic)
+
+import ViperVM.Arch.Linux.Graphics.Controller
+import ViperVM.Arch.Linux.Graphics.Connector
+import ViperVM.Arch.Linux.Graphics.Encoder
+import ViperVM.Arch.Linux.Graphics.FrameBuffer
+import ViperVM.Arch.Linux.Graphics.Mode
 
 data ObjectType
    = ObjectController
@@ -49,34 +49,19 @@ fromObjectType x = case x of
    ObjectBlob         -> 0xbbbbbbbb 
    ObjectPlane        -> 0xeeeeeeee 
 
--- | Data matching the C structure drm_mode_obj_get_properties
-data GetObjPropStruct = GetObjPropStruct
-   { gopPropsPtr        :: Word64
-   , gopValuesPtr       :: Word64
-   , gopCountProps      :: Word32
-   , gopObjId           :: Word32
-   , gopObjType         :: Word32
-   } deriving Generic
 
-instance CStorable GetObjPropStruct
-instance Storable GetObjPropStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+class Object a where
+   getObjectType :: a -> ObjectType
 
--- | Data matching the C structure drm_mode_obj_set_properties
-data SetObjPropStruct = SetObjPropStruct
-   { sopValue           :: Word64
-   , sopPropId          :: Word32
-   , sopObjId           :: Word32
-   , sopObjType         :: Word32
-   } deriving Generic
-
-instance CStorable SetObjPropStruct
-instance Storable SetObjPropStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
+instance Object Controller where
+   getObjectType _ = ObjectController
+instance Object Connector where
+   getObjectType _ = ObjectConnector
+instance Object Encoder where
+   getObjectType _ = ObjectEncoder
+instance Object Mode where
+   getObjectType _ = ObjectMode
+instance Object FrameBuffer where
+   getObjectType _ = ObjectFrameBuffer
+instance Object Plane where
+   getObjectType _ = ObjectPlane
