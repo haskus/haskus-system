@@ -8,6 +8,7 @@ module ViperVM.Arch.Linux.Graphics.Connector
    , Connection(..)
    , SubConnectorType(..)
    , ConnectorType(..)
+   , ConnectorProperty(..)
    , SubPixel(..)
    , connectorEncoder
    , connectorController
