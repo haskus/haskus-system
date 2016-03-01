@@ -23,6 +23,8 @@ import Control.Monad.Trans.Class (lift)
 import Foreign.Storable
 import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
+import Data.List (isPrefixOf)
+import System.FilePath (takeBaseName)
 
 -- | Input device
 data InputDevice = InputDevice
@@ -39,7 +41,10 @@ data InputDevice = InputDevice
 loadInputDevices :: System -> Sys [InputDevice]
 loadInputDevices system = sysLogSequence "Load input devices" $ do
    devs <- listDevicesWithClass system "input"
-   forM devs $ \(devpath,dev) -> do
+   let
+      isEvent (p,_) = "event" `isPrefixOf` takeBaseName p
+      devs' = filter isEvent devs
+   forM devs' $ \(devpath,dev) -> do
       fd   <- getDeviceHandle system CharDevice dev
       InputDevice devpath dev fd
          <$> (sysCallAssert "Get device name" $
