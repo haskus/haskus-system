@@ -9,7 +9,9 @@
 module ViperVM.Arch.Linux.Graphics.Mode
    ( Mode(..)
    , ModeType(..)
+   , ModeTypes
    , ModeFlag(..)
+   , ModeFlags
    -- * Low level
    , ModeStruct(..)
    , emptyModeStruct
@@ -63,6 +65,7 @@ data ModeType
    deriving (Show,Enum)
 
 instance EnumBitSet ModeType
+type ModeTypes = BitSet Word32 ModeType
 
 data ModeFlag
    = ModeFlagPHSync
@@ -90,6 +93,7 @@ data ModeFlag
    deriving (Show,Enum)
 
 instance EnumBitSet ModeFlag
+type ModeFlags = BitSet Word32 ModeFlag
 
 
 -- | Data matching the C structure drm_mode_modeinfo
@@ -130,8 +134,8 @@ data Mode = Mode
    , modeVerticalScan        :: Word16
 
    , modeVerticalRefresh     :: Word32
-   , modeFlags               :: Word32
-   , modeType                :: Word32
+   , modeFlags               :: ModeFlags
+   , modeType                :: ModeTypes
    , modeName                :: String    -- length = DRM_DISPLAY_MODE_LEN = 32
    } deriving (Show)
 
@@ -159,8 +163,8 @@ fromModeStruct (ModeStruct {..}) =
       , modeVerticalTotal       = miVTotal
       , modeVerticalScan        = miVScan
       , modeVerticalRefresh     = miVRefresh
-      , modeFlags               = miFlags
-      , modeType                = miType
+      , modeFlags               = fromBits miFlags
+      , modeType                = fromBits miType
       , modeName                = extractName (miName)
       }
 
@@ -182,8 +186,8 @@ toModeStruct (Mode {..}) =
       , miVTotal     = modeVerticalTotal
       , miVScan      = modeVerticalScan
       , miVRefresh   = modeVerticalRefresh
-      , miFlags      = modeFlags
-      , miType       = modeType
+      , miFlags      = toBits modeFlags
+      , miType       = toBits modeType
       , miName       = Storable modeName'
       }
 
