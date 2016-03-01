@@ -53,8 +53,6 @@ data SubPixel
    | SubPixelNone
    deriving (Eq,Ord,Enum,Show)
 
-newtype ConnectorTypeID = ConnectorTypeID Word32 deriving (Show)
-
 -- | A connector on the graphic card
 data Connector = Connector
    { connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
@@ -63,7 +61,7 @@ data Connector = Connector
    , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
    , connectorID                 :: ConnectorID          -- ^ ID
    , connectorType               :: ConnectorType        -- ^ Type of connector
-   , connectorTypeID             :: ConnectorTypeID      -- ^ Identifier within connectors of the same type
+   , connectorByTypeIndex        :: Word32               -- ^ Identifier within connectors of the same type
 
    , connectorState              :: Connection           -- ^ Connection state
    , connectorWidth              :: Word32               -- ^ Width (in millimeters)
@@ -120,7 +118,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd ->
                      <*> return (EncoderID            <$> wrapZero (connEncoderID_ res4))
                      <*> return (ConnectorID           $ connConnectorID_ res4)
                      <*> return (toEnum . fromIntegral $ connConnectorType_ res4)
-                     <*> return (ConnectorTypeID       $ connConnectorTypeID_ res4)
+                     <*> return (connConnectorTypeID_ res4)
                      <*> return (isConnected           $ connConnection_ res4)
                      <*> return (connWidth_ res4)
                      <*> return (connHeight_ res4)
