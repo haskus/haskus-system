@@ -1,4 +1,4 @@
-# ViperVM library
+# ViperVM
 
 This package provides a panel of tools for system programming, mostly for
 x86-64 architecture and Linux for now. From the bottom up:
@@ -75,6 +75,11 @@ $ firefox http://localhost:8020
 ## X86 Web
 
 Show info about the x86 instructions recognized by ViperVM.
+
+```bash
+$ X86Web -p 8020 &
+$ firefox http://localhost:8020
+```
 
 ## Platform Web
 
