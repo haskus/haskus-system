@@ -32,6 +32,8 @@ import Data.Foldable (traverse_)
 import Control.Monad.Trans.Class (lift)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
+import Data.List (isPrefixOf)
+import System.FilePath (takeBaseName)
 
 -- | Graphic card
 data GraphicCard = GraphicCard
@@ -52,7 +54,10 @@ loadGraphicCards :: System -> Sys [GraphicCard]
 loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
 
    devs <- listDevicesWithClass system "drm"
-   forM devs $ \(devpath,dev) -> do
+   let
+      isCard (p,_) = "card" `isPrefixOf` takeBaseName p
+      devs' = filter isCard devs
+   forM devs' $ \(devpath,dev) -> do
       fd   <- getDeviceHandle system CharDevice dev
       GraphicCard devpath dev (read (drop 4 devpath)) fd
          <$> newEventWaiterThread fd

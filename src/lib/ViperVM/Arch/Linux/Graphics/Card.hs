@@ -160,7 +160,7 @@ getCard ioctl fd = runEitherT $ do
       else right retRes
 
 
--- | Internal function to retrive card entities from their identifiers
+-- | Internal function to retreive card entities from their identifiers
 cardEntities :: (Card -> [a]) -> (Card -> a -> IO (Either x b)) -> Card -> IO [b]
 cardEntities getIDs getEntityFromID card = do
    let 
