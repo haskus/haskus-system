@@ -55,18 +55,17 @@ data SubPixel
 
 -- | A connector on the graphic card
 data Connector = Connector
-   { connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
-   , connectorModes              :: [Mode]               -- ^ Supported modes
-   , connectorProperties         :: [ConnectorProperty]  -- ^ Properties of the connector
-   , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
-   , connectorID                 :: ConnectorID          -- ^ ID
+   { connectorID                 :: ConnectorID          -- ^ ID
    , connectorType               :: ConnectorType        -- ^ Type of connector
    , connectorByTypeIndex        :: Word32               -- ^ Identifier within connectors of the same type
-
    , connectorState              :: Connection           -- ^ Connection state
+   , connectorModes              :: [Mode]               -- ^ Supported modes
    , connectorWidth              :: Word32               -- ^ Width (in millimeters)
    , connectorHeight             :: Word32               -- ^ Height (in millimeters)
    , connectorSubPixel           :: SubPixel             -- ^ Sub-pixel structure
+   , connectorProperties         :: [ConnectorProperty]  -- ^ Properties of the connector
+   , connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
+   , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
    , connectorCard               :: Card                 -- ^ Graphic card
    } deriving (Show)
 
@@ -111,18 +110,18 @@ cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd ->
                       wrapZero x = Just x
                   res4 <- getModeConnector' res3
                   res5 <- liftIO $ Connector
-                     <$> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
-                     <*> (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
-                     <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
-                                                   <*> peekArray' (connPropsCount res2) pvs)
-                     <*> return (EncoderID            <$> wrapZero (connEncoderID_ res4))
-                     <*> return (ConnectorID           $ connConnectorID_ res4)
+                     <$> return (ConnectorID           $ connConnectorID_ res4)
                      <*> return (toEnum . fromIntegral $ connConnectorType_ res4)
                      <*> return (connConnectorTypeID_ res4)
                      <*> return (isConnected           $ connConnection_ res4)
+                     <*> (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
                      <*> return (connWidth_ res4)
                      <*> return (connHeight_ res4)
                      <*> return (toEnum . fromIntegral $ connSubPixel_ res4)
+                     <*> (liftM2 ConnectorProperty <$> peekArray' (connPropsCount res2) ps
+                                                   <*> peekArray' (connPropsCount res2) pvs)
+                     <*> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
+                     <*> return (EncoderID            <$> wrapZero (connEncoderID_ res4))
                      <*> return card
 
                   right (res4, res5)
