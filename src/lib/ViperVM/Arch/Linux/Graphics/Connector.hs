@@ -24,7 +24,7 @@ import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Property
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad (liftM2)
+import Control.Monad (liftM2,forM)
 import Control.Monad.Trans.Either
 import Data.Word
 import Foreign.CStorable
@@ -60,7 +60,7 @@ data Connector = Connector
    , connectorWidth              :: Word32               -- ^ Width (in millimeters)
    , connectorHeight             :: Word32               -- ^ Height (in millimeters)
    , connectorSubPixel           :: SubPixel             -- ^ Sub-pixel structure
-   , connectorProperties         :: [RawProperty]        -- ^ Properties of the connector
+   , connectorProperties         :: [Property]           -- ^ Properties of the connector
    , connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
    , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
    , connectorCard               :: Card                 -- ^ Graphic card
@@ -106,20 +106,32 @@ cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd ->
                   let wrapZero 0 = Nothing
                       wrapZero x = Just x
                   res4 <- getModeConnector' res3
-                  res5 <- liftIO $ Connector
-                     <$> return (ConnectorID           $ connConnectorID_ res4)
-                     <*> return (toEnum . fromIntegral $ connConnectorType_ res4)
-                     <*> return (connConnectorTypeID_ res4)
-                     <*> return (isConnected           $ connConnection_ res4)
-                     <*> (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
-                     <*> return (connWidth_ res4)
-                     <*> return (connHeight_ res4)
-                     <*> return (toEnum . fromIntegral $ connSubPixel_ res4)
-                     <*> (liftM2 RawProperty <$> peekArray' (connPropsCount res2) ps
-                                                   <*> peekArray' (connPropsCount res2) pvs)
-                     <*> (fmap EncoderID <$> peekArray' (connEncodersCount res2) es)
-                     <*> return (EncoderID            <$> wrapZero (connEncoderID_ res4))
-                     <*> return card
+
+                  -- properties
+                  rawProps <-liftIO $ liftM2 RawProperty
+                              <$> peekArray' (connPropsCount res2) ps
+                              <*> peekArray' (connPropsCount res2) pvs
+                  props <- forM rawProps $ \raw -> do
+                     --FIXME: store property meta in the card
+                     meta <- EitherT $ withCard card getPropertyMeta (rawPropertyMetaID raw)
+                     return (Property meta (rawPropertyValue raw))
+
+                  modes <- liftIO (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
+                  encs  <- liftIO (fmap EncoderID      <$> peekArray' (connEncodersCount res2) es)
+
+                  let res5 = Connector
+                        (ConnectorID (connConnectorID_ res4))
+                        (toEnum (fromIntegral (connConnectorType_ res4)))
+                        (connConnectorTypeID_ res4)
+                        (isConnected (connConnection_ res4))
+                        modes
+                        (connWidth_ res4)
+                        (connHeight_ res4)
+                        (toEnum (fromIntegral (connSubPixel_ res4)))
+                        props
+                        encs
+                        (EncoderID <$> wrapZero (connEncoderID_ res4))
+                        card
 
                   right (res4, res5)
 
