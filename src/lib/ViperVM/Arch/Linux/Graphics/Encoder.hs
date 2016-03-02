@@ -30,22 +30,24 @@ import ViperVM.Format.Binary.BitSet as BitSet
 
 -- | An encoder
 data Encoder = Encoder
-   { encoderID                   :: EncoderID            -- ^ Encoder identifier
-   , encoderType                 :: EncoderType          -- ^ Type of the encoder
-   , encoderControllerID         :: Maybe ControllerID   -- ^ Associated controller
-   , encoderPossibleControllers  :: [ControllerID]       -- ^ Valid controllers
-   , encoderPossibleClones       :: [ConnectorID]        -- ^ Valid clone connectors
-   , encoderCard                 :: Card                 -- ^ Graphic card
+   { encoderID                  :: EncoderID          -- ^ Encoder identifier
+   , encoderType                :: EncoderType        -- ^ Type of the encoder
+   , encoderControllerID        :: Maybe ControllerID -- ^ Associated controller
+   , encoderPossibleControllers :: [ControllerID]     -- ^ Valid controllers
+   , encoderPossibleClones      :: [EncoderID]        -- ^ Valid clone encoders
+   , encoderCard                :: Card               -- ^ Graphic card
    } deriving (Show)
-
 
 -- | Type of the encoder
 data EncoderType
    = EncoderTypeNone
-   | EncoderTypeDAC
-   | EncoderTypeTMDS
-   | EncoderTypeLVDS
-   | EncoderTypeTVDAC
+   | EncoderTypeDAC     -- ^ for VGA and analog on DVI-I/DVI-A
+   | EncoderTypeTMDS    -- ^ for DVI, HDMI and (embedded) DisplayPort
+   | EncoderTypeLVDS    -- ^ for display panels
+   | EncoderTypeTVDAC   -- ^ for TV output (Composite, S-Video, Component, SCART)
+   | EncoderTypeVirtual -- ^ for virtual machine display
+   | EncoderTypeDSI
+   | EncoderTypeDPMST
    deriving (Eq,Ord,Show,Enum)
 
 -- | Data matching the C structure drm_mode_get_encoder
@@ -54,7 +56,7 @@ data EncoderStruct = EncoderStruct
    , geEncoderType    :: Word32
    , geCrtcId         :: Word32
    , gePossibleCrtcs  :: BitSet Word32 Int -- ^ Valid controller indexes
-   , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone connector indexes
+   , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone encoder indexes
    } deriving Generic
 
 instance CStorable EncoderStruct
@@ -73,7 +75,7 @@ fromEncoderStruct card EncoderStruct{..} =
             then Nothing
             else Just (ControllerID geCrtcId))
          (pick' (cardControllerIDs card) gePossibleCrtcs)
-         (pick' (cardConnectorIDs card) gePossibleClones)
+         (pick' (cardEncoderIDs card) gePossibleClones)
          card
    where
       -- pick the elements in es whose indexes are in bs
