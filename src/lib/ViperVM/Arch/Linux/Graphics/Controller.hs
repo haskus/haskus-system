@@ -5,7 +5,8 @@
 --
 -- Controllers are called CRTC in original terminology
 module ViperVM.Arch.Linux.Graphics.Controller
-   ( Controller(..)
+   ( Controller (..)
+   , FrameBufferPos (..)
    , setController'
    , switchFrameBuffer'
    , PageFlipFlag(..)
@@ -25,6 +26,7 @@ import Foreign.Marshal.Array
 import Foreign.Ptr
 import Data.Word
 import GHC.Generics (Generic)
+import Control.Monad (void)
 
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
@@ -40,10 +42,15 @@ data Controller = Controller
    { controllerID               :: ControllerID
    , controllerGammaSize        :: Word32
    , controllerMode             :: Maybe Mode
-   , controllerFrameBuffer      :: Maybe (FrameBufferID, Word32, Word32)   -- ^ Associated frame buffer and its dimensions (WxH)
+   , controllerFrameBuffer      :: Maybe FrameBufferPos -- ^ Associated frame buffer and its dimensions (WxH)
    , controllerCard             :: Card
    } deriving (Show)
 
+data FrameBufferPos = FrameBufferPos
+   { frameBufferPosID :: FrameBufferID
+   , frameBufferPosX  :: Word32
+   , frameBufferPosY  :: Word32
+   } deriving (Show)
 
 -- | Data matching the C structure drm_mode_crtc
 data ControllerStruct = ControllerStruct
@@ -69,7 +76,7 @@ emptyControllerStruct :: ControllerStruct
 emptyControllerStruct = ControllerStruct 0 0 0 0 0 0 0 0 emptyModeStruct
 
 fromControllerStruct :: Card -> ControllerStruct -> Controller
-fromControllerStruct card (ControllerStruct {..}) =
+fromControllerStruct card ControllerStruct{..} =
    Controller
       (ControllerID contID)
       contGammaSize
@@ -77,7 +84,7 @@ fromControllerStruct card (ControllerStruct {..}) =
          then Just (fromModeStruct contModeInfo)
          else Nothing)
       (if contFbID /= 0 
-         then Just (FrameBufferID contFbID, contFbX, contFbY)
+         then Just (FrameBufferPos (FrameBufferID contFbID) contFbX contFbY)
          else Nothing)
       card
 
@@ -91,20 +98,23 @@ cardControllerFromID card crtcid = withCard card $ \ioctl fd -> do
 
    fmap (fromControllerStruct card) <$> ioctlReadWrite ioctl 0x64 0xA1 defaultCheck fd crtc
 
-setController' :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferID -> [ConnectorID] -> Maybe Mode -> SysRet ()
+setController' :: IOCTL -> FileDescriptor -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
 setController' ioctl fd crtcid fb conns mode = do
    let
       ControllerID cid = crtcid
       conns' = fmap (\(ConnectorID i) -> i) conns
 
+      (fbid,fbx,fby) = case fb of
+         Nothing -> (0,0,0)
+         Just (FrameBufferPos (FrameBufferID z) x y) -> (z,x,y)
 
    withArray conns' $ \conArray -> do
       let
-         crtc = emptyControllerStruct
+         crtc = ControllerStruct
             { contID = cid
-            , contFbID = case fb of
-               Nothing                -> 0
-               Just (FrameBufferID x) -> x
+            , contFbID = fbid
+            , contFbX  = fbx
+            , contFbY  = fby
             , contModeInfo = case mode of
                Nothing -> emptyModeStruct
                Just x  -> toModeStruct x
@@ -115,7 +125,7 @@ setController' ioctl fd crtcid fb conns mode = do
             , contSetConnPtr = fromIntegral (ptrToWordPtr conArray)
             }
 
-      fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
+      void <$> ioctlReadWrite ioctl 0x64 0xA2 defaultCheck fd crtc
 
 -- | Data matching the C structure drm_mode_crtc_lut
 data ControllerLutStruct = ControllerLutStruct
@@ -169,7 +179,7 @@ switchFrameBuffer' ioctl fd crtcid fb flags = do
       FrameBufferID fid = fb
       s = PageFlipStruct cid fid flags 0 0
 
-   fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xB0 defaultCheck fd s
+   void <$> ioctlReadWrite ioctl 0x64 0xB0 defaultCheck fd s
 
 -- | Get controllers (discard errors)
 cardControllers :: Card -> IO [Controller]

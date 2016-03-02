@@ -18,8 +18,11 @@ cardSetController :: Card -> Controller -> Maybe FrameBuffer -> [Connector] -> M
 cardSetController card = withCard card setController 
    where
       setController :: IOCTL -> FileDescriptor -> Controller -> Maybe FrameBuffer -> [Connector] -> Maybe Mode -> SysRet ()
-      setController ioctl fd crtc fb conns mode =
-         setController' ioctl fd (controllerID crtc) (fmap (FrameBufferID . fbID) fb) (fmap connectorID conns) mode
+      setController ioctl fd crtc fb conns mode = do
+         let fbpos = case fb of
+               Nothing -> Nothing
+               Just z  -> Just $ FrameBufferPos (FrameBufferID (fbID z)) 0 0
+         setController' ioctl fd (controllerID crtc) fbpos (fmap connectorID conns) mode
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change

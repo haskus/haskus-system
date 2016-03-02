@@ -41,7 +41,7 @@ data Connection
    | ConnectionUnknown         -- ^ The connection state cannot be determined
    deriving (Show)
 
--- | Information on the connected device
+-- | Information about the connected device
 data ConnectedDevice = ConnectedDevice
    { connectedDeviceModes        :: [Mode]     -- ^ Supported modes
    , connectedDeviceWidth        :: Word32     -- ^ Width (in millimeters)

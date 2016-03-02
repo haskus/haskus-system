@@ -209,10 +209,8 @@ type PropertyMetaID = Word32
 getPropertyMeta :: IOCTL -> FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
 getPropertyMeta ioctl fd pid = runEitherT $ do
    let
-      extractName :: PropertyName -> String
-      extractName (Storable x) = 
-         takeWhile (/= '\0') (fmap castCCharToChar (Vec.toList x))
       getProperty' = EitherT . ioctlReadWrite ioctl 0x64 0xAA defaultCheck fd
+
       gp = GetPropStruct
             { gpsValuesPtr      = 0
             , gpsEnumBlobPtr    = 0
@@ -227,6 +225,10 @@ getPropertyMeta ioctl fd pid = runEitherT $ do
    g <- getProperty' gp
 
    let
+      extractName :: PropertyName -> String
+      extractName (Storable x) =
+         takeWhile (/= '\0') (fmap castCCharToChar (Vec.toList x))
+
       nval  = gpsCountValues g
       nblob = gpsCountEnumBlobs g
 
