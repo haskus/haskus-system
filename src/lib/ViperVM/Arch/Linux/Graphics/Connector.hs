@@ -4,8 +4,9 @@
 
 -- | Graphic card connector management
 module ViperVM.Arch.Linux.Graphics.Connector
-   ( Connector(..)
-   , Connection(..)
+   ( Connector (..)
+   , Connection (..)
+   , ConnectedDevice (..)
    , ConnectorType(..)
    , SubPixel(..)
    , connectorEncoder
@@ -35,10 +36,20 @@ import GHC.Generics (Generic)
 
 -- | Indicate if a cable is plugged in the connector
 data Connection
-   = Connected          -- ^ The connector is connected to a displaying device
-   | Disconnected       -- ^ The connector is disconnected
-   | ConnectionUnknown  -- ^ The connection state cannot be determined
-   deriving (Eq,Ord,Show)
+   = Connected ConnectedDevice -- ^ The connector is connected to a displaying device
+   | Disconnected              -- ^ The connector is disconnected
+   | ConnectionUnknown         -- ^ The connection state cannot be determined
+   deriving (Show)
+
+-- | Information on the connected device
+data ConnectedDevice = ConnectedDevice
+   { connectedDeviceModes        :: [Mode]     -- ^ Supported modes
+   , connectedDeviceWidth        :: Word32     -- ^ Width (in millimeters)
+   , connectedDeviceHeight       :: Word32     -- ^ Height (in millimeters)
+   , connectedDeviceSubPixel     :: SubPixel   -- ^ Sub-pixel structure
+   , connectedDeviceProperties   :: [Property] -- ^ Properties of the connector
+   } deriving (Show)
+   
 
 -- | Indicate how a pixel is physically subdivised in RGB pixel elements
 data SubPixel
@@ -56,11 +67,6 @@ data Connector = Connector
    , connectorType               :: ConnectorType        -- ^ Type of connector
    , connectorByTypeIndex        :: Word32               -- ^ Identifier within connectors of the same type
    , connectorState              :: Connection           -- ^ Connection state
-   , connectorDeviceModes        :: [Mode]               -- ^ Supported modes
-   , connectorDeviceWidth        :: Word32               -- ^ Width (in millimeters)
-   , connectorDeviceHeight       :: Word32               -- ^ Height (in millimeters)
-   , connectorDeviceSubPixel     :: SubPixel             -- ^ Sub-pixel structure
-   , connectorDeviceProperties   :: [Property]           -- ^ Properties of the connector
    , connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
    , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
    , connectorCard               :: Card                 -- ^ Graphic card
@@ -97,38 +103,41 @@ cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd ->
                                  , connPropsPtr      = cv ps
                                  , connPropValuesPtr = cv pvs
                                  }
-                     isConnected x = case x of
-                        1 -> Connected
-                        2 -> Disconnected
-                        _ -> ConnectionUnknown
 
                   -- we get the values
                   let wrapZero 0 = Nothing
                       wrapZero x = Just x
                   res4 <- getModeConnector' res3
 
-                  -- properties
-                  rawProps <-liftIO $ liftM2 RawProperty
-                              <$> peekArray' (connPropsCount res2) ps
-                              <*> peekArray' (connPropsCount res2) pvs
-                  props <- forM rawProps $ \raw -> do
-                     --FIXME: store property meta in the card
-                     meta <- EitherT $ withCard card getPropertyMeta (rawPropertyMetaID raw)
-                     return (Property meta (rawPropertyValue raw))
+                  state <- case connConnection_ res4 of
+                     1 -> do
+                           -- properties
+                           rawProps <-liftIO $ liftM2 RawProperty
+                                       <$> peekArray' (connPropsCount res2) ps
+                                       <*> peekArray' (connPropsCount res2) pvs
+                           props <- forM rawProps $ \raw -> do
+                              --FIXME: store property meta in the card
+                              meta <- EitherT $ withCard card getPropertyMeta (rawPropertyMetaID raw)
+                              return (Property meta (rawPropertyValue raw))
 
-                  modes <- liftIO (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
+                           modes <- liftIO (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
+                           return $ Connected $ ConnectedDevice
+                              modes
+                              (connWidth_ res4)
+                              (connHeight_ res4)
+                              (toEnum (fromIntegral (connSubPixel_ res4)))
+                              props
+                              
+                     2 -> return Disconnected
+                     _ -> return ConnectionUnknown
+
                   encs  <- liftIO (fmap EncoderID      <$> peekArray' (connEncodersCount res2) es)
 
                   let res5 = Connector
                         (ConnectorID (connConnectorID_ res4))
                         (toEnum (fromIntegral (connConnectorType_ res4)))
                         (connConnectorTypeID_ res4)
-                        (isConnected (connConnection_ res4))
-                        modes
-                        (connWidth_ res4)
-                        (connHeight_ res4)
-                        (toEnum (fromIntegral (connSubPixel_ res4)))
-                        props
+                        state
                         encs
                         (EncoderID <$> wrapZero (connEncoderID_ res4))
                         card
