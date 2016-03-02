@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 -- We need this one to use type literal numbers (S (S .. Z)) of size 32
 {-# OPTIONS -fcontext-stack=50 #-}
@@ -43,7 +42,8 @@ type N32 = -- 32
    )))))))))))))))))))))))))))))))
 
 
-type DisplayModeLength   = N32
+type ModeNameLength = N32
+type ModeName       = StorableWrap (Vec ModeNameLength CChar)
 
 data ModeType
    = ModeTypeBuiltin
@@ -95,7 +95,7 @@ data ModeStruct = ModeStruct
    , miVRefresh      :: Word32
    , miFlags         :: Word32
    , miType          :: Word32
-   , miName          :: StorableWrap (Vec DisplayModeLength CChar)
+   , miName          :: ModeName
    } deriving Generic
 
 instance CStorable ModeStruct
@@ -138,8 +138,10 @@ instance Storable Mode where
 
 
 fromModeStruct :: ModeStruct -> Mode
-fromModeStruct (ModeStruct {..}) =
-   let extractName (Storable x) = 
+fromModeStruct ModeStruct {..} =
+   let
+      extractName :: ModeName -> String
+      extractName (Storable x) = 
          takeWhile (/= '\0') (fmap castCCharToChar (Vec.toList x))
    in Mode
       { modeClock               = miClock
@@ -156,7 +158,7 @@ fromModeStruct (ModeStruct {..}) =
       , modeVerticalRefresh     = miVRefresh
       , modeFlags               = fromBits miFlags
       , modeType                = fromBits miType
-      , modeName                = extractName (miName)
+      , modeName                = extractName miName
       }
 
 toModeStruct :: Mode -> ModeStruct

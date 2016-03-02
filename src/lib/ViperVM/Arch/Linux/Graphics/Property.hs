@@ -5,10 +5,11 @@
 module ViperVM.Arch.Linux.Graphics.Property
    ( PropertyMeta (..)
    , PropertyType (..)
-   , getPropertyType
+   , RawProperty (..)
+   , Property (..)
+   , getPropertyMeta
    , GetObjPropStruct (..)
    , SetObjPropStruct (..)
-   , GetPropStruct(..)
    , SetPropStruct(..)
    )
 where
@@ -41,12 +42,13 @@ import Data.Vector.Fixed.Cont (S,Z)
 import Data.Vector.Fixed.Storable (Vec)
 import qualified Data.Vector.Fixed as Vec
 
--- | An object property
+-- | Property meta-information
 data PropertyMeta = PropertyMeta
-   { propertyID      :: Word32         -- ^ ID of the property
-   , propertyFlags   :: Word32         -- ^ TODO: extract Immutable and Pending
-   , propertyName    :: String         -- ^ Property name
-   , propertyType    :: PropertyType   -- ^ Type of the property
+   { propertyID        :: Word32       -- ^ ID of the property type
+   , propertyImmutable :: Bool         -- ^ The value won't change
+   , propertyPending   :: Bool         -- ^ The value is pending
+   , propertyName      :: String       -- ^ Property name
+   , propertyType      :: PropertyType -- ^ Type of the property
    } deriving (Show,Eq)
 
 -- | The type of a property
@@ -56,6 +58,7 @@ data PropertyType
    | PropEnum        [(Word64,String)]          -- ^ Value-enum
    | PropBitmask     [(Word64,String)]          -- ^ Bit-enum (bitmask)
    | PropBlob        [(Word32,BS.ByteString)]   -- ^ Blob-enum
+   | PropObject
    deriving (Show,Eq)
 
 type N32 = -- 32 
@@ -69,6 +72,15 @@ type PropertyName = StorableWrap (Vec PropertyNameLength CChar)
 emptyVec :: PropertyName
 emptyVec = Storable (Vec.replicate (castCharToCChar '\0'))
 
+data RawProperty = RawProperty
+   { rawPropertyMetaID  :: Word32   -- ^ Card-wise property meta-info ID
+   , rawPropertyValue   :: Word64   -- ^ Property value
+   } deriving (Show,Eq)
+
+data Property = Property
+   { propertyMeta       :: PropertyMeta   -- ^ Meta-information about the property
+   , propertyValue      :: Word64         -- ^ Value of the property
+   } deriving (Show,Eq)
 
 -- | Data matching the C structure drm_mode_obj_get_properties
 data GetObjPropStruct = GetObjPropStruct
@@ -104,9 +116,7 @@ instance Storable SetObjPropStruct where
 
 -- | Type of the property
 data PropertyTypeID
-   = PropTypePending
-   | PropTypeRange
-   | PropTypeImmutable
+   = PropTypeRange
    | PropTypeEnum       -- ^ Enumerated type with text strings
    | PropTypeBlob
    | PropTypeBitmask    -- ^ Bitmask of enumerated types
@@ -114,24 +124,24 @@ data PropertyTypeID
    | PropTypeSignedRange
    deriving (Eq,Ord,Show)
 
-toPropType :: Word32 -> PropertyTypeID
-toPropType typ =
-   case typ of
-      -- legacy types: 1 bit per type...
-      1  -> PropTypePending
-      2  -> PropTypeRange
-      4  -> PropTypeImmutable
-      8  -> PropTypeEnum
-      16 -> PropTypeBlob
-      32 -> PropTypeBitmask
-      -- newer types, shifted int
-      n -> case (n `shiftR` 6) of
-         1 -> PropTypeObject
-         2 -> PropTypeSignedRange
-         _ -> error "Unknown type"
+getPropType :: GetPropStruct -> PropertyTypeID
+getPropType s =
+   -- type is interleaved with Pending and Immutable flags
+   case gpsFlags s .&. 0xFA of
+      2   -> PropTypeRange
+      8   -> PropTypeEnum
+      16  -> PropTypeBlob
+      32  -> PropTypeBitmask
+      64  -> PropTypeObject
+      128 -> PropTypeSignedRange
+      _   -> error "Unknown property type"
 
-getPropertyTypeID :: GetPropStruct -> PropertyTypeID
-getPropertyTypeID s = toPropType (gpsFlags s .&. 0xFA)
+isPending :: GetPropStruct -> Bool
+isPending s = (gpsFlags s .&. 0x01) /= 0
+
+isImmutable :: GetPropStruct -> Bool
+isImmutable s = (gpsFlags s .&. 0x04) /= 0
+
 
 -- | Data matching the C structure drm_mode_property_enum
 data PropEnumStruct = PropEnumStruct
@@ -148,12 +158,12 @@ instance Storable PropEnumStruct where
 
 -- | Data matching the C structure drm_mode_get_property
 data GetPropStruct = GetPropStruct
-   { gpsValuesPtr    :: Word64
-   , gpsEnumBlobPtr  :: Word64
-   , gpsPropId       :: Word32
-   , gpsFlags        :: Word32
-   , gpsName         :: StorableWrap (Vec PropertyNameLength CChar)
-   , gpsCountValues  :: Word32
+   { gpsValuesPtr      :: Word64
+   , gpsEnumBlobPtr    :: Word64
+   , gpsPropId         :: Word32
+   , gpsFlags          :: Word32
+   , gpsName           :: StorableWrap (Vec PropertyNameLength CChar)
+   , gpsCountValues    :: Word32
    , gpsCountEnumBlobs :: Word32
    } deriving Generic
 
@@ -193,17 +203,25 @@ instance Storable GetBlobStruct where
    peek        = cPeek
    poke        = cPoke
 
-type PropertyID = Word32
+type PropertyMetaID = Word32
 
-getPropertyType :: IOCTL -> FileDescriptor -> PropertyID -> SysRet PropertyMeta
-getPropertyType ioctl fd pid = runEitherT $ do
+-- | Return meta-information from a property type ID
+getPropertyMeta :: IOCTL -> FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
+getPropertyMeta ioctl fd pid = runEitherT $ do
    let
       extractName :: PropertyName -> String
       extractName (Storable x) = 
          takeWhile (/= '\0') (fmap castCCharToChar (Vec.toList x))
       getProperty' = EitherT . ioctlReadWrite ioctl 0x64 0xAA defaultCheck fd
-      gp = GetPropStruct 0 0 pid 0 emptyVec 0 0
-
+      gp = GetPropStruct
+            { gpsValuesPtr      = 0
+            , gpsEnumBlobPtr    = 0
+            , gpsPropId         = pid
+            , gpsFlags          = 0
+            , gpsName           = emptyVec
+            , gpsCountValues    = 0
+            , gpsCountEnumBlobs = 0
+            }
    
    -- get value size/number of elements/etc.
    g <- getProperty' gp
@@ -215,24 +233,30 @@ getPropertyType ioctl fd pid = runEitherT $ do
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
+      -- corresponds to DRM_IOCTL_MODE_GETPROPBLOB
       getBlobStruct' = EitherT . ioctlReadWrite ioctl 0x64 0xAC defaultCheck fd
       getBlobStruct = runEitherT . getBlobStruct'
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b -> IO c) -> IO c
-      withBuffers valueCount blobCount f = do
-         allocaArray' valueCount $ \valuePtr -> do
+      withBuffers valueCount blobCount f =
+         allocaArray' valueCount $ \valuePtr ->
             allocaArray' blobCount $ \blobPtr -> do
-               let gp' = GetPropStruct 
-                           (fromIntegral (ptrToWordPtr valuePtr))
-                           (fromIntegral (ptrToWordPtr blobPtr))
-                           pid 0 emptyVec valueCount blobCount
+               let gp' = GetPropStruct
+                           { gpsValuesPtr      = fromIntegral (ptrToWordPtr valuePtr)
+                           , gpsEnumBlobPtr    = fromIntegral (ptrToWordPtr blobPtr)
+                           , gpsPropId         = pid
+                           , gpsFlags          = 0
+                           , gpsName           = emptyVec
+                           , gpsCountValues    = valueCount
+                           , gpsCountEnumBlobs = blobCount
+                           }
                -- nothing changes, except for the two buffers
                _ <- runEitherT $ getProperty' gp'
                f valuePtr blobPtr
 
-      withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr ()) -> do
+      withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr ()) ->
          f =<< peekArray (fromIntegral n) ptr
-      withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr ()) ptr -> do
+      withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr ()) ptr ->
          f =<< peekArray (fromIntegral n) ptr
       withBuffers' n m f = withBuffers n m $ \p1 p2 -> do
          vs <- peekArray (fromIntegral n) p1
@@ -240,13 +264,14 @@ getPropertyType ioctl fd pid = runEitherT $ do
          f vs bs
          
 
-   ptype <- liftIO $ case getPropertyTypeID g of
+   ptype <- liftIO $ case getPropType g of
 
+      PropTypeObject      -> return PropObject
       PropTypeRange       -> withValueBuffer nval (return . PropRange)
       PropTypeSignedRange -> withValueBuffer nval (return . PropSignedRange)
-      PropTypeEnum        -> withBlobBuffer nblob $ \es -> do
+      PropTypeEnum        -> withBlobBuffer nblob $ \es ->
          return (PropEnum [(peValue e, extractName $ peName e) | e <- es])
-      PropTypeBitmask     -> withBlobBuffer nblob $ \es -> do
+      PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
          return (PropBitmask [(peValue e, extractName $ peName e) | e <- es])
 
       PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
@@ -263,7 +288,11 @@ getPropertyType ioctl fd pid = runEitherT $ do
          return (PropBlob (ids `zip` bids'))
 
 
-   return $ PropertyMeta pid (gpsFlags g) (extractName (gpsName g)) ptype
+   return $ PropertyMeta pid
+      (isImmutable g)
+      (isPending g)
+      (extractName (gpsName g))
+      ptype
    
 
 
