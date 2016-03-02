@@ -39,14 +39,14 @@ main = do
 
       let
          isValid x  = connectorState x == Connected
-                      && not (null $ connectorModes x)
+                      && not (null $ connectorDeviceModes x)
          validConns = filter isValid conns
 
          -- select first connector
          conn = head validConns
 
          -- select highest mode
-         mode = head (connectorModes conn)
+         mode = head (connectorDeviceModes conn)
          width  = fromIntegral $ modeHorizontalDisplay mode
          height = fromIntegral $ modeVerticalDisplay mode
          bpp    = 32

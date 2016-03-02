@@ -56,11 +56,11 @@ data Connector = Connector
    , connectorType               :: ConnectorType        -- ^ Type of connector
    , connectorByTypeIndex        :: Word32               -- ^ Identifier within connectors of the same type
    , connectorState              :: Connection           -- ^ Connection state
-   , connectorModes              :: [Mode]               -- ^ Supported modes
-   , connectorWidth              :: Word32               -- ^ Width (in millimeters)
-   , connectorHeight             :: Word32               -- ^ Height (in millimeters)
-   , connectorSubPixel           :: SubPixel             -- ^ Sub-pixel structure
-   , connectorProperties         :: [Property]           -- ^ Properties of the connector
+   , connectorDeviceModes        :: [Mode]               -- ^ Supported modes
+   , connectorDeviceWidth        :: Word32               -- ^ Width (in millimeters)
+   , connectorDeviceHeight       :: Word32               -- ^ Height (in millimeters)
+   , connectorDeviceSubPixel     :: SubPixel             -- ^ Sub-pixel structure
+   , connectorDeviceProperties   :: [Property]           -- ^ Properties of the connector
    , connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
    , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
    , connectorCard               :: Card                 -- ^ Graphic card
