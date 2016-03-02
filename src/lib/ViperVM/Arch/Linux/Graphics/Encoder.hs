@@ -11,15 +11,12 @@
 module ViperVM.Arch.Linux.Graphics.Encoder
    ( Encoder(..)
    , EncoderType(..)
-   , encoderControllerIDs
-   , encoderConnectorIDs
    , encoderController
    , cardEncoders
    , cardEncoderFromID
    )
 where
 
-import Data.Bits
 import Data.Word
 import Foreign.CStorable
 import Foreign.Storable
@@ -29,14 +26,15 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Format.Binary.BitSet as BitSet
 
 -- | An encoder
 data Encoder = Encoder
    { encoderID                   :: EncoderID            -- ^ Encoder identifier
    , encoderType                 :: EncoderType          -- ^ Type of the encoder
    , encoderControllerID         :: Maybe ControllerID   -- ^ Associated controller
-   , encoderPossibleControllers  :: Word32               -- ^ Bitset of valid controllers
-   , encoderPossibleConnectors   :: Word32               -- ^ Bitset of valid connectors
+   , encoderPossibleControllers  :: [ControllerID]       -- ^ Valid controllers
+   , encoderPossibleClones       :: [ConnectorID]        -- ^ Valid clone connectors
    , encoderCard                 :: Card                 -- ^ Graphic card
    } deriving (Show)
 
@@ -55,8 +53,8 @@ data EncoderStruct = EncoderStruct
    { geEncoderId      :: Word32
    , geEncoderType    :: Word32
    , geCrtcId         :: Word32
-   , gePossibleCrtcs  :: Word32
-   , gePossibleClones :: Word32
+   , gePossibleCrtcs  :: BitSet Word32 Int -- ^ Valid controller indexes
+   , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone connector indexes
    } deriving Generic
 
 instance CStorable EncoderStruct
@@ -67,41 +65,32 @@ instance Storable EncoderStruct where
    peek        = cPeek
 
 fromEncoderStruct :: Card -> EncoderStruct -> Encoder
-fromEncoderStruct card (EncoderStruct {..}) =
-   Encoder
-      (EncoderID geEncoderId)
-      (toEnum (fromIntegral geEncoderType))
-      (if geCrtcId == 0
-         then Nothing
-         else Just (ControllerID geCrtcId))
-      gePossibleCrtcs
-      gePossibleClones
-      card
+fromEncoderStruct card EncoderStruct{..} =
+      Encoder
+         (EncoderID geEncoderId)
+         (toEnum (fromIntegral geEncoderType))
+         (if geCrtcId == 0
+            then Nothing
+            else Just (ControllerID geCrtcId))
+         (pick' (cardControllerIDs card) gePossibleCrtcs)
+         (pick' (cardConnectorIDs card) gePossibleClones)
+         card
+   where
+      -- pick the elements in es whose indexes are in bs
+      pick' es bs = pick es 0 (BitSet.elems bs)
+
+      pick :: [a] -> Int -> [Int] -> [a]
+      pick [] _ _ = []
+      pick _ _ [] = []
+      pick (x:xs) n (i:is)
+         | n == i    = x : pick xs (n+1) is
+         | otherwise = pick xs (n+1) (i:is)
 
 -- | Get an encoder from its ID
 cardEncoderFromID :: Card -> EncoderID -> SysRet Encoder
 cardEncoderFromID card (EncoderID encId) = withCard card $ \ioctl fd -> do
-   let res = EncoderStruct encId 0 0 0 0
+   let res = EncoderStruct encId 0 0 BitSet.empty BitSet.empty
    fmap (fromEncoderStruct card) <$> ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
-
--- | Select elements in the list if the bit corresponding to their index is set in the mask
-fromMaskedList :: Bits a => a -> [b] -> [b]
-fromMaskedList mask xs = foldr f [] xs'
-   where
-      xs' = [0..] `zip` xs
-      f (k,v) vs
-         | testBit mask k = v:vs
-         | otherwise      = vs
-
--- | Retrieve Controllers that can work with the given encoder
-encoderControllerIDs :: Encoder -> [ControllerID]
-encoderControllerIDs enc = let card = encoderCard enc in
-   fromMaskedList (encoderPossibleControllers enc) (cardControllerIDs card)
-
--- | Retrieve Connectors that can work with the given encoder
-encoderConnectorIDs :: Encoder -> [ConnectorID]
-encoderConnectorIDs enc = let card = encoderCard enc in
-   fromMaskedList (encoderPossibleConnectors enc) (cardConnectorIDs card)
 
 -- | Controller attached to the encoder, if any
 encoderController :: Encoder -> SysRet (Maybe Controller)

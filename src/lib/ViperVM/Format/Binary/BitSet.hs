@@ -46,6 +46,7 @@ module ViperVM.Format.Binary.BitSet
    , fromBits
    , member
    , notMember
+   , elems
    , intersection
    , union
    )
