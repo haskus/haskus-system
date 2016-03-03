@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 -- | Generic buffer management
@@ -66,9 +65,7 @@ instance Storable  GenericBufferMap where
    poke        = cPoke
 
 
--- | Create a new Generic buffer
---
--- This is supported by all drivers (software rendering)
+-- | Create a generic buffer
 createGenericBuffer :: Card -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
 createGenericBuffer card width height bpp flags = do
    let res = GenericBuffer height width bpp flags 0 0 0
@@ -78,7 +75,7 @@ createGenericBuffer card width height bpp flags = do
 destroyGenericBuffer :: Card -> GenericBuffer -> SysRet ()
 destroyGenericBuffer card buffer =
    -- We don't use a data matching the C structure drm_mode_destroy_dumb because
-   -- it contains only a single Word32 field that we can allocate directly
+   -- it only contains a single Word32 field that we can allocate directly
    with (genericBufferHandle buffer) $ \bufPtr ->
       void <$> ioctlModeDestroyGenericBuffer (cardHandle card) bufPtr
 

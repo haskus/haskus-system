@@ -19,33 +19,17 @@ import ViperVM.Arch.Linux.ErrorCode
 
 -- | Graphic card capability
 data Capability
-   = CapGenericBuffer            -- ^ Support generic buffers (i.e. not vendor specific)
+   = CapGenericBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
    | CapVBlankHighController
    | CapGenericPreferredDepth
    | CapGenericPreferShadow
    | CapPrime
    | CapTimestampMonotonic
-   | CapAsyncPageFlip
-   deriving (Show,Eq)
-
-instance Enum Capability where
-   fromEnum x = case x of 
-      CapGenericBuffer           -> 1
-      CapVBlankHighController -> 2
-      CapGenericPreferredDepth   -> 3
-      CapGenericPreferShadow     -> 4
-      CapPrime                -> 5
-      CapTimestampMonotonic   -> 6
-      CapAsyncPageFlip        -> 7
-   toEnum x = case x of 
-      1 -> CapGenericBuffer
-      2 -> CapVBlankHighController
-      3 -> CapGenericPreferredDepth
-      4 -> CapGenericPreferShadow
-      5 -> CapPrime
-      6 -> CapTimestampMonotonic
-      7 -> CapAsyncPageFlip
-      _ -> error "Unknown capability"
+   | CapAsyncPageFlip         -- ^ Support asynchronous page-flipping
+   | CapCursorWidth
+   | CapCursorHeight
+   | CapAddFrameBufferModifiers
+   deriving (Show,Eq,Enum)
 
 -- | Parameter for getCapability IOCTL (capability id, return value)
 data GetCapability =
@@ -62,7 +46,7 @@ instance Storable GetCapability where
 -- | Indicate if the given capability is supported
 cardCapability :: Card -> Capability -> SysRet Word64
 cardCapability card cap = do
-   let param = GetCapability (fromIntegral $ fromEnum cap) 0
+   let param = GetCapability (fromIntegral (fromEnum cap + 1)) 0
    ret <- ioctlGetCapabilities (cardHandle card) param
    case ret of
       Left err -> return (Left err)

@@ -172,6 +172,7 @@ library
     ViperVM.Utils.STM.TSet
     ViperVM.Utils.STM.TList
     ViperVM.Utils.STM.TGraph
+    ViperVM.Utils.Tuples
 
     ViperVM.Format.CPIO
 

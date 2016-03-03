@@ -13,7 +13,7 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    )
 where
 
-import Data.List (transpose)
+import Data.List (zip4)
 import Data.Vector.Fixed.Cont (S,Z)
 import Data.Vector.Fixed.Storable (Vec)
 import Data.Word
@@ -30,14 +30,16 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Format.Binary.BitSet
+import ViperVM.Utils.Tuples (uncurry4,take4)
 
 type Vec4 = Vec (S (S (S (S Z))))
 
 -- | Plane (used for pixel formats that use several sources)
 data Plane = Plane
-   { planeHandle :: Word32       -- ^ Handle of the plane
-   , planePitch  :: Word32       -- ^ Pitch of the plane
-   , planeOffset :: Word32       -- ^ Offset of the plane
+   { planeHandle    :: Word32 -- ^ Handle of the plane
+   , planePitch     :: Word32 -- ^ Pitch of the plane
+   , planeOffset    :: Word32 -- ^ Offset of the plane
+   , planeModifiers :: Word64 -- ^ Modifiers for the plane
    }
 
 -- | Frame buffer
@@ -56,20 +58,17 @@ instance Storable FrameBuffer where
    peek ptr    = do
       let 
          p = castPtr ptr :: Ptr Word8
-         phandles = castPtr (p `plusPtr` 20) :: Ptr Word32
-         ppitches = castPtr (p `plusPtr` 36) :: Ptr Word32
-         poffsets = castPtr (p `plusPtr` 52) :: Ptr Word32
-      handles <- peekArray 4 phandles
-      pitches <- peekArray 4 ppitches
-      offsets <- peekArray 4 poffsets
+         phandles   = castPtr (p `plusPtr` 20) :: Ptr Word32
+         ppitches   = castPtr (p `plusPtr` 36) :: Ptr Word32
+         poffsets   = castPtr (p `plusPtr` 52) :: Ptr Word32
+         pmodifiers = castPtr (p `plusPtr` 68) :: Ptr Word64
+      handles   <- peekArray 4 phandles
+      pitches   <- peekArray 4 ppitches
+      offsets   <- peekArray 4 poffsets
+      modifiers <- peekArray 4 pmodifiers
 
       let 
-         ps = transpose [handles,pitches,offsets]
-         toPlane [h,pp,o]   = Plane h pp o
-         toPlane _          = undefined
-         takeFour [a,b,c,d] = (a,b,c,d)
-         takeFour _         = undefined
-         planes = takeFour (map toPlane ps)
+         planes = uncurry4 Plane <$> zip4 handles pitches offsets modifiers
       
       FrameBuffer
          <$> peekByteOff ptr 0
@@ -77,32 +76,34 @@ instance Storable FrameBuffer where
          <*> peekByteOff ptr 8
          <*> peekByteOff ptr 12
          <*> peekByteOff ptr 16
-         <*> return planes
+         <*> return (take4 planes)
 
-   poke ptr (FrameBuffer {..}) = do
+   poke ptr FrameBuffer{..} = do
       pokeByteOff ptr 0  fbID
       pokeByteOff ptr 4  fbWidth
       pokeByteOff ptr 8  fbHeight
       pokeByteOff ptr 12 fbPixelFormat
       pokeByteOff ptr 16 fbFlags
       let 
-         p = castPtr ptr :: Ptr Word8
-         phandles = castPtr (p `plusPtr` 20) :: Ptr Word32
-         ppitches = castPtr (p `plusPtr` 36) :: Ptr Word32
-         poffsets = castPtr (p `plusPtr` 52) :: Ptr Word32
+         p           = castPtr ptr :: Ptr Word8
+         phandles    = castPtr (p `plusPtr` 20) :: Ptr Word32
+         ppitches    = castPtr (p `plusPtr` 36) :: Ptr Word32
+         poffsets    = castPtr (p `plusPtr` 52) :: Ptr Word32
+         pmodifiers  = castPtr (p `plusPtr` 68) :: Ptr Word64
          g (a,b,c,d) = [a,b,c,d]
-         planes = g fbPlanes 
+         planes      = g fbPlanes
       
-      pokeArray phandles (map planeHandle planes)
-      pokeArray ppitches (map planePitch  planes)
-      pokeArray poffsets (map planeOffset planes)
+      pokeArray phandles   (map planeHandle    planes)
+      pokeArray ppitches   (map planePitch     planes)
+      pokeArray poffsets   (map planeOffset    planes)
+      pokeArray pmodifiers (map planeModifiers planes)
 
 -- | Create a framebuffer
 addFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
 addFrameBuffer card width height fmt flags planes = do
    
    let
-      emptyPlane = Plane 0 0 0
+      emptyPlane = Plane 0 0 0 0
       takeFour (a:b:c:d:_) = (a,b,c,d)
       takeFour _           = undefined
       planes' = takeFour (planes ++ repeat emptyPlane)

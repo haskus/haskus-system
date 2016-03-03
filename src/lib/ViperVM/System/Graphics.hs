@@ -118,7 +118,7 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
             [MapShared]
             (Just (fd, genericMapOffset bufKerMap))
 
-      let plane = Plane (genericBufferHandle buf) (genericBufferPitch buf) 0
+      let plane = Plane (genericBufferHandle buf) (genericBufferPitch buf) 0 0
 
       return (MappedPlane buf bufKerMap addr plane)
    
