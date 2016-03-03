@@ -5,6 +5,8 @@
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
    ( Plane(..)
    , FrameBuffer(..)
+   , FrameBufferFlag (..)
+   , FrameBufferFlags
    , addFrameBuffer
    , removeFrameBuffer
    -- * Low-level
@@ -48,16 +50,25 @@ data FrameBuffer = FrameBuffer
    , fbWidth       :: Word32                    -- ^ Frame buffer width
    , fbHeight      :: Word32                    -- ^ Frame buffer height
    , fbPixelFormat :: PixelFormat               -- ^ Pixel format
-   , fbFlags       :: Word32                    -- ^ Flags
+   , fbFlags       :: FrameBufferFlags          -- ^ Flags
    , fbPlanes      :: (Plane,Plane,Plane,Plane) -- ^ Data sources (up to four planes)
    }
+
+-- | Frame buffer flags
+data FrameBufferFlag
+   = FrameBufferInterlaced    -- ^ Interlaced frame buffer
+   | FrameBufferUseModifiers  -- ^ Enable modifiers
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet FrameBufferFlag
+type FrameBufferFlags = BitSet Word32 FrameBufferFlag
 
 instance Storable FrameBuffer where
    sizeOf _    = 4 * 17
    alignment _ = 4
    peek ptr    = do
       let 
-         p = castPtr ptr :: Ptr Word8
+         p          = castPtr ptr :: Ptr Word8
          phandles   = castPtr (p `plusPtr` 20) :: Ptr Word32
          ppitches   = castPtr (p `plusPtr` 36) :: Ptr Word32
          poffsets   = castPtr (p `plusPtr` 52) :: Ptr Word32
@@ -99,7 +110,7 @@ instance Storable FrameBuffer where
       pokeArray pmodifiers (map planeModifiers planes)
 
 -- | Create a framebuffer
-addFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
+addFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Plane] -> SysRet FrameBuffer
 addFrameBuffer card width height fmt flags planes = do
    
    let
@@ -116,12 +127,6 @@ removeFrameBuffer :: Card -> FrameBuffer -> SysRet ()
 removeFrameBuffer card fb =
    with (fbID fb) $ \bufPtr ->
       void <$> ioctlModeRemoveFrameBuffer (cardHandle card) bufPtr
-
-data FrameBufferMode
-   = FrameBufferInterlaced
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet FrameBufferMode
 
 
 -- | Data matching the C structure drm_mode_fb_cmd2

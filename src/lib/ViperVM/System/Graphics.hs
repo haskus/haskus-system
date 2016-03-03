@@ -8,6 +8,7 @@ module ViperVM.System.Graphics
 where
 
 import ViperVM.System.System
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem
@@ -22,7 +23,6 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Prelude hiding (init,tail)
 import Control.Monad (void,forM)
 import Foreign.Ptr
 
@@ -124,7 +124,7 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
    
    let planes = fmap mappedPlaneInfo mappedPlanes
 
-   fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer card width height pixfmt 0 planes
+   fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer card width height pixfmt BitSet.empty planes
 
    return (fb, mappedPlanes)
 
