@@ -102,14 +102,14 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
       height = fromIntegral $ modeVerticalDisplay mode
       bpps   = formatBitDepth fmt
       flags  = 0
-      fd     = cardFileDescriptor card
+      fd     = cardHandle card
 
    mappedPlanes <- forM bpps $ \bpp -> do
       buf <- sysCallAssert "Create a generic buffer" $
-         cardCreateGenericBuffer card width height bpp flags
+         createGenericBuffer card width height bpp flags
 
       bufKerMap <- sysCallAssert "Map generic buffer" $
-         cardMapGenericBuffer card buf
+         mapGenericBuffer card buf
 
       addr <- sysCallAssert "Map generic buffer in user space" $ 
          sysMemMap Nothing
@@ -124,7 +124,7 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
    
    let planes = fmap mappedPlaneInfo mappedPlanes
 
-   fb <- sysCallAssert "Add frame buffer" $ cardAddFrameBuffer card width height pixfmt 0 planes
+   fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer card width height pixfmt 0 planes
 
    return (fb, mappedPlanes)
 

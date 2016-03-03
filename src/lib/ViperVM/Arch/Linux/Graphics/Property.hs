@@ -14,9 +14,9 @@ module ViperVM.Arch.Linux.Graphics.Property
    )
 where
 
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Graphics.Internals
 
 import Foreign.Storable
 import Foreign.CStorable
@@ -206,10 +206,10 @@ instance Storable GetBlobStruct where
 type PropertyMetaID = Word32
 
 -- | Return meta-information from a property type ID
-getPropertyMeta :: IOCTL -> FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
-getPropertyMeta ioctl fd pid = runEitherT $ do
+getPropertyMeta :: FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
+getPropertyMeta fd pid = runEitherT $ do
    let
-      getProperty' = EitherT . ioctlReadWrite ioctl 0x64 0xAA defaultCheck fd
+      getProperty' = EitherT . ioctlModeGetProperty fd
 
       gp = GetPropStruct
             { gpsValuesPtr      = 0
@@ -235,8 +235,7 @@ getPropertyMeta ioctl fd pid = runEitherT $ do
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      -- corresponds to DRM_IOCTL_MODE_GETPROPBLOB
-      getBlobStruct' = EitherT . ioctlReadWrite ioctl 0x64 0xAC defaultCheck fd
+      getBlobStruct' = EitherT . ioctlModeGetPropertyBlob fd
       getBlobStruct = runEitherT . getBlobStruct'
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b -> IO c) -> IO c

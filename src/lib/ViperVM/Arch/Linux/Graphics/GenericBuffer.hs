@@ -11,20 +11,20 @@
 module ViperVM.Arch.Linux.Graphics.GenericBuffer
    ( GenericBuffer(..)
    , GenericBufferMap(..)
-   , cardCreateGenericBuffer
-   , cardDestroyGenericBuffer
-   , cardMapGenericBuffer
+   , createGenericBuffer
+   , destroyGenericBuffer
+   , mapGenericBuffer
    )
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Card
-import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Arch.Linux.Graphics.Internals
 
 import Foreign.Marshal.Utils (with)
 import Foreign.Storable
 import Foreign.CStorable
+import Control.Monad (void)
 import GHC.Generics
 import Data.Word
 
@@ -69,40 +69,21 @@ instance Storable  GenericBufferMap where
 -- | Create a new Generic buffer
 --
 -- This is supported by all drivers (software rendering)
-createGenericBuffer :: IOCTL -> FileDescriptor -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
-createGenericBuffer ioctl fd width height bpp flags = do
+createGenericBuffer :: Card -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
+createGenericBuffer card width height bpp flags = do
    let res = GenericBuffer height width bpp flags 0 0 0
-   ioctlReadWrite ioctl 0x64 0xB2 defaultCheck fd res
+   ioctlModeCreateGenericBuffer (cardHandle card) res
 
 -- | Destroy a generic buffer
--- 
--- We don't use a data matching the C structure drm_mode_destroy_dumb because it contains only a single Word32 field that we can allocate directly
-destroyGenericBuffer :: IOCTL -> FileDescriptor -> GenericBuffer -> SysRet ()
-destroyGenericBuffer ioctl fd buffer = do
-   
+destroyGenericBuffer :: Card -> GenericBuffer -> SysRet ()
+destroyGenericBuffer card buffer =
+   -- We don't use a data matching the C structure drm_mode_destroy_dumb because
+   -- it contains only a single Word32 field that we can allocate directly
    with (genericBufferHandle buffer) $ \bufPtr ->
-      fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xB4 defaultCheck fd bufPtr
+      void <$> ioctlModeDestroyGenericBuffer (cardHandle card) bufPtr
 
 -- | Map a Generic buffer
-mapGenericBuffer :: IOCTL -> FileDescriptor -> GenericBuffer -> SysRet GenericBufferMap
-mapGenericBuffer ioctl fd buffer = do
+mapGenericBuffer :: Card -> GenericBuffer -> SysRet GenericBufferMap
+mapGenericBuffer card buffer = do
    let res = GenericBufferMap (genericBufferHandle buffer) 0 0
-   ioctlReadWrite ioctl 0x64 0xB3 defaultCheck fd res
-
-
--- | Create a new Generic buffer
---
--- This is supported by all drivers (software rendering)
-cardCreateGenericBuffer :: Card -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
-cardCreateGenericBuffer card width height bpp flags =
-   withCard card createGenericBuffer width height bpp flags
-
--- | Destroy a generic buffer
-cardDestroyGenericBuffer :: Card -> GenericBuffer -> SysRet ()
-cardDestroyGenericBuffer card buffer =
-   withCard card destroyGenericBuffer buffer
-
--- | Map a Generic buffer
-cardMapGenericBuffer :: Card -> GenericBuffer -> SysRet GenericBufferMap
-cardMapGenericBuffer card buffer =
-   withCard card mapGenericBuffer buffer
+   ioctlModeMapGenericBuffer (cardHandle card) res

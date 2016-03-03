@@ -14,8 +14,8 @@ import GHC.Generics (Generic)
 import Data.Word
 
 import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Ioctl
 
 -- | Graphic card capability
 data Capability
@@ -61,9 +61,9 @@ instance Storable GetCapability where
 
 -- | Indicate if the given capability is supported
 cardCapability :: Card -> Capability -> SysRet Word64
-cardCapability card cap = withCard card $ \ioctl fd -> do
+cardCapability card cap = do
    let param = GetCapability (fromIntegral $ fromEnum cap) 0
-   ret <- ioctlReadWrite ioctl 0x64 0x0c defaultCheck fd param
+   ret <- ioctlGetCapabilities (cardHandle card) param
    case ret of
       Left err -> return (Left err)
       Right (GetCapability _ value) -> return (Right value)

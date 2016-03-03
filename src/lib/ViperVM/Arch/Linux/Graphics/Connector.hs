@@ -15,7 +15,6 @@ module ViperVM.Arch.Linux.Graphics.Connector
    )
 where
 
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 
 import ViperVM.Arch.Linux.Graphics.Mode
@@ -23,6 +22,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Property
+import ViperVM.Arch.Linux.Graphics.Internals
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2,forM)
@@ -74,7 +74,7 @@ data Connector = Connector
 
 -- | Get connector
 cardConnectorFromID :: Card -> ConnectorID -> SysRet Connector
-cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd -> runEitherT $ do
+cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
    let 
       res = ConnectorStruct 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
 
@@ -84,7 +84,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd ->
       peekArray' :: (Storable a, Integral c) => c -> Ptr a -> IO [a]
       peekArray'        = peekArray . fromIntegral
 
-      getModeConnector' = EitherT . ioctlReadWrite ioctl 0x64 0xA7 defaultCheck fd
+      getModeConnector' = EitherT . ioctlModeGetConnector (cardHandle card)
 
    -- First we get the number of each resource
    res2 <- getModeConnector' res
@@ -117,7 +117,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = withCard card $ \ioctl fd ->
                                        <*> peekArray' (connPropsCount res2) pvs
                            props <- forM rawProps $ \raw -> do
                               --FIXME: store property meta in the card
-                              meta <- EitherT $ withCard card getPropertyMeta (rawPropertyMetaID raw)
+                              meta <- EitherT $ getPropertyMeta (cardHandle card) (rawPropertyMetaID raw)
                               return (Property meta (rawPropertyValue raw))
 
                            modes <- liftIO (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)

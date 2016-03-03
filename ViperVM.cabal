@@ -239,6 +239,9 @@ library
     ViperVM.Library.Kernel
     ViperVM.Library.Maths.MatrixOps
 
+  other-modules:
+    ViperVM.Arch.Linux.Graphics.Internals
+
   c-sources: 
     src/lib/ViperVM/Arch/X86_64/Linux/syscall.c
     src/lib/ViperVM/Arch/X86_64/cpuid.c

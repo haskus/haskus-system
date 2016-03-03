@@ -1,27 +1,24 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Graphic card management
 module ViperVM.Arch.Linux.Graphics.Card
    ( Card(..)
-   , drmIoctl
    -- * Identifiers
    , FrameBufferID(..)
    , ControllerID(..)
    , ConnectorID(..)
    , EncoderID(..)
    -- * Low level
-   , withCard
    , getCard
    , cardEntities
    )
 where
 
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Graphics.Internals
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Either
@@ -42,9 +39,8 @@ data Card = Card
    , cardMaxWidth        :: Word32
    , cardMinHeight       :: Word32
    , cardMaxHeight       :: Word32
-   , cardFileDescriptor  :: FileDescriptor
-   , cardIOCTL           :: IOCTL
-   }
+   , cardHandle          :: FileDescriptor
+   } deriving (Show)
 
 newtype ConnectorID    = ConnectorID Word32 deriving (Show,Eq,Storable)
 
@@ -53,20 +49,6 @@ newtype ControllerID   = ControllerID Word32 deriving (Show,Eq,Storable)
 newtype EncoderID   = EncoderID Word32 deriving (Show,Eq,Storable)
 
 newtype FrameBufferID  = FrameBufferID Word32 deriving (Show,Eq,Storable)
-
-instance Show Card where
-   show (Card {..}) = 
-      "{ FrameBuffer IDs: " ++ show cardFrameBufferIDs ++ "\n" ++
-      ", Controller IDs:  " ++ show cardControllerIDs ++ "\n" ++
-      ", Connector IDs:   " ++ show cardConnectorIDs ++ "\n" ++
-      ", Encoder IDs:     " ++ show cardEncoderIDs ++ "\n" ++
-      ", Minimal size:    " ++ show cardMinWidth ++ "x" ++ show cardMinHeight++"\n" ++
-      ", Maximal size:    " ++ show cardMaxWidth ++ "x" ++ show cardMaxHeight++"\n" ++
-      ", File descriptor: " ++ show cardFileDescriptor ++"\n" ++
-      "}"
-
-withCard :: Card -> (IOCTL -> FileDescriptor -> a) -> a
-withCard card f = f (cardIOCTL card) (cardFileDescriptor card)
 
 -- | Data matching the C structure drm_mode_card_res
 data CardStruct = CardStruct
@@ -91,20 +73,14 @@ instance Storable CardStruct where
    poke        = cPoke
    peek        = cPeek
 
--- | IOCTL for DRM is restarted on interruption
--- Apply this function to your preferred ioctl function
-drmIoctl :: IOCTL -> IOCTL
-drmIoctl = repeatIoctl
-
-
 -- | Get graphic card info
 --
 -- It seems like the kernel fills *Count fields and min/max fields.  If *Ptr
 -- fields are not NULL, the kernel fills the pointed arrays with up to *Count
 -- elements.
 -- 
-getCard :: IOCTL -> FileDescriptor -> SysRet Card
-getCard ioctl fd = runEitherT $ do
+getCard :: FileDescriptor -> SysRet Card
+getCard fd = runEitherT $ do
    let 
       res          = CardStruct 0 0 0 0 0 0 0 0 0 0 0 0
  
@@ -115,7 +91,7 @@ getCard ioctl fd = runEitherT $ do
             go as (x:xs) = allocaArray (fromIntegral x) $ \a -> go (a:as) xs
 
       peekArray'   = peekArray . fromIntegral
-      getCard'     = EitherT . ioctlReadWrite ioctl 0x64 0xA0 defaultCheck fd
+      getCard'     = EitherT . ioctlModeGetResources fd
 
    -- First we get the number of each resource
    res2 <- getCard' res
@@ -144,7 +120,6 @@ getCard ioctl fd = runEitherT $ do
             <*> return (csMinHeight res4)
             <*> return (csMaxHeight res4)
             <*> return fd
-            <*> return ioctl
 
          right (res4, res5)
 
@@ -156,7 +131,7 @@ getCard ioctl fd = runEitherT $ do
      || csCountCrtcs res2 < csCountCrtcs rawRes
      || csCountConns res2 < csCountConns rawRes
      || csCountEncs  res2 < csCountEncs  rawRes
-      then EitherT $ getCard ioctl fd
+      then EitherT $ getCard fd
       else right retRes
 
 

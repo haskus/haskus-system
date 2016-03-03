@@ -1,13 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Frame buffer management
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
    ( Plane(..)
    , FrameBuffer(..)
-   , cardAddFrameBuffer
-   , cardRemoveFrameBuffer
+   , addFrameBuffer
+   , removeFrameBuffer
    -- * Low-level
    , FbCmd2Struct(..)
    , FbDirtyStruct(..)
@@ -24,12 +23,12 @@ import Foreign.Marshal.Utils (with)
 import Foreign.Ptr
 import Foreign.Storable
 import GHC.Generics (Generic)
+import Control.Monad (void)
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
-import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Format.Binary.BitSet
 
 type Vec4 = Vec (S (S (S (S Z))))
@@ -43,12 +42,12 @@ data Plane = Plane
 
 -- | Frame buffer
 data FrameBuffer = FrameBuffer
-   { fbID            :: Word32                      -- ^ Frame buffer identifier
-   , fbWidth         :: Word32                      -- ^ Frame buffer width
-   , fbHeight        :: Word32                      -- ^ Frame buffer height
-   , fbPixelFormat   :: PixelFormat                 -- ^ Pixel format
-   , fbFlags         :: Word32                      -- ^ Flags
-   , fbPlanes        :: (Plane,Plane,Plane,Plane)   -- ^ Data sources (up to four planes)
+   { fbID          :: FrameBufferID             -- ^ Frame buffer identifier
+   , fbWidth       :: Word32                    -- ^ Frame buffer width
+   , fbHeight      :: Word32                    -- ^ Frame buffer height
+   , fbPixelFormat :: PixelFormat               -- ^ Pixel format
+   , fbFlags       :: Word32                    -- ^ Flags
+   , fbPlanes      :: (Plane,Plane,Plane,Plane) -- ^ Data sources (up to four planes)
    }
 
 instance Storable FrameBuffer where
@@ -99,25 +98,23 @@ instance Storable FrameBuffer where
       pokeArray poffsets (map planeOffset planes)
 
 -- | Create a framebuffer
---
--- We use DRM_IOCTL_MODE_ADDFB2 as it provides more control on pixel format
-addFrameBuffer :: IOCTL -> FileDescriptor -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
-addFrameBuffer ioctl fd width height fmt flags planes = do
+addFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
+addFrameBuffer card width height fmt flags planes = do
    
    let
       emptyPlane = Plane 0 0 0
       takeFour (a:b:c:d:_) = (a,b,c,d)
       takeFour _           = undefined
       planes' = takeFour (planes ++ repeat emptyPlane)
-      fb = FrameBuffer 0 width height fmt flags planes'
+      fb = FrameBuffer (FrameBufferID 0) width height fmt flags planes'
 
-   ioctlReadWrite ioctl 0x64 0xB8 defaultCheck fd fb
+   ioctlModeAddFrameBuffer (cardHandle card) fb
 
 -- | Release a frame buffer
-removeFrameBuffer :: IOCTL -> FileDescriptor -> FrameBuffer -> SysRet ()
-removeFrameBuffer ioctl fd fb = do
+removeFrameBuffer :: Card -> FrameBuffer -> SysRet ()
+removeFrameBuffer card fb =
    with (fbID fb) $ \bufPtr ->
-      fmap (const ()) <$> ioctlReadWrite ioctl 0x64 0xAF defaultCheck fd bufPtr
+      void <$> ioctlModeRemoveFrameBuffer (cardHandle card) bufPtr
 
 data FrameBufferMode
    = FrameBufferInterlaced
@@ -168,12 +165,3 @@ instance Storable FbDirtyStruct where
    alignment   = cAlignment
    peek        = cPeek
    poke        = cPoke
-
--- | Create a framebuffer
-cardAddFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> Word32 -> [Plane] -> SysRet FrameBuffer
-cardAddFrameBuffer card width height fmt flags planes =
-   withCard card addFrameBuffer width height fmt flags planes
-
--- | Release a frame buffer
-cardRemoveFrameBuffer :: Card -> FrameBuffer -> SysRet ()
-cardRemoveFrameBuffer card fb = withCard card removeFrameBuffer fb

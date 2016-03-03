@@ -25,7 +25,7 @@ import GHC.Generics (Generic)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
-import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Format.Binary.BitSet as BitSet
 
 -- | An encoder
@@ -90,9 +90,9 @@ fromEncoderStruct card EncoderStruct{..} =
 
 -- | Get an encoder from its ID
 cardEncoderFromID :: Card -> EncoderID -> SysRet Encoder
-cardEncoderFromID card (EncoderID encId) = withCard card $ \ioctl fd -> do
+cardEncoderFromID card (EncoderID encId) = do
    let res = EncoderStruct encId 0 0 BitSet.empty BitSet.empty
-   fmap (fromEncoderStruct card) <$> ioctlReadWrite ioctl 0x64 0xA6 defaultCheck fd res
+   fmap (fromEncoderStruct card) <$> ioctlModeGetEncoder (cardHandle card) res
 
 -- | Controller attached to the encoder, if any
 encoderController :: Encoder -> SysRet (Maybe Controller)
