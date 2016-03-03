@@ -9,6 +9,7 @@ module ViperVM.Arch.Linux.Graphics.Internals
    , ioctlModeSetProperty
    , ioctlModeGetPropertyBlob
    , ioctlModePageFlip
+   , ioctlModeDirtyFrameBuffer
    , ioctlModeCreateGenericBuffer
    , ioctlModeMapGenericBuffer
    , ioctlModeDestroyGenericBuffer
@@ -66,6 +67,9 @@ ioctlModeRemoveFrameBuffer = drmIoctl 0xAF
 
 ioctlModePageFlip :: Storable a => FileDescriptor -> a -> SysRet a
 ioctlModePageFlip = drmIoctl 0xB0
+
+ioctlModeDirtyFrameBuffer :: Storable a => FileDescriptor -> a -> SysRet a
+ioctlModeDirtyFrameBuffer = drmIoctl 0xB1
 
 ioctlModeCreateGenericBuffer :: Storable a => FileDescriptor -> a -> SysRet a
 ioctlModeCreateGenericBuffer = drmIoctl 0xB2

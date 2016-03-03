@@ -9,9 +9,9 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    , FrameBufferFlags
    , addFrameBuffer
    , removeFrameBuffer
-   -- * Low-level
-   , FbCmd2Struct(..)
-   , FbDirtyStruct(..)
+   , DirtyMode (..)
+   , Clip (..)
+   , dirtyFrameBuffer
    )
 where
 
@@ -139,6 +139,7 @@ data FbCmd2Struct = FbCmd2Struct
    , fc2Handles       :: StorableWrap (Vec4 Word32)
    , fc2Pitches       :: StorableWrap (Vec4 Word32)
    , fc2Offsets       :: StorableWrap (Vec4 Word32)
+   , fc2Modifiers     :: StorableWrap (Vec4 Word64)
    } deriving Generic
 
 instance CStorable FbCmd2Struct
@@ -149,12 +150,33 @@ instance Storable FbCmd2Struct where
    poke        = cPoke
 
 
-data FrameBufferDirty
-   = FrameBufferDirtyNone
-   | FrameBufferDirtyAnnotateCopy
-   | FrameBufferDirtyAnnotateFill
-   | FrameBufferDirtyFlags
-   deriving (Show,Eq,Enum)
+
+
+-- | Mark a region of a framebuffer as dirty.
+-- 
+-- Some hardware does not automatically update display contents as a hardware or
+-- software draw to a framebuffer. This ioctl allows userspace to tell the
+-- kernel and the hardware what regions of the framebuffer have changed.
+-- 
+-- The kernel or hardware is free to update more then just the region specified
+-- by the clip rects. The kernel or hardware may also delay and/or coalesce
+-- several calls to dirty into a single update.
+-- 
+-- Userspace may annotate the updates, the annotates are a promise made by the
+-- caller that the change is either a copy of pixels or a fill of a single color
+-- in the region specified.
+-- 
+-- If the DirtyCopy mode is used then the clip rects are paired as (src,dst).
+-- The width and height of each one of the pairs must match.
+-- 
+-- If the DirtyFill mode is used the caller promises that the region specified
+-- of the clip rects is filled completely with a single color as given in the
+-- color argument.
+data DirtyMode
+   = Dirty     [Clip]
+   | DirtyCopy [(Clip,Clip)]
+   | DirtyFill Word32 [Clip]
+   deriving (Show,Eq)
 
 -- | Data matching the C structure drm_mode_fb_dirty_cmd
 data FbDirtyStruct = FbDirtyStruct
@@ -171,3 +193,38 @@ instance Storable FbDirtyStruct where
    alignment   = cAlignment
    peek        = cPeek
    poke        = cPoke
+
+data Clip = Clip
+   { clipX1 :: Word16
+   , clipY1 :: Word16
+   , clipX2 :: Word16
+   , clipY2 :: Word16
+   } deriving (Show,Eq,Generic)
+
+instance CStorable Clip
+instance Storable  Clip where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   peek        = cPeek
+   poke        = cPoke
+
+dirtyFrameBuffer :: Card -> FrameBuffer -> DirtyMode -> SysRet ()
+dirtyFrameBuffer card fb mode = do
+   let
+      (color,flags,clips) = case mode of
+         Dirty     cs   -> (0,0,cs)
+         DirtyCopy cs   -> (0,1, concatMap (\(a,b) -> [a,b]) cs)
+         DirtyFill c cs -> (c,2,cs)
+      FrameBufferID fbid = fbID fb
+
+   withArray clips $ \clipPtr -> do
+      let s = FbDirtyStruct
+               { fdFbId     = fbid
+               , fdFlags    = flags
+               , fdColor    = color
+               , fdNumClips = fromIntegral (length clips)
+               , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
+               }
+      void <$> ioctlModeDirtyFrameBuffer (cardHandle card) s
+
+
