@@ -2,18 +2,31 @@
 {-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Sound.Internals
+   -- * Hardware dependent: /dev/snd/hw*
    ( hwVersion
    , HwInterface (..)
    , HwInfo (..)
+   , HwDspStatus (..)
+   , HwDspImage (..)
+   , ioctlHwVersion
+   , ioctlHwInfo
+   , ioctlHwDspStatus
+   , ioctlHwDspLoad
    )
 where
 
 import Data.Word
+import Foreign.Ptr
 import Foreign.CStorable
 import Foreign.Storable
-import Foreign.C.Types (CChar)
-import ViperVM.Format.Binary.Vector (Vector)
+import Foreign.C.Types (CChar, CSize)
 import GHC.Generics (Generic)
+
+import ViperVM.Format.Binary.Vector (Vector)
+import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.FileDescriptor
 
 -- From alsa-lib/include/sound/asound.h
 
@@ -88,7 +101,7 @@ data HwInfo = HwInfo
    , hwInfoId        :: Vector 64 CChar -- ^ ID (user selectable)
    , hwInfoName      :: Vector 80 CChar -- ^ hwdep name
    , hwInfoInterface :: Int             -- ^ hwdep interface
-   , hwInfoReserved  :: Vector 64 CChar -- ^ reserved for future
+   , hwInfoReserved  :: Vector 64 Word8 -- ^ reserved for future
    } deriving (Generic)
 
 instance CStorable HwInfo
@@ -98,39 +111,62 @@ instance Storable HwInfo where
    poke        = cPoke
    peek        = cPeek
 
+
+-- | Generic DSP loader
+data HwDspStatus = HwDspStatus
+   { hwDspVersion    :: Word            -- ^ R: driver-specific version
+   , hwDspId         :: Vector 32 CChar -- ^ R: driver-specific ID string
+   , hwDspNumDsps    :: Word            -- ^ R: number of DSP images to transfer
+   , hwDspLoadedDsps :: Word            -- ^ R: bit flags indicating the loaded DSPs
+   , hwDspChipReady  :: Word            -- ^ R: 1 = initialization finished
+   , hwDspReserved   :: Vector 16 Word8 -- ^ reserved for future use
+   } deriving (Generic)
+
+instance CStorable HwDspStatus
+instance Storable  HwDspStatus where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
+
+data HwDspImage = HwDspImage
+   { hwDspImageIndex      :: Word            -- ^ W: DSP index
+   , hwDspImageName       :: Vector 64 CChar -- ^ W: ID (e.g. file name)
+   , hwDspImageBin        :: Ptr ()          -- ^ W: binary image
+   , hwDspImageLength     :: CSize           -- ^ W: size of image in bytes
+   , hwDspImageDriverData :: Word64          -- ^ W: driver-specific data
+   } deriving (Generic)
+
+instance CStorable HwDspImage
+instance Storable  HwDspImage where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
+soundIoctl :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
+soundIoctl n = ioctlReadWrite sysIoctl 0x48 n defaultCheck
+
+soundIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
+soundIoctlW n = ioctlWrite sysIoctl 0x48 n defaultCheck
+
+soundIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+soundIoctlR n = ioctlRead sysIoctl 0x48 n defaultCheck
+
+ioctlHwVersion :: FileDescriptor -> SysRet Int
+ioctlHwVersion = soundIoctlR 0x00
+
+ioctlHwInfo :: FileDescriptor -> SysRet HwInfo
+ioctlHwInfo = soundIoctlR 0x01
+
+ioctlHwDspStatus :: FileDescriptor -> SysRet HwDspStatus
+ioctlHwDspStatus = soundIoctlR 0x02
+
+ioctlHwDspLoad :: FileDescriptor -> HwDspImage -> SysRet ()
+ioctlHwDspLoad = soundIoctlW 0x03
+
 {-
-
-struct snd_hwdep_info {
-        unsigned int device;            /* WR: device number */
-        int card;                       /* R: card number */
-        unsigned char id[64];           /* ID (user selectable) */
-        unsigned char name[80];         /* hwdep name */
-        int iface;                      /* hwdep interface */
-        unsigned char reserved[64];     /* reserved for future */
-};
-
-/* generic DSP loader */
-struct snd_hwdep_dsp_status {
-        unsigned int version;           /* R: driver-specific version */
-        unsigned char id[32];           /* R: driver-specific ID string */
-        unsigned int num_dsps;          /* R: number of DSP images to transfer */
-        unsigned int dsp_loaded;        /* R: bit flags indicating the loaded DSPs */
-        unsigned int chip_ready;        /* R: 1 = initialization finished */
-        unsigned char reserved[16];     /* reserved for future use */
-};
-
-struct snd_hwdep_dsp_image {
-        unsigned int index;             /* W: DSP index */
-        unsigned char name[64];         /* W: ID (e.g. file name) */
-        unsigned char __user *image;    /* W: binary image */
-        size_t length;                  /* W: size of image in bytes */
-        unsigned long driver_data;      /* W: driver-specific data */
-};
-
-#define SNDRV_HWDEP_IOCTL_PVERSION      _IOR ('H', 0x00, int)
-#define SNDRV_HWDEP_IOCTL_INFO          _IOR ('H', 0x01, struct snd_hwdep_info)
-#define SNDRV_HWDEP_IOCTL_DSP_STATUS    _IOR('H', 0x02, struct snd_hwdep_dsp_status)
-#define SNDRV_HWDEP_IOCTL_DSP_LOAD      _IOW('H', 0x03, struct snd_hwdep_dsp_image)
 
 /*****************************************************************************
  *                                                                           *

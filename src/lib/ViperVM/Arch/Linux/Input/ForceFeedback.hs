@@ -322,7 +322,7 @@ instance Storable  ForceFeedbackRumbleEffect where
 --
 -- EVIOCRMFF
 removeForceFeedback :: IOCTL -> FileDescriptor -> Int -> SysRet ()
-removeForceFeedback ioctl = ioctlWrite ioctl 0x45 0x81 defaultCheckRet 
+removeForceFeedback ioctl = ioctlWrite ioctl 0x45 0x81 defaultCheck
 
 -- | Report the number of effects playable at the same time
 --
@@ -431,4 +431,4 @@ instance Storable ForceFeedbackEffect where
 --
 -- EVIOCSFF
 sendForceFeedback :: IOCTL -> FileDescriptor -> ForceFeedbackEffect -> SysRet ()
-sendForceFeedback ioctl = ioctlWrite ioctl 0x45 0x80 defaultCheckRet 
+sendForceFeedback ioctl = ioctlWrite ioctl 0x45 0x80 defaultCheck

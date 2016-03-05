@@ -178,12 +178,15 @@ ioctlReadBuffer ioctl typ nr test f defn fd = go defn
 -- | Build a Write IOCTL
 --
 -- Execute the IOCTL command on the file descriptor, then `test` the result. 
-ioctlWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> SysRet b) -> FileDescriptor -> a -> SysRet b
-ioctlWrite ioctl typ nr test fd arg = do
+ioctlWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet ()
+ioctlWrite ioctl typ nr test fd arg =
    with arg $ \ptr -> do
       let cmd = Command typ nr Write (paramSize arg)
       ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
-      test ret
+      return $ case test ret of
+         Nothing -> Right ()
+         Just x  -> Left x
+
 
 -- | Build a ReadWrite IOCTL
 --

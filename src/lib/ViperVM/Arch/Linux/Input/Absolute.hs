@@ -47,7 +47,7 @@ getDeviceAbsInfo ioctl code = ioctlRead ioctl 0x45 (0x40 + code) defaultCheck
 --
 -- EVIOCSABS
 setDeviceAbsInfo :: IOCTL -> Word8 -> AbsoluteInfo -> FileDescriptor -> SysRet ()
-setDeviceAbsInfo ioctl code value fd = ioctlWrite ioctl 0x45 (0xc0 + code) defaultCheckRet fd value
+setDeviceAbsInfo ioctl code value fd = ioctlWrite ioctl 0x45 (0xc0 + code) defaultCheck fd value
 
 
 data AbsoluteEvent

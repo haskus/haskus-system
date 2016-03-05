@@ -107,7 +107,7 @@ getDeviceBits ioctl code n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 (0x2
 --
 -- EVIOCGRAB
 grabReleaseDevice :: IOCTL -> Bool -> FileDescriptor -> SysRet ()
-grabReleaseDevice ioctl grab fd = ioctlWrite ioctl 0x45 0x90 defaultCheckRet fd value
+grabReleaseDevice ioctl grab fd = ioctlWrite ioctl 0x45 0x90 defaultCheck fd value
    where
       value :: Int
       value = if grab then 1 else 0
@@ -124,7 +124,7 @@ releaseDevice ioctl = grabReleaseDevice ioctl False
 --
 -- EVIOCREVOKE
 revokeDevice :: IOCTL -> FileDescriptor -> SysRet ()
-revokeDevice ioctl fd = ioctlWrite ioctl 0x45 0x91 defaultCheckRet fd value
+revokeDevice ioctl fd = ioctlWrite ioctl 0x45 0x91 defaultCheck fd value
    where
       value :: Int
       value = 0
@@ -133,7 +133,7 @@ revokeDevice ioctl fd = ioctlWrite ioctl 0x45 0x91 defaultCheckRet fd value
 --
 -- EVIOCCLOCKID
 setDeviceClock :: IOCTL -> Clock -> FileDescriptor -> SysRet ()
-setDeviceClock ioctl clk fd = ioctlWrite ioctl 0x45 0x91 defaultCheckRet fd (fromEnum clk)
+setDeviceClock ioctl clk fd = ioctlWrite ioctl 0x45 0x91 defaultCheck fd (fromEnum clk)
 
 -- | Device properties and quirks
 data Property

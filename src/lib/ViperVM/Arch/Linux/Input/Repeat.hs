@@ -46,6 +46,6 @@ getRepeatSettings ioctl = ioctlRead ioctl 0x45 0x03 defaultCheck
 --
 -- EVIOCSREP
 setRepeatSettings :: IOCTL -> FileDescriptor -> RepeatSettings -> SysRet ()
-setRepeatSettings ioctl = ioctlWrite ioctl 0x45 0x03 defaultCheckRet
+setRepeatSettings ioctl = ioctlWrite ioctl 0x45 0x03 defaultCheck
 
 

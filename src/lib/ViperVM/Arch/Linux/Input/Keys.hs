@@ -57,7 +57,7 @@ getKeyCode ioctl = ioctlRead ioctl 0x45 0x04 defaultCheck
 --
 -- EVIOCSKEYCODE_V2
 setKeyCode :: IOCTL -> FileDescriptor -> KeymapEntry -> SysRet ()
-setKeyCode ioctl = ioctlWrite ioctl 0x45 0x04 defaultCheckRet
+setKeyCode ioctl = ioctlWrite ioctl 0x45 0x04 defaultCheck
 
 
 -- | Get keys (one bit per pressed key)
