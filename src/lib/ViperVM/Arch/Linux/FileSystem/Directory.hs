@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Directory
@@ -51,9 +52,7 @@ data DirectoryEntryHeader = DirectoryEntryHeader
    , dirOffset    :: Int64    -- ^ Offset of the next entry
    , dirLength    :: Word16   -- ^ Length of the entry
    , dirFileTyp   :: Word8    -- ^ Type of file
-   } deriving (Generic)
-
-instance CStorable DirectoryEntryHeader
+   } deriving (Generic,CStorable)
 
 instance Storable DirectoryEntryHeader where
    peek      = cPeek

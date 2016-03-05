@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ViperVM.Arch.Linux.Input.Event
    ( Event (..)
@@ -21,9 +22,8 @@ data Event = Event
    , eventType  :: EventType
    , eventCode  :: Word16
    , eventValue :: Int32
-   } deriving (Show,Eq,Generic)
+   } deriving (Show,Eq,Generic,CStorable)
 
-instance CStorable Event
 instance Storable Event where
    alignment = cAlignment
    sizeOf    = cSizeOf

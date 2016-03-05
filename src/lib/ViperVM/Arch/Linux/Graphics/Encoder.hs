@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Encoders management
 --
@@ -57,9 +57,8 @@ data EncoderStruct = EncoderStruct
    , geCrtcId         :: Word32
    , gePossibleCrtcs  :: BitSet Word32 Int -- ^ Valid controller indexes
    , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone encoder indexes
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable EncoderStruct
 instance Storable EncoderStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

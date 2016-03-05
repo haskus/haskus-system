@@ -138,9 +138,8 @@ data FbCmd2Struct = FbCmd2Struct
    , fc2Pitches       :: Vector 4 Word32
    , fc2Offsets       :: Vector 4 Word32
    , fc2Modifiers     :: Vector 4 Word64
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable FbCmd2Struct
 instance Storable FbCmd2Struct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -183,9 +182,8 @@ data FbDirtyStruct = FbDirtyStruct
    , fdColor         :: Word32
    , fdNumClips      :: Word32
    , fdClipsPtr      :: Word64
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable FbDirtyStruct
 instance Storable FbDirtyStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -197,9 +195,8 @@ data Clip = Clip
    , clipY1 :: Word16
    , clipX2 :: Word16
    , clipY2 :: Word16
-   } deriving (Show,Eq,Generic)
+   } deriving (Show,Eq,Generic,CStorable)
 
-instance CStorable Clip
 instance Storable  Clip where
    sizeOf      = cSizeOf
    alignment   = cAlignment

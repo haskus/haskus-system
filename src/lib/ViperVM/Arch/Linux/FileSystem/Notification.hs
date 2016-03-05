@@ -29,9 +29,8 @@ data PollStruct = PollStruct
    { pollFD             :: Int32
    , pollEvents         :: Word16
    , pollReturnedEvents :: Word16
-   } deriving (Generic)
+   } deriving (Generic,CStorable)
 
-instance CStorable PollStruct
 instance Storable PollStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

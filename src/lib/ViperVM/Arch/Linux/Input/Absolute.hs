@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ViperVM.Arch.Linux.Input.Absolute
    ( AbsoluteInfo(..)
@@ -28,9 +29,8 @@ data AbsoluteInfo = AbsoluteInfo
    , absFuzz       :: Int32   -- ^ Fuzz value used to filter noise from the event stream
    , absFlat       :: Int32   -- ^ Values that are within this value will be discarded and reported as 0 instead
    , absResolution :: Int32   -- ^ Resolution for the values reported for the axis
-   } deriving (Show, Eq, Generic)
+   } deriving (Show, Eq, Generic, CStorable)
 
-instance CStorable AbsoluteInfo
 instance Storable AbsoluteInfo where
    sizeOf      = cSizeOf
    alignment   = cAlignment

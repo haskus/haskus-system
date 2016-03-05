@@ -31,9 +31,8 @@ data CursorStruct = CursorStruct
    , curWidth     :: Word32
    , curHeight    :: Word32
    , curHandle    :: Word32   -- ^ if 0, turns the cursor off
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable CursorStruct
 instance Storable  CursorStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -51,9 +50,8 @@ data Cursor2Struct = Cursor2Struct
    , cur2Handle    :: Word32   -- ^ if 0, turns the cursor off
    , cur2HotX      :: Int32
    , cur2HotY      :: Int32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable Cursor2Struct
 instance Storable  Cursor2Struct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

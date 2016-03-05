@@ -464,9 +464,8 @@ data StatStruct = StatStruct
    , statLastAccess'       :: TimeSpec
    , statLastModif'        :: TimeSpec
    , statLastStatusChange' :: TimeSpec
-   } deriving (Generic)
+   } deriving (Generic,CStorable)
 
-instance CStorable StatStruct
 instance Storable StatStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Linux Input management
 module ViperVM.Arch.Linux.Input.Device
@@ -47,9 +48,8 @@ data DeviceInfo = DeviceInfo
    , infoVendor  :: Word16
    , infoProduct :: Word16
    , infoVersion :: Word16
-   } deriving (Show,Eq,Generic)
+   } deriving (Show,Eq,Generic,CStorable)
 
-instance CStorable DeviceInfo
 instance Storable DeviceInfo where
    sizeOf      = cSizeOf
    alignment   = cAlignment

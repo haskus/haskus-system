@@ -63,9 +63,8 @@ data ControllerStruct = ControllerStruct
    , contGammaSize  :: Word32
    , contModeValid  :: Word32
    , contModeInfo   :: ModeStruct
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable ControllerStruct
 instance Storable ControllerStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -136,9 +135,8 @@ data ControllerLutStruct = ControllerLutStruct
    , clsRed          :: Word64
    , clsGreen        :: Word64
    , clsBlue         :: Word64
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable ControllerLutStruct
 instance Storable  ControllerLutStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -160,9 +158,8 @@ data PageFlipStruct = PageFlipStruct
    , pfFlags         :: PageFlipFlags
    , pfReserved      :: Word32
    , pfUserData      :: Word64
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable PageFlipStruct
 instance Storable  PageFlipStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

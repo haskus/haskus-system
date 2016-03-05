@@ -176,9 +176,8 @@ toModeStruct Mode {..} =
 data ModeCmdStruct = ModeCmdStruct
    { mcConnId     :: Word32
    , mcMode       :: ModeStruct
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable ModeCmdStruct
 instance Storable  ModeCmdStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

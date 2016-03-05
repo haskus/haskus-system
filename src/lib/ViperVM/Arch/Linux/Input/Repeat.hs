@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ViperVM.Arch.Linux.Input.Repeat
    ( RepeatSettings(..)
@@ -21,9 +22,8 @@ data RepeatSettings = RepeatSettings
    { repeatDelay  :: Int32
    , repeatPeriod :: Int32
    }
-   deriving (Show,Eq,Generic)
+   deriving (Show,Eq,Generic,CStorable)
 
-instance CStorable RepeatSettings
 instance Storable RepeatSettings where
    sizeOf      = cSizeOf
    alignment   = cAlignment

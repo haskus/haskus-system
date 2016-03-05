@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.FileSystem.ReadWrite
    ( IOVec(..)
    , sysRead
@@ -36,9 +37,8 @@ import ViperVM.Arch.Linux.Syscalls
 data IOVec = IOVec
    { iovecPtr  :: Ptr ()
    , iovecSize :: Word64
-   } deriving (Generic)
+   } deriving (Generic,CStorable)
 
-instance CStorable IOVec
 instance Storable IOVec where
    sizeOf      = cSizeOf
    alignment   = cAlignment

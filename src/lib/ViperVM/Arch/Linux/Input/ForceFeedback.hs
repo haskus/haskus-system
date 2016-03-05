@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ViperVM.Arch.Linux.Input.ForceFeedback
    ( ForceFeedbackEffect(..)
@@ -158,9 +159,8 @@ instance Enum ForceFeedbackDeviceProperties where
 data ForceFeedbackReplay = ForceFeedbackReplay
    { ffReplayLength :: Word16
    , ffReplayDelay  :: Word16
-   } deriving (Show,Eq,Generic)
+   } deriving (Show,Eq,Generic,CStorable)
 
-instance CStorable ForceFeedbackReplay
 instance Storable ForceFeedbackReplay where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -173,9 +173,8 @@ instance Storable ForceFeedbackReplay where
 data ForceFeedbackTrigger = ForceFeedbackTrigger
    { ffTriggerButton   :: Word16
    , ffTriggerInterval :: Word16
-   } deriving (Show,Eq,Generic)
+   } deriving (Show,Eq,Generic,CStorable)
 
-instance CStorable ForceFeedbackTrigger
 instance Storable ForceFeedbackTrigger where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -198,9 +197,8 @@ data ForceFeedbackEnvelope = ForceFeedbackEnvelope
    , ffEnvelopeAttackLevel  :: Word16
    , ffEnvelopeFadeLength   :: Word16
    , ffEnvelopeFadeLevel    :: Word16
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackEnvelope
 instance Storable  ForceFeedbackEnvelope where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -214,9 +212,8 @@ instance Storable  ForceFeedbackEnvelope where
 data ForceFeedbackConstantEffect = ForceFeedbackConstantEffect
    { ffConstantEffectLevel    :: Int16
    , ffConstantEffectEnvelope :: ForceFeedbackEnvelope
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackConstantEffect
 instance Storable  ForceFeedbackConstantEffect where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -232,9 +229,8 @@ data ForceFeedbackRampEffect = ForceFeedbackRampEffect
    { ffRampEffectStartLevel :: Int16
    , ffRampEffectEndLevel   :: Int16
    , ffRampEffectEnvelope   :: ForceFeedbackEnvelope
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackRampEffect
 instance Storable  ForceFeedbackRampEffect where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -256,9 +252,8 @@ data ForceFeedbackConditionEffect = ForceFeedbackConditionEffect
    , ffConditionEffectLeftCoeff       :: Int16
    , ffConditionEffectDeadBand        :: Word16
    , ffConditionEffectCenter          :: Int16
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackConditionEffect
 instance Storable  ForceFeedbackConditionEffect where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -290,9 +285,8 @@ data ForceFeedbackPeriodicEffect = ForceFeedbackPeriodicEffect
    , ffPeriodicEffectEnvelope   :: ForceFeedbackEnvelope
    , ffPeriodicEffectCustomLen  :: Word32
    , ffPeriodicEffectCustomData :: Ptr Int16
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackPeriodicEffect
 instance Storable  ForceFeedbackPeriodicEffect where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -309,9 +303,8 @@ instance Storable  ForceFeedbackPeriodicEffect where
 data ForceFeedbackRumbleEffect = ForceFeedbackRumbleEffect
    { ffRumbleEffectStrongMagnitude :: Word16
    , ffRumbleEffectWeakMagnitude   :: Word16
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackRumbleEffect
 instance Storable  ForceFeedbackRumbleEffect where
    sizeOf    = cSizeOf
    alignment = cAlignment
@@ -336,9 +329,8 @@ data ForceFeedbackEffectHeader = ForceFeedbackEffectHeader
    , ffHeaderDirection  :: ForceFeedbackDirection
    , ffHeaderTrigger    :: ForceFeedbackTrigger
    , ffHeaderReplay     :: ForceFeedbackReplay
-   } deriving (Eq,Show,Generic)
+   } deriving (Eq,Show,Generic,CStorable)
 
-instance CStorable ForceFeedbackEffectHeader
 instance Storable ForceFeedbackEffectHeader where
    sizeOf    = cSizeOf
    alignment = cAlignment

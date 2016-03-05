@@ -32,10 +32,9 @@ data KeymapEntry = KeymapEntry
    , keymapEntryIndex    :: Word16          -- ^ Index in the keymap (may be used instead of the scancode)
    , keymapEntryKeyCode  :: Word32          -- ^ Key code assigned to this scancode
    , keymapEntryScanCode :: Vector 32 Word8 -- ^ Scan in machine-endian form (up to 32 bytes)
-   } deriving (Generic)
+   } deriving (Generic,CStorable)
 
 
-instance CStorable KeymapEntry
 instance Storable KeymapEntry where
    sizeOf      = cSizeOf
    alignment   = cAlignment

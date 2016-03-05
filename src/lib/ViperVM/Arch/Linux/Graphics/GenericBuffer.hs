@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Generic buffer management
 --
@@ -38,9 +39,8 @@ data GenericBuffer = GenericBuffer
    , genericBufferHandle   :: Word32
    , genericBufferPitch    :: Word32
    , genericBufferSize     :: Word64
-   } deriving (Show,Generic)
+   } deriving (Show,Generic,CStorable)
 
-instance CStorable GenericBuffer
 instance Storable  GenericBuffer where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -55,9 +55,8 @@ data GenericBufferMap = GenericBufferMap
    { genericMapHandle :: Word32
    , genericMapPad    :: Word32  -- Padding field: not useful
    , genericMapOffset :: Word64
-   } deriving (Show,Generic)
+   } deriving (Show,Generic,CStorable)
 
-instance CStorable GenericBufferMap
 instance Storable  GenericBufferMap where
    sizeOf      = cSizeOf
    alignment   = cAlignment

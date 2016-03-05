@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 
@@ -80,9 +81,8 @@ data GetObjPropStruct = GetObjPropStruct
    , gopCountProps      :: Word32
    , gopObjId           :: Word32
    , gopObjType         :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable GetObjPropStruct
 instance Storable GetObjPropStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -95,9 +95,8 @@ data SetObjPropStruct = SetObjPropStruct
    , sopPropId          :: Word32
    , sopObjId           :: Word32
    , sopObjType         :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable SetObjPropStruct
 instance Storable SetObjPropStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -138,9 +137,8 @@ isImmutable s = (gpsFlags s .&. 0x04) /= 0
 data PropEnumStruct = PropEnumStruct
    { peValue       :: Word64
    , peName        :: Vector 32 CChar
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable PropEnumStruct
 instance Storable PropEnumStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -156,9 +154,8 @@ data GetPropStruct = GetPropStruct
    , gpsName           :: Vector 32 CChar
    , gpsCountValues    :: Word32
    , gpsCountEnumBlobs :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable GetPropStruct
 instance Storable GetPropStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -170,9 +167,8 @@ data SetPropStruct = SetPropStruct
    { spsValue        :: Word64
    , spsPropId       :: Word32
    , spsConnId       :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable SetPropStruct
 instance Storable SetPropStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -185,9 +181,8 @@ data GetBlobStruct = GetBlobStruct
    { gbBlobId     :: Word32
    , gbLength     :: Word32
    , gbData       :: Word64
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable GetBlobStruct
 instance Storable GetBlobStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

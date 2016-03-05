@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Plane
 module ViperVM.Arch.Linux.Graphics.Plane
@@ -29,9 +30,8 @@ data SetPlaneStruct = SetPlaneStruct
    , spSrcY          :: Word32
    , spSrcH          :: Word32
    , spSrcW          :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable SetPlaneStruct
 instance Storable SetPlaneStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -47,9 +47,8 @@ data GetPlaneStruct = GetPlaneStruct
    , gpGammaSize     :: Word32
    , gpCountFmtTypes :: Word32
    , gpFormatTypePtr :: Word64
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable GetPlaneStruct
 instance Storable GetPlaneStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -60,9 +59,8 @@ instance Storable GetPlaneStruct where
 data GetPlaneResStruct = GetPlaneResStruct
    { gprsPlaneIdPtr  :: Word64
    , gprsCountPlanes :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable GetPlaneResStruct
 instance Storable GetPlaneResStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

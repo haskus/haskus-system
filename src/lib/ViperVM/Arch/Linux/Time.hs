@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -31,9 +32,8 @@ import ViperVM.Arch.Linux.Syscalls
 data TimeSpec = TimeSpec {
    tsSeconds      :: {-# UNPACK #-} !Int64,
    tsNanoSeconds  :: {-# UNPACK #-} !Int64
-} deriving (Show,Eq,Ord,Generic)
+} deriving (Show,Eq,Ord,Generic,CStorable)
 
-instance CStorable TimeSpec
 instance Storable TimeSpec where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -43,9 +43,8 @@ instance Storable TimeSpec where
 data TimeVal = TimeVal
    { tvSeconds       :: Word64
    , tvMilliSeconds  :: Word64
-   } deriving (Show,Eq,Ord, Generic)
+   } deriving (Show, Eq, Ord, Generic, CStorable)
 
-instance CStorable TimeVal
 instance Storable TimeVal where
    sizeOf      = cSizeOf
    alignment   = cAlignment

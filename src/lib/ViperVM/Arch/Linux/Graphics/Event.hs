@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ViperVM.Arch.Linux.Graphics.Event
    ( EventType(..)
@@ -46,9 +47,8 @@ data VBlankEventInfo = VBlankEventInfo
    , vblankEventSequence     :: Word32
    --, eventReserved   :: Word32
    } 
-   deriving (Show,Generic)
+   deriving (Show,Generic,CStorable)
 
-instance CStorable VBlankEventInfo
 instance Storable  VBlankEventInfo where
    sizeOf      = cSizeOf
    alignment   = cAlignment

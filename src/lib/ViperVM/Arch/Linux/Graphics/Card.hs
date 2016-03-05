@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Graphic card management
@@ -42,13 +43,13 @@ data Card = Card
    , cardHandle          :: FileDescriptor
    } deriving (Show)
 
-newtype ConnectorID    = ConnectorID Word32 deriving (Show,Eq,Storable)
+newtype ConnectorID   = ConnectorID Word32 deriving (Show,Eq,Storable)
 
-newtype ControllerID   = ControllerID Word32 deriving (Show,Eq,Storable)
+newtype ControllerID  = ControllerID Word32 deriving (Show,Eq,Storable)
 
-newtype EncoderID   = EncoderID Word32 deriving (Show,Eq,Storable)
+newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable)
 
-newtype FrameBufferID  = FrameBufferID Word32 deriving (Show,Eq,Storable)
+newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
 -- | Data matching the C structure drm_mode_card_res
 data CardStruct = CardStruct
@@ -64,9 +65,8 @@ data CardStruct = CardStruct
    , csMaxWidth   :: Word32
    , csMinHeight  :: Word32
    , csMaxHeight  :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable CardStruct
 instance Storable CardStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

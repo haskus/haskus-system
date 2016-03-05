@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
 
 -- | Graphic card connector management
@@ -217,9 +218,8 @@ data ConnectorStruct = ConnectorStruct
    , connWidth_            :: Word32   -- ^ HxW in millimeters
    , connHeight_           :: Word32
    , connSubPixel_         :: Word32
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable ConnectorStruct
 instance Storable ConnectorStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment

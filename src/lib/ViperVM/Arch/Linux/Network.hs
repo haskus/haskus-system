@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.Network
    ( sysShutdown
    , sysSendFile
@@ -311,9 +313,10 @@ sysListen (FileDescriptor fd) backlog =
 
 
 -- | Netlink socket binding
-data NetlinkSocket = NetlinkSocket Word32 Word32 Word32 deriving (Generic)
+data NetlinkSocket
+   = NetlinkSocket Word32 Word32 Word32
+   deriving (Generic, CStorable)
 
-instance CStorable NetlinkSocket
 instance Storable NetlinkSocket where
    sizeOf    = cSizeOf
    alignment = cAlignment

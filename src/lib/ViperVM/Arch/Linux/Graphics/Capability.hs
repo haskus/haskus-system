@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Graphic card capabilities
 module ViperVM.Arch.Linux.Graphics.Capability
@@ -32,11 +33,10 @@ data Capability
    deriving (Show,Eq,Enum)
 
 -- | Parameter for getCapability IOCTL (capability id, return value)
-data GetCapability =
-   GetCapability Word64 Word64
-   deriving (Generic)
+data GetCapability
+   = GetCapability Word64 Word64
+   deriving (Generic,CStorable)
 
-instance CStorable GetCapability
 instance Storable GetCapability where
    sizeOf    = cSizeOf
    alignment = cAlignment
