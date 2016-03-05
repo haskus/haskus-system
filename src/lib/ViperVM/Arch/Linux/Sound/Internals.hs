@@ -2,8 +2,10 @@
 {-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Sound.Internals
+   ( Cea861AudioInfoFrame (..)
+   , AesIec958 (..)
    -- * Hardware dependent: /dev/snd/hw*
-   ( hwVersion
+   , hwVersion
    , HwInterface (..)
    , HwInfo (..)
    , HwDspStatus (..)
@@ -12,6 +14,8 @@ module ViperVM.Arch.Linux.Sound.Internals
    , ioctlHwInfo
    , ioctlHwDspStatus
    , ioctlHwDspLoad
+   -- * PCM: /dev/snd/pcm*
+   , pcmVersion
    )
 where
 
@@ -31,34 +35,36 @@ import ViperVM.Arch.Linux.FileDescriptor
 -- From alsa-lib/include/sound/asound.h
 
 
+-----------------------------------------------------------------------------
+-- Digit audio interface
+-----------------------------------------------------------------------------
 
--- /****************************************************************************
---  *                                                                          *
---  *        Digital audio interface                                        *
---  *                                                                          *
---  ****************************************************************************/
--- 
--- struct snd_aes_iec958 {
---      unsigned char status[24];       /* AES/IEC958 channel status bits */
---      unsigned char subcode[147];     /* AES/IEC958 subcode bits */
---      unsigned char pad;              /* nothing */
---      unsigned char dig_subframe[4];  /* AES/IEC958 subframe bits */
--- };
--- 
--- /****************************************************************************
---  *                                                                          *
---  *        CEA-861 Audio InfoFrame. Used in HDMI and DisplayPort                  *
---  *                                                                          *
---  ****************************************************************************/
--- 
--- struct snd_cea_861_aud_if {
---      unsigned char db1_ct_cc; /* coding type and channel count */
---      unsigned char db2_sf_ss; /* sample frequency and size */
---      unsigned char db3; /* not used, all zeros */
---      unsigned char db4_ca; /* channel allocation code */
---      unsigned char db5_dminh_lsv; /* downmix inhibit & level-shit values */
--- };
--- 
+data AesIec958 = AesIec958
+   { aesStatus      :: Vector 24 Word8  -- ^ AES/IEC958 channel status bits
+   , aesSubcode     :: Vector 147 Word8 -- ^ AES/IEC958 subcode bits
+   , aesPadding     :: CChar            -- ^ nothing
+   , aesDigSubFrame :: Vector 4 Word8   -- ^ AES/IEC958 subframe bits
+   } deriving (Generic, Show)
+
+instance CStorable AesIec958
+instance Storable  AesIec958 where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
+-----------------------------------------------------------------------------
+-- Digit audio interface
+-----------------------------------------------------------------------------
+
+data Cea861AudioInfoFrame = Cea861AudioInfoFrame
+   { ceaCodingTypeChannelCount :: Word8 -- ^ coding type and channel count
+   , ceaSampleFrequencySize    :: Word8 -- ^ sample frequency and size
+   , ceaUnused                 :: Word8 -- ^ not used, all zeros
+   , ceaChannelAllocationCode  :: Word8 -- ^ channel allocation code
+   , ceaDownmixLevelShift      :: Word8 -- ^ downmix inhibit & level-shit values
+   } deriving (Generic,Show)
+
 
 -----------------------------------------------------------------------------
 -- Section for driver hardware dependent interface - /dev/snd/hw?
@@ -166,15 +172,14 @@ ioctlHwDspStatus = soundIoctlR 0x02
 ioctlHwDspLoad :: FileDescriptor -> HwDspImage -> SysRet ()
 ioctlHwDspLoad = soundIoctlW 0x03
 
+-----------------------------------------------------------------------------
+-- Digital Audio (PCM) interface - /dev/snd/pcm??
+-----------------------------------------------------------------------------
+
+pcmVersion :: Word32
+pcmVersion = 0x0002000d
+
 {-
-
-/*****************************************************************************
- *                                                                           *
- *             Digital Audio (PCM) interface - /dev/snd/pcm??                *
- *                                                                           *
- *****************************************************************************/
-
-#define SNDRV_PCM_VERSION               SNDRV_PROTOCOL_VERSION(2, 0, 13)
 
 typedef unsigned long snd_pcm_uframes_t;
 typedef signed long snd_pcm_sframes_t;
