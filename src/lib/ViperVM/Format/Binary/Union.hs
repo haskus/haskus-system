@@ -1,19 +1,55 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds #-}
 
+-- | Union (as in C)
+--
+-- Unions are storable and can contain any storable data. Currently there are
+-- Union2, Union3 and Union4 (respectively to contain 2, 3 or 4 members). We
+-- could easily extend this to 5+ members.
+-- 
+-- Use 'fromUnion' to read a alternative:
+--
+-- @
+-- {-# LANGUAGE DataKinds #-}
+--
+-- import Data.Proxy
+--
+-- getUnion :: IO (Union3 Word16 Word32 Word64)
+-- getUnion = ...
+--
+-- test = do
+--    u <- getUnion
+--
+--    -- to get the Word16
+--    let v = fromUnion (Proxy :: Proxy 1) u
+--    -- to get the Word32
+--    let v = fromUnion (Proxy :: Proxy 2) u
+--    -- to get the Word64
+--    let v = fromUnion (Proxy :: Proxy 3) u
+-- @
+--
+-- Use 'toUnion' to create a new union:
+-- @
+--
+-- let
+--    u2 :: Union2 Word32 (Vector 4 Word8)
+--    u2 = toUnion (Proxy :: Proxy 1) 0x12345678
+-- @
 module ViperVM.Format.Binary.Union
    ( Union2
    , Union3
-   , union1
-   , union2
-   , union3
-   , union4
+   , Union4
+   , fromUnion
+   , toUnion
    )
 where
 
 import ViperVM.Utils.Memory (memCopy)
 
+import GHC.TypeLits
+import Data.Proxy
 import Foreign.Storable
 import Foreign.ForeignPtr
 import Foreign.Ptr
@@ -45,7 +81,11 @@ newtype Union3 a b c   = Union3 Buffer
 newtype Union4 a b c d = Union4 Buffer
 
 class Union a where
-   getBuffer :: a -> Buffer
+   -- | Get the buffer backing an union
+   getBuffer  :: a -> Buffer
+   -- | Create an union from a buffer
+   fromBuffer :: Buffer -> a
+
 
 instance (Storable a, Storable b) => Storable (Union2 a b) where
    sizeOf _    = maximum
@@ -61,6 +101,7 @@ instance (Storable a, Storable b) => Storable (Union2 a b) where
 
 instance Union (Union2 a b) where
    getBuffer (Union2 b) = b
+   fromBuffer           = Union2
 
 
 instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
@@ -79,6 +120,7 @@ instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
 
 instance Union (Union3 a b c) where
    getBuffer (Union3 b) = b
+   fromBuffer           = Union3
 
 instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a b c d) where
    sizeOf _    = maximum
@@ -98,34 +140,32 @@ instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a 
 
 instance Union (Union4 a b c d) where
    getBuffer (Union4 b) = b
+   fromBuffer           = Union4
 
 
 
-type family E1 a
-type instance E1 (Union2 a b)     = a
-type instance E1 (Union3 a b c)   = a
-type instance E1 (Union4 a b c d) = a
+type family E (n :: Nat) a :: *
+type instance E 1 (Union2 a b)     = a
+type instance E 1 (Union3 a b c)   = a
+type instance E 1 (Union4 a b c d) = a
+type instance E 2 (Union2 a b)     = b
+type instance E 2 (Union3 a b c)   = b
+type instance E 2 (Union4 a b c d) = b
+type instance E 3 (Union3 a b c)   = c
+type instance E 3 (Union4 a b c d) = c
+type instance E 4 (Union4 a b c d) = d
 
-type family E2 a
-type instance E2 (Union2 a b)     = b
-type instance E2 (Union3 a b c)   = b
-type instance E2 (Union4 a b c d) = b
+-- | Retrieve a union member from its index
+fromUnion :: forall (n :: Nat) u . (KnownNat n, Union u, Storable (E n u))
+            => Proxy n -> u -> E n u
+fromUnion _ u = peekElem (getBuffer u)
 
-type family E3 a
-type instance E3 (Union3 a b c)   = c
-type instance E3 (Union4 a b c d) = c
-
-type family E4 a
-type instance E4 (Union4 a b c d) = d
-
-union1 :: (Union u, Storable (E1 u)) => u -> E1 u
-union1 u = peekElem (getBuffer u)
-
-union2 :: (Union u, Storable (E2 u)) => u -> E2 u
-union2 u = peekElem (getBuffer u)
-
-union3 :: (Union u, Storable (E3 u)) => u -> E3 u
-union3 u = peekElem (getBuffer u)
-
-union4 :: (Union u, Storable (E3 u)) => u -> E3 u
-union4 u = peekElem (getBuffer u)
+-- | Create a new union
+toUnion :: forall (n :: Nat) u . (Storable u, KnownNat n, Union u, Storable (E n u))
+            => Proxy n -> E n u -> u
+toUnion _ v = unsafePerformIO $ do
+   let sz = sizeOf (undefined :: u)
+   fp <- mallocForeignPtrBytes sz
+   withForeignPtr fp $ \p -> 
+      poke (castPtr p) v
+   return (fromBuffer (Buffer (fromIntegral sz) fp))
