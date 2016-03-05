@@ -76,6 +76,54 @@ module ViperVM.Arch.Linux.Sound.Internals
    , ioctlPcmReadNFrames
    , ioctlPcmLink
    , ioctlPcmUnlink
+   -- * MIDI: /dev/snd/midi*
+   , midiVersion
+   , MidiStream (..)
+   , MidiFlag (..)
+   , MidiFlags
+   , MidiInfo (..)
+   , MidiParams (..)
+   , MidiStatus (..)
+   , ioctlMidiVersion
+   , ioctlMidiInfo
+   , ioctlMidiParams
+   , ioctlMidiStatus
+   , ioctlMidiDrop
+   , ioctlMidiDrain
+   -- * Timer: /dev/snd/timer
+   , timerVersion
+   , TimerClass (..)
+   , TimerSlaveClass (..)
+   , TimerGlobal (..)
+   , TimerFlag (..)
+   , TimerFlags
+   , TimerId (..)
+   , TimerGInfo (..)
+   , TimerGParams (..)
+   , TimerGStatus (..)
+   , TimerSelect (..)
+   , TimerInfo (..)
+   , TimerParamsFlag (..)
+   , TimerParamsFlags
+   , TimerParams (..)
+   , TimerStatus (..)
+   , ioctlTimerVersion
+   , ioctlTimerNextDevice
+   , ioctlTimerTRead
+   , ioctlTimerGInfo
+   , ioctlTimerGParams
+   , ioctlTimerGStatus
+   , ioctlTimerSelect
+   , ioctlTimerInfo
+   , ioctlTimerParams
+   , ioctlTimerStatus
+   , ioctlTimerStart
+   , ioctlTimerStop
+   , ioctlTimerContinue
+   , ioctlTimerPause
+   , TimerRead (..)
+   , TimerEvent (..)
+   , TimerTRead (..)
    )
 where
 
@@ -983,227 +1031,428 @@ ioctlPcmUnlink :: FileDescriptor -> SysRet ()
 ioctlPcmUnlink = pcmIoctl 0x61
 
 
+-----------------------------------------------------------------------------
+-- Raw MIDI interface - /dev/snd/midi*
+-----------------------------------------------------------------------------
+
+midiVersion :: Word32
+midiVersion = 0x00020000
+
+data MidiStream
+   = MidiStreamOutput
+   | MidiStreamInput
+   deriving (Show,Eq,Enum)
+
+
+data MidiFlag
+   = MidiFlagOutput
+   | MidiFlagInput
+   | MidiFlagDuplex
+   deriving (Show,Eq,Enum,EnumBitSet)
+
+type MidiFlags = BitSet Word MidiFlag
+
+data MidiInfo = MidiInfo
+   { midiInfoDevice         :: Word            -- ^ RO/WR (control): device number
+   , midiInfoSubDevice      :: Word            -- ^ RO/WR (control): subdevice number
+   , midiInfoStream         :: Int             -- ^ WR: stream
+   , midiInfoCard           :: Int             -- ^ R: card number
+   , midiInfoFlags          :: MidiFlags       -- ^ SNDRV_RAWMIDI_INFO_XXXX
+   , midiInfoId             :: Vector 64 CChar -- ^ ID (user selectable)
+   , midiInfoName           :: Vector 80 CChar -- ^ name of device
+   , midiInfoSubName        :: Vector 32 CChar -- ^ name of active or selected subdevice
+   , midiInfoSubDeviceCount :: Word
+   , midiInfoSubDeviceAvail :: Word
+   , midiInfoReserved       :: Vector 64 Word8 -- ^ reserved for future use
+   } deriving (Show, Generic, CStorable)
+
+instance Storable MidiInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data MidiParams = MidiParams
+   { midiParamsStream          :: Int
+   , midiParamsBufferSize      :: CSize           -- ^ queue size in bytes
+   , midiParamsAvailMin        :: CSize           -- ^ minimum avail bytes for wakeup
+   , midiParamsNoActiveSensing :: Word            -- ^ do not send active sensing byte in close()
+   , midiParamsReserved        :: Vector 16 Word8 -- ^ reserved for future use
+   } deriving (Show, Generic, CStorable)
+
+instance Storable MidiParams where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data MidiStatus = MidiStatus
+   { midiStatusStream    :: Int
+   , midiStatusTimeStamp :: TimeSpec        -- ^ Timestamp
+   , midiStatusAvail     :: CSize           -- ^ available bytes
+   , midiStatusXRuns     :: CSize           -- ^ count of overruns since last status (in bytes)
+   , midiStatusReserved  :: Vector 16 Word8 -- ^ reserved for future use
+   } deriving (Show, Generic, CStorable)
+
+instance Storable MidiStatus where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+midiIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
+midiIoctlW n = ioctlWrite sysIoctl 0x57 n defaultCheck
+
+midiIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+midiIoctlR n = ioctlRead sysIoctl 0x57 n defaultCheck
+
+midiIoctlWR :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
+midiIoctlWR n = ioctlReadWrite sysIoctl 0x57 n defaultCheck
+
+
+ioctlMidiVersion :: FileDescriptor -> SysRet Int
+ioctlMidiVersion = midiIoctlR 0x00
+
+ioctlMidiInfo :: FileDescriptor -> SysRet MidiInfo
+ioctlMidiInfo = midiIoctlR 0x01
+
+ioctlMidiParams :: FileDescriptor -> MidiParams -> SysRet MidiParams
+ioctlMidiParams = midiIoctlWR 0x10
+
+ioctlMidiStatus :: FileDescriptor -> MidiStatus -> SysRet MidiStatus
+ioctlMidiStatus = midiIoctlWR 0x20
+
+ioctlMidiDrop :: FileDescriptor -> Int -> SysRet ()
+ioctlMidiDrop = midiIoctlW 0x30
+
+ioctlMidiDrain :: FileDescriptor -> Int -> SysRet ()
+ioctlMidiDrain = midiIoctlW 0x31
+
+
+-----------------------------------------------------------------------------
+-- Timer section - /dev/snd/timer
+-----------------------------------------------------------------------------
+
+timerVersion :: Word32
+timerVersion = 0x00020006
+
+data TimerClass
+   = TimerClassNone
+   | TimerClassSlave
+   | TimerClassGlobal
+   | TimerClassCard
+   | TimerClassPCM
+   deriving (Show,Eq)
+
+instance Enum TimerClass where
+   fromEnum x = case x of
+      TimerClassNone   -> -1
+      TimerClassSlave  -> 0
+      TimerClassGlobal -> 1
+      TimerClassCard   -> 2
+      TimerClassPCM    -> 3
+   toEnum x = case x of
+      -1 -> TimerClassNone
+      0  -> TimerClassSlave
+      1  -> TimerClassGlobal
+      2  -> TimerClassCard
+      3  -> TimerClassPCM
+      _  -> error "Unknown timer class"
+
+
+-- | Slave timer classes
+data TimerSlaveClass
+   = TimerSlaveClassNone
+   | TimerSlaveClassApplication
+   | TimerSlaveClassSequencer       -- ^ alias
+   | TimerSlaveClassOssSequencer    -- ^ alias
+   deriving (Show,Eq,Enum)
+
+-- | Global timers (device member)
+data TimerGlobal
+   = TimerGlobalSystem
+   | TimerGlobalRTC
+   | TimerGlobalHPET
+   | TimerGlobalHRTimer
+   deriving (Show,Eq,Enum)
+
+-- | Timer info flags
+data TimerFlag
+   = TimerFlagSlave  -- ^ Cannot be controlled
+   deriving (Show,Eq,Enum,EnumBitSet)
+
+type TimerFlags = BitSet Word TimerFlag
+
+
+data TimerId = TimerId
+   { timerIdDeviceClass    :: Int
+   , timerIdDeviceSubClass :: Int
+   , timerIdCard           :: Int
+   , timerIdDevice         :: Int
+   , timerIdSubDevice      :: Int
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerId where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data TimerGInfo = TimerGInfo
+   { timerGInfoTimerID       :: TimerId         -- ^ requested timer ID
+   , timerGInfoFlags         :: TimerFlags      -- ^ timer flags
+   , timerGInfoCard          :: Int             -- ^ card number
+   , timerGInfoId            :: Vector 64 CChar -- ^ timer identification
+   , timerGInfoName          :: Vector 80 CChar -- ^ timer name
+   , timerGInfoReserved      :: Word64          -- ^ reserved for future use
+   , timerGInfoResolution    :: Word64          -- ^ average period resolution in ns
+   , timerGInfoResolutionMin :: Word64          -- ^ minimal period resolution in ns
+   , timerGInfoResolutionMax :: Word64          -- ^ maximal period resolution in ns
+   , timerGInfoClients       :: Word            -- ^ active timer clients
+   , timerGInfoReserved2     :: Vector 32 Word8
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerGInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data TimerGParams = TimerGParams
+   { timerGParamsTimerId          :: TimerId        -- ^ requested timer ID
+   , timerGParamsPeriodNumerator  :: Word64         -- ^ requested precise period duration (in seconds) - numerator
+   , timerGParamsPeriodDenomintor :: Word64         -- ^ requested precise period duration (in seconds) - denominator
+   , timerGParamsReserved         :: Vector 32 Word8
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerGParams where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data TimerGStatus = TimerGStatus
+   { timerGStatusTimerId               :: TimerId         -- ^ requested timer ID
+   , timerGStatusResolution            :: Word64          -- ^ current period resolution in ns
+   , timerGStatusResolutionNumerator   :: Word64          -- ^ precise current period resolution (in seconds) - numerator
+   , timerGStatusResolutionDenominator :: Word64          -- ^ precise current period resolution (in seconds) - denominator
+   , timerGStatusReserved              :: Vector 32 Word8
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerGStatus where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data TimerSelect = TimerSelect
+   { timerSelectTimerId  :: TimerId         -- ^ bind to timer ID
+   , timerSelectReserved :: Vector 32 Word8 -- ^ reserved
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerSelect where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data TimerInfo = TimerInfo
+   { timerInfoFlags         :: TimerFlags      -- ^ timer flags
+   , timerInfoCard          :: Int             -- ^ card number
+   , timerInfoId            :: Vector 64 CChar -- ^ timer identification
+   , timerInfoName          :: Vector 80 CChar -- ^ timer name
+   , timerInfoReserved      :: Word64          -- ^ reserved for future use
+   , timerInfoResolution    :: Word64          -- ^ average period resolution in ns
+   , timerInfoReserved2     :: Vector 64 Word8
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data TimerParamsFlag
+   = TimerParamFlagAuto       -- ^ auto start, otherwise one-shot 
+   | TimerParamFlagExclusive  -- ^ exclusive use, precise start/stop/pause/continue 
+   | TimerParamFlagEarlyEvent -- ^ write early event to the poll queue 
+   deriving (Show,Eq,Enum,EnumBitSet)
+
+type TimerParamsFlags = BitSet Word TimerParamsFlag
+
+data TimerParams = TimerParams
+   { timerParamsFlags     :: TimerParamsFlags -- ^ flags - SNDRV_MIXER_PSFLG_*
+   , timerParamsTicks     :: Word             -- ^ requested resolution in ticks
+   , timerParamsQueueSize :: Word             -- ^ total size of queue (32-1024)
+   , timerParamsReserved  :: Word             -- ^ reserved, was: failure locations
+   , timerParamsFilter    :: Word             -- ^ event filter (bitmask of SNDRV_TIMER_EVENT_*)
+   , timerParamsReserved2 :: Vector 60 Word8  -- ^ reserved
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerParams where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data TimerStatus = TimerStatus
+   { timerStatusTimeStamp  :: TimeSpec        -- ^ Timestamp - last update
+   , timerStatusResolution :: Word            -- ^ current period resolution in ns
+   , timerStatusLost       :: Word            -- ^ counter of master tick lost
+   , timerStatusOverrun    :: Word            -- ^ count of read queue overruns
+   , timerStatusQueue      :: Word            -- ^ used queue size
+   , timerStatusReserved   :: Vector 64 Word8 -- ^ reserved
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerStatus where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+timerIoctl :: Word8 -> FileDescriptor -> SysRet ()
+timerIoctl n = ioctlSignal sysIoctl 0x54 n defaultCheck
+
+timerIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
+timerIoctlW n = ioctlWrite sysIoctl 0x54 n defaultCheck
+
+timerIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+timerIoctlR n = ioctlRead sysIoctl 0x54 n defaultCheck
+
+timerIoctlWR :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
+timerIoctlWR n = ioctlReadWrite sysIoctl 0x54 n defaultCheck
+
+ioctlTimerVersion :: FileDescriptor -> SysRet Int
+ioctlTimerVersion = timerIoctlR 0x00
+
+ioctlTimerNextDevice :: FileDescriptor -> TimerId -> SysRet TimerId
+ioctlTimerNextDevice = timerIoctlWR 0x01
+
+ioctlTimerTRead :: FileDescriptor -> Int -> SysRet ()
+ioctlTimerTRead = timerIoctlW 0x02
+
+ioctlTimerGInfo :: FileDescriptor -> TimerGInfo -> SysRet TimerGInfo
+ioctlTimerGInfo = timerIoctlWR 0x03
+
+ioctlTimerGParams :: FileDescriptor -> TimerGParams -> SysRet ()
+ioctlTimerGParams = timerIoctlW 0x04
+
+ioctlTimerGStatus :: FileDescriptor -> TimerGStatus -> SysRet TimerGStatus
+ioctlTimerGStatus = timerIoctlWR 0x05
+
+ioctlTimerSelect :: FileDescriptor -> TimerSelect -> SysRet ()
+ioctlTimerSelect = timerIoctlW 0x10
+
+ioctlTimerInfo :: FileDescriptor -> SysRet TimerInfo
+ioctlTimerInfo = timerIoctlR 0x11
+
+ioctlTimerParams :: FileDescriptor -> TimerParams -> SysRet ()
+ioctlTimerParams = timerIoctlW 0x12
+
+ioctlTimerStatus :: FileDescriptor -> SysRet TimerStatus
+ioctlTimerStatus = timerIoctlR 0x14
+
+ioctlTimerStart :: FileDescriptor -> SysRet ()
+ioctlTimerStart = timerIoctl 0xa0
+
+ioctlTimerStop :: FileDescriptor -> SysRet ()
+ioctlTimerStop = timerIoctl 0xa1
+
+ioctlTimerContinue :: FileDescriptor -> SysRet ()
+ioctlTimerContinue = timerIoctl 0xa2
+
+ioctlTimerPause :: FileDescriptor -> SysRet ()
+ioctlTimerPause = timerIoctl 0xa3
+
+data TimerRead = TimerRead
+   { timerReadResolution :: Word
+   , timerReadTicks      :: Word
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerRead where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data TimerEvent
+   = TimerEventResolution        -- ^ val = resolution in ns 
+   | TimerEventTick              -- ^ val = ticks 
+   | TimerEventStart             -- ^ val = resolution in ns 
+   | TimerEventStop              -- ^ val = 0 
+   | TimerEventContinue          -- ^ val = resolution in ns 
+   | TimerEventPause             -- ^ val = 0 
+   | TimerEventEarly             -- ^ val = 0, early event 
+   | TimerEventSuspend           -- ^ val = 0 
+   | TimerEventResume            -- ^ val = resolution in ns 
+   -- master timer events for slave timer instances
+   | TimerEventMasterStart
+   | TimerEventMasterStop
+   | TimerEventMasterContinue
+   | TimerEventMasterPause
+   | TimerEventMasterSuspend
+   | TimerEventMasterResume
+   deriving (Show,Eq)
+
+instance Enum TimerEvent where
+   fromEnum x = case x of
+      TimerEventResolution       -> 0
+      TimerEventTick             -> 1
+      TimerEventStart            -> 2
+      TimerEventStop             -> 3
+      TimerEventContinue         -> 4
+      TimerEventPause            -> 5
+      TimerEventEarly            -> 6
+      TimerEventSuspend          -> 7
+      TimerEventResume           -> 8
+      TimerEventMasterStart      -> 12
+      TimerEventMasterStop       -> 13
+      TimerEventMasterContinue   -> 14
+      TimerEventMasterPause      -> 15
+      TimerEventMasterSuspend    -> 17
+      TimerEventMasterResume     -> 18
+   toEnum x = case x of
+      0  -> TimerEventResolution
+      1  -> TimerEventTick
+      2  -> TimerEventStart
+      3  -> TimerEventStop
+      4  -> TimerEventContinue
+      5  -> TimerEventPause
+      6  -> TimerEventEarly
+      7  -> TimerEventSuspend
+      8  -> TimerEventResume
+      12 -> TimerEventMasterStart
+      13 -> TimerEventMasterStop
+      14 -> TimerEventMasterContinue
+      15 -> TimerEventMasterPause
+      17 -> TimerEventMasterSuspend
+      18 -> TimerEventMasterResume
+      _  -> error "Unknown timer event"
+
+data TimerTRead = TimerTRead
+   { timerTReadEvent     :: Int
+   , timerTReadTimeStamp :: TimeSpec
+   , timerTReadValue     :: Word
+   } deriving (Show,Generic,CStorable)
+
+instance Storable TimerTRead where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+-----------------------------------------------------------------------------
+-- Driver control interface - /dev/snd/control*
+-----------------------------------------------------------------------------
+
+controlVersion :: Word32
+controlVersion = 0x00020007
 
 {-
-/*****************************************************************************
- *                                                                           *
- *                            MIDI v1.0 interface                            *
- *                                                                           *
- *****************************************************************************/
-
-/*
- *  Raw MIDI section - /dev/snd/midi??
- */
-
-#define SNDRV_RAWMIDI_VERSION           SNDRV_PROTOCOL_VERSION(2, 0, 0)
-
-enum {
-        SNDRV_RAWMIDI_STREAM_OUTPUT = 0,
-        SNDRV_RAWMIDI_STREAM_INPUT,
-        SNDRV_RAWMIDI_STREAM_LAST = SNDRV_RAWMIDI_STREAM_INPUT,
-};
-
-#define SNDRV_RAWMIDI_INFO_OUTPUT               0x00000001
-#define SNDRV_RAWMIDI_INFO_INPUT                0x00000002
-#define SNDRV_RAWMIDI_INFO_DUPLEX               0x00000004
-
-struct snd_rawmidi_info {
-        unsigned int device;            /* RO/WR (control): device number */
-        unsigned int subdevice;         /* RO/WR (control): subdevice number */
-        int stream;                     /* WR: stream */
-        int card;                       /* R: card number */
-        unsigned int flags;             /* SNDRV_RAWMIDI_INFO_XXXX */
-        unsigned char id[64];           /* ID (user selectable) */
-        unsigned char name[80];         /* name of device */
-        unsigned char subname[32];      /* name of active or selected subdevice */
-        unsigned int subdevices_count;
-        unsigned int subdevices_avail;
-        unsigned char reserved[64];     /* reserved for future use */
-};
-
-struct snd_rawmidi_params {
-        int stream;
-        size_t buffer_size;             /* queue size in bytes */
-        size_t avail_min;               /* minimum avail bytes for wakeup */
-        unsigned int no_active_sensing: 1; /* do not send active sensing byte in close() */
-        unsigned char reserved[16];     /* reserved for future use */
-};
-
-struct snd_rawmidi_status {
-        int stream;
-        struct timespec tstamp;         /* Timestamp */
-        size_t avail;                   /* available bytes */
-        size_t xruns;                   /* count of overruns since last status (in bytes) */
-        unsigned char reserved[16];     /* reserved for future use */
-};
-
-#define SNDRV_RAWMIDI_IOCTL_PVERSION    _IOR('W', 0x00, int)
-#define SNDRV_RAWMIDI_IOCTL_INFO        _IOR('W', 0x01, struct snd_rawmidi_info)
-#define SNDRV_RAWMIDI_IOCTL_PARAMS      _IOWR('W', 0x10, struct snd_rawmidi_params)
-#define SNDRV_RAWMIDI_IOCTL_STATUS      _IOWR('W', 0x20, struct snd_rawmidi_status)
-#define SNDRV_RAWMIDI_IOCTL_DROP        _IOW('W', 0x30, int)
-#define SNDRV_RAWMIDI_IOCTL_DRAIN       _IOW('W', 0x31, int)
-
-/*
- *  Timer section - /dev/snd/timer
- */
-
-#define SNDRV_TIMER_VERSION             SNDRV_PROTOCOL_VERSION(2, 0, 6)
-
-enum {
-        SNDRV_TIMER_CLASS_NONE = -1,
-        SNDRV_TIMER_CLASS_SLAVE = 0,
-        SNDRV_TIMER_CLASS_GLOBAL,
-        SNDRV_TIMER_CLASS_CARD,
-        SNDRV_TIMER_CLASS_PCM,
-        SNDRV_TIMER_CLASS_LAST = SNDRV_TIMER_CLASS_PCM,
-};
-
-/* slave timer classes */
-enum {
-        SNDRV_TIMER_SCLASS_NONE = 0,
-        SNDRV_TIMER_SCLASS_APPLICATION,
-        SNDRV_TIMER_SCLASS_SEQUENCER,           /* alias */
-        SNDRV_TIMER_SCLASS_OSS_SEQUENCER,       /* alias */
-        SNDRV_TIMER_SCLASS_LAST = SNDRV_TIMER_SCLASS_OSS_SEQUENCER,
-};
-
-/* global timers (device member) */
-#define SNDRV_TIMER_GLOBAL_SYSTEM       0
-#define SNDRV_TIMER_GLOBAL_RTC          1
-#define SNDRV_TIMER_GLOBAL_HPET         2
-#define SNDRV_TIMER_GLOBAL_HRTIMER      3
-
-/* info flags */
-#define SNDRV_TIMER_FLG_SLAVE           (1<<0)  /* cannot be controlled */
-
-struct snd_timer_id {
-        int dev_class;
-        int dev_sclass;
-        int card;
-        int device;
-        int subdevice;
-};
-
-struct snd_timer_ginfo {
-        struct snd_timer_id tid;        /* requested timer ID */
-        unsigned int flags;             /* timer flags - SNDRV_TIMER_FLG_* */
-        int card;                       /* card number */
-        unsigned char id[64];           /* timer identification */
-        unsigned char name[80];         /* timer name */
-        unsigned long reserved0;        /* reserved for future use */
-        unsigned long resolution;       /* average period resolution in ns */
-        unsigned long resolution_min;   /* minimal period resolution in ns */
-        unsigned long resolution_max;   /* maximal period resolution in ns */
-        unsigned int clients;           /* active timer clients */
-        unsigned char reserved[32];
-};
-
-struct snd_timer_gparams {
-        struct snd_timer_id tid;        /* requested timer ID */
-        unsigned long period_num;       /* requested precise period duration (in seconds) - numerator */
-        unsigned long period_den;       /* requested precise period duration (in seconds) - denominator */
-        unsigned char reserved[32];
-};
-
-struct snd_timer_gstatus {
-        struct snd_timer_id tid;        /* requested timer ID */
-        unsigned long resolution;       /* current period resolution in ns */
-        unsigned long resolution_num;   /* precise current period resolution (in seconds) - numerator */
-        unsigned long resolution_den;   /* precise current period resolution (in seconds) - denominator */
-        unsigned char reserved[32];
-};
-
-struct snd_timer_select {
-        struct snd_timer_id id; /* bind to timer ID */
-        unsigned char reserved[32];     /* reserved */
-};
-
-struct snd_timer_info {
-        unsigned int flags;             /* timer flags - SNDRV_TIMER_FLG_* */
-        int card;                       /* card number */
-        unsigned char id[64];           /* timer identificator */
-        unsigned char name[80];         /* timer name */
-        unsigned long reserved0;        /* reserved for future use */
-        unsigned long resolution;       /* average period resolution in ns */
-        unsigned char reserved[64];     /* reserved */
-};
-
-#define SNDRV_TIMER_PSFLG_AUTO          (1<<0)  /* auto start, otherwise one-shot */
-#define SNDRV_TIMER_PSFLG_EXCLUSIVE     (1<<1)  /* exclusive use, precise start/stop/pause/continue */
-#define SNDRV_TIMER_PSFLG_EARLY_EVENT   (1<<2)  /* write early event to the poll queue */
-
-struct snd_timer_params {
-        unsigned int flags;             /* flags - SNDRV_MIXER_PSFLG_* */
-        unsigned int ticks;             /* requested resolution in ticks */
-        unsigned int queue_size;        /* total size of queue (32-1024) */
-        unsigned int reserved0;         /* reserved, was: failure locations */
-        unsigned int filter;            /* event filter (bitmask of SNDRV_TIMER_EVENT_*) */
-        unsigned char reserved[60];     /* reserved */
-};
-
-struct snd_timer_status {
-        struct timespec tstamp;         /* Timestamp - last update */
-        unsigned int resolution;        /* current period resolution in ns */
-        unsigned int lost;              /* counter of master tick lost */
-        unsigned int overrun;           /* count of read queue overruns */
-        unsigned int queue;             /* used queue size */
-        unsigned char reserved[64];     /* reserved */
-};
-
-#define SNDRV_TIMER_IOCTL_PVERSION      _IOR('T', 0x00, int)
-#define SNDRV_TIMER_IOCTL_NEXT_DEVICE   _IOWR('T', 0x01, struct snd_timer_id)
-#define SNDRV_TIMER_IOCTL_TREAD         _IOW('T', 0x02, int)
-#define SNDRV_TIMER_IOCTL_GINFO         _IOWR('T', 0x03, struct snd_timer_ginfo)
-#define SNDRV_TIMER_IOCTL_GPARAMS       _IOW('T', 0x04, struct snd_timer_gparams)
-#define SNDRV_TIMER_IOCTL_GSTATUS       _IOWR('T', 0x05, struct snd_timer_gstatus)
-#define SNDRV_TIMER_IOCTL_SELECT        _IOW('T', 0x10, struct snd_timer_select)
-#define SNDRV_TIMER_IOCTL_INFO          _IOR('T', 0x11, struct snd_timer_info)
-#define SNDRV_TIMER_IOCTL_PARAMS        _IOW('T', 0x12, struct snd_timer_params)
-#define SNDRV_TIMER_IOCTL_STATUS        _IOR('T', 0x14, struct snd_timer_status)
-/* The following four ioctls are changed since 1.0.9 due to confliction */
-#define SNDRV_TIMER_IOCTL_START         _IO('T', 0xa0)
-#define SNDRV_TIMER_IOCTL_STOP          _IO('T', 0xa1)
-#define SNDRV_TIMER_IOCTL_CONTINUE      _IO('T', 0xa2)
-#define SNDRV_TIMER_IOCTL_PAUSE         _IO('T', 0xa3)
-
-struct snd_timer_read {
-        unsigned int resolution;
-        unsigned int ticks;
-};
-
-enum {
-        SNDRV_TIMER_EVENT_RESOLUTION = 0,       /* val = resolution in ns */
-        SNDRV_TIMER_EVENT_TICK,                 /* val = ticks */
-        SNDRV_TIMER_EVENT_START,                /* val = resolution in ns */
-        SNDRV_TIMER_EVENT_STOP,                 /* val = 0 */
-        SNDRV_TIMER_EVENT_CONTINUE,             /* val = resolution in ns */
-        SNDRV_TIMER_EVENT_PAUSE,                /* val = 0 */
-        SNDRV_TIMER_EVENT_EARLY,                /* val = 0, early event */
-        SNDRV_TIMER_EVENT_SUSPEND,              /* val = 0 */
-        SNDRV_TIMER_EVENT_RESUME,               /* val = resolution in ns */
-        /* master timer events for slave timer instances */
-        SNDRV_TIMER_EVENT_MSTART = SNDRV_TIMER_EVENT_START + 10,
-        SNDRV_TIMER_EVENT_MSTOP = SNDRV_TIMER_EVENT_STOP + 10,
-        SNDRV_TIMER_EVENT_MCONTINUE = SNDRV_TIMER_EVENT_CONTINUE + 10,
-        SNDRV_TIMER_EVENT_MPAUSE = SNDRV_TIMER_EVENT_PAUSE + 10,
-        SNDRV_TIMER_EVENT_MSUSPEND = SNDRV_TIMER_EVENT_SUSPEND + 10,
-        SNDRV_TIMER_EVENT_MRESUME = SNDRV_TIMER_EVENT_RESUME + 10,
-};
-
-struct snd_timer_tread {
-        int event;
-        struct timespec tstamp;
-        unsigned int val;
-};
-
-/****************************************************************************
- *                                                                          *
- *        Section for driver control interface - /dev/snd/control?          *
- *                                                                          *
- ****************************************************************************/
-
-#define SNDRV_CTL_VERSION               SNDRV_PROTOCOL_VERSION(2, 0, 7)
 
 struct snd_ctl_card_info {
         int card;                       /* card number */
