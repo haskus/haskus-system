@@ -124,10 +124,51 @@ module ViperVM.Arch.Linux.Sound.Internals
    , TimerRead (..)
    , TimerEvent (..)
    , TimerTRead (..)
+   -- * Control: /dev/snd/control
+   , controlVersion
+   , ControlCardInfo (..)
+   , ControlElementType (..)
+   , ControlElementInterface (..)
+   , ControlElementAccess (..)
+   , ControlElementAccesses
+   , ControlPower (..)
+   , ControlElementId (..)
+   , ControlElementList (..)
+   , ControlTLV (..)
+   , ioctlControlVersion
+   , ioctlControlCardInfo
+   , ioctlControlElemList
+   -- , ioctlControlElemInfo
+   -- , ioctlControlElemRead
+   -- , ioctlControlElemWrite
+   -- , ioctlControlElemLock
+   -- , ioctlControlElemUnlock
+   , ioctlControlSubscribeEvents
+   -- , ioctlControlElemAdd
+   -- , ioctlControlElemReplace
+   -- , ioctlControlElemRemove
+   , ioctlControlTLVRead
+   , ioctlControlTLVWrite
+   , ioctlControlTLVCommand
+   , ioctlControlHwDepNextDevice
+   , ioctlControlHwInfo
+   , ioctlControlPcmNextDevice
+   , ioctlControlPcmInfo
+   , ioctlControlPcmPreferSubdevice
+   , ioctlControlMidiNextDevice
+   , ioctlControlMidiInfo
+   , ioctlControlMidiPreferSubdevice
+   , ioctlControlPower
+   , ioctlControlPowerState
+   -- * Read interface
+   , ControlEventType (..)
+   , ControlEventMask (..)
+   , ControlEvent (..)
    )
 where
 
 import Data.Word
+import Data.Bits
 import Data.Int
 import Foreign.Ptr
 import Foreign.CStorable
@@ -1452,83 +1493,148 @@ instance Storable TimerTRead where
 controlVersion :: Word32
 controlVersion = 0x00020007
 
+data ControlCardInfo = ControlCardInfo
+   { controlCardInfoCard       :: Int              -- ^ card number
+   , controlCardInfoPad        :: Int              -- ^ reserved for future (was type)
+   , controlCardInfoId         :: Vector 16 CChar  -- ^ ID of card (user selectable)
+   , controlCardInfoDriver     :: Vector 16 CChar  -- ^ Driver name
+   , controlCardInfoName       :: Vector 32 CChar  -- ^ Short name of soundcard
+   , controlCardInfoLongName   :: Vector 80 CChar  -- ^ name + info text about soundcard
+   , controlCardInfoReserved   :: Vector 16 Word8  -- ^ reserved for future (was ID of mixer)
+   , controlCardInfoMixerName  :: Vector 80 CChar  -- ^ visual mixer identification
+   , controlCardInfoComponents :: Vector 128 CChar -- ^ card components / fine identification, delimited with one space (AC97 etc..)
+   } deriving (Show,Generic,CStorable)
+
+instance Storable ControlCardInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data ControlElementType
+   = ControlElemNone
+   | ControlElemBoolean
+   | ControlElemInteger
+   | ControlElemEnumerated
+   | ControlElemBytes
+   | ControlElemIec958
+   | ControlElemInteger64
+   deriving (Show,Eq, Enum)
+
+
+data ControlElementInterface
+   = ControlElemInterfaceCard
+   | ControlElemInterfaceHwDep
+   | ControlElemInterfaceMixer
+   | ControlElemInterfacePCM
+   | ControlElemInterfaceMidi
+   | ControlElemInterfaceTimer
+   | ControlElemInterfaceSequencer
+   deriving (Show,Eq,Enum)
+
+data ControlElementAccess
+   = ControlElemAccessRead
+   | ControlElemAccessWrite
+   | ControlElemAccessVolatile    -- ^ control value may be changed without a notification
+   | ControlElemAccessTimeStamp   -- ^ when was control changed
+   | ControlElemAccessTlvRead     -- ^ TLV read is possible
+   | ControlElemAccessTlvWrite    -- ^ TLV write is possible
+   | ControlElemAccessTlvCommand  -- ^ TLV command is possible 
+   | ControlElemAccessInactive    -- ^ control does actually nothing, but may be updated 
+   | ControlElemAccessLock        -- ^ write lock 
+   | ControlElemAccessOwner       -- ^ write lock owner 
+   | ControlElemAccessTlvCallBack -- ^ kernel use a TLV callback 
+   | ControlElemAccessUser        -- ^ user space element 
+   deriving (Show,Eq,EnumBitSet)
+
+instance Enum ControlElementAccess where
+   fromEnum x = case x of
+      ControlElemAccessRead         -> 0
+      ControlElemAccessWrite        -> 1
+      ControlElemAccessVolatile     -> 2
+      ControlElemAccessTimeStamp    -> 3
+      ControlElemAccessTlvRead      -> 4
+      ControlElemAccessTlvWrite     -> 5
+      ControlElemAccessTlvCommand   -> 6
+      ControlElemAccessInactive     -> 8
+      ControlElemAccessLock         -> 9
+      ControlElemAccessOwner        -> 10
+      ControlElemAccessTlvCallBack  -> 28
+      ControlElemAccessUser         -> 29
+   toEnum x = case x of
+      0  -> ControlElemAccessRead
+      1  -> ControlElemAccessWrite
+      2  -> ControlElemAccessVolatile
+      3  -> ControlElemAccessTimeStamp
+      4  -> ControlElemAccessTlvRead
+      5  -> ControlElemAccessTlvWrite
+      6  -> ControlElemAccessTlvCommand
+      8  -> ControlElemAccessInactive
+      9  -> ControlElemAccessLock
+      10 -> ControlElemAccessOwner
+      28 -> ControlElemAccessTlvCallBack
+      29 -> ControlElemAccessUser
+      _  -> error "Unknown control element access"
+
+type ControlElementAccesses = BitSet Word32 ControlElementAccess
+
+-- for further details see the ACPI and PCI power management specification
+
+data ControlPower
+   = ControlPowerD0     -- ^ full On
+   | ControlPowerD1     -- ^ partial On
+   | ControlPowerD2     -- ^ partial On
+   | ControlPowerD3hot  -- ^ Off, with power
+   | ControlPowerD3cold -- ^ Off, without power
+   deriving (Show,Eq)
+
+instance Enum ControlPower where
+   fromEnum x = case x of
+      ControlPowerD0     -> 0x0000
+      ControlPowerD1     -> 0x0100
+      ControlPowerD2     -> 0x0200
+      ControlPowerD3hot  -> 0x0300
+      ControlPowerD3cold -> 0x0301
+   toEnum x = case x of
+      0x0000 -> ControlPowerD0
+      0x0100 -> ControlPowerD1
+      0x0200 -> ControlPowerD2
+      0x0300 -> ControlPowerD3hot
+      0x0301 -> ControlPowerD3cold
+      _      -> error "Unknown control power"
+
+data ControlElementId = ControlElementId
+   { controlElemIdNumId     :: Int             -- ^ numeric identifier, zero = invalid
+   , controlElemIdInterface :: Int             -- ^ interface identifier
+   , controlElemIdDevice    :: Word            -- ^ device/client number
+   , controlElemIdSubDevice :: Word            -- ^ subdevice (substream) number
+   , controlElemIdName      :: Vector 44 CChar -- ^ ASCII name of item
+   , controlElemIdIndex     :: Word            -- ^ index of item
+   } deriving (Show,Generic,CStorable)
+
+instance Storable ControlElementId where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data ControlElementList = ControlElementList
+   { controlElemListOffset   :: Word            -- ^ W: first element ID to get
+   , controlElemListSpace    :: Word            -- ^ W: count of element IDs to get
+   , controlElemListUsed     :: Word            -- ^ R: count of element IDs set
+   , controlElemListCount    :: Word            -- ^ R: count of all elements
+   , controlElemListPids     :: Ptr ()          -- ^ R: IDs
+   , controlElemListReserved :: Vector 50 Word8
+   } deriving (Show,Generic,CStorable)
+
+instance Storable ControlElementList where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
 {-
-
-struct snd_ctl_card_info {
-        int card;                       /* card number */
-        int pad;                        /* reserved for future (was type) */
-        unsigned char id[16];           /* ID of card (user selectable) */
-        unsigned char driver[16];       /* Driver name */
-        unsigned char name[32];         /* Short name of soundcard */
-        unsigned char longname[80];     /* name + info text about soundcard */
-        unsigned char reserved_[16];    /* reserved for future (was ID of mixer) */
-        unsigned char mixername[80];    /* visual mixer identification */
-        unsigned char components[128];  /* card components / fine identification, delimited with one space (AC97 etc..) */
-};
-
-typedef int __bitwise snd_ctl_elem_type_t;
-#define SNDRV_CTL_ELEM_TYPE_NONE        ((__force snd_ctl_elem_type_t) 0) /* invalid */
-#define SNDRV_CTL_ELEM_TYPE_BOOLEAN     ((__force snd_ctl_elem_type_t) 1) /* boolean type */
-#define SNDRV_CTL_ELEM_TYPE_INTEGER     ((__force snd_ctl_elem_type_t) 2) /* integer type */
-#define SNDRV_CTL_ELEM_TYPE_ENUMERATED  ((__force snd_ctl_elem_type_t) 3) /* enumerated type */
-#define SNDRV_CTL_ELEM_TYPE_BYTES       ((__force snd_ctl_elem_type_t) 4) /* byte array */
-#define SNDRV_CTL_ELEM_TYPE_IEC958      ((__force snd_ctl_elem_type_t) 5) /* IEC958 (S/PDIF) setup */
-#define SNDRV_CTL_ELEM_TYPE_INTEGER64   ((__force snd_ctl_elem_type_t) 6) /* 64-bit integer type */
-#define SNDRV_CTL_ELEM_TYPE_LAST        SNDRV_CTL_ELEM_TYPE_INTEGER64
-
-typedef int __bitwise snd_ctl_elem_iface_t;
-#define SNDRV_CTL_ELEM_IFACE_CARD       ((__force snd_ctl_elem_iface_t) 0) /* global control */
-#define SNDRV_CTL_ELEM_IFACE_HWDEP      ((__force snd_ctl_elem_iface_t) 1) /* hardware dependent device */
-#define SNDRV_CTL_ELEM_IFACE_MIXER      ((__force snd_ctl_elem_iface_t) 2) /* virtual mixer device */
-#define SNDRV_CTL_ELEM_IFACE_PCM        ((__force snd_ctl_elem_iface_t) 3) /* PCM device */
-#define SNDRV_CTL_ELEM_IFACE_RAWMIDI    ((__force snd_ctl_elem_iface_t) 4) /* RawMidi device */
-#define SNDRV_CTL_ELEM_IFACE_TIMER      ((__force snd_ctl_elem_iface_t) 5) /* timer device */
-#define SNDRV_CTL_ELEM_IFACE_SEQUENCER  ((__force snd_ctl_elem_iface_t) 6) /* sequencer client */
-#define SNDRV_CTL_ELEM_IFACE_LAST       SNDRV_CTL_ELEM_IFACE_SEQUENCER
-
-#define SNDRV_CTL_ELEM_ACCESS_READ              (1<<0)
-#define SNDRV_CTL_ELEM_ACCESS_WRITE             (1<<1)
-#define SNDRV_CTL_ELEM_ACCESS_READWRITE         (SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE)
-#define SNDRV_CTL_ELEM_ACCESS_VOLATILE          (1<<2)  /* control value may be changed without a notification */
-#define SNDRV_CTL_ELEM_ACCESS_TIMESTAMP         (1<<3)  /* when was control changed */
-#define SNDRV_CTL_ELEM_ACCESS_TLV_READ          (1<<4)  /* TLV read is possible */
-#define SNDRV_CTL_ELEM_ACCESS_TLV_WRITE         (1<<5)  /* TLV write is possible */
-#define SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE     (SNDRV_CTL_ELEM_ACCESS_TLV_READ|SNDRV_CTL_ELEM_ACCESS_TLV_WRITE)
-#define SNDRV_CTL_ELEM_ACCESS_TLV_COMMAND       (1<<6)  /* TLV command is possible */
-#define SNDRV_CTL_ELEM_ACCESS_INACTIVE          (1<<8)  /* control does actually nothing, but may be updated */
-#define SNDRV_CTL_ELEM_ACCESS_LOCK              (1<<9)  /* write lock */
-#define SNDRV_CTL_ELEM_ACCESS_OWNER             (1<<10) /* write lock owner */
-#define SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK      (1<<28) /* kernel use a TLV callback */ 
-#define SNDRV_CTL_ELEM_ACCESS_USER              (1<<29) /* user space element */
-/* bits 30 and 31 are obsoleted (for indirect access) */
-
-/* for further details see the ACPI and PCI power management specification */
-#define SNDRV_CTL_POWER_D0              0x0000  /* full On */
-#define SNDRV_CTL_POWER_D1              0x0100  /* partial On */
-#define SNDRV_CTL_POWER_D2              0x0200  /* partial On */
-#define SNDRV_CTL_POWER_D3              0x0300  /* Off */
-#define SNDRV_CTL_POWER_D3hot           (SNDRV_CTL_POWER_D3|0x0000)     /* Off, with power */
-#define SNDRV_CTL_POWER_D3cold          (SNDRV_CTL_POWER_D3|0x0001)     /* Off, without power */
-
-#define SNDRV_CTL_ELEM_ID_NAME_MAXLEN   44
-
-struct snd_ctl_elem_id {
-        unsigned int numid;             /* numeric identifier, zero = invalid */
-        snd_ctl_elem_iface_t iface;     /* interface identifier */
-        unsigned int device;            /* device/client number */
-        unsigned int subdevice;         /* subdevice (substream) number */
-        unsigned char name[SNDRV_CTL_ELEM_ID_NAME_MAXLEN];              /* ASCII name of item */
-        unsigned int index;             /* index of item */
-};
-
-struct snd_ctl_elem_list {
-        unsigned int offset;            /* W: first element ID to get */
-        unsigned int space;             /* W: count of element IDs to get */
-        unsigned int used;              /* R: count of element IDs set */
-        unsigned int count;             /* R: count of all elements */
-        struct snd_ctl_elem_id __user *pids; /* R: IDs */
-        unsigned char reserved[50];
-};
 
 struct snd_ctl_elem_info {
         struct snd_ctl_elem_id id;      /* W: element ID */
@@ -1588,81 +1694,146 @@ struct snd_ctl_elem_value {
         struct timespec tstamp;
         unsigned char reserved[128-sizeof(struct timespec)];
 };
-
-struct snd_ctl_tlv {
-        unsigned int numid;     /* control element numeric identification */
-        unsigned int length;    /* in bytes aligned to 4 */
-        unsigned int tlv[0];    /* first TLV */
-};
-
-#define SNDRV_CTL_IOCTL_PVERSION        _IOR('U', 0x00, int)
-#define SNDRV_CTL_IOCTL_CARD_INFO       _IOR('U', 0x01, struct snd_ctl_card_info)
-#define SNDRV_CTL_IOCTL_ELEM_LIST       _IOWR('U', 0x10, struct snd_ctl_elem_list)
-#define SNDRV_CTL_IOCTL_ELEM_INFO       _IOWR('U', 0x11, struct snd_ctl_elem_info)
-#define SNDRV_CTL_IOCTL_ELEM_READ       _IOWR('U', 0x12, struct snd_ctl_elem_value)
-#define SNDRV_CTL_IOCTL_ELEM_WRITE      _IOWR('U', 0x13, struct snd_ctl_elem_value)
-#define SNDRV_CTL_IOCTL_ELEM_LOCK       _IOW('U', 0x14, struct snd_ctl_elem_id)
-#define SNDRV_CTL_IOCTL_ELEM_UNLOCK     _IOW('U', 0x15, struct snd_ctl_elem_id)
-#define SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS _IOWR('U', 0x16, int)
-#define SNDRV_CTL_IOCTL_ELEM_ADD        _IOWR('U', 0x17, struct snd_ctl_elem_info)
-#define SNDRV_CTL_IOCTL_ELEM_REPLACE    _IOWR('U', 0x18, struct snd_ctl_elem_info)
-#define SNDRV_CTL_IOCTL_ELEM_REMOVE     _IOWR('U', 0x19, struct snd_ctl_elem_id)
-#define SNDRV_CTL_IOCTL_TLV_READ        _IOWR('U', 0x1a, struct snd_ctl_tlv)
-#define SNDRV_CTL_IOCTL_TLV_WRITE       _IOWR('U', 0x1b, struct snd_ctl_tlv)
-#define SNDRV_CTL_IOCTL_TLV_COMMAND     _IOWR('U', 0x1c, struct snd_ctl_tlv)
-#define SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE _IOWR('U', 0x20, int)
-#define SNDRV_CTL_IOCTL_HWDEP_INFO      _IOR('U', 0x21, struct snd_hwdep_info)
-#define SNDRV_CTL_IOCTL_PCM_NEXT_DEVICE _IOR('U', 0x30, int)
-#define SNDRV_CTL_IOCTL_PCM_INFO        _IOWR('U', 0x31, struct snd_pcm_info)
-#define SNDRV_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x32, int)
-#define SNDRV_CTL_IOCTL_RAWMIDI_NEXT_DEVICE _IOWR('U', 0x40, int)
-#define SNDRV_CTL_IOCTL_RAWMIDI_INFO    _IOWR('U', 0x41, struct snd_rawmidi_info)
-#define SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE _IOW('U', 0x42, int)
-#define SNDRV_CTL_IOCTL_POWER           _IOWR('U', 0xd0, int)
-#define SNDRV_CTL_IOCTL_POWER_STATE     _IOR('U', 0xd1, int)
-
-/*
- *  Read interface.
- */
-
-enum sndrv_ctl_event_type {
-        SNDRV_CTL_EVENT_ELEM = 0,
-        SNDRV_CTL_EVENT_LAST = SNDRV_CTL_EVENT_ELEM,
-};
-
-#define SNDRV_CTL_EVENT_MASK_VALUE      (1<<0)  /* element value was changed */
-#define SNDRV_CTL_EVENT_MASK_INFO       (1<<1)  /* element info was changed */
-#define SNDRV_CTL_EVENT_MASK_ADD        (1<<2)  /* element was added */
-#define SNDRV_CTL_EVENT_MASK_TLV        (1<<3)  /* element TLV tree was changed */
-#define SNDRV_CTL_EVENT_MASK_REMOVE     (~0U)   /* element was removed */
-
-struct snd_ctl_event {
-        int type;       /* event type - SNDRV_CTL_EVENT_* */
-        union {
-                struct {
-                        unsigned int mask;
-                        struct snd_ctl_elem_id id;
-                } elem;
-                unsigned char data8[60];
-        } data;
-};
-
-/*
- *  Control names
- */
-
-#define SNDRV_CTL_NAME_NONE                             ""
-#define SNDRV_CTL_NAME_PLAYBACK                         "Playback "
-#define SNDRV_CTL_NAME_CAPTURE                          "Capture "
-
-#define SNDRV_CTL_NAME_IEC958_NONE                      ""
-#define SNDRV_CTL_NAME_IEC958_SWITCH                    "Switch"
-#define SNDRV_CTL_NAME_IEC958_VOLUME                    "Volume"
-#define SNDRV_CTL_NAME_IEC958_DEFAULT                   "Default"
-#define SNDRV_CTL_NAME_IEC958_MASK                      "Mask"
-#define SNDRV_CTL_NAME_IEC958_CON_MASK                  "Con Mask"
-#define SNDRV_CTL_NAME_IEC958_PRO_MASK                  "Pro Mask"
-#define SNDRV_CTL_NAME_IEC958_PCM_STREAM                "PCM Stream"
-#define SNDRV_CTL_NAME_IEC958(expl,direction,what)      "IEC958 " expl SNDRV_CTL_NAME_##direction SNDRV_CTL_NAME_IEC958_##what
-
 -}
+
+
+data ControlTLV = ControlTLV
+   { controlTlvNumId  :: Word          -- ^ control element numeric identification
+   , controlTlvLength :: Word          -- ^ in bytes aligned to 4
+   , controlTlvTlv    :: Vector 0 Word -- ^ first TLV
+   -- FIXME: the array is allocated "after" the struct...
+   } deriving (Show,Generic,CStorable)
+
+instance Storable ControlTLV where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+controlIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
+controlIoctlW n = ioctlWrite sysIoctl 0x55 n defaultCheck
+
+controlIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+controlIoctlR n = ioctlRead sysIoctl 0x55 n defaultCheck
+
+controlIoctlWR :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
+controlIoctlWR n = ioctlReadWrite sysIoctl 0x55 n defaultCheck
+
+ioctlControlVersion :: FileDescriptor -> SysRet Int
+ioctlControlVersion = controlIoctlR 0x00
+
+ioctlControlCardInfo :: FileDescriptor -> SysRet ControlCardInfo
+ioctlControlCardInfo = controlIoctlR 0x01
+
+ioctlControlElemList :: FileDescriptor -> ControlElementList -> SysRet ControlElementList
+ioctlControlElemList = controlIoctlWR 0x10
+
+-- ioctlControlElemInfo :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+-- ioctlControlElemInfo = controlIoctlWR 0x11
+-- 
+-- ioctlControlElemRead :: FileDescriptor -> ControlElementValue -> SysRet ControlElementValue
+-- ioctlControlElemRead = controlIoctlWR 0x12
+-- 
+-- ioctlControlElemWrite :: FileDescriptor -> ControlElementValue -> SysRet ControlElementValue
+-- ioctlControlElemWrite = controlIoctlWR 0x13
+-- 
+-- ioctlControlElemLock :: FileDescriptor -> ControlElementId -> SysRet ()
+-- ioctlControlElemLock = controlIoctlW 0x14
+-- 
+-- ioctlControlElemUnlock :: FileDescriptor -> ControlElementId -> SysRet ()
+-- ioctlControlElemUnlock = controlIoctlW 0x15
+
+ioctlControlSubscribeEvents :: FileDescriptor -> Int -> SysRet Int
+ioctlControlSubscribeEvents = controlIoctlWR 0x16
+
+-- ioctlControlElemAdd :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+-- ioctlControlElemAdd = controlIoctlWR 0x17
+-- 
+-- ioctlControlElemReplace :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+-- ioctlControlElemReplace = controlIoctlWR 0x18
+-- 
+-- ioctlControlElemRemove :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+-- ioctlControlElemRemove = controlIoctlWR 0x19
+
+ioctlControlTLVRead :: FileDescriptor -> ControlTLV -> SysRet ControlTLV
+ioctlControlTLVRead = controlIoctlWR 0x1a
+
+ioctlControlTLVWrite :: FileDescriptor -> ControlTLV -> SysRet ControlTLV
+ioctlControlTLVWrite = controlIoctlWR 0x1b
+
+ioctlControlTLVCommand :: FileDescriptor -> ControlTLV -> SysRet ControlTLV
+ioctlControlTLVCommand = controlIoctlWR 0x1c
+
+ioctlControlHwDepNextDevice :: FileDescriptor -> Int -> SysRet Int
+ioctlControlHwDepNextDevice = controlIoctlWR 0x20
+
+ioctlControlHwInfo :: FileDescriptor -> SysRet HwInfo
+ioctlControlHwInfo = controlIoctlR 0x21
+
+ioctlControlPcmNextDevice :: FileDescriptor -> SysRet Int
+ioctlControlPcmNextDevice = controlIoctlR 0x30
+
+ioctlControlPcmInfo :: FileDescriptor -> PcmInfo -> SysRet PcmInfo
+ioctlControlPcmInfo = controlIoctlWR 0x31
+
+ioctlControlPcmPreferSubdevice :: FileDescriptor -> Int -> SysRet ()
+ioctlControlPcmPreferSubdevice = controlIoctlW 0x32
+
+ioctlControlMidiNextDevice :: FileDescriptor -> Int -> SysRet Int
+ioctlControlMidiNextDevice = controlIoctlWR 0x40
+
+ioctlControlMidiInfo :: FileDescriptor -> MidiInfo -> SysRet MidiInfo
+ioctlControlMidiInfo = controlIoctlWR 0x41
+
+ioctlControlMidiPreferSubdevice :: FileDescriptor -> Int -> SysRet ()
+ioctlControlMidiPreferSubdevice = controlIoctlW 0x42
+
+ioctlControlPower :: FileDescriptor -> Int -> SysRet Int
+ioctlControlPower = controlIoctlWR 0xd0
+
+ioctlControlPowerState :: FileDescriptor -> SysRet Int
+ioctlControlPowerState = controlIoctlR 0xd1
+
+
+-----------------------------------------------------------------------------
+-- Read interface
+-----------------------------------------------------------------------------
+
+data ControlEventType
+   = ControlEventTypeElem
+   deriving (Show,Eq,Enum)
+
+data ControlEventMask
+   = ControlEventMaskValue    -- ^ element value was changed
+   | ControlEventMaskInfo     -- ^ element info was changed 
+   | ControlEventMaskAdd      -- ^ element was added 
+   | ControlEventMaskTLV      -- ^ element TLV tree was changed 
+   | ControlEventMaskRemove   -- ^ element was removed 
+   deriving (Show,Eq)
+
+instance Enum ControlEventMask where
+   fromEnum x = case x of
+      ControlEventMaskValue   -> 1
+      ControlEventMaskInfo    -> 2
+      ControlEventMaskAdd     -> 4
+      ControlEventMaskTLV     -> 8
+      ControlEventMaskRemove  -> complement 0
+   toEnum x = case x of
+      1                     -> ControlEventMaskValue
+      2                     -> ControlEventMaskInfo
+      4                     -> ControlEventMaskAdd
+      8                     -> ControlEventMaskTLV
+      v | v == complement 0 -> ControlEventMaskRemove
+      _                     -> error "Unknown event mask"
+
+data ControlEvent = ControlEvent
+   { controlEventType   :: Int
+   , controlEventMask   :: Word
+   , controlEventElemId :: ControlElementId
+   } deriving (Show,Generic,CStorable)
+
+instance Storable ControlEvent where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
