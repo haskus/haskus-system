@@ -71,11 +71,6 @@ pokeBuffer (Buffer sz fp) ptr =
    withForeignPtr fp $ \p ->
       memCopy (castPtr ptr) p sz
 
-peekElem :: Storable a => Buffer -> a
-peekElem (Buffer _ fp) = unsafePerformIO $
-   withForeignPtr fp $ \p -> peek (castPtr p)
-
-
 newtype Union2 a b     = Union2 Buffer
 newtype Union3 a b c   = Union3 Buffer
 newtype Union4 a b c d = Union4 Buffer
@@ -86,57 +81,13 @@ class Union a where
    -- | Create an union from a buffer
    fromBuffer :: Buffer -> a
 
-
-instance (Storable a, Storable b) => Storable (Union2 a b) where
-   sizeOf _    = maximum
-                  [ sizeOf (undefined :: a)
-                  , sizeOf (undefined :: b)
-                  ]
-   alignment _ = maximum
-                  [ alignment (undefined :: a)
-                  , alignment (undefined :: b)
-                  ]
-   peek        = peekBuffer Union2
-   poke ptr (Union2 b) = pokeBuffer b ptr
-
 instance Union (Union2 a b) where
    getBuffer (Union2 b) = b
    fromBuffer           = Union2
 
-
-instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
-   sizeOf _    = maximum
-                  [ sizeOf (undefined :: a)
-                  , sizeOf (undefined :: b)
-                  , sizeOf (undefined :: c)
-                  ]
-   alignment _ = maximum
-                  [ alignment (undefined :: a)
-                  , alignment (undefined :: b)
-                  , alignment (undefined :: c)
-                  ]
-   peek        = peekBuffer Union3
-   poke ptr (Union3 b) = pokeBuffer b ptr
-
 instance Union (Union3 a b c) where
    getBuffer (Union3 b) = b
    fromBuffer           = Union3
-
-instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a b c d) where
-   sizeOf _    = maximum
-                  [ sizeOf (undefined :: a)
-                  , sizeOf (undefined :: b)
-                  , sizeOf (undefined :: c)
-                  , sizeOf (undefined :: d)
-                  ]
-   alignment _ = maximum
-                  [ alignment (undefined :: a)
-                  , alignment (undefined :: b)
-                  , alignment (undefined :: c)
-                  , alignment (undefined :: d)
-                  ]
-   peek        = peekBuffer Union4
-   poke ptr (Union4 b) = pokeBuffer b ptr
 
 instance Union (Union4 a b c d) where
    getBuffer (Union4 b) = b
@@ -158,7 +109,11 @@ type instance E 4 (Union4 a b c d) = d
 -- | Retrieve a union member from its index
 fromUnion :: forall (n :: Nat) u . (KnownNat n, Union u, Storable (E n u))
             => Proxy n -> u -> E n u
-fromUnion _ u = peekElem (getBuffer u)
+fromUnion _ u = unsafePerformIO $ peekElem (getBuffer u)
+   where
+      peekElem :: Storable a => Buffer -> IO a
+      peekElem (Buffer _ fp) = withForeignPtr fp (peek . castPtr)
+
 
 -- | Create a new union
 toUnion :: forall (n :: Nat) u . (Storable u, KnownNat n, Union u, Storable (E n u))
@@ -169,3 +124,54 @@ toUnion _ v = unsafePerformIO $ do
    withForeignPtr fp $ \p -> 
       poke (castPtr p) v
    return (fromBuffer (Buffer (fromIntegral sz) fp))
+
+
+-- TODO: rewrite rules
+-- poke p (toUnion (Proxy :: Proxy n) x) = poke (castPtr p :: Ptr (E n u)) x
+--
+-- fromUnion n <$> peek p = peek (castPtr p :: Ptr (E n u))
+
+instance (Storable a, Storable b) => Storable (Union2 a b) where
+   sizeOf _            = maximum
+                          [ sizeOf (undefined :: a)
+                          , sizeOf (undefined :: b)
+                          ]
+   alignment _         = maximum
+                          [ alignment (undefined :: a)
+                          , alignment (undefined :: b)
+                          ]
+   peek                = peekBuffer Union2
+   poke ptr (Union2 b) = pokeBuffer b ptr
+
+
+
+instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
+   sizeOf _            = maximum
+                          [ sizeOf (undefined :: a)
+                          , sizeOf (undefined :: b)
+                          , sizeOf (undefined :: c)
+                          ]
+   alignment _         = maximum
+                          [ alignment (undefined :: a)
+                          , alignment (undefined :: b)
+                          , alignment (undefined :: c)
+                          ]
+   peek                = peekBuffer Union3
+   poke ptr (Union3 b) = pokeBuffer b ptr
+
+
+instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a b c d) where
+   sizeOf _            = maximum
+                          [ sizeOf (undefined :: a)
+                          , sizeOf (undefined :: b)
+                          , sizeOf (undefined :: c)
+                          , sizeOf (undefined :: d)
+                          ]
+   alignment _         = maximum
+                          [ alignment (undefined :: a)
+                          , alignment (undefined :: b)
+                          , alignment (undefined :: c)
+                          , alignment (undefined :: d)
+                          ]
+   peek                = peekBuffer Union4
+   poke ptr (Union4 b) = pokeBuffer b ptr
