@@ -24,17 +24,63 @@ module ViperVM.Arch.Linux.Sound.Internals
    , PcmState (..)
    , PcmInfo (..)
    , PcmHwParam (..)
-   , PcmHwParams (..)
    , PcmHwParamsFlag (..)
    , PcmHwParamsFlags
    , Mask (..)
    , Interval (..)
    , IntervalOption (..)
    , IntervalOptions
+   , PcmHwParams (..)
+   , PcmTimeStampMode (..)
+   , PcmSwParams (..)
+   , PcmChannelInfo (..)
+   , PcmAudioTimeStamp (..)
+   , PcmStatus (..)
+   , PcmMmapStatus (..)
+   , PcmMmapControl (..)
+   , PcmSyncFlag (..)
+   , PcmSyncFlags
+   , PcmSyncPtr (..)
+   , XferI (..)
+   , XferN (..)
+   , PcmTimeStampType (..)
+   , ChannelPosition (..)
+   , ChannelOption (..)
+   , ioctlPcmVersion
+   , ioctlPcmInfo
+   , ioctlPcmTimeStamp
+   , ioctlPcmTTimeStamp
+   , ioctlPcmHwRefine
+   , ioctlPcmHwParams
+   , ioctlPcmHwFree
+   , ioctlPcmSwParams
+   , ioctlPcmStatus
+   , ioctlPcmDelay
+   , ioctlPcmHwSync
+   , ioctlPcmSyncPtr
+   , ioctlPcmStatusExt
+   , ioctlPcmChannelInfo
+   , ioctlPcmPrepare
+   , ioctlPcmReset
+   , ioctlPcmStart
+   , ioctlPcmDrop
+   , ioctlPcmDrain
+   , ioctlPcmPause
+   , ioctlPcmRewind
+   , ioctlPcmResume
+   , ioctlPcmXRun
+   , ioctlPcmForward
+   , ioctlPcmWriteIFrames
+   , ioctlPcmReadIFrames
+   , ioctlPcmWriteNFrames
+   , ioctlPcmReadNFrames
+   , ioctlPcmLink
+   , ioctlPcmUnlink
    )
 where
 
 import Data.Word
+import Data.Int
 import Foreign.Ptr
 import Foreign.CStorable
 import Foreign.Storable
@@ -47,6 +93,7 @@ import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Time
 
 -- From alsa-lib/include/sound/asound.h
 
@@ -166,26 +213,23 @@ instance Storable HwDspImage where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-soundIoctl :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
-soundIoctl n = ioctlReadWrite sysIoctl 0x48 n defaultCheck
+hwIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
+hwIoctlW n = ioctlWrite sysIoctl 0x48 n defaultCheck
 
-soundIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
-soundIoctlW n = ioctlWrite sysIoctl 0x48 n defaultCheck
-
-soundIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
-soundIoctlR n = ioctlRead sysIoctl 0x48 n defaultCheck
+hwIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+hwIoctlR n = ioctlRead sysIoctl 0x48 n defaultCheck
 
 ioctlHwVersion :: FileDescriptor -> SysRet Int
-ioctlHwVersion = soundIoctlR 0x00
+ioctlHwVersion = hwIoctlR 0x00
 
 ioctlHwInfo :: FileDescriptor -> SysRet HwInfo
-ioctlHwInfo = soundIoctlR 0x01
+ioctlHwInfo = hwIoctlR 0x01
 
 ioctlHwDspStatus :: FileDescriptor -> SysRet HwDspStatus
-ioctlHwDspStatus = soundIoctlR 0x02
+ioctlHwDspStatus = hwIoctlR 0x02
 
 ioctlHwDspLoad :: FileDescriptor -> HwDspImage -> SysRet ()
-ioctlHwDspLoad = soundIoctlW 0x03
+ioctlHwDspLoad = hwIoctlW 0x03
 
 -----------------------------------------------------------------------------
 -- Digital Audio (PCM) interface - /dev/snd/pcm??
@@ -461,6 +505,17 @@ data PcmState
    | PcmStateDisconnected -- ^ hardware is disconnected
    deriving (Show,Eq,Enum)
 
+instance Storable PcmState where
+   sizeOf _    = sizeOf (undefined :: Int)
+   alignment _ = alignment (undefined :: Int)
+   peek ptr    = toEnum <$> peek (castPtr ptr)
+   poke ptr e  = poke (castPtr ptr) (fromEnum e)
+instance CStorable PcmState where
+   cSizeOf    = sizeOf
+   cAlignment = alignment
+   cPeek      = peek
+   cPoke      = poke
+
 data PcmMmapOffset
    = PcmMmapOffsetData
    | PcmMmapOffsetStatus
@@ -620,196 +675,316 @@ data PcmTimeStampMode
    | PcmTimeStampEnabled
    deriving (Show,Eq,Enum)
 
+data PcmSwParams = PcmSwParams
+   { pcmSwParamsTimeStamp        :: Int                -- ^ timestamp mode
+   , pcmSwParamsPeriodStep       :: Word
+   , pcmSwParamsSleepMin         :: Word            -- ^ min ticks to sleep
+   , pcmSwParamsAvailMin         :: Word64          -- ^ min avail frames for wakeup
+   , pcmSwParamsXFerAlign        :: Word64          -- ^ obsolete: xfer size need to be a multiple
+   , pcmSwParamsStartThreshold   :: Word64          -- ^ min hw_avail frames for automatic start
+   , pcmSwParamsStopThreshold    :: Word64          -- ^ min avail frames for automatic stop
+   , pcmSwParamsSilenceThreshold :: Word64          -- ^ min distance from noise for silence filling
+   , pcmSwParamsSilenceSize      :: Word64          -- ^ silence block size
+   , pcmSwParamsBoundary         :: Word64          -- ^ pointers wrap point
+   , pcmSwParamsProtoVersion     :: Word            -- ^ protocol version
+   , pcmSwParamsTimeStampType    :: Word            -- ^ timestamp type (req. proto >= 2.0.12)
+   , pcmSwParamsReserved         :: Vector 56 Word8 -- ^ reserved for future
+   } deriving (Generic, CStorable, Show)
+
+instance Storable PcmSwParams where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data PcmChannelInfo = PcmChannelInfo
+   { pcmChannelInfoChannel :: Word
+   , pcmChannelInfoOffset  :: Int64 -- ^ mmap offset
+   , pcmChannelInfoFirst   :: Word  -- ^ offset to first sample in bits
+   , pcmChannelInfoStep    :: Word  -- ^ samples distance in bits
+   } deriving (Show,Generic,CStorable)
+
+instance Storable PcmChannelInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data PcmAudioTimeStamp
+   = PcmAudioTimeStampCompat           -- ^ For backwards compatibility only, maps to wallclock/link time for HDAudio playback and DEFAULT/DMA time for everything else
+   | PcmAudioTimeStampDefault          -- ^ DMA time, reported as per hw_ptr
+   | PcmAudioTimeStampLink             -- ^ link time reported by sample or wallclock counter, reset on startup
+   | PcmAudioTimeStampLinkAbsolute     -- ^ link time reported by sample or wallclock counter, not reset on startup
+   | PcmAudioTimeStampLinkEstimated    -- ^ link time estimated indirectly
+   | PcmAudioTimeStampLinkSynchronized -- ^ link time synchronized with system time
+   deriving (Show,Eq,Enum)
+
+data PcmStatus = PcmStatus
+   { pcmStatusState              :: PcmState        -- ^ stream state
+   , pcmStatusTriggerTimeStamp   :: TimeSpec        -- ^ time when stream was started/stopped/paused
+   , pcmStatusTimeStamp          :: TimeSpec        -- ^ reference timestamp
+   , pcmStatusApplPtr            :: Word64          -- ^ appl ptr
+   , pcmStatusHwPtr              :: Word64          -- ^ hw ptr
+   , pcmStatusDelay              :: Word64          -- ^ current delay in frames
+   , pcmStatusAvail              :: Word64          -- ^ number of frames available
+   , pcmStatusAvailMax           :: Word64          -- ^ max frames available on hw since last status
+   , pcmStatusOverRange          :: Word64          -- ^ count of ADC (capture) overrange detections from last status
+   , pcmStatusSyspendedState     :: PcmState        -- ^ suspended stream state
+   , pcmStatusAudioTimeStampData :: Word32          -- ^ needed for 64-bit alignment, used for configs/report to/from userspace
+   , pcmStatusAudioTimeStamp     :: TimeSpec        -- ^ sample counter, wall clock, PHC or on-demand sync'ed
+   , pcmStatusDriverTimeStamp    :: TimeSpec        -- ^ useful in case reference system tstamp is reported with delay
+   , pcmStatusTimeStampAccuracy  :: Word32          -- ^ in ns units, only valid if indicated in audio_tstamp_data
+   , pcmStatusReserved           :: Vector 20 Word8 -- ^ must be filled with zero
+   } deriving (Show,Generic,CStorable)
+
+instance Storable PcmStatus where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data PcmMmapStatus = PcmMmapStatus
+   { pcmMmapStatusState          :: PcmState -- ^ RO: state - SNDRV_PCM_STATE_XXXX
+   , pcmMmapStatusPadding        :: Int      -- ^ Needed for 64 bit alignment
+   , pcmMmapStatusHwPtr          :: Word64   -- ^ RO: hw ptr (0...boundary-1)
+   , pcmMmapStatusTimeStamp      :: TimeSpec -- ^ Timestamp
+   , pcmMmapStatusSuspendedState :: PcmState -- ^ RO: suspended stream state
+   , pcmMmapStatusAudioTimeStamp :: TimeSpec -- ^ from sample counter or wall clock
+   } deriving (Show,Generic,CStorable)
+
+instance Storable PcmMmapStatus where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data PcmMmapControl = PcmMmapControl
+   { pcmMmapControlApplPtr  :: Word64  -- ^ RW: appl ptr (0...boundary-1)
+   , pcmMmapControlAvailMin :: Word64  -- ^ RW: min available frames for wakeup
+   } deriving (Show,Generic,CStorable)
+
+instance Storable PcmMmapControl where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data PcmSyncFlag
+   = PcmSyncFlagHwSync        -- ^ execute hwsync 
+   | PcmSyncFlagPtrAppl       -- ^ get appl_ptr from driver (r/w op) 
+   | PcmSyncFlagPtrAvailMin   -- ^ get avail_min from driver 
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet PcmSyncFlag
+type PcmSyncFlags = BitSet Word PcmSyncFlag
+
+data PcmSyncPtr = PcmSyncPtr
+   { pcmSyncPtrFlags :: PcmSyncFlags
+   , pcmSyncPtrStatus :: PcmMmapStatus
+   , pcmSyncPtrControl   :: PcmMmapControl
+   , pcmSyncPtrPadding :: Vector 48 Word8
+   } deriving (Show, Generic, CStorable)
+
+instance Storable PcmSyncPtr where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data XferI = XferI
+   { xferiResult :: Int64
+   , xferiBuffer :: Ptr ()
+   , xferiFrames :: Word64
+   } deriving (Show, Generic, CStorable)
+
+instance Storable XferI where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data XferN = XferN
+   { xfernResult  :: Int64
+   , xfernBuffers :: Ptr (Ptr ())
+   , xfernFrames  :: Word64
+   } deriving (Show, Generic, CStorable)
+
+instance Storable XferN where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data PcmTimeStampType
+   = PcmTimeStampGetTimeOfDay  -- ^ gettimeofday equivalent 
+   | PcmTimeStampMonotonic     -- ^ posix_clock_monotonic equivalent 
+   | PcmTimeStampMonotonicRaw  -- ^ monotonic_raw (no NTP) 
+   deriving (Show,Eq,Enum)
+
+
+-- | Channel positions
+data ChannelPosition
+   = ChannelPosUnknown             -- ^ Unknown
+   | ChannelPosNA                  -- ^ N/A, silent
+   | ChannelPosMono                -- ^ mono stream
+   | ChannelPosFrontLeft           -- ^ front left
+   | ChannelPosFrontRight          -- ^ front right
+   | ChannelPosRearLeft            -- ^ rear left
+   | ChannelPosRearRight           -- ^ rear right
+   | ChannelPosFrontCenter         -- ^ front center
+   | ChannelPosLFE                 -- ^ LFE
+   | ChannelPosSideLeft            -- ^ side left
+   | ChannelPosSideRight           -- ^ side right
+   | ChannelPosRearCenter          -- ^ rear center
+   | ChannelPosFrontLeftCenter     -- ^ front left center
+   | ChannelPosFrontRightCenter    -- ^ front right center
+   | ChannelPosRearLeftCenter      -- ^ rear left center
+   | ChannelPosRearRightCenter     -- ^ rear right center
+   | ChannelPosFrontLeftWide       -- ^ front left wide
+   | ChannelPosFrontRightWide      -- ^ front right wide
+   | ChannelPosFrontLeftHigh       -- ^ front left high
+   | ChannelPosFrontCenterHigh     -- ^ front center high
+   | ChannelPosFrontRightHigh      -- ^ front right high
+   | ChannelPosTopCenter           -- ^ top center
+   | ChannelPosTopFrontLeft        -- ^ top front left
+   | ChannelPosTopFrontRight       -- ^ top front right
+   | ChannelPosTopFrontCenter      -- ^ top front center
+   | ChannelPosTopRearLeft         -- ^ top rear left
+   | ChannelPosTopRearRight        -- ^ top rear right
+   | ChannelPosTopRearCenter       -- ^ top rear center
+   | ChannelPosTopFrontLeftCenter  -- ^ top front left center
+   | ChannelPosTopFrontRightCenter -- ^ top front right center
+   | ChannelPosTopSideLeft         -- ^ top side left
+   | ChannelPosTopSideRight        -- ^ top side right
+   | ChannelPosLeftLFE             -- ^ left LFE
+   | ChannelPosRightLFE            -- ^ right LFE
+   | ChannelPosBottomCenter        -- ^ bottom center
+   | ChannelPosBottomLeftCenter    -- ^ bottom left center
+   | ChannelPosBottomRightCenter   -- ^ bottom right center
+   deriving (Show,Eq,Enum)
+
+data ChannelOption
+   = ChannelPhaseInverse
+   | ChannelDriverSpec
+   deriving (Show,Eq,EnumBitSet)
+
+instance Enum ChannelOption where
+   fromEnum x = case x of
+      ChannelPhaseInverse -> 16
+      ChannelDriverSpec   -> 17
+   toEnum x = case x of
+      16 -> ChannelPhaseInverse
+      17 -> ChannelDriverSpec
+      _  -> error "Unknown channel option"        
+
+pcmIoctl :: Word8 -> FileDescriptor -> SysRet ()
+pcmIoctl n = ioctlSignal sysIoctl 0x41 n defaultCheck
+
+pcmIoctlWR :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
+pcmIoctlWR n = ioctlReadWrite sysIoctl 0x41 n defaultCheck
+
+pcmIoctlW :: Storable a => Word8 -> FileDescriptor -> a -> SysRet ()
+pcmIoctlW n = ioctlWrite sysIoctl 0x41 n defaultCheck
+
+pcmIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+pcmIoctlR n = ioctlRead sysIoctl 0x41 n defaultCheck
+
+ioctlPcmVersion :: FileDescriptor -> SysRet Int
+ioctlPcmVersion = pcmIoctlR 0x00
+
+ioctlPcmInfo :: FileDescriptor -> SysRet PcmInfo
+ioctlPcmInfo = pcmIoctlR 0x01
+
+ioctlPcmTimeStamp :: FileDescriptor -> Int -> SysRet ()
+ioctlPcmTimeStamp = pcmIoctlW 0x02
+
+ioctlPcmTTimeStamp :: FileDescriptor -> Int -> SysRet ()
+ioctlPcmTTimeStamp = pcmIoctlW 0x03
+
+ioctlPcmHwRefine :: FileDescriptor -> PcmHwParams -> SysRet PcmHwParams
+ioctlPcmHwRefine = pcmIoctlWR 0x10
+
+ioctlPcmHwParams :: FileDescriptor -> PcmHwParams -> SysRet PcmHwParams
+ioctlPcmHwParams = pcmIoctlWR 0x11
+
+ioctlPcmHwFree :: FileDescriptor -> SysRet ()
+ioctlPcmHwFree = pcmIoctl 0x12
+
+ioctlPcmSwParams :: FileDescriptor -> PcmSwParams -> SysRet PcmSwParams
+ioctlPcmSwParams = pcmIoctlWR 0x13
+
+ioctlPcmStatus :: FileDescriptor -> SysRet PcmStatus
+ioctlPcmStatus = pcmIoctlR 0x20
+
+ioctlPcmDelay :: FileDescriptor -> SysRet Int64
+ioctlPcmDelay = pcmIoctlR 0x21
+
+ioctlPcmHwSync :: FileDescriptor -> SysRet ()
+ioctlPcmHwSync = pcmIoctl 0x22
+
+ioctlPcmSyncPtr :: FileDescriptor -> PcmSyncPtr -> SysRet PcmSyncPtr
+ioctlPcmSyncPtr = pcmIoctlWR 0x23
+
+ioctlPcmStatusExt :: FileDescriptor -> PcmStatus -> SysRet PcmStatus
+ioctlPcmStatusExt = pcmIoctlWR 0x24
+
+ioctlPcmChannelInfo :: FileDescriptor -> SysRet PcmChannelInfo
+ioctlPcmChannelInfo = pcmIoctlR 0x32
+
+ioctlPcmPrepare :: FileDescriptor -> SysRet ()
+ioctlPcmPrepare = pcmIoctl 0x40
+
+ioctlPcmReset :: FileDescriptor -> SysRet ()
+ioctlPcmReset = pcmIoctl 0x41
+
+ioctlPcmStart :: FileDescriptor -> SysRet ()
+ioctlPcmStart = pcmIoctl 0x42
+
+ioctlPcmDrop :: FileDescriptor -> SysRet ()
+ioctlPcmDrop = pcmIoctl 0x43
+
+ioctlPcmDrain :: FileDescriptor -> SysRet ()
+ioctlPcmDrain = pcmIoctl 0x44
+
+ioctlPcmPause :: FileDescriptor -> Int -> SysRet ()
+ioctlPcmPause = pcmIoctlW 0x45
+
+ioctlPcmRewind :: FileDescriptor -> Word64 -> SysRet ()
+ioctlPcmRewind = pcmIoctlW 0x46
+
+ioctlPcmResume :: FileDescriptor -> SysRet ()
+ioctlPcmResume = pcmIoctl 0x47
+
+ioctlPcmXRun :: FileDescriptor -> SysRet ()
+ioctlPcmXRun = pcmIoctl 0x48
+
+ioctlPcmForward :: FileDescriptor -> Word64 -> SysRet ()
+ioctlPcmForward = pcmIoctlW 0x49
+
+ioctlPcmWriteIFrames :: FileDescriptor -> XferI -> SysRet ()
+ioctlPcmWriteIFrames = pcmIoctlW 0x50
+
+ioctlPcmReadIFrames :: FileDescriptor -> SysRet XferI
+ioctlPcmReadIFrames = pcmIoctlR 0x51
+
+ioctlPcmWriteNFrames :: FileDescriptor -> XferN -> SysRet ()
+ioctlPcmWriteNFrames = pcmIoctlW 0x52
+
+ioctlPcmReadNFrames :: FileDescriptor -> SysRet XferN
+ioctlPcmReadNFrames = pcmIoctlR 0x53
+
+ioctlPcmLink :: FileDescriptor -> Int -> SysRet ()
+ioctlPcmLink = pcmIoctlW 0x60
+
+ioctlPcmUnlink :: FileDescriptor -> SysRet ()
+ioctlPcmUnlink = pcmIoctl 0x61
+
+
+
 {-
-typedef unsigned long snd_pcm_uframes_t;
-typedef signed long snd_pcm_sframes_t;
-
-struct snd_pcm_sw_params {
-        int tstamp_mode;                        /* timestamp mode */
-        unsigned int period_step;
-        unsigned int sleep_min;                 /* min ticks to sleep */
-        snd_pcm_uframes_t avail_min;            /* min avail frames for wakeup */
-        snd_pcm_uframes_t xfer_align;           /* obsolete: xfer size need to be a multiple */
-        snd_pcm_uframes_t start_threshold;      /* min hw_avail frames for automatic start */
-        snd_pcm_uframes_t stop_threshold;       /* min avail frames for automatic stop */
-        snd_pcm_uframes_t silence_threshold;    /* min distance from noise for silence filling */
-        snd_pcm_uframes_t silence_size;         /* silence block size */
-        snd_pcm_uframes_t boundary;             /* pointers wrap point */
-        unsigned int proto;                     /* protocol version */
-        unsigned int tstamp_type;               /* timestamp type (req. proto >= 2.0.12) */
-        unsigned char reserved[56];             /* reserved for future */
-};
-
-struct snd_pcm_channel_info {
-        unsigned int channel;
-        __kernel_off_t offset;          /* mmap offset */
-        unsigned int first;             /* offset to first sample in bits */
-        unsigned int step;              /* samples distance in bits */
-};
-
-enum {
-        /*
-         *  first definition for backwards compatibility only,
-         *  maps to wallclock/link time for HDAudio playback and DEFAULT/DMA time for everything else
-         */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_COMPAT = 0,
-
-        /* timestamp definitions */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_DEFAULT = 1,           /* DMA time, reported as per hw_ptr */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_LINK = 2,              /* link time reported by sample or wallclock counter, reset on startup */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_LINK_ABSOLUTE = 3,     /* link time reported by sample or wallclock counter, not reset on startup */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_LINK_ESTIMATED = 4,    /* link time estimated indirectly */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED = 5, /* link time synchronized with system time */
-        SNDRV_PCM_AUDIO_TSTAMP_TYPE_LAST = SNDRV_PCM_AUDIO_TSTAMP_TYPE_LINK_SYNCHRONIZED
-};
-
-struct snd_pcm_status {
-        snd_pcm_state_t state;          /* stream state */
-        struct timespec trigger_tstamp; /* time when stream was started/stopped/paused */
-        struct timespec tstamp;         /* reference timestamp */
-        snd_pcm_uframes_t appl_ptr;     /* appl ptr */
-        snd_pcm_uframes_t hw_ptr;       /* hw ptr */
-        snd_pcm_sframes_t delay;        /* current delay in frames */
-        snd_pcm_uframes_t avail;        /* number of frames available */
-        snd_pcm_uframes_t avail_max;    /* max frames available on hw since last status */
-        snd_pcm_uframes_t overrange;    /* count of ADC (capture) overrange detections from last status */
-        snd_pcm_state_t suspended_state; /* suspended stream state */
-        __u32 audio_tstamp_data;         /* needed for 64-bit alignment, used for configs/report to/from userspace */
-        struct timespec audio_tstamp;   /* sample counter, wall clock, PHC or on-demand sync'ed */
-        struct timespec driver_tstamp;  /* useful in case reference system tstamp is reported with delay */
-        __u32 audio_tstamp_accuracy;    /* in ns units, only valid if indicated in audio_tstamp_data */
-        unsigned char reserved[52-2*sizeof(struct timespec)]; /* must be filled with zero */
-};
-
-struct snd_pcm_mmap_status {
-        snd_pcm_state_t state;          /* RO: state - SNDRV_PCM_STATE_XXXX */
-        int pad1;                       /* Needed for 64 bit alignment */
-        snd_pcm_uframes_t hw_ptr;       /* RO: hw ptr (0...boundary-1) */
-        struct timespec tstamp;         /* Timestamp */
-        snd_pcm_state_t suspended_state; /* RO: suspended stream state */
-        struct timespec audio_tstamp;   /* from sample counter or wall clock */
-};
-
-struct snd_pcm_mmap_control {
-        snd_pcm_uframes_t appl_ptr;     /* RW: appl ptr (0...boundary-1) */
-        snd_pcm_uframes_t avail_min;    /* RW: min available frames for wakeup */
-};
-
-#define SNDRV_PCM_SYNC_PTR_HWSYNC       (1<<0)  /* execute hwsync */
-#define SNDRV_PCM_SYNC_PTR_APPL         (1<<1)  /* get appl_ptr from driver (r/w op) */
-#define SNDRV_PCM_SYNC_PTR_AVAIL_MIN    (1<<2)  /* get avail_min from driver */
-
-struct snd_pcm_sync_ptr {
-        unsigned int flags;
-        union {
-                struct snd_pcm_mmap_status status;
-                unsigned char reserved[64];
-        } s;
-        union {
-                struct snd_pcm_mmap_control control;
-                unsigned char reserved[64];
-        } c;
-};
-
-struct snd_xferi {
-        snd_pcm_sframes_t result;
-        void __user *buf;
-        snd_pcm_uframes_t frames;
-};
-
-struct snd_xfern {
-        snd_pcm_sframes_t result;
-        void __user * __user *bufs;
-        snd_pcm_uframes_t frames;
-};
-
-enum {
-        SNDRV_PCM_TSTAMP_TYPE_GETTIMEOFDAY = 0, /* gettimeofday equivalent */
-        SNDRV_PCM_TSTAMP_TYPE_MONOTONIC,        /* posix_clock_monotonic equivalent */
-        SNDRV_PCM_TSTAMP_TYPE_MONOTONIC_RAW,    /* monotonic_raw (no NTP) */
-        SNDRV_PCM_TSTAMP_TYPE_LAST = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC_RAW,
-};
-
-/* channel positions */
-enum {
-        SNDRV_CHMAP_UNKNOWN = 0,
-        SNDRV_CHMAP_NA,         /* N/A, silent */
-        SNDRV_CHMAP_MONO,       /* mono stream */
-        /* this follows the alsa-lib mixer channel value + 3 */
-        SNDRV_CHMAP_FL,         /* front left */
-        SNDRV_CHMAP_FR,         /* front right */
-        SNDRV_CHMAP_RL,         /* rear left */
-        SNDRV_CHMAP_RR,         /* rear right */
-        SNDRV_CHMAP_FC,         /* front center */
-        SNDRV_CHMAP_LFE,        /* LFE */
-        SNDRV_CHMAP_SL,         /* side left */
-        SNDRV_CHMAP_SR,         /* side right */
-        SNDRV_CHMAP_RC,         /* rear center */
-        /* new definitions */
-        SNDRV_CHMAP_FLC,        /* front left center */
-        SNDRV_CHMAP_FRC,        /* front right center */
-        SNDRV_CHMAP_RLC,        /* rear left center */
-        SNDRV_CHMAP_RRC,        /* rear right center */
-        SNDRV_CHMAP_FLW,        /* front left wide */
-        SNDRV_CHMAP_FRW,        /* front right wide */
-        SNDRV_CHMAP_FLH,        /* front left high */
-        SNDRV_CHMAP_FCH,        /* front center high */
-        SNDRV_CHMAP_FRH,        /* front right high */
-        SNDRV_CHMAP_TC,         /* top center */
-        SNDRV_CHMAP_TFL,        /* top front left */
-        SNDRV_CHMAP_TFR,        /* top front right */
-        SNDRV_CHMAP_TFC,        /* top front center */
-        SNDRV_CHMAP_TRL,        /* top rear left */
-        SNDRV_CHMAP_TRR,        /* top rear right */
-        SNDRV_CHMAP_TRC,        /* top rear center */
-        /* new definitions for UAC2 */
-        SNDRV_CHMAP_TFLC,       /* top front left center */
-        SNDRV_CHMAP_TFRC,       /* top front right center */
-        SNDRV_CHMAP_TSL,        /* top side left */
-        SNDRV_CHMAP_TSR,        /* top side right */
-        SNDRV_CHMAP_LLFE,       /* left LFE */
-        SNDRV_CHMAP_RLFE,       /* right LFE */
-        SNDRV_CHMAP_BC,         /* bottom center */
-        SNDRV_CHMAP_BLC,        /* bottom left center */
-        SNDRV_CHMAP_BRC,        /* bottom right center */
-        SNDRV_CHMAP_LAST = SNDRV_CHMAP_BRC,
-};
-
-#define SNDRV_CHMAP_POSITION_MASK       0xffff
-#define SNDRV_CHMAP_PHASE_INVERSE       (0x01 << 16)
-#define SNDRV_CHMAP_DRIVER_SPEC         (0x02 << 16)
-
-#define SNDRV_PCM_IOCTL_PVERSION        _IOR('A', 0x00, int)
-#define SNDRV_PCM_IOCTL_INFO            _IOR('A', 0x01, struct snd_pcm_info)
-#define SNDRV_PCM_IOCTL_TSTAMP          _IOW('A', 0x02, int)
-#define SNDRV_PCM_IOCTL_TTSTAMP         _IOW('A', 0x03, int)
-#define SNDRV_PCM_IOCTL_HW_REFINE       _IOWR('A', 0x10, struct snd_pcm_hw_params)
-#define SNDRV_PCM_IOCTL_HW_PARAMS       _IOWR('A', 0x11, struct snd_pcm_hw_params)
-#define SNDRV_PCM_IOCTL_HW_FREE         _IO('A', 0x12)
-#define SNDRV_PCM_IOCTL_SW_PARAMS       _IOWR('A', 0x13, struct snd_pcm_sw_params)
-#define SNDRV_PCM_IOCTL_STATUS          _IOR('A', 0x20, struct snd_pcm_status)
-#define SNDRV_PCM_IOCTL_DELAY           _IOR('A', 0x21, snd_pcm_sframes_t)
-#define SNDRV_PCM_IOCTL_HWSYNC          _IO('A', 0x22)
-#define SNDRV_PCM_IOCTL_SYNC_PTR        _IOWR('A', 0x23, struct snd_pcm_sync_ptr)
-#define SNDRV_PCM_IOCTL_STATUS_EXT      _IOWR('A', 0x24, struct snd_pcm_status)
-#define SNDRV_PCM_IOCTL_CHANNEL_INFO    _IOR('A', 0x32, struct snd_pcm_channel_info)
-#define SNDRV_PCM_IOCTL_PREPARE         _IO('A', 0x40)
-#define SNDRV_PCM_IOCTL_RESET           _IO('A', 0x41)
-#define SNDRV_PCM_IOCTL_START           _IO('A', 0x42)
-#define SNDRV_PCM_IOCTL_DROP            _IO('A', 0x43)
-#define SNDRV_PCM_IOCTL_DRAIN           _IO('A', 0x44)
-#define SNDRV_PCM_IOCTL_PAUSE           _IOW('A', 0x45, int)
-#define SNDRV_PCM_IOCTL_REWIND          _IOW('A', 0x46, snd_pcm_uframes_t)
-#define SNDRV_PCM_IOCTL_RESUME          _IO('A', 0x47)
-#define SNDRV_PCM_IOCTL_XRUN            _IO('A', 0x48)
-#define SNDRV_PCM_IOCTL_FORWARD         _IOW('A', 0x49, snd_pcm_uframes_t)
-#define SNDRV_PCM_IOCTL_WRITEI_FRAMES   _IOW('A', 0x50, struct snd_xferi)
-#define SNDRV_PCM_IOCTL_READI_FRAMES    _IOR('A', 0x51, struct snd_xferi)
-#define SNDRV_PCM_IOCTL_WRITEN_FRAMES   _IOW('A', 0x52, struct snd_xfern)
-#define SNDRV_PCM_IOCTL_READN_FRAMES    _IOR('A', 0x53, struct snd_xfern)
-#define SNDRV_PCM_IOCTL_LINK            _IOW('A', 0x60, int)
-#define SNDRV_PCM_IOCTL_UNLINK          _IO('A', 0x61)
-
 /*****************************************************************************
  *                                                                           *
  *                            MIDI v1.0 interface                            *

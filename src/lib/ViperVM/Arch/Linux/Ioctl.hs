@@ -209,11 +209,13 @@ ioctlReadWriteWithRet ioctl typ nr test fd arg = do
 -- | Build a Signal IOCTL (direction = None)
 --
 -- Execute the IOCTL command on the file descriptor, then `test` the result. 
-ioctlSignal :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> SysRet b) -> FileDescriptor -> SysRet b
+ioctlSignal :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet ()
 ioctlSignal ioctl typ nr test fd = do
    let cmd = Command typ nr None 0
    ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg nullPtr)
-   test ret
+   return $ case test ret of
+      Nothing  -> Right ()
+      Just err -> Left err
 
 -- | Call the IOCTL, restarting if interrupted
 repeatIoctl :: IOCTL -> IOCTL

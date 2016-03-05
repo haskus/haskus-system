@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+
+
 module ViperVM.Arch.Linux.Time
    ( TimeSpec(..)
    , TimeVal(..)
@@ -27,8 +29,8 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 
 data TimeSpec = TimeSpec {
-   tsSeconds      :: Int64,
-   tsNanoSeconds  :: Int64
+   tsSeconds      :: {-# UNPACK #-} !Int64,
+   tsNanoSeconds  :: {-# UNPACK #-} !Int64
 } deriving (Show,Eq,Ord,Generic)
 
 instance CStorable TimeSpec
