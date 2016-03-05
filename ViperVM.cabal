@@ -212,6 +212,7 @@ library
     ViperVM.Format.Binary.Put
     ViperVM.Format.Binary.VariableLength
     ViperVM.Format.Binary.Vector
+    ViperVM.Format.Binary.Union
 
 
     ViperVM.Platform.Drivers
