@@ -529,7 +529,7 @@ data PcmInfoFlag
    | PcmInfoHasLinkSynchronizedAtime -- ^ report synchronized audio/system time
    | PcmInfoDrainTrigger             -- ^ internal kernel flag - trigger in drain
    | PcmInfoFifoInFrames             -- ^ internal kernel flag - FIFO size is in frames
-   deriving (Show,Eq)
+   deriving (Show,Eq,EnumBitSet)
 
 instance Enum PcmInfoFlag where
    fromEnum x = case x of
@@ -578,7 +578,6 @@ instance Enum PcmInfoFlag where
       31 -> PcmInfoFifoInFrames
       _  -> error "Unknown PCM info flag"
 
-instance EnumBitSet PcmInfoFlag
 type PcmInfoFlags = BitSet Word32 PcmInfoFlag
 
 
@@ -714,18 +713,16 @@ data IntervalOption
    | IntervalOpenMax
    | IntervalInteger
    | IntervalEmpty
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,EnumBitSet)
 
-instance EnumBitSet IntervalOption
 type IntervalOptions = BitSet Word IntervalOption
 
 data PcmHwParamsFlag
    = PcmHwParamsNoResample     -- ^ avoid rate resampling
    | PcmHwParamsExportBuffer   -- ^ export buffer
    | PcmHwParamsNoPeriodWakeUp -- ^ disable period wakeups
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,EnumBitSet)
 
-instance EnumBitSet PcmHwParamsFlag
 type PcmHwParamsFlags = BitSet Word PcmHwParamsFlag
 
 data Mask = Mask
@@ -864,9 +861,8 @@ data PcmSyncFlag
    = PcmSyncFlagHwSync        -- ^ execute hwsync 
    | PcmSyncFlagPtrAppl       -- ^ get appl_ptr from driver (r/w op) 
    | PcmSyncFlagPtrAvailMin   -- ^ get avail_min from driver 
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,EnumBitSet)
 
-instance EnumBitSet PcmSyncFlag
 type PcmSyncFlags = BitSet Word PcmSyncFlag
 
 data PcmSyncPtr = PcmSyncPtr

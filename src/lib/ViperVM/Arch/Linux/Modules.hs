@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.Modules
    ( loadModuleFromFile
    , loadModuleFromMemory
@@ -19,9 +21,7 @@ import Foreign.C.String (withCString)
 data LoadModuleFlag
    = IgnoreSymbolVersions
    | IgnoreKernelVersion
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet LoadModuleFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type LoadModuleFlags = BitSet Word LoadModuleFlag
 

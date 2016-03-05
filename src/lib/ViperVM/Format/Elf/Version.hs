@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 -- | Version sections
 module ViperVM.Format.Elf.Version
    ( -- * Version definition
@@ -50,9 +52,7 @@ data VersionDefinitionVersion
 data VersionDefinitionFlag
    = VersionFlagBase    -- ^ Version definition of file itself
    | VersionFlagWeak    -- ^ Weak version identifier
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet VersionDefinitionFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type VersionDefinitionFlags = BitSet Word16 VersionDefinitionFlag
 

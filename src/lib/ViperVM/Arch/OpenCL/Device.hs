@@ -1,4 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | OpenCL device module
 module ViperVM.Arch.OpenCL.Device
@@ -150,9 +152,7 @@ data DeviceType
    | CL_DEVICE_TYPE_GPU
    | CL_DEVICE_TYPE_ACCELERATOR
    | CL_DEVICE_TYPE_CUSTOM
-   deriving (Eq,Show,Bounded,Enum)
-
-instance EnumBitSet DeviceType
+   deriving (Eq,Show,Bounded,Enum,EnumBitSet)
 
 type DeviceTypeSet = BitSet Word64 DeviceType
 
@@ -175,17 +175,13 @@ data DeviceFPConfig
    | CL_FP_FMA
    | CL_FP_SOFT_FLOAT
    | CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT
-   deriving (Show, Bounded, Eq, Ord, Enum)
-
-instance EnumBitSet DeviceFPConfig
+   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
 
 -- | Device execution capabilities
 data DeviceExecCapability
    = CL_EXEC_KERNEL
    | CL_EXEC_NATIVE_KERNEL
-   deriving (Show, Bounded, Eq, Ord, Enum)
-
-instance EnumBitSet DeviceExecCapability
+   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
 
 -- | Device cache memory type
 data DeviceMemCacheType
@@ -212,9 +208,7 @@ instance CLConstant DeviceLocalMemType where
 data CommandQueueProperty
    = CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
    | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
-   deriving (Show, Bounded, Eq, Ord, Enum)
-
-instance EnumBitSet CommandQueueProperty
+   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
 
 type CommandQueueProperties = BitSet Word64 CommandQueueProperty
 

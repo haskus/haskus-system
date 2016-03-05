@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
 
@@ -56,9 +57,8 @@ data FrameBuffer = FrameBuffer
 data FrameBufferFlag
    = FrameBufferInterlaced    -- ^ Interlaced frame buffer
    | FrameBufferUseModifiers  -- ^ Enable modifiers
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,EnumBitSet)
 
-instance EnumBitSet FrameBufferFlag
 type FrameBufferFlags = BitSet Word32 FrameBufferFlag
 
 instance Storable FrameBuffer where

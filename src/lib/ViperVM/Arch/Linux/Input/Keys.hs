@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Input.Keys
@@ -43,9 +44,7 @@ instance Storable KeymapEntry where
 
 data KeymapFlags
    = KeymapByIndex
-   deriving (Eq,Show,Enum)
-
-instance EnumBitSet KeymapFlags
+   deriving (Eq,Show,Enum,EnumBitSet)
 
 -- | Get key code
 --

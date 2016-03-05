@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Video controller management
 --
@@ -148,9 +149,8 @@ instance Storable  ControllerLutStruct where
 data PageFlipFlag
    = PageFlipEvent
    | PageFlipAsync
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,EnumBitSet)
 
-instance EnumBitSet PageFlipFlag
 type PageFlipFlags = BitSet Word32 PageFlipFlag
 
 -- | Data matching the C structure drm_mode_crtc_page_flip

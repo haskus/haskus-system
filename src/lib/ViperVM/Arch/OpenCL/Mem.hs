@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 -- | OpenCL memory object (buffer, image) module
 module ViperVM.Arch.OpenCL.Mem
    ( Mem(..)
@@ -60,9 +62,7 @@ data MemFlag
    | CL_MEM_HOST_WRITE_ONLY   -- 128
    | CL_MEM_HOST_READ_ONLY    -- 256
    | CL_MEM_HOST_NO_ACCESS    -- 512
-   deriving (Show, Bounded, Eq, Ord, Enum)
-
-instance EnumBitSet MemFlag
+   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
 
 type MemFlags = BitSet Word64 MemFlag
 
@@ -71,9 +71,7 @@ data MapFlag
    = CL_MAP_READ
    | CL_MAP_WRITE
    | CL_MAP_WRITE_INVALIDATE_REGION
-   deriving (Show, Bounded, Eq, Ord, Enum)
-
-instance EnumBitSet MapFlag
+   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
 
 type MapFlags = BitSet Word64 MapFlag
 

@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
+
 module ViperVM.Arch.Linux.FileSystem
    ( FilePermission(..)
    , FilePermissions
@@ -65,7 +67,7 @@ import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
-
+import Control.Monad (void)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.BitSet
@@ -184,9 +186,7 @@ data FilePermission
    | PermUserExecute
    | PermUserWrite
    | PermUserRead
-   deriving (Eq,Show,Enum)
-
-instance EnumBitSet FilePermission
+   deriving (Eq,Show,Enum,EnumBitSet)
 
 type FilePermissions = BitSet Word FilePermission
 
@@ -205,7 +205,7 @@ sysSeek (FileDescriptor fd) off whence =
 
 -- | Reposition read/write file offset
 sysSeek' :: FileDescriptor -> Int64 -> SeekWhence -> SysRet ()
-sysSeek' fd off whence = fmap (const ()) <$> (sysSeek fd off whence)
+sysSeek' fd off whence = void <$> (sysSeek fd off whence)
 
 -- | Send a custom command to a device
 sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64
@@ -220,9 +220,7 @@ data AccessMode
    = AccessExecute  -- bit 0
    | AccessWrite    -- bit 1
    | AccessRead     -- bit 2
-   deriving (Eq,Show,Enum)
-
-instance EnumBitSet AccessMode
+   deriving (Eq,Show,Enum,EnumBitSet)
 
 type AccessModes = BitSet Word64 AccessMode
 
@@ -394,9 +392,7 @@ data FileOption
    = FileOptSticky
    | FileOptSetGID
    | FileOptSetUID
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet FileOption
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type FileOptions = BitSet Word64 FileOption
 

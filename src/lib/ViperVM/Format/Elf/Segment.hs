@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Format.Elf.Segment
    ( Segment (..)
    , SegmentType (..)
@@ -60,9 +62,7 @@ data SegmentFlag
    = SegmentFlagExecutable
    | SegmentFlagWritable
    | SegmentFlagReadable
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet SegmentFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type SegmentFlags = BitSet Word32 SegmentFlag
 

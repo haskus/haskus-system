@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
 
@@ -43,9 +44,8 @@ data ModeType
    | ModeTypeDefault
    | ModeTypeUserDef
    | ModeTypeDriver
-   deriving (Show,Enum)
+   deriving (Show,Enum,EnumBitSet)
 
-instance EnumBitSet ModeType
 type ModeTypes = BitSet Word32 ModeType
 
 data ModeFlag
@@ -71,9 +71,8 @@ data ModeFlag
    | ModeFlag3DLDepthGFXGFXDepth
    | ModeFlag3DTopAndBottom
    | ModeFlag3DSideBySideHalf
-   deriving (Show,Enum)
+   deriving (Show,Enum,EnumBitSet)
 
-instance EnumBitSet ModeFlag
 type ModeFlags = BitSet Word32 ModeFlag
 
 
@@ -86,9 +85,8 @@ data ModeStruct = ModeStruct
    , miFlags         :: Word32
    , miType          :: Word32
    , miName          :: ModeName
-   } deriving Generic
+   } deriving (Generic,CStorable)
 
-instance CStorable ModeStruct
 instance Storable ModeStruct where
    sizeOf      = cSizeOf
    alignment   = cAlignment
@@ -191,6 +189,4 @@ instance Storable  ModeCmdStruct where
 data ModeFieldPresent
    = PresentTopField
    | PresentBottomField
-   deriving (Show,Enum)
-
-instance EnumBitSet ModeFieldPresent
+   deriving (Show,Enum,EnumBitSet)

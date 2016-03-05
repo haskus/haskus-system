@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.Trace
    ( TraceRequest(..)
    , TraceFlag(..)
@@ -132,7 +134,7 @@ data TraceOption
    | OptTraceExit       -- ^ Stop the tracee at exit
    | OptTraceSecComp    -- ^ Stop the tracee when a seccomp SECCOMP_RET_TRACE rule is triggered
    | OptTraceExitKill   -- ^ When set, tracee processes will receive a KILL signal when the tracer process exits
-   deriving (Eq,Show)
+   deriving (Eq,Show,EnumBitSet)
 
 instance Enum TraceOption where
    fromEnum x = case x of
@@ -156,8 +158,6 @@ instance Enum TraceOption where
       7  -> OptTraceSecComp
       20 -> OptTraceExitKill
       _  -> error "Invalid trace option"
-
-instance EnumBitSet TraceOption
 
 data EventCode
    = EventFork
@@ -196,10 +196,7 @@ data PeekSigInfoArgs = PeekSigInfoArgs
 
 data PeekSigInfoFlags
    = PeekSigInfoShared
-   deriving (Enum)
-
-instance EnumBitSet PeekSigInfoFlags
-   
+   deriving (Enum,EnumBitSet)
    
    
 -- | Trace a process

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.FileSystem.Mount
    ( MountFlag(..)
    , MountFlags
@@ -47,7 +49,7 @@ data MountFlag
    | MountStrictAccessTime       -- ^ Always perform atime updates
    | MountActive
    | MountNoUser
-   deriving (Show,Eq)
+   deriving (Show,Eq,EnumBitSet)
 
 instance Enum MountFlag where
    fromEnum x = case x of
@@ -105,8 +107,6 @@ instance Enum MountFlag where
       31 -> MountNoUser
       _  -> error "Unknown mount flag"
 
-instance EnumBitSet MountFlag
-
 type MountFlags = BitSet Word64 MountFlag
 
 data UnmountFlag
@@ -114,15 +114,13 @@ data UnmountFlag
    | UnmountDetach      -- ^ Just detach from the tree
    | UnmountExpire      -- ^ Mark for expiry
    | UnmountDontFollow  -- ^ Don't follow symlink on unmount
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet UnmountFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type UnmountFlags = BitSet Word64 UnmountFlag
 
 -- | Mount a file system
 sysMount :: String -> String -> String -> MountFlags -> Ptr () -> SysRet ()
-sysMount source target fstype flags dat = do
+sysMount source target fstype flags dat =
    withCString source $ \source' ->
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->

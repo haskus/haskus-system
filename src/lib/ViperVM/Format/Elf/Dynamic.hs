@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Format.Elf.Dynamic
    ( RawDynamicEntry (..)
    , getRawDynamicEntry
@@ -275,9 +277,7 @@ data DynamicEntryFlag
    | DynFlagHasTextRelocation -- ^ Object contains text relocations
    | DynFlagBindNow           -- ^ No lazy binding for this object
    | DynFlagStaticTLS         -- ^ Module uses the static TLS model
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet DynamicEntryFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type DynamicEntryFlags = BitSet Word64 DynamicEntryFlag
 
@@ -309,9 +309,7 @@ data DynamicStateFlag
    | DynStateFlagSymbolInterposers          -- ^ Object has individual interposers.  
    | DynStateFlagGlobalAudit                -- ^ Global auditing required.  
    | DynStateFlagSingletonSymbols           -- ^ Singleton symbols are used.  
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet DynamicStateFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 
@@ -319,9 +317,7 @@ type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 data DynamicFeature
    = DynFeatureParInit
    | DynFeatureConfExp
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet DynamicFeature
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type DynamicFeatures = BitSet Word64 DynamicFeature
 
@@ -329,8 +325,6 @@ type DynamicFeatures = BitSet Word64 DynamicFeature
 data DynamicPositionalFlag
    = DynPositionalFlagLazyLoad   -- ^ Lazyload following object
    | DynPositionalFlagGroupPerm  -- ^ Symbols from next object are not generally available
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet DynamicPositionalFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type DynamicPositionalFlags = BitSet Word64 DynamicPositionalFlag

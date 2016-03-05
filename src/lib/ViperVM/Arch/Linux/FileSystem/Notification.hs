@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
 
 -- | Notifications on file system (poll, select, inotify, etc.)
@@ -51,7 +52,7 @@ data PollEvent
    | PollWriteNormal
    | PollReadBand
    | PollWriteBand
-   deriving (Show,Eq)
+   deriving (Show,Eq,EnumBitSet)
 
 instance Enum PollEvent where
    fromEnum x = case x of
@@ -83,8 +84,6 @@ instance Enum PollEvent where
       7  -> PollReadBand               
       9  -> PollWriteBand              
       _  -> error "Unknown poll event"
-
-instance EnumBitSet PollEvent
 
 -- | A set of polling events
 type PollEventSet = BitSet Word16 PollEvent

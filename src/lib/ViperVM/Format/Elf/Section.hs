@@ -201,6 +201,8 @@ data SectionFlag
    | SectionFlagOther Word        -- ^ Other flags
    deriving (Show,Eq)
 
+instance EnumBitSet SectionFlag
+
 instance Enum SectionFlag where
    fromEnum x = case x of
       SectionFlagWritable           -> 0
@@ -232,8 +234,6 @@ instance Enum SectionFlag where
       30 -> SectionFlagOrdered
       31 -> SectionFlagExclude
       v  -> SectionFlagOther (fromIntegral v)
-
-instance EnumBitSet SectionFlag
 
 type SectionFlags = BitSet Word64 SectionFlag
 

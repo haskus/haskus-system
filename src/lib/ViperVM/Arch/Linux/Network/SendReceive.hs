@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.Network.SendReceive
    ( SendReceiveFlag(..)
    , SendReceiveFlags
@@ -41,7 +43,7 @@ data SendReceiveFlag
    | FlagWaitForOne        -- ^ Wait for at least one packet to return
    | FlagFastOpen          -- ^ Send data in TCP SYN
    | FlagCloseOnExec       -- ^ Set close_on_exit for file descriptor received through SCM_RIGHTS
-   deriving (Show,Eq)
+   deriving (Show,Eq,EnumBitSet)
 
 instance Enum SendReceiveFlag where
    fromEnum x = case x of
@@ -85,8 +87,6 @@ instance Enum SendReceiveFlag where
       29 -> FlagFastOpen
       30 -> FlagCloseOnExec
       _  -> error "Unknown send-receive flag"
-
-instance EnumBitSet SendReceiveFlag
 
 type SendReceiveFlags = BitSet Word64 SendReceiveFlag
 

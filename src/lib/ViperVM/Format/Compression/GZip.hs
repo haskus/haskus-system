@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Format.Compression.GZip
    ( Member(..)
    , Flag(..)
@@ -99,9 +101,7 @@ data Flag
    | FlagExtra
    | FlagName
    | FlagComment
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet Flag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type Flags = BitSet Word8 Flag
 

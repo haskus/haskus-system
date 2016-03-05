@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.Memory
    ( sysBrk
    , sysBrkGet
@@ -242,9 +244,7 @@ sysMemUnlock addr len = onSuccess (syscall_munlock addr len) (const ())
 data MemLockFlag
    = LockCurrentPages
    | LockFuturePages
-   deriving (Show,Eq,Enum)
-
-instance EnumBitSet MemLockFlag
+   deriving (Show,Eq,Enum,EnumBitSet)
 
 type MemLockFlags = BitSet Word64 MemLockFlag
 

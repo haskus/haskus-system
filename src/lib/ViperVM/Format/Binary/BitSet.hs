@@ -16,13 +16,12 @@
 -- Example:
 --
 -- @
+-- {-# LANGUAGE DeriveAnyClass #-}
 -- data Flag
 --    = FlagXXX
 --    | FlagYYY
 --    | FlagWWW
---    deriving (Show,Eq,Enum)
---
--- instance 'EnumBitSet' Flag
+--    deriving (Show,Eq,Enum,EnumBitSet)
 --
 -- -- Adapt the backing type, here we choose Word16
 -- type Flags = 'BitSet' Word16 Flag

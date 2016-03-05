@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Cursor
 module ViperVM.Arch.Linux.Graphics.Cursor
@@ -19,9 +20,7 @@ import ViperVM.Format.Binary.BitSet
 data CursorMode
    = CursorModeBO
    | CursorModeMove
-   deriving (Eq,Enum,Show)
-
-instance EnumBitSet CursorMode
+   deriving (Eq,Enum,Show,EnumBitSet)
 
 -- | Data matching the C structure drm_mode_cursor
 data CursorStruct = CursorStruct
