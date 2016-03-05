@@ -1,5 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DataKinds #-}
+
+
 module ViperVM.Arch.Linux.Signal
    ( SignalSet(..)
    , ChangeSignals(..)
@@ -22,14 +25,9 @@ import Foreign.Storable
 import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Alloc (alloca)
-import Data.Vector.Fixed.Cont (S,Z)
-import Data.Vector.Fixed.Storable (Vec)
+import ViperVM.Format.Binary.Vector (Vector)
 
-type N16 = --16
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
-   )))))))))))))))
-
-newtype SignalSet = SignalSet (Vec N16 Word64) deriving (Storable)
+newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 sysPause :: SysRet ()
 sysPause = onSuccess syscall_pause (const ())

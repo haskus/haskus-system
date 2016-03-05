@@ -168,11 +168,13 @@ library
 
     ViperVM.Utils.Hash
     ViperVM.Utils.EmbedByteString
+    ViperVM.Utils.Memory
     ViperVM.Utils.STM.TMap
     ViperVM.Utils.STM.TSet
     ViperVM.Utils.STM.TList
     ViperVM.Utils.STM.TGraph
     ViperVM.Utils.Tuples
+    ViperVM.Utils.Unsafe
 
     ViperVM.Format.CPIO
 
@@ -209,6 +211,7 @@ library
     ViperVM.Format.Binary.Get
     ViperVM.Format.Binary.Put
     ViperVM.Format.Binary.VariableLength
+    ViperVM.Format.Binary.Vector
 
 
     ViperVM.Platform.Drivers
@@ -242,6 +245,7 @@ library
 
   other-modules:
     ViperVM.Arch.Linux.Graphics.Internals
+    ViperVM.Arch.Linux.Sound.Internals
 
   c-sources: 
     src/lib/ViperVM/Arch/X86_64/Linux/syscall.c
@@ -266,7 +270,7 @@ library
       ,  text                      >= 1.2
       ,  filepath                  >= 1.4
       ,  either                    >= 4.4
-      ,  vector                    >= 0.10
+      ,  vector                    >= 0.11
       ,  directory                 >= 1.2
       ,  megaparsec                >= 4.1
       ,  dynamic-linker-template   >= 0.1
@@ -274,7 +278,6 @@ library
       ,  unix                      >= 2.7
       ,  criterion                 >= 1.1
       ,  c-storable-deriving       >= 0.1.3
-      ,  fixed-vector              >= 0.8
       ,  pqueue                    >= 1.3
       ,  dequeue                   >= 0.1.12
       ,  mtl                       >= 2.2

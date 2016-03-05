@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Frame buffer management
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
@@ -16,8 +17,6 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
 where
 
 import Data.List (zip4)
-import Data.Vector.Fixed.Cont (S,Z)
-import Data.Vector.Fixed.Storable (Vec)
 import Data.Word
 import Foreign.CStorable
 import Foreign.Marshal.Array
@@ -32,9 +31,8 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Format.Binary.BitSet
+import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Utils.Tuples (uncurry4,take4)
-
-type Vec4 = Vec (S (S (S (S Z))))
 
 -- | Plane (used for pixel formats that use several sources)
 data Plane = Plane
@@ -136,10 +134,10 @@ data FbCmd2Struct = FbCmd2Struct
    , fc2Height        :: Word32
    , fc2PixelFormat   :: Word32
    , fc2Flags         :: Word32
-   , fc2Handles       :: StorableWrap (Vec4 Word32)
-   , fc2Pitches       :: StorableWrap (Vec4 Word32)
-   , fc2Offsets       :: StorableWrap (Vec4 Word32)
-   , fc2Modifiers     :: StorableWrap (Vec4 Word64)
+   , fc2Handles       :: Vector 4 Word32
+   , fc2Pitches       :: Vector 4 Word32
+   , fc2Offsets       :: Vector 4 Word32
+   , fc2Modifiers     :: Vector 4 Word64
    } deriving Generic
 
 instance CStorable FbCmd2Struct

@@ -1,8 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-
--- We need this one to use type literal numbers (S (S .. Z)) of size 32
-{-# OPTIONS -fcontext-stack=50 #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Display mode (resolution, refresh rate, etc.)
 module ViperVM.Arch.Linux.Graphics.Mode
@@ -25,25 +23,17 @@ import Foreign.CStorable
 import Data.Word
 import GHC.Generics (Generic)
 import Foreign.Ptr (castPtr)
-import qualified Data.Vector.Fixed as Vec
 import Foreign.C.String 
    ( castCCharToChar
    , castCharToCChar
    )
 import Foreign.C.Types (CChar)
-import Data.Vector.Fixed.Cont (S,Z)
-import Data.Vector.Fixed.Storable (Vec)
+import ViperVM.Format.Binary.Vector (Vector)
+import qualified ViperVM.Format.Binary.Vector as Vec
 
 import ViperVM.Format.Binary.BitSet
 
-type N32 = -- 32 
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
-   )))))))))))))))))))))))))))))))
-
-
-type ModeNameLength = N32
-type ModeName       = StorableWrap (Vec ModeNameLength CChar)
+type ModeName = Vector 32 CChar
 
 data ModeType
    = ModeTypeBuiltin
@@ -106,7 +96,7 @@ instance Storable ModeStruct where
    peek        = cPeek
 
 emptyModeStruct :: ModeStruct
-emptyModeStruct = ModeStruct 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (Storable (Vec.replicate (castCharToCChar '\0')))
+emptyModeStruct = ModeStruct 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (Vec.replicate (castCharToCChar '\0'))
 
 -- | Display mode
 data Mode = Mode
@@ -133,7 +123,7 @@ data Mode = Mode
 instance Storable Mode where
    sizeOf _    = cSizeOf (undefined :: ModeStruct)
    alignment _ = cAlignment (undefined :: ModeStruct)
-   peek v      = fromModeStruct <$> (cPeek $ castPtr v)
+   peek v      = fromModeStruct <$> cPeek (castPtr v)
    poke p v    = cPoke (castPtr p) (toModeStruct v)
 
 
@@ -141,8 +131,7 @@ fromModeStruct :: ModeStruct -> Mode
 fromModeStruct ModeStruct {..} =
    let
       extractName :: ModeName -> String
-      extractName (Storable x) = 
-         takeWhile (/= '\0') (fmap castCCharToChar (Vec.toList x))
+      extractName = takeWhile (/= '\0') . fmap castCCharToChar . Vec.toList
    in Mode
       { modeClock               = miClock
       , modeHorizontalDisplay   = miHDisplay
@@ -162,9 +151,10 @@ fromModeStruct ModeStruct {..} =
       }
 
 toModeStruct :: Mode -> ModeStruct
-toModeStruct (Mode {..}) =
+toModeStruct Mode {..} =
    let
-      modeName' = Vec.fromList (fmap castCharToCChar (modeName ++ replicate 32 '\0'))
+      modeName' = Vec.fromFilledListZ (castCharToCChar '\0')
+                     (fmap castCharToCChar modeName)
 
    in ModeStruct
       { miClock      = modeClock
@@ -181,7 +171,7 @@ toModeStruct (Mode {..}) =
       , miVRefresh   = modeVerticalRefresh
       , miFlags      = toBits modeFlags
       , miType       = toBits modeType
-      , miName       = Storable modeName'
+      , miName       = modeName'
       }
 
 -- | Data matching the C structure drm_mode_mode_cmd

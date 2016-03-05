@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Property
 module ViperVM.Arch.Linux.Graphics.Property
@@ -38,9 +39,8 @@ import Foreign.C.String
    , castCharToCChar
    )
 import Foreign.C.Types (CChar)
-import Data.Vector.Fixed.Cont (S,Z)
-import Data.Vector.Fixed.Storable (Vec)
-import qualified Data.Vector.Fixed as Vec
+import ViperVM.Format.Binary.Vector (Vector)
+import qualified ViperVM.Format.Binary.Vector as Vec
 
 -- | Property meta-information
 data PropertyMeta = PropertyMeta
@@ -61,16 +61,7 @@ data PropertyType
    | PropObject
    deriving (Show,Eq)
 
-type N32 = -- 32 
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
-   )))))))))))))))))))))))))))))))
-
-type PropertyNameLength  = N32
-type PropertyName = StorableWrap (Vec PropertyNameLength CChar)
-
-emptyVec :: PropertyName
-emptyVec = Storable (Vec.replicate (castCharToCChar '\0'))
+type PropertyName = Vector 32 CChar
 
 data RawProperty = RawProperty
    { rawPropertyMetaID  :: Word32   -- ^ Card-wise property meta-info ID
@@ -78,8 +69,8 @@ data RawProperty = RawProperty
    } deriving (Show,Eq)
 
 data Property = Property
-   { propertyMeta       :: PropertyMeta   -- ^ Meta-information about the property
-   , propertyValue      :: Word64         -- ^ Value of the property
+   { propertyMeta       :: PropertyMeta -- ^ Meta-information about the property
+   , propertyValue      :: Word64       -- ^ Value of the property
    } deriving (Show,Eq)
 
 -- | Data matching the C structure drm_mode_obj_get_properties
@@ -146,7 +137,7 @@ isImmutable s = (gpsFlags s .&. 0x04) /= 0
 -- | Data matching the C structure drm_mode_property_enum
 data PropEnumStruct = PropEnumStruct
    { peValue       :: Word64
-   , peName        :: StorableWrap (Vec PropertyNameLength CChar)
+   , peName        :: Vector 32 CChar
    } deriving Generic
 
 instance CStorable PropEnumStruct
@@ -162,7 +153,7 @@ data GetPropStruct = GetPropStruct
    , gpsEnumBlobPtr    :: Word64
    , gpsPropId         :: Word32
    , gpsFlags          :: Word32
-   , gpsName           :: StorableWrap (Vec PropertyNameLength CChar)
+   , gpsName           :: Vector 32 CChar
    , gpsCountValues    :: Word32
    , gpsCountEnumBlobs :: Word32
    } deriving Generic
@@ -216,7 +207,7 @@ getPropertyMeta fd pid = runEitherT $ do
             , gpsEnumBlobPtr    = 0
             , gpsPropId         = pid
             , gpsFlags          = 0
-            , gpsName           = emptyVec
+            , gpsName           = Vec.replicate (castCharToCChar '\0')
             , gpsCountValues    = 0
             , gpsCountEnumBlobs = 0
             }
@@ -226,8 +217,7 @@ getPropertyMeta fd pid = runEitherT $ do
 
    let
       extractName :: PropertyName -> String
-      extractName (Storable x) =
-         takeWhile (/= '\0') (fmap castCCharToChar (Vec.toList x))
+      extractName = takeWhile (/= '\0') . fmap castCCharToChar . Vec.toList
 
       nval  = gpsCountValues g
       nblob = gpsCountEnumBlobs g
@@ -247,7 +237,7 @@ getPropertyMeta fd pid = runEitherT $ do
                            , gpsEnumBlobPtr    = fromIntegral (ptrToWordPtr blobPtr)
                            , gpsPropId         = pid
                            , gpsFlags          = 0
-                           , gpsName           = emptyVec
+                           , gpsName           = Vec.replicate (castCharToCChar '\0')
                            , gpsCountValues    = valueCount
                            , gpsCountEnumBlobs = blobCount
                            }

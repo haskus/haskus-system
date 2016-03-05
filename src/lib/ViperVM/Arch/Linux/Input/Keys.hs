@@ -1,8 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
-
--- We need this one to use type literal numbers (S (S .. Z)) of size 32
-{-# OPTIONS -fcontext-stack=50 #-}
-
+{-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Input.Keys
    ( KeymapEntry(..)
@@ -23,24 +20,17 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Format.Binary.BitSet
-
-import Data.Vector.Fixed.Cont (S,Z)
-import Data.Vector.Fixed.Storable (Vec)
-
-type N32 = -- 32 
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (
-   S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z
-   )))))))))))))))))))))))))))))))
+import ViperVM.Format.Binary.Vector (Vector)
 
 -- | Query or modify keymap data
 --
 -- `struct input_keymap_entry` in C header file
 data KeymapEntry = KeymapEntry
-   { keymapEntryFlags    :: Word8                        -- ^ Indicate how kernel should handle the request
-   , keymapEntryLength   :: Word8                        -- ^ Length of the scancode
-   , keymapEntryIndex    :: Word16                       -- ^ Index in the keymap (may be used instead of the scancode)
-   , keymapEntryKeyCode  :: Word32                       -- ^ Key code assigned to this scancode
-   , keymapEntryScanCode :: StorableWrap (Vec N32 Word8) -- ^ Scan in machine-endian form (up to 32 bytes)
+   { keymapEntryFlags    :: Word8           -- ^ Indicate how kernel should handle the request
+   , keymapEntryLength   :: Word8           -- ^ Length of the scancode
+   , keymapEntryIndex    :: Word16          -- ^ Index in the keymap (may be used instead of the scancode)
+   , keymapEntryKeyCode  :: Word32          -- ^ Key code assigned to this scancode
+   , keymapEntryScanCode :: Vector 32 Word8 -- ^ Scan in machine-endian form (up to 32 bytes)
    } deriving (Generic)
 
 
