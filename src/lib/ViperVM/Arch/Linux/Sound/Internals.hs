@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Sound.Internals
@@ -16,6 +17,20 @@ module ViperVM.Arch.Linux.Sound.Internals
    , ioctlHwDspLoad
    -- * PCM: /dev/snd/pcm*
    , pcmVersion
+   , PcmClass (..)
+   , PcmFormat (..)
+   , PcmInfoFlag (..)
+   , PcmInfoFlags
+   , PcmState (..)
+   , PcmInfo (..)
+   , PcmHwParam (..)
+   , PcmHwParams (..)
+   , PcmHwParamsFlag (..)
+   , PcmHwParamsFlags
+   , Mask (..)
+   , Interval (..)
+   , IntervalOption (..)
+   , IntervalOptions
    )
 where
 
@@ -27,13 +42,13 @@ import Foreign.C.Types (CChar, CSize)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Vector (Vector)
+import ViperVM.Format.Binary.BitSet
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileDescriptor
 
 -- From alsa-lib/include/sound/asound.h
-
 
 -----------------------------------------------------------------------------
 -- Digit audio interface
@@ -44,14 +59,14 @@ data AesIec958 = AesIec958
    , aesSubcode     :: Vector 147 Word8 -- ^ AES/IEC958 subcode bits
    , aesPadding     :: CChar            -- ^ nothing
    , aesDigSubFrame :: Vector 4 Word8   -- ^ AES/IEC958 subframe bits
-   } deriving (Generic, Show)
+   } deriving (Generic, Show, CStorable)
 
-instance CStorable AesIec958
-instance Storable  AesIec958 where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+instance Storable AesIec958 where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
 
 -----------------------------------------------------------------------------
 -- Digit audio interface
@@ -63,8 +78,13 @@ data Cea861AudioInfoFrame = Cea861AudioInfoFrame
    , ceaUnused                 :: Word8 -- ^ not used, all zeros
    , ceaChannelAllocationCode  :: Word8 -- ^ channel allocation code
    , ceaDownmixLevelShift      :: Word8 -- ^ downmix inhibit & level-shit values
-   } deriving (Generic,Show)
+   } deriving (Generic, Show, CStorable)
 
+instance Storable Cea861AudioInfoFrame where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
 
 -----------------------------------------------------------------------------
 -- Section for driver hardware dependent interface - /dev/snd/hw?
@@ -108,15 +128,13 @@ data HwInfo = HwInfo
    , hwInfoName      :: Vector 80 CChar -- ^ hwdep name
    , hwInfoInterface :: Int             -- ^ hwdep interface
    , hwInfoReserved  :: Vector 64 Word8 -- ^ reserved for future
-   } deriving (Generic)
+   } deriving (Generic, Show, CStorable)
 
-instance CStorable HwInfo
 instance Storable HwInfo where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
 
 -- | Generic DSP loader
 data HwDspStatus = HwDspStatus
@@ -126,15 +144,13 @@ data HwDspStatus = HwDspStatus
    , hwDspLoadedDsps :: Word            -- ^ R: bit flags indicating the loaded DSPs
    , hwDspChipReady  :: Word            -- ^ R: 1 = initialization finished
    , hwDspReserved   :: Vector 16 Word8 -- ^ reserved for future use
-   } deriving (Generic)
+   } deriving (Generic, Show, CStorable)
 
-instance CStorable HwDspStatus
-instance Storable  HwDspStatus where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
+instance Storable HwDspStatus where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
 
 data HwDspImage = HwDspImage
    { hwDspImageIndex      :: Word            -- ^ W: DSP index
@@ -142,14 +158,13 @@ data HwDspImage = HwDspImage
    , hwDspImageBin        :: Ptr ()          -- ^ W: binary image
    , hwDspImageLength     :: CSize           -- ^ W: size of image in bytes
    , hwDspImageDriverData :: Word64          -- ^ W: driver-specific data
-   } deriving (Generic)
+   } deriving (Generic, Show, CStorable)
 
-instance CStorable HwDspImage
-instance Storable  HwDspImage where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+instance Storable HwDspImage where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
 
 soundIoctl :: Storable a => Word8 -> FileDescriptor -> a -> SysRet a
 soundIoctl n = ioctlReadWrite sysIoctl 0x48 n defaultCheck
@@ -179,257 +194,435 @@ ioctlHwDspLoad = soundIoctlW 0x03
 pcmVersion :: Word32
 pcmVersion = 0x0002000d
 
-{-
+data PcmClass
+   = PcmClassGeneric  -- ^ standard mono or stereo device
+   | PcmClassMulti    -- ^ multichannel device
+   | PcmClassModem    -- ^ software modem class
+   | PcmClassDigitize -- ^ digitizer class
+   deriving (Show,Eq,Enum)
 
+
+data PcmSubClass
+   = PcmSubClassGenericMix -- ^ mono or stereo subdevices are mixed together 
+   | PcmSubClassMultiMix   -- ^ multichannel subdevices are mixed together 
+   deriving (Show,Eq,Enum)
+
+data PcmStream
+   = PcmStreamPlayback
+   | PcmStreamCapture
+   deriving (Show,Eq,Enum)
+
+data PcmAccess
+   = PcmAccessMmapInterleaved     -- ^ interleaved mmap
+   | PcmAccessMmapNontInterleaved -- ^ noninterleaved m
+   | PcmAccessMmapComplex         -- ^ complex mmap
+   | PcmAccessRwInterleaved       -- ^ readi/writei
+   | PcmAccessRwNonInterleaved    -- ^ readn/writen
+   deriving (Show,Eq,Enum)
+
+data PcmFormat
+   = PcmFormatS8
+   | PcmFormatU8
+   | PcmFormatS16_LE
+   | PcmFormatS16_BE
+   | PcmFormatU16_LE
+   | PcmFormatU16_BE
+   | PcmFormatS24_LE -- ^ low three bytes 
+   | PcmFormatS24_BE -- ^ low three bytes 
+   | PcmFormatU24_LE -- ^ low three bytes 
+   | PcmFormatU24_BE -- ^ low three bytes 
+   | PcmFormatS32_LE
+   | PcmFormatS32_BE
+   | PcmFormatU32_LE
+   | PcmFormatU32_BE
+   | PcmFormatFLOAT_LE   -- ^ 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 
+   | PcmFormatFLOAT_BE   -- ^ 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 
+   | PcmFormatFLOAT64_LE -- ^ 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 
+   | PcmFormatFLOAT64_BE -- ^ 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 
+   | PcmFormatIEC958_SUBFRAME_LE -- ^ IEC-958 subframe, Little Endian 
+   | PcmFormatIEC958_SUBFRAME_BE -- ^ IEC-958 subframe, Big Endian 
+   | PcmFormatMU_LAW
+   | PcmFormatA_LAW
+   | PcmFormatIMA_ADPCM
+   | PcmFormatMPEG
+   | PcmFormatGSM
+   | PcmFormatSPECIAL
+   | PcmFormatS24_3LE    -- ^ in three bytes 
+   | PcmFormatS24_3BE    -- ^ in three bytes 
+   | PcmFormatU24_3LE    -- ^ in three bytes 
+   | PcmFormatU24_3BE    -- ^ in three bytes 
+   | PcmFormatS20_3LE    -- ^ in three bytes 
+   | PcmFormatS20_3BE    -- ^ in three bytes 
+   | PcmFormatU20_3LE    -- ^ in three bytes 
+   | PcmFormatU20_3BE    -- ^ in three bytes 
+   | PcmFormatS18_3LE    -- ^ in three bytes 
+   | PcmFormatS18_3BE    -- ^ in three bytes 
+   | PcmFormatU18_3LE    -- ^ in three bytes 
+   | PcmFormatU18_3BE    -- ^ in three bytes 
+   | PcmFormatG723_24    -- ^ 8 samples in 3 bytes 
+   | PcmFormatG723_24_1B -- ^ 1 sample in 1 byte 
+   | PcmFormatG723_40    -- ^ 8 Samples in 5 bytes 
+   | PcmFormatG723_40_1B -- ^ 1 sample in 1 byte 
+   | PcmFormatDSD_U8     -- ^ DSD, 1-byte samples DSD (x8) 
+   | PcmFormatDSD_U16_LE -- ^ DSD, 2-byte samples DSD (x16), little endian 
+   | PcmFormatDSD_U32_LE -- ^ DSD, 4-byte samples DSD (x32), little endian 
+   | PcmFormatDSD_U16_BE -- ^ DSD, 2-byte samples DSD (x16), big endian 
+   | PcmFormatDSD_U32_BE -- ^ DSD, 4-byte samples DSD (x32), big endian 
+   deriving (Show,Eq)
+
+instance Enum PcmFormat where
+   fromEnum x = case x of
+      PcmFormatS8                 -> 0
+      PcmFormatU8                 -> 1
+      PcmFormatS16_LE             -> 2
+      PcmFormatS16_BE             -> 3
+      PcmFormatU16_LE             -> 4
+      PcmFormatU16_BE             -> 5
+      PcmFormatS24_LE             -> 6
+      PcmFormatS24_BE             -> 7
+      PcmFormatU24_LE             -> 8
+      PcmFormatU24_BE             -> 9
+      PcmFormatS32_LE             -> 10
+      PcmFormatS32_BE             -> 11
+      PcmFormatU32_LE             -> 12
+      PcmFormatU32_BE             -> 13
+      PcmFormatFLOAT_LE           -> 14
+      PcmFormatFLOAT_BE           -> 15
+      PcmFormatFLOAT64_LE         -> 16
+      PcmFormatFLOAT64_BE         -> 17
+      PcmFormatIEC958_SUBFRAME_LE -> 18
+      PcmFormatIEC958_SUBFRAME_BE -> 19
+      PcmFormatMU_LAW             -> 20
+      PcmFormatA_LAW              -> 21
+      PcmFormatIMA_ADPCM          -> 22
+      PcmFormatMPEG               -> 23
+      PcmFormatGSM                -> 24
+      PcmFormatSPECIAL            -> 31
+      PcmFormatS24_3LE            -> 32
+      PcmFormatS24_3BE            -> 33
+      PcmFormatU24_3LE            -> 34
+      PcmFormatU24_3BE            -> 35
+      PcmFormatS20_3LE            -> 36
+      PcmFormatS20_3BE            -> 37
+      PcmFormatU20_3LE            -> 38
+      PcmFormatU20_3BE            -> 39
+      PcmFormatS18_3LE            -> 40
+      PcmFormatS18_3BE            -> 41
+      PcmFormatU18_3LE            -> 42
+      PcmFormatU18_3BE            -> 43
+      PcmFormatG723_24            -> 44
+      PcmFormatG723_24_1B         -> 45
+      PcmFormatG723_40            -> 46
+      PcmFormatG723_40_1B         -> 47
+      PcmFormatDSD_U8             -> 48
+      PcmFormatDSD_U16_LE         -> 49
+      PcmFormatDSD_U32_LE         -> 50
+      PcmFormatDSD_U16_BE         -> 51
+      PcmFormatDSD_U32_BE         -> 52
+
+   toEnum x = case x of
+    0  -> PcmFormatS8
+    1  -> PcmFormatU8
+    2  -> PcmFormatS16_LE
+    3  -> PcmFormatS16_BE
+    4  -> PcmFormatU16_LE
+    5  -> PcmFormatU16_BE
+    6  -> PcmFormatS24_LE
+    7  -> PcmFormatS24_BE
+    8  -> PcmFormatU24_LE
+    9  -> PcmFormatU24_BE
+    10 -> PcmFormatS32_LE
+    11 -> PcmFormatS32_BE
+    12 -> PcmFormatU32_LE
+    13 -> PcmFormatU32_BE
+    14 -> PcmFormatFLOAT_LE
+    15 -> PcmFormatFLOAT_BE
+    16 -> PcmFormatFLOAT64_LE
+    17 -> PcmFormatFLOAT64_BE
+    18 -> PcmFormatIEC958_SUBFRAME_LE
+    19 -> PcmFormatIEC958_SUBFRAME_BE
+    20 -> PcmFormatMU_LAW
+    21 -> PcmFormatA_LAW
+    22 -> PcmFormatIMA_ADPCM
+    23 -> PcmFormatMPEG
+    24 -> PcmFormatGSM
+    31 -> PcmFormatSPECIAL
+    32 -> PcmFormatS24_3LE
+    33 -> PcmFormatS24_3BE
+    34 -> PcmFormatU24_3LE
+    35 -> PcmFormatU24_3BE
+    36 -> PcmFormatS20_3LE
+    37 -> PcmFormatS20_3BE
+    38 -> PcmFormatU20_3LE
+    39 -> PcmFormatU20_3BE
+    40 -> PcmFormatS18_3LE
+    41 -> PcmFormatS18_3BE
+    42 -> PcmFormatU18_3LE
+    43 -> PcmFormatU18_3BE
+    44 -> PcmFormatG723_24
+    45 -> PcmFormatG723_24_1B
+    46 -> PcmFormatG723_40
+    47 -> PcmFormatG723_40_1B
+    48 -> PcmFormatDSD_U8
+    49 -> PcmFormatDSD_U16_LE
+    50 -> PcmFormatDSD_U32_LE
+    51 -> PcmFormatDSD_U16_BE
+    52 -> PcmFormatDSD_U32_BE
+    _  -> error "Unknown PCM format"
+
+data PcmSubFormat
+   = PcmSubFormatStd
+   deriving (Show,Eq,Enum)
+
+data PcmInfoFlag
+   = PcmInfoMmap                     -- ^ hardware supports mmap
+   | PcmInfoMmapValid                -- ^ period data are valid during transfer
+   | PcmInfoDouble                   -- ^ Double buffering needed for PCM start/stop
+   | PcmInfoBatch                    -- ^ double buffering
+   | PcmInfoInterleaved              -- ^ channels are interleaved
+   | PcmInfoNonInterleaved           -- ^ channels are not interleaved
+   | PcmInfoComplex                  -- ^ complex frame organization (mmap only)
+   | PcmInfoBLockTransfer            -- ^ hardware transfer block of samples
+   | PcmInfoOverrange                -- ^ hardware supports ADC (capture) overrange detection
+   | PcmInfoResume                   -- ^ hardware supports stream resume after suspend
+   | PcmInfoPause                    -- ^ pause ioctl is supported
+   | PcmInfoHalfDuplex               -- ^ only half duplex
+   | PcmInfoJOintDuplex              -- ^ playback and capture stream are somewhat correlated
+   | PcmInfoSyncStart                -- ^ pcm support some kind of sync go
+   | PcmInfoNoPeriodWakeUp           -- ^ period wakeup can be disabled
+   | PcmInfoHasLinkAtime             -- ^ report hardware link audio time, reset on startup
+   | PcmInfoHaskLinkAbsoluteAtime    -- ^ report absolute hardware link audio time, not reset on startup
+   | PcmInfoHasLinkEstimatedAtime    -- ^ report estimated link audio time
+   | PcmInfoHasLinkSynchronizedAtime -- ^ report synchronized audio/system time
+   | PcmInfoDrainTrigger             -- ^ internal kernel flag - trigger in drain
+   | PcmInfoFifoInFrames             -- ^ internal kernel flag - FIFO size is in frames
+   deriving (Show,Eq)
+
+instance Enum PcmInfoFlag where
+   fromEnum x = case x of
+      PcmInfoMmap                     -> 0
+      PcmInfoMmapValid                -> 1
+      PcmInfoDouble                   -> 2
+      PcmInfoBatch                    -> 4
+      PcmInfoInterleaved              -> 8
+      PcmInfoNonInterleaved           -> 9
+      PcmInfoComplex                  -> 10
+      PcmInfoBLockTransfer            -> 16
+      PcmInfoOverrange                -> 17
+      PcmInfoResume                   -> 18
+      PcmInfoPause                    -> 19
+      PcmInfoHalfDuplex               -> 20
+      PcmInfoJOintDuplex              -> 21
+      PcmInfoSyncStart                -> 22
+      PcmInfoNoPeriodWakeUp           -> 23
+      PcmInfoHasLinkAtime             -> 24
+      PcmInfoHaskLinkAbsoluteAtime    -> 25
+      PcmInfoHasLinkEstimatedAtime    -> 26
+      PcmInfoHasLinkSynchronizedAtime -> 27
+      PcmInfoDrainTrigger             -> 30
+      PcmInfoFifoInFrames             -> 31
+   toEnum x = case x of
+      0  -> PcmInfoMmap
+      1  -> PcmInfoMmapValid
+      2  -> PcmInfoDouble
+      4  -> PcmInfoBatch
+      8  -> PcmInfoInterleaved
+      9  -> PcmInfoNonInterleaved
+      10 -> PcmInfoComplex
+      16 -> PcmInfoBLockTransfer
+      17 -> PcmInfoOverrange
+      18 -> PcmInfoResume
+      19 -> PcmInfoPause
+      20 -> PcmInfoHalfDuplex
+      21 -> PcmInfoJOintDuplex
+      22 -> PcmInfoSyncStart
+      23 -> PcmInfoNoPeriodWakeUp
+      24 -> PcmInfoHasLinkAtime
+      25 -> PcmInfoHaskLinkAbsoluteAtime
+      26 -> PcmInfoHasLinkEstimatedAtime
+      27 -> PcmInfoHasLinkSynchronizedAtime
+      30 -> PcmInfoDrainTrigger
+      31 -> PcmInfoFifoInFrames
+      _  -> error "Unknown PCM info flag"
+
+instance EnumBitSet PcmInfoFlag
+type PcmInfoFlags = BitSet Word32 PcmInfoFlag
+
+
+data PcmState
+   = PcmStateOpen         -- ^ stream is open
+   | PcmStateSetup        -- ^ stream has a setup
+   | PcmStatePrepared     -- ^ stream is ready to start
+   | PcmStateRunning      -- ^ stream is running
+   | PcmStateXRun         -- ^ stream reached an xrun
+   | PcmStateDraining     -- ^ stream is draining
+   | PcmStatePaused       -- ^ stream is paused
+   | PcmStateSuspended    -- ^ hardware is suspended
+   | PcmStateDisconnected -- ^ hardware is disconnected
+   deriving (Show,Eq,Enum)
+
+data PcmMmapOffset
+   = PcmMmapOffsetData
+   | PcmMmapOffsetStatus
+   | PcmMmapOffsetControl
+   deriving (Show,Eq)
+
+instance Enum PcmMmapOffset where
+   fromEnum x = case x of
+      PcmMmapOffsetData    -> 0x00000000
+      PcmMmapOffsetStatus  -> 0x80000000
+      PcmMmapOffsetControl -> 0x81000000
+   toEnum x = case x of
+      0x00000000 -> PcmMmapOffsetData
+      0x80000000 -> PcmMmapOffsetStatus
+      0x81000000 -> PcmMmapOffsetControl
+      _          -> error "Unknown PCM map offset"
+
+data PcmInfo = PcmInfo
+   { pcmInfoDevice               :: Word            -- ^ RO/WR (control): device number
+   , pcmInfoSubDevice            :: Word            -- ^ RO/WR (control): subdevice number
+   , pcmInfoStream               :: Int             -- ^ RO/WR (control): stream direction
+   , pcmInfoCard                 :: Int             -- ^ R: card number
+   , pcmInfoID                   :: Vector 64 CChar -- ^ ID (user selectable)
+   , pcmInfoName                 :: Vector 80 CChar -- ^ name of this device
+   , pcmInfoSubName              :: Vector 32 CChar -- ^ subdevice name
+   , pcmInfoDevClass             :: Int             -- ^ SNDRV_PCM_CLASS_*
+   , pcmInfoDevSubClass          :: Int             -- ^ SNDRV_PCM_SUBCLASS_*
+   , pcmInfoSubDevicesCount      :: Word
+   , pcmInfoSubDevicesAvailabled :: Word
+   , pcmInfoSync                 :: Vector 16 Word8 -- ^ hardware synchronization ID
+   , pcmInfoReserved             :: Vector 64 Word8 -- ^ reserved for future...
+   } deriving (Generic, Show, CStorable)
+
+instance Storable PcmInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data PcmHwParam
+   = PcmHwParamAccess      -- ^ Access type
+   | PcmHwParamFormat      -- ^ Format
+   | PcmHwParamSubFormat   -- ^ Subformat
+   | PcmHwParamSampleBits  -- ^ Bits per sample 
+   | PcmHwParamFrameBits   -- ^ Bits per frame 
+   | PcmHwParamChannels    -- ^ Channels 
+   | PcmHwParamRate        -- ^ Approx rate 
+   | PcmHwParamPeriodTime  -- ^ Approx distance between interrupts in us 
+   | PcmHwParamPeriodSize  -- ^ Approx frames between interrupts 
+   | PcmHwParamPeriodBytes -- ^ Approx bytes between interrupts 
+   | PcmHwParamPeriods     -- ^ Approx interrupts per buffer 
+   | PcmHwParamBufferTime  -- ^ Approx duration of buffer in us 
+   | PcmHwParamBufferSize  -- ^ Size of buffer in frames 
+   | PcmHwParamBufferBytes -- ^ Size of buffer in bytes 
+   | PcmHwParamTickTime    -- ^ Approx tick duration in us 
+   deriving (Show,Eq)
+
+instance Enum PcmHwParam where
+   fromEnum x = case x of
+      PcmHwParamAccess      -> 0
+      PcmHwParamFormat      -> 1
+      PcmHwParamSubFormat   -> 2
+      PcmHwParamSampleBits  -> 8
+      PcmHwParamFrameBits   -> 9
+      PcmHwParamChannels    -> 10
+      PcmHwParamRate        -> 11
+      PcmHwParamPeriodTime  -> 12
+      PcmHwParamPeriodSize  -> 13
+      PcmHwParamPeriodBytes -> 14
+      PcmHwParamPeriods     -> 15
+      PcmHwParamBufferTime  -> 16
+      PcmHwParamBufferSize  -> 17
+      PcmHwParamBufferBytes -> 18
+      PcmHwParamTickTime    -> 19
+   toEnum x = case x of
+      0  -> PcmHwParamAccess
+      1  -> PcmHwParamFormat
+      2  -> PcmHwParamSubFormat
+      8  -> PcmHwParamSampleBits
+      9  -> PcmHwParamFrameBits
+      10 -> PcmHwParamChannels
+      11 -> PcmHwParamRate
+      12 -> PcmHwParamPeriodTime
+      13 -> PcmHwParamPeriodSize
+      14 -> PcmHwParamPeriodBytes
+      15 -> PcmHwParamPeriods
+      16 -> PcmHwParamBufferTime
+      17 -> PcmHwParamBufferSize
+      18 -> PcmHwParamBufferBytes
+      19 -> PcmHwParamTickTime
+      _  -> error "Unknown PCM HW Param"
+
+data Interval = Interval
+   { intervalMin :: Word
+   , intervalMax :: Word
+   , intervalOptions :: IntervalOptions
+   } deriving (Show,Eq,Generic,CStorable)
+
+instance Storable Interval where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data IntervalOption
+   = IntervalOpenMin
+   | IntervalOpenMax
+   | IntervalInteger
+   | IntervalEmpty
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet IntervalOption
+type IntervalOptions = BitSet Word IntervalOption
+
+data PcmHwParamsFlag
+   = PcmHwParamsNoResample     -- ^ avoid rate resampling
+   | PcmHwParamsExportBuffer   -- ^ export buffer
+   | PcmHwParamsNoPeriodWakeUp -- ^ disable period wakeups
+   deriving (Show,Eq,Enum)
+
+instance EnumBitSet PcmHwParamsFlag
+type PcmHwParamsFlags = BitSet Word PcmHwParamsFlag
+
+data Mask = Mask
+   { maskBits :: Vector 8 Word32
+   } deriving (Generic,CStorable,Show)
+
+instance Storable Mask where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data PcmHwParams = PcmHwParams
+   { pcmHwParamsFlags               :: PcmHwParamsFlags
+   , pcmHwParamsMasks               :: Vector 8 Mask
+   , pcmHwParamsIntervals           :: Vector 21 Interval
+   , pcmHwParamsRequestedMasks      :: Word               -- ^ W: requested masks
+   , pcmHwParamsChangedMasks        :: Word               -- ^ R: changed masks
+   , pcmHwParamsInfo                :: Word               -- ^ R: Info flags for returned setup
+   , pcmHwParamsMostSignificantBits :: Word               -- ^ R: used most significant bits
+   , pcmHwParamsRateNumerator       :: Word               -- ^ R: rate numerator
+   , pcmHwParamsRateDenominator     :: Word               -- ^ R: rate denominator
+   , pcmHwParamsFifoSize            :: Word64             -- ^ R: chip FIFO size in frames
+   , pcmHwParamsReserved            :: Vector 64 Word8    -- ^ reserved for future
+   } deriving (Generic, CStorable, Show)
+
+instance Storable PcmHwParams where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+
+data PcmTimeStampMode
+   = PcmTimeStampNone
+   | PcmTimeStampEnabled
+   deriving (Show,Eq,Enum)
+
+{-
 typedef unsigned long snd_pcm_uframes_t;
 typedef signed long snd_pcm_sframes_t;
-
-enum {
-        SNDRV_PCM_CLASS_GENERIC = 0,    /* standard mono or stereo device */
-        SNDRV_PCM_CLASS_MULTI,          /* multichannel device */
-        SNDRV_PCM_CLASS_MODEM,          /* software modem class */
-        SNDRV_PCM_CLASS_DIGITIZER,      /* digitizer class */
-        /* Don't forget to change the following: */
-        SNDRV_PCM_CLASS_LAST = SNDRV_PCM_CLASS_DIGITIZER,
-};
-
-enum {
-        SNDRV_PCM_SUBCLASS_GENERIC_MIX = 0, /* mono or stereo subdevices are mixed together */
-        SNDRV_PCM_SUBCLASS_MULTI_MIX,   /* multichannel subdevices are mixed together */
-        /* Don't forget to change the following: */
-        SNDRV_PCM_SUBCLASS_LAST = SNDRV_PCM_SUBCLASS_MULTI_MIX,
-};
-
-enum {
-        SNDRV_PCM_STREAM_PLAYBACK = 0,
-        SNDRV_PCM_STREAM_CAPTURE,
-        SNDRV_PCM_STREAM_LAST = SNDRV_PCM_STREAM_CAPTURE,
-};
-
-typedef int __bitwise snd_pcm_access_t;
-#define SNDRV_PCM_ACCESS_MMAP_INTERLEAVED       ((__force snd_pcm_access_t) 0) /* interleaved mmap */
-#define SNDRV_PCM_ACCESS_MMAP_NONINTERLEAVED    ((__force snd_pcm_access_t) 1) /* noninterleaved mmap */
-#define SNDRV_PCM_ACCESS_MMAP_COMPLEX           ((__force snd_pcm_access_t) 2) /* complex mmap */
-#define SNDRV_PCM_ACCESS_RW_INTERLEAVED         ((__force snd_pcm_access_t) 3) /* readi/writei */
-#define SNDRV_PCM_ACCESS_RW_NONINTERLEAVED      ((__force snd_pcm_access_t) 4) /* readn/writen */
-#define SNDRV_PCM_ACCESS_LAST           SNDRV_PCM_ACCESS_RW_NONINTERLEAVED
-
-typedef int __bitwise snd_pcm_format_t;
-#define SNDRV_PCM_FORMAT_S8     ((__force snd_pcm_format_t) 0)
-#define SNDRV_PCM_FORMAT_U8     ((__force snd_pcm_format_t) 1)
-#define SNDRV_PCM_FORMAT_S16_LE ((__force snd_pcm_format_t) 2)
-#define SNDRV_PCM_FORMAT_S16_BE ((__force snd_pcm_format_t) 3)
-#define SNDRV_PCM_FORMAT_U16_LE ((__force snd_pcm_format_t) 4)
-#define SNDRV_PCM_FORMAT_U16_BE ((__force snd_pcm_format_t) 5)
-#define SNDRV_PCM_FORMAT_S24_LE ((__force snd_pcm_format_t) 6) /* low three bytes */
-#define SNDRV_PCM_FORMAT_S24_BE ((__force snd_pcm_format_t) 7) /* low three bytes */
-#define SNDRV_PCM_FORMAT_U24_LE ((__force snd_pcm_format_t) 8) /* low three bytes */
-#define SNDRV_PCM_FORMAT_U24_BE ((__force snd_pcm_format_t) 9) /* low three bytes */
-#define SNDRV_PCM_FORMAT_S32_LE ((__force snd_pcm_format_t) 10)
-#define SNDRV_PCM_FORMAT_S32_BE ((__force snd_pcm_format_t) 11)
-#define SNDRV_PCM_FORMAT_U32_LE ((__force snd_pcm_format_t) 12)
-#define SNDRV_PCM_FORMAT_U32_BE ((__force snd_pcm_format_t) 13)
-#define SNDRV_PCM_FORMAT_FLOAT_LE       ((__force snd_pcm_format_t) 14) /* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
-#define SNDRV_PCM_FORMAT_FLOAT_BE       ((__force snd_pcm_format_t) 15) /* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
-#define SNDRV_PCM_FORMAT_FLOAT64_LE     ((__force snd_pcm_format_t) 16) /* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
-#define SNDRV_PCM_FORMAT_FLOAT64_BE     ((__force snd_pcm_format_t) 17) /* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
-#define SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE ((__force snd_pcm_format_t) 18) /* IEC-958 subframe, Little Endian */
-#define SNDRV_PCM_FORMAT_IEC958_SUBFRAME_BE ((__force snd_pcm_format_t) 19) /* IEC-958 subframe, Big Endian */
-#define SNDRV_PCM_FORMAT_MU_LAW         ((__force snd_pcm_format_t) 20)
-#define SNDRV_PCM_FORMAT_A_LAW          ((__force snd_pcm_format_t) 21)
-#define SNDRV_PCM_FORMAT_IMA_ADPCM      ((__force snd_pcm_format_t) 22)
-#define SNDRV_PCM_FORMAT_MPEG           ((__force snd_pcm_format_t) 23)
-#define SNDRV_PCM_FORMAT_GSM            ((__force snd_pcm_format_t) 24)
-#define SNDRV_PCM_FORMAT_SPECIAL        ((__force snd_pcm_format_t) 31)
-#define SNDRV_PCM_FORMAT_S24_3LE        ((__force snd_pcm_format_t) 32) /* in three bytes */
-#define SNDRV_PCM_FORMAT_S24_3BE        ((__force snd_pcm_format_t) 33) /* in three bytes */
-#define SNDRV_PCM_FORMAT_U24_3LE        ((__force snd_pcm_format_t) 34) /* in three bytes */
-#define SNDRV_PCM_FORMAT_U24_3BE        ((__force snd_pcm_format_t) 35) /* in three bytes */
-#define SNDRV_PCM_FORMAT_S20_3LE        ((__force snd_pcm_format_t) 36) /* in three bytes */
-#define SNDRV_PCM_FORMAT_S20_3BE        ((__force snd_pcm_format_t) 37) /* in three bytes */
-#define SNDRV_PCM_FORMAT_U20_3LE        ((__force snd_pcm_format_t) 38) /* in three bytes */
-#define SNDRV_PCM_FORMAT_U20_3BE        ((__force snd_pcm_format_t) 39) /* in three bytes */
-#define SNDRV_PCM_FORMAT_S18_3LE        ((__force snd_pcm_format_t) 40) /* in three bytes */
-#define SNDRV_PCM_FORMAT_S18_3BE        ((__force snd_pcm_format_t) 41) /* in three bytes */
-#define SNDRV_PCM_FORMAT_U18_3LE        ((__force snd_pcm_format_t) 42) /* in three bytes */
-#define SNDRV_PCM_FORMAT_U18_3BE        ((__force snd_pcm_format_t) 43) /* in three bytes */
-#define SNDRV_PCM_FORMAT_G723_24        ((__force snd_pcm_format_t) 44) /* 8 samples in 3 bytes */
-#define SNDRV_PCM_FORMAT_G723_24_1B     ((__force snd_pcm_format_t) 45) /* 1 sample in 1 byte */
-#define SNDRV_PCM_FORMAT_G723_40        ((__force snd_pcm_format_t) 46) /* 8 Samples in 5 bytes */
-#define SNDRV_PCM_FORMAT_G723_40_1B     ((__force snd_pcm_format_t) 47) /* 1 sample in 1 byte */
-#define SNDRV_PCM_FORMAT_DSD_U8         ((__force snd_pcm_format_t) 48) /* DSD, 1-byte samples DSD (x8) */
-#define SNDRV_PCM_FORMAT_DSD_U16_LE     ((__force snd_pcm_format_t) 49) /* DSD, 2-byte samples DSD (x16), little endian */
-#define SNDRV_PCM_FORMAT_DSD_U32_LE     ((__force snd_pcm_format_t) 50) /* DSD, 4-byte samples DSD (x32), little endian */
-#define SNDRV_PCM_FORMAT_DSD_U16_BE     ((__force snd_pcm_format_t) 51) /* DSD, 2-byte samples DSD (x16), big endian */
-#define SNDRV_PCM_FORMAT_DSD_U32_BE     ((__force snd_pcm_format_t) 52) /* DSD, 4-byte samples DSD (x32), big endian */
-#define SNDRV_PCM_FORMAT_LAST           SNDRV_PCM_FORMAT_DSD_U32_BE
-
-#ifdef SNDRV_LITTLE_ENDIAN
-#define SNDRV_PCM_FORMAT_S16            SNDRV_PCM_FORMAT_S16_LE
-#define SNDRV_PCM_FORMAT_U16            SNDRV_PCM_FORMAT_U16_LE
-#define SNDRV_PCM_FORMAT_S24            SNDRV_PCM_FORMAT_S24_LE
-#define SNDRV_PCM_FORMAT_U24            SNDRV_PCM_FORMAT_U24_LE
-#define SNDRV_PCM_FORMAT_S32            SNDRV_PCM_FORMAT_S32_LE
-#define SNDRV_PCM_FORMAT_U32            SNDRV_PCM_FORMAT_U32_LE
-#define SNDRV_PCM_FORMAT_FLOAT          SNDRV_PCM_FORMAT_FLOAT_LE
-#define SNDRV_PCM_FORMAT_FLOAT64        SNDRV_PCM_FORMAT_FLOAT64_LE
-#define SNDRV_PCM_FORMAT_IEC958_SUBFRAME SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE
-#endif
-#ifdef SNDRV_BIG_ENDIAN
-#define SNDRV_PCM_FORMAT_S16            SNDRV_PCM_FORMAT_S16_BE
-#define SNDRV_PCM_FORMAT_U16            SNDRV_PCM_FORMAT_U16_BE
-#define SNDRV_PCM_FORMAT_S24            SNDRV_PCM_FORMAT_S24_BE
-#define SNDRV_PCM_FORMAT_U24            SNDRV_PCM_FORMAT_U24_BE
-#define SNDRV_PCM_FORMAT_S32            SNDRV_PCM_FORMAT_S32_BE
-#define SNDRV_PCM_FORMAT_U32            SNDRV_PCM_FORMAT_U32_BE
-#define SNDRV_PCM_FORMAT_FLOAT          SNDRV_PCM_FORMAT_FLOAT_BE
-#define SNDRV_PCM_FORMAT_FLOAT64        SNDRV_PCM_FORMAT_FLOAT64_BE
-#define SNDRV_PCM_FORMAT_IEC958_SUBFRAME SNDRV_PCM_FORMAT_IEC958_SUBFRAME_BE
-#endif
-
-typedef int __bitwise snd_pcm_subformat_t;
-#define SNDRV_PCM_SUBFORMAT_STD         ((__force snd_pcm_subformat_t) 0)
-#define SNDRV_PCM_SUBFORMAT_LAST        SNDRV_PCM_SUBFORMAT_STD
-
-#define SNDRV_PCM_INFO_MMAP             0x00000001      /* hardware supports mmap */
-#define SNDRV_PCM_INFO_MMAP_VALID       0x00000002      /* period data are valid during transfer */
-#define SNDRV_PCM_INFO_DOUBLE           0x00000004      /* Double buffering needed for PCM start/stop */
-#define SNDRV_PCM_INFO_BATCH            0x00000010      /* double buffering */
-#define SNDRV_PCM_INFO_INTERLEAVED      0x00000100      /* channels are interleaved */
-#define SNDRV_PCM_INFO_NONINTERLEAVED   0x00000200      /* channels are not interleaved */
-#define SNDRV_PCM_INFO_COMPLEX          0x00000400      /* complex frame organization (mmap only) */
-#define SNDRV_PCM_INFO_BLOCK_TRANSFER   0x00010000      /* hardware transfer block of samples */
-#define SNDRV_PCM_INFO_OVERRANGE        0x00020000      /* hardware supports ADC (capture) overrange detection */
-#define SNDRV_PCM_INFO_RESUME           0x00040000      /* hardware supports stream resume after suspend */
-#define SNDRV_PCM_INFO_PAUSE            0x00080000      /* pause ioctl is supported */
-#define SNDRV_PCM_INFO_HALF_DUPLEX      0x00100000      /* only half duplex */
-#define SNDRV_PCM_INFO_JOINT_DUPLEX     0x00200000      /* playback and capture stream are somewhat correlated */
-#define SNDRV_PCM_INFO_SYNC_START       0x00400000      /* pcm support some kind of sync go */
-#define SNDRV_PCM_INFO_NO_PERIOD_WAKEUP 0x00800000      /* period wakeup can be disabled */
-#define SNDRV_PCM_INFO_HAS_WALL_CLOCK   0x01000000      /* (Deprecated)has audio wall clock for audio/system time sync */
-#define SNDRV_PCM_INFO_HAS_LINK_ATIME              0x01000000  /* report hardware link audio time, reset on startup */
-#define SNDRV_PCM_INFO_HAS_LINK_ABSOLUTE_ATIME     0x02000000  /* report absolute hardware link audio time, not reset on startup */
-#define SNDRV_PCM_INFO_HAS_LINK_ESTIMATED_ATIME    0x04000000  /* report estimated link audio time */
-#define SNDRV_PCM_INFO_HAS_LINK_SYNCHRONIZED_ATIME 0x08000000  /* report synchronized audio/system time */
-
-#define SNDRV_PCM_INFO_DRAIN_TRIGGER    0x40000000              /* internal kernel flag - trigger in drain */
-#define SNDRV_PCM_INFO_FIFO_IN_FRAMES   0x80000000      /* internal kernel flag - FIFO size is in frames */
-
-
-
-typedef int __bitwise snd_pcm_state_t;
-#define SNDRV_PCM_STATE_OPEN            ((__force snd_pcm_state_t) 0) /* stream is open */
-#define SNDRV_PCM_STATE_SETUP           ((__force snd_pcm_state_t) 1) /* stream has a setup */
-#define SNDRV_PCM_STATE_PREPARED        ((__force snd_pcm_state_t) 2) /* stream is ready to start */
-#define SNDRV_PCM_STATE_RUNNING         ((__force snd_pcm_state_t) 3) /* stream is running */
-#define SNDRV_PCM_STATE_XRUN            ((__force snd_pcm_state_t) 4) /* stream reached an xrun */
-#define SNDRV_PCM_STATE_DRAINING        ((__force snd_pcm_state_t) 5) /* stream is draining */
-#define SNDRV_PCM_STATE_PAUSED          ((__force snd_pcm_state_t) 6) /* stream is paused */
-#define SNDRV_PCM_STATE_SUSPENDED       ((__force snd_pcm_state_t) 7) /* hardware is suspended */
-#define SNDRV_PCM_STATE_DISCONNECTED    ((__force snd_pcm_state_t) 8) /* hardware is disconnected */
-#define SNDRV_PCM_STATE_LAST            SNDRV_PCM_STATE_DISCONNECTED
-
-enum {
-        SNDRV_PCM_MMAP_OFFSET_DATA = 0x00000000,
-        SNDRV_PCM_MMAP_OFFSET_STATUS = 0x80000000,
-        SNDRV_PCM_MMAP_OFFSET_CONTROL = 0x81000000,
-};
-
-union snd_pcm_sync_id {
-        unsigned char id[16];
-        unsigned short id16[8];
-        unsigned int id32[4];
-};
-
-struct snd_pcm_info {
-        unsigned int device;            /* RO/WR (control): device number */
-        unsigned int subdevice;         /* RO/WR (control): subdevice number */
-        int stream;                     /* RO/WR (control): stream direction */
-        int card;                       /* R: card number */
-        unsigned char id[64];           /* ID (user selectable) */
-        unsigned char name[80];         /* name of this device */
-        unsigned char subname[32];      /* subdevice name */
-        int dev_class;                  /* SNDRV_PCM_CLASS_* */
-        int dev_subclass;               /* SNDRV_PCM_SUBCLASS_* */
-        unsigned int subdevices_count;
-        unsigned int subdevices_avail;
-        union snd_pcm_sync_id sync;     /* hardware synchronization ID */
-        unsigned char reserved[64];     /* reserved for future... */
-};
-
-typedef int snd_pcm_hw_param_t;
-#define SNDRV_PCM_HW_PARAM_ACCESS       0       /* Access type */
-#define SNDRV_PCM_HW_PARAM_FORMAT       1       /* Format */
-#define SNDRV_PCM_HW_PARAM_SUBFORMAT    2       /* Subformat */
-#define SNDRV_PCM_HW_PARAM_FIRST_MASK   SNDRV_PCM_HW_PARAM_ACCESS
-#define SNDRV_PCM_HW_PARAM_LAST_MASK    SNDRV_PCM_HW_PARAM_SUBFORMAT
-
-#define SNDRV_PCM_HW_PARAM_SAMPLE_BITS  8       /* Bits per sample */
-#define SNDRV_PCM_HW_PARAM_FRAME_BITS   9       /* Bits per frame */
-#define SNDRV_PCM_HW_PARAM_CHANNELS     10      /* Channels */
-#define SNDRV_PCM_HW_PARAM_RATE         11      /* Approx rate */
-#define SNDRV_PCM_HW_PARAM_PERIOD_TIME  12      /* Approx distance between
-                                                 * interrupts in us
-                                                 */
-#define SNDRV_PCM_HW_PARAM_PERIOD_SIZE  13      /* Approx frames between
-                                                 * interrupts
-                                                 */
-#define SNDRV_PCM_HW_PARAM_PERIOD_BYTES 14      /* Approx bytes between
-                                                 * interrupts
-                                                 */
-#define SNDRV_PCM_HW_PARAM_PERIODS      15      /* Approx interrupts per
-                                                 * buffer
-                                                 */
-#define SNDRV_PCM_HW_PARAM_BUFFER_TIME  16      /* Approx duration of buffer
-                                                 * in us
-                                                 */
-#define SNDRV_PCM_HW_PARAM_BUFFER_SIZE  17      /* Size of buffer in frames */
-#define SNDRV_PCM_HW_PARAM_BUFFER_BYTES 18      /* Size of buffer in bytes */
-#define SNDRV_PCM_HW_PARAM_TICK_TIME    19      /* Approx tick duration in us */
-#define SNDRV_PCM_HW_PARAM_FIRST_INTERVAL       SNDRV_PCM_HW_PARAM_SAMPLE_BITS
-#define SNDRV_PCM_HW_PARAM_LAST_INTERVAL        SNDRV_PCM_HW_PARAM_TICK_TIME
-
-#define SNDRV_PCM_HW_PARAMS_NORESAMPLE  (1<<0)  /* avoid rate resampling */
-#define SNDRV_PCM_HW_PARAMS_EXPORT_BUFFER       (1<<1)  /* export buffer */
-#define SNDRV_PCM_HW_PARAMS_NO_PERIOD_WAKEUP    (1<<2)  /* disable period wakeups */
-
-struct snd_interval {
-        unsigned int min, max;
-        unsigned int openmin:1,
-                     openmax:1,
-                     integer:1,
-                     empty:1;
-};
-
-#define SNDRV_MASK_MAX  256
-
-struct snd_mask {
-        __u32 bits[(SNDRV_MASK_MAX+31)/32];
-};
-
-struct snd_pcm_hw_params {
-        unsigned int flags;
-        struct snd_mask masks[SNDRV_PCM_HW_PARAM_LAST_MASK - 
-                               SNDRV_PCM_HW_PARAM_FIRST_MASK + 1];
-        struct snd_mask mres[5];        /* reserved masks */
-        struct snd_interval intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
-                                        SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
-        struct snd_interval ires[9];    /* reserved intervals */
-        unsigned int rmask;             /* W: requested masks */
-        unsigned int cmask;             /* R: changed masks */
-        unsigned int info;              /* R: Info flags for returned setup */
-        unsigned int msbits;            /* R: used most significant bits */
-        unsigned int rate_num;          /* R: rate numerator */
-        unsigned int rate_den;          /* R: rate denominator */
-        snd_pcm_uframes_t fifo_size;    /* R: chip FIFO size in frames */
-        unsigned char reserved[64];     /* reserved for future */
-};
-
-enum {
-        SNDRV_PCM_TSTAMP_NONE = 0,
-        SNDRV_PCM_TSTAMP_ENABLE,
-        SNDRV_PCM_TSTAMP_LAST = SNDRV_PCM_TSTAMP_ENABLE,
-};
 
 struct snd_pcm_sw_params {
         int tstamp_mode;                        /* timestamp mode */
