@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module ViperVM.Arch.Linux.Process
    ( ProcessID(..)
    , ThreadID(..)
@@ -25,15 +26,16 @@ import Data.Int (Int64)
 import Data.Word (Word32)
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
-import Foreign.Storable (peek)
+import Foreign.Storable
+import Foreign.CStorable
 
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 
-newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord)
-newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord)
-newtype UserID = UserID Word32 deriving (Show,Eq,Ord)
-newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord)
+newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype UserID = UserID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
 
 -- | Exit the current process with the given return value
 -- This syscall does not return.

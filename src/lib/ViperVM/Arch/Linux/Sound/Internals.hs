@@ -134,19 +134,24 @@ module ViperVM.Arch.Linux.Sound.Internals
    , ControlPower (..)
    , ControlElementId (..)
    , ControlElementList (..)
+   , IntegerValue (..)
+   , Integer64Value (..)
+   , EnumeratedValue (..)
+   , ControlElementInfo (..)
+   , ControlElementValue (..)
    , ControlTLV (..)
    , ioctlControlVersion
    , ioctlControlCardInfo
    , ioctlControlElemList
-   -- , ioctlControlElemInfo
-   -- , ioctlControlElemRead
-   -- , ioctlControlElemWrite
-   -- , ioctlControlElemLock
-   -- , ioctlControlElemUnlock
+   , ioctlControlElemInfo
+   , ioctlControlElemRead
+   , ioctlControlElemWrite
+   , ioctlControlElemLock
+   , ioctlControlElemUnlock
    , ioctlControlSubscribeEvents
-   -- , ioctlControlElemAdd
-   -- , ioctlControlElemReplace
-   -- , ioctlControlElemRemove
+   , ioctlControlElemAdd
+   , ioctlControlElemReplace
+   , ioctlControlElemRemove
    , ioctlControlTLVRead
    , ioctlControlTLVWrite
    , ioctlControlTLVCommand
@@ -177,12 +182,14 @@ import Foreign.C.Types (CChar, CSize)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Vector (Vector)
+import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Time
+import ViperVM.Arch.Linux.Process (ProcessID)
 
 -- From alsa-lib/include/sound/asound.h
 
@@ -360,47 +367,47 @@ data PcmFormat
    | PcmFormatS16_BE
    | PcmFormatU16_LE
    | PcmFormatU16_BE
-   | PcmFormatS24_LE -- ^ low three bytes 
-   | PcmFormatS24_BE -- ^ low three bytes 
-   | PcmFormatU24_LE -- ^ low three bytes 
-   | PcmFormatU24_BE -- ^ low three bytes 
+   | PcmFormatS24_LE             -- ^ low three bytes
+   | PcmFormatS24_BE             -- ^ low three bytes
+   | PcmFormatU24_LE             -- ^ low three bytes
+   | PcmFormatU24_BE             -- ^ low three bytes
    | PcmFormatS32_LE
    | PcmFormatS32_BE
    | PcmFormatU32_LE
    | PcmFormatU32_BE
-   | PcmFormatFLOAT_LE   -- ^ 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 
-   | PcmFormatFLOAT_BE   -- ^ 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 
-   | PcmFormatFLOAT64_LE -- ^ 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 
-   | PcmFormatFLOAT64_BE -- ^ 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 
-   | PcmFormatIEC958_SUBFRAME_LE -- ^ IEC-958 subframe, Little Endian 
-   | PcmFormatIEC958_SUBFRAME_BE -- ^ IEC-958 subframe, Big Endian 
+   | PcmFormatFLOAT_LE           -- ^ 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0
+   | PcmFormatFLOAT_BE           -- ^ 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0
+   | PcmFormatFLOAT64_LE         -- ^ 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0
+   | PcmFormatFLOAT64_BE         -- ^ 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0
+   | PcmFormatIEC958_SUBFRAME_LE -- ^ IEC-958 subframe, Little Endian
+   | PcmFormatIEC958_SUBFRAME_BE -- ^ IEC-958 subframe, Big Endian
    | PcmFormatMU_LAW
    | PcmFormatA_LAW
    | PcmFormatIMA_ADPCM
    | PcmFormatMPEG
    | PcmFormatGSM
    | PcmFormatSPECIAL
-   | PcmFormatS24_3LE    -- ^ in three bytes 
-   | PcmFormatS24_3BE    -- ^ in three bytes 
-   | PcmFormatU24_3LE    -- ^ in three bytes 
-   | PcmFormatU24_3BE    -- ^ in three bytes 
-   | PcmFormatS20_3LE    -- ^ in three bytes 
-   | PcmFormatS20_3BE    -- ^ in three bytes 
-   | PcmFormatU20_3LE    -- ^ in three bytes 
-   | PcmFormatU20_3BE    -- ^ in three bytes 
-   | PcmFormatS18_3LE    -- ^ in three bytes 
-   | PcmFormatS18_3BE    -- ^ in three bytes 
-   | PcmFormatU18_3LE    -- ^ in three bytes 
-   | PcmFormatU18_3BE    -- ^ in three bytes 
-   | PcmFormatG723_24    -- ^ 8 samples in 3 bytes 
-   | PcmFormatG723_24_1B -- ^ 1 sample in 1 byte 
-   | PcmFormatG723_40    -- ^ 8 Samples in 5 bytes 
-   | PcmFormatG723_40_1B -- ^ 1 sample in 1 byte 
-   | PcmFormatDSD_U8     -- ^ DSD, 1-byte samples DSD (x8) 
-   | PcmFormatDSD_U16_LE -- ^ DSD, 2-byte samples DSD (x16), little endian 
-   | PcmFormatDSD_U32_LE -- ^ DSD, 4-byte samples DSD (x32), little endian 
-   | PcmFormatDSD_U16_BE -- ^ DSD, 2-byte samples DSD (x16), big endian 
-   | PcmFormatDSD_U32_BE -- ^ DSD, 4-byte samples DSD (x32), big endian 
+   | PcmFormatS24_3LE            -- ^ in three bytes
+   | PcmFormatS24_3BE            -- ^ in three bytes
+   | PcmFormatU24_3LE            -- ^ in three bytes
+   | PcmFormatU24_3BE            -- ^ in three bytes
+   | PcmFormatS20_3LE            -- ^ in three bytes
+   | PcmFormatS20_3BE            -- ^ in three bytes
+   | PcmFormatU20_3LE            -- ^ in three bytes
+   | PcmFormatU20_3BE            -- ^ in three bytes
+   | PcmFormatS18_3LE            -- ^ in three bytes
+   | PcmFormatS18_3BE            -- ^ in three bytes
+   | PcmFormatU18_3LE            -- ^ in three bytes
+   | PcmFormatU18_3BE            -- ^ in three bytes
+   | PcmFormatG723_24            -- ^ 8 samples in 3 bytes
+   | PcmFormatG723_24_1B         -- ^ 1 sample in 1 byte
+   | PcmFormatG723_40            -- ^ 8 Samples in 5 bytes
+   | PcmFormatG723_40_1B         -- ^ 1 sample in 1 byte
+   | PcmFormatDSD_U8             -- ^ DSD, 1-byte samples DSD (x8)
+   | PcmFormatDSD_U16_LE         -- ^ DSD, 2-byte samples DSD (x16), little endian
+   | PcmFormatDSD_U32_LE         -- ^ DSD, 4-byte samples DSD (x32), little endian
+   | PcmFormatDSD_U16_BE         -- ^ DSD, 2-byte samples DSD (x16), big endian
+   | PcmFormatDSD_U32_BE         -- ^ DSD, 4-byte samples DSD (x32), big endian
    deriving (Show,Eq)
 
 instance Enum PcmFormat where
@@ -1630,67 +1637,75 @@ instance Storable ControlElementList where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-{-
 
-struct snd_ctl_elem_info {
-        struct snd_ctl_elem_id id;      /* W: element ID */
-        snd_ctl_elem_type_t type;       /* R: value type - SNDRV_CTL_ELEM_TYPE_* */
-        unsigned int access;            /* R: value access (bitmask) - SNDRV_CTL_ELEM_ACCESS_* */
-        unsigned int count;             /* count of values */
-        __kernel_pid_t owner;           /* owner's PID of this control */
-        union {
-                struct {
-                        long min;               /* R: minimum value */
-                        long max;               /* R: maximum value */
-                        long step;              /* R: step (0 variable) */
-                } integer;
-                struct {
-                        long long min;          /* R: minimum value */
-                        long long max;          /* R: maximum value */
-                        long long step;         /* R: step (0 variable) */
-                } integer64;
-                struct {
-                        unsigned int items;     /* R: number of items */
-                        unsigned int item;      /* W: item number */
-                        char name[64];          /* R: value name */
-                        __u64 names_ptr;        /* W: names list (ELEM_ADD only) */
-                        unsigned int names_length;
-                } enumerated;
-                unsigned char reserved[128];
-        } value;
-        union {
-                unsigned short d[4];            /* dimensions */
-                unsigned short *d_ptr;          /* indirect - obsoleted */
-        } dimen;
-        unsigned char reserved[64-4*sizeof(unsigned short)];
-};
+data IntegerValue = IntegerValue
+   { integerValueMin  :: Word32 -- ^ R: minimum value
+   , integerValueMax  :: Word32 -- ^ R: maximum value
+   , integerValueStep :: Word32 -- ^ R: step (0 variable)
+   } deriving (Show,Generic,CStorable)
 
-struct snd_ctl_elem_value {
-        struct snd_ctl_elem_id id;      /* W: element ID */
-        unsigned int indirect: 1;       /* W: indirect access - obsoleted */
-        union {
-                union {
-                        long value[128];
-                        long *value_ptr;        /* obsoleted */
-                } integer;
-                union {
-                        long long value[64];
-                        long long *value_ptr;   /* obsoleted */
-                } integer64;
-                union {
-                        unsigned int item[128];
-                        unsigned int *item_ptr; /* obsoleted */
-                } enumerated;
-                union {
-                        unsigned char data[512];
-                        unsigned char *data_ptr;        /* obsoleted */
-                } bytes;
-                struct snd_aes_iec958 iec958;
-        } value;                /* RO */
-        struct timespec tstamp;
-        unsigned char reserved[128-sizeof(struct timespec)];
-};
--}
+instance Storable IntegerValue where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data Integer64Value = Integer64Value
+   { integer64ValueMin  :: Word64 -- ^ R: minimum value
+   , integer64ValueMax  :: Word64 -- ^ R: maximum value
+   , integer64ValueStep :: Word64 -- ^ R: step (0 variable)
+   } deriving (Show,Generic,CStorable)
+
+instance Storable Integer64Value where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data EnumeratedValue = EnumeratedValue
+   { enumeratedCount       :: Word            -- ^ R: number of items
+   , enumeratedItem        :: Word            -- ^ W: item number
+   , enumeratedName        :: Vector 64 CChar -- ^ R: value name
+   , enumeratedNamesPtr    :: Word64          -- ^ W: names list (ELEM_ADD only)
+   , enumeratedNamesLength :: Word
+   } deriving (Show,Generic,CStorable)
+
+instance Storable EnumeratedValue where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data ControlElementInfo = ControlElementInfo
+   { controlElemInfoId :: ControlElementId
+   , controlElemInfoType :: Int
+   , controlElemInfoAccess :: Word
+   , controlElemInfoCount :: Word
+   , controlElemInfoOwner :: ProcessID
+   , controlElemInfoValue :: Union4 IntegerValue Integer64Value EnumeratedValue (Vector 128 Word8)
+   , controlElemInfoDimensions :: Vector 4 Word16
+   } deriving (Show,Generic,CStorable)
+
+
+instance Storable ControlElementInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
+
+data ControlElementValue = ControlElementValue
+   { controlElemValueId        :: ControlElementId                    -- ^ W: element ID
+   , controlElemValueIndirect  :: Word                                -- ^ W: indirect access - obsoleted
+   , controlElemValueValue     :: Union2 (Vector 512 Word8) AesIec958
+   , controlElemValueTimeStamp :: TimeSpec
+   , controlElemValueReserved  :: Vector 112 Word8
+   } deriving (Show,Generic,CStorable)
+
+instance Storable ControlElementValue where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
 
 
 data ControlTLV = ControlTLV
@@ -1724,32 +1739,32 @@ ioctlControlCardInfo = controlIoctlR 0x01
 ioctlControlElemList :: FileDescriptor -> ControlElementList -> SysRet ControlElementList
 ioctlControlElemList = controlIoctlWR 0x10
 
--- ioctlControlElemInfo :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
--- ioctlControlElemInfo = controlIoctlWR 0x11
--- 
--- ioctlControlElemRead :: FileDescriptor -> ControlElementValue -> SysRet ControlElementValue
--- ioctlControlElemRead = controlIoctlWR 0x12
--- 
--- ioctlControlElemWrite :: FileDescriptor -> ControlElementValue -> SysRet ControlElementValue
--- ioctlControlElemWrite = controlIoctlWR 0x13
--- 
--- ioctlControlElemLock :: FileDescriptor -> ControlElementId -> SysRet ()
--- ioctlControlElemLock = controlIoctlW 0x14
--- 
--- ioctlControlElemUnlock :: FileDescriptor -> ControlElementId -> SysRet ()
--- ioctlControlElemUnlock = controlIoctlW 0x15
+ioctlControlElemInfo :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+ioctlControlElemInfo = controlIoctlWR 0x11
+
+ioctlControlElemRead :: FileDescriptor -> ControlElementValue -> SysRet ControlElementValue
+ioctlControlElemRead = controlIoctlWR 0x12
+
+ioctlControlElemWrite :: FileDescriptor -> ControlElementValue -> SysRet ControlElementValue
+ioctlControlElemWrite = controlIoctlWR 0x13
+
+ioctlControlElemLock :: FileDescriptor -> ControlElementId -> SysRet ()
+ioctlControlElemLock = controlIoctlW 0x14
+
+ioctlControlElemUnlock :: FileDescriptor -> ControlElementId -> SysRet ()
+ioctlControlElemUnlock = controlIoctlW 0x15
 
 ioctlControlSubscribeEvents :: FileDescriptor -> Int -> SysRet Int
 ioctlControlSubscribeEvents = controlIoctlWR 0x16
 
--- ioctlControlElemAdd :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
--- ioctlControlElemAdd = controlIoctlWR 0x17
--- 
--- ioctlControlElemReplace :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
--- ioctlControlElemReplace = controlIoctlWR 0x18
--- 
--- ioctlControlElemRemove :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
--- ioctlControlElemRemove = controlIoctlWR 0x19
+ioctlControlElemAdd :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+ioctlControlElemAdd = controlIoctlWR 0x17
+
+ioctlControlElemReplace :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+ioctlControlElemReplace = controlIoctlWR 0x18
+
+ioctlControlElemRemove :: FileDescriptor -> ControlElementInfo -> SysRet ControlElementInfo
+ioctlControlElemRemove = controlIoctlWR 0x19
 
 ioctlControlTLVRead :: FileDescriptor -> ControlTLV -> SysRet ControlTLV
 ioctlControlTLVRead = controlIoctlWR 0x1a

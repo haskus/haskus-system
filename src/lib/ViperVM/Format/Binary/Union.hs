@@ -51,12 +51,13 @@ import ViperVM.Utils.Memory (memCopy)
 import GHC.TypeLits
 import Data.Proxy
 import Foreign.Storable
+import Foreign.CStorable
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Data.Word
 import System.IO.Unsafe (unsafePerformIO)
 
-data Buffer = Buffer !Word64 !(ForeignPtr ())
+data Buffer = Buffer !Word64 !(ForeignPtr ()) deriving (Show)
 
 peekBuffer :: Storable b => (Buffer -> b) -> Ptr a -> IO b
 peekBuffer f ptr = do
@@ -71,9 +72,9 @@ pokeBuffer (Buffer sz fp) ptr =
    withForeignPtr fp $ \p ->
       memCopy (castPtr ptr) p sz
 
-newtype Union2 a b     = Union2 Buffer
-newtype Union3 a b c   = Union3 Buffer
-newtype Union4 a b c d = Union4 Buffer
+newtype Union2 a b     = Union2 Buffer deriving (Show)
+newtype Union3 a b c   = Union3 Buffer deriving (Show)
+newtype Union4 a b c d = Union4 Buffer deriving (Show)
 
 class Union a where
    -- | Get the buffer backing an union
@@ -143,6 +144,11 @@ instance (Storable a, Storable b) => Storable (Union2 a b) where
    peek                = peekBuffer Union2
    poke ptr (Union2 b) = pokeBuffer b ptr
 
+instance (Storable a, Storable b) => CStorable (Union2 a b) where
+   cPeek      = peek
+   cPoke      = poke
+   cAlignment = alignment
+   cSizeOf    = sizeOf
 
 
 instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
@@ -158,6 +164,12 @@ instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
                           ]
    peek                = peekBuffer Union3
    poke ptr (Union3 b) = pokeBuffer b ptr
+
+instance (Storable a, Storable b, Storable c) => CStorable (Union3 a b c) where
+   cPeek      = peek
+   cPoke      = poke
+   cAlignment = alignment
+   cSizeOf    = sizeOf
 
 
 instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a b c d) where
@@ -175,3 +187,9 @@ instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a 
                           ]
    peek                = peekBuffer Union4
    poke ptr (Union4 b) = pokeBuffer b ptr
+
+instance (Storable a, Storable b, Storable c, Storable d) => CStorable (Union4 a b c d) where
+   cPeek      = peek
+   cPoke      = poke
+   cAlignment = alignment
+   cSizeOf    = sizeOf
