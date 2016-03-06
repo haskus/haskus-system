@@ -769,7 +769,7 @@ data PcmTimeStampMode
    deriving (Show,Eq,Enum)
 
 data PcmSwParams = PcmSwParams
-   { pcmSwParamsTimeStamp        :: Int                -- ^ timestamp mode
+   { pcmSwParamsTimeStamp        :: Int             -- ^ timestamp mode
    , pcmSwParamsPeriodStep       :: Word
    , pcmSwParamsSleepMin         :: Word            -- ^ min ticks to sleep
    , pcmSwParamsAvailMin         :: Word64          -- ^ min avail frames for wakeup
