@@ -1,6 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds #-}
 
 -- | Union (as in C)
@@ -14,20 +13,19 @@
 -- @
 -- {-# LANGUAGE DataKinds #-}
 --
--- import Data.Proxy
---
 -- getUnion :: IO (Union3 Word16 Word32 Word64)
 -- getUnion = ...
 --
 -- test = do
 --    u <- getUnion
 --
---    -- to get the Word16
---    let v = fromUnion (Proxy :: Proxy 1) u
---    -- to get the Word32
---    let v = fromUnion (Proxy :: Proxy 2) u
---    -- to get the Word64
---    let v = fromUnion (Proxy :: Proxy 3) u
+--    -- to get one of the member
+--    let v = fromUnion u :: Word16
+--    let v = fromUnion u :: Word32
+--    let v = fromUnion u :: Word64
+--
+--    -- This won't compile (Word8 is not a member of the union)
+--    let v = fromUnion u :: Word8
 -- @
 --
 -- Use 'toUnion' to create a new union:
@@ -35,7 +33,7 @@
 --
 -- let
 --    u2 :: Union2 Word32 (Vector 4 Word8)
---    u2 = toUnion (Proxy :: Proxy 1) 0x12345678
+--    u2 = toUnion (0x12345678 :: Word32)
 -- @
 module ViperVM.Format.Binary.Union
    ( Union2
@@ -48,8 +46,6 @@ where
 
 import ViperVM.Utils.Memory (memCopy)
 
-import GHC.TypeLits
-import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr
@@ -96,35 +92,32 @@ instance Union (Union4 a b c d) where
 
 
 
-type family E (n :: Nat) a :: *
-type instance E 1 (Union2 a b)     = a
-type instance E 1 (Union3 a b c)   = a
-type instance E 1 (Union4 a b c d) = a
-type instance E 2 (Union2 a b)     = b
-type instance E 2 (Union3 a b c)   = b
-type instance E 2 (Union4 a b c d) = b
-type instance E 3 (Union3 a b c)   = c
-type instance E 3 (Union4 a b c d) = c
-type instance E 4 (Union4 a b c d) = d
+type family   UnionMember a u :: *
+type instance UnionMember a (Union2 a b)     = a
+type instance UnionMember a (Union3 a b c)   = a
+type instance UnionMember a (Union4 a b c d) = a
+type instance UnionMember b (Union2 a b)     = b
+type instance UnionMember b (Union3 a b c)   = b
+type instance UnionMember b (Union4 a b c d) = b
+type instance UnionMember c (Union3 a b c)   = c
+type instance UnionMember c (Union4 a b c d) = c
+type instance UnionMember d (Union4 a b c d) = d
 
 -- | Retrieve a union member from its index
-fromUnion :: forall (n :: Nat) u . (KnownNat n, Union u, Storable (E n u))
-            => Proxy n -> u -> E n u
-fromUnion _ u = unsafePerformIO $ peekElem (getBuffer u)
+fromUnion :: (Union u, Storable a, UnionMember a u ~ a) => u -> a
+fromUnion u = unsafePerformIO $ peekElem (getBuffer u)
    where
       peekElem :: Storable a => Buffer -> IO a
       peekElem (Buffer _ fp) = withForeignPtr fp (peek . castPtr)
 
 
 -- | Create a new union
-toUnion :: forall (n :: Nat) u . (Storable u, KnownNat n, Union u, Storable (E n u))
-            => Proxy n -> E n u -> u
-toUnion _ v = unsafePerformIO $ do
-   let sz = sizeOf (undefined :: u)
-   fp <- mallocForeignPtrBytes sz
+toUnion :: forall a u . (Storable u, Union u, Storable a, UnionMember a u ~ a) => a -> u
+toUnion v = unsafePerformIO $ do
+   fp <- mallocForeignPtr :: IO (ForeignPtr u)
    withForeignPtr fp $ \p -> 
       poke (castPtr p) v
-   return (fromBuffer (Buffer (fromIntegral sz) fp))
+   return (fromBuffer (Buffer (fromIntegral (sizeOf (undefined :: u))) (castForeignPtr fp)))
 
 
 -- TODO: rewrite rules
