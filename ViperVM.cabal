@@ -137,6 +137,9 @@ library
     ViperVM.Arch.Linux.Graphics.PixelFormat
     ViperVM.Arch.Linux.Graphics.Property
     ViperVM.Arch.Linux.Graphics.Helper
+    ViperVM.Arch.Linux.Graphics.Internals
+
+    ViperVM.Arch.Linux.Sound.Internals
 
     ViperVM.Arch.OpenCL.All
     ViperVM.Arch.OpenCL.Bindings
@@ -242,8 +245,6 @@ library
     ViperVM.Library.Maths.MatrixOps
 
   other-modules:
-    ViperVM.Arch.Linux.Graphics.Internals
-    ViperVM.Arch.Linux.Sound.Internals
 
   c-sources: 
     src/lib/ViperVM/Arch/X86_64/Linux/syscall.c
