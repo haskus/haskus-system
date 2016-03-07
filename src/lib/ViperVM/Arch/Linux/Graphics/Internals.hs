@@ -89,7 +89,7 @@ module ViperVM.Arch.Linux.Graphics.Internals
    , StructSetClientCap (..)
    -- * IOCTLs
    , ioctlGetCapabilities
-   , ioctlSetClientCapabilities
+   , ioctlSetClientCapability
    , ioctlGetResources
    , ioctlGetController
    , ioctlSetController
@@ -1052,14 +1052,14 @@ instance Storable StructGetCap where
 --
 -- Warning: add 1 to the enum number to get the valid value
 data ClientCapability
-   = ClientCapStereo3D -- ^ if set, the DRM core will expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Mode3DMode)
+   = ClientCapStereo3D        -- ^ if set, the DRM core will expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Mode3DMode)
    | ClientCapUniversalPlanes -- ^ If set, the DRM core will expose all planes (overlay, primary, and cursor) to userspace.
-   | ClientCapAtomic -- ^ If set, the DRM core will expose atomic properties to userspace
+   | ClientCapAtomic          -- ^ If set, the DRM core will expose atomic properties to userspace
    deriving (Show,Eq,Enum)
 
 data StructSetClientCap = StructSetClientCap
    { sccCapability :: Word64
-   , sccValue :: Word64
+   , sccValue      :: Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructSetClientCap where
@@ -1079,8 +1079,8 @@ drmIoctl n = ioctlReadWrite sysIoctl 0x64 n defaultCheck
 ioctlGetCapabilities :: FileDescriptor -> StructGetCap -> SysRet StructGetCap
 ioctlGetCapabilities = drmIoctl 0x0C
 
-ioctlSetClientCapabilities :: FileDescriptor -> StructSetClientCap -> SysRet StructSetClientCap
-ioctlSetClientCapabilities = drmIoctl 0x0D
+ioctlSetClientCapability :: FileDescriptor -> StructSetClientCap -> SysRet StructSetClientCap
+ioctlSetClientCapability = drmIoctl 0x0D
  
  
 ioctlGetResources :: FileDescriptor -> StructCardRes -> SysRet StructCardRes

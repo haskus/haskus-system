@@ -1,8 +1,10 @@
 -- | Graphic card capabilities
 module ViperVM.Arch.Linux.Graphics.Capability
-   ( cardCapability
-   , cardHasSupportFor
+   ( getCapability
+   , supports
    , Capability (..)
+   , ClientCapability (..)
+   , setClientCapability
    )
 where
 
@@ -11,17 +13,22 @@ import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.ErrorCode
 
 import Data.Word
+import Control.Monad (void)
 
--- | Indicate if the given capability is supported
-cardCapability :: Card -> Capability -> SysRet Word64
-cardCapability card cap = do
-   let param = StructGetCap (fromIntegral (fromEnum cap + 1)) 0
-   ret <- ioctlGetCapabilities (cardHandle card) param
-   case ret of
-      Left err -> return (Left err)
-      Right (StructGetCap _ value) -> return (Right value)
+-- | Get a capability
+getCapability :: Card -> Capability -> SysRet Word64
+getCapability card cap = do
+   let s = StructGetCap (fromIntegral (fromEnum cap + 1)) 0
+   fmap gcValue <$> ioctlGetCapabilities (cardHandle card) s
 
 -- | Indicate if a capability is supported
-cardHasSupportFor :: Card -> Capability -> SysRet Bool
-cardHasSupportFor card cap = fmap (/= 0) <$> cardCapability card cap
+supports :: Card -> Capability -> SysRet Bool
+supports card cap = fmap (/= 0) <$> getCapability card cap
 
+-- | Set a client capability
+setClientCapability :: Card -> ClientCapability -> Bool -> SysRet ()
+setClientCapability card cap b = do
+   let 
+      v = if b then 1 else 0
+      s = StructSetClientCap (fromIntegral (fromEnum cap + 1)) v
+   void <$> ioctlSetClientCapability (cardHandle card) s
