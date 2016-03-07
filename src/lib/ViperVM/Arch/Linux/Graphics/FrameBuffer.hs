@@ -33,7 +33,7 @@ data Buffer = Buffer
    , bufferPitch     :: Word32 -- ^ Pitch of the buffer
    , bufferOffset    :: Word32 -- ^ Offset of the buffer
    , bufferModifiers :: Word64 -- ^ Modifiers for the buffer
-   }
+   } deriving (Show)
 
 -- | Frame buffer
 data FrameBuffer = FrameBuffer
@@ -43,7 +43,7 @@ data FrameBuffer = FrameBuffer
    , fbPixelFormat :: PixelFormat      -- ^ Pixel format
    , fbFlags       :: FrameBufferFlags -- ^ Flags
    , fbBuffers     :: [Buffer]         -- ^ Data sources (up to four)
-   }
+   } deriving (Show)
 
 fromFrameBuffer :: FrameBuffer -> StructFrameBufferCommand
 fromFrameBuffer FrameBuffer{..} = s
