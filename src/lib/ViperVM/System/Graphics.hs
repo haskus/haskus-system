@@ -17,6 +17,7 @@ import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.Graphics.Mode
@@ -60,6 +61,11 @@ loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
       devs' = filter isCard devs
    forM devs' $ \(devpath,dev) -> do
       fd   <- getDeviceHandle system CharDevice dev
+      -- We support these capabilities
+      setClientCapability' fd ClientCapStereo3D        True
+      setClientCapability' fd ClientCapUniversalPlanes True
+      setClientCapability' fd ClientCapAtomic          True
+      -- Create the DRM event reader thread
       GraphicCard devpath dev (read (drop 4 devpath)) fd
          <$> newEventWaiterThread fd
 

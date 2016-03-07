@@ -11,7 +11,7 @@ module ViperVM.Arch.Linux.Graphics.Internals
    , ModeTypes
    , ModeFlag (..)
    , ModeFlags
-   , Mode3DMode (..)
+   , Stereo3D (..)
    , toModeFlag
    , fromModeFlag
    , PowerState(..)
@@ -181,21 +181,21 @@ data ModeFlag
    | ModeFlagClockDiv2
    deriving (Show,Enum,EnumBitSet)
 
-data Mode3DMode
-   = ModeFlag3DNone
-   | ModeFlag3DFramePacking
-   | ModeFlag3DFieldAlternative
-   | ModeFlag3DLineAlternative
-   | ModeFlag3DSideBySideFull
-   | ModeFlag3DLDepth
-   | ModeFlag3DLDepthGFXGFXDepth
-   | ModeFlag3DTopAndBottom
-   | ModeFlag3DSideBySideHalf
+data Stereo3D
+   = Stereo3DNone
+   | Stereo3DFramePacking
+   | Stereo3DFieldAlternative
+   | Stereo3DLineAlternative
+   | Stereo3DSideBySideFull
+   | Stereo3DLDepth
+   | Stereo3DLDepthGFXGFXDepth
+   | Stereo3DTopAndBottom
+   | Stereo3DSideBySideHalf
    deriving (Show,Enum)
 
 type ModeFlags = BitSet Word32 ModeFlag
 
-toModeFlag :: Word32 -> (ModeFlags,Mode3DMode)
+toModeFlag :: Word32 -> (ModeFlags,Stereo3D)
 toModeFlag x = (flgs, flg3d)
    where
       -- normal flags are in a bitset (14 bits)
@@ -203,7 +203,7 @@ toModeFlag x = (flgs, flg3d)
       -- 3D flags are values shifted (14 bits)
       flg3d = toEnum (fromIntegral (x `shiftR` 14))
 
-fromModeFlag :: ModeFlags -> Mode3DMode -> Word32
+fromModeFlag :: ModeFlags -> Stereo3D -> Word32
 fromModeFlag flgs flg3d =
    BitSet.toBits flgs .|. fromIntegral (fromEnum flg3d)
 
@@ -1052,7 +1052,7 @@ instance Storable StructGetCap where
 --
 -- Warning: add 1 to the enum number to get the valid value
 data ClientCapability
-   = ClientCapStereo3D        -- ^ if set, the DRM core will expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Mode3DMode)
+   = ClientCapStereo3D        -- ^ if set, the DRM core will expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Stereo3D)
    | ClientCapUniversalPlanes -- ^ If set, the DRM core will expose all planes (overlay, primary, and cursor) to userspace.
    | ClientCapAtomic          -- ^ If set, the DRM core will expose atomic properties to userspace
    deriving (Show,Eq,Enum)

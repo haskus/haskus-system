@@ -5,12 +5,15 @@ module ViperVM.Arch.Linux.Graphics.Capability
    , Capability (..)
    , ClientCapability (..)
    , setClientCapability
+   , setClientCapability'
    )
 where
 
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Error
 
 import Data.Word
 import Control.Monad (void)
@@ -26,9 +29,14 @@ supports :: Card -> Capability -> SysRet Bool
 supports card cap = fmap (/= 0) <$> getCapability card cap
 
 -- | Set a client capability
-setClientCapability :: Card -> ClientCapability -> Bool -> SysRet ()
-setClientCapability card cap b = do
+setClientCapability :: Card -> ClientCapability -> Bool -> Sys ()
+setClientCapability card = setClientCapability' (cardHandle card)
+
+-- | Set a client capability
+setClientCapability' :: FileDescriptor -> ClientCapability -> Bool -> Sys ()
+setClientCapability' fd cap b = do
    let 
       v = if b then 1 else 0
       s = StructSetClientCap (fromIntegral (fromEnum cap + 1)) v
-   void <$> ioctlSetClientCapability (cardHandle card) s
+      m = "Set client capability " ++ show cap
+   void $ sysCallWarn m (ioctlSetClientCapability fd s)

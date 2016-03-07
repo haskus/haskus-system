@@ -45,7 +45,7 @@ data Mode = Mode
 
    , modeVerticalRefresh     :: Word32
    , modeFlags               :: ModeFlags
-   , mode3DMode              :: Mode3DMode
+   , modeStereo3D            :: Stereo3D
    , modeType                :: ModeTypes
    , modeName                :: String
    } deriving (Show)
@@ -76,7 +76,7 @@ fromStructMode StructMode {..} =
       , modeVerticalScan        = miVScan
       , modeVerticalRefresh     = miVRefresh
       , modeFlags               = flgs
-      , mode3DMode              = flg3d
+      , modeStereo3D            = flg3d
       , modeType                = fromBits miType
       , modeName                = extractName miName
       }
@@ -100,7 +100,7 @@ toStructMode Mode {..} =
       , miVTotal     = modeVerticalTotal
       , miVScan      = modeVerticalScan
       , miVRefresh   = modeVerticalRefresh
-      , miFlags      = fromModeFlag modeFlags mode3DMode
+      , miFlags      = fromModeFlag modeFlags modeStereo3D
       , miType       = toBits modeType
       , miName       = modeName'
       }
