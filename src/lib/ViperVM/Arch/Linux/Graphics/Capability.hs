@@ -2,6 +2,7 @@
 module ViperVM.Arch.Linux.Graphics.Capability
    ( cardCapability
    , cardHasSupportFor
+   , Capability (..)
    )
 where
 
