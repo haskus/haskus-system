@@ -8,6 +8,8 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    , addFrameBuffer
    , removeFrameBuffer
    , dirtyFrameBuffer
+   , PageFlipFlag (..)
+   , PageFlipFlags
    )
 where
 
