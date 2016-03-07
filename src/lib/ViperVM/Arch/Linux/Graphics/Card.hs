@@ -1,6 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Graphic card management
@@ -11,8 +9,7 @@ module ViperVM.Arch.Linux.Graphics.Card
    , ControllerID(..)
    , ConnectorID(..)
    , EncoderID(..)
-   -- * Low level
-   , getCard
+   , getCardResources
    , cardEntities
    )
 where
@@ -24,11 +21,9 @@ import ViperVM.Arch.Linux.Graphics.Internals
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Either
 import Data.Word
-import Foreign.CStorable
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr (Ptr,ptrToWordPtr)
 import Foreign.Storable
-import GHC.Generics (Generic)
 
 -- | Graphic card ressources
 data Card = Card
@@ -51,38 +46,16 @@ newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable)
 
 newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
--- | Data matching the C structure drm_mode_card_res
-data CardStruct = CardStruct
-   { csFbIdPtr    :: Word64
-   , csCrtcIdPtr  :: Word64
-   , csConnIdPtr  :: Word64
-   , csEncIdPtr   :: Word64
-   , csCountFbs   :: Word32
-   , csCountCrtcs :: Word32
-   , csCountConns :: Word32
-   , csCountEncs  :: Word32
-   , csMinWidth   :: Word32
-   , csMaxWidth   :: Word32
-   , csMinHeight  :: Word32
-   , csMaxHeight  :: Word32
-   } deriving (Generic,CStorable)
-
-instance Storable CardStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
 -- | Get graphic card info
 --
 -- It seems like the kernel fills *Count fields and min/max fields.  If *Ptr
 -- fields are not NULL, the kernel fills the pointed arrays with up to *Count
 -- elements.
 -- 
-getCard :: FileDescriptor -> SysRet Card
-getCard fd = runEitherT $ do
+getCardResources :: FileDescriptor -> SysRet Card
+getCardResources fd = runEitherT $ do
    let 
-      res          = CardStruct 0 0 0 0 0 0 0 0 0 0 0 0
+      res          = StructCardRes 0 0 0 0 0 0 0 0 0 0 0 0
  
       -- allocate several arrays with the same type at once, call f on the list of arrays
       allocaArrays' sizes f = go [] sizes
@@ -91,7 +64,7 @@ getCard fd = runEitherT $ do
             go as (x:xs) = allocaArray (fromIntegral x) $ \a -> go (a:as) xs
 
       peekArray'   = peekArray . fromIntegral
-      getCard'     = EitherT . ioctlModeGetResources fd
+      getCard'     = EitherT . ioctlGetResources fd
 
    -- First we get the number of each resource
    res2 <- getCard' res
@@ -131,7 +104,7 @@ getCard fd = runEitherT $ do
      || csCountCrtcs res2 < csCountCrtcs rawRes
      || csCountConns res2 < csCountConns rawRes
      || csCountEncs  res2 < csCountEncs  rawRes
-      then EitherT $ getCard fd
+      then EitherT $ getCardResources fd
       else right retRes
 
 

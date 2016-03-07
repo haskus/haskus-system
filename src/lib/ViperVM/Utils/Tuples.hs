@@ -1,6 +1,7 @@
 module ViperVM.Utils.Tuples
    ( uncurry4
    , take4
+   , fromTuple4
    )
 where
 
@@ -16,3 +17,9 @@ take4 [a,b,c,d] = (a,b,c,d)
 take4 _         = error "take4: invalid list (exactly 4 elements required)"
 
 {-# INLINE take4 #-}
+
+-- | toList for quadruple
+fromTuple4 :: (a,a,a,a) -> [a]
+fromTuple4 (a,b,c,d) = [a,b,c,d]
+
+{-# INLINE fromTuple4 #-}

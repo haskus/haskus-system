@@ -10,9 +10,6 @@ module ViperVM.Arch.Linux.Graphics.Property
    , RawProperty (..)
    , Property (..)
    , getPropertyMeta
-   , GetObjPropStruct (..)
-   , SetObjPropStruct (..)
-   , SetPropStruct(..)
    )
 where
 
@@ -21,16 +18,13 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Internals
 
 import Foreign.Storable
-import Foreign.CStorable
 import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 import Data.Word
 import Data.Int
-import Data.Bits
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
-import GHC.Generics (Generic)
 
 import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
@@ -74,120 +68,6 @@ data Property = Property
    , propertyValue      :: Word64       -- ^ Value of the property
    } deriving (Show,Eq)
 
--- | Data matching the C structure drm_mode_obj_get_properties
-data GetObjPropStruct = GetObjPropStruct
-   { gopPropsPtr        :: Word64
-   , gopValuesPtr       :: Word64
-   , gopCountProps      :: Word32
-   , gopObjId           :: Word32
-   , gopObjType         :: Word32
-   } deriving (Generic,CStorable)
-
-instance Storable GetObjPropStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
--- | Data matching the C structure drm_mode_obj_set_properties
-data SetObjPropStruct = SetObjPropStruct
-   { sopValue           :: Word64
-   , sopPropId          :: Word32
-   , sopObjId           :: Word32
-   , sopObjType         :: Word32
-   } deriving (Generic,CStorable)
-
-instance Storable SetObjPropStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
-
--- | Type of the property
-data PropertyTypeID
-   = PropTypeRange
-   | PropTypeEnum       -- ^ Enumerated type with text strings
-   | PropTypeBlob
-   | PropTypeBitmask    -- ^ Bitmask of enumerated types
-   | PropTypeObject
-   | PropTypeSignedRange
-   deriving (Eq,Ord,Show)
-
-getPropType :: GetPropStruct -> PropertyTypeID
-getPropType s =
-   -- type is interleaved with Pending and Immutable flags
-   case gpsFlags s .&. 0xFA of
-      2   -> PropTypeRange
-      8   -> PropTypeEnum
-      16  -> PropTypeBlob
-      32  -> PropTypeBitmask
-      64  -> PropTypeObject
-      128 -> PropTypeSignedRange
-      _   -> error "Unknown property type"
-
-isPending :: GetPropStruct -> Bool
-isPending s = (gpsFlags s .&. 0x01) /= 0
-
-isImmutable :: GetPropStruct -> Bool
-isImmutable s = (gpsFlags s .&. 0x04) /= 0
-
-
--- | Data matching the C structure drm_mode_property_enum
-data PropEnumStruct = PropEnumStruct
-   { peValue       :: Word64
-   , peName        :: Vector 32 CChar
-   } deriving (Generic,CStorable)
-
-instance Storable PropEnumStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
--- | Data matching the C structure drm_mode_get_property
-data GetPropStruct = GetPropStruct
-   { gpsValuesPtr      :: Word64
-   , gpsEnumBlobPtr    :: Word64
-   , gpsPropId         :: Word32
-   , gpsFlags          :: Word32
-   , gpsName           :: Vector 32 CChar
-   , gpsCountValues    :: Word32
-   , gpsCountEnumBlobs :: Word32
-   } deriving (Generic,CStorable)
-
-instance Storable GetPropStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
--- | Data matching the C structure drm_mode_set_property
-data SetPropStruct = SetPropStruct
-   { spsValue        :: Word64
-   , spsPropId       :: Word32
-   , spsConnId       :: Word32
-   } deriving (Generic,CStorable)
-
-instance Storable SetPropStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
-
--- | Data matching the C structure drm_mode_get_blob
-data GetBlobStruct = GetBlobStruct
-   { gbBlobId     :: Word32
-   , gbLength     :: Word32
-   , gbData       :: Word64
-   } deriving (Generic,CStorable)
-
-instance Storable GetBlobStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
 
 type PropertyMetaID = Word32
 
@@ -195,16 +75,16 @@ type PropertyMetaID = Word32
 getPropertyMeta :: FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
 getPropertyMeta fd pid = runEitherT $ do
    let
-      getProperty' = EitherT . ioctlModeGetProperty fd
+      getProperty' = EitherT . ioctlGetProperty fd
 
-      gp = GetPropStruct
-            { gpsValuesPtr      = 0
-            , gpsEnumBlobPtr    = 0
-            , gpsPropId         = pid
-            , gpsFlags          = 0
-            , gpsName           = Vec.replicate (castCharToCChar '\0')
-            , gpsCountValues    = 0
-            , gpsCountEnumBlobs = 0
+      gp = StructGetProperty
+            { gpsValuesPtr   = 0
+            , gpsEnumBlobPtr = 0
+            , gpsPropId      = pid
+            , gpsFlags       = 0
+            , gpsName        = Vec.replicate (castCharToCChar '\0')
+            , gpsCountValues = 0
+            , gpsCountEnum   = 0
             }
    
    -- get value size/number of elements/etc.
@@ -215,26 +95,26 @@ getPropertyMeta fd pid = runEitherT $ do
       extractName = takeWhile (/= '\0') . fmap castCCharToChar . Vec.toList
 
       nval  = gpsCountValues g
-      nblob = gpsCountEnumBlobs g
+      nblob = gpsCountEnum   g
 
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      getBlobStruct' = EitherT . ioctlModeGetPropertyBlob fd
+      getBlobStruct' = EitherT . ioctlGetBlob fd
       getBlobStruct = runEitherT . getBlobStruct'
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b -> IO c) -> IO c
       withBuffers valueCount blobCount f =
          allocaArray' valueCount $ \valuePtr ->
             allocaArray' blobCount $ \blobPtr -> do
-               let gp' = GetPropStruct
-                           { gpsValuesPtr      = fromIntegral (ptrToWordPtr valuePtr)
-                           , gpsEnumBlobPtr    = fromIntegral (ptrToWordPtr blobPtr)
-                           , gpsPropId         = pid
-                           , gpsFlags          = 0
-                           , gpsName           = Vec.replicate (castCharToCChar '\0')
-                           , gpsCountValues    = valueCount
-                           , gpsCountEnumBlobs = blobCount
+               let gp' = StructGetProperty
+                           { gpsValuesPtr   = fromIntegral (ptrToWordPtr valuePtr)
+                           , gpsEnumBlobPtr = fromIntegral (ptrToWordPtr blobPtr)
+                           , gpsPropId      = pid
+                           , gpsFlags       = 0
+                           , gpsName        = Vec.replicate (castCharToCChar '\0')
+                           , gpsCountValues = valueCount
+                           , gpsCountEnum   = blobCount
                            }
                -- nothing changes, except for the two buffers
                _ <- runEitherT $ getProperty' gp'
@@ -250,7 +130,7 @@ getPropertyMeta fd pid = runEitherT $ do
          f vs bs
          
 
-   ptype <- liftIO $ case getPropType g of
+   ptype <- liftIO $ case getPropertyTypeType g of
 
       PropTypeObject      -> return PropObject
       PropTypeRange       -> withValueBuffer nval (return . PropRange)
@@ -262,7 +142,7 @@ getPropertyMeta fd pid = runEitherT $ do
 
       PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
          bids' <- forM bids $ \bid -> do
-            let gb = GetBlobStruct
+            let gb = StructGetBlob
                         { gbBlobId = bid
                         , gbLength = 0
                         , gbData   = 0

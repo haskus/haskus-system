@@ -191,7 +191,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Time
 import ViperVM.Arch.Linux.Process (ProcessID)
 
--- From alsa-lib/include/sound/asound.h
+-- From linux/include/uapi/sound/asound.h
 
 -----------------------------------------------------------------------------
 -- Digit audio interface

@@ -1,6 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
 
 -- | Graphic card connector management
@@ -29,11 +27,9 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2,forM)
 import Control.Monad.Trans.Either
 import Data.Word
-import Foreign.CStorable
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr
 import Foreign.Storable
-import GHC.Generics (Generic)
 
 -- | Indicate if a cable is plugged in the connector
 data Connection
@@ -77,7 +73,7 @@ data Connector = Connector
 cardConnectorFromID :: Card -> ConnectorID -> SysRet Connector
 cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
    let 
-      res = ConnectorStruct 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
+      res = StructGetConnector 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
 
       allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> IO b) -> IO b
       allocaArray'      = allocaArray . fromIntegral
@@ -85,14 +81,14 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
       peekArray' :: (Storable a, Integral c) => c -> Ptr a -> IO [a]
       peekArray'        = peekArray . fromIntegral
 
-      getModeConnector' = EitherT . ioctlModeGetConnector (cardHandle card)
+      getModeConnector' = EitherT . ioctlGetConnector (cardHandle card)
 
    -- First we get the number of each resource
    res2 <- getModeConnector' res
 
    -- then we allocate arrays of appropriate sizes
    (rawRes, retRes) <-
-      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr ModeStruct) ->
+      EitherT $ allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->
          allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
             allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
                allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> runEitherT $ do
@@ -121,7 +117,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
                               meta <- EitherT $ getPropertyMeta (cardHandle card) (rawPropertyMetaID raw)
                               return (Property meta (rawPropertyValue raw))
 
-                           modes <- liftIO (fmap fromModeStruct <$> peekArray' (connModesCount res2) ms)
+                           modes <- liftIO (fmap fromStructMode <$> peekArray' (connModesCount res2) ms)
                            return $ Connected $ ConnectedDevice
                               modes
                               (connWidth_ res4)
@@ -156,75 +152,6 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
       else right retRes
 
 
--- | Connector type
-data ConnectorType
-   = ConnectorTypeUnknown
-   | ConnectorTypeVGA
-   | ConnectorTypeDVII
-   | ConnectorTypeDVID
-   | ConnectorTypeDVIA
-   | ConnectorTypeComposite
-   | ConnectorTypeSVIDEO
-   | ConnectorTypeLVDS
-   | ConnectorTypeComponent
-   | ConnectorType9PinDIN
-   | ConnectorTypeDisplayPort
-   | ConnectorTypeHDMIA
-   | ConnectorTypeHDMIB
-   | ConnectorTypeTV
-   | ConnectorTypeeDP
-   | ConnectorTypeVirtual
-   | ConnectorTypeDSI
-   deriving (Eq, Ord, Enum)
-
-instance Show ConnectorType where
-   show x = case x of
-      ConnectorTypeUnknown       -> "Unknown"
-      ConnectorTypeVGA           -> "VGA"
-      ConnectorTypeDVII          -> "DVI-I"
-      ConnectorTypeDVID          -> "DVI-D"
-      ConnectorTypeDVIA          -> "DVI-A"
-      ConnectorTypeComposite     -> "Composite"
-      ConnectorTypeSVIDEO        -> "SVIDEO"
-      ConnectorTypeLVDS          -> "LVDS"
-      ConnectorTypeComponent     -> "Component"
-      ConnectorType9PinDIN       -> "9PinDIN"
-      ConnectorTypeDisplayPort   -> "DisplayPort"
-      ConnectorTypeHDMIA         -> "HDMI-A"
-      ConnectorTypeHDMIB         -> "HDMI-B"
-      ConnectorTypeTV            -> "TV"
-      ConnectorTypeeDP           -> "eDP"
-      ConnectorTypeVirtual       -> "Virtual"
-      ConnectorTypeDSI           -> "DSI"
-
-
--- | Data matching the C structure drm_mode_get_connector
-data ConnectorStruct = ConnectorStruct
-   { connEncodersPtr       :: Word64
-   , connModesPtr          :: Word64
-   , connPropsPtr          :: Word64
-   , connPropValuesPtr     :: Word64
-
-   , connModesCount        :: Word32
-   , connPropsCount        :: Word32
-   , connEncodersCount     :: Word32
-
-   , connEncoderID_        :: Word32   -- ^ current encoder
-   , connConnectorID_      :: Word32   -- ^ ID
-   , connConnectorType_    :: Word32
-   , connConnectorTypeID_  :: Word32
-
-   , connConnection_       :: Word32
-   , connWidth_            :: Word32   -- ^ HxW in millimeters
-   , connHeight_           :: Word32
-   , connSubPixel_         :: Word32
-   } deriving (Generic,CStorable)
-
-instance Storable ConnectorStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
 
 -- | Get connectors (discard errors)
 cardConnectors :: Card -> IO [Connector]

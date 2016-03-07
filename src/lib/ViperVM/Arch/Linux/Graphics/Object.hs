@@ -63,5 +63,3 @@ instance Object Mode where
    getObjectType _ = ObjectMode
 instance Object FrameBuffer where
    getObjectType _ = ObjectFrameBuffer
-instance Object Plane where
-   getObjectType _ = ObjectPlane

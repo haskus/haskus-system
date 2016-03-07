@@ -17,6 +17,7 @@ import Data.Map (Map, (!), fromList)
 import Data.Tuple (swap)
 import Control.Arrow (second)
 import Foreign.Storable
+import Foreign.CStorable
 import Foreign.Ptr
 
 -- | Pixel format
@@ -45,6 +46,11 @@ instance Storable PixelFormat where
             LittleEndian -> fmt'
       poke (castPtr ptr :: Ptr Word32) w
    
+instance CStorable PixelFormat where
+   cSizeOf      = sizeOf
+   cAlignment   = alignment
+   cPeek        = peek
+   cPoke        = poke
 
 fmt2bits :: Map Format Word32
 fmt2bits = fromList assoc

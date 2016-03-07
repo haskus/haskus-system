@@ -1,6 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Video controller management
 --
@@ -10,30 +8,22 @@ module ViperVM.Arch.Linux.Graphics.Controller
    , FrameBufferPos (..)
    , setController'
    , switchFrameBuffer'
-   , PageFlipFlag(..)
-   , PageFlipFlags
    , cardControllers
    -- * Low level
    , cardControllerFromID
-   , ControllerStruct(..)
-   , fromControllerStruct
-   , ControllerLutStruct(..)
+   , fromStructController
    )
 where
 
-import Foreign.Storable
-import Foreign.CStorable
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Data.Word
-import GHC.Generics (Generic)
 import Control.Monad (void)
 
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Format.Binary.BitSet
 
 -- | Video controller
 --
@@ -52,34 +42,15 @@ data FrameBufferPos = FrameBufferPos
    , frameBufferPosY  :: Word32
    } deriving (Show)
 
--- | Data matching the C structure drm_mode_crtc
-data ControllerStruct = ControllerStruct
-   { contSetConnPtr :: Word64
-   , contConnCount  :: Word32
-   , contID         :: Word32
-   , contFbID       :: Word32
-   , contFbX        :: Word32
-   , contFbY        :: Word32
-   , contGammaSize  :: Word32
-   , contModeValid  :: Word32
-   , contModeInfo   :: ModeStruct
-   } deriving (Generic,CStorable)
+emptyStructController :: StructController
+emptyStructController = StructController 0 0 0 0 0 0 0 0 emptyStructMode
 
-instance Storable ControllerStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
-emptyControllerStruct :: ControllerStruct
-emptyControllerStruct = ControllerStruct 0 0 0 0 0 0 0 0 emptyModeStruct
-
-fromControllerStruct :: Card -> ControllerStruct -> Controller
-fromControllerStruct card ControllerStruct{..} =
+fromStructController :: Card -> StructController -> Controller
+fromStructController card StructController{..} =
    Controller
       (ControllerID contID)
       (if contModeValid /= 0
-         then Just (fromModeStruct contModeInfo)
+         then Just (fromStructMode contModeInfo)
          else Nothing)
       (if contFbID /= 0 
          then Just (FrameBufferPos (FrameBufferID contFbID) contFbX contFbY)
@@ -94,9 +65,9 @@ cardControllerFromID card crtcid = do
    let
       fd               = cardHandle card
       ControllerID cid = crtcid
-      crtc             = emptyControllerStruct { contID = cid }
+      crtc             = emptyStructController { contID = cid }
 
-   fmap (fromControllerStruct card) <$> ioctlModeGetController fd crtc
+   fmap (fromStructController card) <$> ioctlGetController fd crtc
 
 setController' :: Card -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
 setController' card crtcid fb conns mode = do
@@ -110,14 +81,14 @@ setController' card crtcid fb conns mode = do
 
    withArray conns' $ \conArray -> do
       let
-         crtc = ControllerStruct
+         crtc = StructController
             { contID = cid
             , contFbID = fbid
             , contFbX  = fbx
             , contFbY  = fby
             , contModeInfo = case mode of
-               Nothing -> emptyModeStruct
-               Just x  -> toModeStruct x
+               Nothing -> emptyStructMode
+               Just x  -> toStructMode x
             , contModeValid  = case mode of
                Nothing -> 0
                Just _  -> 1
@@ -126,45 +97,7 @@ setController' card crtcid fb conns mode = do
             , contGammaSize = 0
             }
 
-      void <$> ioctlModeSetController (cardHandle card) crtc
-
--- | Data matching the C structure drm_mode_crtc_lut
-data ControllerLutStruct = ControllerLutStruct
-   { clsCrtcId       :: Word32
-   , clsGammaSize    :: Word32
-   , clsRed          :: Word64
-   , clsGreen        :: Word64
-   , clsBlue         :: Word64
-   } deriving (Generic,CStorable)
-
-instance Storable  ControllerLutStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
-
-data PageFlipFlag
-   = PageFlipEvent
-   | PageFlipAsync
-   deriving (Show,Eq,Enum,EnumBitSet)
-
-type PageFlipFlags = BitSet Word32 PageFlipFlag
-
--- | Data matching the C structure drm_mode_crtc_page_flip
-data PageFlipStruct = PageFlipStruct
-   { pfCrtcId        :: Word32
-   , pfFbId          :: Word32
-   , pfFlags         :: PageFlipFlags
-   , pfReserved      :: Word32
-   , pfUserData      :: Word64
-   } deriving (Generic,CStorable)
-
-instance Storable  PageFlipStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+      void <$> ioctlSetController (cardHandle card) crtc
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
@@ -175,9 +108,9 @@ switchFrameBuffer' card crtcid fb flags = do
    let
       ControllerID cid = crtcid
       FrameBufferID fid = fb
-      s = PageFlipStruct cid fid flags 0 0
+      s = StructPageFlip cid fid flags 0 0
 
-   void <$> ioctlModePageFlip (cardHandle card) s
+   void <$> ioctlPageFlip (cardHandle card) s
 
 -- | Get controllers (discard errors)
 cardControllers :: Card -> IO [Controller]

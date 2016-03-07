@@ -128,16 +128,13 @@ library
     ViperVM.Arch.Linux.Graphics.Card
     ViperVM.Arch.Linux.Graphics.Connector
     ViperVM.Arch.Linux.Graphics.Controller
-    ViperVM.Arch.Linux.Graphics.Cursor
     ViperVM.Arch.Linux.Graphics.Encoder
     ViperVM.Arch.Linux.Graphics.Event
     ViperVM.Arch.Linux.Graphics.FrameBuffer
     ViperVM.Arch.Linux.Graphics.GenericBuffer
     ViperVM.Arch.Linux.Graphics.Mode
     ViperVM.Arch.Linux.Graphics.Object
-    ViperVM.Arch.Linux.Graphics.Options
     ViperVM.Arch.Linux.Graphics.PixelFormat
-    ViperVM.Arch.Linux.Graphics.Plane
     ViperVM.Arch.Linux.Graphics.Property
     ViperVM.Arch.Linux.Graphics.Helper
 

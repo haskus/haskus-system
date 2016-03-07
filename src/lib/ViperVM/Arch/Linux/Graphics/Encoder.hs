@@ -17,11 +17,6 @@ module ViperVM.Arch.Linux.Graphics.Encoder
    )
 where
 
-import Data.Word
-import Foreign.CStorable
-import Foreign.Storable
-import GHC.Generics (Generic)
-
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
@@ -38,35 +33,8 @@ data Encoder = Encoder
    , encoderCard                :: Card               -- ^ Graphic card
    } deriving (Show)
 
--- | Type of the encoder
-data EncoderType
-   = EncoderTypeNone
-   | EncoderTypeDAC     -- ^ for VGA and analog on DVI-I/DVI-A
-   | EncoderTypeTMDS    -- ^ for DVI, HDMI and (embedded) DisplayPort
-   | EncoderTypeLVDS    -- ^ for display panels
-   | EncoderTypeTVDAC   -- ^ for TV output (Composite, S-Video, Component, SCART)
-   | EncoderTypeVirtual -- ^ for virtual machine display
-   | EncoderTypeDSI
-   | EncoderTypeDPMST
-   deriving (Eq,Ord,Show,Enum)
-
--- | Data matching the C structure drm_mode_get_encoder
-data EncoderStruct = EncoderStruct
-   { geEncoderId      :: Word32
-   , geEncoderType    :: Word32
-   , geCrtcId         :: Word32
-   , gePossibleCrtcs  :: BitSet Word32 Int -- ^ Valid controller indexes
-   , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone encoder indexes
-   } deriving (Generic,CStorable)
-
-instance Storable EncoderStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
-fromEncoderStruct :: Card -> EncoderStruct -> Encoder
-fromEncoderStruct card EncoderStruct{..} =
+fromStructGetEncoder :: Card -> StructGetEncoder -> Encoder
+fromStructGetEncoder card StructGetEncoder{..} =
       Encoder
          (EncoderID geEncoderId)
          (toEnum (fromIntegral geEncoderType))
@@ -90,8 +58,8 @@ fromEncoderStruct card EncoderStruct{..} =
 -- | Get an encoder from its ID
 cardEncoderFromID :: Card -> EncoderID -> SysRet Encoder
 cardEncoderFromID card (EncoderID encId) = do
-   let res = EncoderStruct encId 0 0 BitSet.empty BitSet.empty
-   fmap (fromEncoderStruct card) <$> ioctlModeGetEncoder (cardHandle card) res
+   let res = StructGetEncoder encId 0 0 BitSet.empty BitSet.empty
+   fmap (fromStructGetEncoder card) <$> ioctlGetEncoder (cardHandle card) res
 
 -- | Controller attached to the encoder, if any
 encoderController :: Encoder -> SysRet (Maybe Controller)

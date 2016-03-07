@@ -18,6 +18,7 @@ import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
+import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -91,7 +92,7 @@ data MappedPlane = MappedPlane
    { mappedPlaneBuffer  :: GenericBuffer
    , mappedPlaneMapping :: GenericBufferMap
    , mappedPlanePointer :: Ptr ()
-   , mappedPlaneInfo    :: Plane
+   , mappedPlaneInfo    :: Buffer
    }
 
 -- | Allocate and map fullscreen planes for the given format and mode
@@ -113,12 +114,12 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
 
       addr <- sysCallAssert "Map generic buffer in user space" $ 
          sysMemMap Nothing
-            (genericBufferSize buf)
+            (cdSize buf)
             [ProtRead,ProtWrite]
             [MapShared]
-            (Just (fd, genericMapOffset bufKerMap))
+            (Just (fd, mdOffset bufKerMap))
 
-      let plane = Plane (genericBufferHandle buf) (genericBufferPitch buf) 0 0
+      let plane = Buffer (cdHandle buf) (cdPitch buf) 0 0
 
       return (MappedPlane buf bufKerMap addr plane)
    

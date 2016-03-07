@@ -121,9 +121,9 @@ toUnion v = unsafePerformIO $ do
 
 
 -- TODO: rewrite rules
--- poke p (toUnion (Proxy :: Proxy n) x) = poke (castPtr p :: Ptr (E n u)) x
+-- poke p (toUnion x) = poke (castPtr p) x
 --
--- fromUnion n <$> peek p = peek (castPtr p :: Ptr (E n u))
+-- (fromUnion <$> peek p) :: IO a  = peek (castPtr p) :: IO a
 
 instance (Storable a, Storable b) => Storable (Union2 a b) where
    sizeOf _            = maximum
