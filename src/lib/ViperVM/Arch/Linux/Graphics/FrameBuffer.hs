@@ -36,20 +36,19 @@ data Buffer = Buffer
 
 -- | Frame buffer
 data FrameBuffer = FrameBuffer
-   { fbID          :: FrameBufferID                 -- ^ Frame buffer identifier
-   , fbWidth       :: Word32                        -- ^ Frame buffer width
-   , fbHeight      :: Word32                        -- ^ Frame buffer height
-   , fbPixelFormat :: PixelFormat                   -- ^ Pixel format
-   , fbFlags       :: FrameBufferFlags              -- ^ Flags
-   , fbBuffers     :: (Buffer,Buffer,Buffer,Buffer) -- ^ Data sources (up to four planes)
+   { fbID          :: FrameBufferID    -- ^ Frame buffer identifier
+   , fbWidth       :: Word32           -- ^ Frame buffer width
+   , fbHeight      :: Word32           -- ^ Frame buffer height
+   , fbPixelFormat :: PixelFormat      -- ^ Pixel format
+   , fbFlags       :: FrameBufferFlags -- ^ Flags
+   , fbBuffers     :: [Buffer]         -- ^ Data sources (up to four)
    }
 
 fromFrameBuffer :: FrameBuffer -> StructFrameBufferCommand
 fromFrameBuffer FrameBuffer{..} = s
    where
       FrameBufferID fbid = fbID
-      bufs = fromTuple4 fbBuffers
-      g f  = Vector.fromFilledList 0 (fmap f bufs)
+      g f  = Vector.fromFilledList 0 (fmap f fbBuffers)
       s = StructFrameBufferCommand fbid
             fbWidth fbHeight fbPixelFormat fbFlags
             (g bufferHandle) (g bufferPitch)
@@ -58,7 +57,7 @@ fromFrameBuffer FrameBuffer{..} = s
 toFrameBuffer :: StructFrameBufferCommand -> FrameBuffer
 toFrameBuffer StructFrameBufferCommand{..} = s
    where
-      bufs = take4 $ uncurry4 Buffer <$> zip4
+      bufs = uncurry4 Buffer <$> zip4
                (Vector.toList fc2Handles)
                (Vector.toList fc2Pitches)
                (Vector.toList fc2Offsets)
@@ -72,7 +71,7 @@ addFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags ->
 addFrameBuffer card width height fmt flags buffers = do
    
    let s = FrameBuffer (FrameBufferID 0) width height
-               fmt flags (take4 buffers)
+               fmt flags buffers
 
    fmap toFrameBuffer <$> ioctlAddFrameBuffer (cardHandle card)
                            (fromFrameBuffer s)
@@ -84,6 +83,7 @@ removeFrameBuffer card fb = do
    void <$> ioctlRemoveFrameBuffer (cardHandle card) fbid
 
 
+-- | Indicate dirty parts of a framebuffer
 dirtyFrameBuffer :: Card -> FrameBuffer -> DirtyAnnotation -> SysRet ()
 dirtyFrameBuffer card fb mode = do
    let
