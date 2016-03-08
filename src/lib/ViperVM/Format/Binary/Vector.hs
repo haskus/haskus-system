@@ -95,13 +95,20 @@ drop n (Vector fp o) = Vector fp (o + fromIntegral (natVal n))
 {-# INLINE drop #-}
 
 -- | /O(1)/ Index safely into the vector using a type level index.
-index :: forall a (n :: Nat) (m :: Nat) . (KnownNat n, KnownNat m, Storable a) => Vector (m+n) a -> Proxy n -> a
+index :: forall a (n :: Nat) (m :: Nat) .
+   ( KnownNat n
+   , KnownNat m
+   , Storable a
+   ) => Vector (m+n) a -> Proxy n -> a
 index (Vector fp o) n = inlinePerformIO $ withForeignPtr fp $ \p ->
    peekByteOff p (elemOffset (undefined :: a)
       (fromIntegral o + fromIntegral (natVal n)))
 {-# INLINE index #-}
 
-fromList :: forall a (n :: Nat) . (KnownNat n, Storable a) => [a] -> Maybe (Vector n a)
+fromList :: forall a (n :: Nat) .
+   ( KnownNat n
+   , Storable a
+   ) => [a] -> Maybe (Vector n a)
 fromList v
    | n' /= n   = Nothing
    | otherwise = Just $ unsafePerformIO $ do
@@ -116,7 +123,10 @@ fromList v
 {-# INLINE fromList #-}
 
 -- | Take at most n element from the list, then use z
-fromFilledList :: forall a (n :: Nat) . (KnownNat n, Storable a) => a -> [a] -> Vector n a
+fromFilledList :: forall a (n :: Nat) .
+   ( KnownNat n
+   , Storable a
+   ) => a -> [a] -> Vector n a
 fromFilledList z v = unsafePerformIO $ do
    let 
       n' = fromIntegral (natVal (Proxy :: Proxy n))
@@ -131,7 +141,10 @@ fromFilledList z v = unsafePerformIO $ do
 {-# INLINE fromFilledList #-}
 
 -- | Take at most (n-1) element from the list, then use z
-fromFilledListZ :: forall a (n :: Nat) . (KnownNat n, Storable a) => a -> [a] -> Vector n a
+fromFilledListZ :: forall a (n :: Nat) .
+   ( KnownNat n
+   , Storable a
+   ) => a -> [a] -> Vector n a
 fromFilledListZ z v = unsafePerformIO $ do
    let 
       n' = fromIntegral (natVal (Proxy :: Proxy n))
@@ -145,7 +158,10 @@ fromFilledListZ z v = unsafePerformIO $ do
    return (Vector fp 0)
 {-# INLINE fromFilledListZ #-}
 
-toList :: forall a (n :: Nat) . (KnownNat n, Storable a) => Vector n a -> [a]
+toList :: forall a (n :: Nat) .
+   ( KnownNat n
+   , Storable a
+   ) => Vector n a -> [a]
 toList (Vector fp o) = inlinePerformIO $ withForeignPtr fp $ \p ->
       return (go (p `plusPtr` elemOffset (undefined :: a) (fromIntegral o)) n)
    where
@@ -155,7 +171,10 @@ toList (Vector fp o) = inlinePerformIO $ withForeignPtr fp $ \p ->
       go p i = inlinePerformIO (peek p) : go (p `plusPtr` off) (i-1)
 {-# INLINE toList #-}
 
-replicate :: forall a (n :: Nat) . (KnownNat n, Storable a) => a -> Vector n a
+replicate :: forall a (n :: Nat) .
+   ( KnownNat n
+   , Storable a
+   ) => a -> Vector n a
 replicate v = unsafePerformIO $ do
    let n = fromIntegral (natVal (Proxy :: Proxy n))
    fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))

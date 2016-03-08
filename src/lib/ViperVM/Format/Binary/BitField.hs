@@ -154,7 +154,13 @@ instance Integral b => Field (BitSet b a) where
    toField   = BitSet.fromBits . fromIntegral
 
 
-extractField :: forall name fields b . (KnownNat (Offset name fields), KnownNat (Size name fields), WholeSize fields ~ BitSize b, Bits b, Integral b, Field (Output name fields)) => BitFields b fields -> Proxy name -> Output name fields
+extractField :: forall name fields b .
+   ( KnownNat (Offset name fields)
+   , KnownNat (Size name fields)
+   , WholeSize fields ~ BitSize b
+   , Bits b, Integral b
+   , Field (Output name fields)
+   ) => BitFields b fields -> Proxy name -> Output name fields
 extractField (BitFields w) _ = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
    where
       off = natVal (Proxy :: Proxy (Offset name fields))
@@ -162,7 +168,13 @@ extractField (BitFields w) _ = toField ((w `shiftR` fromIntegral off) .&. ((1 `s
 
 {-# INLINE extractField #-}
 
-updateField :: forall name fields b . (KnownNat (Offset name fields), KnownNat (Size name fields), WholeSize fields ~ BitSize b, Bits b, Integral b, Field (Output name fields)) => BitFields b fields -> Proxy name -> Output name fields -> BitFields b fields
+updateField :: forall name fields b .
+   ( KnownNat (Offset name fields)
+   , KnownNat (Size name fields)
+   , WholeSize fields ~ BitSize b
+   , Bits b, Integral b
+   , Field (Output name fields)
+   ) => BitFields b fields -> Proxy name -> Output name fields -> BitFields b fields
 updateField (BitFields w) _ value = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
    where
       off  = fromIntegral $ natVal (Proxy :: Proxy (Offset name fields))
