@@ -58,10 +58,10 @@
 module ViperVM.Format.Binary.BitField
    ( BitFields (..)
    , BitField (..)
-   , Cons
-   , Nil
    , extractField
    , updateField
+   , Cons
+   , Nil
    )
 where
 
@@ -75,6 +75,7 @@ import Foreign.Storable
 import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Common
 
 -- | Bit fields on a base type b
 newtype BitFields b fields = BitFields b deriving (Storable)
@@ -128,9 +129,6 @@ type family WholeSize fs :: Nat where
    WholeSize Nil                            = 0
    WholeSize (Cons (BitField n name s) xs)  = n + WholeSize xs
 
-
-data Cons x xs
-data Nil
 
 class Field f where
    fromField :: Integral b => f -> b

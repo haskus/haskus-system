@@ -1,6 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 -- | Union (as in C)
 --
@@ -36,9 +42,7 @@
 --    u2 = toUnion (0x12345678 :: Word32)
 -- @
 module ViperVM.Format.Binary.Union
-   ( Union2
-   , Union3
-   , Union4
+   ( Union
    , fromUnion
    , toUnion
    )
@@ -46,6 +50,8 @@ where
 
 import ViperVM.Utils.Memory (memCopy)
 
+import Data.HList.FakePrelude (ApplyAB(..))
+import Data.HList.HList
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr
@@ -53,136 +59,79 @@ import Foreign.Ptr
 import Data.Word
 import System.IO.Unsafe (unsafePerformIO)
 
-data Buffer = Buffer !Word64 !(ForeignPtr ()) deriving (Show)
+data Union xs = Union !Word64 !(ForeignPtr ()) deriving (Show)
 
-peekBuffer :: Storable b => (Buffer -> b) -> Ptr a -> IO b
-peekBuffer f ptr = do
-   let sz = sizeOf (f undefined)
-   fp <- mallocForeignPtrBytes sz
-   withForeignPtr fp $ \p -> 
-      memCopy p (castPtr ptr) (fromIntegral sz)
-   return (f (Buffer (fromIntegral sz) fp))
-
-pokeBuffer :: Buffer -> Ptr a -> IO ()
-pokeBuffer (Buffer sz fp) ptr =
-   withForeignPtr fp $ \p ->
-      memCopy (castPtr ptr) p sz
-
-newtype Union2 a b     = Union2 Buffer deriving (Show)
-newtype Union3 a b c   = Union3 Buffer deriving (Show)
-newtype Union4 a b c d = Union4 Buffer deriving (Show)
-
-class Union a where
-   -- | Get the buffer backing an union
-   getBuffer  :: a -> Buffer
-   -- | Create an union from a buffer
-   fromBuffer :: Buffer -> a
-
-instance Union (Union2 a b) where
-   getBuffer (Union2 b) = b
-   fromBuffer           = Union2
-
-instance Union (Union3 a b c) where
-   getBuffer (Union3 b) = b
-   fromBuffer           = Union3
-
-instance Union (Union4 a b c d) where
-   getBuffer (Union4 b) = b
-   fromBuffer           = Union4
-
-
-
-type family   UnionMember a u :: *
-type instance UnionMember a (Union2 a b)     = a
-type instance UnionMember a (Union3 a b c)   = a
-type instance UnionMember a (Union4 a b c d) = a
-type instance UnionMember b (Union2 a b)     = b
-type instance UnionMember b (Union3 a b c)   = b
-type instance UnionMember b (Union4 a b c d) = b
-type instance UnionMember c (Union3 a b c)   = c
-type instance UnionMember c (Union4 a b c d) = c
-type instance UnionMember d (Union4 a b c d) = d
+type family IsMember a l :: Bool where
+   IsMember a (a ': l) = 'True
+   IsMember a (b ': l) = IsMember a l
 
 -- | Retrieve a union member from its index
-fromUnion :: (Union u, Storable a, UnionMember a u ~ a) => u -> a
-fromUnion u = unsafePerformIO $ peekElem (getBuffer u)
-   where
-      peekElem :: Storable a => Buffer -> IO a
-      peekElem (Buffer _ fp) = withForeignPtr fp (peek . castPtr)
-
+fromUnion :: (Storable a, IsMember a l ~ 'True) => Union (HList l) -> a
+fromUnion (Union _ fp) = unsafePerformIO $ withForeignPtr fp (peek . castPtr)
 
 -- | Create a new union
-toUnion :: forall a u . (Storable u, Union u, Storable a, UnionMember a u ~ a) => a -> u
+toUnion :: forall a l . (Storable (Union (HList l)), Storable a, IsMember a l ~ 'True) => a -> Union (HList l)
 toUnion v = unsafePerformIO $ do
-   fp <- mallocForeignPtr :: IO (ForeignPtr u)
+   fp <- mallocForeignPtr :: IO (ForeignPtr (Union (HList l)))
    withForeignPtr fp $ \p -> 
       poke (castPtr p) v
-   return (fromBuffer (Buffer (fromIntegral (sizeOf (undefined :: u))) (castForeignPtr fp)))
+   return $ Union
+      (fromIntegral (sizeOf (undefined :: (Union (HList l)))))
+      (castForeignPtr fp)
+
+unionSize :: forall l . HFoldr' SizeOf Int l Int => Union (HList l) -> Int
+unionSize _ = hFoldr' SizeOf (0 :: Int) (undefined :: HList l)
+
+unionAlignment :: forall l . HFoldr' Alignment Int l Int => Union (HList l) -> Int
+unionAlignment _ = hFoldr' Alignment (0 :: Int) (undefined :: HList l)
+
+data SizeOf    = SizeOf
+data Alignment = Alignment
+
+instance (r ~ Int, Storable a) => ApplyAB SizeOf (a, Int) r where
+   applyAB _ (_,r) = max r (sizeOf (undefined :: a))
+
+instance (r ~ Int, Storable a) => ApplyAB Alignment (a, Int) r where
+   applyAB _ (_,r) = max r (alignment (undefined :: a))
+
+
+-- | Like HFoldr but only use types, not values!
+
+class HFoldr' f v (l :: [*]) r where
+    hFoldr' :: f -> v -> HList l -> r
+
+instance (v ~ v') => HFoldr' f v '[] v' where
+    hFoldr'       _ v _   = v
+
+instance (ApplyAB f (e, r) r', HFoldr' f v l r)
+    => HFoldr' f v (e ': l) r' where
+    hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
+
+instance (HFoldr' SizeOf Int l Int,
+          HFoldr' Alignment Int l Int
+         ) => Storable (Union (HList l)) where
+   sizeOf             = unionSize
+   alignment          = unionAlignment
+   peek ptr = do
+      let sz = sizeOf (undefined :: Union (HList l))
+      fp <- mallocForeignPtrBytes sz
+      withForeignPtr fp $ \p -> 
+         memCopy p (castPtr ptr) (fromIntegral sz)
+      return (Union (fromIntegral sz) fp)
+
+   poke ptr (Union sz fp) =
+      withForeignPtr fp $ \p ->
+         memCopy (castPtr ptr) p sz
+
+
+instance (Storable (Union (HList l))) => CStorable (Union (HList l))  where
+   cPeek      = peek
+   cPoke      = poke
+   cAlignment = alignment
+   cSizeOf    = sizeOf
 
 
 -- TODO: rewrite rules
 -- poke p (toUnion x) = poke (castPtr p) x
 --
 -- (fromUnion <$> peek p) :: IO a  = peek (castPtr p) :: IO a
-
-instance (Storable a, Storable b) => Storable (Union2 a b) where
-   sizeOf _            = maximum
-                          [ sizeOf (undefined :: a)
-                          , sizeOf (undefined :: b)
-                          ]
-   alignment _         = maximum
-                          [ alignment (undefined :: a)
-                          , alignment (undefined :: b)
-                          ]
-   peek                = peekBuffer Union2
-   poke ptr (Union2 b) = pokeBuffer b ptr
-
-instance (Storable a, Storable b) => CStorable (Union2 a b) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf
-
-
-instance (Storable a, Storable b, Storable c) => Storable (Union3 a b c) where
-   sizeOf _            = maximum
-                          [ sizeOf (undefined :: a)
-                          , sizeOf (undefined :: b)
-                          , sizeOf (undefined :: c)
-                          ]
-   alignment _         = maximum
-                          [ alignment (undefined :: a)
-                          , alignment (undefined :: b)
-                          , alignment (undefined :: c)
-                          ]
-   peek                = peekBuffer Union3
-   poke ptr (Union3 b) = pokeBuffer b ptr
-
-instance (Storable a, Storable b, Storable c) => CStorable (Union3 a b c) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf
-
-
-instance (Storable a, Storable b, Storable c, Storable d) => Storable (Union4 a b c d) where
-   sizeOf _            = maximum
-                          [ sizeOf (undefined :: a)
-                          , sizeOf (undefined :: b)
-                          , sizeOf (undefined :: c)
-                          , sizeOf (undefined :: d)
-                          ]
-   alignment _         = maximum
-                          [ alignment (undefined :: a)
-                          , alignment (undefined :: b)
-                          , alignment (undefined :: c)
-                          , alignment (undefined :: d)
-                          ]
-   peek                = peekBuffer Union4
-   poke ptr (Union4 b) = pokeBuffer b ptr
-
-instance (Storable a, Storable b, Storable c, Storable d) => CStorable (Union4 a b c d) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf

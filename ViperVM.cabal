@@ -214,6 +214,7 @@ library
     ViperVM.Format.Binary.VariableLength
     ViperVM.Format.Binary.Vector
     ViperVM.Format.Binary.Union
+    ViperVM.Format.Binary.Common
 
 
     ViperVM.Platform.Drivers
@@ -283,6 +284,7 @@ library
       ,  mtl                       >= 2.2
       ,  template-haskell          >= 2.10
       ,  text-format               >= 0.3
+      ,  HList                     >= 0.4
 
   build-tools: 
   ghc-options:          -Wall -threaded -O3

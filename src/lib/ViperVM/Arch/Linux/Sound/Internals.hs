@@ -175,6 +175,7 @@ where
 import Data.Word
 import Data.Bits
 import Data.Int
+import Data.HList.HList
 import Foreign.Ptr
 import Foreign.CStorable
 import Foreign.Storable
@@ -1661,7 +1662,7 @@ data ControlElementInfo = ControlElementInfo
    , controlElemInfoAccess :: Word
    , controlElemInfoCount :: Word
    , controlElemInfoOwner :: ProcessID
-   , controlElemInfoValue :: Union4 IntegerValue Integer64Value EnumeratedValue (Vector 128 Word8)
+   , controlElemInfoValue :: Union (HList '[IntegerValue,Integer64Value,EnumeratedValue,Vector 128 Word8])
    , controlElemInfoDimensions :: Vector 4 Word16
    } deriving (Show,Generic,CStorable)
 
@@ -1675,7 +1676,7 @@ instance Storable ControlElementInfo where
 data ControlElementValue = ControlElementValue
    { controlElemValueId        :: ControlElementId                    -- ^ W: element ID
    , controlElemValueIndirect  :: Word                                -- ^ W: indirect access - obsoleted
-   , controlElemValueValue     :: Union2 (Vector 512 Word8) AesIec958
+   , controlElemValueValue     :: Union (HList '[Vector 512 Word8,AesIec958])
    , controlElemValueTimeStamp :: TimeSpec
    , controlElemValueReserved  :: Vector 112 Word8
    } deriving (Show,Generic,CStorable)
