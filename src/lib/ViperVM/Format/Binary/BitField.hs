@@ -1,111 +1,172 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+-- | Bit fields (as in C)
+--
+-- This module allows you to define bit fields over words. For instance, you can
+-- have a Word16 split into 3 fields X, Y and Z composed of 5, 9 and 2 bits
+-- respectively.
+--
+--                   X             Y          Z
+--  w :: Word16 |0 0 0 0 0|0 0 0 0 0 0 0 0 0|0 0|
+-- 
+-- You define it as follows:
+-- @
+-- w :: BitFields Word16 (Cons (BitField 5 "X" Word8) 
+--                       (Cons (BitField 9 "Y" Word16)
+--                       (Cons (BitField 2 "Z" Word8) Nil)))
+-- w = BitFields 0x01020304
+-- @
+--
+-- Note that each field has its own associated type (e.g. Word8 for X and Z)
+-- that must be large enough to hold the number of bits for the field.
+-- 
+-- You can extract and update the value of a field by its name:
+--
+-- @
+-- x = extractField w (Proxy :: Proxy "X")
+-- z = extractField w (Proxy :: Proxy "Z")
+-- w' = updateField w (Proxy :: Proxy "Y") 0x5566
+-- @
+--
+-- Fields can also be 'BitSet'.
 module ViperVM.Format.Binary.BitField
-   ( BitField(..)
-   , Bit(..)
-   , flatten
-   , length
-   , drop
-   , take
-   , priority
+   ( BitFields (..)
+   , BitField (..)
+   , Cons (..)
+   , Nil (..)
+   , extractField
+   , updateField
    )
 where
 
-import Prelude hiding (drop,take,length)
-
 import Data.Word
+import Data.Int
 import Data.Bits
+import GHC.TypeLits
+import Data.Proxy
+import Numeric
+import Foreign.Storable
+import ViperVM.Format.Binary.BitSet as BitSet
 
-data BitField
-   = Fixed32 Word Word32      -- ^ Fixed n least significant bits
-   | Var Word                 -- ^ Variable bits
-   | Seq BitField BitField    -- ^ Sequence
-   | Empty
-   deriving (Show)
+-- | Bit fields on a base type b
+data BitFields b fields = BitFields !b
 
--- | Seq smart constructor
-sq :: BitField -> BitField -> BitField
-sq Empty x = x
-sq x Empty = x
-sq x y     = Seq x y
+instance (Integral b, Show b) => Show (BitFields b fields) where
+   show (BitFields w) = "0x" ++ showHex w ""
 
+-- | A field of n bits
+newtype BitField (n :: Nat) (name :: Symbol) s = BitField s deriving (Storable)
 
-length :: BitField -> Word
-length (Fixed32 n _) = n
-length (Var n)       = n
-length (Seq x y)     = length x + length y
-length Empty         = 0
+type family BitSize a :: Nat
+type instance BitSize Word8  = 8
+type instance BitSize Word16 = 16
+type instance BitSize Word32 = 32
+type instance BitSize Word64 = 64
 
-drop :: Word -> BitField -> BitField
-drop _ Empty         = Empty
-drop k (Fixed32 n x)
-   | k >= n          = Empty
-   | otherwise       = Fixed32 (n-k) x
-drop k (Var n)
-   | k >= n          = Empty
-   | otherwise       = Var (n-k)
-drop k (Seq x y)
-   | k == length x   = y
-   | k > length x    = drop (k - length x) y
-   | otherwise       = sq (drop k x) y
+-- | Get the bit offset of a field from its name
+type family Offset (name :: Symbol) fs :: Nat where
+   Offset name (Cons (BitField n name s) xs)  = AddOffset xs
+   Offset name (Cons (BitField n name2 s) xs) = Offset name xs
 
-take :: Word -> BitField -> BitField
-take _ Empty         = Empty
-take k (Fixed32 n x)
-   | k >= n          = Fixed32 n x
-   | otherwise       = Fixed32 k (x `shiftR` fromIntegral (n-k))
-take k (Var n)
-   | k >= n          = Var n
-   | otherwise       = Var k
-take k (Seq x y)
-   | k == length x   = x
-   | k < length x    = take k x
-   | otherwise       = sq x (take (k-length x) y)
+type family AddOffset fs :: Nat where
+   AddOffset Nil = 0
+   AddOffset (Cons (BitField n name s) Nil) = n
+   AddOffset (Cons (BitField n name s) xs)  = n + AddOffset xs
+
+-- | Get the type of a field from its name
+type family Output (name :: Symbol) fs :: * where
+   Output name (Cons (BitField n name s) xs)  = s
+   Output name (Cons (BitField n name2 s) xs) = Output name xs
+
+-- | Get the size of a field from it name
+type family Size (name :: Symbol) fs :: Nat where
+   Size name (Cons (BitField n name s) xs)  = n
+   Size name (Cons (BitField n name2 s) xs) = Size name xs
+
+-- | Get the whole size of a BitFields
+type family WholeSize fs :: Nat where
+   WholeSize Nil                            = 0
+   WholeSize (Cons (BitField n name s) xs)  = n + WholeSize xs
 
 
-data Bit = Zero | One | Unset deriving (Show,Eq)
+data Cons x xs = Cons
+data Nil = Nil
 
-instance Ord Bit where
-   compare Zero  Zero  = EQ
-   compare One   One   = EQ
-   compare Unset Unset = EQ
-   compare Zero  _     = LT
-   compare One   Unset = LT
-   compare One   Zero  = GT
-   compare Unset _     = GT
+class Field f where
+   fromField :: Integral b => f -> b
+   toField   :: Integral b => b -> f
 
-flatten :: BitField -> [Bit]
-flatten Empty = []
-flatten (Fixed32 n x) = fmap (boolBit . testBit x . fromIntegral) [n-1, n-2..0]
+instance Field Bool where
+   fromField True  = 1
+   fromField False = 0
+   toField 0  = False
+   toField _  = True
+
+instance Field Word where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Word8 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Word16 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Word32 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Word64 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Int where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Int8 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Int16 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Int32 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Field Int64 where
+   fromField = fromIntegral
+   toField   = fromIntegral
+
+instance Integral b => Field (BitSet b a) where
+   fromField = fromIntegral . BitSet.toBits
+   toField   = BitSet.fromBits . fromIntegral
+
+
+extractField :: forall name fields b . (KnownNat (Offset name fields), KnownNat (Size name fields), WholeSize fields ~ BitSize b, Bits b, Integral b, Field (Output name fields)) => BitFields b fields -> Proxy name -> Output name fields
+extractField (BitFields w) _ = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
    where
-      boolBit True  = One
-      boolBit False = Zero
-flatten (Var n) = replicate (fromIntegral n) Unset
-flatten (Seq x y) = flatten x ++ flatten y
+      off = natVal (Proxy :: Proxy (Offset name fields))
+      sz  = natVal (Proxy :: Proxy (Size name fields))
 
-instance Eq BitField where
-   (==) x y = flatten x == flatten y
+{-# INLINE extractField #-}
 
-instance Ord BitField where
-   compare x y = compare (flatten x) (flatten y)
-
-hasVar :: BitField -> Bool
-hasVar (Var _)       = True
-hasVar (Seq x y)     = hasVar x || hasVar y
-hasVar _             = False
-
-priority :: BitField -> BitField -> Ordering
-priority x y = if hasVar x' || hasVar y'
-      then case (any (== GT) cs, any (== LT) cs) of
-         (False,False) -> EQ
-         (False,True)  -> LT
-         (True,False)  -> GT
-         (True,True)   -> EQ
-      else EQ
+updateField :: forall name fields b . (KnownNat (Offset name fields), KnownNat (Size name fields), WholeSize fields ~ BitSize b, Bits b, Integral b, Field (Output name fields)) => BitFields b fields -> Proxy name -> Output name fields -> BitFields b fields
+updateField (BitFields w) _ value = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
    where
-      cs = zipWith cmp (flatten x') (flatten y')
-      cmp Unset Unset = EQ
-      cmp _     Unset = LT
-      cmp Unset _     = GT
-      cmp _     _     = EQ
-      l = min (length x) (length y)
-      (x',y') = (take l x, take l y)
+      off  = fromIntegral $ natVal (Proxy :: Proxy (Offset name fields))
+      sz   = natVal (Proxy :: Proxy (Size name fields))
+      mask = ((1 `shiftL` fromIntegral sz) - 1) `shiftL` off
 
+{-# INLINE updateField #-}
