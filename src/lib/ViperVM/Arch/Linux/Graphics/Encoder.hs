@@ -22,6 +22,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Enum
 
 -- | An encoder
 data Encoder = Encoder
@@ -37,7 +38,7 @@ fromStructGetEncoder :: Card -> StructGetEncoder -> Encoder
 fromStructGetEncoder card StructGetEncoder{..} =
       Encoder
          (EncoderID geEncoderId)
-         (toEnum (fromIntegral geEncoderType))
+         (fromEnumField geEncoderType)
          (if geCrtcId == 0
             then Nothing
             else Just (ControllerID geCrtcId))
@@ -58,7 +59,8 @@ fromStructGetEncoder card StructGetEncoder{..} =
 -- | Get an encoder from its ID
 cardEncoderFromID :: Card -> EncoderID -> SysRet Encoder
 cardEncoderFromID card (EncoderID encId) = do
-   let res = StructGetEncoder encId 0 0 BitSet.empty BitSet.empty
+   let res = StructGetEncoder encId (toEnumField EncoderTypeNone)
+               0 BitSet.empty BitSet.empty
    fmap (fromStructGetEncoder card) <$> ioctlGetEncoder (cardHandle card) res
 
 -- | Controller attached to the encoder, if any

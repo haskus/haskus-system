@@ -120,6 +120,12 @@ module ViperVM.Arch.Linux.Graphics.Internals
    , EventType (..)
    , toEventType
    , StructEventVBlank (..)
+   -- * Rotation/reflection
+   , Rotation (..)
+   , Reflection (..)
+   , RotateReflect
+   -- * SubPixel order
+   , SubPixel (..)
    )
 where
 
@@ -404,7 +410,7 @@ data EncoderType
 -- | drm_mode_get_encoder
 data StructGetEncoder = StructGetEncoder
    { geEncoderId      :: Word32
-   , geEncoderType    :: Word32
+   , geEncoderType    :: EnumField Word32 EncoderType
    , geCrtcId         :: Word32
    , gePossibleCrtcs  :: BitSet Word32 Int -- ^ Valid controller indexes
    , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone encoder indexes
@@ -502,13 +508,13 @@ data StructGetConnector = StructGetConnector
 
    , connEncoderID_        :: Word32   -- ^ current encoder
    , connConnectorID_      :: Word32   -- ^ ID
-   , connConnectorType_    :: Word32
+   , connConnectorType_    :: EnumField Word32 ConnectorType
    , connConnectorTypeID_  :: Word32
 
    , connConnection_       :: Word32
    , connWidth_            :: Word32   -- ^ HxW in millimeters
    , connHeight_           :: Word32
-   , connSubPixel_         :: Word32
+   , connSubPixel_         :: EnumField Word32 SubPixel
    } deriving (Generic,CStorable)
 
 instance Storable StructGetConnector where
@@ -1214,4 +1220,44 @@ instance Storable StructEventVBlank where
    alignment   = cAlignment
    peek        = cPeek
    poke        = cPoke
+
+-- =============================================================
+--    From linux/include/uapi/drm/drm_crtc.h
+-- =============================================================
+
+-----------------------------------------------------------------------------
+-- Rotation/reflection
+-----------------------------------------------------------------------------
+
+data Rotation
+   = RotateNone
+   | Rotate90
+   | Rotate180
+   | Rotate270
+   deriving (Show,Eq,Enum)
+
+data Reflection
+   = ReflectX
+   | ReflectY
+   deriving (Show,Eq,Enum,EnumBitSet)
+
+type RotateReflect = BitFields Word8
+   (Cons (BitField 2 "padding" Word8)
+   (Cons (BitField 2 "reflection" (BitSet Word8 Reflection))
+   (Cons (BitField 4 "rotation"   (EnumField Word8 Rotation))
+   Nil)))
+
+-----------------------------------------------------------------------------
+-- SubPixel order
+-----------------------------------------------------------------------------
+
+-- | Indicate how a pixel is physically subdivised in RGB pixel elements
+data SubPixel
+   = SubPixelUnknown
+   | SubPixelHorizontalRGB
+   | SubPixelHorizontalBGR
+   | SubPixelVerticalRGB
+   | SubPixelVerticalBGR
+   | SubPixelNone
+   deriving (Eq,Ord,Enum,Show)
 

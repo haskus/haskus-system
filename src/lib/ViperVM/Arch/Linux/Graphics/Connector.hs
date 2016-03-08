@@ -22,6 +22,7 @@ import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Format.Binary.Enum
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (liftM2,forM)
@@ -48,16 +49,6 @@ data ConnectedDevice = ConnectedDevice
    } deriving (Show)
    
 
--- | Indicate how a pixel is physically subdivised in RGB pixel elements
-data SubPixel
-   = SubPixelUnknown
-   | SubPixelHorizontalRGB
-   | SubPixelHorizontalBGR
-   | SubPixelVerticalRGB
-   | SubPixelVerticalBGR
-   | SubPixelNone
-   deriving (Eq,Ord,Enum,Show)
-
 -- | A connector on the graphic card
 data Connector = Connector
    { connectorID                 :: ConnectorID          -- ^ ID
@@ -73,7 +64,9 @@ data Connector = Connector
 cardConnectorFromID :: Card -> ConnectorID -> SysRet Connector
 cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
    let 
-      res = StructGetConnector 0 0 0 0 0 0 0 0 cid 0 0 0 0 0 0
+      res = StructGetConnector 0 0 0 0 0 0 0 0 cid
+               (toEnumField ConnectorTypeUnknown) 0 0 0 0
+               (toEnumField SubPixelNone)
 
       allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> IO b) -> IO b
       allocaArray'      = allocaArray . fromIntegral
@@ -122,7 +115,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
                               modes
                               (connWidth_ res4)
                               (connHeight_ res4)
-                              (toEnum (fromIntegral (connSubPixel_ res4)))
+                              (fromEnumField (connSubPixel_ res4))
                               props
                               
                      2 -> return Disconnected
@@ -132,7 +125,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
 
                   let res5 = Connector
                         (ConnectorID (connConnectorID_ res4))
-                        (toEnum (fromIntegral (connConnectorType_ res4)))
+                        (fromEnumField (connConnectorType_ res4))
                         (connConnectorTypeID_ res4)
                         state
                         encs
