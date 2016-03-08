@@ -134,30 +134,15 @@ data TraceOption
    | OptTraceExit       -- ^ Stop the tracee at exit
    | OptTraceSecComp    -- ^ Stop the tracee when a seccomp SECCOMP_RET_TRACE rule is triggered
    | OptTraceExitKill   -- ^ When set, tracee processes will receive a KILL signal when the tracer process exits
-   deriving (Eq,Show,EnumBitSet)
+   deriving (Eq,Show,Enum)
 
-instance Enum TraceOption where
-   fromEnum x = case x of
-      OptFlagSyscallTrap -> 0
-      OptTraceFork       -> 1
-      OptTraceVFork      -> 2
-      OptTraceClone      -> 3
-      OptTraceExec       -> 4
-      OptTraceVForkDone  -> 5
-      OptTraceExit       -> 6
-      OptTraceSecComp    -> 7
+instance CBitSet TraceOption where
+   toBitOffset x = case x of
       OptTraceExitKill   -> 20
-   toEnum x = case x of
-      0  -> OptFlagSyscallTrap
-      1  -> OptTraceFork
-      2  -> OptTraceVFork
-      3  -> OptTraceClone
-      4  -> OptTraceExec
-      5  -> OptTraceVForkDone
-      6  -> OptTraceExit
-      7  -> OptTraceSecComp
+      _                  -> fromEnum x
+   fromBitOffset x = case x of
       20 -> OptTraceExitKill
-      _  -> error "Invalid trace option"
+      _  -> toEnum x
 
 data EventCode
    = EventFork
@@ -196,7 +181,7 @@ data PeekSigInfoArgs = PeekSigInfoArgs
 
 data PeekSigInfoFlags
    = PeekSigInfoShared
-   deriving (Enum,EnumBitSet)
+   deriving (Enum,CBitSet)
    
    
 -- | Trace a process

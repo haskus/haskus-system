@@ -21,8 +21,8 @@ import qualified Data.Vector as Vector
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 
-import ViperVM.Format.Binary.BitSet (EnumBitSet,BitSet)
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Enum
 
 
 import ViperVM.Format.Elf.PreHeader
@@ -62,12 +62,12 @@ data SegmentFlag
    = SegmentFlagExecutable
    | SegmentFlagWritable
    | SegmentFlagReadable
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type SegmentFlags = BitSet Word32 SegmentFlag
 
-instance Enum SegmentType where
-   fromEnum x = case x of
+instance CEnum SegmentType where
+   fromCEnum x = case x of
       SegmentTypeNone                   -> 0
       SegmentTypeLoad                   -> 1
       SegmentTypeDynamic                -> 2
@@ -83,7 +83,7 @@ instance Enum SegmentType where
       SegmentTypeSunStack               -> 0x6ffffffb
       SegmentTypeUnknown w              -> fromIntegral w
 
-   toEnum x = case x of
+   toCEnum x = case x of
       0            -> SegmentTypeNone
       1            -> SegmentTypeLoad
       2            -> SegmentTypeDynamic
@@ -106,7 +106,7 @@ getSegment hdr = do
    let (_,_,gw32,_,gwN) = getGetters hdr
    case preHeaderWordSize hdr of
       WordSize32 -> do
-         typ   <- toEnum . fromIntegral <$> gw32
+         typ   <- toCEnum <$> gw32
          off   <- gwN
          vaddr <- gwN
          paddr <- gwN
@@ -116,7 +116,7 @@ getSegment hdr = do
          algn  <- gwN
          return (Segment typ flgs off vaddr paddr fsz msz algn)
       WordSize64 -> do
-         typ   <- toEnum . fromIntegral <$> gw32
+         typ   <- toCEnum <$> gw32
          flgs  <- BitSet.fromBits <$> gw32
          off   <- gwN
          vaddr <- gwN
@@ -130,7 +130,7 @@ putSegment :: PreHeader -> Segment -> Put
 putSegment hdr s = do
    let 
       (_,_,pw32,_,pwN) = getPutters hdr
-      typ   = fromIntegral . fromEnum . segmentType $ s
+      typ   = fromCEnum . segmentType $ s
       flags = BitSet.toBits (segmentFlags s)
 
    case preHeaderWordSize hdr of

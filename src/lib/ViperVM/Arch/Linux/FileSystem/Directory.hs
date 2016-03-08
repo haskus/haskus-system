@@ -23,7 +23,7 @@ import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.C.String
 
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor

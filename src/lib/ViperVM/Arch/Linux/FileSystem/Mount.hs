@@ -49,7 +49,7 @@ data MountFlag
    | MountStrictAccessTime       -- ^ Always perform atime updates
    | MountActive
    | MountNoUser
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,CBitSet)
 
 instance Enum MountFlag where
    fromEnum x = case x of
@@ -114,7 +114,7 @@ data UnmountFlag
    | UnmountDetach      -- ^ Just detach from the tree
    | UnmountExpire      -- ^ Mark for expiry
    | UnmountDontFollow  -- ^ Don't follow symlink on unmount
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type UnmountFlags = BitSet Word64 UnmountFlag
 

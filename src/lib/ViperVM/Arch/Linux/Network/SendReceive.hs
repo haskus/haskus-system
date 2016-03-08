@@ -19,8 +19,7 @@ import Foreign.Storable
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Format.Binary.BitSet (EnumBitSet, BitSet)
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
 
 
 data SendReceiveFlag
@@ -43,7 +42,7 @@ data SendReceiveFlag
    | FlagWaitForOne        -- ^ Wait for at least one packet to return
    | FlagFastOpen          -- ^ Send data in TCP SYN
    | FlagCloseOnExec       -- ^ Set close_on_exit for file descriptor received through SCM_RIGHTS
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,CBitSet)
 
 instance Enum SendReceiveFlag where
    fromEnum x = case x of

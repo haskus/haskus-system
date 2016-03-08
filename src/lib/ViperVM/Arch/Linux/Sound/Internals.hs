@@ -184,6 +184,7 @@ import GHC.Generics (Generic)
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.BitSet
+import ViperVM.Format.Binary.Enum
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem
@@ -536,10 +537,10 @@ data PcmInfoFlag
    | PcmInfoHasLinkSynchronizedAtime -- ^ report synchronized audio/system time
    | PcmInfoDrainTrigger             -- ^ internal kernel flag - trigger in drain
    | PcmInfoFifoInFrames             -- ^ internal kernel flag - FIFO size is in frames
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,Enum)
 
-instance Enum PcmInfoFlag where
-   fromEnum x = case x of
+instance CBitSet PcmInfoFlag where
+   toBitOffset x = case x of
       PcmInfoMmap                     -> 0
       PcmInfoMmapValid                -> 1
       PcmInfoDouble                   -> 2
@@ -561,7 +562,7 @@ instance Enum PcmInfoFlag where
       PcmInfoHasLinkSynchronizedAtime -> 27
       PcmInfoDrainTrigger             -> 30
       PcmInfoFifoInFrames             -> 31
-   toEnum x = case x of
+   fromBitOffset x = case x of
       0  -> PcmInfoMmap
       1  -> PcmInfoMmapValid
       2  -> PcmInfoDouble
@@ -598,31 +599,22 @@ data PcmState
    | PcmStatePaused       -- ^ stream is paused
    | PcmStateSuspended    -- ^ hardware is suspended
    | PcmStateDisconnected -- ^ hardware is disconnected
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,CEnum)
 
-instance Storable PcmState where
-   sizeOf _    = sizeOf (undefined :: Int)
-   alignment _ = alignment (undefined :: Int)
-   peek ptr    = toEnum <$> peek (castPtr ptr)
-   poke ptr e  = poke (castPtr ptr) (fromEnum e)
-instance CStorable PcmState where
-   cSizeOf    = sizeOf
-   cAlignment = alignment
-   cPeek      = peek
-   cPoke      = poke
+type PcmStateField = EnumField Int PcmState
 
 data PcmMmapOffset
    = PcmMmapOffsetData
    | PcmMmapOffsetStatus
    | PcmMmapOffsetControl
-   deriving (Show,Eq)
+   deriving (Show,Eq,Enum)
 
-instance Enum PcmMmapOffset where
-   fromEnum x = case x of
+instance CEnum PcmMmapOffset where
+   fromCEnum x = case x of
       PcmMmapOffsetData    -> 0x00000000
       PcmMmapOffsetStatus  -> 0x80000000
       PcmMmapOffsetControl -> 0x81000000
-   toEnum x = case x of
+   toCEnum x = case x of
       0x00000000 -> PcmMmapOffsetData
       0x80000000 -> PcmMmapOffsetStatus
       0x81000000 -> PcmMmapOffsetControl
@@ -720,7 +712,7 @@ data IntervalOption
    | IntervalOpenMax
    | IntervalInteger
    | IntervalEmpty
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type IntervalOptions = BitSet Word IntervalOption
 
@@ -728,7 +720,7 @@ data PcmHwParamsFlag
    = PcmHwParamsNoResample     -- ^ avoid rate resampling
    | PcmHwParamsExportBuffer   -- ^ export buffer
    | PcmHwParamsNoPeriodWakeUp -- ^ disable period wakeups
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type PcmHwParamsFlags = BitSet Word PcmHwParamsFlag
 
@@ -814,7 +806,7 @@ data PcmAudioTimeStamp
    deriving (Show,Eq,Enum)
 
 data PcmStatus = PcmStatus
-   { pcmStatusState              :: PcmState        -- ^ stream state
+   { pcmStatusState              :: PcmStateField   -- ^ stream state
    , pcmStatusTriggerTimeStamp   :: TimeSpec        -- ^ time when stream was started/stopped/paused
    , pcmStatusTimeStamp          :: TimeSpec        -- ^ reference timestamp
    , pcmStatusApplPtr            :: Word64          -- ^ appl ptr
@@ -823,7 +815,7 @@ data PcmStatus = PcmStatus
    , pcmStatusAvail              :: Word64          -- ^ number of frames available
    , pcmStatusAvailMax           :: Word64          -- ^ max frames available on hw since last status
    , pcmStatusOverRange          :: Word64          -- ^ count of ADC (capture) overrange detections from last status
-   , pcmStatusSyspendedState     :: PcmState        -- ^ suspended stream state
+   , pcmStatusSyspendedState     :: PcmStateField   -- ^ suspended stream state
    , pcmStatusAudioTimeStampData :: Word32          -- ^ needed for 64-bit alignment, used for configs/report to/from userspace
    , pcmStatusAudioTimeStamp     :: TimeSpec        -- ^ sample counter, wall clock, PHC or on-demand sync'ed
    , pcmStatusDriverTimeStamp    :: TimeSpec        -- ^ useful in case reference system tstamp is reported with delay
@@ -839,11 +831,11 @@ instance Storable PcmStatus where
 
 
 data PcmMmapStatus = PcmMmapStatus
-   { pcmMmapStatusState          :: PcmState -- ^ RO: state - SNDRV_PCM_STATE_XXXX
+   { pcmMmapStatusState          :: PcmStateField -- ^ RO: state - SNDRV_PCM_STATE_XXXX
    , pcmMmapStatusPadding        :: Int      -- ^ Needed for 64 bit alignment
    , pcmMmapStatusHwPtr          :: Word64   -- ^ RO: hw ptr (0...boundary-1)
    , pcmMmapStatusTimeStamp      :: TimeSpec -- ^ Timestamp
-   , pcmMmapStatusSuspendedState :: PcmState -- ^ RO: suspended stream state
+   , pcmMmapStatusSuspendedState :: PcmStateField -- ^ RO: suspended stream state
    , pcmMmapStatusAudioTimeStamp :: TimeSpec -- ^ from sample counter or wall clock
    } deriving (Show,Generic,CStorable)
 
@@ -868,7 +860,7 @@ data PcmSyncFlag
    = PcmSyncFlagHwSync        -- ^ execute hwsync 
    | PcmSyncFlagPtrAppl       -- ^ get appl_ptr from driver (r/w op) 
    | PcmSyncFlagPtrAvailMin   -- ^ get avail_min from driver 
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type PcmSyncFlags = BitSet Word PcmSyncFlag
 
@@ -961,7 +953,7 @@ data ChannelPosition
 data ChannelOption
    = ChannelPhaseInverse
    | ChannelDriverSpec
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,CBitSet)
 
 instance Enum ChannelOption where
    fromEnum x = case x of
@@ -1092,7 +1084,7 @@ data MidiFlag
    = MidiFlagOutput
    | MidiFlagInput
    | MidiFlagDuplex
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type MidiFlags = BitSet Word MidiFlag
 
@@ -1223,7 +1215,7 @@ data TimerGlobal
 -- | Timer info flags
 data TimerFlag
    = TimerFlagSlave  -- ^ Cannot be controlled
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type TimerFlags = BitSet Word TimerFlag
 
@@ -1324,7 +1316,7 @@ data TimerParamsFlag
    = TimerParamFlagAuto       -- ^ auto start, otherwise one-shot 
    | TimerParamFlagExclusive  -- ^ exclusive use, precise start/stop/pause/continue 
    | TimerParamFlagEarlyEvent -- ^ write early event to the poll queue 
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type TimerParamsFlags = BitSet Word TimerParamsFlag
 
@@ -1548,36 +1540,23 @@ data ControlElementAccess
    | ControlElemAccessOwner       -- ^ write lock owner 
    | ControlElemAccessTlvCallBack -- ^ kernel use a TLV callback 
    | ControlElemAccessUser        -- ^ user space element 
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,Enum)
 
-instance Enum ControlElementAccess where
-   fromEnum x = case x of
-      ControlElemAccessRead         -> 0
-      ControlElemAccessWrite        -> 1
-      ControlElemAccessVolatile     -> 2
-      ControlElemAccessTimeStamp    -> 3
-      ControlElemAccessTlvRead      -> 4
-      ControlElemAccessTlvWrite     -> 5
-      ControlElemAccessTlvCommand   -> 6
+instance CBitSet ControlElementAccess where
+   toBitOffset x = case x of
       ControlElemAccessInactive     -> 8
       ControlElemAccessLock         -> 9
       ControlElemAccessOwner        -> 10
       ControlElemAccessTlvCallBack  -> 28
       ControlElemAccessUser         -> 29
-   toEnum x = case x of
-      0  -> ControlElemAccessRead
-      1  -> ControlElemAccessWrite
-      2  -> ControlElemAccessVolatile
-      3  -> ControlElemAccessTimeStamp
-      4  -> ControlElemAccessTlvRead
-      5  -> ControlElemAccessTlvWrite
-      6  -> ControlElemAccessTlvCommand
+      _                             -> fromEnum x
+   fromBitOffset x = case x of
       8  -> ControlElemAccessInactive
       9  -> ControlElemAccessLock
       10 -> ControlElemAccessOwner
       28 -> ControlElemAccessTlvCallBack
       29 -> ControlElemAccessUser
-      _  -> error "Unknown control element access"
+      _  -> toEnum x
 
 type ControlElementAccesses = BitSet Word32 ControlElementAccess
 

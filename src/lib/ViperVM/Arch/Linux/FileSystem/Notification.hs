@@ -20,7 +20,7 @@ import Data.Word (Word64, Word16)
 import Data.Int (Int64,Int32)
 import GHC.Generics (Generic)
 
-import ViperVM.Format.Binary.BitSet (EnumBitSet, BitSet, fromBits, toBits)
+import ViperVM.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
@@ -51,7 +51,7 @@ data PollEvent
    | PollWriteNormal
    | PollReadBand
    | PollWriteBand
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,CBitSet)
 
 instance Enum PollEvent where
    fromEnum x = case x of

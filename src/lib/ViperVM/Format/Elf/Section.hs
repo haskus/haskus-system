@@ -24,8 +24,8 @@ import qualified Data.Vector as Vector
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 
-import ViperVM.Format.Binary.BitSet (EnumBitSet,BitSet)
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Enum
 
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
@@ -201,10 +201,8 @@ data SectionFlag
    | SectionFlagOther Word        -- ^ Other flags
    deriving (Show,Eq)
 
-instance EnumBitSet SectionFlag
-
-instance Enum SectionFlag where
-   fromEnum x = case x of
+instance CBitSet SectionFlag where
+   toBitOffset x = case x of
       SectionFlagWritable           -> 0
       SectionFlagAlloc              -> 1
       SectionFlagExecutable         -> 2
@@ -219,7 +217,7 @@ instance Enum SectionFlag where
       SectionFlagOrdered            -> 30
       SectionFlagExclude            -> 31
       SectionFlagOther v            -> fromIntegral v
-   toEnum x = case x of
+   fromBitOffset x = case x of
       0  -> SectionFlagWritable
       1  -> SectionFlagAlloc
       2  -> SectionFlagExecutable
@@ -243,12 +241,12 @@ data CompressionType
    | CompressionUnknown Word32   -- ^ Unknown compression used
    deriving (Show)
 
-instance Enum CompressionType where
-   fromEnum x = case x of
+instance CEnum CompressionType where
+   fromCEnum x = case x of
       CompressionZLIB      -> 1
       CompressionUnknown v -> fromIntegral v
    
-   toEnum x = case x of
+   toCEnum x = case x of
       1 -> CompressionZLIB
       v -> CompressionUnknown (fromIntegral v)
 
@@ -264,11 +262,11 @@ getSectionCompression i = do
    let (_,_,gw32,_,gwN) = getGetters i
    case preHeaderWordSize i of
       WordSize32 -> SectionCompression
-         <$> fmap (toEnum . fromIntegral) gw32
+         <$> fmap toCEnum gw32
          <*> gwN
          <*> gwN
       WordSize64 -> SectionCompression
-         <$> fmap (toEnum . fromIntegral) (gw32 <* skip 4)
+         <$> fmap toCEnum (gw32 <* skip 4)
          <*> gwN
          <*> gwN
 
@@ -277,11 +275,11 @@ putSectionCompression i (SectionCompression typ sz align) = do
    let (_,_,pw32,_,pwN) = getPutters i
    case preHeaderWordSize i of
       WordSize32 -> do
-         pw32 (fromIntegral (fromEnum typ))
+         pw32 (fromCEnum typ)
          pwN sz
          pwN align
       WordSize64 -> do
-         pw32 (fromIntegral (fromEnum typ))
+         pw32 (fromCEnum typ)
          pw32 0 -- reserved word
          pwN sz
          pwN align

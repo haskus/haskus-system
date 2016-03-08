@@ -16,7 +16,7 @@ import Data.Foldable (toList)
 import Data.Word
 import ViperVM.Format.Binary.Get as Get
 import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitSet (BitSet,EnumBitSet)
+import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import Control.Monad (when)
 import Data.ByteString.Char8 (unpack)
@@ -101,7 +101,7 @@ data Flag
    | FlagExtra
    | FlagName
    | FlagComment
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type Flags = BitSet Word8 Flag
 

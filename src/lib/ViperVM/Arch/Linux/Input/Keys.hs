@@ -43,7 +43,7 @@ instance Storable KeymapEntry where
 
 data KeymapFlags
    = KeymapByIndex
-   deriving (Eq,Show,Enum,EnumBitSet)
+   deriving (Eq,Show,Enum,CBitSet)
 
 -- | Get key code
 --

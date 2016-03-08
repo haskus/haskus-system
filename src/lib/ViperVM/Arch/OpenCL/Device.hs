@@ -31,7 +31,7 @@ module ViperVM.Arch.OpenCL.Device
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Binary.BitSet (BitSet, EnumBitSet)
+import ViperVM.Format.Binary.BitSet (BitSet, CBitSet)
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -152,7 +152,7 @@ data DeviceType
    | CL_DEVICE_TYPE_GPU
    | CL_DEVICE_TYPE_ACCELERATOR
    | CL_DEVICE_TYPE_CUSTOM
-   deriving (Eq,Show,Bounded,Enum,EnumBitSet)
+   deriving (Eq,Show,Bounded,Enum,CBitSet)
 
 type DeviceTypeSet = BitSet Word64 DeviceType
 
@@ -175,13 +175,13 @@ data DeviceFPConfig
    | CL_FP_FMA
    | CL_FP_SOFT_FLOAT
    | CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT
-   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
+   deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
 -- | Device execution capabilities
 data DeviceExecCapability
    = CL_EXEC_KERNEL
    | CL_EXEC_NATIVE_KERNEL
-   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
+   deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
 -- | Device cache memory type
 data DeviceMemCacheType
@@ -208,20 +208,20 @@ instance CLConstant DeviceLocalMemType where
 data CommandQueueProperty
    = CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
    | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
-   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
+   deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
 type CommandQueueProperties = BitSet Word64 CommandQueueProperty
 
 -- | Return the required size to return a device info
 getDeviceInfoRetSize :: DeviceInfo -> Device -> CLRet CSize
-getDeviceInfoRetSize infoid dev = do
+getDeviceInfoRetSize infoid dev =
    alloca $ \(dat :: Ptr CSize) -> whenSuccess 
       (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) 0 nullPtr dat)
       (peek dat)
 
 -- | Return a string device info
 getDeviceInfoString :: DeviceInfo -> Device -> CLRet String
-getDeviceInfoString infoid dev = do
+getDeviceInfoString infoid dev =
    getDeviceInfoRetSize infoid dev >>= \case
       Left err   -> return (Left err)
       Right size -> do

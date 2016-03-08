@@ -17,7 +17,7 @@ module ViperVM.Arch.OpenCL.Mem
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Binary.BitSet (EnumBitSet, BitSet)
+import ViperVM.Format.Binary.BitSet (CBitSet, BitSet)
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -52,17 +52,17 @@ instance Entity Mem where
 
 -- | Memory object flags
 data MemFlag
-   = CL_MEM_READ_WRITE        -- 1
-   | CL_MEM_WRITE_ONLY        -- 2
-   | CL_MEM_READ_ONLY         -- 4
-   | CL_MEM_USE_HOST_PTR      -- 8
-   | CL_MEM_ALLOC_HOST_PTR    -- 16
-   | CL_MEM_COPY_HOST_PTR     -- 32
-   | CL_MEM_RESERVED          -- 64
-   | CL_MEM_HOST_WRITE_ONLY   -- 128
-   | CL_MEM_HOST_READ_ONLY    -- 256
-   | CL_MEM_HOST_NO_ACCESS    -- 512
-   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
+   = CL_MEM_READ_WRITE
+   | CL_MEM_WRITE_ONLY
+   | CL_MEM_READ_ONLY
+   | CL_MEM_USE_HOST_PTR
+   | CL_MEM_ALLOC_HOST_PTR
+   | CL_MEM_COPY_HOST_PTR
+   | CL_MEM_RESERVED
+   | CL_MEM_HOST_WRITE_ONLY
+   | CL_MEM_HOST_READ_ONLY
+   | CL_MEM_HOST_NO_ACCESS
+   deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
 type MemFlags = BitSet Word64 MemFlag
 
@@ -71,7 +71,7 @@ data MapFlag
    = CL_MAP_READ
    | CL_MAP_WRITE
    | CL_MAP_WRITE_INVALIDATE_REGION
-   deriving (Show, Bounded, Eq, Ord, Enum, EnumBitSet)
+   deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
 type MapFlags = BitSet Word64 MapFlag
 

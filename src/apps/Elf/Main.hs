@@ -16,7 +16,7 @@ import ViperVM.Format.Elf.Dynamic
 
 import ViperVM.Format.Dwarf
 
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
 import Data.Foldable (forM_)
@@ -600,7 +600,7 @@ showDebugInfo dis = do
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do
    let
-      showFlags :: (Show a, BitSet.EnumBitSet a) => BitSet.BitSet Word64 a -> Html ()
+      showFlags :: (Show a, CBitSet a) => BitSet Word64 a -> Html ()
       showFlags = toHtml . concat . List.intersperse ", " . fmap show . BitSet.toList
 
    table_ $ do

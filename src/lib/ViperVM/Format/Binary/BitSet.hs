@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 -- | A bit set based on Enum to name the bits. Use bitwise operations and
 -- minimal storage in a safer way.
@@ -11,7 +12,7 @@
 --     * We dont use the deprecated bitSize function
 --     * We use countTrailingZeros instead of iterating on the
 --     number of bits
---     * We add a typeclass EnumBitSet
+--     * We add a typeclass CBitSet
 --
 -- Example:
 --
@@ -21,7 +22,7 @@
 --    = FlagXXX
 --    | FlagYYY
 --    | FlagWWW
---    deriving (Show,Eq,Enum,EnumBitSet)
+--    deriving (Show,Eq,Enum,CBitSet)
 --
 -- -- Adapt the backing type, here we choose Word16
 -- type Flags = 'BitSet' Word16 Flag
@@ -35,8 +36,8 @@
 -- can also perform set operations such as 'union' and 'intersection'.
 --
 module ViperVM.Format.Binary.BitSet
-   ( BitSet (..)
-   , EnumBitSet (..)
+   ( BitSet
+   , CBitSet (..)
    , null
    , empty
    , insert
@@ -48,6 +49,10 @@ module ViperVM.Format.Binary.BitSet
    , elems
    , intersection
    , union
+   , fromListToBits
+   , toListFromBits
+   , fromList
+   , toList
    )
 where
 
@@ -70,7 +75,7 @@ import Foreign.CStorable
 -- from the least-significant bit.
 newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable,CStorable)
 
-instance (Show a, EnumBitSet a, FiniteBits b) => Show (BitSet b a) where
+instance (Show a, CBitSet a, FiniteBits b) => Show (BitSet b a) where
    show b = "fromList " ++ show (toList b)
 
 -- | Indicate if the set is empty
@@ -87,87 +92,99 @@ empty = BitSet zeroBits
 
 
 -- | Insert an element in the set
-insert :: (Bits b, Enum a) => BitSet b a -> a -> BitSet b a
-insert (BitSet b) e = BitSet $ setBit b (fromEnum e)
+insert :: (Bits b, CBitSet a) => BitSet b a -> a -> BitSet b a
+insert (BitSet b) e = BitSet $ setBit b (toBitOffset e)
 
 {-# INLINE insert #-}
 
 
 -- | Remove an element from the set
-delete :: (Bits b, Enum a) => BitSet b a -> a -> BitSet b a
-delete (BitSet b) e = BitSet $ clearBit b (fromEnum e)
+delete :: (Bits b, CBitSet a) => BitSet b a -> a -> BitSet b a
+delete (BitSet b) e = BitSet $ clearBit b (toBitOffset e)
 
 {-# INLINE delete #-}
 
 
 -- | Unwrap the bitset
-toBits :: BitSet b a -> b
+toBits :: (CBitSet a, FiniteBits b) => BitSet b a -> b
 toBits (BitSet b) = b
 
 -- | Wrap a bitset
-fromBits :: b -> BitSet b a
+fromBits :: (CBitSet a, FiniteBits b) => b -> BitSet b a
 fromBits = BitSet
 
 -- | Test if an element is in the set
-member :: (Bits b, Enum a) => BitSet b a -> a -> Bool
-member (BitSet b) e = testBit b (fromEnum e)
+member :: (CBitSet a, FiniteBits b) => BitSet b a -> a -> Bool
+member (BitSet b) e = testBit b (toBitOffset e)
 
 {-# INLINE member #-}
 
 
 -- | Test if an element is not in the set
-notMember :: (Bits b, Enum a) => BitSet b a -> a -> Bool
+notMember :: (CBitSet a, FiniteBits b) => BitSet b a -> a -> Bool
 notMember b e = not (member b e)
 
 {-# INLINE notMember #-}
 
 
 -- | Retrieve elements in the set
-elems :: (Enum a, FiniteBits b) => BitSet b a -> [a]
+elems :: (CBitSet a, FiniteBits b) => BitSet b a -> [a]
 elems (BitSet b) = go b
    where
       go !c
          | c == zeroBits = []
-         | otherwise     = let e = countTrailingZeros c in toEnum e : go (clearBit c e)
+         | otherwise     = let e = countTrailingZeros c in fromBitOffset e : go (clearBit c e)
 
 -- | Intersection of two sets
-intersection :: Bits b => BitSet b a -> BitSet b a -> BitSet b a
+intersection :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
 intersection (BitSet b1) (BitSet b2) = BitSet (b1 .&. b2)
 
 {-# INLINE intersection #-}
 
 -- | Intersection of two sets
-union :: Bits b => BitSet b a -> BitSet b a -> BitSet b a
+union :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
 union (BitSet b1) (BitSet b2) = BitSet (b1 .|. b2)
 
 {-# INLINE union #-}
 
+class CBitSet a where
+   -- | Return the bit offset of an element
+   toBitOffset         :: a -> Int
+   default toBitOffset :: Enum a => a -> Int
+   toBitOffset         = fromEnum
 
--- | Indicate that an Enum is used as flags in a BitSet.
--- Default method implementations should be enough.
-class Enum a => EnumBitSet a where
-   -- | Convert a list of enum elements into a bitset Warning: b
-   -- must have enough bits to store the given elements! (we don't
-   -- perform any check, for performance reason)
-   fromListToBits :: (Bits b, Foldable m) => m a -> b
-   fromListToBits = toBits . fromList
+   -- | Return the value associated with a bit offset
+   fromBitOffset         :: Int -> a
+   default fromBitOffset :: Enum a => Int -> a
+   fromBitOffset         = toEnum
 
-   -- | Convert a bitset into a list of Enum elements
-   toListFromBits :: (FiniteBits b) => b -> [a]
-   toListFromBits = toList . BitSet
-
-   -- | Convert a set into a list
-   toList :: (FiniteBits b) => BitSet b a -> [a]
-   toList = elems
-
-   -- | Convert a Foldable into a set
-   fromList :: (Bits b, Foldable m) => m a -> BitSet b a
-   fromList = BitSet . foldl' f zeroBits
-      where
-         f bs a = setBit bs (fromEnum a)
+-- | It can be useful to get the indexes of the set bits
+instance CBitSet Int where
+   toBitOffset   = id
+   fromBitOffset = id
+   
 
 
-instance (FiniteBits b, EnumBitSet a) => Ext.IsList (BitSet b a) where
+-- | Convert a list of enum elements into a bitset Warning: b
+-- must have enough bits to store the given elements! (we don't
+-- perform any check, for performance reason)
+fromListToBits :: (CBitSet a, FiniteBits b, Foldable m) => m a -> b
+fromListToBits = toBits . fromList
+
+-- | Convert a bitset into a list of Enum elements
+toListFromBits :: (CBitSet a, FiniteBits b) => b -> [a]
+toListFromBits = toList . BitSet
+
+-- | Convert a set into a list
+toList :: (CBitSet a, FiniteBits b) => BitSet b a -> [a]
+toList = elems
+
+-- | Convert a Foldable into a set
+fromList :: (CBitSet a, FiniteBits b, Foldable m) => m a -> BitSet b a
+fromList = foldl' insert (BitSet zeroBits)
+
+
+instance (FiniteBits b, CBitSet a) => Ext.IsList (BitSet b a) where
    type Item (BitSet b a) = a
    fromList = fromList
    toList   = toList

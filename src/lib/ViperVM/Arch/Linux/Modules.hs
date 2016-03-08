@@ -11,8 +11,7 @@ where
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Format.Binary.BitSet
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
 
 import Data.Word
 import Foreign.Ptr
@@ -21,7 +20,7 @@ import Foreign.C.String (withCString)
 data LoadModuleFlag
    = IgnoreSymbolVersions
    | IgnoreKernelVersion
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type LoadModuleFlags = BitSet Word LoadModuleFlag
 

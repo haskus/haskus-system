@@ -18,7 +18,7 @@ import Foreign.Ptr
 -- EnumField b a: directly store the value of enum "a" as a "b"
 -----------------------------------------------------------------------------
 
-newtype EnumField b a = EnumField a
+newtype EnumField b a = EnumField a deriving (Show,Eq)
 
 instance (Storable b, Integral b, CEnum a) => Storable (EnumField b a) where
    sizeOf _             = sizeOf (undefined :: b)

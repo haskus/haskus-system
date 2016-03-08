@@ -26,8 +26,7 @@ import Data.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 
-import ViperVM.Format.Binary.BitSet (EnumBitSet,BitSet)
-import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Format.Elf.PreHeader
 
@@ -52,7 +51,7 @@ data VersionDefinitionVersion
 data VersionDefinitionFlag
    = VersionFlagBase    -- ^ Version definition of file itself
    | VersionFlagWeak    -- ^ Weak version identifier
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type VersionDefinitionFlags = BitSet Word16 VersionDefinitionFlag
 

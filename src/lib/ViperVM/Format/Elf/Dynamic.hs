@@ -20,7 +20,7 @@ import Data.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 
-import ViperVM.Format.Binary.BitSet (EnumBitSet,BitSet)
+import ViperVM.Format.Binary.BitSet (CBitSet,BitSet)
 
 import ViperVM.Format.Elf.PreHeader
 
@@ -277,7 +277,7 @@ data DynamicEntryFlag
    | DynFlagHasTextRelocation -- ^ Object contains text relocations
    | DynFlagBindNow           -- ^ No lazy binding for this object
    | DynFlagStaticTLS         -- ^ Module uses the static TLS model
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type DynamicEntryFlags = BitSet Word64 DynamicEntryFlag
 
@@ -309,7 +309,7 @@ data DynamicStateFlag
    | DynStateFlagSymbolInterposers          -- ^ Object has individual interposers.  
    | DynStateFlagGlobalAudit                -- ^ Global auditing required.  
    | DynStateFlagSingletonSymbols           -- ^ Singleton symbols are used.  
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 
@@ -317,7 +317,7 @@ type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 data DynamicFeature
    = DynFeatureParInit
    | DynFeatureConfExp
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type DynamicFeatures = BitSet Word64 DynamicFeature
 
@@ -325,6 +325,6 @@ type DynamicFeatures = BitSet Word64 DynamicFeature
 data DynamicPositionalFlag
    = DynPositionalFlagLazyLoad   -- ^ Lazyload following object
    | DynPositionalFlagGroupPerm  -- ^ Symbols from next object are not generally available
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type DynamicPositionalFlags = BitSet Word64 DynamicPositionalFlag

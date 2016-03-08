@@ -165,7 +165,7 @@ data ModeType
    | ModeTypeDefault
    | ModeTypeUserDef
    | ModeTypeDriver
-   deriving (Show,Enum,EnumBitSet)
+   deriving (Show,Enum,CBitSet)
 
 type ModeTypes = BitSet Word32 ModeType
 
@@ -186,7 +186,7 @@ data ModeFlag
    | ModeFlagPixMux
    | ModeFlagDoubleClock
    | ModeFlagClockDiv2
-   deriving (Show,Enum,EnumBitSet)
+   deriving (Show,Enum,CBitSet)
 
 type ModeFlags = BitSet Word32 ModeFlag
 
@@ -332,7 +332,7 @@ instance Storable StructController where
 data ModeFieldPresent
    = PresentTopField
    | PresentBottomField
-   deriving (Show,Enum,EnumBitSet)
+   deriving (Show,Enum,CBitSet)
 
 type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 
@@ -653,7 +653,7 @@ instance Storable StructGetBlob where
 data FrameBufferFlag
    = FrameBufferInterlaced    -- ^ Interlaced frame buffer
    | FrameBufferUseModifiers  -- ^ Enable modifiers
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type FrameBufferFlags = BitSet Word32 FrameBufferFlag
 
@@ -752,7 +752,7 @@ instance Storable  StructModeCommand where
 data CursorFlag
    = CursorFlagBO
    | CursorFlagMove
-   deriving (Eq,Enum,Show,EnumBitSet)
+   deriving (Eq,Enum,Show,CBitSet)
 
 type CursorFlags = BitSet Word32 CursorFlag
 
@@ -818,7 +818,7 @@ instance Storable  StructControllerLut where
 data PageFlipFlag
    = PageFlipEvent
    | PageFlipAsync
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type PageFlipFlags = BitSet Word32 PageFlipFlag
 
@@ -918,16 +918,16 @@ data AtomicFlag
    | AtomicFlagTestOnly
    | AtomicFlagNonBlock
    | AtomicFlagAllowModeset
-   deriving (Show,Eq,EnumBitSet)
+   deriving (Show,Eq,Enum)
 
-instance Enum AtomicFlag where
-   fromEnum x = case x of
+instance CBitSet AtomicFlag where
+   toBitOffset x = case x of
       AtomicFlagPageFlipEvent -> 0
       AtomicFlagPageFlipAsync -> 1
       AtomicFlagTestOnly      -> 8
       AtomicFlagNonBlock      -> 9
       AtomicFlagAllowModeset  -> 10
-   toEnum x = case x of
+   fromBitOffset x = case x of
       0  -> AtomicFlagPageFlipEvent
       1  -> AtomicFlagPageFlipAsync
       8  -> AtomicFlagTestOnly
@@ -1245,7 +1245,7 @@ data Rotation
 data Reflection
    = ReflectX
    | ReflectY
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type RotateReflect = BitFields Word8
    (Cons (BitField 2 "padding" Word8)

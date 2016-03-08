@@ -28,8 +28,7 @@ import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
 import Data.Bits ((.|.), (.&.), shiftL)
 
-import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Binary.BitSet (BitSet, EnumBitSet)
+import ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
@@ -244,7 +243,7 @@ sysMemUnlock addr len = onSuccess (syscall_munlock addr len) (const ())
 data MemLockFlag
    = LockCurrentPages
    | LockFuturePages
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type MemLockFlags = BitSet Word64 MemLockFlag
 

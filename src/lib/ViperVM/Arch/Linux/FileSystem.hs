@@ -186,7 +186,7 @@ data FilePermission
    | PermUserExecute
    | PermUserWrite
    | PermUserRead
-   deriving (Eq,Show,Enum,EnumBitSet)
+   deriving (Eq,Show,Enum,CBitSet)
 
 type FilePermissions = BitSet Word FilePermission
 
@@ -217,10 +217,10 @@ sysIoctl (FileDescriptor fd) cmd arg =
 --
 -- To test if a file exists, use no flag
 data AccessMode
-   = AccessExecute  -- bit 0
-   | AccessWrite    -- bit 1
-   | AccessRead     -- bit 2
-   deriving (Eq,Show,Enum,EnumBitSet)
+   = AccessExecute
+   | AccessWrite
+   | AccessRead
+   deriving (Eq,Show,Enum,CBitSet)
 
 type AccessModes = BitSet Word64 AccessMode
 
@@ -392,7 +392,7 @@ data FileOption
    = FileOptSticky
    | FileOptSetGID
    | FileOptSetUID
-   deriving (Show,Eq,Enum,EnumBitSet)
+   deriving (Show,Eq,Enum,CBitSet)
 
 type FileOptions = BitSet Word64 FileOption
 
