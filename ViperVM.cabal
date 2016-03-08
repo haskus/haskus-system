@@ -207,6 +207,7 @@ library
     ViperVM.Format.Binary.BitFields
     ViperVM.Format.Binary.BitPut
     ViperVM.Format.Binary.BitField
+    ViperVM.Format.Binary.Enum
     ViperVM.Format.Binary.Endianness
     ViperVM.Format.Binary.Get
     ViperVM.Format.Binary.Put

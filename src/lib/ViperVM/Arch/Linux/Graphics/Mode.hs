@@ -14,6 +14,7 @@ module ViperVM.Arch.Linux.Graphics.Mode
    )
 where
 
+import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import Data.Word
@@ -23,8 +24,9 @@ import Foreign.C.String
    , castCharToCChar
    )
 import qualified ViperVM.Format.Binary.Vector as Vec
+import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.Enum
 
-import ViperVM.Format.Binary.BitSet
 import ViperVM.Arch.Linux.Graphics.Internals
 
 -- | Display mode
@@ -61,7 +63,8 @@ fromStructMode :: StructMode -> Mode
 fromStructMode StructMode {..} =
    let
       extractName = takeWhile (/= '\0') . fmap castCCharToChar . Vec.toList
-      (flgs,flg3d) = toModeFlag miFlags
+      flgs  = extractField (Proxy :: Proxy "flags") miFlags
+      flg3d = fromEnumField $ extractField (Proxy :: Proxy "stereo3d") miFlags
    in Mode
       { modeClock               = miClock
       , modeHorizontalDisplay   = miHDisplay
@@ -77,7 +80,7 @@ fromStructMode StructMode {..} =
       , modeVerticalRefresh     = miVRefresh
       , modeFlags               = flgs
       , modeStereo3D            = flg3d
-      , modeType                = fromBits miType
+      , modeType                = miType
       , modeName                = extractName miName
       }
 
@@ -86,6 +89,9 @@ toStructMode Mode {..} =
    let
       modeName' = Vec.fromFilledListZ (castCharToCChar '\0')
                      (fmap castCharToCChar modeName)
+      flgs = updateField (Proxy :: Proxy "flags") modeFlags
+           $ updateField (Proxy :: Proxy "stereo3d") (toEnumField modeStereo3D)
+           $ BitFields 0
 
    in StructMode
       { miClock      = modeClock
@@ -100,7 +106,7 @@ toStructMode Mode {..} =
       , miVTotal     = modeVerticalTotal
       , miVScan      = modeVerticalScan
       , miVRefresh   = modeVerticalRefresh
-      , miFlags      = fromModeFlag modeFlags modeStereo3D
-      , miType       = toBits modeType
+      , miFlags      = flgs
+      , miType       = modeType
       , miName       = modeName'
       }

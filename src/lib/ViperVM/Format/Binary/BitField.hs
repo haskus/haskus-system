@@ -35,17 +35,17 @@
 -- You can extract and update the value of a field by its name:
 --
 -- @
--- x = extractField w (Proxy :: Proxy "X")
--- z = extractField w (Proxy :: Proxy "Z")
--- w' = updateField w (Proxy :: Proxy "Y") 0x5566
+-- x = extractField (Proxy :: Proxy "X") w
+-- z = extractField (Proxy :: Proxy "Z") w
+-- w' = updateField (Proxy :: Proxy "Y") 0x5566 w
 -- @
 --
 -- Fields can also be 'BitSet'.
 module ViperVM.Format.Binary.BitField
    ( BitFields (..)
    , BitField (..)
-   , Cons (..)
-   , Nil (..)
+   , Cons
+   , Nil
    , extractField
    , updateField
    )
@@ -58,16 +58,30 @@ import GHC.TypeLits
 import Data.Proxy
 import Numeric
 import Foreign.Storable
+import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Enum
 
 -- | Bit fields on a base type b
-data BitFields b fields = BitFields !b
+newtype BitFields b fields = BitFields b deriving (Storable)
+
+instance Storable b => CStorable (BitFields b fields) where
+   cPeek      = peek
+   cPoke      = poke
+   cAlignment = alignment
+   cSizeOf    = sizeOf
 
 instance (Integral b, Show b) => Show (BitFields b fields) where
    show (BitFields w) = "0x" ++ showHex w ""
 
 -- | A field of n bits
 newtype BitField (n :: Nat) (name :: Symbol) s = BitField s deriving (Storable)
+
+instance Storable s => CStorable (BitField n name s) where
+   cPeek      = peek
+   cPoke      = poke
+   cAlignment = alignment
+   cSizeOf    = sizeOf
 
 type family BitSize a :: Nat
 type instance BitSize Word8  = 8
@@ -101,8 +115,8 @@ type family WholeSize fs :: Nat where
    WholeSize (Cons (BitField n name s) xs)  = n + WholeSize xs
 
 
-data Cons x xs = Cons
-data Nil = Nil
+data Cons x xs
+data Nil
 
 class Field f where
    fromField :: Integral b => f -> b
@@ -158,6 +172,10 @@ instance Integral b => Field (BitSet b a) where
    fromField = fromIntegral . BitSet.toBits
    toField   = BitSet.fromBits . fromIntegral
 
+instance Enum a => Field (EnumField b a) where
+   fromField = fromIntegral . fromEnum . fromEnumField
+   toField   = toEnumField . toEnum . fromIntegral
+
 
 extractField :: forall name fields b .
    ( KnownNat (Offset name fields)
@@ -165,8 +183,8 @@ extractField :: forall name fields b .
    , WholeSize fields ~ BitSize b
    , Bits b, Integral b
    , Field (Output name fields)
-   ) => BitFields b fields -> Proxy name -> Output name fields
-extractField (BitFields w) _ = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
+   ) => Proxy name -> BitFields b fields -> Output name fields
+extractField _ (BitFields w) = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
    where
       off = natVal (Proxy :: Proxy (Offset name fields))
       sz  = natVal (Proxy :: Proxy (Size name fields))
@@ -179,8 +197,8 @@ updateField :: forall name fields b .
    , WholeSize fields ~ BitSize b
    , Bits b, Integral b
    , Field (Output name fields)
-   ) => BitFields b fields -> Proxy name -> Output name fields -> BitFields b fields
-updateField (BitFields w) _ value = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
+   ) => Proxy name -> Output name fields -> BitFields b fields -> BitFields b fields
+updateField _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
    where
       off  = fromIntegral $ natVal (Proxy :: Proxy (Offset name fields))
       sz   = natVal (Proxy :: Proxy (Size name fields))

@@ -12,8 +12,7 @@ module ViperVM.Arch.Linux.Graphics.Internals
    , ModeFlag (..)
    , ModeFlags
    , Stereo3D (..)
-   , toModeFlag
-   , fromModeFlag
+   , ModeFlagsStereo3D
    , PowerState(..)
    , ScalingMode(..)
    , AspectMode(..)
@@ -130,6 +129,8 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
+import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.Enum
 
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
@@ -181,6 +182,8 @@ data ModeFlag
    | ModeFlagClockDiv2
    deriving (Show,Enum,EnumBitSet)
 
+type ModeFlags = BitSet Word32 ModeFlag
+
 data Stereo3D
    = Stereo3DNone
    | Stereo3DFramePacking
@@ -193,20 +196,10 @@ data Stereo3D
    | Stereo3DSideBySideHalf
    deriving (Show,Enum)
 
-type ModeFlags = BitSet Word32 ModeFlag
-
-toModeFlag :: Word32 -> (ModeFlags,Stereo3D)
-toModeFlag x = (flgs, flg3d)
-   where
-      -- normal flags are in a bitset (14 bits)
-      flgs = BitSet.fromBits (x .&. 0x3FFF)
-      -- 3D flags are values shifted (14 bits)
-      flg3d = toEnum (fromIntegral (x `shiftR` 14))
-
-fromModeFlag :: ModeFlags -> Stereo3D -> Word32
-fromModeFlag flgs flg3d =
-   BitSet.toBits flgs .|. fromIntegral (fromEnum flg3d)
-
+type ModeFlagsStereo3D = BitFields Word32
+   (Cons (BitField 18 "stereo3d" (EnumField Word32 Stereo3D))
+   (Cons (BitField 14 "flags"    ModeFlags)
+   Nil))
 
 -- | DPMS flags
 data PowerState 
@@ -259,10 +252,12 @@ data StructMode = StructMode
    , miVTotal     :: Word16
    , miVScan      :: Word16
    , miVRefresh   :: Word32
-   , miFlags      :: Word32
-   , miType       :: Word32
+   , miFlags      :: ModeFlagsStereo3D
+   , miType       :: ModeTypes
    , miName       :: Vector 32 CChar
-   } deriving (Generic,CStorable)
+   } deriving (Generic)
+
+instance CStorable StructMode
 
 instance Storable StructMode where
    sizeOf      = cSizeOf
@@ -271,7 +266,7 @@ instance Storable StructMode where
    peek        = cPeek
 
 emptyStructMode :: StructMode
-emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (Vector.replicate (castCharToCChar '\0'))
+emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 (BitFields 0) BitSet.empty (Vector.replicate (castCharToCChar '\0'))
 
 -----------------------------------------------------------------------------
 -- Resources
