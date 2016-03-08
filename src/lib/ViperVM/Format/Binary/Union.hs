@@ -10,16 +10,14 @@
 
 -- | Union (as in C)
 --
--- Unions are storable and can contain any storable data. Currently there are
--- Union2, Union3 and Union4 (respectively to contain 2, 3 or 4 members). We
--- could easily extend this to 5+ members.
+-- Unions are storable and can contain any storable data.
 -- 
 -- Use 'fromUnion' to read a alternative:
 --
 -- @
 -- {-# LANGUAGE DataKinds #-}
 --
--- getUnion :: IO (Union3 Word16 Word32 Word64)
+-- getUnion :: IO (Union '[Word16 Word32 Word64])
 -- getUnion = ...
 --
 -- test = do
@@ -38,17 +36,18 @@
 -- @
 --
 -- let
---    u2 :: Union2 Word32 (Vector 4 Word8)
+--    u2 :: Union '[Word32, Vector 4 Word8]
 --    u2 = toUnion (0x12345678 :: Word32)
 -- @
 module ViperVM.Format.Binary.Union
    ( Union
    , fromUnion
    , toUnion
+   , toUnionZero
    )
 where
 
-import ViperVM.Utils.Memory (memCopy)
+import ViperVM.Utils.Memory (memCopy, memSet)
 
 import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
@@ -56,34 +55,67 @@ import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr
 import Foreign.Ptr
-import Data.Word
 import System.IO.Unsafe (unsafePerformIO)
+import Control.Monad (when)
 
-data Union xs = Union !Word64 !(ForeignPtr ()) deriving (Show)
+-- | An union 
+--
+-- We use a list of types as a parameter.
+--
+-- The union is just a pointer to a buffer containing the value(s). The size of
+-- the buffer is implicitly known from the types in the list.
+newtype Union (x :: [*]) = Union (ForeignPtr ()) deriving (Show)
 
+-- | Check that a type is member of a type list
 type family IsMember a l :: Bool where
    IsMember a (a ': l) = 'True
    IsMember a (b ': l) = IsMember a l
 
--- | Retrieve a union member from its index
-fromUnion :: (Storable a, IsMember a l ~ 'True) => Union (HList l) -> a
-fromUnion (Union _ fp) = unsafePerformIO $ withForeignPtr fp (peek . castPtr)
+-- | Retrieve a union member from its type
+fromUnion :: (Storable a, IsMember a l ~ 'True) => Union l -> a
+fromUnion (Union fp) = unsafePerformIO $ withForeignPtr fp (peek . castPtr)
 
--- | Create a new union
-toUnion :: forall a l . (Storable (Union (HList l)), Storable a, IsMember a l ~ 'True) => a -> Union (HList l)
-toUnion v = unsafePerformIO $ do
-   fp <- mallocForeignPtr :: IO (ForeignPtr (Union (HList l)))
-   withForeignPtr fp $ \p -> 
+-- | Create a new union from one of the union types
+toUnion :: forall a l . (Storable (Union l), Storable a, IsMember a l ~ 'True) => a -> Union l
+toUnion = toUnion' False
+
+-- | Like 'toUnion' but set the remaining bytes to 0
+toUnionZero :: forall a l . (Storable (Union l), Storable a, IsMember a l ~ 'True) => a -> Union l
+toUnionZero = toUnion' True
+
+
+-- | Create a new union from one of the union types
+toUnion' :: forall a l . (Storable (Union l), Storable a, IsMember a l ~ 'True) => Bool -> a -> Union l
+toUnion' zero v = unsafePerformIO $ do
+   let sz = sizeOf (undefined :: Union l)
+   fp <- mallocForeignPtrBytes sz
+   withForeignPtr fp $ \p -> do
+      -- set bytes after the object to 0
+      when zero $ do
+         let psz = sizeOf (undefined :: a)
+         memSet (p `plusPtr` psz) (fromIntegral (sz - psz)) 0
       poke (castPtr p) v
-   return $ Union
-      (fromIntegral (sizeOf (undefined :: (Union (HList l)))))
-      (castForeignPtr fp)
+   return $ Union fp
 
-unionSize :: forall l . HFoldr' SizeOf Int l Int => Union (HList l) -> Int
-unionSize _ = hFoldr' SizeOf (0 :: Int) (undefined :: HList l)
 
-unionAlignment :: forall l . HFoldr' Alignment Int l Int => Union (HList l) -> Int
-unionAlignment _ = hFoldr' Alignment (0 :: Int) (undefined :: HList l)
+-- | Like HFoldr but only use types, not values!
+--
+-- It allows us to foldr over the list of types in the union and for each type
+-- to retrieve the alignment and the size (from Storable).
+class HFoldr' f v (l :: [*]) r where
+   hFoldr' :: f -> v -> HList l -> r
+
+instance (v ~ v') => HFoldr' f v '[] v' where
+   hFoldr'       _ v _   = v
+
+instance (ApplyAB f (e, r) r', HFoldr' f v l r) => HFoldr' f v (e ': l) r' where
+   -- compared to hFoldr, we pass undefined values instead of the values
+   -- supposedly in the list (we don't have a real list associated to HList l)
+   hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
+
+-------------------------------------------------------------------------------------
+-- Now we use HFoldr to get the maximum size and alignment of the types in the union
+-------------------------------------------------------------------------------------
 
 data SizeOf    = SizeOf
 data Alignment = Alignment
@@ -94,37 +126,35 @@ instance (r ~ Int, Storable a) => ApplyAB SizeOf (a, Int) r where
 instance (r ~ Int, Storable a) => ApplyAB Alignment (a, Int) r where
    applyAB _ (_,r) = max r (alignment (undefined :: a))
 
+-- | Get the union size (i.e. the maximum of the types in the union)
+unionSize :: forall l . HFoldr' SizeOf Int l Int => Union l -> Int
+unionSize _ = hFoldr' SizeOf (0 :: Int) (undefined :: HList l)
 
--- | Like HFoldr but only use types, not values!
+-- | Get the union alignment (i.e. the maximum of the types in the union)
+unionAlignment :: forall l . HFoldr' Alignment Int l Int => Union l -> Int
+unionAlignment _ = hFoldr' Alignment (0 :: Int) (undefined :: HList l)
 
-class HFoldr' f v (l :: [*]) r where
-    hFoldr' :: f -> v -> HList l -> r
 
-instance (v ~ v') => HFoldr' f v '[] v' where
-    hFoldr'       _ v _   = v
+-------------------------------------------------------------------------------------
+-- Finally we can write the Storable and CStorable instances
+-------------------------------------------------------------------------------------
 
-instance (ApplyAB f (e, r) r', HFoldr' f v l r)
-    => HFoldr' f v (e ': l) r' where
-    hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
-
-instance (HFoldr' SizeOf Int l Int,
-          HFoldr' Alignment Int l Int
-         ) => Storable (Union (HList l)) where
+instance (HFoldr' SizeOf Int l Int, HFoldr' Alignment Int l Int) => Storable (Union l) where
    sizeOf             = unionSize
    alignment          = unionAlignment
    peek ptr = do
-      let sz = sizeOf (undefined :: Union (HList l))
+      let sz = sizeOf (undefined :: Union l)
       fp <- mallocForeignPtrBytes sz
       withForeignPtr fp $ \p -> 
          memCopy p (castPtr ptr) (fromIntegral sz)
-      return (Union (fromIntegral sz) fp)
+      return (Union fp)
 
-   poke ptr (Union sz fp) =
+   poke ptr (Union fp) = do
+      let sz = sizeOf (undefined :: Union l)
       withForeignPtr fp $ \p ->
-         memCopy (castPtr ptr) p sz
+         memCopy (castPtr ptr) p (fromIntegral sz)
 
-
-instance (Storable (Union (HList l))) => CStorable (Union (HList l))  where
+instance (Storable (Union l)) => CStorable (Union l) where
    cPeek      = peek
    cPoke      = poke
    cAlignment = alignment
