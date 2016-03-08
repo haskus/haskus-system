@@ -172,9 +172,9 @@ instance Integral b => Field (BitSet b a) where
    fromField = fromIntegral . BitSet.toBits
    toField   = BitSet.fromBits . fromIntegral
 
-instance Enum a => Field (EnumField b a) where
-   fromField = fromIntegral . fromEnum . fromEnumField
-   toField   = toEnumField . toEnum . fromIntegral
+instance CEnum a => Field (EnumField b a) where
+   fromField = fromCEnum . fromEnumField
+   toField   = toEnumField . toCEnum
 
 
 extractField :: forall name fields b .

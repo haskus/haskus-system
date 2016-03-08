@@ -14,6 +14,7 @@ import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
+import ViperVM.Format.Binary.Enum
 
 import Data.Word
 import Control.Monad (void)
@@ -21,7 +22,7 @@ import Control.Monad (void)
 -- | Get a capability
 getCapability :: Card -> Capability -> SysRet Word64
 getCapability card cap = do
-   let s = StructGetCap (fromIntegral (fromEnum cap + 1)) 0
+   let s = StructGetCap (toEnumField cap) 0
    fmap gcValue <$> ioctlGetCapabilities (cardHandle card) s
 
 -- | Indicate if a capability is supported
@@ -37,6 +38,6 @@ setClientCapability' :: FileDescriptor -> ClientCapability -> Bool -> Sys ()
 setClientCapability' fd cap b = do
    let 
       v = if b then 1 else 0
-      s = StructSetClientCap (fromIntegral (fromEnum cap + 1)) v
+      s = StructSetClientCap (toEnumField cap) v
       m = "Set client capability " ++ show cap
    void $ sysCallWarn m (ioctlSetClientCapability fd s)

@@ -200,7 +200,7 @@ data Stereo3D
    | Stereo3DLDepthGFXGFXDepth
    | Stereo3DTopAndBottom
    | Stereo3DSideBySideHalf
-   deriving (Show,Enum)
+   deriving (Show,Enum,CEnum)
 
 type ModeFlagsStereo3D = BitFields Word32
    (Cons (BitField 18 "stereo3d" (EnumField Word32 Stereo3D))
@@ -405,7 +405,7 @@ data EncoderType
    | EncoderTypeVirtual -- ^ for virtual machine display
    | EncoderTypeDSI
    | EncoderTypeDPMST
-   deriving (Eq,Ord,Show,Enum)
+   deriving (Eq,Ord,Show,Enum,CEnum)
 
 -- | drm_mode_get_encoder
 data StructGetEncoder = StructGetEncoder
@@ -473,7 +473,7 @@ data ConnectorType
    | ConnectorTypeeDP
    | ConnectorTypeVirtual
    | ConnectorTypeDSI
-   deriving (Eq, Ord, Enum)
+   deriving (Eq, Ord, Enum, CEnum)
 
 instance Show ConnectorType where
    show x = case x of
@@ -1000,7 +1000,7 @@ data Clip = Clip
    , clipY2 :: Word16
    } deriving (Show,Eq,Generic,CStorable)
 
-instance Storable  Clip where
+instance Storable Clip where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    peek        = cPeek
@@ -1013,8 +1013,6 @@ instance Storable  Clip where
 
 
 -- | Capability
---
--- Warning: add 1 to the enum number to get the valid value
 data Capability
    = CapGenericBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
    | CapVBlankHighController
@@ -1028,6 +1026,11 @@ data Capability
    | CapAddFrameBufferModifiers
    deriving (Show,Eq,Enum)
 
+-- Add 1 to the enum number to get the valid value
+instance CEnum Capability where
+   fromCEnum = (+1) . fromIntegral . fromEnum
+   toCEnum   = toEnum . (\x -> x-1) . fromIntegral
+
 -- | drm_get_cap
 --
 -- The CURSOR_WIDTH and CURSOR_HEIGHT capabilities return a valid widthxheight
@@ -1039,7 +1042,7 @@ data Capability
 -- size.
 -- 
 data StructGetCap = StructGetCap
-   { gcCapability :: Word64
+   { gcCapability :: EnumField Word64 Capability
    , gcValue      :: Word64
    } deriving (Generic,CStorable)
 
@@ -1050,16 +1053,19 @@ instance Storable StructGetCap where
    poke      = cPoke
 
 -- | Client capabilities
---
--- Warning: add 1 to the enum number to get the valid value
 data ClientCapability
    = ClientCapStereo3D        -- ^ if set, the DRM core will expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Stereo3D)
    | ClientCapUniversalPlanes -- ^ If set, the DRM core will expose all planes (overlay, primary, and cursor) to userspace.
    | ClientCapAtomic          -- ^ If set, the DRM core will expose atomic properties to userspace
    deriving (Show,Eq,Enum)
 
+-- Add 1 to the enum number to get the valid value
+instance CEnum ClientCapability where
+   fromCEnum = (+1) . fromIntegral . fromEnum
+   toCEnum   = toEnum . (\x -> x-1) . fromIntegral
+
 data StructSetClientCap = StructSetClientCap
-   { sccCapability :: Word64
+   { sccCapability :: EnumField Word64 ClientCapability
    , sccValue      :: Word64
    } deriving (Generic,CStorable)
 
@@ -1259,5 +1265,5 @@ data SubPixel
    | SubPixelVerticalRGB
    | SubPixelVerticalBGR
    | SubPixelNone
-   deriving (Eq,Ord,Enum,Show)
+   deriving (Eq,Ord,Enum,Show,CEnum)
 
