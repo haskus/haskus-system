@@ -18,6 +18,8 @@
 -- 
 -- You define it as follows:
 -- @
+-- {-# LANGUAGE DataKinds #-}
+--
 -- w :: BitFields Word16 (Cons (BitField 5 "X" Word8) 
 --                       (Cons (BitField 9 "Y" Word16)
 --                       (Cons (BitField 2 "Z" Word8) Nil)))
@@ -26,6 +28,9 @@
 --
 -- Note that each field has its own associated type (e.g. Word8 for X and Z)
 -- that must be large enough to hold the number of bits for the field.
+--
+-- Operations on BitFields except that the cumulated size of the fields is equal
+-- to the whole word size: use a padding field if necessary.
 -- 
 -- You can extract and update the value of a field by its name:
 --
