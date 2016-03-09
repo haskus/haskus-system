@@ -4,6 +4,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 
 
 -- | Vector with size in the type
@@ -99,7 +100,8 @@ index :: forall a (n :: Nat) (m :: Nat) .
    ( KnownNat n
    , KnownNat m
    , Storable a
-   ) => Proxy n -> Vector (m+n) a -> a
+   , CmpNat n m ~ 'LT
+   ) => Proxy n -> Vector m a -> a
 index n (Vector fp o) = inlinePerformIO $ withForeignPtr fp $ \p ->
    peekByteOff p (elemOffset (undefined :: a)
       (fromIntegral o + fromIntegral (natVal n)))

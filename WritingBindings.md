@@ -70,19 +70,19 @@ v :: Vector 5 Word16
 ```
 
 Vectors are storable, so you can `peek` and `poke` them from memory.
-Alternatively, you create them from a list:
+Alternatively, you can create them from a list:
 ```haskell
 Just v = fromList [1,2,3,4,5]
 Just v = fromList [1,2,3,4,5,6] -- this fails dynamically
 Just v = fromList [1,2,3,4]     -- this fails dynamically
 
--- take at most 5 elements then fills with 0: v = [1,2,3,4,5]
+-- take at most 5 elements then fill with 0: v = [1,2,3,4,5]
 v = fromFilledList 0 [1,2,3,4,5,6]
 
--- take at most 5 elements then fills with 7: v = [1,2,3,7,7]
+-- take at most 5 elements then fill with 7: v = [1,2,3,7,7]
 v = fromFilledList 7 [1,2,3]
 
--- take at most 4 (!) elements then fills with 0: v = [1,2,3,0,0]
+-- take at most 4 (!) elements then fill with 0: v = [1,2,3,0,0]
 v = fromFilledListZ 0 [1,2,3]
 
 -- useful for zero-terminal strings: s = "too long \NUL"
@@ -108,7 +108,7 @@ v2 = V.take (Proxy :: Proxy 8) v
 -- v2 = [3,4,5]
 v2 = V.drop (Proxy :: Proxy 2) v
 
--- x = 2
+-- x = 3
 x = V.index (Proxy :: Proxy 2) v
 ```
 
