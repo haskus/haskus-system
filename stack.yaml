@@ -22,6 +22,10 @@ flags: {}
 # Extra package databases containing global packages
 extra-package-dbs: []
 
+ghc-options:
+   # GHCI needs it because of the foreign primops
+   "*": -fobject-code
+
 # Control whether we use the GHC we find on the path
 # system-ghc: true
 
