@@ -100,7 +100,7 @@ toUnion' zero v = unsafePerformIO $ do
 
 
 -------------------------------------------------------------------------------------
--- We use HFoldr to get the maximum size and alignment of the types in the union
+-- We use HFoldr' to get the maximum size and alignment of the types in the union
 -------------------------------------------------------------------------------------
 
 data SizeOf    = SizeOf

@@ -310,6 +310,8 @@ w' = updateField (Proxy :: Proxy "Y") 0x100 w
 -- w' = 0x402
 
 z = extractField (Proxy :: Proxy "XXX") w -- won't compile
+
+w'' = withField (Proxy :: Proxy "Y") (+2) w
 ```
 
 Fields can also be 'BitSet' or 'EnumField':

@@ -63,6 +63,7 @@ module ViperVM.Format.Binary.BitField
    , BitField (..)
    , extractField
    , updateField
+   , withField
    , matchFields
    )
 where
@@ -192,7 +193,7 @@ instance CEnum a => Field (EnumField b a) where
    fromField = fromCEnum . fromEnumField
    toField   = toEnumField . toCEnum
 
-
+-- | Get the value of a field
 extractField :: forall name fields b .
    ( KnownNat (Offset name fields)
    , KnownNat (Size name fields)
@@ -207,6 +208,7 @@ extractField _ (BitFields w) = toField ((w `shiftR` fromIntegral off) .&. ((1 `s
 
 {-# INLINE extractField #-}
 
+-- | Set the value of a field
 updateField :: forall name fields b .
    ( KnownNat (Offset name fields)
    , KnownNat (Size name fields)
@@ -222,9 +224,23 @@ updateField _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) 
 
 {-# INLINE updateField #-}
 
+-- | Modify the value of a field
+withField :: forall name fields b f .
+   ( KnownNat (Offset name fields)
+   , KnownNat (Size name fields)
+   , WholeSize fields ~ BitSize b
+   , Bits b, Integral b
+   , f ~ Output name fields
+   , Field f
+   ) => Proxy name -> (f -> f) -> BitFields b fields -> BitFields b fields
+withField name f bs = updateField name (f v) bs
+   where
+      v = extractField name bs
+
+{-# INLINE withField #-}
 
 -------------------------------------------------------------------------------------
--- We use HFoldr to extract each component and create a HList from it. Then we
+-- We use HFoldr' to extract each component and create a HList from it. Then we
 -- convert it into a Tuple
 -------------------------------------------------------------------------------------
 data Extract = Extract
