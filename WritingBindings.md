@@ -112,6 +112,12 @@ v2 = V.drop (Proxy :: Proxy 2) v
 x = V.index (Proxy :: Proxy 2) v
 ```
 
+Finally, you can obtain a list of the values
+```haskell
+> V.toList v
+[1,2,3,4,5]
+```
+
 ### Enums
 
 If you have a C enum (or a set of #define's) with consecutive values and
