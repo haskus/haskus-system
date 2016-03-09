@@ -79,6 +79,7 @@ import Foreign.Storable
 import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Utils.HList (HFoldr'(..))
 
 -- | Bit fields on a base type b
 newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
@@ -221,21 +222,11 @@ updateField _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) 
 
 {-# INLINE updateField #-}
 
--- | Like HFoldr but only use types, not values!
---
--- It allows us to foldr over the list of types in the union and for each type
--- to retrieve the alignment and the size (from Storable).
-class HFoldr' f v (l :: [*]) r where
-   hFoldr' :: f -> v -> HList l -> r
 
-instance (v ~ v') => HFoldr' f v '[] v' where
-   hFoldr'       _ v _   = v
-
-instance (ApplyAB f (e, r) r', HFoldr' f v l r) => HFoldr' f v (e ': l) r' where
-   -- compared to hFoldr, we pass undefined values instead of the values
-   -- supposedly in the list (we don't have a real list associated to HList l)
-   hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
-
+-------------------------------------------------------------------------------------
+-- We use HFoldr to extract each component and create a HList from it. Then we
+-- convert it into a Tuple
+-------------------------------------------------------------------------------------
 data Extract = Extract
 
 instance forall name bs b l l2 i (n :: Nat) s r w .

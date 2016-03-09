@@ -167,6 +167,7 @@ library
     ViperVM.System.Terminal
 
     ViperVM.Utils.Hash
+    ViperVM.Utils.HList
     ViperVM.Utils.EmbedByteString
     ViperVM.Utils.Memory
     ViperVM.Utils.STM.TMap

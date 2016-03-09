@@ -57,6 +57,61 @@ data StructY = StructY
    } deriving (Show,Generic,CStorable)
 ```
 
+### Arrays (or Vectors)
+
+ViperVM supports vectors: a fixed amount of Storable data correctly aligned. You
+can define a vector as follows:
+```haskell
+{-# LANGUAGE DataKinds #-}
+
+import ViperVM.Format.Binary.Vector
+
+v :: Vector 5 Word16
+```
+
+Vectors are storable, so you can 'peek' and 'poke' them from memory.
+Alternatively, you create them from a list:
+```haskell
+Just v = fromList [1,2,3,4,5]
+Just v = fromList [1,2,3,4,5,6] -- this fails dynamically
+Just v = fromList [1,2,3,4]     -- this fails dynamically
+
+-- take at most 5 elements then fills with 0: v = [1,2,3,4,5]
+v = fromFilledList 0 [1,2,3,4,5,6]
+
+-- take at most 5 elements then fills with 7: v = [1,2,3,7,7]
+v = fromFilledList 7 [1,2,3]
+
+-- take at most 4 (!) elements then fills with 0: v = [1,2,3,0,0]
+v = fromFilledListZ 0 [1,2,3]
+
+-- useful for zero-terminal strings: s = "too long \NUL"
+s :: Vector 10 CChar
+s = fromFilledListZ 0 (fmap castCharToCChar "too long string")
+```
+
+You can also safely 'drop' or 'take' elements in a vector. Be careful that the
+elements that become not accessible in the new vector are not released from
+memory until the new vector is collected too. You can also 'index' into a vector:
+```haskell
+import ViperVM.Format.Binary.Vector as V
+
+v :: Vector 5 Int
+v = fromFilledList 0 [1,2,3,4,5,6]
+
+-- v2 = [1,2]
+v2 = V.take (Proxy :: Proxy 2) v
+
+-- won't compile (8 > 5)
+v2 = V.take (Proxy :: Proxy 8) v
+
+-- v2 = [3,4,5]
+v2 = V.drop (Proxy :: Proxy 2) v
+
+-- x = 2
+x = V.index (Proxy :: Proxy 2) v
+```
+
 ### Enums
 
 If you have a C enum (or a set of #define's) with consecutive values and
@@ -117,6 +172,10 @@ ViperVM uses the CBitSet class to get the bit offset of each flag. By default,
 it uses the Enum instance to get the bit offsets as in the following example:
 
 ```haskell
+{-# LANGUAGE DeriveAnyClass #-}
+
+import ViperVM.Format.Binary.BitSet
+
 data Flag
    = FlagX  -- bit 0
    | FlagY  -- bit 1
@@ -168,6 +227,11 @@ An union provides several ways to access the same buffer of memory. To use them
 with ViperVM, you need to give the list of available representations in a type
 as follows:
 ```haskell
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+
+import ViperVM.Format.Binary.Union
+
 u :: Union '[Word8, Word64, Vector 5 Word16]
 ```
 
@@ -209,6 +273,8 @@ You define it as follows:
 ```haskell
 {-# LANGUAGE DataKinds #-}
 
+import ViperVM.Format.Binary.BitField
+
 w :: BitFields Word16 '[ BitField 5 "X" Word8 
                        , BitField 9 "Y" Word16
                        , BitField 2 "Z" Word8
@@ -235,6 +301,11 @@ z = extractField (Proxy :: Proxy "XXX") w -- won't compile
 Fields can also be 'BitSet' or 'EnumField':
 ```haskell
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
+import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.BitSet
 
 data A = A0 | A1 | A2 | A3 deriving (Show,Enum,CEnum)
 

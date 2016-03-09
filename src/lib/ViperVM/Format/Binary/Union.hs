@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 
@@ -48,6 +48,7 @@ module ViperVM.Format.Binary.Union
 where
 
 import ViperVM.Utils.Memory (memCopy, memSet)
+import ViperVM.Utils.HList (HFoldr'(..))
 
 import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
@@ -98,23 +99,8 @@ toUnion' zero v = unsafePerformIO $ do
    return $ Union fp
 
 
--- | Like HFoldr but only use types, not values!
---
--- It allows us to foldr over the list of types in the union and for each type
--- to retrieve the alignment and the size (from Storable).
-class HFoldr' f v (l :: [*]) r where
-   hFoldr' :: f -> v -> HList l -> r
-
-instance (v ~ v') => HFoldr' f v '[] v' where
-   hFoldr'       _ v _   = v
-
-instance (ApplyAB f (e, r) r', HFoldr' f v l r) => HFoldr' f v (e ': l) r' where
-   -- compared to hFoldr, we pass undefined values instead of the values
-   -- supposedly in the list (we don't have a real list associated to HList l)
-   hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
-
 -------------------------------------------------------------------------------------
--- Now we use HFoldr to get the maximum size and alignment of the types in the union
+-- We use HFoldr to get the maximum size and alignment of the types in the union
 -------------------------------------------------------------------------------------
 
 data SizeOf    = SizeOf

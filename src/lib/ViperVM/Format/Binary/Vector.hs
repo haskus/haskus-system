@@ -99,8 +99,8 @@ index :: forall a (n :: Nat) (m :: Nat) .
    ( KnownNat n
    , KnownNat m
    , Storable a
-   ) => Vector (m+n) a -> Proxy n -> a
-index (Vector fp o) n = inlinePerformIO $ withForeignPtr fp $ \p ->
+   ) => Proxy n -> Vector (m+n) a -> a
+index n (Vector fp o) = inlinePerformIO $ withForeignPtr fp $ \p ->
    peekByteOff p (elemOffset (undefined :: a)
       (fromIntegral o + fromIntegral (natVal n)))
 {-# INLINE index #-}
@@ -133,7 +133,7 @@ fromFilledList z v = unsafePerformIO $ do
       n  = List.length v
    fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))
    withForeignPtr fp $ \p -> do
-      forM_ (v `zip` [0..n-1]) $ \(e,i) ->
+      forM_ (v `zip` [0..min (n-1) (n'-1)]) $ \(e,i) ->
          pokeByteOff p (elemOffset e i) e
       forM_ [n..n'-1] $ \i ->
          pokeByteOff p (elemOffset z i) z
@@ -151,9 +151,9 @@ fromFilledListZ z v = unsafePerformIO $ do
       n  = List.length v
    fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))
    withForeignPtr fp $ \p -> do
-      forM_ (v `zip` [0..n-2]) $ \(e,i) ->
+      forM_ (v `zip` [0.. min (n-1) (n'-2)]) $ \(e,i) ->
          pokeByteOff p (elemOffset e i) e
-      forM_ [n-1..n'-1] $ \i ->
+      forM_ [min n (n'-1)..n'-1] $ \i ->
          pokeByteOff p (elemOffset z i) z
    return (Vector fp 0)
 {-# INLINE fromFilledListZ #-}
