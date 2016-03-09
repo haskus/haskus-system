@@ -69,7 +69,7 @@ import ViperVM.Format.Binary.Vector
 v :: Vector 5 Word16
 ```
 
-Vectors are storable, so you can 'peek' and 'poke' them from memory.
+Vectors are storable, so you can `peek` and `poke` them from memory.
 Alternatively, you create them from a list:
 ```haskell
 Just v = fromList [1,2,3,4,5]
@@ -90,9 +90,9 @@ s :: Vector 10 CChar
 s = fromFilledListZ 0 (fmap castCharToCChar "too long string")
 ```
 
-You can also safely 'drop' or 'take' elements in a vector. Be careful that the
+You can also safely `drop` or `take` elements in a vector. Be careful that the
 elements that become not accessible in the new vector are not released from
-memory until the new vector is collected too. You can also 'index' into a vector:
+memory until the new vector is collected too. You can also `index` into a vector:
 ```haskell
 import ViperVM.Format.Binary.Vector as V
 
@@ -242,7 +242,7 @@ u :: Union '[Word8, Word64, Vector 5 Word16]
 ```
 
 Unions are storable so you can use them as fields in storable structures or
-you can directly peek/poke them.
+you can directly `peek`/`poke` them.
 
 You can retrieve a member of the union with `fromUnion`.  The extracted type
 must be a member of the union otherwise it won't compile.
