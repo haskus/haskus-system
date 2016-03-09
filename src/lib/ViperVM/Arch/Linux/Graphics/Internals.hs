@@ -805,7 +805,7 @@ data StructControllerLut = StructControllerLut
    , clsBlue         :: Word64
    } deriving (Generic,CStorable)
 
-instance Storable  StructControllerLut where
+instance Storable StructControllerLut where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    peek        = cPeek
@@ -1248,7 +1248,7 @@ data Reflection
    deriving (Show,Eq,Enum,CBitSet)
 
 type RotateReflect = BitFields Word8
-   '[ BitField 2 "padding" Word8
+   '[ BitField 2 "padding"    Word8
     , BitField 2 "reflection" (BitSet Word8 Reflection)
     , BitField 4 "rotation"   (EnumField Word8 Rotation)
     ]

@@ -17,11 +17,11 @@ where
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Utils.Memory (allocaArrays,peekArrays)
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Either
 import Data.Word
-import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr (Ptr,ptrToWordPtr)
 import Foreign.Storable
 
@@ -57,13 +57,6 @@ getCardResources fd = runEitherT $ do
    let 
       res          = StructCardRes 0 0 0 0 0 0 0 0 0 0 0 0
  
-      -- allocate several arrays with the same type at once, call f on the list of arrays
-      allocaArrays' sizes f = go [] sizes
-         where
-            go as []     = f (reverse as)
-            go as (x:xs) = allocaArray (fromIntegral x) $ \a -> go (a:as) xs
-
-      peekArray'   = peekArray . fromIntegral
       getCard'     = EitherT . ioctlGetResources fd
 
    -- First we get the number of each resource
@@ -71,8 +64,8 @@ getCardResources fd = runEitherT $ do
 
    -- then we allocate arrays of appropriate sizes
    let arraySizes = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [res2]
-   (rawRes, retRes) <- EitherT $ allocaArrays' arraySizes $ 
-      \([fs,crs,cs,es] :: [Ptr Word32]) -> runEitherT $ do
+   (rawRes, retRes) <- EitherT $ allocaArrays arraySizes $ 
+      \(as@[fs,crs,cs,es] :: [Ptr Word32]) -> runEitherT $ do
          -- we put them in a new struct
          let
             cv = fromIntegral . ptrToWordPtr
@@ -81,18 +74,22 @@ getCardResources fd = runEitherT $ do
                         , csEncIdPtr  = cv es
                         , csConnIdPtr = cv cs
                         }
+
          -- we get the values
          res4 <- getCard' res3
-         res5 <- liftIO $ Card
-            <$> (fmap FrameBufferID <$> peekArray' (csCountFbs res2) fs)
-            <*> (fmap ControllerID  <$> peekArray' (csCountCrtcs res2) crs)
-            <*> (fmap ConnectorID   <$> peekArray' (csCountConns res2) cs)
-            <*> (fmap EncoderID     <$> peekArray' (csCountEncs res2) es)
-            <*> return (csMinWidth res4)
-            <*> return (csMaxWidth res4)
-            <*> return (csMinHeight res4)
-            <*> return (csMaxHeight res4)
-            <*> return fd
+
+         [fbs,ctrls,conns,encs] <- liftIO $ peekArrays arraySizes as
+
+         let res5 = Card
+                     (fmap FrameBufferID fbs)
+                     (fmap ControllerID  ctrls)
+                     (fmap ConnectorID   conns)
+                     (fmap EncoderID     encs)
+                     (csMinWidth res4)
+                     (csMaxWidth res4)
+                     (csMinHeight res4)
+                     (csMaxHeight res4)
+                     fd
 
          right (res4, res5)
 

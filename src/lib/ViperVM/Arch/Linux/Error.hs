@@ -3,6 +3,9 @@ module ViperVM.Arch.Linux.Error
    ( Sys
    , runSys
    , runSys'
+   , sysIO
+   , sysRun
+   , sysExec
    , Log (..)
    , LogType (..)
    , sysLog
@@ -37,8 +40,8 @@ import ViperVM.Arch.Linux.ErrorCode
 type Sys a = StateT SysState IO a
 
 data SysState = SysState
-   { sysLogCurrent :: Log         -- ^ Current log
-   , sysLogStack   :: [Log]       -- ^ Stack of logs
+   { sysLogCurrent :: Log   -- ^ Current log
+   , sysLogStack   :: [Log] -- ^ Stack of logs
    }
 
 -- | Run
@@ -53,6 +56,18 @@ runSys act = evalStateT act initState
 -- | Run and return nothing
 runSys' :: Sys a -> IO ()
 runSys' = void . runSys
+
+-- | Execute an IO action that may use the state
+sysIO :: (SysState -> IO (a,SysState)) -> Sys a
+sysIO = StateT
+
+-- | Run with an explicit state
+sysRun :: SysState -> Sys a -> IO (a, SysState)
+sysRun s f = runStateT f s
+
+-- | Exec with an explicit state
+sysExec :: SysState -> Sys a -> IO SysState
+sysExec s f = snd <$> sysRun s f
 
 -- | Called on system error
 sysOnError :: Sys a

@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Video controller management
 --
@@ -9,6 +10,7 @@ module ViperVM.Arch.Linux.Graphics.Controller
    , setController'
    , switchFrameBuffer'
    , cardControllers
+   , getControllerGamma
    -- * Low level
    , cardControllerFromID
    , fromStructController
@@ -24,6 +26,8 @@ import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Error
+import ViperVM.Utils.Memory (peekArrays,allocaArrays)
 
 -- | Video controller
 --
@@ -115,3 +119,19 @@ switchFrameBuffer' card crtcid fb flags = do
 -- | Get controllers (discard errors)
 cardControllers :: Card -> IO [Controller]
 cardControllers = cardEntities cardControllerIDs cardControllerFromID
+
+-- | Get controller gama look-up table
+getControllerGamma :: Card -> Controller -> Sys ([Word8],[Word8],[Word8])
+getControllerGamma card c = do
+   let 
+      (ControllerID cid) = controllerID c
+      sz                 = controllerGammaTableSize c
+      s                  = StructControllerLut cid sz
+
+   sysIO $ \state ->
+      allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word8]) -> do
+         let f = fromIntegral . ptrToWordPtr
+         state2 <- sysExec state $ sysCallAssert "ioctlGetGamma" $
+            ioctlGetGamma (cardHandle card) (s (f r) (f g) (f b))
+         [rs,gs,bs] <- peekArrays [sz,sz,sz] as
+         return ((rs,gs,bs),state2)
