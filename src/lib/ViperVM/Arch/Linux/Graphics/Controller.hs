@@ -128,7 +128,7 @@ getControllerGamma card c = do
       sz                 = controllerGammaTableSize c
       s                  = StructControllerLut cid sz
 
-   sysIO $ \state ->
+   sysIO' $ \state ->
       allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word8]) -> do
          let f = fromIntegral . ptrToWordPtr
          state2 <- sysExec state $ sysCallAssert "ioctlGetGamma" $

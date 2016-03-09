@@ -4,6 +4,7 @@ module ViperVM.Arch.Linux.Error
    , runSys
    , runSys'
    , sysIO
+   , sysIO'
    , sysRun
    , sysExec
    , Log (..)
@@ -58,8 +59,12 @@ runSys' :: Sys a -> IO ()
 runSys' = void . runSys
 
 -- | Execute an IO action that may use the state
-sysIO :: (SysState -> IO (a,SysState)) -> Sys a
-sysIO = StateT
+sysIO' :: (SysState -> IO (a,SysState)) -> Sys a
+sysIO' = StateT
+
+-- | Execute an IO action
+sysIO :: IO a -> Sys a
+sysIO = liftIO
 
 -- | Run with an explicit state
 sysRun :: SysState -> Sys a -> IO (a, SysState)
