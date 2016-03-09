@@ -121,17 +121,19 @@ cardControllers :: Card -> IO [Controller]
 cardControllers = cardEntities cardControllerIDs cardControllerFromID
 
 -- | Get controller gama look-up table
-getControllerGamma :: Card -> Controller -> Sys ([Word8],[Word8],[Word8])
-getControllerGamma card c = do
+getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])
+getControllerGamma c = do
    let 
+      card               = controllerCard c
       (ControllerID cid) = controllerID c
       sz                 = controllerGammaTableSize c
       s                  = StructControllerLut cid sz
 
    sysIO' $ \state ->
-      allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word8]) -> do
+      allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
          let f = fromIntegral . ptrToWordPtr
-         state2 <- sysExec state $ sysCallAssert "ioctlGetGamma" $
-            ioctlGetGamma (cardHandle card) (s (f r) (f g) (f b))
+         state2 <- sysExec state $
+            sysCallAssert "Get controller gamma look-up table" $
+               ioctlGetGamma (cardHandle card) (s (f r) (f g) (f b))
          [rs,gs,bs] <- peekArrays [sz,sz,sz] as
          return ((rs,gs,bs),state2)
