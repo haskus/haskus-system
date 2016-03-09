@@ -203,9 +203,9 @@ data Stereo3D
    deriving (Show,Enum,CEnum)
 
 type ModeFlagsStereo3D = BitFields Word32
-   (Cons (BitField 18 "stereo3d" (EnumField Word32 Stereo3D))
-   (Cons (BitField 14 "flags"    ModeFlags)
-   Nil))
+   '[ BitField 18 "stereo3d" (EnumField Word32 Stereo3D)
+    , BitField 14 "flags"    ModeFlags
+    ]
 
 -- | DPMS flags
 data PowerState 
@@ -1248,10 +1248,10 @@ data Reflection
    deriving (Show,Eq,Enum,CBitSet)
 
 type RotateReflect = BitFields Word8
-   (Cons (BitField 2 "padding" Word8)
-   (Cons (BitField 2 "reflection" (BitSet Word8 Reflection))
-   (Cons (BitField 4 "rotation"   (EnumField Word8 Rotation))
-   Nil)))
+   '[ BitField 2 "padding" Word8
+    , BitField 2 "reflection" (BitSet Word8 Reflection)
+    , BitField 4 "rotation"   (EnumField Word8 Rotation)
+    ]
 
 -----------------------------------------------------------------------------
 -- SubPixel order

@@ -20,10 +20,10 @@
 -- @
 -- {-# LANGUAGE DataKinds #-}
 --
--- w :: BitFields Word16 (Cons (BitField 5 "X" Word8) 
---                       (Cons (BitField 9 "Y" Word16)
---                       (Cons (BitField 2 "Z" Word8)
---                       Nil)))
+-- w :: BitFields Word16 '[ BitField 5 "X" Word8 
+--                        , BitField 9 "Y" Word16
+--                        , BitField 2 "Z" Word8
+--                        ]
 -- w = BitFields 0x01020304
 -- @
 --
@@ -49,10 +49,10 @@
 --
 -- data B = B0 | B1 deriving (Enum,CBitSet)
 --
--- w :: BitFields Word16 (Cons (BitField 5 "X" (EnumField Word8 A) 
---                       (Cons (BitField 9 "Y" Word16)
---                       (Cons (BitField 2 "Z" (BitSet Word8 B)
---                       Nil)))
+-- w :: BitFields Word16 '[ BitField 5 "X" (EnumField Word8 A)
+--                        , BitField 9 "Y" Word16
+--                        , BitField 2 "Z" (BitSet Word8 B)
+--                        ]
 -- w = BitFields 0x01020304
 -- @
 module ViperVM.Format.Binary.BitField
@@ -60,8 +60,6 @@ module ViperVM.Format.Binary.BitField
    , BitField (..)
    , extractField
    , updateField
-   , Cons
-   , Nil
    )
 where
 
@@ -75,10 +73,9 @@ import Foreign.Storable
 import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
-import ViperVM.Format.Binary.Common
 
 -- | Bit fields on a base type b
-newtype BitFields b fields = BitFields b deriving (Storable)
+newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
 
 instance Storable b => CStorable (BitFields b fields) where
    cPeek      = peek
@@ -106,28 +103,28 @@ type instance BitSize Word64 = 64
 
 -- | Get the bit offset of a field from its name
 type family Offset (name :: Symbol) fs :: Nat where
-   Offset name (Cons (BitField n name s) xs)  = AddOffset xs
-   Offset name (Cons (BitField n name2 s) xs) = Offset name xs
+   Offset name (BitField n name  s ': xs) = AddOffset xs
+   Offset name (BitField n name2 s ': xs) = Offset name xs
 
 type family AddOffset fs :: Nat where
-   AddOffset Nil = 0
-   AddOffset (Cons (BitField n name s) Nil) = n
-   AddOffset (Cons (BitField n name s) xs)  = n + AddOffset xs
+   AddOffset '[]                        = 0
+   AddOffset '[BitField n name s]       = n
+   AddOffset (BitField n name s ': xs)  = n + AddOffset xs
 
 -- | Get the type of a field from its name
 type family Output (name :: Symbol) fs :: * where
-   Output name (Cons (BitField n name s) xs)  = s
-   Output name (Cons (BitField n name2 s) xs) = Output name xs
+   Output name (BitField n name  s ': xs) = s
+   Output name (BitField n name2 s ': xs) = Output name xs
 
 -- | Get the size of a field from it name
 type family Size (name :: Symbol) fs :: Nat where
-   Size name (Cons (BitField n name s) xs)  = n
-   Size name (Cons (BitField n name2 s) xs) = Size name xs
+   Size name (BitField n name  s ': xs) = n
+   Size name (BitField n name2 s ': xs) = Size name xs
 
 -- | Get the whole size of a BitFields
 type family WholeSize fs :: Nat where
-   WholeSize Nil                            = 0
-   WholeSize (Cons (BitField n name s) xs)  = n + WholeSize xs
+   WholeSize '[]                        = 0
+   WholeSize (BitField n name s ': xs)  = n + WholeSize xs
 
 
 class Field f where
