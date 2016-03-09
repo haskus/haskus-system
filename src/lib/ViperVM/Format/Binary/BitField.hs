@@ -1,11 +1,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Bit fields (as in C)
 --
@@ -24,7 +27,7 @@
 --                        , BitField 9 "Y" Word16
 --                        , BitField 2 "Z" Word8
 --                        ]
--- w = BitFields 0x01020304
+-- w = BitFields 0x0102
 -- @
 --
 -- Note that each field has its own associated type (e.g. Word8 for X and Z)
@@ -38,7 +41,7 @@
 -- @
 -- x = extractField (Proxy :: Proxy "X") w
 -- z = extractField (Proxy :: Proxy "Z") w
--- w' = updateField (Proxy :: Proxy "Y") 0x5566 w
+-- w' = updateField (Proxy :: Proxy "Y") 0x16 w
 -- @
 --
 -- Fields can also be 'BitSet' or 'EnumField':
@@ -53,16 +56,19 @@
 --                        , BitField 9 "Y" Word16
 --                        , BitField 2 "Z" (BitSet Word8 B)
 --                        ]
--- w = BitFields 0x01020304
+-- w = BitFields 0x0102
 -- @
 module ViperVM.Format.Binary.BitField
    ( BitFields (..)
    , BitField (..)
    , extractField
    , updateField
+   , matchFields
    )
 where
 
+import Data.HList.FakePrelude (ApplyAB(..))
+import Data.HList.HList
 import Data.Word
 import Data.Int
 import Data.Bits
@@ -214,3 +220,51 @@ updateField _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) 
       mask = ((1 `shiftL` fromIntegral sz) - 1) `shiftL` off
 
 {-# INLINE updateField #-}
+
+-- | Like HFoldr but only use types, not values!
+--
+-- It allows us to foldr over the list of types in the union and for each type
+-- to retrieve the alignment and the size (from Storable).
+class HFoldr' f v (l :: [*]) r where
+   hFoldr' :: f -> v -> HList l -> r
+
+instance (v ~ v') => HFoldr' f v '[] v' where
+   hFoldr'       _ v _   = v
+
+instance (ApplyAB f (e, r) r', HFoldr' f v l r) => HFoldr' f v (e ': l) r' where
+   -- compared to hFoldr, we pass undefined values instead of the values
+   -- supposedly in the list (we don't have a real list associated to HList l)
+   hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
+
+data Extract = Extract
+
+instance forall name bs b l l2 i (n :: Nat) s r w .
+   ( bs ~ BitFields w l     -- the bitfields
+   , b ~ BitField n name s  -- the current field
+   , i ~ (bs, HList l2)     -- input type
+   , r ~ (bs, HList (Output name l ': l2))     -- result typ
+   , BitSize w ~ WholeSize l
+   , Integral w, Bits w
+   , KnownNat (Offset name l)
+   , KnownNat (Size name l)
+   , Field (Output name l)
+   ) => ApplyAB Extract (b, i) r where
+      applyAB _ (_, (bs,xs)) =
+         (bs, HCons (extractField (Proxy :: Proxy name) bs) xs)
+
+
+matchFields' :: forall l l2 w bs .
+   ( bs ~ BitFields w l
+   , HFoldr' Extract (bs, HList '[]) l (bs, HList l2)
+   ) => bs -> HList l2
+matchFields' bs = snd res
+   where
+      res :: (bs, HList l2)
+      res = hFoldr' Extract ((bs, HNil) :: (bs, HList '[])) (undefined :: HList l)
+
+matchFields :: forall l l2 w bs t .
+   ( bs ~ BitFields w l
+   , HFoldr' Extract (bs, HList '[]) l (bs, HList l2)
+   , HTuple l2 t
+   ) => bs -> t
+matchFields = hToTuple . matchFields'

@@ -60,7 +60,7 @@ data StructY = StructY
 ### Enums
 
 If you have a C enum (or a set of #define's) with consecutive values and
-starting at 0, you can do:
+starting from 0, you can do:
 
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
@@ -74,7 +74,7 @@ data MyEnum
    deriving (Show,Eq,Enum,CEnum)
 ```
 
-If the values are not consecutive or don't start a 0, you can write your own
+If the values are not consecutive or don't start from 0, you can write your own
 CEnum instance:
 
 ```haskell
@@ -93,8 +93,8 @@ data StructZ = StructZ
 ```
 
 The first type parameter of EnumField indicates the backing word type (i.e. the
-size of field in the structure). For instance, you can use Word8, Word16, Word32
-and Word64.
+size of the field in the structure). For instance, you can use Word8, Word16,
+Word32 and Word64.
 
 To create or extract an EnumField, use the methods:
 
@@ -113,7 +113,8 @@ We often use flags that are combined in a single word. Each flag is associated
 to a bit of the word: if the bit is set the flag is active, otherwise the flag
 isn't active.
 
-ViperVM uses CEnum to get the bit position of flags as in the following example:
+ViperVM uses the CBitSet class to get the bit offset of each flag. By default,
+it uses the Enum instance to get the bit offsets as in the following example:
 
 ```haskell
 data Flag
@@ -142,8 +143,8 @@ data StructZ = StructZ
 ```
 
 The first type parameter of BitSet indicates the backing word type (i.e. the
-size of field in the structure). For instance, you can use Word8, Word16, Word32
-and Word64.
+size of the field in the structure). For instance, you can use Word8, Word16,
+Word32 and Word64.
 
 Use the following methods to manipulate the BitSet:
 
@@ -158,39 +159,41 @@ intersection :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
 union        :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
 ```
  
-Note that we don't check if bit offsets are outside of b.
+Note that we don't check if bit offsets are outside of the backing word. You
+have to choose a backing word that is large enough.
 
 ### Unions
 
 An union provides several ways to access the same buffer of memory. To use them
 with ViperVM, you need to give the list of available representations in a type
 as follows:
-
 ```haskell
-u :: Union '[Word8,Word64,Vector 5 Word16]
+u :: Union '[Word8, Word64, Vector 5 Word16]
 ```
 
 Unions are storable so you can use them as fields in storable structures or
-directly peek/poke them.
+you can directly peek/poke them.
 
-You can retrieve a member of the union with `fromUnion`:
+You can retrieve a member of the union with `fromUnion`.  The extracted type
+must be a member of the union otherwise it won't compile.
 ```haskell
 fromUnion u :: Word64
+fromUnion u :: Word8
+fromUnion u :: Vector 5 Word16
+fromUnion u :: Word32 -- won't compile!
 ```
-The extracted type must be a member of the union otherwise it won't compile.
 
-To create a new union from one of its member, use `toUnion` or `toUnionZero`:
+To create a new union from one of its member, use `toUnion` or `toUnionZero`.
+The latter set the remaining bytes of the buffer to 0. In the example, the union
+uses 10 bytes (5 * 2 for Vector 5 Word16) and we write 8 bytes (sizeOf Word64)
+hence there are two bytes that can be left uninitialized (toUnion) or set to 0
+(toUnionZero).
 ```haskell
 u :: Union '[Word8,Word64,Vector 5 Word16]
 u = toUnion (0x1122334455667788 :: Word64)
 -- or
 u = toUnionZero (0x1122334455667788 :: Word64)
 ```
-
-The latter set the remaining bytes of the buffer to 0. In the example, the union
-uses 10 bytes (5 * 2 for Vector 5 Word16) and we write 8 bytes (sizeOf Word64)
-hence there are two bytes that can be left uninitialized (toUnion) or set to 0
-(toUnionZero).
 
 
 ### Bit fields
@@ -225,19 +228,30 @@ You can extract and update the value of a field by its name:
 x = extractField (Proxy :: Proxy "X") w
 z = extractField (Proxy :: Proxy "Z") w
 w' = updateField (Proxy :: Proxy "Y") 0x5566 w
+
+z = extractField (Proxy :: Proxy "XXX") w -- won't compile
 ```
 
 Fields can also be 'BitSet' or 'EnumField':
 ```haskell
 {-# LANGUAGE DataKinds #-}
 
-data A = A0 | A1 | A2 | A3 deriving (Enum,CEnum)
+data A = A0 | A1 | A2 | A3 deriving (Show,Enum,CEnum)
 
-data B = B0 | B1 deriving (Enum,CBitSet)
+data B = B0 | B1 deriving (Show,Enum,CBitSet)
 
 w :: BitFields Word16 '[ BitField 5 "X" (EnumField Word8 A)
                        , BitField 9 "Y" Word16
                        , BitField 2 "Z" (BitSet Word8 B)
                        ]
-w = BitFields 0x01020304
+w = BitFields 0x1503
+```
+
+BitFields are storable and can be used in storable structures.
+
+You can easily pattern-match on all the fields at the same time with
+`matchFields`. It creates a tuple containing one value per field.
+```haskell
+> matchFields w
+(EnumField A2,320,fromList [B0,B1])
 ```
