@@ -254,15 +254,21 @@ fromUnion u :: Word32 -- won't compile!
 ```
 
 To create a new union from one of its member, use `toUnion` or `toUnionZero`.
-The latter set the remaining bytes of the buffer to 0. In the example, the union
+The latter sets the remaining bytes of the buffer to 0. In the example, the union
 uses 10 bytes (5 * 2 for Vector 5 Word16) and we write 8 bytes (sizeOf Word64)
 hence there are two bytes that can be left uninitialized (toUnion) or set to 0
 (toUnionZero).
 ```haskell
 u :: Union '[Word8,Word64,Vector 5 Word16]
 u = toUnion (0x1122334455667788 :: Word64)
+
+> print (fromUnion u :: Vector 5 Word16)
+fromList [30600,21862,13124,4386,49850]
+
 -- or
 u = toUnionZero (0x1122334455667788 :: Word64)
+> print (fromUnion u :: Vector 5 Word16)
+fromList [30600,21862,13124,4386,0]
 ```
 
 
@@ -280,12 +286,13 @@ You define it as follows:
 {-# LANGUAGE DataKinds #-}
 
 import ViperVM.Format.Binary.BitField
+import Data.Proxy
 
 w :: BitFields Word16 '[ BitField 5 "X" Word8 
                        , BitField 9 "Y" Word16
                        , BitField 2 "Z" Word8
                        ]
-w = BitFields 0x01020304
+w = BitFields 0x0102
 ```
 
 Note that each field has its own associated type (e.g. Word8 for X and Z)
@@ -299,7 +306,8 @@ You can extract and update the value of a field by its name:
 ```haskell
 x = extractField (Proxy :: Proxy "X") w
 z = extractField (Proxy :: Proxy "Z") w
-w' = updateField (Proxy :: Proxy "Y") 0x5566 w
+w' = updateField (Proxy :: Proxy "Y") 0x100 w
+-- w' = 0x402
 
 z = extractField (Proxy :: Proxy "XXX") w -- won't compile
 ```
