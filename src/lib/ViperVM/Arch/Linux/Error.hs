@@ -6,6 +6,7 @@ module ViperVM.Arch.Linux.Error
    , sysIO
    , sysIO'
    , sysRun
+   , sysRun'
    , sysExec
    , Log (..)
    , LogType (..)
@@ -69,6 +70,13 @@ sysIO = liftIO
 -- | Run with an explicit state
 sysRun :: SysState -> Sys a -> IO (a, SysState)
 sysRun s f = runStateT f s
+
+-- | Run with an explicit state
+sysRun' :: SysState -> Sys a -> IO ((), SysState)
+sysRun' s f = do
+   (_, s2) <- runStateT f s
+   return ((),s2)
+
 
 -- | Exec with an explicit state
 sysExec :: SysState -> Sys a -> IO SysState

@@ -11,6 +11,7 @@ module ViperVM.Arch.Linux.Graphics.Controller
    , switchFrameBuffer'
    , cardControllers
    , getControllerGamma
+   , setControllerGamma
    -- * Low level
    , cardControllerFromID
    , fromStructController
@@ -27,7 +28,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
-import ViperVM.Utils.Memory (peekArrays,allocaArrays)
+import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 
 -- | Video controller
 --
@@ -137,3 +138,21 @@ getControllerGamma c = do
                ioctlGetGamma (cardHandle card) (s (f r) (f g) (f b))
          [rs,gs,bs] <- peekArrays [sz,sz,sz] as
          return ((rs,gs,bs),state2)
+
+-- | Set controller gama look-up table
+setControllerGamma :: Controller -> ([Word16],[Word16],[Word16]) -> Sys ()
+setControllerGamma c (rs,gs,bs) = do
+   let 
+      card               = controllerCard c
+      (ControllerID cid) = controllerID c
+      sz'                = controllerGammaTableSize c
+      sz                 = fromIntegral sz'
+      s                  = StructControllerLut cid sz'
+      ss                 = [take sz rs,take sz gs, take sz bs]
+
+   sysIO' $ \state ->
+      withArrays ss $ \[r,g,b] -> do
+         let f = fromIntegral . ptrToWordPtr
+         sysRun' state $
+            sysCallAssert "Set controller gamma look-up table" $
+               ioctlSetGamma (cardHandle card) (s (f r) (f g) (f b))
