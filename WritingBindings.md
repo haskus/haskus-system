@@ -337,8 +337,12 @@ w = BitFields 0x1503
 BitFields are storable and can be used in storable structures.
 
 You can easily pattern-match on all the fields at the same time with
-`matchFields`. It creates a tuple containing one value per field.
+`matchFields` and `matchNamedFields`. It creates a tuple containing one value
+(and its name with `matchNamedFields`) per field.
 ```haskell
 > matchFields w
 (EnumField A2,320,fromList [B0,B1])
+
+> matchNamedFields  w
+(("X",EnumField A2),("Y",320),("Z",fromList [B0,B1]))
 ```
