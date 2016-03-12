@@ -21,10 +21,13 @@ module ViperVM.Arch.X86_64.Cpuid
    ( Cpuid
    , initCpuid
    , cpuid
+   , Feature (..)
    , ProcInfo
    , procInfo
    , procVendor
    , procBrand
+   , ExtendedFeature (..)
+   , procExtFeatures
    )
    where
 
@@ -57,6 +60,13 @@ cpuid (W32# n) =
    case (cpuid# n) of 
       (# a,b,c,d #) -> ( W32# a, W32# b, W32# c, W32# d )
 
+foreign import prim "x86_64_cpuid2_primop" cpuid2# :: Word# -> Word# -> (# Word#, Word#, Word#, Word# #)
+
+cpuid2 :: Word32 -> Word32 -> (Word32, Word32, Word32, Word32)
+cpuid2 (W32# eax) (W32# ecx) = 
+   case (cpuid2# eax ecx) of 
+      (# a,b,c,d #) -> ( W32# a, W32# b, W32# c, W32# d )
+
 #else
 
 --------------------------------------------------
@@ -66,7 +76,7 @@ cpuid (W32# n) =
 import Foreign.Marshal.Array
 import System.IO.Unsafe (unsafePerformIO)
 
-foreign import ccall "x86_64_cpuid_ffi" cpuid_ :: Word32 -> Ptr Word32 -> IO ()
+foreign import ccall unsafe "x86_64_cpuid_ffi" cpuid_ :: Word32 -> Ptr Word32 -> IO ()
 
 cpuid :: Word32 -> (Word32, Word32, Word32, Word32)
 cpuid x = unsafePerformIO $
@@ -75,6 +85,14 @@ cpuid x = unsafePerformIO $
       [a,b,c,d] <- peekArray 4 arr
       return (a, b, c, d)
 
+foreign import ccall unsafe "x86_64_cpuid2_ffi" cpuid2_ :: Word32 -> Word32 -> Ptr Word32 -> IO ()
+
+cpuid :: Word32 -> Word32 -> (Word32, Word32, Word32, Word32)
+cpuid eax ecx = unsafePerformIO $
+   allocaArray 4 $ \ptr -> do
+      cpuid_ eax ecx ptr
+      [a,b,c,d] <- peekArray 4 arr
+      return (a, b, c, d)
 
 #endif
 
@@ -203,3 +221,48 @@ procInfo = (BitFields a, BitSet.fromBits fs)
    where
       (a,_,c,d) = cpuid 0x01
       fs = (fromIntegral c `shiftL` 32) .|. fromIntegral d
+
+
+data ExtendedFeature
+   = FeatureFsGsBase
+   | FeatureTscAdjust
+   | FeatureSGX
+   | FeatureBMI1
+   | FeatureHLE
+   | FeatureAVX2
+   | FeatureReserved3
+   | FeatureSMEP
+   | FeatureBMI2
+   | FeatureERMS
+   | FeatureINVPCID
+   | FeatureRTM
+   | FeaturePQM
+   | FeatureFPUCSDS
+   | FeatureMPX
+   | FeaturePQE
+   | FeatureAVX512F
+   | FeatureAVX512DQ
+   | FeatureRDSEED
+   | FeatureADX
+   | FeatureSMAP
+   | FeatureAVX512IFMA
+   | FeaturePCOMMIT
+   | FeatureCLFLUSHOPT
+   | FeatureCLWB
+   | FeaturePTRACE
+   | FeatureAVX512PF
+   | FeatureAVX512ER
+   | FeatureAVX512CD
+   | FeatureSHA
+   | FeatureAVX512BW
+   | FeatureAVX512VL
+   | FeaturePREFETCHWT1
+   | FeatureAVX512VBMI
+   deriving (Show,Eq,Enum,CBitSet)
+
+-- | Processor info and feature bits
+procExtFeatures :: BitSet Word64 ExtendedFeature
+procExtFeatures = BitSet.fromBits fs
+   where
+      (_,b,c,_) = cpuid2 7 0
+      fs = ((fromIntegral c .&. 0x03) `shiftL` 32) .|. fromIntegral b

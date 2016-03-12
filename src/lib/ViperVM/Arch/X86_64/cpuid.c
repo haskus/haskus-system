@@ -28,6 +28,21 @@ void x86_64_cpuid_primop() {
    );
 }
 
+/* CPUID with EAX and ECX as parameters */
+void x86_64_cpuid2_primop() {
+   asm (
+      "movq %%rbx, %%rax\n\t"
+      "movq %%r14, %%rcx\n\t"
+      "cpuid\n\t"
+      "movq %%rbx, %%r14\n\t"
+      "movq %%rax, %%rbx\n\t"
+      "movq %%rdx, %%rdi\n\t"
+      "movq %%rcx, %%rsi\n\t"
+      "jmp * (%%rbp)\n\t"
+      ::: 
+   );
+}
+
 /*************************************************
  * Convertion between x86-64 calling convention
  * and CPUID instruction
@@ -50,9 +65,26 @@ void x86_64_cpuid_ffi() {
       "cpuid\n\t"
       "mov %%eax, (%%rsi)\n\t"
       "mov %%ebx, 0x04(%%rsi)\n\t"
-      "mov %%edx, 0x08(%%rsi)\n\t"
-      "mov %%ecx, 0x0c(%%rsi)\n\t"
+      "mov %%edx, 0x0c(%%rsi)\n\t"
+      "mov %%ecx, 0x08(%%rsi)\n\t"
       "movq %%r8, %%rbx\n\t" // restore RBX
+      :::
+   );
+}
+
+void x86_64_cpuid2_ffi() {
+   asm (
+      "movq %%rdi, %%rax\n\t"
+      "movq %%rbx, %%r8\n\t" //save RBX
+      "movq %%rcx, %%r9\n\t" //save RCX
+      "movq %%rsi, %%rcx\n\t"
+      "cpuid\n\t"
+      "mov %%eax, (%%rsi)\n\t"
+      "mov %%ebx, 0x04(%%rsi)\n\t"
+      "mov %%edx, 0x0c(%%rsi)\n\t"
+      "mov %%ecx, 0x08(%%rsi)\n\t"
+      "movq %%r8, %%rbx\n\t" // restore RBX
+      "movq %%r9, %%rcx\n\t" // restore RBX
       :::
    );
 }
