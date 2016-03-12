@@ -1,6 +1,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeOperators #-}
 
 #ifdef __GLASGOW_HASKELL__
 {-# LANGUAGE GHCForeignImportPrim, 
@@ -24,14 +28,18 @@ module ViperVM.Arch.X86_64.Cpuid
    )
    where
 
+import GHC.TypeLits
 import Data.Text (Text)
 import Data.Bits
-import qualified Data.Text.Encoding as Text
-import qualified Data.ByteString as BS
+import qualified Data.Text as Text
+import Foreign.C.String (castCCharToChar)
+import Foreign.C.Types
 
-import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Union
+import ViperVM.Format.Binary.Vector as V
+import ViperVM.Utils.Tuples (fromTuple4)
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -81,26 +89,35 @@ initCpuid = Cpuid x
    where
       (x,_,_,_) = cpuid 0
 
+-- | Convert a vector of values into a Text
+valToText :: forall (n :: Nat)  (m :: Nat) .
+   ( m ~ (n GHC.TypeLits.* 4)
+   , KnownNat n
+   , KnownNat m
+   )
+   => Vector n Word32 -> Text
+valToText xs = Text.pack (fmap castCCharToChar (V.toList v))
+   where
+      u :: Union '[Vector n Word32 , Vector m CChar]
+      u = toUnion xs
+
+      v :: Vector m CChar
+      v = fromUnion u
 
 procVendor :: Text
-procVendor = Text.decodeUtf8 $ runPut $ do
-   let (_,b,c,d) = cpuid 0x00
-   putWord32le b
-   putWord32le d
-   putWord32le c
+procVendor = valToText xs
+   where 
+      (_,b,c,d) = cpuid 0x00
+      xs = V.fromFilledList 0 [b,d,c] :: Vector 3 Word32
 
 procBrand :: Text
-procBrand = Text.decodeUtf8 $ BS.takeWhile (/= 0) $ runPut $ do
-   -- TODO: add feature check
-   let f x = do
-         let (a,b,c,d) = cpuid x
-         putWord32le a
-         putWord32le b
-         putWord32le c
-         putWord32le d
-   f 0x80000002
-   f 0x80000003
-   f 0x80000004
+procBrand = valToText xs
+   where
+      -- TODO: add feature check
+      x  = fromTuple4 (cpuid 0x80000002)
+      y  = fromTuple4 (cpuid 0x80000003)
+      z  = fromTuple4 (cpuid 0x80000004)
+      xs = V.fromFilledList 0 (x++y++z) :: Vector 12 Word32
 
 
 type ProcInfo = BitFields Word32
@@ -181,9 +198,7 @@ data Feature
    deriving (Show,Eq,Enum,CBitSet)
 
 -- | Processor info and feature bits
---
--- TODO: add feature bits
-procInfo :: (ProcInfo,BitSet Word64 Feature)
+procInfo :: (ProcInfo, BitSet Word64 Feature)
 procInfo = (BitFields a, BitSet.fromBits fs)
    where
       (a,_,c,d) = cpuid 0x01
