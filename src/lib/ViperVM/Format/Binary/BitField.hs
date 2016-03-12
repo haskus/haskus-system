@@ -65,6 +65,7 @@ module ViperVM.Format.Binary.BitField
    , updateField
    , withField
    , matchFields
+   , matchNamedFields
    )
 where
 
@@ -75,12 +76,11 @@ import Data.Int
 import Data.Bits
 import GHC.TypeLits
 import Data.Proxy
-import Numeric
 import Foreign.Storable
 import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
-import ViperVM.Utils.HList (HFoldr'(..))
+import ViperVM.Utils.HList
 
 -- | Bit fields on a base type b
 newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
@@ -90,9 +90,6 @@ instance Storable b => CStorable (BitFields b fields) where
    cPoke      = poke
    cAlignment = alignment
    cSizeOf    = sizeOf
-
-instance (Integral b, Show b) => Show (BitFields b fields) where
-   show (BitFields w) = "0x" ++ showHex w ""
 
 -- | A field of n bits
 newtype BitField (n :: Nat) (name :: Symbol) s = BitField s deriving (Storable)
@@ -244,12 +241,13 @@ withField name f bs = updateField name (f v) bs
 -- convert it into a Tuple
 -------------------------------------------------------------------------------------
 data Extract = Extract
+data Name    = Name
 
 instance forall name bs b l l2 i (n :: Nat) s r w .
-   ( bs ~ BitFields w l     -- the bitfields
-   , b ~ BitField n name s  -- the current field
-   , i ~ (bs, HList l2)     -- input type
-   , r ~ (bs, HList (Output name l ': l2))     -- result typ
+   ( bs ~ BitFields w l                    -- the bitfields
+   , b ~ BitField n name s                 -- the current field
+   , i ~ (bs, HList l2)                    -- input type
+   , r ~ (bs, HList (Output name l ': l2)) -- result type
    , BitSize w ~ WholeSize l
    , Integral w, Bits w
    , KnownNat (Offset name l)
@@ -259,19 +257,67 @@ instance forall name bs b l l2 i (n :: Nat) s r w .
       applyAB _ (_, (bs,xs)) =
          (bs, HCons (extractField (Proxy :: Proxy name) bs) xs)
 
+instance forall name bs b l l2 i (n :: Nat) s r w .
+   ( bs ~ BitFields w l       -- the bitfields
+   , b ~ BitField n name s    -- the current field
+   , i ~ HList l2             -- input type
+   , r ~ HList (String ': l2) -- result type
+   , KnownSymbol name
+   ) => ApplyAB Name (b, i) r where
+      applyAB _ (_, xs) = HCons (symbolVal (Proxy :: Proxy name)) xs
 
-matchFields' :: forall l l2 w bs .
+fieldValues :: forall l l2 w bs .
    ( bs ~ BitFields w l
    , HFoldr' Extract (bs, HList '[]) l (bs, HList l2)
    ) => bs -> HList l2
-matchFields' bs = snd res
+fieldValues bs = snd res
    where
       res :: (bs, HList l2)
       res = hFoldr' Extract ((bs, HNil) :: (bs, HList '[])) (undefined :: HList l)
 
+fieldNames :: forall l l2 w bs .
+   ( bs ~ BitFields w l
+   , HFoldr' Name (HList '[]) l (HList l2)
+   ) => bs -> HList l2
+fieldNames _ = hFoldr' Name (HNil :: HList '[]) (undefined :: HList l)
+
+-- | Get values in a tuple
 matchFields :: forall l l2 w bs t .
    ( bs ~ BitFields w l
    , HFoldr' Extract (bs, HList '[]) l (bs, HList l2)
-   , HTuple l2 t
+   , HTuple' l2 t
    ) => bs -> t
-matchFields = hToTuple . matchFields'
+matchFields = hToTuple' . fieldValues
+
+
+-- | Get field names and values in a tuple
+matchNamedFields ::forall lt lv ln lnv w bs t .
+   ( bs ~ BitFields w lt
+   , HFoldr' Extract (bs, HList '[]) lt (bs, HList lv)
+   , HFoldr' Name (HList '[]) lt (HList ln)
+   , HZipList ln lv lnv
+   , HTuple' lnv t
+   ) => bs -> t
+matchNamedFields = hToTuple' . matchNamedFields'
+
+-- | Get field names and values in a tuple
+matchNamedFields' ::forall lt lv ln lnv w bs .
+   ( bs ~ BitFields w lt
+   , HFoldr' Extract (bs, HList '[]) lt (bs, HList lv)
+   , HFoldr' Name (HList '[]) lt (HList ln)
+   , HZipList ln lv lnv
+   ) => bs -> HList lnv
+matchNamedFields' bs = hZipList names values
+   where
+      names  = fieldNames bs
+      values = fieldValues bs
+
+-- | Get field names and values in a tuple
+instance  forall lt lv ln lnv w bs .
+   ( bs ~ BitFields w lt
+   , HFoldr' Extract (bs, HList '[]) lt (bs, HList lv)
+   , HFoldr' Name (HList '[]) lt (HList ln)
+   , HZipList ln lv lnv
+   , Show (HList lnv)
+   ) => Show (BitFields w lt) where
+      show bs = show (matchNamedFields' bs :: HList lnv)

@@ -5,6 +5,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 
 -- | Vector with size in the type
@@ -18,16 +21,19 @@ module ViperVM.Format.Binary.Vector
    , fromFilledListZ
    , toList
    , replicate
+   , concat
    )
 where
 
+import Data.HList.FakePrelude (ApplyAB(..))
+import Data.HList.HList
 import GHC.TypeLits
 import Data.Proxy
 import Data.Word
 import Foreign.Storable
 import Foreign.CStorable
 import Prelude hiding (replicate, head, last,
-                       tail, init, map, length, drop, take)
+                       tail, init, map, length, drop, take, concat)
 import qualified Data.List as List
 import Control.Monad(forM_)
 import Foreign.ForeignPtr
@@ -35,6 +41,7 @@ import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
 import ViperVM.Utils.Unsafe (inlinePerformIO)
 import ViperVM.Utils.Memory (memCopy)
+import ViperVM.Utils.HList
 
 -- | Vector with type-checked size
 --
@@ -185,3 +192,54 @@ replicate v = unsafePerformIO $ do
          pokeByteOff p (elemOffset v i) v
    return (Vector fp 0)
 {-# INLINE replicate #-}
+
+
+data SizeVectors = SizeVectors -- Get the cumulated size of a list of vector
+data StoreVector = StoreVector -- Store a vector at the right offset
+
+instance forall v r .
+   ( r ~ Int
+   , Storable v
+   ) => ApplyAB SizeVectors (v, Int) r where
+      applyAB _ (_, sz) = sz + sizeOf (undefined :: v)
+
+instance forall (n :: Nat) v a r .
+   ( v ~ Vector n a
+   , r ~ IO (Ptr a)
+   , KnownNat n
+   , Storable a
+   ) => ApplyAB StoreVector (v, IO (Ptr a)) r where
+      applyAB _ (v, getP) = do
+         p <- getP
+         let
+            vsz = fromIntegral (natVal (Proxy :: Proxy n))
+            p'  = p `plusPtr` (-1 * vsz * sizeOf (undefined :: a))
+         poke (castPtr p') v 
+         return p'
+
+type family WholeSize fs :: Nat where
+   WholeSize '[]                 = 0
+   WholeSize (Vector n s ': xs)  = n + WholeSize xs
+
+wholeSize :: forall l .
+   ( HFoldr' SizeVectors Int l Int
+   ) => HList l -> Int
+wholeSize = hFoldr' SizeVectors (0 :: Int)
+
+-- | Concat several vectors into a single one
+concat :: forall l (n :: Nat) a .
+   ( WholeSize l ~ n
+   , KnownNat n
+   , Storable a
+   , HFoldr StoreVector (IO (Ptr a)) l (IO (Ptr a))
+   , HFoldr' SizeVectors Int l Int
+   )
+   => HList l -> Vector n a
+concat vs = unsafePerformIO $ do
+   let sz = wholeSize vs
+   fp <- mallocForeignPtrBytes sz :: IO (ForeignPtr a)
+   _  <- withForeignPtr fp $ \p ->
+      hFoldr StoreVector (return (p `plusPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
+
+   return (Vector fp 0)
+

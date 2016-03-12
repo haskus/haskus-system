@@ -205,7 +205,6 @@ library
     ViperVM.Format.Binary.BitOps.BitReverse
     ViperVM.Format.Binary.BitOrder
     ViperVM.Format.Binary.BitGet
-    ViperVM.Format.Binary.BitFields
     ViperVM.Format.Binary.BitPut
     ViperVM.Format.Binary.BitField
     ViperVM.Format.Binary.Enum

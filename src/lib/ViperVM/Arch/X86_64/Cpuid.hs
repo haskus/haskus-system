@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 #ifdef __GLASGOW_HASKELL__
 {-# LANGUAGE GHCForeignImportPrim, 
@@ -15,10 +17,10 @@ module ViperVM.Arch.X86_64.Cpuid
    ( Cpuid
    , initCpuid
    , cpuid
+   , ProcInfo
+   , procInfo
    , procVendor
    , procBrand
-   , ProcModelField(..)
-   , procModel
    )
    where
 
@@ -28,9 +30,8 @@ import qualified Data.Text.Encoding as Text
 import qualified Data.ByteString as BS
 
 import ViperVM.Format.Binary.Put
-import ViperVM.Format.Binary.BitOps
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitFields
+import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.BitSet as BitSet
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -60,7 +61,7 @@ import System.IO.Unsafe (unsafePerformIO)
 foreign import ccall "x86_64_cpuid_ffi" cpuid_ :: Word32 -> Ptr Word32 -> IO ()
 
 cpuid :: Word32 -> (Word32, Word32, Word32, Word32)
-cpuid x = unsafePerformIO $ do
+cpuid x = unsafePerformIO $
    allocaArray 4 $ \ptr -> do
       cpuid_ x ptr
       [a,b,c,d] <- peekArray 4 arr
@@ -83,7 +84,7 @@ initCpuid = Cpuid x
 
 procVendor :: Text
 procVendor = Text.decodeUtf8 $ runPut $ do
-   let (_,b,c,d) = cpuid 0
+   let (_,b,c,d) = cpuid 0x00
    putWord32le b
    putWord32le d
    putWord32le c
@@ -102,27 +103,88 @@ procBrand = Text.decodeUtf8 $ BS.takeWhile (/= 0) $ runPut $ do
    f 0x80000004
 
 
-data ProcModelField
-   = SteppingId
-   | ModelId
-   | FamilyId
-   | ProcessorType
-   deriving (Enum,Eq,Show)
+type ProcInfo = BitFields Word32
+  '[ BitField 6 "padding"         Word8
+   , BitField 8 "extended family" Word8
+   , BitField 4 "extended model"  Word8
+   , BitField 2 "proc type"       Word8
+   , BitField 4 "family"          Word8
+   , BitField 4 "model"           Word8
+   , BitField 4 "stepping"        Word8
+   ]
 
-instance EnumBitField ProcModelField where
-   getBitField x b = case x of
-      SteppingId  -> getBitRange LL 0 4 b
-      ModelId     -> let fam = getBitRange LL 8 4 b in
-         if fam == 0x06 || fam == 0x0f
-            then (getBitRange LL 16 4 b `shiftL` 4) .|. getBitRange LL 4 4 b
-            else getBitRange LL 4 4 b
-      FamilyId    ->  let fam = getBitRange LL 8 4 b in
-         if fam == 0x0f
-            then (getBitRange LL 20 4 b `shiftL` 4) .|. fam
-            else fam
-      ProcessorType -> getBitRange LL 12 2 b
+data Feature
+   = FeatureFPU
+   | FeatureVME
+   | FeatureDE
+   | FeaturePSE
+   | FeatureTSC
+   | FeatureMSR
+   | FeaturePAE
+   | FeatureMCE
+   | FeatureCX8
+   | FeatureAPIC
+   | FeatureReserved0
+   | FeatureSEP
+   | FeatureMTTRR
+   | FeaturePGE
+   | FeatureMCA
+   | FeatureCMOV
+   | FeaturePAT
+   | FeaturePSE36
+   | FeaturePSN
+   | FeatureCLFSH
+   | FeatureReserved1
+   | FeatureDS
+   | FeatureACPI
+   | FeatureMMX
+   | FeatureFXSR
+   | FeatureSSE
+   | FeatureSSE2
+   | FeatureSS
+   | FeatureHTT
+   | FeatureTM
+   | FeatureIA64
+   | FeaturePBE
+   | FeatureSSE3
+   | FeaturePCLMULQDQ
+   | FeatureDTES64
+   | FeatureMONITOR
+   | FeatureDSCPL
+   | FeatureVMX
+   | FeatureSMX
+   | FeatureEST
+   | FeatureTM2
+   | FeatureSSSE3
+   | FeatureCNXTID
+   | FeatureSDBG
+   | FeatureFMA
+   | FeatureCX16
+   | FeatureXTPR
+   | FeaturePDCM
+   | FeatureReserved2
+   | FeaturePCID
+   | FeatureDCA
+   | FeatureSSE41
+   | FeatureSSE42
+   | FeatureX2APIC
+   | FeatureMOVBE
+   | FeaturePOPCNT
+   | FeatureTSCDeadline
+   | FeatureAES
+   | FeatureXSAVE
+   | FeatureOSXSAVE
+   | FeatureAVX
+   | FeatureF16C
+   | FeatureRDRND
+   | FeatureHypervisor
+   deriving (Show,Eq,Enum,CBitSet)
 
-procModel :: BitFields Word32 ProcModelField
-procModel = BitFields a
-   where 
-      (a,_,_,_) = cpuid 0x01
+-- | Processor info and feature bits
+--
+-- TODO: add feature bits
+procInfo :: (ProcInfo,BitSet Word64 Feature)
+procInfo = (BitFields a, BitSet.fromBits fs)
+   where
+      (a,_,c,d) = cpuid 0x01
+      fs = (fromIntegral c `shiftL` 32) .|. fromIntegral d
