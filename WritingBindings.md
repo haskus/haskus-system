@@ -64,7 +64,7 @@ can define a vector as follows:
 ```haskell
 {-# LANGUAGE DataKinds #-}
 
-import ViperVM.Format.Binary.Vector
+import ViperVM.Format.Binary.Vector as V
 
 v :: Vector 5 Word16
 ```
@@ -88,6 +88,23 @@ v = fromFilledListZ 0 [1,2,3]
 -- useful for zero-terminal strings: s = "too long \NUL"
 s :: Vector 10 CChar
 s = fromFilledListZ 0 (fmap castCharToCChar "too long string")
+```
+
+You can concatenate several vectors into a single one:
+```haskell
+import Data.HList.HList
+
+x = fromFilledList 0 [1,2,3,4] :: Vector 4 Int
+y = fromFilledList 0 [5,6]     :: Vector 2 Int
+z = fromFilledList 0 [7,8,9]   :: Vector 3 Int
+
+v = V.concat (x `HCons` y `HCons` z `HCons` HNil)
+
+>:t v
+v :: Vector 9 Int
+
+> v
+fromList [1,2,3,4,5,6,7,8,9]
 ```
 
 You can also safely `drop` or `take` elements in a vector. Be careful that the
