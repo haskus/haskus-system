@@ -113,7 +113,6 @@ type family Offset (name :: Symbol) fs :: Nat where
 
 type family AddOffset fs :: Nat where
    AddOffset '[]                        = 0
-   AddOffset '[BitField n name s]       = n
    AddOffset (BitField n name s ': xs)  = n + AddOffset xs
 
 -- | Get the type of a field from its name
