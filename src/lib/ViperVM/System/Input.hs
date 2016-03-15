@@ -61,11 +61,11 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
       rfd = Fd (fromIntegral lowfd)
       nb  = 50 -- number of events read at once
 
-   ch <- lift $ newBroadcastTChanIO
+   ch <- lift newBroadcastTChanIO
    void $ lift $ forkIO $ allocaArray nb $ \ptr -> do
       let go = do
             threadWaitRead rfd
-            r <- sysRead fd ptr (fromIntegral sz)
+            r <- sysRead fd ptr (fromIntegral sz * fromIntegral nb)
             case r of
                -- FIXME: we should somehow signal that an error occured and
                -- that we won't report future events (if any)
