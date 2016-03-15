@@ -173,6 +173,7 @@ library
     ViperVM.Utils.STM.TMap
     ViperVM.Utils.STM.TSet
     ViperVM.Utils.STM.TList
+    ViperVM.Utils.STM.TNotify
     ViperVM.Utils.STM.TGraph
     ViperVM.Utils.Tuples
     ViperVM.Utils.Unsafe

@@ -11,6 +11,7 @@ module ViperVM.Arch.Linux.ErrorCode
    , onSuccessIO
    , onSuccess
    , onSuccessId
+   , onSuccessVoid
    )
 where
 
@@ -54,8 +55,13 @@ onSuccess sc f = do
       Just err -> Left err
       Nothing  -> Right (f ret)
 
+-- | Check for error and return the value otherwise
 onSuccessId :: IO Int64 -> SysRet Int64
 onSuccessId = flip onSuccess id
+
+-- | Check for error and return void
+onSuccessVoid :: IO Int64 -> SysRet ()
+onSuccessVoid = flip onSuccess (const ())
 
 
 ------------------------------------------------

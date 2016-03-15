@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module ViperVM.Arch.Linux.FileSystem.OpenClose
    ( withOpenAt
-   , OpenFlag(..)
+   , HandleFlag(..)
    , Device(..)
    , FilePermission(..)
    )
@@ -12,7 +12,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileSystem
 
-withOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> (FileDescriptor -> Sys a) -> Sys (Either ErrorCode a)
+withOpenAt :: FileDescriptor -> FilePath -> [HandleFlag] -> FilePermissions -> (FileDescriptor -> Sys a) -> Sys (Either ErrorCode a)
 withOpenAt fd path flags perm act = do
    fd1 <- sysCallWarn "Open file" $ sysOpenAt fd path flags perm
    case fd1 of

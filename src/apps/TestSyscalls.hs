@@ -3,6 +3,7 @@
 
 module Main where
 
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.Directory
@@ -35,7 +36,7 @@ main = do
    
    let writeDummyFile = do
          putStrLn "Opening dummy.result file"
-         fd <- check <$> sysOpen "dummy.result" [OpenWriteOnly,OpenCreate] [PermUserWrite,PermUserRead]
+         fd <- check <$> sysOpen "dummy.result" [HandleWriteOnly,HandleCreate] [PermUserWrite,PermUserRead]
 
          let str = "Hello Linux!"
          putStrLn (printf "Writing \"%s\" in it" str)
@@ -156,7 +157,7 @@ main = do
    traverse_ printClock (clocks :: [Clock])
 
    putStrLn "Listing /etc directory:"
-   etcfd <- check <$> sysOpen "/etc" [OpenReadOnly] BitSet.empty
+   etcfd <- check <$> sysOpen "/etc" [] BitSet.empty
    entries <- check <$> listDirectory etcfd
    entries2 <- check <$> listDirectory etcfd
    check <$> sysClose etcfd
@@ -175,7 +176,7 @@ main = do
       Right _  -> putStrLn $ "Sleeping succeeded"
 
    putStrLn "Get device info"
-   dev <- check <$> sysOpen "/dev/input/event0" [OpenReadOnly] [PermUserRead]
+   dev <- check <$> sysOpen "/dev/input/event0" [] [PermUserRead]
 
    driverVersion <- getDriverVersion sysIoctl dev
    putStrLn $ "Driver version: " ++ show driverVersion

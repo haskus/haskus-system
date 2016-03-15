@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    , syscall_fchmod
    , syscall_fchown
    , syscall_fdatasync
+   , syscall_fcntl
    , syscall_flock
    , syscall_epoll_create1
    , syscall_fstat
@@ -334,6 +335,12 @@ syscall_uname :: CString -> IO Int64
 syscall_uname = syscall1 63
 {-# INLINE syscall_uname #-}
 
+-- | fcntl
+syscall_fcntl :: FD -> Int64 -> Word64 -> IO Int64
+syscall_fcntl = syscall3 72
+
+{-# INLINE syscall_fcntl #-}
+
 -- | flock
 syscall_flock :: FD -> Int64 -> IO Int64
 syscall_flock = syscall2 73
@@ -648,7 +655,6 @@ syscall_finit_module = syscall3 313
 69	common	msgsnd			sys_msgsnd
 70	common	msgrcv			sys_msgrcv
 71	common	msgctl			sys_msgctl
-72	common	fcntl			sys_fcntl
 78	common	getdents		sys_getdents
 89	common	readlink		sys_readlink
 96	common	gettimeofday		sys_gettimeofday

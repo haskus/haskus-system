@@ -9,7 +9,6 @@ module ViperVM.Arch.Linux.FileSystem
    , FileOption(..)
    , FileOptions
    , makeMode
-   , OpenFlag(..)
    , SeekWhence(..)
    , AccessMode(..)
    , AccessModes
@@ -81,14 +80,14 @@ import ViperVM.Arch.Linux.Time (TimeSpec)
 import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
 
 -- | Open a file
-sysOpen :: FilePath -> [OpenFlag] -> FilePermissions -> SysRet FileDescriptor
+sysOpen :: FilePath -> [HandleFlag] -> FilePermissions -> SysRet FileDescriptor
 sysOpen path flags mode = 
    withCString path $ \path' -> 
       onSuccess (syscall_open path' (toSet flags :: Int) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
 -- | Open a file
-sysOpenAt :: FileDescriptor -> FilePath -> [OpenFlag] -> FilePermissions -> SysRet FileDescriptor
+sysOpenAt :: FileDescriptor -> FilePath -> [HandleFlag] -> FilePermissions -> SysRet FileDescriptor
 sysOpenAt (FileDescriptor fd) path flags mode = 
    withCString path $ \path' -> 
       onSuccess (syscall_openat fd path' (toSet flags :: Int) (BitSet.toBits mode))
@@ -105,74 +104,6 @@ sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 sysClose :: FileDescriptor -> SysRet ()
 sysClose (FileDescriptor fd) =
    onSuccess (syscall_close fd) (const ())
-
-
--- | Flags for "open" syscall
-data OpenFlag =
-     OpenReadOnly
-   | OpenWriteOnly
-   | OpenReadWrite
-   | CloseOnExec
-   | OpenAppend
-   | OpenAsync
-   | OpenCreate
-   | OpenDirect
-   | OpenDirectory
-   | OpenExclusive
-   | OpenLargeFile
-   | OpenWithoutAccessTime
-   | OpenNoTTYControl
-   | OpenDontFollowSymLinks
-   | OpenNonBlocking
-   | OpenPath
-   | OpenSynchronous
-   | OpenTmpFile
-   | OpenTruncate
-   deriving (Show,Eq)
-
-instance Enum OpenFlag where
-   fromEnum x = case x of
-      OpenReadOnly            -> 0o00000000
-      OpenWriteOnly           -> 0o00000001
-      OpenReadWrite           -> 0o00000002
-      OpenCreate              -> 0o00000100
-      OpenExclusive           -> 0o00000200
-      OpenNoTTYControl        -> 0o00000400
-      OpenTruncate            -> 0o00001000
-      OpenAppend              -> 0o00002000
-      OpenNonBlocking         -> 0o00004000
-      OpenSynchronous         -> 0o00010000
-      OpenAsync               -> 0o00020000
-      OpenDirect              -> 0o00040000
-      OpenLargeFile           -> 0o00100000
-      OpenDirectory           -> 0o00200000
-      OpenDontFollowSymLinks  -> 0o00400000
-      OpenWithoutAccessTime   -> 0o01000000
-      CloseOnExec             -> 0o02000000
-      OpenPath                -> 0o10000000
-      OpenTmpFile             -> 0o20000000
-
-   toEnum x = case x of
-      0o00000000 -> OpenReadOnly
-      0o00000001 -> OpenWriteOnly
-      0o00000002 -> OpenReadWrite
-      0o00000100 -> OpenCreate
-      0o00000200 -> OpenExclusive
-      0o00000400 -> OpenNoTTYControl
-      0o00001000 -> OpenTruncate
-      0o00002000 -> OpenAppend
-      0o00004000 -> OpenNonBlocking
-      0o00010000 -> OpenSynchronous
-      0o00020000 -> OpenAsync
-      0o00040000 -> OpenDirect
-      0o00100000 -> OpenLargeFile
-      0o00200000 -> OpenDirectory
-      0o00400000 -> OpenDontFollowSymLinks
-      0o01000000 -> OpenWithoutAccessTime
-      0o02000000 -> CloseOnExec
-      0o10000000 -> OpenPath
-      0o20000000 -> OpenTmpFile
-      _ -> error "Unknown Open flag value"
 
 
 -- | File permissions
