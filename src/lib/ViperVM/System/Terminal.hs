@@ -121,12 +121,17 @@ readFromHandle s sz ptr = do
       -- read bytes from the buffer if any
       b <- takeTMVar (inputBuffer s)
       let 
-         size   = inputBufferSize b - inputBufferStop b
+         size   = inputBufferStop b - inputBufferStart b
          size'  = min (fromIntegral size) sz -- number of bytes taken from the buffer
          start' = inputBufferStart b + size'
          b'     = if start' == inputBufferStop b
                      -- if we read all the bytes, we reset start and stop
-                     then InputBuffer (inputBufferPtr b) (inputBufferSize b) 0 0
+                     then InputBuffer 
+                              { inputBufferPtr   = inputBufferPtr b
+                              , inputBufferSize  = inputBufferSize b
+                              , inputBufferStart = 0
+                              , inputBufferStop  = 0
+                              }
                      else b { inputBufferStart = start' }
          after  = putTMVar (inputBuffer s) b'
       return (after, size', inputBufferPtr b `plusPtr` fromIntegral (inputBufferStart b))
