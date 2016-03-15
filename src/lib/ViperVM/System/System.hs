@@ -69,17 +69,17 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    -- mount sysfs
    sysCallAssert "Create sysfs directory" $ createDir sysfsPath
    sysCallAssert "Mount sysfs" $ mountSysFS sysMount sysfsPath
-   sysfd <- sysCallAssert "Open sysfs directory" $ sysOpen sysfsPath [] BitSet.empty
+   sysfd <- sysCallAssert "Open sysfs directory" $ sysOpen sysfsPath BitSet.empty BitSet.empty
 
    -- mount procfs
    sysCallAssert "Create procfs directory" $ createDir procfsPath
    sysCallAssert "Mount procfs" $ mountProcFS sysMount procfsPath
-   procfd <- sysCallAssert "Open procfs directory" $ sysOpen procfsPath [] BitSet.empty
+   procfd <- sysCallAssert "Open procfs directory" $ sysOpen procfsPath BitSet.empty BitSet.empty
 
    -- create device directory
    sysCallAssert "Create device directory" $ createDir devicePath
    sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount devicePath
-   devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath [] BitSet.empty
+   devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath BitSet.empty BitSet.empty
 
    -- create netlink reader
    netlink <- makeKernelEventChannel
@@ -103,7 +103,7 @@ getDeviceHandle system typ dev = do
       sysCallAssert "Create device special file" $
          createDeviceFile devfd devname typ BitSet.empty dev
       fd  <- sysCallAssert "Open device special file" $
-         sysOpenAt devfd devname [HandleReadWrite,HandleNonBlocking] BitSet.empty
+         sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty
       sysCallAssert "Remove device special file" $
          sysUnlinkAt devfd devname False
       return fd
@@ -115,7 +115,7 @@ releaseDeviceHandle fd = do
 
 -- | Find device path by number (major, minor)
 openDeviceDir :: System -> DeviceType -> Device -> SysRet FileDescriptor
-openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path [HandleDirectory] BitSet.empty
+openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids
       typ' = case typ of
@@ -152,7 +152,7 @@ listDevicesWithClass system cls = do
 
       -- read device directory
       readDev fd dir = do
-         dev <- withOpenAt fd (dir </> "dev") [] BitSet.empty readDevFile
+         dev <- withOpenAt fd (dir </> "dev") BitSet.empty BitSet.empty readDevFile
          -- skip entries without "dev" file
          return $ case dev of
             Left _  -> Nothing
@@ -165,7 +165,7 @@ listDevicesWithClass system cls = do
          let dirs'  = fmap entryName dirs
          catMaybes <$> traverse (readDev fd) dirs'
 
-   devs <- withOpenAt (systemSysFS system) clsdir [] BitSet.empty readDevs
+   devs <- withOpenAt (systemSysFS system) clsdir BitSet.empty BitSet.empty readDevs
 
    case devs of
       Left _  -> return []

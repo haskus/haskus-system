@@ -121,8 +121,9 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
       addr <- sysCallAssert "Map generic buffer in user space" $ 
          sysMemMap Nothing
             (cdSize buf)
-            [ProtRead,ProtWrite]
-            [MapShared]
+            (BitSet.fromList [ProtRead,ProtWrite])
+            (BitSet.fromList [MapShared])
+            Nothing
             (Just (fd, mdOffset bufKerMap))
 
       let plane = Buffer (cdHandle buf) (cdPitch buf) 0 0

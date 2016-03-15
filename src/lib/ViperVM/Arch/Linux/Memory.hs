@@ -1,11 +1,13 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Memory
    ( sysBrk
    , sysBrkGet
    , sysBrkSet
    , sysMemMap
-   , MemProtect(..)
+   , MemProtectFlag(..)
+   , MemProtectFlags
    , MapFlag(..)
    , sysMemUnmap
    , sysMemProtect
@@ -21,19 +23,20 @@ module ViperVM.Arch.Linux.Memory
    )
 where
 
-import Data.Word (Word8,Word64)
+import Data.Proxy
+import Data.Word
 import Data.Int (Int64)
 import Foreign.Ptr (Ptr, nullPtr, intPtrToPtr)
 import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
-import Data.Bits ((.|.), (.&.), shiftL)
+import Data.Bits ((.&.))
 
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitField
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Arch.Linux.Utils (toSet)
 
 -- | Set program break location (i.e. data segement size)
 -- 
@@ -53,38 +56,37 @@ sysBrkGet = sysBrk 0
 sysBrkSet :: Word64 -> IO Bool
 sysBrkSet addr = (==addr) <$> sysBrk addr
 
-data MemProtect =
-     ProtExec
+data MemProtectFlag
+   = ProtExec
    | ProtRead
    | ProtWrite
    | ProtSem
    | ProtGrowsDown
    | ProtGrowsUp
-   deriving (Eq,Show)
+   deriving (Eq,Show,Enum)
 
-instance Enum MemProtect where
-   fromEnum x = case x of
-      ProtExec       -> 0x04
-      ProtRead       -> 0x01
-      ProtWrite      -> 0x02
-      ProtSem        -> 0x08
-      ProtGrowsDown  -> 0x01000000
-      ProtGrowsUp    -> 0x02000000
+instance CBitSet MemProtectFlag where
+   toBitOffset x = case x of
+      ProtExec       -> 2
+      ProtRead       -> 0
+      ProtWrite      -> 1
+      ProtSem        -> 3
+      ProtGrowsDown  -> 24
+      ProtGrowsUp    -> 25
+   fromBitOffset x = case x of
+      2  -> ProtExec     
+      0  -> ProtRead     
+      1  -> ProtWrite    
+      3  -> ProtSem      
+      24 -> ProtGrowsDown
+      25 -> ProtGrowsUp  
+      _ -> error "Invalid memory protection flag"
 
-   toEnum x = case x of
-      0x04       -> ProtExec
-      0x01       -> ProtRead
-      0x02       -> ProtWrite
-      0x08       -> ProtSem
-      0x01000000 -> ProtGrowsDown
-      0x02000000 -> ProtGrowsUp
-      _ -> error "Invalid flag"
+type MemProtectFlags = BitSet Int64 MemProtectFlag
 
-
-data MapFlag =
-     MapShared
+data MapFlag
+   = MapShared
    | MapPrivate
-   | MapType
    | MapFixed
    | MapAnonymous
    | MapUninitialized
@@ -96,41 +98,68 @@ data MapFlag =
    | MapPopulate
    | MapNonBlock
    | MapStack
-   | MapHugeTLB Word8   -- ^ Page size (6 bits)
+   | MapHugeTLB
    deriving (Eq,Show)
 
-instance Enum MapFlag where
-   fromEnum x = case x of
-      MapShared         -> 0x01
-      MapPrivate        -> 0x02
-      MapType           -> 0x0F
-      MapFixed          -> 0x10
-      MapAnonymous      -> 0x20
-      MapUninitialized  -> 0x4000000
-      MapGrowsDown      -> 0x0100
-      MapDenyWrite      -> 0x0800
-      MapExecutable     -> 0x1000
-      MapLocked         -> 0x2000
-      MapNoReserve      -> 0x4000
-      MapPopulate       -> 0x8000
-      MapNonBlock       -> 0x10000
-      MapStack          -> 0x20000
-      MapHugeTLB sz 
-         | sz .&. 0xC0 == 0 -> 0x40000 .|. (fromIntegral sz `shiftL` 26)
-         | otherwise        -> error "Page size too big"
+instance CBitSet MapFlag where
+   toBitOffset x = case x of
+      MapShared         -> 0
+      MapPrivate        -> 1
+      MapFixed          -> 4
+      MapAnonymous      -> 5
+      MapUninitialized  -> 26
+      MapGrowsDown      -> 8
+      MapDenyWrite      -> 11
+      MapExecutable     -> 12
+      MapLocked         -> 13
+      MapNoReserve      -> 14
+      MapPopulate       -> 15
+      MapNonBlock       -> 16
+      MapStack          -> 17
+      MapHugeTLB        -> 18
+   fromBitOffset x = case x of
+      0  -> MapShared
+      1  -> MapPrivate
+      4  -> MapFixed
+      5  -> MapAnonymous
+      26 -> MapUninitialized
+      8  -> MapGrowsDown
+      11 -> MapDenyWrite
+      12 -> MapExecutable
+      13 -> MapLocked
+      14 -> MapNoReserve
+      15 -> MapPopulate
+      16 -> MapNonBlock
+      17 -> MapStack
+      18 -> MapHugeTLB
+      _  -> error "Invalid map flag bit offset"
 
-   toEnum = undefined
+type MapFlagField = BitFields Word32
+   '[ BitField 6  "HugeTLBSize" Word8                   -- ^ Log2 of the huge page size
+    , BitField 26 "MapFlags"    (BitSet Word32 MapFlag) -- ^ Flags
+    ]
+
+type MapFlags = BitSet Word32 MapFlag
 
 -- | Map files or devices into memory
-sysMemMap :: Maybe (Ptr ()) -> Word64 -> [MemProtect] -> [MapFlag] -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
-sysMemMap addr len prot flags source = do
+--
+-- Optional `hugepagesize` is in Log2 and on 6 bits
+sysMemMap :: Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
+sysMemMap addr len prot flags hugepagesize source = do
    let 
       (fd,off) = fromMaybe (-1,0) ((\(FileDescriptor fd', x) -> (fd',x)) <$> source)
-      flags' = toSet flags :: Int64
-      prot' = toSet prot :: Int64
-      addr' = fromMaybe nullPtr addr
+      flags'   = case hugepagesize of
+                  Nothing -> flags
+                  Just _  -> BitSet.union flags (BitSet.fromList [MapHugeTLB])
+      fld      :: MapFlagField
+      fld      = updateField (Proxy :: Proxy "MapFlags") flags'
+               $ updateField (Proxy :: Proxy "HugeTLBSize") (fromMaybe 0 hugepagesize)
+               $ BitFields 0
+      fld'     = fromIntegral (bitFieldsBits fld)
+      prot'    = BitSet.toBits prot
+      addr'    = fromMaybe nullPtr addr
    
-   onSuccess (syscall_mmap addr' len prot' flags' fd off) (intPtrToPtr . fromIntegral)
+   onSuccess (syscall_mmap addr' len prot' fld' fd off) (intPtrToPtr . fromIntegral)
 
 -- | Unmap memory
 sysMemUnmap :: Ptr () -> Word64 -> SysRet ()
@@ -138,9 +167,9 @@ sysMemUnmap addr len =
    onSuccess (syscall_munmap addr len) (const ())
 
 -- | Set protection of a region of memory
-sysMemProtect :: Ptr () -> Word64 -> [MemProtect] -> SysRet ()
+sysMemProtect :: Ptr () -> Word64 -> MemProtectFlags -> SysRet ()
 sysMemProtect addr len prot = do
-   let prot' = toSet prot :: Int64
+   let prot' = BitSet.toBits prot
    onSuccess (syscall_mprotect addr len prot') (const ())
 
 
@@ -206,24 +235,17 @@ sysMemAdvise addr len adv =
    onSuccess (syscall_madvise addr len (fromEnum adv)) 
       (const ())
 
-data MemSync =
-     MemSync
-   | MemAsync
+data MemSync
+   = MemAsync
    | MemInvalidate
+   | MemSync
+   deriving (Show,Eq,Enum,CBitSet)
 
-instance Enum MemSync where
-   fromEnum x = case x of
-      MemSync        -> 4
-      MemAsync       -> 1
-      MemInvalidate  -> 2
+type MemSyncFlags = BitSet Word32 MemSync
 
-   toEnum = undefined
-
-
-sysMemSync :: Ptr () -> Word64 -> [MemSync] -> SysRet ()
+sysMemSync :: Ptr () -> Word64 -> MemSyncFlags -> SysRet ()
 sysMemSync addr len flag = 
-   onSuccess (syscall_msync addr len (toSet flag :: Int64))
-      (const ())
+   onSuccessVoid (syscall_msync addr len (fromIntegral (BitSet.toBits flag)))
 
 sysMemInCore :: Ptr () -> Word64 -> SysRet [Bool]
 sysMemInCore addr len = do
@@ -235,10 +257,10 @@ sysMemInCore addr len = do
 
 
 sysMemLock :: Ptr () -> Word64 -> SysRet ()
-sysMemLock addr len = onSuccess (syscall_mlock addr len) (const ())
+sysMemLock addr len = onSuccessVoid (syscall_mlock addr len)
 
 sysMemUnlock :: Ptr () -> Word64 -> SysRet ()
-sysMemUnlock addr len = onSuccess (syscall_munlock addr len) (const ())
+sysMemUnlock addr len = onSuccessVoid (syscall_munlock addr len)
 
 data MemLockFlag
    = LockCurrentPages
@@ -248,7 +270,7 @@ data MemLockFlag
 type MemLockFlags = BitSet Word64 MemLockFlag
 
 sysMemLockAll :: MemLockFlags -> SysRet ()
-sysMemLockAll flags = onSuccess (syscall_mlockall (BitSet.toBits flags)) (const ())
+sysMemLockAll flags = onSuccessVoid (syscall_mlockall (BitSet.toBits flags))
 
 sysMemUnlockAll :: SysRet ()
-sysMemUnlockAll = onSuccess syscall_munlockall (const ())
+sysMemUnlockAll = onSuccessVoid syscall_munlockall

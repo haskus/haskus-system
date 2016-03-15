@@ -60,6 +60,7 @@
 -- @
 module ViperVM.Format.Binary.BitField
    ( BitFields (..)
+   , bitFieldsBits
    , BitField (..)
    , extractField
    , updateField
@@ -84,6 +85,10 @@ import ViperVM.Utils.HList
 
 -- | Bit fields on a base type b
 newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
+
+
+bitFieldsBits :: BitFields b f -> b
+bitFieldsBits (BitFields b) = b
 
 instance Storable b => CStorable (BitFields b fields) where
    cPeek      = peek

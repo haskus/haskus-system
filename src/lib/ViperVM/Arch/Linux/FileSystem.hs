@@ -75,22 +75,21 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Arch.Linux.Utils (toSet)
 import ViperVM.Arch.Linux.Time (TimeSpec)
 import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
 
 -- | Open a file
-sysOpen :: FilePath -> [HandleFlag] -> FilePermissions -> SysRet FileDescriptor
+sysOpen :: FilePath -> HandleFlags -> FilePermissions -> SysRet FileDescriptor
 sysOpen path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall_open path' (toSet flags :: Int) (BitSet.toBits mode))
+      onSuccess (syscall_open path' (BitSet.toBits flags) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
 -- | Open a file
-sysOpenAt :: FileDescriptor -> FilePath -> [HandleFlag] -> FilePermissions -> SysRet FileDescriptor
+sysOpenAt :: FileDescriptor -> FilePath -> HandleFlags -> FilePermissions -> SysRet FileDescriptor
 sysOpenAt (FileDescriptor fd) path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall_openat fd path' (toSet flags :: Int) (BitSet.toBits mode))
+      onSuccess (syscall_openat fd path' (BitSet.toBits flags) (BitSet.toBits mode))
          (FileDescriptor . fromIntegral)
 
 sysCreateCString :: CString -> FilePermissions -> SysRet FileDescriptor

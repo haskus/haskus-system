@@ -2,6 +2,7 @@
 module ViperVM.Arch.Linux.FileDescriptor
    ( FileDescriptor(..)
    , HandleFlag(..)
+   , HandleFlags
    , getHandleFlags
    , setHandleFlags
    )
@@ -54,26 +55,28 @@ data HandleFlag
    | HandleTruncate
    deriving (Show,Eq,Enum)
 
+type HandleFlags = BitSet Int HandleFlag
+
 instance CBitSet HandleFlag where
    toBitOffset x = case x of
-      HandleWriteOnly           -> 0
-      HandleReadWrite           -> 1
-      HandleCreate              -> 6
-      HandleExclusive           -> 7
-      HandleNoTTYControl        -> 8
-      HandleTruncate            -> 9
-      HandleAppend              -> 10
-      HandleNonBlocking         -> 11
-      HandleSynchronous         -> 12
-      HandleAsync               -> 13
-      HandleDirect              -> 14
-      HandleLargeFile           -> 15
-      HandleDirectory           -> 16
-      HandleDontFollowSymLinks  -> 17
-      HandleWithoutAccessTime   -> 18
-      HandleCloseOnExec          -> 19
-      HandlePath                -> 21
-      HandleTmpFile             -> 22
+      HandleWriteOnly          -> 0
+      HandleReadWrite          -> 1
+      HandleCreate             -> 6
+      HandleExclusive          -> 7
+      HandleNoTTYControl       -> 8
+      HandleTruncate           -> 9
+      HandleAppend             -> 10
+      HandleNonBlocking        -> 11
+      HandleSynchronous        -> 12
+      HandleAsync              -> 13
+      HandleDirect             -> 14
+      HandleLargeFile          -> 15
+      HandleDirectory          -> 16
+      HandleDontFollowSymLinks -> 17
+      HandleWithoutAccessTime  -> 18
+      HandleCloseOnExec        -> 19
+      HandlePath               -> 21
+      HandleTmpFile            -> 22
 
    fromBitOffset x = case x of
       0  -> HandleWriteOnly
