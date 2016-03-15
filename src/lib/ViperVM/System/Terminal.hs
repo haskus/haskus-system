@@ -30,6 +30,7 @@ import Foreign.Ptr
 import Foreign.Storable
 import Foreign.C.String (withCStringLen)
 import Foreign.Marshal.Alloc
+import Foreign.Marshal.Utils (with)
 
 
 data Terminal = Terminal
@@ -234,9 +235,11 @@ writeTermBytes term sz ptr = writeToHandle (termOut term) sz (castPtr ptr)
 -- | Write a string
 writeStrLn :: Terminal -> String -> Sys ()
 writeStrLn term s =
-   sysIO $ withCStringLen s $ \(ptr,len) -> do
-      sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-      atomically (waitNotify sem)
+   sysIO $ withCStringLen s $ \(ptr,len) ->
+      with '\n' $ \ptr2 -> do
+         _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
+         sem <- writeTermBytes term 1 (castPtr ptr2)
+         atomically (waitNotify sem)
 
 -- | Read bytes (asynchronous)
 readTermBytes :: Terminal -> Word64 -> Ptr a -> IO (TNotify ())
