@@ -4,6 +4,7 @@ module ViperVM.System.Terminal
    ( Terminal
    , defaultTerminal
    , readTermBytes
+   , readTerm
    , writeTermBytes
    , writeStrLn
    , waitForKey
@@ -232,18 +233,19 @@ writeStrLn term s =
       sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
       atomically (waitNotify sem)
 
--- | Read bytes
+-- | Read bytes (asynchronous)
 readTermBytes :: Terminal -> Word64 -> Ptr a -> IO (TNotify ())
 readTermBytes term sz ptr = readFromHandle (termIn term) sz (castPtr ptr)
 
-readChar :: Terminal -> Sys Word8
-readChar term = sysIO $
-   alloca $ \(ptr :: Ptr Word8) -> do
-      sem <- readTermBytes term 1 ptr
+-- | Read a Storable (synchronous)
+readTerm :: Storable a => Terminal -> Sys a
+readTerm term = sysIO $
+   alloca $ \(ptr :: Ptr a) -> do
+      sem <- readTermBytes term (fromIntegral $ sizeOf (undefined :: a)) ptr
       atomically $ waitNotify sem
       peek ptr
 
 -- | Wait for a key to pressed
 waitForKey :: Terminal -> Sys ()
-waitForKey term = void (readChar term)
+waitForKey term = void (readTerm term :: Sys Word8)
 

@@ -33,10 +33,10 @@ makeKernelEventChannel = do
    return ch
 
 -- | Read events in the given channel forever
-onEvent :: TChan e -> (e -> IO ()) -> Sys ()
+onEvent :: TChan e -> (e -> Sys ()) -> Sys ()
 onEvent bch f = do
    sysLog LogInfo "Creating event listener"
 
    lift $ do
       ch <- atomically $ dupTChan bch
-      void $ forkIO $ forever (atomically (readTChan ch) >>= f)
+      void $ forkIO $ forever (atomically (readTChan ch) >>= runSys' . f)
