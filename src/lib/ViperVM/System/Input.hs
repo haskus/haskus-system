@@ -17,7 +17,7 @@ import Control.Concurrent
 import Data.Traversable (forM)
 import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
-import Control.Monad (void)
+import Control.Monad (void,forever)
 import Control.Monad.Trans.Class (lift)
 import Foreign.Storable
 import Foreign.Marshal (allocaArray, peekArray)
@@ -62,17 +62,14 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
       nb  = 50 -- number of events read at once
 
    ch <- lift newBroadcastTChanIO
-   void $ lift $ forkIO $ allocaArray nb $ \ptr -> do
-      let go = do
-            threadWaitRead rfd
-            r <- sysRead fd ptr (fromIntegral sz * fromIntegral nb)
-            case r of
-               -- FIXME: we should somehow signal that an error occured and
-               -- that we won't report future events (if any)
-               Left _  -> return ()
-               Right sz2 -> do
-                  evs <- peekArray (fromIntegral sz2 `div` sz) ptr
-                  atomically $ traverse_ (writeTChan ch) evs
-                  go
-      go
+   void $ lift $ forkIO $ allocaArray nb $ \ptr -> forever $ do
+      threadWaitRead rfd
+      r <- sysRead fd ptr (fromIntegral sz * fromIntegral nb)
+      case r of
+         -- FIXME: we should somehow signal that an error occured and
+         -- that we won't report future events (if any)
+         Left _  -> return ()
+         Right sz2 -> do
+            evs <- peekArray (fromIntegral sz2 `div` sz) ptr
+            atomically $ traverse_ (writeTChan ch) evs
    return ch
