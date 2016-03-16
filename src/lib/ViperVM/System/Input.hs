@@ -45,6 +45,7 @@ loadInputDevices system = sysLogSequence "Load input devices" $ do
       devs' = filter isEvent devs
    forM devs' $ \(devpath,dev) -> do
       fd   <- getDeviceHandle system CharDevice dev
+      void $ sysCallWarn "Grab device" $ grabDevice sysIoctl fd
       InputDevice devpath dev fd
          <$> (sysCallAssert "Get device name" $
                   Input.getDeviceName sysIoctl fd)
