@@ -153,6 +153,7 @@ library
     ViperVM.System.Input
     ViperVM.System.Devices
     ViperVM.System.Terminal
+    ViperVM.System.Process
 
     ViperVM.Utils.Hash
     ViperVM.Utils.HList
