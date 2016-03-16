@@ -1,9 +1,11 @@
 -- | Manage graphics devices
 module ViperVM.System.Graphics
-   ( GraphicCard(..)
+   ( GraphicCard (..)
    , loadGraphicCards
-   , MappedPlane(..)
-   , initFrameBuffer
+   , MappedBuffer (..)
+   , GenericFrame (..)
+   , initGenericFrameBuffer
+   , freeGenericFrameBuffer
    )
 where
 
@@ -25,7 +27,7 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Monad (void,forM)
+import Control.Monad (void,forM,forM_)
 import Foreign.Ptr
 
 import Control.Concurrent.STM
@@ -94,16 +96,21 @@ newEventWaiterThread fd@(FileDescriptor lowfd) = do
    return ch
 
 
-data MappedPlane = MappedPlane
-   { mappedPlaneBuffer  :: GenericBuffer
-   , mappedPlaneMapping :: GenericBufferMap
-   , mappedPlanePointer :: Ptr ()
-   , mappedPlaneInfo    :: Buffer
+data MappedBuffer = MappedBuffer
+   { mappedBufferBuffer  :: GenericBuffer
+   , mappedBufferMapping :: GenericBufferMap
+   , mappedBufferPointer :: Ptr ()
+   , mappedBufferInfo    :: Buffer
+   }
+
+data GenericFrame = GenericFrame
+   { genericFrameBuffer  :: FrameBuffer
+   , genericFrameBuffers :: [MappedBuffer]
    }
 
 -- | Allocate and map fullscreen planes for the given format and mode
-initFrameBuffer :: Card -> Mode -> PixelFormat -> Sys (FrameBuffer, [MappedPlane])
-initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
+initGenericFrameBuffer :: Card -> Mode -> PixelFormat -> Sys GenericFrame
+initGenericFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
    let
       width  = fromIntegral $ modeHorizontalDisplay mode
       height = fromIntegral $ modeVerticalDisplay mode
@@ -128,11 +135,27 @@ initFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
 
       let plane = Buffer (cdHandle buf) (cdPitch buf) 0 0
 
-      return (MappedPlane buf bufKerMap addr plane)
+      return (MappedBuffer buf bufKerMap addr plane)
    
-   let planes = fmap mappedPlaneInfo mappedPlanes
+   let planes = fmap mappedBufferInfo mappedPlanes
 
    fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer card width height pixfmt BitSet.empty planes
 
-   return (fb, mappedPlanes)
+   return $ GenericFrame fb mappedPlanes
 
+
+freeGenericFrameBuffer :: Card -> GenericFrame -> Sys ()
+freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
+
+   forM_ mappedBufs $ \(MappedBuffer buf _ addr _) -> do
+      -- unmap generic buffer from user-space
+      sysCallAssert "Unmap generic buffer from user space" $ 
+         sysMemUnmap addr (cdSize buf)
+
+      -- destroy the generic buffer
+      sysCallAssert "Destroy generic buffer" $ destroyGenericBuffer card buf
+
+
+   -- remove the framebuffer
+   sysCallAssert "Remove framebuffer" $
+      removeFrameBuffer card fb

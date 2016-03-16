@@ -164,17 +164,17 @@ sysMemMap addr len prot flags hugepagesize source = do
 -- | Unmap memory
 sysMemUnmap :: Ptr () -> Word64 -> SysRet ()
 sysMemUnmap addr len =
-   onSuccess (syscall_munmap addr len) (const ())
+   onSuccessVoid (syscall_munmap addr len)
 
 -- | Set protection of a region of memory
 sysMemProtect :: Ptr () -> Word64 -> MemProtectFlags -> SysRet ()
 sysMemProtect addr len prot = do
    let prot' = BitSet.toBits prot
-   onSuccess (syscall_mprotect addr len prot') (const ())
+   onSuccessVoid (syscall_mprotect addr len prot')
 
 
-data MemAdvice =
-     MemAdviceNormal
+data MemAdvice
+   = MemAdviceNormal
    | MemAdviceRandom
    | MemAdviceSequential
    | MemAdviceWillNeed
@@ -190,6 +190,7 @@ data MemAdvice =
    | MemAdviceNoHugePage
    | MemAdviceDontDump
    | MemAdviceDoDump
+   deriving (Show,Eq)
 
 instance Enum MemAdvice where
    fromEnum x = case x of
@@ -232,8 +233,7 @@ instance Enum MemAdvice where
 
 sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> SysRet ()
 sysMemAdvise addr len adv = 
-   onSuccess (syscall_madvise addr len (fromEnum adv)) 
-      (const ())
+   onSuccessVoid (syscall_madvise addr len (fromEnum adv)) 
 
 data MemSync
    = MemAsync
