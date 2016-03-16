@@ -47,10 +47,10 @@ loadInputDevices system = sysLogSequence "Load input devices" $ do
       fd   <- getDeviceHandle system CharDevice dev
       void $ sysCallWarn "Grab device" $ grabDevice sysIoctl fd
       InputDevice devpath dev fd
-         <$> (sysCallAssert "Get device name" $
-                  Input.getDeviceName sysIoctl fd)
-         <*> (sysCallAssert "Get device info" $
-                  Input.getDeviceInfo sysIoctl fd)
+         <$> sysCallAssert "Get device name"
+                  (Input.getDeviceName sysIoctl fd)
+         <*> sysCallAssert "Get device info"
+                  (Input.getDeviceInfo sysIoctl fd)
          <*> newEventWaiterThread fd
 
 -- | Create a new thread reading input events and putting them in a TChan

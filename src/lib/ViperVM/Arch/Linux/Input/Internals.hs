@@ -825,8 +825,8 @@ sendForceFeedback ioctl = ioctlWrite ioctl 0x45 0x80 defaultCheck
 -- | Erase a force effect
 --
 -- EVIOCRMFF
-removeForceFeedback :: IOCTL -> FileDescriptor -> Int -> SysRet ()
-removeForceFeedback ioctl = ioctlWrite ioctl 0x45 0x81 defaultCheck
+removeForceFeedback :: IOCTL -> FileDescriptor -> Int64 -> SysRet ()
+removeForceFeedback ioctl = ioctlWriteValue ioctl 0x45 0x81 defaultCheck
 
 -- | Report the number of effects playable at the same time
 --
@@ -838,9 +838,9 @@ supportedSimultaneousEffects ioctl = ioctlRead ioctl 0x45 0x84 defaultCheck
 --
 -- EVIOCGRAB
 grabReleaseDevice :: IOCTL -> Bool -> FileDescriptor -> SysRet ()
-grabReleaseDevice ioctl grab fd = ioctlWrite ioctl 0x45 0x90 defaultCheck fd value
+grabReleaseDevice ioctl grab fd = ioctlWriteValue ioctl 0x45 0x90 defaultCheck fd value
    where
-      value :: Int
+      value :: Int64
       value = if grab then 1 else 0
 
 -- | Grab device
@@ -855,9 +855,9 @@ releaseDevice ioctl = grabReleaseDevice ioctl False
 --
 -- EVIOCREVOKE
 revokeDevice :: IOCTL -> FileDescriptor -> SysRet ()
-revokeDevice ioctl fd = ioctlWrite ioctl 0x45 0x91 defaultCheck fd value
+revokeDevice ioctl fd = ioctlWriteValue ioctl 0x45 0x91 defaultCheck fd value
    where
-      value :: Int
+      value :: Int64
       value = 0
 
 -- | Get event mask (filter by type)

@@ -27,6 +27,7 @@ module ViperVM.Arch.Linux.Ioctl
    , ioctlReadWithRet
    -- * Write
    , ioctlWrite
+   , ioctlWriteValue
    -- * Read / Write
    , ioctlReadWrite
    , ioctlReadWriteWithRet
@@ -186,6 +187,17 @@ ioctlWrite ioctl typ nr test fd arg =
       return $ case test ret of
          Nothing -> Right ()
          Just x  -> Left x
+
+-- | Build a Write IOCTL
+--
+-- Execute the IOCTL command on the file descriptor, then `test` the result. 
+ioctlWriteValue :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> Int64 -> SysRet ()
+ioctlWriteValue ioctl typ nr test fd arg = do
+   let cmd = Command typ nr Write (paramSize arg)
+   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) arg
+   return $ case test ret of
+      Nothing -> Right ()
+      Just x  -> Left x
 
 
 -- | Build a ReadWrite IOCTL
