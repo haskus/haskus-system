@@ -107,19 +107,7 @@ library
     ViperVM.Arch.Linux.Trace
     ViperVM.Arch.Linux.Utils
 
-    ViperVM.Arch.Linux.Input.Absolute
-    ViperVM.Arch.Linux.Input.Device
-    ViperVM.Arch.Linux.Input.Event
-    ViperVM.Arch.Linux.Input.ForceFeedback
-    ViperVM.Arch.Linux.Input.Keys
-    ViperVM.Arch.Linux.Input.LEDs
-    ViperVM.Arch.Linux.Input.Misc
-    ViperVM.Arch.Linux.Input.MultiTouch
-    ViperVM.Arch.Linux.Input.Relative
-    ViperVM.Arch.Linux.Input.Repeat
-    ViperVM.Arch.Linux.Input.Sound
-    ViperVM.Arch.Linux.Input.Switch
-    ViperVM.Arch.Linux.Input.Sync
+    ViperVM.Arch.Linux.Input.Internals
 
     ViperVM.Arch.Linux.Process.MemoryMap
     ViperVM.Arch.Linux.Process.ControlGroup

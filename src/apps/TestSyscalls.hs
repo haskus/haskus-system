@@ -13,10 +13,7 @@ import ViperVM.Arch.Linux.Info
 import ViperVM.Arch.Linux.Time
 --import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Input.Device
-import ViperVM.Arch.Linux.Input.Keys
-import ViperVM.Arch.Linux.Input.LEDs
-import ViperVM.Arch.Linux.Input.Repeat
+import ViperVM.Arch.Linux.Input.Internals
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 
@@ -178,7 +175,7 @@ main = do
    putStrLn "Get device info"
    dev <- check <$> sysOpen "/dev/input/event0" [] [PermUserRead]
 
-   driverVersion <- getDriverVersion sysIoctl dev
+   driverVersion <- getVersion sysIoctl dev
    putStrLn $ "Driver version: " ++ show driverVersion
 
    deviceInfo <- getDeviceInfo sysIoctl dev
@@ -202,7 +199,7 @@ main = do
    devKeys <- getDeviceKeys sysIoctl 256 dev
    putStrLn $ "Device keys: " ++ show devKeys
 
-   devLeds <- getDeviceLEDs sysIoctl dev
+   devLeds <- getDeviceLEDs sysIoctl 50 dev
    putStrLn $ "Device LEDs: " ++ show devLeds
 
    case repeatSettings of

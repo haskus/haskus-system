@@ -10,8 +10,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
-import ViperVM.Arch.Linux.Input.Device as Input
-import ViperVM.Arch.Linux.Input.Event as Input
+import ViperVM.Arch.Linux.Input.Internals as Input
 
 import Control.Concurrent.STM
 import Control.Concurrent
