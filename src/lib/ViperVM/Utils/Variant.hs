@@ -38,7 +38,14 @@ module ViperVM.Utils.Variant
    , setVariant3
    , setVariant4
    , setVariant5
+   , updateVariant0
+   , updateVariant1
+   , updateVariant2
+   , updateVariant3
+   , updateVariant4
+   , updateVariant5
    , liftEither
+   , liftEitherM
    )
 where
 
@@ -116,6 +123,10 @@ liftEither :: Either a b -> Variant '[b,a]
 liftEither (Left a)  = setVariant1 a
 liftEither (Right b) = setVariant0 b
 
+-- | Lift an Either into a Variant (reversed order by convention)
+liftEitherM :: (Monad m) => m (Either a b) -> m (Variant '[b,a])
+liftEitherM = fmap liftEither
+
 -- | Update a variant value
 updateVariant :: forall (n :: Nat) l l2 .
    (KnownNat n)
@@ -124,6 +135,30 @@ updateVariant _ f v@(Variant t a) =
    case getVariant (Proxy :: Proxy n) v of
       Nothing -> Variant t a
       Just x  -> Variant t (f x)
+
+updateVariant0 :: forall (l :: [*]) (l2 :: [*]).
+   (TypeAt 0 l -> TypeAt 0 l2) -> Variant l -> Variant l2
+updateVariant0 = updateVariant (Proxy :: Proxy 0)
+
+updateVariant1 :: forall (l :: [*]) (l2 :: [*]).
+   (TypeAt 1 l -> TypeAt 1 l2) -> Variant l -> Variant l2
+updateVariant1 = updateVariant (Proxy :: Proxy 1)
+
+updateVariant2 :: forall (l :: [*]) (l2 :: [*]).
+   (TypeAt 2 l -> TypeAt 2 l2) -> Variant l -> Variant l2
+updateVariant2 = updateVariant (Proxy :: Proxy 2)
+
+updateVariant3 :: forall (l :: [*]) (l2 :: [*]).
+   (TypeAt 3 l -> TypeAt 3 l2) -> Variant l -> Variant l2
+updateVariant3 = updateVariant (Proxy :: Proxy 3)
+
+updateVariant4 :: forall (l :: [*]) (l2 :: [*]).
+   (TypeAt 4 l -> TypeAt 4 l2) -> Variant l -> Variant l2
+updateVariant4 = updateVariant (Proxy :: Proxy 4)
+
+updateVariant5 :: forall (l :: [*]) (l2 :: [*]).
+   (TypeAt 5 l -> TypeAt 5 l2) -> Variant l -> Variant l2
+updateVariant5 = updateVariant (Proxy :: Proxy 5)
 
 -- | Update a variant value in a Monad
 updateVariantM :: forall (n :: Nat) l l2 m .
