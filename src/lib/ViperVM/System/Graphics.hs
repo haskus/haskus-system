@@ -114,9 +114,10 @@ data GenericFrame = GenericFrame
    }
 
 -- | Allocate and map fullscreen planes for the given format and mode
-initGenericFrameBuffer :: Handle -> Mode -> PixelFormat -> Sys GenericFrame
-initGenericFrameBuffer hdl mode pixfmt@(PixelFormat fmt _) = do
+initGenericFrameBuffer :: GraphicCard -> Mode -> PixelFormat -> Sys GenericFrame
+initGenericFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
    let
+      hdl    = graphicCardHandle card
       width  = fromIntegral $ modeHorizontalDisplay mode
       height = fromIntegral $ modeVerticalDisplay mode
       bpps   = formatBitDepth fmt
@@ -148,8 +149,10 @@ initGenericFrameBuffer hdl mode pixfmt@(PixelFormat fmt _) = do
    return $ GenericFrame fb mappedPlanes
 
 
-freeGenericFrameBuffer :: Handle -> GenericFrame -> Sys ()
-freeGenericFrameBuffer hdl (GenericFrame fb mappedBufs) = do
+freeGenericFrameBuffer :: GraphicCard -> GenericFrame -> Sys ()
+freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
+
+   let hdl = graphicCardHandle card
 
    forM_ mappedBufs $ \(MappedBuffer buf _ addr _) -> do
       -- unmap generic buffer from user-space
