@@ -5,11 +5,9 @@ module ViperVM.Arch.Linux.Graphics.Capability
    , Capability (..)
    , ClientCapability (..)
    , setClientCapability
-   , setClientCapability'
    )
 where
 
-import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
@@ -20,24 +18,20 @@ import Data.Word
 import Control.Monad (void)
 
 -- | Get a capability
-getCapability :: Card -> Capability -> SysRet Word64
-getCapability card cap = do
+getCapability :: Handle -> Capability -> SysRet Word64
+getCapability hdl cap = do
    let s = StructGetCap (toEnumField cap) 0
-   fmap gcValue <$> ioctlGetCapabilities (cardHandle card) s
+   fmap gcValue <$> ioctlGetCapabilities hdl s
 
 -- | Indicate if a capability is supported
-supports :: Card -> Capability -> SysRet Bool
-supports card cap = fmap (/= 0) <$> getCapability card cap
+supports :: Handle -> Capability -> SysRet Bool
+supports hdl cap = fmap (/= 0) <$> getCapability hdl cap
 
 -- | Set a client capability
-setClientCapability :: Card -> ClientCapability -> Bool -> Sys ()
-setClientCapability card = setClientCapability' (cardHandle card)
-
--- | Set a client capability
-setClientCapability' :: FileDescriptor -> ClientCapability -> Bool -> Sys ()
-setClientCapability' fd cap b = do
+setClientCapability :: Handle -> ClientCapability -> Bool -> Sys ()
+setClientCapability hdl cap b = do
    let 
       v = if b then 1 else 0
       s = StructSetClientCap (toEnumField cap) v
       m = "Set client capability " ++ show cap
-   void $ sysCallWarn m (ioctlSetClientCapability fd s)
+   void $ sysCallWarn m (ioctlSetClientCapability hdl s)

@@ -21,6 +21,7 @@ import Foreign.Ptr
 import Control.Monad (void)
 
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Internals
@@ -68,25 +69,24 @@ toFrameBuffer StructFrameBufferCommand{..} = s
 
 
 -- | Create a framebuffer
-addFrameBuffer :: Card -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Buffer] -> SysRet FrameBuffer
-addFrameBuffer card width height fmt flags buffers = do
+addFrameBuffer :: Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Buffer] -> SysRet FrameBuffer
+addFrameBuffer hdl width height fmt flags buffers = do
    
    let s = FrameBuffer (FrameBufferID 0) width height
                fmt flags buffers
 
-   fmap toFrameBuffer <$> ioctlAddFrameBuffer (cardHandle card)
-                           (fromFrameBuffer s)
+   fmap toFrameBuffer <$> ioctlAddFrameBuffer hdl (fromFrameBuffer s)
 
 -- | Release a frame buffer
-removeFrameBuffer :: Card -> FrameBuffer -> SysRet ()
-removeFrameBuffer card fb = do
+removeFrameBuffer :: Handle -> FrameBuffer -> SysRet ()
+removeFrameBuffer hdl fb = do
    let FrameBufferID fbid = fbID fb
-   void <$> ioctlRemoveFrameBuffer (cardHandle card) fbid
+   void <$> ioctlRemoveFrameBuffer hdl fbid
 
 
 -- | Indicate dirty parts of a framebuffer
-dirtyFrameBuffer :: Card -> FrameBuffer -> DirtyAnnotation -> SysRet ()
-dirtyFrameBuffer card fb mode = do
+dirtyFrameBuffer :: Handle -> FrameBuffer -> DirtyAnnotation -> SysRet ()
+dirtyFrameBuffer hdl fb mode = do
    let
       (color,flags,clips) = case mode of
          Dirty     cs   -> (0,0,cs)
@@ -102,6 +102,6 @@ dirtyFrameBuffer card fb mode = do
                , fdNumClips = fromIntegral (length clips)
                , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
                }
-      void <$> ioctlDirtyFrameBuffer (cardHandle card) s
+      void <$> ioctlDirtyFrameBuffer hdl s
 
 

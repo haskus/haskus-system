@@ -1,6 +1,7 @@
 -- | File descriptor (used for many things in Linux)
 module ViperVM.Arch.Linux.FileDescriptor
    ( FileDescriptor(..)
+   , Handle
    , HandleFlag(..)
    , HandleFlags
    , getHandleFlags
@@ -19,6 +20,11 @@ import ViperVM.Format.Binary.BitSet as BitSet
 --
 -- (file descriptor in original terminology)
 newtype FileDescriptor = FileDescriptor Word deriving (Show,Eq)
+
+-- | Kernel object handle
+--
+-- (file descriptor in original terminology)
+type Handle = FileDescriptor
 
 
 -- | Get descriptor flags

@@ -12,11 +12,13 @@ module ViperVM.Arch.Linux.Graphics.Encoder
    ( Encoder(..)
    , EncoderType(..)
    , encoderController
-   , cardEncoders
-   , cardEncoderFromID
+   , getEncoders
+   , getEncoderFromID
    )
 where
 
+import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
@@ -31,20 +33,20 @@ data Encoder = Encoder
    , encoderControllerID        :: Maybe ControllerID -- ^ Associated controller
    , encoderPossibleControllers :: [ControllerID]     -- ^ Valid controllers
    , encoderPossibleClones      :: [EncoderID]        -- ^ Valid clone encoders
-   , encoderCard                :: Card               -- ^ Graphic card
+   , encoderHandle              :: Handle             -- ^ Graphic card
    } deriving (Show)
 
-fromStructGetEncoder :: Card -> StructGetEncoder -> Encoder
-fromStructGetEncoder card StructGetEncoder{..} =
+fromStructGetEncoder :: Resources -> Handle -> StructGetEncoder -> Encoder
+fromStructGetEncoder res hdl StructGetEncoder{..} =
       Encoder
          (EncoderID geEncoderId)
          (fromEnumField geEncoderType)
          (if geCrtcId == 0
             then Nothing
             else Just (ControllerID geCrtcId))
-         (pick' (cardControllerIDs card) gePossibleCrtcs)
-         (pick' (cardEncoderIDs card) gePossibleClones)
-         card
+         (pick' (resControllerIDs res) gePossibleCrtcs)
+         (pick' (resEncoderIDs    res) gePossibleClones)
+         hdl
    where
       -- pick the elements in es whose indexes are in bs
       pick' es bs = pick es 0 (BitSet.elems bs)
@@ -57,18 +59,19 @@ fromStructGetEncoder card StructGetEncoder{..} =
          | otherwise = pick xs (n+1) (i:is)
 
 -- | Get an encoder from its ID
-cardEncoderFromID :: Card -> EncoderID -> SysRet Encoder
-cardEncoderFromID card (EncoderID encId) = do
-   let res = StructGetEncoder encId (toEnumField EncoderTypeNone)
+getEncoderFromID :: Handle -> EncoderID -> SysRet Encoder
+getEncoderFromID hdl (EncoderID encId) = do
+   let enc = StructGetEncoder encId (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
-   fmap (fromStructGetEncoder card) <$> ioctlGetEncoder (cardHandle card) res
+   res <- runSys $ sysCallAssert "Get resources" $ getResources hdl
+   fmap (fromStructGetEncoder res hdl) <$> ioctlGetEncoder hdl enc
 
 -- | Controller attached to the encoder, if any
 encoderController :: Encoder -> SysRet (Maybe Controller)
 encoderController enc = case encoderControllerID enc of
-   Nothing    -> return (Right Nothing)
-   Just contId -> fmap Just <$> cardControllerFromID (encoderCard enc) contId
+   Nothing     -> return (Right Nothing)
+   Just contId -> fmap Just <$> getControllerFromID (encoderHandle enc) contId
 
 -- | Get encoders (discard errors)
-cardEncoders :: Card -> IO [Encoder]
-cardEncoders = cardEntities cardEncoderIDs cardEncoderFromID
+getEncoders :: Handle -> IO [Encoder]
+getEncoders = getEntities resEncoderIDs getEncoderFromID

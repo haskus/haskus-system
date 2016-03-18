@@ -6,8 +6,9 @@
 --
 -- Bindings with C structures and IOCTLs
 module ViperVM.Arch.Linux.Graphics.Internals
+   (
    -- * Mode
-   ( ModeType (..)
+     ModeType (..)
    , ModeTypes
    , ModeFlag (..)
    , ModeFlags

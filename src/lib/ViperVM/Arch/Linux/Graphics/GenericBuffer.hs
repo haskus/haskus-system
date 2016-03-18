@@ -18,7 +18,7 @@ module ViperVM.Arch.Linux.Graphics.GenericBuffer
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Internals
 
 import Control.Monad (void)
@@ -28,19 +28,19 @@ type GenericBuffer = StructCreateDumb
 type GenericBufferMap = StructMapDumb
 
 -- | Create a generic buffer
-createGenericBuffer :: Card -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
-createGenericBuffer card width height bpp flags = do
+createGenericBuffer :: Handle -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
+createGenericBuffer hdl width height bpp flags = do
    let s = StructCreateDumb height width bpp flags 0 0 0
-   ioctlCreateGenericBuffer (cardHandle card) s
+   ioctlCreateGenericBuffer hdl s
 
 -- | Destroy a generic buffer
-destroyGenericBuffer :: Card -> GenericBuffer -> SysRet ()
-destroyGenericBuffer card buffer = do
+destroyGenericBuffer :: Handle -> GenericBuffer -> SysRet ()
+destroyGenericBuffer hdl buffer = do
    let s = StructDestroyDumb (cdHandle buffer)
-   void <$> ioctlDestroyGenericBuffer (cardHandle card) s
+   void <$> ioctlDestroyGenericBuffer hdl s
 
 -- | Map a Generic buffer
-mapGenericBuffer :: Card -> GenericBuffer -> SysRet GenericBufferMap
-mapGenericBuffer card buffer = do
+mapGenericBuffer :: Handle -> GenericBuffer -> SysRet GenericBufferMap
+mapGenericBuffer hdl buffer = do
    let s = StructMapDumb (cdHandle buffer) 0 0
-   ioctlMapGenericBuffer (cardHandle card) s
+   ioctlMapGenericBuffer hdl s

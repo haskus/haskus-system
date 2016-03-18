@@ -1,19 +1,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- | Graphic card management
+-- | Graphic card resources
 module ViperVM.Arch.Linux.Graphics.Card
-   ( Card(..)
-   -- * Identifiers
+   ( Resources(..)
    , FrameBufferID(..)
    , ControllerID(..)
    , ConnectorID(..)
    , EncoderID(..)
-   , getCardResources
-   , cardEntities
+   , getResources
+   , getEntities
    )
 where
 
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Internals
@@ -26,16 +26,15 @@ import Foreign.Ptr (Ptr,ptrToWordPtr)
 import Foreign.Storable
 
 -- | Graphic card ressources
-data Card = Card
-   { cardFrameBufferIDs  :: [FrameBufferID]
-   , cardControllerIDs   :: [ControllerID]
-   , cardConnectorIDs    :: [ConnectorID]
-   , cardEncoderIDs      :: [EncoderID]
-   , cardMinWidth        :: Word32
-   , cardMaxWidth        :: Word32
-   , cardMinHeight       :: Word32
-   , cardMaxHeight       :: Word32
-   , cardHandle          :: FileDescriptor
+data Resources = Resources
+   { resFrameBufferIDs  :: [FrameBufferID]   -- ^ Frame buffer IDs
+   , resControllerIDs   :: [ControllerID]    -- ^ Controller IDs
+   , resConnectorIDs    :: [ConnectorID]     -- ^ Connector IDs
+   , resEncoderIDs      :: [EncoderID]       -- ^ Encoder IDs
+   , resMinWidth        :: Word32            -- ^ Minimal width
+   , resMaxWidth        :: Word32            -- ^ Maximal width
+   , resMinHeight       :: Word32            -- ^ Minimal height
+   , resMaxHeight       :: Word32            -- ^ Maximal height
    } deriving (Show)
 
 newtype ConnectorID   = ConnectorID Word32 deriving (Show,Eq,Storable)
@@ -52,8 +51,8 @@ newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 -- fields are not NULL, the kernel fills the pointed arrays with up to *Count
 -- elements.
 -- 
-getCardResources :: FileDescriptor -> SysRet Card
-getCardResources fd = runEitherT $ do
+getResources :: Handle -> SysRet Resources
+getResources fd = runEitherT $ do
    let 
       res          = StructCardRes 0 0 0 0 0 0 0 0 0 0 0 0
  
@@ -80,7 +79,7 @@ getCardResources fd = runEitherT $ do
 
          [fbs,ctrls,conns,encs] <- liftIO $ peekArrays arraySizes as
 
-         let res5 = Card
+         let res5 = Resources
                      (fmap FrameBufferID fbs)
                      (fmap ControllerID  ctrls)
                      (fmap ConnectorID   conns)
@@ -89,7 +88,6 @@ getCardResources fd = runEitherT $ do
                      (csMaxWidth res4)
                      (csMinHeight res4)
                      (csMaxHeight res4)
-                     fd
 
          right (res4, res5)
 
@@ -101,17 +99,19 @@ getCardResources fd = runEitherT $ do
      || csCountCrtcs res2 < csCountCrtcs rawRes
      || csCountConns res2 < csCountConns rawRes
      || csCountEncs  res2 < csCountEncs  rawRes
-      then EitherT $ getCardResources fd
+      then EitherT $ getResources fd
       else right retRes
 
 
 -- | Internal function to retreive card entities from their identifiers
-cardEntities :: (Card -> [a]) -> (Card -> a -> IO (Either x b)) -> Card -> IO [b]
-cardEntities getIDs getEntityFromID card = do
+getEntities :: (Resources -> [a]) -> (Handle -> a -> IO (Either x b)) -> Handle -> IO [b]
+getEntities getIDs getEntityFromID hdl = do
+   res <- runSys $ sysCallAssert "Get resources" $ getResources hdl
+
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs
-      ids = getIDs card
-   
-   xs <- traverse (getEntityFromID card) ids
+      ids            = getIDs res
+
+   xs <- traverse (getEntityFromID hdl) ids
    return (foldr f [] xs)

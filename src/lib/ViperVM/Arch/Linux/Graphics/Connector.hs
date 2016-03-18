@@ -10,11 +10,12 @@ module ViperVM.Arch.Linux.Graphics.Connector
    , SubPixel(..)
    , connectorEncoder
    , connectorController
-   , cardConnectors
+   , getConnectors
    )
 where
 
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.FileDescriptor
 
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
@@ -57,12 +58,12 @@ data Connector = Connector
    , connectorState              :: Connection           -- ^ Connection state
    , connectorPossibleEncoderIDs :: [EncoderID]          -- ^ IDs of the encoders that can work with this connector
    , connectorEncoderID          :: Maybe EncoderID      -- ^ Currently used encoder
-   , connectorCard               :: Card                 -- ^ Graphic card
+   , connectorHandle             :: Handle               -- ^ Graphic card
    } deriving (Show)
 
 -- | Get connector
-cardConnectorFromID :: Card -> ConnectorID -> SysRet Connector
-cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
+getConnectorFromID :: Handle -> ConnectorID -> SysRet Connector
+getConnectorFromID hdl connId@(ConnectorID cid) = runEitherT $ do
    let 
       res = StructGetConnector 0 0 0 0 0 0 0 0 cid
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
@@ -74,7 +75,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
       peekArray' :: (Storable a, Integral c) => c -> Ptr a -> IO [a]
       peekArray'        = peekArray . fromIntegral
 
-      getModeConnector' = EitherT . ioctlGetConnector (cardHandle card)
+      getModeConnector' = EitherT . ioctlGetConnector hdl
 
    -- First we get the number of each resource
    res2 <- getModeConnector' res
@@ -107,7 +108,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
                                        <*> peekArray' (connPropsCount res2) pvs
                            props <- forM rawProps $ \raw -> do
                               --FIXME: store property meta in the card
-                              meta <- EitherT $ getPropertyMeta (cardHandle card) (rawPropertyMetaID raw)
+                              meta <- EitherT $ getPropertyMeta hdl (rawPropertyMetaID raw)
                               return (Property meta (rawPropertyValue raw))
 
                            modes <- liftIO (fmap fromStructMode <$> peekArray' (connModesCount res2) ms)
@@ -130,7 +131,7 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
                         state
                         encs
                         (EncoderID <$> wrapZero (connEncoderID_ res4))
-                        card
+                        hdl
 
                   right (res4, res5)
 
@@ -141,21 +142,21 @@ cardConnectorFromID card connId@(ConnectorID cid) = runEitherT $ do
    if   connModesCount    res2 < connModesCount    rawRes
      || connPropsCount    res2 < connPropsCount    rawRes
      || connEncodersCount res2 < connEncodersCount rawRes
-      then EitherT $ cardConnectorFromID card connId
+      then EitherT $ getConnectorFromID hdl connId
       else right retRes
 
 
 
 -- | Get connectors (discard errors)
-cardConnectors :: Card -> IO [Connector]
-cardConnectors = cardEntities cardConnectorIDs cardConnectorFromID
+getConnectors :: Handle -> IO [Connector]
+getConnectors = getEntities resConnectorIDs getConnectorFromID
 
 
 -- | Encoder attached to the connector, if any
 connectorEncoder :: Connector -> SysRet (Maybe Encoder)
 connectorEncoder conn = case connectorEncoderID conn of
    Nothing    -> return (Right Nothing)
-   Just encId -> fmap Just <$> cardEncoderFromID (connectorCard conn) encId
+   Just encId -> fmap Just <$> getEncoderFromID (connectorHandle conn) encId
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
 connectorController :: Connector -> SysRet (Maybe Controller, Maybe Encoder)

@@ -29,11 +29,11 @@ setController ctrl fbconf conns mode = do
          SetFB fb  -> Just $ FrameBufferPos (fbID fb) 0 0
          ReuseFB   -> Just $ FrameBufferPos (FrameBufferID (-1)) 0 0
          ReleaseFB -> Nothing
-      card  = controllerCard ctrl
-   setController' card (controllerID ctrl) fbpos (fmap connectorID conns) mode
+      hdl  = controllerHandle ctrl
+   setController' hdl (controllerID ctrl) fbpos (fmap connectorID conns) mode
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
 switchFrameBuffer :: Controller -> FrameBuffer -> PageFlipFlags -> SysRet ()
 switchFrameBuffer ctrl fb flags =
-   switchFrameBuffer' (controllerCard ctrl) (controllerID ctrl) (fbID fb) flags
+   switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (fbID fb) flags

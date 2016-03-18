@@ -18,7 +18,6 @@ import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Memory
 
-import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Internals
@@ -62,14 +61,14 @@ loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
       isCard (p,_) = "card" `isPrefixOf` takeBaseName p
       devs' = filter isCard devs
    forM devs' $ \(devpath,dev) -> do
-      fd   <- getDeviceHandle system CharDevice dev
+      hdl   <- getDeviceHandle system CharDevice dev
       -- We support these capabilities
-      setClientCapability' fd ClientCapStereo3D        True
-      setClientCapability' fd ClientCapUniversalPlanes True
-      setClientCapability' fd ClientCapAtomic          True
+      setClientCapability hdl ClientCapStereo3D        True
+      setClientCapability hdl ClientCapUniversalPlanes True
+      setClientCapability hdl ClientCapAtomic          True
       -- Create the DRM event reader thread
-      GraphicCard devpath dev (read (drop 4 devpath)) fd
-         <$> newEventWaiterThread fd
+      GraphicCard devpath dev (read (drop 4 devpath)) hdl
+         <$> newEventWaiterThread hdl
 
 
 -- | Create a new thread reading input events and putting them in a TChan
@@ -109,21 +108,20 @@ data GenericFrame = GenericFrame
    }
 
 -- | Allocate and map fullscreen planes for the given format and mode
-initGenericFrameBuffer :: Card -> Mode -> PixelFormat -> Sys GenericFrame
-initGenericFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
+initGenericFrameBuffer :: Handle -> Mode -> PixelFormat -> Sys GenericFrame
+initGenericFrameBuffer hdl mode pixfmt@(PixelFormat fmt _) = do
    let
       width  = fromIntegral $ modeHorizontalDisplay mode
       height = fromIntegral $ modeVerticalDisplay mode
       bpps   = formatBitDepth fmt
       flags  = 0
-      fd     = cardHandle card
 
    mappedPlanes <- forM bpps $ \bpp -> do
       buf <- sysCallAssert "Create a generic buffer" $
-         createGenericBuffer card width height bpp flags
+         createGenericBuffer hdl width height bpp flags
 
       bufKerMap <- sysCallAssert "Map generic buffer" $
-         mapGenericBuffer card buf
+         mapGenericBuffer hdl buf
 
       addr <- sysCallAssert "Map generic buffer in user space" $ 
          sysMemMap Nothing
@@ -131,7 +129,7 @@ initGenericFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
             (BitSet.fromList [ProtRead,ProtWrite])
             (BitSet.fromList [MapShared])
             Nothing
-            (Just (fd, mdOffset bufKerMap))
+            (Just (hdl, mdOffset bufKerMap))
 
       let plane = Buffer (cdHandle buf) (cdPitch buf) 0 0
 
@@ -139,13 +137,13 @@ initGenericFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
    
    let planes = fmap mappedBufferInfo mappedPlanes
 
-   fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer card width height pixfmt BitSet.empty planes
+   fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer hdl width height pixfmt BitSet.empty planes
 
    return $ GenericFrame fb mappedPlanes
 
 
-freeGenericFrameBuffer :: Card -> GenericFrame -> Sys ()
-freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
+freeGenericFrameBuffer :: Handle -> GenericFrame -> Sys ()
+freeGenericFrameBuffer hdl (GenericFrame fb mappedBufs) = do
 
    forM_ mappedBufs $ \(MappedBuffer buf _ addr _) -> do
       -- unmap generic buffer from user-space
@@ -153,9 +151,8 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
          sysMemUnmap addr (cdSize buf)
 
       -- destroy the generic buffer
-      sysCallAssert "Destroy generic buffer" $ destroyGenericBuffer card buf
+      sysCallAssert "Destroy generic buffer" $ destroyGenericBuffer hdl buf
 
 
    -- remove the framebuffer
-   sysCallAssert "Remove framebuffer" $
-      removeFrameBuffer card fb
+   sysCallAssert "Remove framebuffer" $ removeFrameBuffer hdl fb

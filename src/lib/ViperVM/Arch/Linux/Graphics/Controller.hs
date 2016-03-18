@@ -9,11 +9,11 @@ module ViperVM.Arch.Linux.Graphics.Controller
    , FrameBufferPos (..)
    , setController'
    , switchFrameBuffer'
-   , cardControllers
+   , getControllers
    , getControllerGamma
    , setControllerGamma
    -- * Low level
-   , cardControllerFromID
+   , getControllerFromID
    , fromStructController
    )
 where
@@ -23,11 +23,12 @@ import Foreign.Ptr
 import Data.Word
 import Control.Monad (void)
 
-import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Internals
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 
 -- | Video controller
@@ -38,7 +39,7 @@ data Controller = Controller
    , controllerMode           :: Maybe Mode
    , controllerFrameBuffer    :: Maybe FrameBufferPos -- ^ Associated frame buffer and its position (x,y)
    , controllerGammaTableSize :: Word32
-   , controllerCard           :: Card
+   , controllerHandle         :: Handle
    } deriving (Show)
 
 data FrameBufferPos = FrameBufferPos
@@ -50,8 +51,8 @@ data FrameBufferPos = FrameBufferPos
 emptyStructController :: StructController
 emptyStructController = StructController 0 0 0 0 0 0 0 0 emptyStructMode
 
-fromStructController :: Card -> StructController -> Controller
-fromStructController card StructController{..} =
+fromStructController :: Handle -> StructController -> Controller
+fromStructController hdl StructController{..} =
    Controller
       (ControllerID contID)
       (if contModeValid /= 0
@@ -61,21 +62,20 @@ fromStructController card StructController{..} =
          then Just (FrameBufferPos (FrameBufferID contFbID) contFbX contFbY)
          else Nothing)
       contGammaSize
-      card
+      hdl
 
       
 -- | Get Controller
-cardControllerFromID :: Card -> ControllerID -> SysRet Controller
-cardControllerFromID card crtcid = do
+getControllerFromID :: Handle -> ControllerID -> SysRet Controller
+getControllerFromID hdl crtcid = do
    let
-      fd               = cardHandle card
       ControllerID cid = crtcid
       crtc             = emptyStructController { contID = cid }
 
-   fmap (fromStructController card) <$> ioctlGetController fd crtc
+   fmap (fromStructController hdl) <$> ioctlGetController hdl crtc
 
-setController' :: Card -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
-setController' card crtcid fb conns mode = do
+setController' :: Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
+setController' hdl crtcid fb conns mode = do
    let
       ControllerID cid = crtcid
       conns' = fmap (\(ConnectorID i) -> i) conns
@@ -102,30 +102,30 @@ setController' card crtcid fb conns mode = do
             , contGammaSize = 0
             }
 
-      void <$> ioctlSetController (cardHandle card) crtc
+      void <$> ioctlSetController hdl crtc
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: Card -> ControllerID -> FrameBufferID -> PageFlipFlags -> SysRet ()
-switchFrameBuffer' card crtcid fb flags = do
+switchFrameBuffer' :: Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> SysRet ()
+switchFrameBuffer' hdl crtcid fb flags = do
    let
       ControllerID cid = crtcid
       FrameBufferID fid = fb
       s = StructPageFlip cid fid flags 0 0
 
-   void <$> ioctlPageFlip (cardHandle card) s
+   void <$> ioctlPageFlip hdl s
 
 -- | Get controllers (discard errors)
-cardControllers :: Card -> IO [Controller]
-cardControllers = cardEntities cardControllerIDs cardControllerFromID
+getControllers :: Handle -> IO [Controller]
+getControllers = getEntities resControllerIDs getControllerFromID
 
 -- | Get controller gama look-up table
 getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])
 getControllerGamma c = do
    let 
-      card               = controllerCard c
+      hdl                = controllerHandle c
       (ControllerID cid) = controllerID c
       sz                 = controllerGammaTableSize c
       s                  = StructControllerLut cid sz
@@ -135,7 +135,7 @@ getControllerGamma c = do
          let f = fromIntegral . ptrToWordPtr
          state2 <- sysExec state $
             sysCallAssert "Get controller gamma look-up table" $
-               ioctlGetGamma (cardHandle card) (s (f r) (f g) (f b))
+               ioctlGetGamma hdl (s (f r) (f g) (f b))
          [rs,gs,bs] <- peekArrays [sz,sz,sz] as
          return ((rs,gs,bs),state2)
 
@@ -143,7 +143,7 @@ getControllerGamma c = do
 setControllerGamma :: Controller -> ([Word16],[Word16],[Word16]) -> Sys ()
 setControllerGamma c (rs,gs,bs) = do
    let 
-      card               = controllerCard c
+      hdl                = controllerHandle c
       (ControllerID cid) = controllerID c
       sz'                = controllerGammaTableSize c
       sz                 = fromIntegral sz'
@@ -155,4 +155,4 @@ setControllerGamma c (rs,gs,bs) = do
          let f = fromIntegral . ptrToWordPtr
          sysRun' state $
             sysCallAssert "Set controller gamma look-up table" $
-               ioctlSetGamma (cardHandle card) (s (f r) (f g) (f b))
+               ioctlSetGamma hdl (s (f r) (f g) (f b))
