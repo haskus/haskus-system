@@ -21,8 +21,24 @@ module ViperVM.Utils.Variant
    , ReplaceAt
    , Concat
    , Length
+   , MapMaybe
+   , GetValue
+   , Generate
    , matchVariantHList
    , matchVariant
+   , getVariant0
+   , getVariant1
+   , getVariant2
+   , getVariant3
+   , getVariant4
+   , getVariant5
+   , setVariant0
+   , setVariant1
+   , setVariant2
+   , setVariant3
+   , setVariant4
+   , setVariant5
+   , liftEither
    )
 where
 
@@ -52,6 +68,23 @@ getVariant _ (Variant t a) =
       then Nothing
       else Just (unsafeCoerce a) -- we know it is the effective type
 
+getVariant0 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 0 l)
+getVariant0 = getVariant (Proxy :: Proxy 0)
+
+getVariant1 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 1 l)
+getVariant1 = getVariant (Proxy :: Proxy 1)
+
+getVariant2 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 2 l)
+getVariant2 = getVariant (Proxy :: Proxy 2)
+
+getVariant3 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 3 l)
+getVariant3 = getVariant (Proxy :: Proxy 3)
+
+getVariant4 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 4 l)
+getVariant4 = getVariant (Proxy :: Proxy 4)
+
+getVariant5 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 5 l)
+getVariant5 = getVariant (Proxy :: Proxy 5)
 
 -- | Set the value with the given indexed type
 setVariant :: forall (n :: Nat) l .
@@ -59,6 +92,29 @@ setVariant :: forall (n :: Nat) l .
    => Proxy n -> TypeAt n l -> Variant l
 setVariant _ = Variant (fromIntegral (natVal (Proxy :: Proxy n)))
 
+
+setVariant0 :: forall (l :: [*]). TypeAt 0 l -> Variant l
+setVariant0 = setVariant (Proxy :: Proxy 0)
+
+setVariant1 :: forall (l :: [*]). TypeAt 1 l -> Variant l
+setVariant1 = setVariant (Proxy :: Proxy 1)
+
+setVariant2 :: forall (l :: [*]). TypeAt 2 l -> Variant l
+setVariant2 = setVariant (Proxy :: Proxy 2)
+
+setVariant3 :: forall (l :: [*]). TypeAt 3 l -> Variant l
+setVariant3 = setVariant (Proxy :: Proxy 3)
+
+setVariant4 :: forall (l :: [*]). TypeAt 4 l -> Variant l
+setVariant4 = setVariant (Proxy :: Proxy 4)
+
+setVariant5 :: forall (l :: [*]). TypeAt 5 l -> Variant l
+setVariant5 = setVariant (Proxy :: Proxy 5)
+
+-- | Lift an Either into a Variant (reversed order by convention)
+liftEither :: Either a b -> Variant '[b,a]
+liftEither (Left a)  = setVariant1 a
+liftEither (Right b) = setVariant0 b
 
 -- | Update a variant value
 updateVariant :: forall (n :: Nat) l l2 .
