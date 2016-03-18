@@ -155,6 +155,7 @@ library
     ViperVM.System.Terminal
     ViperVM.System.Process
 
+    ViperVM.Utils.Variant
     ViperVM.Utils.Hash
     ViperVM.Utils.HList
     ViperVM.Utils.EmbedByteString
