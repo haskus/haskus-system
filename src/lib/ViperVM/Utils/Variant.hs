@@ -5,6 +5,9 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | Variant type
 module ViperVM.Utils.Variant
@@ -15,12 +18,21 @@ module ViperVM.Utils.Variant
    , updateVariantM
    , updateVariantFold
    , updateVariantFoldM
+   , ReplaceAt
+   , Concat
+   , Length
+   , matchVariantHList
+   , matchVariant
    )
 where
 
+import Data.HList.FakePrelude (ApplyAB(..))
+import Data.HList.HList
 import GHC.TypeLits
 import Unsafe.Coerce
 import Data.Proxy
+
+import ViperVM.Utils.HList
 
 -- | A variant contains a value whose type is at the given position in the type
 -- list
@@ -118,3 +130,47 @@ updateVariantFoldM _ f v@(Variant t a) =
    where
       n   = fromIntegral (natVal (Proxy :: Proxy n))
       nl2 = fromIntegral (natVal (Proxy :: Proxy k))
+
+type family MapMaybe l where
+   MapMaybe '[]       = '[]
+   MapMaybe (x ': xs) = Maybe x ': MapMaybe xs
+
+-- | Generate a list of Nat [n..m-1]
+type family Generate (n :: Nat) (m :: Nat) where
+   Generate n n = '[]
+   Generate n m = Proxy n ': Generate (n+1) m
+
+data GetValue = GetValue
+
+instance forall (n :: Nat) l l2 i r .
+   ( i ~ (Variant l, HList l2)                         -- input
+   , r ~ (Variant l, HList (Maybe (TypeAt n l) ': l2)) -- result
+   , KnownNat n
+   ) => ApplyAB GetValue (Proxy n,i) r where
+      applyAB _ (_, (v,xs)) = (v, getVariant (Proxy :: Proxy n) v `HCons` xs)
+
+-- | Get variant possible values in a HList of Maybe types
+matchVariantHList :: forall l l2 m is . 
+   ( m ~ Length l
+   , KnownNat m
+   , l2 ~ MapMaybe l
+   , is ~ Generate 0 m
+   , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
+   ) => Variant l -> HList (MapMaybe l)
+matchVariantHList v = snd res
+   where
+      res :: (Variant l, HList (MapMaybe l))
+      res = hFoldr' GetValue
+               ((v, HNil) :: (Variant l, HList '[]))
+               (undefined :: HList is)
+
+-- | Get variant possible values in a tuple of Maybe types
+matchVariant :: forall l l2 m is t . 
+   ( m ~ Length l
+   , KnownNat m
+   , l2 ~ MapMaybe l
+   , is ~ Generate 0 m
+   , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
+   , HTuple' (MapMaybe l) t
+   ) => Variant l -> t
+matchVariant = hToTuple' . matchVariantHList
