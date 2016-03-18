@@ -6,6 +6,9 @@ module ViperVM.System.Graphics
    , GenericFrame (..)
    , initGenericFrameBuffer
    , freeGenericFrameBuffer
+   , graphicCardConnectors
+   , graphicCardControllers
+   , graphicCardEncoders
    )
 where
 
@@ -21,6 +24,9 @@ import ViperVM.Arch.Linux.Memory
 import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Graphics.Connector
+import ViperVM.Arch.Linux.Graphics.Controller
+import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -43,7 +49,7 @@ data GraphicCard = GraphicCard
    { graphicCardPath    :: FilePath             -- ^ Path to the graphic card in SysFS
    , graphicCardDev     :: Device               -- ^ Device major/minor to create the device file descriptor
    , graphicCardID      :: Int                  -- ^ Card identifier
-   , graphicCardHandle  :: FileDescriptor       -- ^ Device handle
+   , graphicCardHandle  :: Handle               -- ^ Device handle
    , graphicCardChan    :: TChan Graphics.Event -- ^ Event stream
    }
 
@@ -156,3 +162,16 @@ freeGenericFrameBuffer hdl (GenericFrame fb mappedBufs) = do
 
    -- remove the framebuffer
    sysCallAssert "Remove framebuffer" $ removeFrameBuffer hdl fb
+
+
+-- | Retreive graphic card connectors
+graphicCardConnectors :: GraphicCard -> Sys [Connector]
+graphicCardConnectors = sysIO . getConnectors . graphicCardHandle
+
+-- | Retrieve graphic card controllers
+graphicCardControllers :: GraphicCard -> Sys [Controller]
+graphicCardControllers = sysIO . getControllers . graphicCardHandle
+
+-- | Retrieve graphic card encoders
+graphicCardEncoders :: GraphicCard -> Sys [Encoder]
+graphicCardEncoders = sysIO . getEncoders . graphicCardHandle
