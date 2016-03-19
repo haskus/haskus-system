@@ -10,14 +10,82 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
+-- | Heterogeneous list utils
 module ViperVM.Utils.HList
-   ( HFoldr' (..)
+   ( ReplaceAt
+   , Concat
+   , Length
+   , MapMaybe
+   , Generate
+   , IsMember
+   , Indexes
+   , MapTest
+   , Zip
+   , Filter
+   , HFoldr' (..)
    , HTuple' (..)
+   , Single (..)
    )
 where
 
 import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
+import Data.Proxy
+import GHC.TypeLits
+
+-- | Concat two type lists
+type family Concat xs ys where
+   Concat '[] '[]      = '[]
+   Concat '[] ys       = ys
+   Concat (x ': xs) ys = x ': Concat xs ys
+
+-- | Get list length
+type family Length xs where
+   Length '[]       = 0
+   Length (x ': xs) = 1 + Length xs
+
+-- | replace l[n] with l2 (folded)
+type family ReplaceAt (n :: Nat) l l2 where
+   ReplaceAt 0 (x ': xs) ys = Concat ys xs
+   ReplaceAt n (x ': xs) ys = x ': ReplaceAt (n-1) xs ys
+
+-- | Apply Maybe to all the elements of the list
+type family MapMaybe l where
+   MapMaybe '[]       = '[]
+   MapMaybe (x ': xs) = Maybe x ': MapMaybe xs
+
+-- | Generate a list of Nat [n..m-1]
+type family Generate (n :: Nat) (m :: Nat) where
+   Generate n n = '[]
+   Generate n m = Proxy n ': Generate (n+1) m
+
+-- | Check that a type is member of a type list
+type family IsMember a l :: Bool where
+   IsMember a (a ': l) = 'True
+   IsMember a (b ': l) = IsMember a l
+
+-- | Get list indexes
+type family Indexes (l :: [*]) where
+   Indexes l = Generate 0 (Length l)
+
+-- | Map to 1 if type equality, 0 otherwise
+type family MapTest a (l :: [*]) where
+   MapTest a '[]       = '[]
+   MapTest a (a ': xs) = Proxy 1 ': MapTest a xs
+   MapTest a (x ': xs) = Proxy 0 ': MapTest a xs
+
+-- | Zip two lists
+type family Zip (l :: [*]) (l2 :: [*]) where
+   Zip '[] xs              = '[]
+   Zip xs '[]              = '[]
+   Zip (x ': xs) (y ': ys) = (x,y) ': Zip xs ys
+
+-- | Remove `a` in `l`
+type family Filter a (l :: [*]) where
+   Filter a '[]       = '[]
+   Filter a (a ': xs) = Filter a xs
+   Filter a (x ': xs) = x ': Filter a xs
+
 
 -- | Like HFoldr but only use types, not values!
 --
@@ -53,6 +121,12 @@ class HTuple' v t | v -> t, t -> v where
 instance HTuple' '[] () where
     hToTuple' HNil = ()
     hFromTuple' () = HNil
+
+data Single a = Single a deriving (Show,Eq)
+
+instance HTuple' '[a] (Single a) where
+    hToTuple' (a `HCons` HNil) = Single a
+    hFromTuple' (Single a) = (a `HCons` HNil)
 
 instance HTuple' '[a,b] (a,b) where
     hToTuple' (a `HCons` b `HCons` HNil) = (a,b)

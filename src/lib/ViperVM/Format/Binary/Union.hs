@@ -48,7 +48,7 @@ module ViperVM.Format.Binary.Union
 where
 
 import ViperVM.Utils.Memory (memCopy, memSet)
-import ViperVM.Utils.HList (HFoldr'(..))
+import ViperVM.Utils.HList
 
 import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
@@ -66,11 +66,6 @@ import Control.Monad (when)
 -- The union is just a pointer to a buffer containing the value(s). The size of
 -- the buffer is implicitly known from the types in the list.
 newtype Union (x :: [*]) = Union (ForeignPtr ()) deriving (Show)
-
--- | Check that a type is member of a type list
-type family IsMember a l :: Bool where
-   IsMember a (a ': l) = 'True
-   IsMember a (b ': l) = IsMember a l
 
 -- | Retrieve a union member from its type
 fromUnion :: (Storable a, IsMember a l ~ 'True) => Union l -> a

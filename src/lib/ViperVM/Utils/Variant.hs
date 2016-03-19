@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Variant type
 module ViperVM.Utils.Variant
@@ -18,12 +19,7 @@ module ViperVM.Utils.Variant
    , updateVariantM
    , updateVariantFold
    , updateVariantFoldM
-   , ReplaceAt
-   , Concat
-   , Length
-   , MapMaybe
    , GetValue
-   , Generate
    , matchVariantHList
    , matchVariant
    , getVariant0
@@ -46,6 +42,10 @@ module ViperVM.Utils.Variant
    , updateVariant5
    , liftEither
    , liftEitherM
+   , removeType
+   , Found
+   , RemoveType
+   , singleVariant
    )
 where
 
@@ -54,6 +54,7 @@ import Data.HList.HList
 import GHC.TypeLits
 import Unsafe.Coerce
 import Data.Proxy
+import Data.Maybe
 
 import ViperVM.Utils.HList
 
@@ -169,21 +170,6 @@ updateVariantM _ f v@(Variant t a) =
       Nothing -> return (Variant t a)
       Just x  -> Variant t <$> f x
 
--- | Concat two type lists
-type family Concat xs ys where
-   Concat '[] '[]      = '[]
-   Concat '[] ys       = ys
-   Concat (x ': xs) ys = x ': Concat xs ys
-
-type family Length xs where
-   Length '[]       = 0
-   Length (x ': xs) = 1 + Length xs
-
--- | replace l[n] with l2 (folded)
-type family ReplaceAt (n :: Nat) l l2 where
-   ReplaceAt 0 (x ': xs) ys = Concat ys xs
-   ReplaceAt n (x ': xs) ys = x ': ReplaceAt (n-1) xs ys
-
 -- | Update a variant value with a variant and fold the result
 updateVariantFold :: forall (n :: Nat) (m :: Nat) l l2 .
    (KnownNat n, KnownNat m, m ~ Length l2)
@@ -222,16 +208,8 @@ updateVariantFoldM _ f v@(Variant t a) =
       n   = fromIntegral (natVal (Proxy :: Proxy n))
       nl2 = fromIntegral (natVal (Proxy :: Proxy k))
 
-type family MapMaybe l where
-   MapMaybe '[]       = '[]
-   MapMaybe (x ': xs) = Maybe x ': MapMaybe xs
-
--- | Generate a list of Nat [n..m-1]
-type family Generate (n :: Nat) (m :: Nat) where
-   Generate n n = '[]
-   Generate n m = Proxy n ': Generate (n+1) m
-
-data GetValue = GetValue
+data GetValue   = GetValue
+data RemoveType = RemoveType
 
 instance forall (n :: Nat) l l2 i r .
    ( i ~ (Variant l, HList l2)                         -- input
@@ -239,6 +217,51 @@ instance forall (n :: Nat) l l2 i r .
    , KnownNat n
    ) => ApplyAB GetValue (Proxy n,i) r where
       applyAB _ (_, (v,xs)) = (v, getVariant (Proxy :: Proxy n) v `HCons` xs)
+
+
+data Found
+   = FoundSame
+   | FoundDifferent
+
+
+instance forall (n :: Nat) l l2 r i a (same :: Nat).
+   ( i ~ (Variant l, Int, Maybe Found) -- input
+   , r ~ (Variant l, Int, Maybe Found) -- input
+   , l2 ~ Filter a l
+   , KnownNat n
+   , KnownNat same
+   ) => ApplyAB RemoveType ((Proxy n,Proxy same),i) r where
+      applyAB _ (_, (v,shift,r)) =
+            case r of
+               -- we already have a result: we update the shift
+               Just _  -> (v, shift + same, r)
+               -- we look for a result
+               Nothing -> case getVariant (Proxy :: Proxy n) v of
+                  Nothing -> (v,shift,r)
+                  Just _  -> if same == 0
+                     then (v, shift, Just FoundDifferent)
+                     else (v, shift, Just FoundSame)
+         where
+            -- if (a /= TypeAt n l), same == 0, else same == 1
+            same = fromIntegral (natVal (Proxy :: Proxy same))
+
+
+removeType :: forall l a l2 r is.
+   ( r ~ (Variant l, Int, Maybe Found)
+   , is ~ Zip (Indexes l) (MapTest a l)
+   , HFoldr' RemoveType r is r
+   , l2 ~ Filter a l
+   ) => Variant l -> Either a (Variant l2)
+removeType v = case res of
+      (Variant _ a,_, Just FoundSame)          -> Left (unsafeCoerce a)
+      (Variant t a,shift, Just FoundDifferent) -> Right (Variant (t-shift) a)
+      _ -> error "removeType error" -- shouldn't happen
+   where
+      res :: (Variant l, Int, Maybe Found)
+      res = hFoldr' RemoveType
+               ((v,0,Nothing) :: r)
+               (undefined :: HList (Zip (Indexes l) (MapTest a l)))
+
 
 -- | Get variant possible values in a HList of Maybe types
 matchVariantHList :: forall l l2 m is . 
@@ -265,3 +288,7 @@ matchVariant :: forall l l2 m is t .
    , HTuple' (MapMaybe l) t
    ) => Variant l -> t
 matchVariant = hToTuple' . matchVariantHList
+
+-- | Retreive the last v
+singleVariant :: Variant '[a] -> a
+singleVariant = fromJust . getVariant0

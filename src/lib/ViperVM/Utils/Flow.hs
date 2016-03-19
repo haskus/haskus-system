@@ -15,6 +15,7 @@ module ViperVM.Utils.Flow
    , flowMatch
    , flowRetry
    , flowBind
+   , flowCatch
    )
 where
 
@@ -88,3 +89,16 @@ flowRetry n f = do
 -- | Bind during a flow
 flowBind :: Monad m => m a -> (a -> m b) -> m b
 flowBind = (>>=)
+
+
+-- | Catch all the values of type `a`
+flowCatch :: forall l a l2 b m is r.
+   ( IsMember a l ~ 'True
+   , Monad m
+   , r ~ (Variant l, Int, Maybe Found)
+   , is ~ Zip (Indexes l) (MapTest a l)
+   , HFoldr' RemoveType r is r
+   , l2 ~ Filter a l
+   )
+   => m (Variant l) -> (Either a (Variant l2) -> m b) -> m b
+flowCatch v f = f . removeType =<< v
