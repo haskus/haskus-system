@@ -10,9 +10,11 @@
 module ViperVM.Utils.Flow
    ( flowSeq
    , flowSeqE
+   , flowSeqM
    , flowSeq'
    , flowMatch
    , flowRetry
+   , flowBind
    )
 where
 
@@ -35,10 +37,20 @@ flowSeq :: forall x xs m l l2 k .
    => m (Variant (x ': xs)) -> (x -> m (Variant l)) -> m (Variant l2)
 flowSeq v f = updateVariantFoldM (Proxy :: Proxy 0) f =<< v
 
-flowSeqE :: forall x (xs :: [*]) (m :: * -> *) a b.
+-- | Lift an Either into a flow
+flowSeqE :: forall x (xs :: [*]) m a b.
    ( Monad m
    ) => m (Variant (x ': xs)) -> (x -> m (Either a b)) -> m (Variant (b ': a ': xs))
 flowSeqE v f = flowSeq v (liftEitherM . f)
+
+-- | Lift a non-failing function into a flow
+flowSeqM :: forall x (xs :: [*]) m a.
+   ( Monad m
+   ) => m (Variant (x ': xs)) -> (x -> m a) -> m (Variant (a ': xs))
+flowSeqM v f = v `flowSeq` f'
+   where
+      f' :: x -> m (Variant '[a])
+      f' x = setVariant0 <$> f x
 
 
 -- | Like `flowSeq` but specialised for `()` (similarly to `>>`)
@@ -63,6 +75,7 @@ flowMatch :: forall l t m a l2 is.
    ) => m (Variant l) -> (t -> m a) -> m a
 flowMatch v f = f . matchVariant =<< v
 
+
 -- | Retry a flow several times on error
 flowRetry :: (Monad m) => Int -> m (Variant l) -> m (Variant l)
 flowRetry n f = do
@@ -71,3 +84,7 @@ flowRetry n f = do
       (0,_)       -> return r
       (_,Just _)  -> return r
       (_,Nothing) -> flowRetry (n-1) f
+
+-- | Bind during a flow
+flowBind :: Monad m => m a -> (a -> m b) -> m b
+flowBind = (>>=)
