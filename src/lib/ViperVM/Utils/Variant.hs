@@ -45,11 +45,14 @@ module ViperVM.Utils.Variant
    , liftEitherM
    , removeType
    , pickVariant
+   , headVariant
    , Found
    , RemoveType
    , singleVariant
    , appendVariant
    , prependVariant
+   , fusionVariant
+   , VariantFusion
    )
 where
 
@@ -280,6 +283,11 @@ pickVariant _ v@(Variant t a) = case getVariant (Proxy :: Proxy n) v of
       then Variant (t-1) a
       else Variant t a
 
+-- | Pick the head of a variant value
+headVariant :: forall x xs. Variant (x ': xs) -> Either (Variant xs) x
+headVariant v@(Variant t a) = case getVariant0 v of
+   Just x  -> Right x
+   Nothing -> Left $ Variant (t-1) a
 
 -- | Get variant possible values in a HList of Maybe types
 matchVariantHList :: forall l l2 m is . 
@@ -352,3 +360,37 @@ prependVariant :: forall (xs :: [*]) (ys :: [*]).
 prependVariant _ (Variant t a) = Variant (n+t) a
    where
       n = fromIntegral (natVal (Proxy :: Proxy (Length ys)))
+
+data VariantFusion = VariantFusion
+
+-- | Fusioning variant values
+instance forall (n :: Nat) l i r a.
+   ( i ~ (Variant l, Maybe (Variant (Nub l))) -- input
+   , r ~ (Variant l, Maybe (Variant (Nub l))) -- output
+   , a ~ TypeAt n l
+   , a ~ TypeAt (IndexOf a (Nub l)) (Nub l)
+   , KnownNat n
+   , KnownNat (IndexOf a (Nub l))
+   ) => ApplyAB VariantFusion (Proxy n,i) r where
+      applyAB _ (_, i) = case i of
+         (_, Just _)  -> i
+         (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
+               Nothing -> (v, Nothing)
+               Just a  -> (v, Just (setVariant p a))
+                  where
+                     p = Proxy :: Proxy (IndexOf a (Nub l))
+
+-- | Fusion variant values of the same type
+fusionVariant :: forall l r i.
+   ( i ~ (Variant l, Maybe (Variant (Nub l)))
+   , r ~ (Variant l, Maybe (Variant (Nub l)))
+   , HFoldr' VariantFusion i (Indexes l) r
+   ) => Variant l -> Variant (Nub l)
+fusionVariant v = s
+   where
+      res :: r
+      res = hFoldr' VariantFusion
+               ((v,Nothing) :: i)
+               (undefined :: HList (Indexes l))
+
+      Just s = snd res

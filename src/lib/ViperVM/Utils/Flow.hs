@@ -25,6 +25,7 @@ module ViperVM.Utils.Flow
    , flowBind
    , flowCatchE
    , flowCatch
+   , flowFusion
    )
 where
 
@@ -190,7 +191,7 @@ flowCatchE :: forall l a l2 b m is r.
 flowCatchE v f = f . removeType =<< v
 
 -- | Catch all the values of type `a`
-flowCatch :: forall x xs xs' a m ys r l is.
+flowCatch :: forall x xs xs' a m ys is.
    ( IsMember a xs ~ 'True
    , Monad m
    , xs' ~ Filter a xs  -- xs without the "a" types
@@ -207,3 +208,12 @@ flowCatch v f = do
          flowCatchE (return xs) $ \case
             Left a   -> appendVariant (Proxy :: Proxy xs') <$> f a
             Right v2 -> return (prependVariant (Proxy :: Proxy (x ': ys)) v2)
+
+-- | Fusion variant values of the same type
+flowFusion :: forall m l r i.
+   ( i ~ (Variant l, Maybe (Variant (Nub l)))
+   , r ~ (Variant l, Maybe (Variant (Nub l)))
+   , HFoldr' VariantFusion i (Indexes l) r
+   , Monad m
+   ) => m (Variant l) -> m (Variant (Nub l))
+flowFusion v = fusionVariant <$> v

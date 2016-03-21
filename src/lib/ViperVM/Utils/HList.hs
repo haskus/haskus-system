@@ -23,6 +23,9 @@ module ViperVM.Utils.HList
    , MapTest
    , Zip
    , Filter
+   , Nub
+   , NubHead
+   , IndexOf
    , HFoldr' (..)
    , HTuple' (..)
    , Single (..)
@@ -91,6 +94,21 @@ type family Filter a (l :: [*]) where
    Filter a '[]       = '[]
    Filter a (a ': xs) = Filter a xs
    Filter a (x ': xs) = x ': Filter a xs
+
+-- | Keep only a single value of each type
+type family Nub (l :: [*]) where
+   Nub '[]       = '[]
+   Nub (x ': xs) = x ': Nub (Filter x xs)
+
+-- | Keep only a single value of the head type
+type family NubHead (l :: [*]) where
+   NubHead '[]       = '[]
+   NubHead (x ': xs) = x ': Filter x xs
+
+-- | Get the first index of a type
+type family IndexOf a (l :: [*]) where
+   IndexOf x (x ': xs) = 0
+   IndexOf y (x ': xs) = 1 + IndexOf y xs
 
 
 -- | Like HFoldr but only use types, not values!
