@@ -19,6 +19,7 @@ module ViperVM.Utils.Flow
    , flowFinallyV
    , flowFinallyM
    , flowMatch
+   , flowOp2
    , flowRetry
    , flowBind
    , flowCatch
@@ -143,6 +144,19 @@ flowMatch :: forall l t m a l2 is.
    , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
    ) => m (Variant l) -> (t -> m a) -> m a
 flowMatch v f = f . matchVariant =<< v
+
+-- | Combine two succeeding flows with the given operator
+flowOp2 :: forall a b c as bs m.
+   ( Monad m
+   , KnownNat (Length (b ': bs))
+   ) => (a -> b -> c) -> m (Variant (a ': as)) -> m (Variant (b ': bs)) -> m (Variant (c ': Concat bs as))
+flowOp2 op v1 v2 =
+   flowSeq v1 $ \a ->
+      flowSeq v2 $ \b -> do
+         let
+            v :: Variant '[c]
+            v = setVariant0 (a `op` b)
+         return v
 
 
 -- | Retry a flow several times on error
