@@ -10,6 +10,7 @@
 -- | Control flow
 module ViperVM.Utils.Flow
    ( flowSeq
+   , flowSeqN
    , flowSeqE
    , flowSeqM
    , flowSeq'
@@ -49,6 +50,17 @@ flowSeq :: forall x xs m l l2 k .
    )
    => m (Variant (x ': xs)) -> (x -> m (Variant l)) -> m (Variant l2)
 flowSeq v f = updateVariantFoldM (Proxy :: Proxy 0) f =<< v
+
+-- | Connect a flow to the output n of another
+flowSeqN :: forall x m l1 l2 l3 n.
+   ( l3 ~ ReplaceAt n l1 l2
+   , x ~ TypeAt n l1
+   , Monad m
+   , KnownNat (Length l2)
+   , KnownNat n
+   )
+   => Proxy n -> m (Variant l1) -> (x -> m (Variant l2)) -> m (Variant l3)
+flowSeqN _ v f = updateVariantFoldM (Proxy :: Proxy n) f =<< v
 
 -- | Lift an Either into a flow
 flowSeqE :: forall x (xs :: [*]) m a b.

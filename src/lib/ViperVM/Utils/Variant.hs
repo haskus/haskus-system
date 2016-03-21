@@ -73,10 +73,6 @@ data Variant (l :: [*]) = forall a . Variant Int a
 -- between Variant values unsafe
 type role Variant representational
 
-type family TypeAt (n :: Nat) l where
-   TypeAt 0 (x ': xs) = x
-   TypeAt n (x ': xs) = TypeAt (n-1) xs
-
 -- | Get the value if it has the indexed type
 getVariant :: forall (n :: Nat) l . 
    (KnownNat n)
