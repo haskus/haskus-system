@@ -10,7 +10,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
--- | Variant type
+-- | Typed Variant type (union)
 module ViperVM.Utils.Variant
    ( Variant
    , getVariant
