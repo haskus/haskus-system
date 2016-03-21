@@ -9,6 +9,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE RoleAnnotations #-}
 
 -- | Typed Variant type (union)
 module ViperVM.Utils.Variant
@@ -62,6 +63,9 @@ import ViperVM.Utils.HList
 -- list
 data Variant (l :: [*]) = forall a . Variant Int a
 
+-- | Make GHC consider `l` as a representational parameter to make coercions
+-- between Variant values unsafe
+type role Variant representational
 
 type family TypeAt (n :: Nat) l where
    TypeAt 0 (x ': xs) = x
