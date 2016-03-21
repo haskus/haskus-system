@@ -146,6 +146,8 @@ flowMatch :: forall l t m a l2 is.
 flowMatch v f = f . matchVariant =<< v
 
 -- | Combine two succeeding flows with the given operator
+--
+-- If the first flow fails, the second one isn't evaluated at all!
 flowOp2 :: forall a b c as bs m.
    ( Monad m
    , KnownNat (Length (b ': bs))

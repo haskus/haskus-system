@@ -212,8 +212,9 @@ updateVariantFoldM _ f v@(Variant t a) =
       n   = fromIntegral (natVal (Proxy :: Proxy n))
       nl2 = fromIntegral (natVal (Proxy :: Proxy k))
 
-data GetValue   = GetValue
-data RemoveType = RemoveType
+data GetValue    = GetValue
+data RemoveType  = RemoveType
+data VariantShow = VariantShow
 
 instance forall (n :: Nat) l l2 i r .
    ( i ~ (Variant l, HList l2)                         -- input
@@ -230,7 +231,7 @@ data Found
 
 instance forall (n :: Nat) l l2 r i a (same :: Nat).
    ( i ~ (Variant l, Int, Maybe Found) -- input
-   , r ~ (Variant l, Int, Maybe Found) -- input
+   , r ~ (Variant l, Int, Maybe Found) -- result
    , l2 ~ Filter a l
    , KnownNat n
    , KnownNat same
@@ -272,7 +273,7 @@ matchVariantHList :: forall l l2 m is .
    ( m ~ Length l
    , KnownNat m
    , l2 ~ MapMaybe l
-   , is ~ Generate 0 m
+   , is ~ Indexes l
    , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
    ) => Variant l -> HList (MapMaybe l)
 matchVariantHList v = snd res
@@ -296,3 +297,33 @@ matchVariant = hToTuple' . matchVariantHList
 -- | Retreive the last v
 singleVariant :: Variant '[a] -> a
 singleVariant = fromJust . getVariant0
+
+
+-- | Showing a variant value
+instance forall (n :: Nat) l i r .
+   ( i ~ (Variant l, Maybe String) -- input
+   , r ~ (Variant l, Maybe String) -- result
+   , Show (TypeAt n l)
+   , KnownNat n
+   ) => ApplyAB VariantShow (Proxy n,i) r where
+      applyAB _ (_, i) = case i of
+         (_, Just _)  -> i
+         (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
+               Nothing -> (v, Nothing)
+               Just a  -> (v, Just s)
+                  where
+                     s = "setVariant @" ++ show n ++ " "++show a
+                     n = natVal (Proxy :: Proxy n)
+
+instance 
+   ( HFoldr' VariantShow (Variant l, Maybe String) (Indexes l) (Variant l, Maybe String)
+   )
+   => Show (Variant l) where
+   show v = s
+      where
+         res :: (Variant l, Maybe String)
+         res = hFoldr' VariantShow
+                  ((v,Nothing) :: (Variant l, Maybe String))
+                  (undefined :: HList (Indexes l))
+
+         Just s = snd res
