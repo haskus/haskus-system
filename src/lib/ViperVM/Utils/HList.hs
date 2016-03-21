@@ -13,6 +13,7 @@
 -- | Heterogeneous list utils
 module ViperVM.Utils.HList
    ( ReplaceAt
+   , RemoveAt
    , Concat
    , Length
    , MapMaybe
@@ -48,6 +49,11 @@ type family Length xs where
 type family ReplaceAt (n :: Nat) l l2 where
    ReplaceAt 0 (x ': xs) ys = Concat ys xs
    ReplaceAt n (x ': xs) ys = x ': ReplaceAt (n-1) xs ys
+
+-- | Remove a type at index
+type family RemoveAt (n :: Nat) l where
+   RemoveAt 0 (x ': xs) = xs
+   RemoveAt n (x ': xs) = x ': RemoveAt (n-1) xs
 
 -- | Apply Maybe to all the elements of the list
 type family MapMaybe l where

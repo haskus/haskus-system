@@ -5,6 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | Control flow
 module ViperVM.Utils.Flow
@@ -22,6 +23,7 @@ module ViperVM.Utils.Flow
    , flowOp2
    , flowRetry
    , flowBind
+   , flowCatchE
    , flowCatch
    )
 where
@@ -175,8 +177,8 @@ flowBind :: Monad m => m a -> (a -> m b) -> m b
 flowBind = (>>=)
 
 
--- | Catch all the values of type `a`
-flowCatch :: forall l a l2 b m is r.
+-- | Catch all the values of type `a`, use Either
+flowCatchE :: forall l a l2 b m is r.
    ( IsMember a l ~ 'True
    , Monad m
    , r ~ (Variant l, Int, Maybe Found)
@@ -185,4 +187,23 @@ flowCatch :: forall l a l2 b m is r.
    , l2 ~ Filter a l
    )
    => m (Variant l) -> (Either a (Variant l2) -> m b) -> m b
-flowCatch v f = f . removeType =<< v
+flowCatchE v f = f . removeType =<< v
+
+-- | Catch all the values of type `a`
+flowCatch :: forall x xs xs' a m ys r l is.
+   ( IsMember a xs ~ 'True
+   , Monad m
+   , xs' ~ Filter a xs  -- xs without the "a" types
+   , is ~ Zip (Indexes xs) (MapTest a xs)
+   , KnownNat (1 + Length ys)
+   , HFoldr' RemoveType (Variant xs, Int, Maybe Found) is (Variant xs, Int, Maybe Found)
+   )
+   => m (Variant (x ': xs)) -> (a -> m (Variant (x ': ys))) -> m (Variant (Concat (x ': ys) xs'))
+flowCatch v f = do
+   r <- v
+   case pickVariant (Proxy :: Proxy 0) r of
+      Right x -> return (setVariant0 x)
+      Left xs ->
+         flowCatchE (return xs) $ \case
+            Left a   -> appendVariant (Proxy :: Proxy xs') <$> f a
+            Right v2 -> return (prependVariant (Proxy :: Proxy (x ': ys)) v2)

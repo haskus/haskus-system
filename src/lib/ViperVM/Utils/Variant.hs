@@ -44,9 +44,12 @@ module ViperVM.Utils.Variant
    , liftEither
    , liftEitherM
    , removeType
+   , pickVariant
    , Found
    , RemoveType
    , singleVariant
+   , appendVariant
+   , prependVariant
    )
 where
 
@@ -258,14 +261,24 @@ removeType :: forall l a l2 r is.
    , l2 ~ Filter a l
    ) => Variant l -> Either a (Variant l2)
 removeType v = case res of
-      (Variant _ a,_, Just FoundSame)          -> Left (unsafeCoerce a)
-      (Variant t a,shift, Just FoundDifferent) -> Right (Variant (t-shift) a)
+      (Variant _ a, _,     Just FoundSame)      -> Left (unsafeCoerce a)
+      (Variant t a, shift, Just FoundDifferent) -> Right (Variant (t-shift) a)
       _ -> error "removeType error" -- shouldn't happen
    where
       res :: (Variant l, Int, Maybe Found)
       res = hFoldr' RemoveType
                ((v,0,Nothing) :: r)
                (undefined :: HList (Zip (Indexes l) (MapTest a l)))
+
+-- | Pick a variant value
+pickVariant :: forall n l. 
+   ( KnownNat n
+   ) => Proxy n -> Variant l -> Either (Variant (RemoveAt n l)) (TypeAt n l)
+pickVariant _ v@(Variant t a) = case getVariant (Proxy :: Proxy n) v of
+   Just x  -> Right x
+   Nothing -> Left $ if t > fromIntegral (natVal (Proxy :: Proxy n))
+      then Variant (t-1) a
+      else Variant t a
 
 
 -- | Get variant possible values in a HList of Maybe types
@@ -327,3 +340,15 @@ instance
                   (undefined :: HList (Indexes l))
 
          Just s = snd res
+
+-- | Extend a variant by appending other possible values
+appendVariant :: forall (xs :: [*]) (ys :: [*]). Proxy ys -> Variant xs -> Variant (Concat xs ys)
+appendVariant _ (Variant t a) = Variant t a
+
+-- | Extend a variant by prepending other possible values
+prependVariant :: forall (xs :: [*]) (ys :: [*]).
+   ( KnownNat (Length ys)
+   ) => Proxy ys -> Variant xs -> Variant (Concat ys xs)
+prependVariant _ (Variant t a) = Variant (n+t) a
+   where
+      n = fromIntegral (natVal (Proxy :: Proxy (Length ys)))
