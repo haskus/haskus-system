@@ -54,6 +54,8 @@ module ViperVM.Utils.Variant
    , prependVariant
    , fusionVariant
    , VariantFusion
+   , VariantExtend
+   , extendVariant
    )
 where
 
@@ -400,3 +402,42 @@ setVariant :: forall a l n.
    , KnownNat n
    ) => a -> Variant l
 setVariant = setVariantN (Proxy :: Proxy n)
+
+
+data VariantExtend = VariantExtend
+
+
+-- | Merge a variant into another
+instance forall (n :: Nat) (m :: Nat) xs ys i r x.
+   ( i ~ (Variant xs, Maybe (Variant ys)) -- input
+   , r ~ (Variant xs, Maybe (Variant ys)) -- output
+   , x ~ TypeAt n xs
+   , x ~ TypeAt m ys
+   , m ~ IndexOf x ys
+   , IsMember x ys ~ 'True
+   , KnownNat m
+   , KnownNat n
+   ) => ApplyAB VariantExtend (Proxy n,i) r where
+      applyAB _ (_, i) = case i of
+         (_, Just _)  -> i
+         (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
+               Nothing -> (v, Nothing)
+               Just a  -> (v, Just (setVariant a))
+
+
+-- | Extend a variant
+--
+-- Set values to the first correspond type tag
+extendVariant :: forall xs ys i r.
+   ( i ~ (Variant xs, Maybe (Variant ys))
+   , r ~ (Variant xs, Maybe (Variant ys))
+   , HFoldr' VariantExtend i (Indexes xs) r
+   ) => Variant xs -> Variant ys
+extendVariant v = s
+   where
+      res :: r
+      res = hFoldr' VariantExtend
+               ((v,Nothing) :: i)
+               (undefined :: HList (Indexes xs))
+
+      Just s = snd res

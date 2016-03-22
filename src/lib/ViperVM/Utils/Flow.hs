@@ -28,6 +28,7 @@ module ViperVM.Utils.Flow
    , flowCatch
    , flowFusion
    , flowSet
+   , flowExtend
    )
 where
 
@@ -240,3 +241,12 @@ flowSet :: forall a l n m.
    , Monad m
    ) => a -> m (Variant l)
 flowSet = return . setVariant
+
+-- | Extend the number and types of the output paths
+flowExtend :: forall xs ys i r m.
+   ( i ~ (Variant xs, Maybe (Variant ys))
+   , r ~ (Variant xs, Maybe (Variant ys))
+   , HFoldr' VariantExtend i (Indexes xs) r
+   , Monad m
+   ) => m (Variant xs) -> m (Variant ys)
+flowExtend = fmap extendVariant
