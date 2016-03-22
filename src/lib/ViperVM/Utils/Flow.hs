@@ -39,7 +39,6 @@ import ViperVM.Utils.Variant
 import ViperVM.Utils.HList
 
 import Control.Monad
-import Data.HList.HList
 import Data.Proxy
 import GHC.TypeLits
 import Data.Foldable (traverse_)
@@ -155,14 +154,8 @@ flowFinallyM v f = do
    return r
 
 -- | Match a variant by using a tuple
-flowMatch :: forall l t m a l2 is.
-   ( Monad m
-   , l2 ~ MapMaybe l
-   , is ~ Generate 0 (Length l)
-   , KnownNat (Length l)
-   , HTuple' (MapMaybe l) t
-   , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
-   ) => m (Variant l) -> (t -> m a) -> m a
+flowMatch :: forall l t m a.  (Monad m , Matchable l t)
+   => m (Variant l) -> (t -> m a) -> m a
 flowMatch v f = f . matchVariant =<< v
 
 -- | Combine two succeeding flows with the given operator
@@ -196,25 +189,20 @@ flowBind = (>>=)
 
 
 -- | Catch all the values of type `a`, use Either
-flowCatchE :: forall l a l2 b m is r.
-   ( IsMember a l ~ 'True
-   , Monad m
-   , r ~ (Variant l, Int, Maybe Found)
-   , is ~ Zip (Indexes l) (MapTest a l)
-   , HFoldr' RemoveType r is r
-   , l2 ~ Filter a l
+flowCatchE :: forall l a b m.
+   ( --IsMember a l ~ 'True
+   Monad m
+   , Catchable a l
    )
-   => m (Variant l) -> (Either a (Variant l2) -> m b) -> m b
+   => m (Variant l) -> (Either a (Variant (Filter a l)) -> m b) -> m b
 flowCatchE v f = f . removeType =<< v
 
 -- | Catch all the values of type `a`
-flowCatch :: forall x xs xs' a m ys is.
-   ( IsMember a xs ~ 'True
-   , Monad m
-   , xs' ~ Filter a xs  -- xs without the "a" types
-   , is ~ Zip (Indexes xs) (MapTest a xs)
+flowCatch :: forall x xs xs' a m ys.
+   ( Monad m
+   , Catchable a xs
+   , xs' ~ Filter a xs
    , KnownNat (1 + Length ys)
-   , HFoldr' RemoveType (Variant xs, Int, Maybe Found) is (Variant xs, Int, Maybe Found)
    )
    => m (Variant (x ': xs)) -> (a -> m (Variant (x ': ys))) -> m (Variant (Concat (x ': ys) xs'))
 flowCatch v f = do
@@ -227,13 +215,8 @@ flowCatch v f = do
             Right v2 -> return (prependVariant (Proxy :: Proxy (x ': ys)) v2)
 
 -- | Fusion variant values of the same type
-flowFusion :: forall m l r i.
-   ( IsSubset l (Nub l) ~ 'True
-   , i ~ (Variant l, Maybe (Variant (Nub l)))
-   , r ~ (Variant l, Maybe (Variant (Nub l)))
-   , HFoldr' VariantLift i (Indexes l) r
-   , Monad m
-   ) => m (Variant l) -> m (Variant (Nub l))
+flowFusion :: (Monad m, Liftable l (Nub l))
+   => m (Variant l) -> m (Variant (Nub l))
 flowFusion v = fusionVariant <$> v
 
 -- | Set the first matching type of a Variant
@@ -247,13 +230,7 @@ flowSet :: forall a l n m.
 flowSet = return . setVariant
 
 -- | Lift a flow into another
-flowLift :: forall xs ys i r m.
-   ( IsSubset xs ys ~ 'True
-   , i ~ (Variant xs, Maybe (Variant ys))
-   , r ~ (Variant xs, Maybe (Variant ys))
-   , HFoldr' VariantLift i (Indexes xs) r
-   , Monad m
-   ) => m (Variant xs) -> m (Variant ys)
+flowLift :: (Liftable xs ys , Monad m) => m (Variant xs) -> m (Variant ys)
 flowLift = fmap liftVariant
 
 -- | Flow monad transformer
@@ -296,13 +273,6 @@ instance Monad m => Monad (FlowT m l) where
    (>>=)  = flowMBind
 
 -- | Lift a flow into a FlowT
-liftFlowT ::
-   ( IsSubset xs (x ': l) ~ 'True
-   , i ~ (Variant xs, Maybe (Variant ys))
-   , r ~ (Variant xs, Maybe (Variant ys))
-   , HFoldr' VariantLift i (Indexes xs) r
-   , ys ~ (x ': l)
-   , x ~ Head xs
-   , Monad m
-   ) => m (Variant xs) -> FlowT m l x
+liftFlowT :: (Liftable (x ': xs) (x ': ys) , Monad m)
+   => m (Variant (x ': xs)) -> FlowT m ys x
 liftFlowT = FlowT . flowLift

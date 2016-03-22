@@ -10,6 +10,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RoleAnnotations #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 -- | Typed Variant type (union)
 module ViperVM.Utils.Variant
@@ -21,7 +22,6 @@ module ViperVM.Utils.Variant
    , updateVariantM
    , updateVariantFold
    , updateVariantFoldM
-   , GetValue
    , matchVariantHList
    , matchVariant
    , getVariant0
@@ -44,16 +44,17 @@ module ViperVM.Utils.Variant
    , updateVariant5
    , liftEither
    , liftEitherM
+   , Catchable
+   , Liftable
+   , Matchable
+   , MatchableH
    , removeType
    , pickVariant
    , headVariant
-   , Found
-   , RemoveType
    , singleVariant
    , appendVariant
    , prependVariant
    , fusionVariant
-   , VariantLift
    , liftVariant
    )
 where
@@ -254,6 +255,12 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
             -- if (a /= TypeAt n l), same == 0, else same == 1
             same = fromIntegral (natVal (Proxy :: Proxy same))
 
+type Catchable a xs =
+   ( IsMember a xs ~ 'True
+   , HFoldr' RemoveType (Variant xs, Int, Maybe Found)
+         (Zip (Indexes xs) (MapTest a xs))
+         (Variant xs, Int, Maybe Found)
+   )
 
 removeType :: forall l a l2 r is.
    ( r ~ (Variant l, Int, Maybe Found)
@@ -287,30 +294,32 @@ headVariant v@(Variant t a) = case getVariant0 v of
    Just x  -> Right x
    Nothing -> Left $ Variant (t-1) a
 
+
+-- | Matchable as a HList
+type MatchableH l =
+   ( HFoldr' GetValue (Variant l, HList '[])
+         (Indexes l) (Variant l, HList (MapMaybe l))
+   , KnownNat (Length l)
+   )
+
+-- | Matchable as a tuple
+type Matchable l t =
+   ( MatchableH l
+   , HTuple' (MapMaybe l) t
+   )
+
 -- | Get variant possible values in a HList of Maybe types
-matchVariantHList :: forall l l2 m is . 
-   ( m ~ Length l
-   , KnownNat m
-   , l2 ~ MapMaybe l
-   , is ~ Indexes l
-   , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
-   ) => Variant l -> HList (MapMaybe l)
+matchVariantHList :: forall l.  (MatchableH l)
+   => Variant l -> HList (MapMaybe l)
 matchVariantHList v = snd res
    where
       res :: (Variant l, HList (MapMaybe l))
       res = hFoldr' GetValue
                ((v, HNil) :: (Variant l, HList '[]))
-               (undefined :: HList is)
+               (undefined :: HList (Indexes l))
 
 -- | Get variant possible values in a tuple of Maybe types
-matchVariant :: forall l l2 m is t . 
-   ( m ~ Length l
-   , KnownNat m
-   , l2 ~ MapMaybe l
-   , is ~ Generate 0 m
-   , HFoldr' GetValue (Variant l, HList '[]) is (Variant l, HList l2)
-   , HTuple' (MapMaybe l) t
-   ) => Variant l -> t
+matchVariant :: forall l t.  (Matchable l t) => Variant l -> t
 matchVariant = hToTuple' . matchVariantHList
 
 -- | Retreive the last v
@@ -361,12 +370,7 @@ prependVariant _ (Variant t a) = Variant (n+t) a
 
 
 -- | Fusion variant values of the same type
-fusionVariant :: forall l r i.
-   ( IsSubset l (Nub l) ~ 'True
-   , i ~ (Variant l, Maybe (Variant (Nub l)))
-   , r ~ (Variant l, Maybe (Variant (Nub l)))
-   , HFoldr' VariantLift i (Indexes l) r
-   ) => Variant l -> Variant (Nub l)
+fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)
 fusionVariant = liftVariant
 
 -- | Set the first matching type of a Variant
@@ -377,6 +381,12 @@ setVariant :: forall a l n.
    , KnownNat n
    ) => a -> Variant l
 setVariant = setVariantN (Proxy :: Proxy n)
+
+type Liftable xs ys =
+   ( IsSubset xs ys ~ 'True
+   , HFoldr' VariantLift (Variant xs, Maybe (Variant ys))
+         (Indexes xs) (Variant xs, Maybe (Variant ys))
+   )
 
 data VariantLift = VariantLift
 
@@ -397,6 +407,7 @@ instance forall (n :: Nat) (m :: Nat) xs ys i r x.
          (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
                Nothing -> (v, Nothing)
                Just a  -> (v, Just (setVariant a))
+
 
 
 -- | Lift a variant into another
