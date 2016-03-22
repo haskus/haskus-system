@@ -16,6 +16,7 @@ module ViperVM.Utils.Variant
    ( Variant
    , getVariant
    , setVariant
+   , setVariantN
    , updateVariant
    , updateVariantM
    , updateVariantFold
@@ -101,29 +102,29 @@ getVariant5 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 5 l)
 getVariant5 = getVariant (Proxy :: Proxy 5)
 
 -- | Set the value with the given indexed type
-setVariant :: forall (n :: Nat) l .
+setVariantN :: forall (n :: Nat) l .
    (KnownNat n)
    => Proxy n -> TypeAt n l -> Variant l
-setVariant _ = Variant (fromIntegral (natVal (Proxy :: Proxy n)))
+setVariantN _ = Variant (fromIntegral (natVal (Proxy :: Proxy n)))
 
 
 setVariant0 :: forall (l :: [*]). TypeAt 0 l -> Variant l
-setVariant0 = setVariant (Proxy :: Proxy 0)
+setVariant0 = setVariantN (Proxy :: Proxy 0)
 
 setVariant1 :: forall (l :: [*]). TypeAt 1 l -> Variant l
-setVariant1 = setVariant (Proxy :: Proxy 1)
+setVariant1 = setVariantN (Proxy :: Proxy 1)
 
 setVariant2 :: forall (l :: [*]). TypeAt 2 l -> Variant l
-setVariant2 = setVariant (Proxy :: Proxy 2)
+setVariant2 = setVariantN (Proxy :: Proxy 2)
 
 setVariant3 :: forall (l :: [*]). TypeAt 3 l -> Variant l
-setVariant3 = setVariant (Proxy :: Proxy 3)
+setVariant3 = setVariantN (Proxy :: Proxy 3)
 
 setVariant4 :: forall (l :: [*]). TypeAt 4 l -> Variant l
-setVariant4 = setVariant (Proxy :: Proxy 4)
+setVariant4 = setVariantN (Proxy :: Proxy 4)
 
 setVariant5 :: forall (l :: [*]). TypeAt 5 l -> Variant l
-setVariant5 = setVariant (Proxy :: Proxy 5)
+setVariant5 = setVariantN (Proxy :: Proxy 5)
 
 -- | Lift an Either into a Variant (reversed order by convention)
 liftEither :: Either a b -> Variant '[b,a]
@@ -329,7 +330,7 @@ instance forall (n :: Nat) l i r .
                Nothing -> (v, Nothing)
                Just a  -> (v, Just s)
                   where
-                     s = "setVariant @" ++ show n ++ " "++show a
+                     s = "setVariantN @" ++ show n ++ " "++show a
                      n = natVal (Proxy :: Proxy n)
 
 instance 
@@ -372,7 +373,7 @@ instance forall (n :: Nat) l i r a.
          (_, Just _)  -> i
          (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
                Nothing -> (v, Nothing)
-               Just a  -> (v, Just (setVariant p a))
+               Just a  -> (v, Just (setVariantN p a))
                   where
                      p = Proxy :: Proxy (IndexOf a (Nub l))
 
@@ -390,3 +391,12 @@ fusionVariant v = s
                (undefined :: HList (Indexes l))
 
       Just s = snd res
+
+-- | Set the first matching type of a Variant
+setVariant :: forall a l n.
+   ( IsMember a l ~ 'True
+   , n ~ IndexOf a l
+   , a ~ TypeAt n l
+   , KnownNat n
+   ) => a -> Variant l
+setVariant = setVariantN (Proxy :: Proxy n)

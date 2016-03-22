@@ -27,6 +27,7 @@ module ViperVM.Utils.Flow
    , flowCatchE
    , flowCatch
    , flowFusion
+   , flowSet
    )
 where
 
@@ -229,3 +230,13 @@ flowFusion :: forall m l r i.
    , Monad m
    ) => m (Variant l) -> m (Variant (Nub l))
 flowFusion v = fusionVariant <$> v
+
+-- | Set the first matching type of a Variant
+flowSet :: forall a l n m.
+   ( IsMember a l ~ 'True
+   , n ~ IndexOf a l
+   , a ~ TypeAt n l
+   , KnownNat n
+   , Monad m
+   ) => a -> m (Variant l)
+flowSet = return . setVariant
