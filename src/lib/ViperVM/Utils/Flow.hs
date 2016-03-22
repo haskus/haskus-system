@@ -254,7 +254,7 @@ flowLift :: forall xs ys i r m.
    ) => m (Variant xs) -> m (Variant ys)
 flowLift = fmap liftVariant
 
-
+-- | Flow monad transformer
 newtype FlowT m (l :: [*]) a = FlowT
    { runFlowT :: m (Variant (a ': l))
    }
