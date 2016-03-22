@@ -362,7 +362,8 @@ prependVariant _ (Variant t a) = Variant (n+t) a
 
 -- | Fusion variant values of the same type
 fusionVariant :: forall l r i.
-   ( i ~ (Variant l, Maybe (Variant (Nub l)))
+   ( IsSubset l (Nub l) ~ 'True
+   , i ~ (Variant l, Maybe (Variant (Nub l)))
    , r ~ (Variant l, Maybe (Variant (Nub l)))
    , HFoldr' VariantLift i (Indexes l) r
    ) => Variant l -> Variant (Nub l)
@@ -382,12 +383,12 @@ data VariantLift = VariantLift
 
 -- | Merge a variant into another
 instance forall (n :: Nat) (m :: Nat) xs ys i r x.
-   ( i ~ (Variant xs, Maybe (Variant ys)) -- input
+   ( x ~ TypeAt n xs
+   , IsMember x ys ~ 'True
+   , i ~ (Variant xs, Maybe (Variant ys)) -- input
    , r ~ (Variant xs, Maybe (Variant ys)) -- output
-   , x ~ TypeAt n xs
    , x ~ TypeAt m ys
    , m ~ IndexOf x ys
-   , IsMember x ys ~ 'True
    , KnownNat m
    , KnownNat n
    ) => ApplyAB VariantLift (Proxy n,i) r where
@@ -402,7 +403,8 @@ instance forall (n :: Nat) (m :: Nat) xs ys i r x.
 --
 -- Set values to the first correspond type tag
 liftVariant :: forall xs ys i r.
-   ( i ~ (Variant xs, Maybe (Variant ys))
+   ( IsSubset xs ys ~ 'True
+   , i ~ (Variant xs, Maybe (Variant ys))
    , r ~ (Variant xs, Maybe (Variant ys))
    , HFoldr' VariantLift i (Indexes xs) r
    ) => Variant xs -> Variant ys

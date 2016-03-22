@@ -21,6 +21,7 @@ module ViperVM.Utils.HList
    , MapMaybe
    , Generate
    , IsMember
+   , IsSubset
    , Indexes
    , MapTest
    , Zip
@@ -83,6 +84,17 @@ type family Generate (n :: Nat) (m :: Nat) where
 type family IsMember a l :: Bool where
    IsMember a (a ': l) = 'True
    IsMember a (b ': l) = IsMember a l
+
+-- | Check that a list is a subset of another
+type family IsSubset l1 l2 :: Bool where
+   IsSubset l1 l1 = 'True
+   IsSubset l1 l2 = IsSubsetEx l1 l2 l2
+
+type family IsSubsetEx l1 l2 i :: Bool where
+   IsSubsetEx '[] l2 i = 'True
+   IsSubsetEx l1 '[] i = 'False
+   IsSubsetEx (x ': xs) (x ': ys) i = IsSubsetEx xs i i
+   IsSubsetEx (x ': xs) (y ': ys) i = IsSubsetEx (x ': xs) ys i
 
 -- | Get list indexes
 type family Indexes (l :: [*]) where

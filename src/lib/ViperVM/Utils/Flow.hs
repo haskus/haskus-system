@@ -228,7 +228,8 @@ flowCatch v f = do
 
 -- | Fusion variant values of the same type
 flowFusion :: forall m l r i.
-   ( i ~ (Variant l, Maybe (Variant (Nub l)))
+   ( IsSubset l (Nub l) ~ 'True
+   , i ~ (Variant l, Maybe (Variant (Nub l)))
    , r ~ (Variant l, Maybe (Variant (Nub l)))
    , HFoldr' VariantLift i (Indexes l) r
    , Monad m
@@ -247,7 +248,8 @@ flowSet = return . setVariant
 
 -- | Lift a flow into another
 flowLift :: forall xs ys i r m.
-   ( i ~ (Variant xs, Maybe (Variant ys))
+   ( IsSubset xs ys ~ 'True
+   , i ~ (Variant xs, Maybe (Variant ys))
    , r ~ (Variant xs, Maybe (Variant ys))
    , HFoldr' VariantLift i (Indexes xs) r
    , Monad m
@@ -295,7 +297,8 @@ instance Monad m => Monad (FlowT m l) where
 
 -- | Lift a flow into a FlowT
 liftFlowT ::
-   ( i ~ (Variant xs, Maybe (Variant ys))
+   ( IsSubset xs (x ': l) ~ 'True
+   , i ~ (Variant xs, Maybe (Variant ys))
    , r ~ (Variant xs, Maybe (Variant ys))
    , HFoldr' VariantLift i (Indexes xs) r
    , ys ~ (x ': l)
