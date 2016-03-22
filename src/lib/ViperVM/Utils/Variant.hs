@@ -377,7 +377,6 @@ setVariant :: forall a l n.
    ) => a -> Variant l
 setVariant = setVariantN (Proxy :: Proxy n)
 
-
 data VariantLift = VariantLift
 
 

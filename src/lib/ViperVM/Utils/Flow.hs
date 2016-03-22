@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Control flow
 module ViperVM.Utils.Flow
@@ -29,6 +30,8 @@ module ViperVM.Utils.Flow
    , flowFusion
    , flowSet
    , flowLift
+   , FlowT (..)
+   , liftFlowT
    )
 where
 
@@ -250,3 +253,53 @@ flowLift :: forall xs ys i r m.
    , Monad m
    ) => m (Variant xs) -> m (Variant ys)
 flowLift = fmap liftVariant
+
+
+newtype FlowT m (l :: [*]) a = FlowT
+   { runFlowT :: m (Variant (a ': l))
+   }
+
+instance Monad m => Functor (FlowT m l) where
+   fmap f (FlowT v) = FlowT (updateVariant0 f <$> v) 
+
+
+flowAp :: Monad m => m (Variant ((a->b) ': l)) -> m (Variant (a ': l)) -> m (Variant (b ': l))
+flowAp f x = do
+   f' <- f
+   let p = Proxy :: Proxy '[b]
+   case headVariant f' of
+      Left xs   -> return (prependVariant p xs)
+      Right f'' -> do
+         x' <- x
+         return $ case headVariant x' of
+            Left ys   -> prependVariant p ys
+            Right x'' -> setVariant0 (f'' x'')
+
+
+instance Monad m => Applicative (FlowT m l) where
+   pure                = FlowT . return . setVariant0
+   FlowT f <*> FlowT x = FlowT (flowAp f x)
+
+
+flowMBind :: Monad m => FlowT m l a -> (a -> FlowT m l b) -> FlowT m l b
+flowMBind (FlowT flowA) f = FlowT $ do
+   a <- flowA
+   let p = Proxy :: Proxy '[b]
+   case headVariant a of
+      Left xs -> return (prependVariant p xs)
+      Right x -> let FlowT r = f x in r
+
+instance Monad m => Monad (FlowT m l) where
+   return = pure
+   (>>=)  = flowMBind
+
+-- | Lift a flow into a FlowT
+liftFlowT ::
+   ( i ~ (Variant xs, Maybe (Variant ys))
+   , r ~ (Variant xs, Maybe (Variant ys))
+   , HFoldr' VariantLift i (Indexes xs) r
+   , ys ~ (x ': l)
+   , x ~ Head xs
+   , Monad m
+   ) => m (Variant xs) -> FlowT m l x
+liftFlowT = FlowT . flowLift

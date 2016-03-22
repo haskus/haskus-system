@@ -12,7 +12,9 @@
 
 -- | Heterogeneous list utils
 module ViperVM.Utils.HList
-   ( ReplaceAt
+   ( Tail
+   , Head
+   , ReplaceAt
    , RemoveAt
    , Concat
    , Length
@@ -37,6 +39,14 @@ import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
 import Data.Proxy
 import GHC.TypeLits
+
+-- | Tail of a list
+type family Tail xs where
+   Tail (x ': xs) = xs
+
+-- | Head of a list
+type family Head xs where
+   Head (x ': xs) = x
 
 -- | Concat two type lists
 type family Concat xs ys where
