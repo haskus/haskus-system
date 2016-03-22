@@ -53,8 +53,8 @@ module ViperVM.Utils.Variant
    , appendVariant
    , prependVariant
    , fusionVariant
-   , VariantExtend
-   , extendVariant
+   , VariantLift
+   , liftVariant
    )
 where
 
@@ -364,16 +364,9 @@ prependVariant _ (Variant t a) = Variant (n+t) a
 fusionVariant :: forall l r i.
    ( i ~ (Variant l, Maybe (Variant (Nub l)))
    , r ~ (Variant l, Maybe (Variant (Nub l)))
-   , HFoldr' VariantExtend i (Indexes l) r
+   , HFoldr' VariantLift i (Indexes l) r
    ) => Variant l -> Variant (Nub l)
-fusionVariant v = s
-   where
-      res :: r
-      res = hFoldr' VariantExtend
-               ((v,Nothing) :: i)
-               (undefined :: HList (Indexes l))
-
-      Just s = snd res
+fusionVariant = liftVariant
 
 -- | Set the first matching type of a Variant
 setVariant :: forall a l n.
@@ -385,7 +378,7 @@ setVariant :: forall a l n.
 setVariant = setVariantN (Proxy :: Proxy n)
 
 
-data VariantExtend = VariantExtend
+data VariantLift = VariantLift
 
 
 -- | Merge a variant into another
@@ -398,7 +391,7 @@ instance forall (n :: Nat) (m :: Nat) xs ys i r x.
    , IsMember x ys ~ 'True
    , KnownNat m
    , KnownNat n
-   ) => ApplyAB VariantExtend (Proxy n,i) r where
+   ) => ApplyAB VariantLift (Proxy n,i) r where
       applyAB _ (_, i) = case i of
          (_, Just _)  -> i
          (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
@@ -406,18 +399,18 @@ instance forall (n :: Nat) (m :: Nat) xs ys i r x.
                Just a  -> (v, Just (setVariant a))
 
 
--- | Extend a variant
+-- | Lift a variant into another
 --
 -- Set values to the first correspond type tag
-extendVariant :: forall xs ys i r.
+liftVariant :: forall xs ys i r.
    ( i ~ (Variant xs, Maybe (Variant ys))
    , r ~ (Variant xs, Maybe (Variant ys))
-   , HFoldr' VariantExtend i (Indexes xs) r
+   , HFoldr' VariantLift i (Indexes xs) r
    ) => Variant xs -> Variant ys
-extendVariant v = s
+liftVariant v = s
    where
       res :: r
-      res = hFoldr' VariantExtend
+      res = hFoldr' VariantLift
                ((v,Nothing) :: i)
                (undefined :: HList (Indexes xs))
 

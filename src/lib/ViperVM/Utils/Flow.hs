@@ -28,7 +28,7 @@ module ViperVM.Utils.Flow
    , flowCatch
    , flowFusion
    , flowSet
-   , flowExtend
+   , flowLift
    )
 where
 
@@ -227,7 +227,7 @@ flowCatch v f = do
 flowFusion :: forall m l r i.
    ( i ~ (Variant l, Maybe (Variant (Nub l)))
    , r ~ (Variant l, Maybe (Variant (Nub l)))
-   , HFoldr' VariantExtend i (Indexes l) r
+   , HFoldr' VariantLift i (Indexes l) r
    , Monad m
    ) => m (Variant l) -> m (Variant (Nub l))
 flowFusion v = fusionVariant <$> v
@@ -242,11 +242,11 @@ flowSet :: forall a l n m.
    ) => a -> m (Variant l)
 flowSet = return . setVariant
 
--- | Extend the number and types of the output paths
-flowExtend :: forall xs ys i r m.
+-- | Lift a flow into another
+flowLift :: forall xs ys i r m.
    ( i ~ (Variant xs, Maybe (Variant ys))
    , r ~ (Variant xs, Maybe (Variant ys))
-   , HFoldr' VariantExtend i (Indexes xs) r
+   , HFoldr' VariantLift i (Indexes xs) r
    , Monad m
    ) => m (Variant xs) -> m (Variant ys)
-flowExtend = fmap extendVariant
+flowLift = fmap liftVariant
