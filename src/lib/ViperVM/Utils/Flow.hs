@@ -227,7 +227,7 @@ flowCatch v f = do
 flowFusion :: forall m l r i.
    ( i ~ (Variant l, Maybe (Variant (Nub l)))
    , r ~ (Variant l, Maybe (Variant (Nub l)))
-   , HFoldr' VariantFusion i (Indexes l) r
+   , HFoldr' VariantExtend i (Indexes l) r
    , Monad m
    ) => m (Variant l) -> m (Variant (Nub l))
 flowFusion v = fusionVariant <$> v
