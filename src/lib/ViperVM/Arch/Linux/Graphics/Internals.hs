@@ -132,7 +132,6 @@ where
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector

@@ -5,6 +5,7 @@ module Main where
 
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.Process

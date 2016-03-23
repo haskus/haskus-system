@@ -8,7 +8,8 @@
 -- Warning: some constants may be modified depending on the architecture. For
 -- now, we only support X86_64.
 module ViperVM.Arch.Linux.Ioctl
-   ( IOCTL
+   ( sysIoctl
+   , IOCTL
    , Command (..)
    , Direction(..)
    , CommandType
@@ -19,8 +20,10 @@ module ViperVM.Arch.Linux.Ioctl
    , decodeCommand
    -- * Signal
    , ioctlSignal
+   , ioctlSignalValue
    -- * Read
    , ioctlRead
+   , ioctlReadBogus
    , ioctlReadBytes
    , ioctlReadByteString
    , ioctlReadBuffer
@@ -45,8 +48,15 @@ import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
 import qualified Data.ByteString as BS
 
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
+
+-- | Send a custom command to a device
+sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64
+sysIoctl (FileDescriptor fd) cmd arg =
+   syscall_ioctl fd cmd arg
+
 
 type CommandType   = Word8
 type CommandNumber = Word8
@@ -129,9 +139,20 @@ ioctlRead ioctl typ nr test fd = fmap snd <$> ioctlReadWithRet ioctl typ nr test
 --
 -- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
 ioctlReadWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet (Int64,a)
-ioctlReadWithRet ioctl typ nr test fd = do
+ioctlReadWithRet ioctl typ nr test fd =
    alloca $ \(ptr :: Ptr a) -> do
       let cmd = Command typ nr Read (paramSize (undefined :: a))
+      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
+      case test ret of
+         Just err -> return (Left err)
+         Nothing  -> Right . (ret,) <$> peek ptr
+
+-- | Some IOCTLs are bogus, we need to pass a custom size to build the command
+-- that doesn't correspond to the size of the returned object...
+ioctlReadBogus :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Word16 -> FileDescriptor -> SysRet (Int64,a)
+ioctlReadBogus ioctl typ nr test sz fd =
+   alloca $ \(ptr :: Ptr a) -> do
+      let cmd = Command typ nr Read sz
       ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
       case test ret of
          Just err -> return (Left err)
@@ -227,6 +248,18 @@ ioctlSignal ioctl typ nr test fd = do
    ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg nullPtr)
    return $ case test ret of
       Nothing  -> Right ()
+      Just err -> Left err
+
+-- | Build a Signal IOCTL (direction = None)
+--
+-- Use direction=None but still use the arg parameter to set/get a value
+-- Execute the IOCTL command on the file descriptor, then `test` the result. 
+ioctlSignalValue :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Int64 -> FileDescriptor -> SysRet Int64
+ioctlSignalValue ioctl typ nr test v fd = do
+   let cmd = Command typ nr None 0
+   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) v
+   return $ case test ret of
+      Nothing  -> Right ret
       Just err -> Left err
 
 -- | Call the IOCTL, restarting if interrupted

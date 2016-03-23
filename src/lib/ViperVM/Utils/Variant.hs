@@ -15,7 +15,7 @@
 -- | Typed Variant type (union)
 module ViperVM.Utils.Variant
    ( Variant
-   , getVariant
+   , getVariantN
    , setVariant
    , setVariantN
    , updateVariant
@@ -65,6 +65,7 @@ import GHC.TypeLits
 import Unsafe.Coerce
 import Data.Proxy
 import Data.Maybe
+import Control.Monad
 
 import ViperVM.Utils.HList
 
@@ -76,38 +77,36 @@ data Variant (l :: [*]) = forall a . Variant Int a
 -- between Variant values unsafe
 type role Variant representational
 
--- | Get the value if it has the indexed type
-getVariant :: forall (n :: Nat) l . 
-   (KnownNat n)
-   => Proxy n -> Variant l -> Maybe (TypeAt n l)
-getVariant _ (Variant t a) =
-   if t /= fromIntegral (natVal (Proxy :: Proxy n))
-      then Nothing
-      else Just (unsafeCoerce a) -- we know it is the effective type
-
-getVariant0 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 0 l)
-getVariant0 = getVariant (Proxy :: Proxy 0)
-
-getVariant1 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 1 l)
-getVariant1 = getVariant (Proxy :: Proxy 1)
-
-getVariant2 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 2 l)
-getVariant2 = getVariant (Proxy :: Proxy 2)
-
-getVariant3 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 3 l)
-getVariant3 = getVariant (Proxy :: Proxy 3)
-
-getVariant4 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 4 l)
-getVariant4 = getVariant (Proxy :: Proxy 4)
-
-getVariant5 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 5 l)
-getVariant5 = getVariant (Proxy :: Proxy 5)
-
 -- | Set the value with the given indexed type
-setVariantN :: forall (n :: Nat) l .
-   (KnownNat n)
+setVariantN :: forall (n :: Nat) (l :: [*]). (KnownNat n)
    => Proxy n -> TypeAt n l -> Variant l
 setVariantN _ = Variant (fromIntegral (natVal (Proxy :: Proxy n)))
+
+-- | Get the value if it has the indexed type
+getVariantN :: forall (n :: Nat) (l :: [*]). (KnownNat n)
+   => Proxy n -> Variant l -> Maybe (TypeAt n l)
+getVariantN _ (Variant t a) = do
+   guard (t == fromIntegral (natVal (Proxy :: Proxy n)))
+   return (unsafeCoerce a) -- we know it is the effective type
+
+getVariant0 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 0 l)
+getVariant0 = getVariantN (Proxy :: Proxy 0)
+
+getVariant1 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 1 l)
+getVariant1 = getVariantN (Proxy :: Proxy 1)
+
+getVariant2 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 2 l)
+getVariant2 = getVariantN (Proxy :: Proxy 2)
+
+getVariant3 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 3 l)
+getVariant3 = getVariantN (Proxy :: Proxy 3)
+
+getVariant4 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 4 l)
+getVariant4 = getVariantN (Proxy :: Proxy 4)
+
+getVariant5 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 5 l)
+getVariant5 = getVariantN (Proxy :: Proxy 5)
+
 
 
 setVariant0 :: forall (l :: [*]). TypeAt 0 l -> Variant l
@@ -142,7 +141,7 @@ updateVariant :: forall (n :: Nat) l l2 .
    (KnownNat n)
    => Proxy n -> (TypeAt n l -> TypeAt n l2) -> Variant l -> Variant l2
 updateVariant _ f v@(Variant t a) =
-   case getVariant (Proxy :: Proxy n) v of
+   case getVariantN (Proxy :: Proxy n) v of
       Nothing -> Variant t a
       Just x  -> Variant t (f x)
 
@@ -175,7 +174,7 @@ updateVariantM :: forall (n :: Nat) l l2 m .
    (KnownNat n, Monad m)
    => Proxy n -> (TypeAt n l -> m (TypeAt n l2)) -> Variant l -> m (Variant l2)
 updateVariantM _ f v@(Variant t a) =
-   case getVariant (Proxy :: Proxy n) v of
+   case getVariantN (Proxy :: Proxy n) v of
       Nothing -> return (Variant t a)
       Just x  -> Variant t <$> f x
 
@@ -184,7 +183,7 @@ updateVariantFold :: forall (n :: Nat) (m :: Nat) l l2 .
    (KnownNat n, KnownNat m, m ~ Length l2)
    => Proxy n -> (TypeAt n l -> Variant l2) -> Variant l -> Variant (ReplaceAt n l l2)
 updateVariantFold _ f v@(Variant t a) =
-   case getVariant (Proxy :: Proxy n) v of
+   case getVariantN (Proxy :: Proxy n) v of
       Nothing ->
          -- we need to adapt the tag if new valid tags (from l2) are added before
          if t < n
@@ -202,7 +201,7 @@ updateVariantFoldM :: forall (n :: Nat) (k :: Nat) m l l2 .
    (KnownNat n, KnownNat k, k ~ Length l2, Monad m)
    => Proxy n -> (TypeAt n l -> m (Variant l2)) -> Variant l -> m (Variant (ReplaceAt n l l2))
 updateVariantFoldM _ f v@(Variant t a) =
-   case getVariant (Proxy :: Proxy n) v of
+   case getVariantN (Proxy :: Proxy n) v of
       Nothing ->
          -- we need to adapt the tag if new valid tags (from l2) are added before
          return $ if t < n
@@ -226,7 +225,7 @@ instance forall (n :: Nat) l l2 i r .
    , r ~ (Variant l, HList (Maybe (TypeAt n l) ': l2)) -- result
    , KnownNat n
    ) => ApplyAB GetValue (Proxy n,i) r where
-      applyAB _ (_, (v,xs)) = (v, getVariant (Proxy :: Proxy n) v `HCons` xs)
+      applyAB _ (_, (v,xs)) = (v, getVariantN (Proxy :: Proxy n) v `HCons` xs)
 
 
 data Found
@@ -246,7 +245,7 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
                -- we already have a result: we update the shift
                Just _  -> (v, shift + same, r)
                -- we look for a result
-               Nothing -> case getVariant (Proxy :: Proxy n) v of
+               Nothing -> case getVariantN (Proxy :: Proxy n) v of
                   Nothing -> (v,shift,r)
                   Just _  -> if same == 0
                      then (v, shift, Just FoundDifferent)
@@ -282,7 +281,7 @@ removeType v = case res of
 pickVariant :: forall n l. 
    ( KnownNat n
    ) => Proxy n -> Variant l -> Either (Variant (RemoveAt n l)) (TypeAt n l)
-pickVariant _ v@(Variant t a) = case getVariant (Proxy :: Proxy n) v of
+pickVariant _ v@(Variant t a) = case getVariantN (Proxy :: Proxy n) v of
    Just x  -> Right x
    Nothing -> Left $ if t > fromIntegral (natVal (Proxy :: Proxy n))
       then Variant (t-1) a
@@ -336,7 +335,7 @@ instance forall (n :: Nat) l i r .
    ) => ApplyAB VariantShow (Proxy n,i) r where
       applyAB _ (_, i) = case i of
          (_, Just _)  -> i
-         (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
+         (v, Nothing) -> case getVariantN (Proxy :: Proxy n) v of
                Nothing -> (v, Nothing)
                Just a  -> (v, Just s)
                   where
@@ -404,7 +403,7 @@ instance forall (n :: Nat) (m :: Nat) xs ys i r x.
    ) => ApplyAB VariantLift (Proxy n,i) r where
       applyAB _ (_, i) = case i of
          (_, Just _)  -> i
-         (v, Nothing) -> case getVariant (Proxy :: Proxy n) v of
+         (v, Nothing) -> case getVariantN (Proxy :: Proxy n) v of
                Nothing -> (v, Nothing)
                Just a  -> (v, Just (setVariant a))
 

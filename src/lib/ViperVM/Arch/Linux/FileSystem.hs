@@ -22,7 +22,6 @@ module ViperVM.Arch.Linux.FileSystem
    , sysClose
    , sysSeek
    , sysSeek'
-   , sysIoctl
    , sysAccess
    , sysDup
    , sysDup2
@@ -77,6 +76,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Time (TimeSpec)
 import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
+import ViperVM.Arch.Linux.Internals.FileSystem
 
 -- | Open a file
 sysOpen :: FilePath -> HandleFlags -> FilePermissions -> SysRet FileDescriptor
@@ -120,13 +120,6 @@ data FilePermission
 
 type FilePermissions = BitSet Word FilePermission
 
-data SeekWhence = 
-     SeekSet 
-   | SeekCurrent 
-   | SeekEnd 
-   | SeekData
-   | SeekHole
-   deriving (Enum,Eq,Show)
 
 -- | Reposition read/write file offset, return the new position
 sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
@@ -136,11 +129,6 @@ sysSeek (FileDescriptor fd) off whence =
 -- | Reposition read/write file offset
 sysSeek' :: FileDescriptor -> Int64 -> SeekWhence -> SysRet ()
 sysSeek' fd off whence = void <$> (sysSeek fd off whence)
-
--- | Send a custom command to a device
-sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64
-sysIoctl (FileDescriptor fd) cmd arg =
-   syscall_ioctl fd cmd arg
 
 
 -- | Access mode

@@ -134,7 +134,7 @@ type family IndexOf a (l :: [*]) where
    IndexOf y (x ': xs) = 1 + IndexOf y xs
 
 -- | Indexed access into the list
-type family TypeAt (n :: Nat) l where
+type family TypeAt (n :: Nat) (l :: [*]) where
    TypeAt 0 (x ': xs) = x
    TypeAt n (x ': xs) = TypeAt (n-1) xs
 
