@@ -8,7 +8,7 @@ module ViperVM.Arch.Linux.Graphics.Capability
    )
 where
 
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error

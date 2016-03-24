@@ -16,7 +16,7 @@ where
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Utils.Memory (allocaArrays,peekArrays)
 
 import Control.Monad.IO.Class (liftIO)

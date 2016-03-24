@@ -23,7 +23,7 @@ import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Encoder
@@ -115,8 +115,9 @@ data GenericFrame = GenericFrame
 
 -- | Allocate and map fullscreen planes for the given format and mode
 initGenericFrameBuffer :: GraphicCard -> Mode -> PixelFormat -> Sys GenericFrame
-initGenericFrameBuffer card mode pixfmt@(PixelFormat fmt _) = do
+initGenericFrameBuffer card mode pixfmt = do
    let
+      fmt    = formatFormat pixfmt
       hdl    = graphicCardHandle card
       width  = fromIntegral $ modeHorizontalDisplay mode
       height = fromIntegral $ modeVerticalDisplay mode

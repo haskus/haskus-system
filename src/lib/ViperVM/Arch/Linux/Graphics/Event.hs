@@ -12,7 +12,7 @@ import Foreign.Storable
 import Foreign.Ptr
 import Data.Word
 
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 
 data Event
    = VBlankEvent  EventType StructEventVBlank

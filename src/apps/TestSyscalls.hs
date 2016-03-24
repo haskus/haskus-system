@@ -13,7 +13,7 @@ import ViperVM.Arch.Linux.Info
 import ViperVM.Arch.Linux.Time
 --import ViperVM.Arch.X86_64.Linux.Futex
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Input.Internals
+import ViperVM.Arch.Linux.Internals.Input
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 

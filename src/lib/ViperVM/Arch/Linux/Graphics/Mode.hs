@@ -27,7 +27,7 @@ import qualified ViperVM.Format.Binary.Vector as Vec
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 
 -- | Display mode
 data Mode = Mode

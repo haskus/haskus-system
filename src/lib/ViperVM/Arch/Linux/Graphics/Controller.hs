@@ -25,7 +25,7 @@ import Control.Monad (void)
 
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Mode
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileDescriptor

@@ -22,7 +22,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Property
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Enum
 
 import Control.Monad.IO.Class (liftIO)

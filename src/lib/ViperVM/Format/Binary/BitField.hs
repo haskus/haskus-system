@@ -90,6 +90,8 @@ newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
 bitFieldsBits :: BitFields b f -> b
 bitFieldsBits (BitFields b) = b
 
+{-# INLINE bitFieldsBits #-}
+
 instance Storable b => CStorable (BitFields b fields) where
    cPeek      = peek
    cPoke      = poke

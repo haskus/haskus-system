@@ -22,7 +22,7 @@ import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 -- | Byte order ("endianness")
 --
 -- Indicate in which order bytes are stored in memory for multi-bytes types.
@@ -20,12 +22,13 @@ where
 import Data.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.Enum
 
 -- | Endianness
 data Endianness 
    = LittleEndian    -- ^ Less significant bytes first
    | BigEndian       -- ^ Most significant bytes first
-   deriving (Eq,Show)
+   deriving (Eq,Show,Enum,CEnum)
 
 data WordGetters = WordGetters
    { wordGetter8  :: Get Word8   -- ^ Read a Word8

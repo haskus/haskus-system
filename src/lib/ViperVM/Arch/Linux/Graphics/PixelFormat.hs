@@ -1,145 +1,157 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | Pixel formats
---
--- Taken from drm/drm_fourcc.h
 module ViperVM.Arch.Linux.Graphics.PixelFormat
-   ( PixelFormat(..)
+   ( PixelFormat
    , Format(..)
    , Endianness(..)
+   , formatEndianness
+   , formatFormat
    , formatBitDepth
    )
 where
 
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.BitField
 import Data.Word
 import Data.Char (ord)
-import Data.Bits
+import Data.Proxy
 import Data.Map (Map, (!), fromList)
 import Data.Tuple (swap)
-import Control.Arrow (second)
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.Ptr
 
--- | Pixel format
-data PixelFormat
-   = PixelFormat Format Endianness
-   deriving (Eq,Show)
+-- =============================================================
+--    From linux/include/uapi/drm/drm_fourcc.h
+-- =============================================================
 
-instance Storable PixelFormat where
-   sizeOf _    = 4
-   alignment _ = 4
-   peek ptr    = do
-      w <- peek (castPtr ptr :: Ptr Word32)
-      let 
-         endian = case testBit w 31 of
-            True  -> BigEndian
-            False -> LittleEndian
-         fmt = bits2fmt ! (clearBit w 31)
+-- | A pixel format is represented as a Word32
+newtype PixelFormat = PixelFormat (BitFields Word32
+  '[ BitField 1  "endianness" (EnumField Int Endianness)
+   , BitField 31 "format"     (EnumField Word32 Format)
+   ]) deriving (Show,Storable)
 
-      return $ PixelFormat fmt endian
+-- | Get pixel format endianness
+formatEndianness :: PixelFormat -> Endianness
+formatEndianness (PixelFormat fmt) =
+   fromEnumField (extractField (Proxy :: Proxy "endianness") fmt)
+{-# INLINE formatEndianness #-}
 
-   poke ptr (PixelFormat fmt endian) = do
-      let
-         fmt' = fmt2bits ! fmt
-         w = case endian of
-            BigEndian    -> fmt' `setBit` 31
-            LittleEndian -> fmt'
-      poke (castPtr ptr :: Ptr Word32) w
-   
+-- | Get pixel format logical format
+formatFormat :: PixelFormat -> Format
+formatFormat (PixelFormat fmt) = 
+   fromEnumField (extractField (Proxy :: Proxy "format") fmt)
+{-# INLINE formatFormat #-}
+
 instance CStorable PixelFormat where
    cSizeOf      = sizeOf
    cAlignment   = alignment
    cPeek        = peek
    cPoke        = poke
 
+type CFormat = BitFields Word32
+  '[ BitField 8 "a" Int
+   , BitField 8 "b" Int
+   , BitField 8 "c" Int
+   , BitField 8 "d" Int
+   ]
+
+-- | Convert a format string (as in the original .h file) into a code
+toFormat :: String -> Word32
+toFormat [a,b,c,d] = bitFieldsBits
+   $ updateField (Proxy :: Proxy "a") (ord a)
+   $ updateField (Proxy :: Proxy "b") (ord b)
+   $ updateField (Proxy :: Proxy "c") (ord c)
+   $ updateField (Proxy :: Proxy "d") (ord d)
+   $ (BitFields 0 :: CFormat)
+toFormat _ = undefined
+{-# INLINE toFormat #-}
+
+
 fmt2bits :: Map Format Word32
-fmt2bits = fromList assoc
+fmt2bits = fromList codes
 
 bits2fmt :: Map Word32 Format
-bits2fmt = fromList (map swap assoc)
+bits2fmt = fromList (map swap codes)
 
 -- | Associate formats to their fourcc code
-assoc :: [(Format,Word32)]
-assoc = assoc'
-   where
-      f (a,b,c,d) = a .|. (b `shiftL` 8) .|. (c `shiftL` 16) .|. (d `shiftL` 24)
-      k = fromIntegral . ord
-      g [a,b,c,d] = f (k a, k b, k c, k d)
-      g _ = undefined
-      assoc' = map (second g)
-         [(C8         , "C8  ")
-         ,(RGB332     , "RGB8")
-         ,(BGR233     , "BGR8")
-
-         ,(XRGB4444   , "XR12")
-         ,(XBGR4444   , "XB12")
-         ,(RGBX4444   , "RX12")
-         ,(BGRX4444   , "BX12")
-
-         ,(ARGB4444   , "AR12")
-         ,(ABGR4444   , "AB12")
-         ,(RGBA4444   , "RA12")
-         ,(BGRA4444   , "BA12")
-
-         ,(XRGB1555   , "XR15")
-         ,(XBGR1555   , "XB15")
-         ,(RGBX5551   , "RX15")
-         ,(BGRX5551   , "BX15")
-
-         ,(ARGB1555   , "AR15")
-         ,(ABGR1555   , "AB15")
-         ,(RGBA5551   , "RA15")
-         ,(BGRA5551   , "BA15")
-
-         ,(RGB565     , "RG16")
-         ,(BGR565     , "BG16")
-
-         ,(RGB888     , "RG24")
-         ,(BGR888     , "BG24")
-
-         ,(XRGB8888   , "XR24")
-         ,(XBGR8888   , "XB24")
-         ,(RGBX8888   , "RX24")
-         ,(BGRX8888   , "BX24")
-
-         ,(ARGB8888   , "AR24")
-         ,(ABGR8888   , "AB24")
-         ,(RGBA8888   , "RA24")
-         ,(BGRA8888   , "BA24")
-
-         ,(XRGB2101010 , "XR30")
-         ,(XBGR2101010 , "XB30")
-         ,(RGBX1010102 , "RX30")
-         ,(BGRX1010102 , "BX30")
-
-         ,(ARGB2101010 , "AR30")
-         ,(ABGR2101010 , "AB30")
-         ,(RGBA1010102 , "RA30")
-         ,(BGRA1010102 , "BA30")
-
-         ,(YUYV        , "YUYV")
-         ,(YVYU        , "YVYU")
-         ,(UYVY        , "UYVY")
-         ,(VYUY        , "VYUY")
-
-         ,(AYUY        , "AYUY")
-
-         ,(NV12        , "NV12")
-         ,(NV21        , "NV21")
-         ,(NV16        , "NV16")
-         ,(NV61        , "NV61")
-
-         ,(YUV410      , "YUV9")
-         ,(YVU410      , "YVU9")
-         ,(YUV411      , "YU11")
-         ,(YVU411      , "YV11")
-         ,(YUV420      , "YU12")
-         ,(YVU420      , "YV12")
-         ,(YUV422      , "YU16")
-         ,(YVU422      , "YV16")
-         ,(YUV444      , "YU24")
-         ,(YVU444      , "YV24")
-         ]
+codes :: [(Format,Word32)]
+codes =
+   [(C8          , toFormat "C8  ")
+   ,(RGB332      , toFormat "RGB8")
+   ,(BGR233      , toFormat "BGR8")
+   
+   ,(XRGB4444    , toFormat "XR12")
+   ,(XBGR4444    , toFormat "XB12")
+   ,(RGBX4444    , toFormat "RX12")
+   ,(BGRX4444    , toFormat "BX12")
+   
+   ,(ARGB4444    , toFormat "AR12")
+   ,(ABGR4444    , toFormat "AB12")
+   ,(RGBA4444    , toFormat "RA12")
+   ,(BGRA4444    , toFormat "BA12")
+   
+   ,(XRGB1555    , toFormat "XR15")
+   ,(XBGR1555    , toFormat "XB15")
+   ,(RGBX5551    , toFormat "RX15")
+   ,(BGRX5551    , toFormat "BX15")
+   
+   ,(ARGB1555    , toFormat "AR15")
+   ,(ABGR1555    , toFormat "AB15")
+   ,(RGBA5551    , toFormat "RA15")
+   ,(BGRA5551    , toFormat "BA15")
+   
+   ,(RGB565      , toFormat "RG16")
+   ,(BGR565      , toFormat "BG16")
+   
+   ,(RGB888      , toFormat "RG24")
+   ,(BGR888      , toFormat "BG24")
+   
+   ,(XRGB8888    , toFormat "XR24")
+   ,(XBGR8888    , toFormat "XB24")
+   ,(RGBX8888    , toFormat "RX24")
+   ,(BGRX8888    , toFormat "BX24")
+   
+   ,(ARGB8888    , toFormat "AR24")
+   ,(ABGR8888    , toFormat "AB24")
+   ,(RGBA8888    , toFormat "RA24")
+   ,(BGRA8888    , toFormat "BA24")
+   
+   ,(XRGB2101010 , toFormat "XR30")
+   ,(XBGR2101010 , toFormat "XB30")
+   ,(RGBX1010102 , toFormat "RX30")
+   ,(BGRX1010102 , toFormat "BX30")
+   
+   ,(ARGB2101010 , toFormat "AR30")
+   ,(ABGR2101010 , toFormat "AB30")
+   ,(RGBA1010102 , toFormat "RA30")
+   ,(BGRA1010102 , toFormat "BA30")
+   
+   ,(YUYV        , toFormat "YUYV")
+   ,(YVYU        , toFormat "YVYU")
+   ,(UYVY        , toFormat "UYVY")
+   ,(VYUY        , toFormat "VYUY")
+   
+   ,(AYUY        , toFormat "AYUY")
+   
+   ,(NV12        , toFormat "NV12")
+   ,(NV21        , toFormat "NV21")
+   ,(NV16        , toFormat "NV16")
+   ,(NV61        , toFormat "NV61")
+   
+   ,(YUV410      , toFormat "YUV9")
+   ,(YVU410      , toFormat "YVU9")
+   ,(YUV411      , toFormat "YU11")
+   ,(YVU411      , toFormat "YV11")
+   ,(YUV420      , toFormat "YU12")
+   ,(YVU420      , toFormat "YV12")
+   ,(YUV422      , toFormat "YU16")
+   ,(YVU422      , toFormat "YV16")
+   ,(YUV444      , toFormat "YU24")
+   ,(YVU444      , toFormat "YV24")
+   ]
 
 -- | Bit-depth per plane
 formatBitDepth :: Format -> [Word32]
@@ -291,4 +303,9 @@ data Format
    | YVU422             -- ^ 3 plane YCbCr: 2x1 subsampled Cr (1) and Cb (2) planes
    | YUV444             -- ^ 3 plane YCbCr: non-subsampled Cb (1) and Cr (2) planes
    | YVU444             -- ^ 3 plane YCbCr: non-subsampled Cr (1) and Cb (2) planes
-   deriving (Eq,Ord,Show)
+   deriving (Eq,Ord,Show,Enum)
+
+instance CEnum Format where
+   fromCEnum x = fromIntegral (fmt2bits ! x)
+   toCEnum   x = bits2fmt ! (fromIntegral x)
+      

@@ -77,6 +77,11 @@ library
     ViperVM.Arch.X86_64.Assembler.X86Dec
     ViperVM.Arch.X86_64.Assembler.X87
 
+    ViperVM.Arch.Linux.Internals.FileSystem
+    ViperVM.Arch.Linux.Internals.Input
+    ViperVM.Arch.Linux.Internals.Sound
+    ViperVM.Arch.Linux.Internals.Graphics
+
     ViperVM.Arch.Linux.Error
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll
@@ -107,9 +112,6 @@ library
     ViperVM.Arch.Linux.Trace
     ViperVM.Arch.Linux.Utils
 
-    ViperVM.Arch.Linux.Internals.FileSystem
-    ViperVM.Arch.Linux.Input.Internals
-
     ViperVM.Arch.Linux.Process.MemoryMap
     ViperVM.Arch.Linux.Process.ControlGroup
 
@@ -126,9 +128,6 @@ library
     ViperVM.Arch.Linux.Graphics.PixelFormat
     ViperVM.Arch.Linux.Graphics.Property
     ViperVM.Arch.Linux.Graphics.Helper
-    ViperVM.Arch.Linux.Graphics.Internals
-
-    ViperVM.Arch.Linux.Sound.Internals
 
     ViperVM.Arch.OpenCL.All
     ViperVM.Arch.OpenCL.Bindings

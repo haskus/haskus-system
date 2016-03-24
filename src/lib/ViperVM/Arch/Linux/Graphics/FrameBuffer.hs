@@ -24,7 +24,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
-import ViperVM.Arch.Linux.Graphics.Internals
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Utils.Tuples
 

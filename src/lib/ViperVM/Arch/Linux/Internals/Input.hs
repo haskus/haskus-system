@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
 
-module ViperVM.Arch.Linux.Input.Internals
+module ViperVM.Arch.Linux.Internals.Input
    ( Property (..)
    , EventType (..)
    , SyncEvent (..)

@@ -5,7 +5,7 @@
 -- | DRM/KMS Internals
 --
 -- Bindings with C structures and IOCTLs
-module ViperVM.Arch.Linux.Graphics.Internals
+module ViperVM.Arch.Linux.Internals.Graphics
    (
    -- * Mode
      ModeType (..)

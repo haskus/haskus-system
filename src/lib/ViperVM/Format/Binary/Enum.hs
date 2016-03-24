@@ -35,8 +35,12 @@ instance (Integral b, Storable b, CEnum a) => CStorable (EnumField b a) where
 fromEnumField :: CEnum a => EnumField b a -> a
 fromEnumField (EnumField a) = a
 
+{-# INLINE fromEnumField #-}
+
 toEnumField :: CEnum a => a -> EnumField b a
 toEnumField = EnumField
+
+{-# INLINE toEnumField #-}
 
 -----------------------------------------------------------------------------
 -- Extended Enum

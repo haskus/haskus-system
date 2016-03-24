@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 
-module ViperVM.Arch.Linux.Sound.Internals
+module ViperVM.Arch.Linux.Internals.Sound
    ( Cea861AudioInfoFrame (..)
    , AesIec958 (..)
    -- * Hardware dependent: /dev/snd/hw*
