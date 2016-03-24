@@ -20,7 +20,8 @@ module ViperVM.Arch.X86_64.Linux.Syscall
 ) where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)
-import Data.Word (Word64,Word32)
+import Foreign.C.Types
+import Data.Word
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -74,7 +75,6 @@ syscall0_ (I64# n) = IO $ \s ->
 --------------------------------------------------
 
 import Data.Int (Int64)
-import Data.Word (Word)
 
 foreign import ccall "x86_64_linux_syscall6" syscall6_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
 foreign import ccall "x86_64_linux_syscall5" syscall5_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
@@ -89,11 +89,12 @@ foreign import ccall "x86_64_linux_syscall0" syscall0_ :: Int64 -> IO Int64
 class Arg a where
    toArg :: a -> Int64
 
-instance Arg Int where toArg = fromIntegral
-instance Arg Int64 where toArg = id
-instance Arg Word where toArg = fromIntegral
-instance Arg Word64 where toArg = fromIntegral
-instance Arg Word32 where toArg = fromIntegral
+instance Arg Int     where toArg = fromIntegral
+instance Arg Int64   where toArg = id
+instance Arg Word    where toArg = fromIntegral
+instance Arg Word64  where toArg = fromIntegral
+instance Arg Word32  where toArg = fromIntegral
+instance Arg CUShort where toArg = fromIntegral
 instance Arg (Ptr a) where toArg = fromIntegral . ptrToIntPtr
 
 syscall6 :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64

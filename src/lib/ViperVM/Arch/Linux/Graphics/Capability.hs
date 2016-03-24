@@ -21,7 +21,7 @@ import Control.Monad (void)
 getCapability :: Handle -> Capability -> SysRet Word64
 getCapability hdl cap = do
    let s = StructGetCap (toEnumField cap) 0
-   fmap gcValue <$> ioctlGetCapabilities hdl s
+   fmap gcValue <$> ioctlGetCapabilities s hdl
 
 -- | Indicate if a capability is supported
 supports :: Handle -> Capability -> SysRet Bool
@@ -34,4 +34,4 @@ setClientCapability hdl cap b = do
       v = if b then 1 else 0
       s = StructSetClientCap (toEnumField cap) v
       m = "Set client capability " ++ show cap
-   void $ sysCallWarn m (ioctlSetClientCapability hdl s)
+   void $ sysCallWarn m (ioctlSetClientCapability s hdl)

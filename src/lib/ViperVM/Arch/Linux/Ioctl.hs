@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Linux IOCTL
 --
@@ -8,265 +10,255 @@
 -- Warning: some constants may be modified depending on the architecture. For
 -- now, we only support X86_64.
 module ViperVM.Arch.Linux.Ioctl
-   ( sysIoctl
-   , IOCTL
-   , Command (..)
+   (
+   -- * Command
+     Command
    , Direction(..)
-   , CommandType
-   , CommandNumber
-   , CommandSize
-   -- * Command encoding/decoding
-   , encodeCommand
-   , decodeCommand
+   , ioctlCommand
    -- * Signal
+   , ioctlSignalCmd
    , ioctlSignal
-   , ioctlSignalValue
+   , ioctlSignalCmdRet
+   , ioctlSignalRet
    -- * Read
+   , ioctlReadCmd
    , ioctlRead
-   , ioctlReadBogus
+   , ioctlReadCmdRet
+   , ioctlReadRet
    , ioctlReadBytes
    , ioctlReadByteString
    , ioctlReadBuffer
-   , ioctlReadWithRet
    -- * Write
+   , ioctlWriteCmd
    , ioctlWrite
+   , ioctlWriteCmdRet
+   , ioctlWriteRet
    , ioctlWriteValue
-   -- * Read / Write
-   , ioctlReadWrite
-   , ioctlReadWriteWithRet
-   -- * Helpers
-   , repeatIoctl
+   -- * Write / Read
+   , ioctlWriteReadCmd
+   , ioctlWriteRead
+   , ioctlWriteReadCmdRet
+   , ioctlWriteReadRet
    )
 where
 
 import Data.Word
 import Data.Int
-import Data.Bits
+import Data.Proxy
 import Foreign.Storable
 import Foreign.Ptr
+import Control.Monad
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
 import qualified Data.ByteString as BS
 
+import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.Enum
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor
 
--- | Send a custom command to a device
-sysIoctl :: FileDescriptor -> Int64 -> Int64 -> IO Int64
-sysIoctl (FileDescriptor fd) cmd arg =
-   syscall_ioctl fd cmd arg
+import ViperVM.Arch.X86_64.Linux.Syscall (Arg(..))
 
+-----------------------------------------------------------------------------
+-- Command
+-----------------------------------------------------------------------------
+
+newtype Command = Command (BitFields Word32
+  '[ BitField 2  "direction" (EnumField Word8 Direction)
+   , BitField 14 "size"      Word16
+   , BitField 8  "type"      CommandType
+   , BitField 8  "number"    CommandNumber
+   ]) deriving (Storable)
 
 type CommandType   = Word8
 type CommandNumber = Word8
-type CommandSize   = Word16 -- is really 14 bits
 
 -- | Direction of the IOCTL
-data Direction = None | Read | Write | ReadWrite
+data Direction
+   = None 
+   | Write 
+   | Read 
+   | WriteRead
+   deriving (Show,Eq,Enum)
 
--- | An IO Control Command
-data Command = Command
-   { ioctlType      :: CommandType   -- ^ IOCTL type
-   , ioctlNumber    :: CommandNumber -- ^ IOCTL number
-   , ioctlDirection :: Direction     -- ^ IOCTL direction (2 bits by default)
-   , ioctlSize      :: CommandSize   -- ^ IOCTL size (14 bits by default)
-   }
+instance CEnum Direction
 
--- | Decode a command
-decodeCommand :: Word32 -> Command
-decodeCommand w = Command 
-      (fromIntegral $ (w `shiftR` 8) .&. 0x000000FF)
-      (fromIntegral $ w .&. 0x000000FF)
-      (toDir (w `shiftR` 30))
-      (fromIntegral $ (w `shiftR` 16) .&. 0x3FFF)
-   where
-      toDir 0 = None
-      toDir 1 = Write
-      toDir 2 = Read
-      toDir 3 = ReadWrite
-      toDir _ = error "Invalid direction" -- should never happen
-
-
--- | Encode a command
-encodeCommand :: Command -> Word32
-encodeCommand c = w
-   where
-      fromDir None      = 0
-      fromDir Write     = 1
-      fromDir Read      = 2
-      fromDir ReadWrite = 3
-      w =   fromIntegral (ioctlNumber c)
-        .|. (fromIntegral (ioctlType c)  `shiftL` 8)
-        .|. (fromDir (ioctlDirection  c) `shiftL` 30)
-        .|. ((fromIntegral (ioctlSize c) .&. 0x3FFFF) `shiftL` 16)
-
--- | IOCTL control commands are stored in 32 bits: 
--- DDSS SSSS SSSS SSSS TTTT TTTT NNNN NNNN
--- where D = direction, S = Size, T = Type and N = Number
-instance Storable Command where
-   sizeOf _ = 4
-   alignment _ = 4
-   peek ptr = do
-      decodeCommand <$> peek (castPtr ptr :: Ptr Word32)
-
-   poke ptr = poke (castPtr ptr :: Ptr Word32) . encodeCommand
+-- | Encode a command (similar to _IO, _IOR, ... macros)
+ioctlCommand :: Direction -> Word8 -> Word8 -> Int -> Command
+ioctlCommand dir typ nb sz = Command
+   $ updateField (Proxy :: Proxy "direction") (toEnumField dir)
+   $ updateField (Proxy :: Proxy "size")      (fromIntegral sz)
+   $ updateField (Proxy :: Proxy "type")      typ
+   $ updateField (Proxy :: Proxy "number")    nb
+   $ BitFields 0
+{-# INLINE ioctlCommand #-}
 
 ---------------------------------------------------
--- Helper functions to build commands
+-- IOCTL
 ---------------------------------------------------
 
--- | Helper to check parameter size
-paramSize :: Storable a => a -> Word16
-paramSize x | sz .&. 0xC000 == 0 = fromIntegral sz
-            | otherwise          = error "Invalid size (> 14 bits)"
-   where sz = sizeOf x
+-- | Send a custom command to a device
+ioctl :: Arg a => Command -> a -> Handle -> IO Int64
+ioctl (Command cmd) arg (FileDescriptor fd) =
+   syscall_ioctl fd (fromIntegral (bitFieldsBits cmd)) (toArg arg)
 
--- | Helper to convert a Ptr into a Int64
-ptrToArg :: Ptr a -> Int64
-ptrToArg = fromIntegral . ptrToIntPtr
+-----------------------------------------------------------------------------
+-- Write/Read
+-----------------------------------------------------------------------------
 
--- | We abstract over the ioctl function
-type IOCTL = FileDescriptor -> Int64 -> Int64 -> IO Int64
-
--- | Build a Read IOCTL
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
-ioctlRead :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet a
-ioctlRead ioctl typ nr test fd = fmap snd <$> ioctlReadWithRet ioctl typ nr test fd
-
--- | Build a Read IOCTL
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
-ioctlReadWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet (Int64,a)
-ioctlReadWithRet ioctl typ nr test fd =
-   alloca $ \(ptr :: Ptr a) -> do
-      let cmd = Command typ nr Read (paramSize (undefined :: a))
-      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
-      case test ret of
+-- | Write and read a storable, use an arbitrary command
+ioctlWriteReadCmdRet :: Storable a => Command -> a -> Handle -> SysRet (Int64,a)
+ioctlWriteReadCmdRet cmd a fd =
+   with a $ \pa -> do
+      r <- ioctl cmd pa fd
+      case defaultCheck r of
+         Nothing  -> Right . (r,) <$> peek pa
          Just err -> return (Left err)
-         Nothing  -> Right . (ret,) <$> peek ptr
 
--- | Some IOCTLs are bogus, we need to pass a custom size to build the command
--- that doesn't correspond to the size of the returned object...
-ioctlReadBogus :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Word16 -> FileDescriptor -> SysRet (Int64,a)
-ioctlReadBogus ioctl typ nr test sz fd =
-   alloca $ \(ptr :: Ptr a) -> do
-      let cmd = Command typ nr Read sz
-      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
-      case test ret of
+-- | Write and read a storable, return the valid returned value
+ioctlWriteReadRet :: forall a. Storable a => CommandType -> CommandNumber -> a -> Handle -> SysRet (Int64,a)
+ioctlWriteReadRet typ nr = ioctlWriteReadCmdRet cmd
+   where
+      cmd = ioctlCommand WriteRead typ nr (sizeOf (undefined :: a))
+
+-- | Write and read a storable
+ioctlWriteRead :: Storable a => CommandType -> CommandNumber -> a -> Handle -> SysRet a
+ioctlWriteRead typ nr a fd = fmap snd <$> ioctlWriteReadRet typ nr a fd
+
+-- | Write and read a storable, use an arbitrary command
+ioctlWriteReadCmd :: Storable a => Command -> a -> Handle -> SysRet a
+ioctlWriteReadCmd cmd a fd = fmap snd <$> ioctlWriteReadCmdRet cmd a fd
+      
+-----------------------------------------------------------------------------
+-- Read
+-----------------------------------------------------------------------------
+
+-- | Read a storable, use an arbitrary command
+ioctlReadCmdRet :: Storable a => Command -> Handle -> SysRet (Int64,a)
+ioctlReadCmdRet cmd fd =
+   alloca $ \pa -> do
+      r <- ioctl cmd pa fd
+      case defaultCheck r of
+         Nothing  -> Right . (r,) <$> peek pa
          Just err -> return (Left err)
-         Nothing  -> Right . (ret,) <$> peek ptr
 
--- | Build a Read IOCTL
---
--- Read n bytes and return the ioctl returned value
-ioctlReadBytes :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Word16 -> Ptr a -> FileDescriptor -> SysRet Int64
-ioctlReadBytes ioctl typ nr test n ptr fd = do
-   let cmd = Command typ nr Read n
-   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
-   case test ret of
+-- | Read a storable, return the valid returned value
+ioctlReadRet :: forall a. Storable a => CommandType -> CommandNumber -> Handle -> SysRet (Int64,a)
+ioctlReadRet typ nr = ioctlReadCmdRet cmd
+   where
+      cmd = ioctlCommand Read typ nr (sizeOf (undefined :: a))
+
+-- | Read a storable
+ioctlRead :: Storable a => CommandType -> CommandNumber -> Handle -> SysRet a
+ioctlRead typ nr fd = fmap snd <$> ioctlReadRet typ nr fd
+
+-- | Read a storable, use an arbitrary command
+ioctlReadCmd :: Storable a => Command -> Handle -> SysRet a
+ioctlReadCmd cmd fd = fmap snd <$> ioctlReadCmdRet cmd fd
+
+-----------------------------------------------------------------------------
+-- Write
+-----------------------------------------------------------------------------
+
+-- | Write a storable, use an arbitrary command
+ioctlWriteCmdRet :: Storable a => Command -> a -> Handle -> SysRet Int64
+ioctlWriteCmdRet cmd a fd =
+   with a $ \pa -> do
+      r <- ioctl cmd pa fd
+      return $ case defaultCheck r of
+         Nothing  -> Right r
+         Just err -> Left err
+
+-- | Write a storable, return the valid returned value
+ioctlWriteRet :: forall a. Storable a => CommandType -> CommandNumber -> a -> Handle -> SysRet Int64
+ioctlWriteRet typ nr = ioctlWriteCmdRet cmd
+   where
+      cmd = ioctlCommand Write typ nr (sizeOf (undefined :: a))
+
+-- | Write a storable
+ioctlWrite :: Storable a => CommandType -> CommandNumber -> a -> Handle -> SysRet ()
+ioctlWrite typ nr a fd = void <$> ioctlWriteRet typ nr a fd
+
+-- | Write a storable, use an arbitrary command
+ioctlWriteCmd :: Storable a => Command -> a -> Handle -> SysRet ()
+ioctlWriteCmd cmd a fd = void <$> ioctlWriteCmdRet cmd a fd
+
+-- | Build a Write IOCTL where the value is directly passed in the `arg`
+-- parameter.
+ioctlWriteValue :: (Storable a, Arg a) => CommandType -> CommandNumber -> a -> Handle -> SysRet ()
+ioctlWriteValue typ nr arg fd = do
+   let cmd = ioctlCommand Write typ nr (sizeOf arg)
+   ret <- ioctl cmd arg fd
+   return $ case defaultCheck ret of
+      Nothing -> Right ()
+      Just x  -> Left x
+
+-----------------------------------------------------------------------------
+-- signal (Direction = None)
+-----------------------------------------------------------------------------
+
+-- | Signal, use an arbitrary command
+ioctlSignalCmdRet :: Arg a => Command -> a -> Handle -> SysRet Int64
+ioctlSignalCmdRet cmd a fd = do
+   r <- ioctl cmd a fd
+   return $ case defaultCheck r of
+      Nothing  -> Right r
+      Just err -> Left err
+
+-- | Signal, return the valid returned value
+ioctlSignalRet :: Arg a => CommandType -> CommandNumber -> a -> Handle -> SysRet Int64
+ioctlSignalRet typ nr = ioctlSignalCmdRet (ioctlCommand None typ nr 0)
+
+-- | Signal
+ioctlSignal :: Arg a => CommandType -> CommandNumber -> a -> Handle -> SysRet ()
+ioctlSignal typ nr a fd = void <$> ioctlSignalRet typ nr a fd
+
+-- | Signal, use an arbitrary command
+ioctlSignalCmd :: Arg a => Command -> a -> Handle -> SysRet ()
+ioctlSignalCmd cmd a fd = void <$> ioctlSignalCmdRet cmd a fd
+
+
+-----------------------------------------------------------------------------
+-- Read buffers
+-----------------------------------------------------------------------------
+
+-- | Build a Read ioctl that reads the given number of bytes
+ioctlReadBytes :: CommandType -> CommandNumber -> Int -> Ptr a -> Handle -> SysRet Int64
+ioctlReadBytes typ nr n ptr fd = do
+   let cmd = ioctlCommand Read typ nr n
+   ret <- ioctl cmd ptr fd
+   case defaultCheck ret of
       Just err -> return (Left err)
       Nothing  -> return (Right ret)
 
--- | Build a Read IOCTL
---
--- Read n bytes and return the ioctl returned value
-ioctlReadByteString :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Int -> FileDescriptor -> SysRet (Int64, BS.ByteString)
-ioctlReadByteString ioctl typ nr test n fd = do
+-- | Build a Read ioctl that reads the given number of bytes and return them in
+-- a ByteString
+ioctlReadByteString :: CommandType -> CommandNumber -> Int -> Handle -> SysRet (Int64, BS.ByteString)
+ioctlReadByteString typ nr n fd =
    allocaBytes n $ \ptr -> do
-      ret <- ioctlReadBytes ioctl typ nr test (fromIntegral n) ptr fd
+      ret <- ioctlReadBytes typ nr n ptr fd
       case ret of
          Left err -> return (Left err)
          Right v  -> Right . (v,) <$> BS.packCStringLen (ptr, n)
 
--- | Build a Read IOCTL
---
--- The returned value is the size of the buffer
-ioctlReadBuffer :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> (Word16 -> Ptr a -> IO b) -> Word16 -> FileDescriptor -> SysRet b
-ioctlReadBuffer ioctl typ nr test f defn fd = go defn
+-- | Build a Read ioctl for variable sized buffers. We except the ioctl to
+-- return the length of the data that can be read. We first try to read with a
+-- buffer of `defn` bytes. If there are data left, we retry with a buffer of the
+-- appropriate size.
+ioctlReadBuffer :: CommandType -> CommandNumber -> (Int -> Ptr a -> IO b) -> Int -> Handle -> SysRet b
+ioctlReadBuffer typ nr f defn fd = go defn
    where
-      go n = do
+      go n =
          -- try with the given buffer size
-         allocaBytes (fromIntegral n) $ \ptr -> do
-            ret <- ioctlReadBytes ioctl typ nr test n ptr fd
+         allocaBytes n $ \ptr -> do
+            ret <- ioctlReadBytes typ nr n ptr fd
             case ret of
-               Left err                      -> return (Left err)
+               Left err                    -> return (Left err)
                Right len 
-                  | len <= (fromIntegral n)  -> Right <$> f n ptr
+                  | len <= fromIntegral n  -> Right <$> f n ptr
                   -- try with the returned buffer size
-                  | otherwise                -> go (fromIntegral len)
-
--- | Build a Write IOCTL
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. 
-ioctlWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet ()
-ioctlWrite ioctl typ nr test fd arg =
-   with arg $ \ptr -> do
-      let cmd = Command typ nr Write (paramSize arg)
-      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
-      return $ case test ret of
-         Nothing -> Right ()
-         Just x  -> Left x
-
--- | Build a Write IOCTL
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. 
-ioctlWriteValue :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> Int64 -> SysRet ()
-ioctlWriteValue ioctl typ nr test fd arg = do
-   let cmd = Command typ nr Write (paramSize arg)
-   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) arg
-   return $ case test ret of
-      Nothing -> Right ()
-      Just x  -> Left x
+                  | otherwise              -> go (fromIntegral len)
 
 
--- | Build a ReadWrite IOCTL
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
-ioctlReadWrite :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet a
-ioctlReadWrite ioctl typ nr test fd arg = fmap snd <$> ioctlReadWriteWithRet ioctl typ nr test fd arg
 
--- | Build a ReadWrite IOCTL
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. If there is no error, the read value is returned.
-ioctlReadWriteWithRet :: Storable a => IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> a -> SysRet (Int64,a)
-ioctlReadWriteWithRet ioctl typ nr test fd arg = do
-   with arg $ \ptr -> do
-      let cmd = Command typ nr ReadWrite (paramSize arg)
-      ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg ptr)
-      case test ret of
-         Just err -> return (Left err)
-         Nothing  -> Right . (ret,) <$> peek ptr
-
--- | Build a Signal IOCTL (direction = None)
---
--- Execute the IOCTL command on the file descriptor, then `test` the result. 
-ioctlSignal :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> FileDescriptor -> SysRet ()
-ioctlSignal ioctl typ nr test fd = do
-   let cmd = Command typ nr None 0
-   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) (ptrToArg nullPtr)
-   return $ case test ret of
-      Nothing  -> Right ()
-      Just err -> Left err
-
--- | Build a Signal IOCTL (direction = None)
---
--- Use direction=None but still use the arg parameter to set/get a value
--- Execute the IOCTL command on the file descriptor, then `test` the result. 
-ioctlSignalValue :: IOCTL -> CommandType -> CommandNumber -> (Int64 -> Maybe ErrorCode) -> Int64 -> FileDescriptor -> SysRet Int64
-ioctlSignalValue ioctl typ nr test v fd = do
-   let cmd = Command typ nr None 0
-   ret <- ioctl fd (fromIntegral $ encodeCommand cmd) v
-   return $ case test ret of
-      Nothing  -> Right ret
-      Just err -> Left err
-
--- | Call the IOCTL, restarting if interrupted
-repeatIoctl :: IOCTL -> IOCTL
-repeatIoctl ioctl fd nr arg = do
-   ret <- ioctl fd nr arg
-   case defaultCheck ret of
-      Just EINTR  -> repeatIoctl ioctl fd nr arg
-      Just EAGAIN -> repeatIoctl ioctl fd nr arg
-      _           -> return ret

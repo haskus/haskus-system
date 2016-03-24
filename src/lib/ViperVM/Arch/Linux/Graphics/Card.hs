@@ -56,7 +56,7 @@ getResources fd = runEitherT $ do
    let 
       res          = StructCardRes 0 0 0 0 0 0 0 0 0 0 0 0
  
-      getCard'     = EitherT . ioctlGetResources fd
+      getCard' r   = EitherT (ioctlGetResources r fd)
 
    -- First we get the number of each resource
    res2 <- getCard' res

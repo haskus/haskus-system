@@ -5,7 +5,6 @@ module Main where
 
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.Process
@@ -176,31 +175,31 @@ main = do
    putStrLn "Get device info"
    dev <- check <$> sysOpen "/dev/input/event0" [] [PermUserRead]
 
-   driverVersion <- getVersion sysIoctl dev
+   driverVersion <- getVersion dev
    putStrLn $ "Driver version: " ++ show driverVersion
 
-   deviceInfo <- getDeviceInfo sysIoctl dev
+   deviceInfo <- getDeviceInfo dev
    putStrLn $ "Device info: " ++ show deviceInfo
 
-   repeatSettings <- getRepeatSettings sysIoctl dev
+   repeatSettings <- getRepeatSettings dev
    putStrLn $ "Repeat settings: " ++ show repeatSettings
 
-   devName <- getDeviceName sysIoctl dev
+   devName <- getDeviceName dev
    putStrLn $ "Device name: " ++ show devName
 
-   devUID <- getDeviceUniqueID sysIoctl dev
+   devUID <- getDeviceUniqueID dev
    putStrLn $ "Device uid: " ++ show devUID
 
-   devLoc <- getDevicePhysicalLocation sysIoctl dev
+   devLoc <- getDevicePhysicalLocation dev
    putStrLn $ "Device physical location: " ++ show devLoc
 
-   devProp <- getDeviceProperties sysIoctl dev
+   devProp <- getDeviceProperties dev
    putStrLn $ "Device properties: " ++ show devProp
 
-   devKeys <- getDeviceKeys sysIoctl 256 dev
+   devKeys <- getDeviceKeys 256 dev
    putStrLn $ "Device keys: " ++ show devKeys
 
-   devLeds <- getDeviceLEDs sysIoctl 50 dev
+   devLeds <- getDeviceLEDs 50 dev
    putStrLn $ "Device LEDs: " ++ show devLeds
 
    case repeatSettings of
@@ -208,10 +207,10 @@ main = do
       Right rs -> do
          putStrLn "Set repeat period very low"
          let nrs = rs { repeatDelay = 250, repeatPeriod = 33 } 
-         setRepeatSettings sysIoctl dev nrs >>= \case
+         setRepeatSettings nrs dev >>= \case
             Left err -> putStrLn $ "Failed: " ++ show err
             Right _  -> do
-               rs2 <- getRepeatSettings sysIoctl dev
+               rs2 <- getRepeatSettings dev
                putStrLn $ "New repeat settings: " ++ show rs2
 
 

@@ -17,6 +17,7 @@ module ViperVM.Arch.Linux.Internals.FileSystem
    , remountFlagMask
    , FsxAttr (..)
    , XFlag (..)
+   , Range (..)
    , ioctlSetReadOnlyStatus
    , ioctlGetReadOnlyStatus
    , ioctlReReadPartitionTable
@@ -71,20 +72,12 @@ import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Enum
 
 import Foreign.Storable
+import Foreign.Marshal.Utils (toBool)
 import Foreign.CStorable
 import Foreign.C.Types
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Utils
-import Foreign.Ptr
 import Data.Word
 import Data.Int
-import Control.Monad
 import GHC.Generics (Generic)
-
--- | Helper to convert a Ptr into a Int64
-ptrToArg :: Ptr a -> Int64
-ptrToArg = fromIntegral . ptrToIntPtr
-
 
 -- =============================================================
 --    From linux/include/uapi/linux/fs.h
@@ -334,45 +327,49 @@ instance CBitSet XFlag where
       _   -> error "Unknown extended flag"
 
 
+csize :: Int
+csize = sizeOf (undefined :: CSize)
 
-blkIoctl :: Word8 -> Int64 -> Handle -> SysRet Int64
-blkIoctl n = ioctlSignalValue sysIoctl 0x12 n defaultCheck
-
-blkIoctlS' :: Word8 -> Int64 -> Handle -> SysRet ()
-blkIoctlS' n b fd = do
-   r <- ioctlSignalValue sysIoctl 0x12 n defaultCheck b fd
-   return $ case r of
-      Left err -> Left err
-      Right _  -> Right ()
-
-blkIoctlS :: Word8 -> Handle -> SysRet ()
-blkIoctlS n = ioctlSignal sysIoctl 0x12 n defaultCheck
-
-blkIoctlR :: Storable a => Word8 -> Handle -> SysRet a
-blkIoctlR n = ioctlRead sysIoctl 0x12 n defaultCheck
-
-blkIoctlW :: Storable a => Word8 -> Handle -> a -> SysRet ()
-blkIoctlW n = ioctlWrite sysIoctl 0x12 n defaultCheck
-
-
-onSuccessIO' :: SysRet a -> (a -> IO b) -> SysRet b
-onSuccessIO' s f = do
-   r <- s
-   case r of
-      Left err -> return (Left err)
-      Right u  -> Right <$> f u
+-- blkIoctl :: Word8 -> Int64 -> Handle -> SysRet Int64
+-- blkIoctl n = ioctlSignalValue 0x12 n
+-- 
+-- blkIoctlS' :: Word8 -> Int64 -> Handle -> SysRet ()
+-- blkIoctlS' n b fd = do
+--    r <- ioctlSignalValue 0x12 n b fd
+--    return $ case r of
+--       Left err -> Left err
+--       Right _  -> Right ()
+-- 
+-- blkIoctlS :: Word8 -> Handle -> SysRet ()
+-- blkIoctlS n = ioctlSignal 0x12 n
+-- 
+-- blkIoctlR :: Storable a => Word8 -> Handle -> SysRet a
+-- blkIoctlR n = ioctlRead 0x12 n
+-- 
+-- blkIoctlW :: Storable a => Word8 -> Handle -> a -> SysRet ()
+-- blkIoctlW n = ioctlWrite 0x12 n
+-- 
+-- 
+-- onSuccessIO' :: SysRet a -> (a -> IO b) -> SysRet b
+-- onSuccessIO' s f = do
+--    r <- s
+--    case r of
+--       Left err -> return (Left err)
+--       Right u  -> Right <$> f u
 
 -- | BLKROSET set device read-only (0 = read-write)
-ioctlSetReadOnlyStatus :: Bool -> Handle -> SysRet Int64
-ioctlSetReadOnlyStatus b = blkIoctl 93 (if b then 1 else 0)
+ioctlSetReadOnlyStatus :: Bool -> Handle -> SysRet ()
+ioctlSetReadOnlyStatus b =
+   ioctlWriteCmd (ioctlCommand None 0x12 93 0) (if b then 1 else 0 :: Int)
 
 -- | BLKROGET get read-only status (0 = read_write)
 ioctlGetReadOnlyStatus :: Handle -> SysRet Bool
-ioctlGetReadOnlyStatus fd = fmap (==1) <$> blkIoctl 94 0 fd
+ioctlGetReadOnlyStatus fd =
+   fmap (toBool :: Int -> Bool) <$> ioctlReadCmd (ioctlCommand None 0x12 94 0) fd
 
 -- | BLKRRPART re-read partition table
 ioctlReReadPartitionTable :: Handle -> SysRet ()
-ioctlReReadPartitionTable = blkIoctlS 95
+ioctlReReadPartitionTable = ioctlSignal 0x12 95 (0 :: Int)
 
 -- | BLKGETSIZE return device size /512 (long *arg)
 -- Use the 64-bit version instead
@@ -383,18 +380,15 @@ ioctlReReadPartitionTable = blkIoctlS 95
 
 -- | BLKFLSBUF  flush buffer cache
 ioctlFlushBuferCache :: Handle -> SysRet ()
-ioctlFlushBuferCache = blkIoctlS 97
+ioctlFlushBuferCache = ioctlSignal 0x12 97 (0 :: Int)
 
 -- | BLKRASET set read ahead for block device
 ioctlSetReadAhead :: Int64 -> Handle -> SysRet ()
-ioctlSetReadAhead = blkIoctlS' 98
+ioctlSetReadAhead = ioctlSignal 0x12 98
 
 -- | BLKRAGET get current read ahead setting
 ioctlGetReadAhead :: Handle -> SysRet CLong
-ioctlGetReadAhead fd =
-   with 0 $ \p -> do
-      r <- blkIoctl 99 (ptrToArg p) fd
-      forM r (const $ peek p)
+ioctlGetReadAhead = ioctlReadCmd (ioctlCommand None 0x12 99 0)
 
 -- Linux aliases BLKRAGET/BLKRASET and BLKFRAGET/BLKFRASET
 -- BLKFRASET  _IO(0x12,100)/* set filesystem (mm/filemap.c) read-ahead */
@@ -402,130 +396,120 @@ ioctlGetReadAhead fd =
 
 
 -- | BLKSECTSET set max sectors per request
+--
+-- Doesn't seem to be supported by Linux (cf block/ioctl.c)
 ioctlSetMaxSectors :: CUShort -> Handle -> SysRet ()
-ioctlSetMaxSectors b = blkIoctlS' 102 (fromIntegral b)
+ioctlSetMaxSectors = ioctlSignal 0x12 102
 
 -- | BLKSECTGET get max sectors per request
 ioctlGetMaxSectors :: Handle -> SysRet CUShort
-ioctlGetMaxSectors fd =
-   with 0 $ \p ->
-      onSuccessIO' (blkIoctl 103 (ptrToArg p) fd) (const $ peek p)
+ioctlGetMaxSectors = ioctlReadCmd (ioctlCommand None 0x12 103 0)
 
 -- | BLKSSZGET get block device logical block size
-ioctlGetLogicalBlockSize :: Handle -> SysRet CUInt
-ioctlGetLogicalBlockSize fd =
-   with 0 $ \p ->
-      onSuccessIO' (blkIoctl 104 (ptrToArg p) fd) (const $ peek p)
+ioctlGetLogicalBlockSize :: Handle -> SysRet Int
+ioctlGetLogicalBlockSize = ioctlReadCmd (ioctlCommand None 0x12 104 0)
 
 -- | BLKBSZGET get block device soft block size
-ioctlGetSoftBlockSize :: Handle -> SysRet CSize
-ioctlGetSoftBlockSize = blkIoctlR 112
+ioctlGetSoftBlockSize :: Handle -> SysRet Int
+ioctlGetSoftBlockSize = ioctlReadCmd (ioctlCommand Read 0x12 112 csize)
 
 -- | BLKBSZSET set block device soft block size
-ioctlSetSoftBlockSize :: Handle -> CSize -> SysRet ()
-ioctlSetSoftBlockSize = blkIoctlW 113
+ioctlSetSoftBlockSize :: Int -> Handle -> SysRet ()
+ioctlSetSoftBlockSize = ioctlWriteCmd (ioctlCommand Write 0x12 113 csize)
 
 -- | BLKGETSIZE64 return device size in bytes
 ioctlGetSize :: Handle -> SysRet Word64
-ioctlGetSize fd =
-   -- we have to encode the command with a sizeOf CSize, but the command returns
-   -- unconditionally a Word64...
-   fmap snd <$> ioctlReadBogus sysIoctl 0x12 114 defaultCheck sz fd
-   where
-      sz = fromIntegral (sizeOf (undefined :: CSize)) 
+ioctlGetSize = ioctlReadCmd (ioctlCommand Read 0x12 114 csize)
 
 -- We haven't defined struct user_trace_setup yet
 -- #define BLKTRACESETUP _IOWR(0x12,115,struct blk_user_trace_setup)
 
 -- | BLKTRACESTART
 ioctlTraceStart :: Handle -> SysRet ()
-ioctlTraceStart = blkIoctlS 116
+ioctlTraceStart = ioctlSignal 0x12 116 (0 :: Int)
 
 -- | BLKTRACESTOP
 ioctlTraceStop :: Handle -> SysRet ()
-ioctlTraceStop = blkIoctlS 117
+ioctlTraceStop = ioctlSignal 0x12 117 (0 :: Int)
 
 -- | BLKTRACETEARDOWN
 ioctlTraceTearDown :: Handle -> SysRet ()
-ioctlTraceTearDown = blkIoctlS 118
+ioctlTraceTearDown = ioctlSignal 0x12 118 (0 :: Int)
 
-ioctlDiscard :: Handle -> SysRet ()
-ioctlDiscard = blkIoctlS 119
+data Range = Range
+   { rangeStart  :: Word64
+   , rangeLength :: Word64
+   } deriving (Generic,CStorable)
+
+instance Storable Range where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
+
+-- | BLKDISCARD
+ioctlDiscard :: Range -> Handle -> SysRet ()
+ioctlDiscard = ioctlWriteCmd (ioctlCommand None 0x12 119 0)
 
 -- | BLKIOMIN
 ioctlGetIOMin :: Handle -> SysRet CUInt
-ioctlGetIOMin fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 120 (ptrToArg p) fd) (const $ peek p)
+ioctlGetIOMin = ioctlReadCmd (ioctlCommand None 0x12 120 0)
 
 -- | BLKIOOPT
 ioctlGetIOOpt :: Handle -> SysRet CUInt
-ioctlGetIOOpt fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 121 (ptrToArg p) fd) (const $ peek p)
+ioctlGetIOOpt = ioctlReadCmd (ioctlCommand None 0x12 121 0)
 
 -- | BLKALIGNOFF
 ioctlGetAlignmentOffset :: Handle -> SysRet Int
-ioctlGetAlignmentOffset fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 122 (ptrToArg p) fd) (const $ peek p)
+ioctlGetAlignmentOffset = ioctlReadCmd (ioctlCommand None 0x12 122 0)
 
 -- | BLKPBSZGET get block device physical block size
 ioctlGetPhysicalBlockSize :: Handle -> SysRet CUInt
-ioctlGetPhysicalBlockSize fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 123 (ptrToArg p) fd) (const $ peek p)
+ioctlGetPhysicalBlockSize = ioctlReadCmd (ioctlCommand None 0x12 123 0)
 
 -- | BLKDISCARDZEROES
 ioctlDiscardZeroes :: Handle -> SysRet CUInt
-ioctlDiscardZeroes fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 124 (ptrToArg p) fd) (const $ peek p)
+ioctlDiscardZeroes = ioctlReadCmd (ioctlCommand None 0x12 124 0)
 
 -- | BLKSECDISCARD
-ioctlDiscardSecure :: Handle -> SysRet ()
-ioctlDiscardSecure = blkIoctlS 125
+ioctlDiscardSecure :: Range -> Handle -> SysRet ()
+ioctlDiscardSecure = ioctlWriteCmd (ioctlCommand None 0x12 125 0)
 
 -- | BLKROTATIONAL
 ioctlGetRotational :: Handle -> SysRet CUShort
-ioctlGetRotational fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 126 (ptrToArg p) fd) (const $ peek p)
+ioctlGetRotational = ioctlReadCmd (ioctlCommand None 0x12 126 0)
 
 -- | BLKZEROOUT
-ioctlZeroOut :: Handle -> SysRet()
-ioctlZeroOut = blkIoctlS 127
+ioctlZeroOut :: Range -> Handle -> SysRet()
+ioctlZeroOut = ioctlWriteCmd (ioctlCommand None 0x12 127 0)
 
 -- | BLKDAXGET
 ioctlGetDAX :: Handle -> SysRet Int
-ioctlGetDAX fd =
-   alloca $ \p ->
-      onSuccessIO' (blkIoctl 129 (ptrToArg p) fd) (const $ peek p)
-
+ioctlGetDAX  = ioctlReadCmd (ioctlCommand None 0x12 129 0)
 
 -- #define FIBMAP     _IO(0x00,1)  /* bmap access */
 -- #define FIGETBSZ   _IO(0x00,2)  /* get the block size used for bmap */
 -- #define FS_IOC_FIEMAP                   _IOWR('f', 11, struct fiemap)
 
 -- | Freeze (FIFREEZE)
-ioctlFreeze :: Handle -> Int -> SysRet Int
-ioctlFreeze = ioctlReadWrite sysIoctl 88 119 defaultCheck
+ioctlFreeze :: Int -> Handle -> SysRet Int
+ioctlFreeze = ioctlWriteRead 88 119
 
 -- | Thaw (FITHAW)
-ioctlThaw :: Handle -> Int -> SysRet Int
-ioctlThaw = ioctlReadWrite sysIoctl 88 120 defaultCheck
+ioctlThaw :: Int -> Handle -> SysRet Int
+ioctlThaw = ioctlWriteRead 88 120
 
 -- | Trim (FITRIM)
-ioctlTrim :: Handle -> TrimRange -> SysRet TrimRange
-ioctlTrim = ioctlReadWrite sysIoctl 88 121 defaultCheck
+ioctlTrim :: TrimRange -> Handle -> SysRet TrimRange
+ioctlTrim = ioctlWriteRead 88 121
 
 -- | Clone (FICLONE)
-ioctlClone :: Handle -> Int -> SysRet ()
-ioctlClone = ioctlWrite sysIoctl 0x94 9 defaultCheck
+ioctlClone :: Int -> Handle -> SysRet ()
+ioctlClone = ioctlWrite 0x94 9
 
 -- | Clone range (FICLONERANGE)
-ioctlCloneRange :: Handle -> FileCloneRange -> SysRet ()
-ioctlCloneRange = ioctlWrite sysIoctl 0x94 13 defaultCheck
+ioctlCloneRange :: FileCloneRange -> Handle -> SysRet ()
+ioctlCloneRange = ioctlWrite 0x94 13
 
 -- | FIDEDUPERANGE
 -- The size parameter must be sizeOf FileDedupeRangeHeader
@@ -533,49 +517,49 @@ ioctlCloneRange = ioctlWrite sysIoctl 0x94 13 defaultCheck
 -- FileDedupeRangeInfo structures...
 --
 --ioctlDedupeRange :: Handle -> FileDe -> SysRet ()
---ioctlDedupeRange = ioctlWrite sysIoctl 0x94 54 defaultCheck
+--ioctlDedupeRange = ioctlWrite 0x94 54
 
 
 -- | FS_IOC_GETFLAGS
 ioctlGetFlags :: Handle -> SysRet CLong
-ioctlGetFlags = ioctlRead sysIoctl 102 1 defaultCheck
+ioctlGetFlags = ioctlRead 102 1
 
 -- | FS_IOC_SETFLAGS
-ioctlSetFlags :: Handle -> CLong -> SysRet ()
-ioctlSetFlags = ioctlWrite sysIoctl 102 2 defaultCheck
+ioctlSetFlags :: CLong -> Handle -> SysRet ()
+ioctlSetFlags = ioctlWrite 102 2
 
 -- | FS_IOC_GETVERSION
 ioctlGetVersion :: Handle -> SysRet CLong
-ioctlGetVersion = ioctlRead sysIoctl 118 1 defaultCheck
+ioctlGetVersion = ioctlRead 118 1
 
 -- | FS_IOC_SETVERSION
-ioctlSetVersion :: Handle -> CLong -> SysRet ()
-ioctlSetVersion = ioctlWrite sysIoctl 118 2 defaultCheck
+ioctlSetVersion :: CLong -> Handle -> SysRet ()
+ioctlSetVersion = ioctlWrite 118 2
 
 
 -- | FS_IOC32_GETFLAGS
 ioctlGetFlags32 :: Handle -> SysRet Int
-ioctlGetFlags32 = ioctlRead sysIoctl 102 1 defaultCheck
+ioctlGetFlags32 = ioctlRead 102 1
 
 -- | FS_IOC32_SETFLAGS
-ioctlSetFlags32 :: Handle -> Int -> SysRet ()
-ioctlSetFlags32 = ioctlWrite sysIoctl 102 2 defaultCheck
+ioctlSetFlags32 :: Int -> Handle -> SysRet ()
+ioctlSetFlags32 = ioctlWrite 102 2
 
 -- | FS_IOC32_GETVERSION
 ioctlGetVersion32 :: Handle -> SysRet Int
-ioctlGetVersion32 = ioctlRead sysIoctl 118 1 defaultCheck
+ioctlGetVersion32 = ioctlRead 118 1
 
 -- | FS_IOC32_SETVERSION
-ioctlSetVersion32 :: Handle -> Int -> SysRet ()
-ioctlSetVersion32 = ioctlWrite sysIoctl 118 2 defaultCheck
+ioctlSetVersion32 :: Int -> Handle -> SysRet ()
+ioctlSetVersion32 = ioctlWrite 118 2
 
 -- | FS_IOC_FSGETXATTR
 ioctlGetXAttr :: Handle -> SysRet FsxAttr
-ioctlGetXAttr = ioctlRead sysIoctl 88 31 defaultCheck
+ioctlGetXAttr = ioctlRead 88 31
 
 -- | FS_IOC_FSSETXATTR
-ioctlSetXAttr :: Handle -> FsxAttr -> SysRet ()
-ioctlSetXAttr = ioctlWrite sysIoctl 88 32 defaultCheck
+ioctlSetXAttr :: FsxAttr -> Handle -> SysRet ()
+ioctlSetXAttr = ioctlWrite 88 32
 
 
 

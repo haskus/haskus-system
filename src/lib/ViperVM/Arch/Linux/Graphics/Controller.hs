@@ -72,7 +72,7 @@ getControllerFromID hdl crtcid = do
       ControllerID cid = crtcid
       crtc             = emptyStructController { contID = cid }
 
-   fmap (fromStructController hdl) <$> ioctlGetController hdl crtc
+   fmap (fromStructController hdl) <$> ioctlGetController crtc hdl
 
 setController' :: Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
 setController' hdl crtcid fb conns mode = do
@@ -102,7 +102,7 @@ setController' hdl crtcid fb conns mode = do
             , contGammaSize = 0
             }
 
-      void <$> ioctlSetController hdl crtc
+      void <$> ioctlSetController crtc hdl
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
@@ -115,7 +115,7 @@ switchFrameBuffer' hdl crtcid fb flags = do
       FrameBufferID fid = fb
       s = StructPageFlip cid fid flags 0 0
 
-   void <$> ioctlPageFlip hdl s
+   void <$> ioctlPageFlip s hdl
 
 -- | Get controllers (discard errors)
 getControllers :: Handle -> IO [Controller]
@@ -135,7 +135,7 @@ getControllerGamma c = do
          let f = fromIntegral . ptrToWordPtr
          state2 <- sysExec state $
             sysCallAssert "Get controller gamma look-up table" $
-               ioctlGetGamma hdl (s (f r) (f g) (f b))
+               ioctlGetGamma (s (f r) (f g) (f b)) hdl
          [rs,gs,bs] <- peekArrays [sz,sz,sz] as
          return ((rs,gs,bs),state2)
 
@@ -155,4 +155,4 @@ setControllerGamma c (rs,gs,bs) = do
          let f = fromIntegral . ptrToWordPtr
          sysRun' state $
             sysCallAssert "Set controller gamma look-up table" $
-               ioctlSetGamma hdl (s (f r) (f g) (f b))
+               ioctlSetGamma (s (f r) (f g) (f b)) hdl

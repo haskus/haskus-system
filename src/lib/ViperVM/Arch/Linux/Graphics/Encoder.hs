@@ -64,7 +64,7 @@ getEncoderFromID hdl (EncoderID encId) = do
    let enc = StructGetEncoder encId (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
    res <- runSys $ sysCallAssert "Get resources" $ getResources hdl
-   fmap (fromStructGetEncoder res hdl) <$> ioctlGetEncoder hdl enc
+   fmap (fromStructGetEncoder res hdl) <$> ioctlGetEncoder enc hdl
 
 -- | Controller attached to the encoder, if any
 encoderController :: Encoder -> SysRet (Maybe Controller)

@@ -75,7 +75,7 @@ type PropertyMetaID = Word32
 getPropertyMeta :: FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
 getPropertyMeta fd pid = runEitherT $ do
    let
-      getProperty' = EitherT . ioctlGetProperty fd
+      getProperty' r = EitherT (ioctlGetProperty r fd)
 
       gp = StructGetProperty
             { gpsValuesPtr   = 0
@@ -100,8 +100,8 @@ getPropertyMeta fd pid = runEitherT $ do
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      getBlobStruct' = EitherT . ioctlGetBlob fd
-      getBlobStruct = runEitherT . getBlobStruct'
+      getBlobStruct' r = EitherT (ioctlGetBlob r fd)
+      getBlobStruct    = runEitherT . getBlobStruct'
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b -> IO c) -> IO c
       withBuffers valueCount blobCount f =

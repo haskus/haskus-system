@@ -75,7 +75,7 @@ getConnectorFromID hdl connId@(ConnectorID cid) = runEitherT $ do
       peekArray' :: (Storable a, Integral c) => c -> Ptr a -> IO [a]
       peekArray'        = peekArray . fromIntegral
 
-      getModeConnector' = EitherT . ioctlGetConnector hdl
+      getModeConnector' r = EitherT (ioctlGetConnector r hdl)
 
    -- First we get the number of each resource
    res2 <- getModeConnector' res

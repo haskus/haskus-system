@@ -7,7 +7,6 @@ where
 
 import ViperVM.System.System
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
@@ -46,12 +45,12 @@ loadInputDevices system = sysLogSequence "Load input devices" $ do
       devs' = filter isEvent devs
    forM devs' $ \(devpath,dev) -> do
       fd   <- getDeviceHandle system CharDevice dev
-      void $ sysCallWarn "Grab device" $ grabDevice sysIoctl fd
+      void $ sysCallWarn "Grab device" $ grabDevice fd
       InputDevice devpath dev fd
          <$> sysCallAssert "Get device name"
-                  (Input.getDeviceName sysIoctl fd)
+                  (Input.getDeviceName fd)
          <*> sysCallAssert "Get device info"
-                  (Input.getDeviceInfo sysIoctl fd)
+                  (Input.getDeviceInfo fd)
          <*> newEventWaiterThread fd
 
 -- | Create a new thread reading input events and putting them in a TChan

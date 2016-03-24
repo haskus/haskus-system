@@ -31,16 +31,16 @@ type GenericBufferMap = StructMapDumb
 createGenericBuffer :: Handle -> Word32 -> Word32 -> Word32 -> Word32 -> SysRet GenericBuffer
 createGenericBuffer hdl width height bpp flags = do
    let s = StructCreateDumb height width bpp flags 0 0 0
-   ioctlCreateGenericBuffer hdl s
+   ioctlCreateGenericBuffer s hdl
 
 -- | Destroy a generic buffer
 destroyGenericBuffer :: Handle -> GenericBuffer -> SysRet ()
 destroyGenericBuffer hdl buffer = do
    let s = StructDestroyDumb (cdHandle buffer)
-   void <$> ioctlDestroyGenericBuffer hdl s
+   void <$> ioctlDestroyGenericBuffer s hdl
 
 -- | Map a Generic buffer
 mapGenericBuffer :: Handle -> GenericBuffer -> SysRet GenericBufferMap
 mapGenericBuffer hdl buffer = do
    let s = StructMapDumb (cdHandle buffer) 0 0
-   ioctlMapGenericBuffer hdl s
+   ioctlMapGenericBuffer s hdl

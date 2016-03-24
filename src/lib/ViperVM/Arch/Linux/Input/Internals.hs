@@ -89,6 +89,7 @@ import Foreign.CStorable
 import Foreign.Ptr
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
+import Foreign.Marshal.Utils (fromBool)
 
 
 -- =============================================================
@@ -662,14 +663,14 @@ instance Storable Mask where
 -- | Get version
 --
 -- EVIOCGVERSION
-getVersion :: IOCTL -> FileDescriptor -> SysRet Int
-getVersion ioctl = ioctlRead ioctl 0x45 0x01 defaultCheck
+getVersion :: FileDescriptor -> SysRet Int
+getVersion = ioctlRead 0x45 0x01
 
 -- | Get device info
 --
 -- EVIOCGID
-getDeviceInfo :: IOCTL -> FileDescriptor -> SysRet DeviceInfo
-getDeviceInfo ioctl = ioctlRead ioctl 0x45 0x02 defaultCheck
+getDeviceInfo :: FileDescriptor -> SysRet DeviceInfo
+getDeviceInfo = ioctlRead 0x45 0x02
 
 -- | Repeat settings
 --
@@ -690,51 +691,51 @@ instance Storable RepeatSettings where
 -- | Get repeat settings
 --
 -- EVIOCGREP
-getRepeatSettings :: IOCTL -> FileDescriptor -> SysRet RepeatSettings
-getRepeatSettings ioctl = ioctlRead ioctl 0x45 0x03 defaultCheck
+getRepeatSettings :: FileDescriptor -> SysRet RepeatSettings
+getRepeatSettings = ioctlRead 0x45 0x03
 
 -- | Set repeat settings
 --
 -- EVIOCSREP
-setRepeatSettings :: IOCTL -> FileDescriptor -> RepeatSettings -> SysRet ()
-setRepeatSettings ioctl = ioctlWrite ioctl 0x45 0x03 defaultCheck
+setRepeatSettings :: RepeatSettings -> FileDescriptor -> SysRet ()
+setRepeatSettings = ioctlWrite 0x45 0x03
 
 
 -- | Get key code
 --
 -- EVIOCGKEYCODE_V2
-getKeyCode :: IOCTL -> FileDescriptor -> SysRet KeymapEntry
-getKeyCode ioctl = ioctlRead ioctl 0x45 0x04 defaultCheck
+getKeyCode :: FileDescriptor -> SysRet KeymapEntry
+getKeyCode = ioctlRead 0x45 0x04
 
 -- | Set key code
 --
 -- EVIOCSKEYCODE_V2
-setKeyCode :: IOCTL -> FileDescriptor -> KeymapEntry -> SysRet ()
-setKeyCode ioctl = ioctlWrite ioctl 0x45 0x04 defaultCheck
+setKeyCode :: KeymapEntry -> FileDescriptor -> SysRet ()
+setKeyCode = ioctlWrite 0x45 0x04
 
 -- | Get device name
 --
 -- EVIOCGNAME
-getDeviceName :: IOCTL -> FileDescriptor -> SysRet String
-getDeviceName ioctl = ioctlReadBuffer ioctl 0x45 0x06 defaultCheck (const peekCString) 256
+getDeviceName :: FileDescriptor -> SysRet String
+getDeviceName = ioctlReadBuffer 0x45 0x06 (const peekCString) 256
 
 -- | Get physical location
 --
 -- EVIOCGPHYS
-getDevicePhysicalLocation :: IOCTL -> FileDescriptor -> SysRet String
-getDevicePhysicalLocation ioctl = ioctlReadBuffer ioctl 0x45 0x07 defaultCheck (const peekCString) 256
+getDevicePhysicalLocation :: FileDescriptor -> SysRet String
+getDevicePhysicalLocation = ioctlReadBuffer 0x45 0x07 (const peekCString) 256
 
 -- | Get unique identifier
 --
 -- EVIOCGUNIQ
-getDeviceUniqueID :: IOCTL -> FileDescriptor -> SysRet String
-getDeviceUniqueID ioctl = ioctlReadBuffer ioctl 0x45 0x08 defaultCheck (const peekCString) 256
+getDeviceUniqueID :: FileDescriptor -> SysRet String
+getDeviceUniqueID = ioctlReadBuffer 0x45 0x08 (const peekCString) 256
 
 -- | Get device properties
 --
 -- EVIOCGPROP
-getDeviceProperties :: IOCTL -> FileDescriptor -> SysRet String
-getDeviceProperties ioctl = ioctlReadBuffer ioctl 0x45 0x09 defaultCheck (const peekCString) 256
+getDeviceProperties :: FileDescriptor -> SysRet String
+getDeviceProperties = ioctlReadBuffer 0x45 0x09 (const peekCString) 256
 
 -- | Get multi-touch slots
 --
@@ -760,12 +761,12 @@ getDeviceProperties ioctl = ioctlReadBuffer ioctl 0x45 0x09 defaultCheck (const 
 -- ABS_MT code.
 -- 
 -- If the request code is not an ABS_MT value, -EINVAL is returned.
-getDeviceMultiTouchSlots :: IOCTL -> Word32 -> Int -> FileDescriptor -> SysRet [Int32]
-getDeviceMultiTouchSlots ioctl code nSlots fd = do
+getDeviceMultiTouchSlots :: Word32 -> Int -> FileDescriptor -> SysRet [Int32]
+getDeviceMultiTouchSlots code nSlots fd = do
    let sz = 4 * (nSlots + 1)
    allocaBytes (fromIntegral sz) $ \ptr -> do
       pokeByteOff ptr 0 code
-      ret <- ioctlReadBytes ioctl 0x45 0x0a defaultCheck (fromIntegral sz) ptr fd
+      ret <- ioctlReadBytes 0x45 0x0a (fromIntegral sz) ptr fd
       case ret of
          Left err -> return (Left err)
          Right _  -> Right <$> peekArray nSlots (ptr `plusPtr` 4)
@@ -773,92 +774,86 @@ getDeviceMultiTouchSlots ioctl code nSlots fd = do
 -- | Get global key state (one bit per pressed key)
 --
 -- EVIOCGKEY
-getDeviceKeys :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
-getDeviceKeys ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x18 defaultCheck ((n `div` 8) + 1) fd
+getDeviceKeys :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceKeys n fd = fmap snd <$> ioctlReadByteString 0x45 0x18 ((n `div` 8) + 1) fd
 
 -- | Get all leds (one bit per led)
 --
 -- EVIOCGLED
-getDeviceLEDs :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
-getDeviceLEDs ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x19 defaultCheck ((n `div` 8) + 1) fd
+getDeviceLEDs :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceLEDs n fd = fmap snd <$> ioctlReadByteString 0x45 0x19 ((n `div` 8) + 1) fd
 
 -- | Get sound status (one bit per sound)
 --
 -- EVIOCGSND
-getDeviceSoundStatus :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
-getDeviceSoundStatus ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x1a defaultCheck ((n `div` 8) + 1) fd
+getDeviceSoundStatus :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceSoundStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1a ((n `div` 8) + 1) fd
 
 -- | Get switch status (one bit per switch)
 --
 -- EVIOCGSW
-getDeviceSwitchStatus :: IOCTL -> Int -> FileDescriptor -> SysRet BS.ByteString
-getDeviceSwitchStatus ioctl n fd = fmap snd <$> ioctlReadByteString ioctl 0x45 0x1b defaultCheck ((n `div` 8) + 1) fd
+getDeviceSwitchStatus :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceSwitchStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1b ((n `div` 8) + 1) fd
 
 -- | Get the number of bits that can be set by the given event type
 --
 -- EVIOCGBIT
-getDeviceBits :: IOCTL -> EventType -> Int -> FileDescriptor -> SysRet BS.ByteString
-getDeviceBits ioctl ev n fd = do
+getDeviceBits :: EventType -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceBits ev n fd = do
    let code = fromCEnum ev
-   fmap snd <$> ioctlReadByteString ioctl 0x45 (0x20 + code) defaultCheck ((n `div` 8) + 1) fd
+   fmap snd <$> ioctlReadByteString 0x45 (0x20 + code) ((n `div` 8) + 1) fd
 
 -- | Get absolute info
 --
 -- EVIOCGABS
-getDeviceAbsoluteInfo :: IOCTL -> Word8 -> FileDescriptor -> SysRet AbsoluteInfo
-getDeviceAbsoluteInfo ioctl code = ioctlRead ioctl 0x45 (0x40 + code) defaultCheck
+getDeviceAbsoluteInfo :: Word8 -> FileDescriptor -> SysRet AbsoluteInfo
+getDeviceAbsoluteInfo code = ioctlRead 0x45 (0x40 + code)
 
 -- | Set absolute info
 --
 -- EVIOCSABS
-setDeviceAbsoluteInfo :: IOCTL -> Word8 -> AbsoluteInfo -> FileDescriptor -> SysRet ()
-setDeviceAbsoluteInfo ioctl code value fd = ioctlWrite ioctl 0x45 (0xc0 + code) defaultCheck fd value
+setDeviceAbsoluteInfo :: Word8 -> AbsoluteInfo -> FileDescriptor -> SysRet ()
+setDeviceAbsoluteInfo code = ioctlWrite 0x45 (0xc0 + code)
 
 -- | Send a force effect to a force feedback device
 --
 -- TODO: we should return the effect ID
 --
 -- EVIOCSFF
-sendForceFeedback :: IOCTL -> FileDescriptor -> ForceFeedbackEffect -> SysRet ()
-sendForceFeedback ioctl = ioctlWrite ioctl 0x45 0x80 defaultCheck
+sendForceFeedback :: ForceFeedbackEffect -> FileDescriptor -> SysRet ()
+sendForceFeedback = ioctlWrite 0x45 0x80
 
 -- | Erase a force effect
 --
 -- EVIOCRMFF
-removeForceFeedback :: IOCTL -> FileDescriptor -> Int64 -> SysRet ()
-removeForceFeedback ioctl = ioctlWriteValue ioctl 0x45 0x81 defaultCheck
+removeForceFeedback :: Int64 -> FileDescriptor -> SysRet ()
+removeForceFeedback = ioctlWriteValue 0x45 0x81
 
 -- | Report the number of effects playable at the same time
 --
 -- EVIOCGEFFECTS
-supportedSimultaneousEffects :: IOCTL -> FileDescriptor -> SysRet Int
-supportedSimultaneousEffects ioctl = ioctlRead ioctl 0x45 0x84 defaultCheck
+supportedSimultaneousEffects :: FileDescriptor -> SysRet Int
+supportedSimultaneousEffects = ioctlRead 0x45 0x84
 
 -- | Grab/release device
 --
 -- EVIOCGRAB
-grabReleaseDevice :: IOCTL -> Bool -> FileDescriptor -> SysRet ()
-grabReleaseDevice ioctl grab fd = ioctlWriteValue ioctl 0x45 0x90 defaultCheck fd value
-   where
-      value :: Int64
-      value = if grab then 1 else 0
+grabReleaseDevice :: Bool -> FileDescriptor -> SysRet ()
+grabReleaseDevice grab = ioctlWriteValue 0x45 0x90 (fromBool grab :: Int)
 
 -- | Grab device
-grabDevice :: IOCTL -> FileDescriptor -> SysRet ()
-grabDevice ioctl = grabReleaseDevice ioctl True
+grabDevice :: FileDescriptor -> SysRet ()
+grabDevice = grabReleaseDevice True
 
 -- | Release device
-releaseDevice :: IOCTL -> FileDescriptor -> SysRet ()
-releaseDevice ioctl = grabReleaseDevice ioctl False
+releaseDevice :: FileDescriptor -> SysRet ()
+releaseDevice = grabReleaseDevice False
 
 -- | Revoke device access
 --
 -- EVIOCREVOKE
-revokeDevice :: IOCTL -> FileDescriptor -> SysRet ()
-revokeDevice ioctl fd = ioctlWriteValue ioctl 0x45 0x91 defaultCheck fd value
-   where
-      value :: Int64
-      value = 0
+revokeDevice :: FileDescriptor -> SysRet ()
+revokeDevice = ioctlWriteValue 0x45 0x91 (0 :: Int)
 
 -- | Get event mask (filter by type)
 --
@@ -889,8 +884,8 @@ revokeDevice ioctl fd = ioctlWriteValue ioctl 0x45 0x91 defaultCheck fd value
 -- This ioctl may fail with ENODEV in case the file is revoked, EFAULT
 -- if the receive-buffer points to invalid memory, or EINVAL if the kernel
 -- does not implement the ioctl.
-getMask :: IOCTL -> FileDescriptor -> SysRet Mask
-getMask ioctl = ioctlRead ioctl 0x45 0x92 defaultCheck
+getMask :: FileDescriptor -> SysRet Mask
+getMask = ioctlRead 0x45 0x92
 
 
 -- | Set event mask (event filter by type)
@@ -914,16 +909,14 @@ getMask ioctl = ioctlRead ioctl 0x45 0x92 defaultCheck
 -- This ioctl may fail with ENODEV in case the file is revoked. EFAULT is
 -- returned if the receive-buffer points to invalid memory. EINVAL is returned
 -- if the kernel does not implement the ioctl.
-setMask :: IOCTL -> Mask -> FileDescriptor -> SysRet ()
-setMask ioctl value fd = ioctlWrite ioctl 0x45 0x93 defaultCheck fd value
+setMask :: Mask -> FileDescriptor -> SysRet ()
+setMask = ioctlWrite 0x45 0x93
 
 -- | Set clock to use for timestamps
 --
 -- EVIOCCLOCKID
-setDeviceClock :: IOCTL -> Clock -> FileDescriptor -> SysRet ()
-setDeviceClock ioctl clk fd = do
-   let code = fromEnum clk :: Int
-   ioctlWrite ioctl 0x45 0xa0 defaultCheck fd code
+setDeviceClock :: Clock -> FileDescriptor -> SysRet ()
+setDeviceClock clk = ioctlWrite 0x45 0xa0 (fromEnum clk :: Int)
 
 
 -- | IDs

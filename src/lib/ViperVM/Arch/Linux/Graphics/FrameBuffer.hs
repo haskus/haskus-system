@@ -75,13 +75,13 @@ addFrameBuffer hdl width height fmt flags buffers = do
    let s = FrameBuffer (FrameBufferID 0) width height
                fmt flags buffers
 
-   fmap toFrameBuffer <$> ioctlAddFrameBuffer hdl (fromFrameBuffer s)
+   fmap toFrameBuffer <$> ioctlAddFrameBuffer (fromFrameBuffer s) hdl
 
 -- | Release a frame buffer
 removeFrameBuffer :: Handle -> FrameBuffer -> SysRet ()
 removeFrameBuffer hdl fb = do
    let FrameBufferID fbid = fbID fb
-   void <$> ioctlRemoveFrameBuffer hdl fbid
+   void <$> ioctlRemoveFrameBuffer fbid hdl
 
 
 -- | Indicate dirty parts of a framebuffer
@@ -102,6 +102,6 @@ dirtyFrameBuffer hdl fb mode = do
                , fdNumClips = fromIntegral (length clips)
                , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
                }
-      void <$> ioctlDirtyFrameBuffer hdl s
+      void <$> ioctlDirtyFrameBuffer s hdl
 
 
