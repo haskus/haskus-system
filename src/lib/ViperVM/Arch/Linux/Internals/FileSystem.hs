@@ -42,6 +42,24 @@ module ViperVM.Arch.Linux.Internals.FileSystem
    , ioctlGetRotational
    , ioctlZeroOut
    , ioctlGetDAX
+   , ioctlFreeze
+   , ioctlThaw
+   , ioctlTrim
+   , ioctlClone
+   , ioctlCloneRange
+   , ioctlGetFlags
+   , ioctlSetFlags
+   , ioctlGetVersion
+   , ioctlSetVersion
+   , ioctlGetFlags32
+   , ioctlSetFlags32
+   , ioctlGetVersion32
+   , ioctlSetVersion32
+   , ioctlGetXAttr
+   , ioctlSetXAttr
+   , InodeFlag (..)
+   , inodeUserVisibleFlags
+   , inodeUserModifiableFlags
    )
 where
 
@@ -96,6 +114,11 @@ data FileCloneRange = FileCloneRange
    }
    deriving (Show,Generic,CStorable)
 
+instance Storable FileCloneRange where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
 -- | struct fstrim_range
 data TrimRange = TrimRange
@@ -104,6 +127,12 @@ data TrimRange = TrimRange
    , trMinLength :: Word64
    }
    deriving (Show,Generic,CStorable)
+
+instance Storable TrimRange where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
 
 -- | extent-same (dedupe) ioctls; these MUST match the btrfs ioctl definitions
@@ -127,6 +156,11 @@ data FileDedupeRangeInfo = FileDedupeRangeInfo
    }
    deriving (Show,Eq,Generic,CStorable)
 
+instance Storable FileDedupeRangeInfo where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
 
 -- | from struct btrfs_ioctl_file_extent_same_args
@@ -139,6 +173,12 @@ data FileDedupeRangeHeader = FileDedupeRangeHeader
    , fdrReserved2 :: Word32 -- ^ must be zero
    }
    deriving (Show,Eq,Generic,CStorable)
+
+instance Storable FileDedupeRangeHeader where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
 
 -----------------------------------------------------------------------------
@@ -153,6 +193,12 @@ data FilesStatStruct = FilesStatStruct
    }
    deriving (Show,Eq,Generic,CStorable)
 
+instance Storable FilesStatStruct where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
 -- | struct inodes_stat_t
 data InodesStat = InodesStat
    { isNrInodes :: CLong
@@ -160,6 +206,12 @@ data InodesStat = InodesStat
    , isDummy    :: Vector 5 CLong -- padding for sysctl ABI compatibility
    }
    deriving (Show,Generic,CStorable)
+
+instance Storable InodesStat where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
 -- | These are the fs-independent mount-flags: up to 32 flags are supported
 data MountFlag
@@ -217,6 +269,12 @@ data FsxAttr = FsxAttr
    , fsxPadding   :: Vector 12 Word8
    }
    deriving (Show,Generic,CStorable)
+
+instance Storable FsxAttr where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
 
 
 data XFlag
@@ -447,79 +505,176 @@ ioctlGetDAX fd =
 
 -- #define FIBMAP     _IO(0x00,1)  /* bmap access */
 -- #define FIGETBSZ   _IO(0x00,2)  /* get the block size used for bmap */
--- #define FIFREEZE        _IOWR('X', 119, int)    /* Freeze */
--- #define FITHAW          _IOWR('X', 120, int)    /* Thaw */
--- #define FITRIM          _IOWR('X', 121, struct fstrim_range)    /* Trim */
--- #define FICLONE         _IOW(0x94, 9, int)
--- #define FICLONERANGE    _IOW(0x94, 13, struct file_clone_range)
--- #define FIDEDUPERANGE   _IOWR(0x94, 54, struct file_dedupe_range)
--- 
--- #define FS_IOC_GETFLAGS                 _IOR('f', 1, long)
--- #define FS_IOC_SETFLAGS                 _IOW('f', 2, long)
--- #define FS_IOC_GETVERSION               _IOR('v', 1, long)
--- #define FS_IOC_SETVERSION               _IOW('v', 2, long)
 -- #define FS_IOC_FIEMAP                   _IOWR('f', 11, struct fiemap)
--- #define FS_IOC32_GETFLAGS               _IOR('f', 1, int)
--- #define FS_IOC32_SETFLAGS               _IOW('f', 2, int)
--- #define FS_IOC32_GETVERSION             _IOR('v', 1, int)
--- #define FS_IOC32_SETVERSION             _IOW('v', 2, int)
--- #define FS_IOC_FSGETXATTR               _IOR ('X', 31, struct fsxattr)
--- #define FS_IOC_FSSETXATTR               _IOW ('X', 32, struct fsxattr)
--- 
--- /*
---  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
---  *
---  * Note: for historical reasons, these flags were originally used and
---  * defined for use by ext2/ext3, and then other file systems started
---  * using these flags so they wouldn't need to write their own version
---  * of chattr/lsattr (which was shipped as part of e2fsprogs).  You
---  * should think twice before trying to use these flags in new
---  * contexts, or trying to assign these flags, since they are used both
---  * as the UAPI and the on-disk encoding for ext2/3/4.  Also, we are
---  * almost out of 32-bit flags.  :-)
---  *
---  * We have recently hoisted FS_IOC_FSGETXATTR / FS_IOC_FSSETXATTR from
---  * XFS to the generic FS level interface.  This uses a structure that
---  * has padding and hence has more room to grow, so it may be more
---  * appropriate for many new use cases.
---  *
---  * Please do not change these flags or interfaces before checking with
---  * linux-fsdevel@vger.kernel.org and linux-api@vger.kernel.org.
---  */
--- #define FS_SECRM_FL                     0x00000001 /* Secure deletion */
--- #define FS_UNRM_FL                      0x00000002 /* Undelete */
--- #define FS_COMPR_FL                     0x00000004 /* Compress file */
--- #define FS_SYNC_FL                      0x00000008 /* Synchronous updates */
--- #define FS_IMMUTABLE_FL                 0x00000010 /* Immutable file */
--- #define FS_APPEND_FL                    0x00000020 /* writes to file may only append */
--- #define FS_NODUMP_FL                    0x00000040 /* do not dump file */
--- #define FS_NOATIME_FL                   0x00000080 /* do not update atime */
--- /* Reserved for compression usage... */
--- #define FS_DIRTY_FL                     0x00000100
--- #define FS_COMPRBLK_FL                  0x00000200 /* One or more compressed clusters */
--- #define FS_NOCOMP_FL                    0x00000400 /* Don't compress */
--- /* End compression flags --- maybe not all used */
--- #define FS_ENCRYPT_FL                   0x00000800 /* Encrypted file */
--- #define FS_BTREE_FL                     0x00001000 /* btree format dir */
--- #define FS_INDEX_FL                     0x00001000 /* hash-indexed directory */
--- #define FS_IMAGIC_FL                    0x00002000 /* AFS directory */
--- #define FS_JOURNAL_DATA_FL              0x00004000 /* Reserved for ext3 */
--- #define FS_NOTAIL_FL                    0x00008000 /* file tail should not be merged */
--- #define FS_DIRSYNC_FL                   0x00010000 /* dirsync behaviour (directories only) */
--- #define FS_TOPDIR_FL                    0x00020000 /* Top of directory hierarchies*/
--- #define FS_HUGE_FILE_FL                 0x00040000 /* Reserved for ext4 */
--- #define FS_EXTENT_FL                    0x00080000 /* Extents */
--- #define FS_EA_INODE_FL                  0x00200000 /* Inode used for large EA */
--- #define FS_EOFBLOCKS_FL                 0x00400000 /* Reserved for ext4 */
--- #define FS_NOCOW_FL                     0x00800000 /* Do not cow file */
--- #define FS_INLINE_DATA_FL               0x10000000 /* Reserved for ext4 */
--- #define FS_PROJINHERIT_FL               0x20000000 /* Create with parents projid */
--- #define FS_RESERVED_FL                  0x80000000 /* reserved for ext2 lib */
--- 
--- #define FS_FL_USER_VISIBLE              0x0003DFFF /* User visible flags */
--- #define FS_FL_USER_MODIFIABLE           0x000380FF /* User modifiable flags */
--- 
--- 
+
+-- | Freeze (FIFREEZE)
+ioctlFreeze :: Handle -> Int -> SysRet Int
+ioctlFreeze = ioctlReadWrite sysIoctl 88 119 defaultCheck
+
+-- | Thaw (FITHAW)
+ioctlThaw :: Handle -> Int -> SysRet Int
+ioctlThaw = ioctlReadWrite sysIoctl 88 120 defaultCheck
+
+-- | Trim (FITRIM)
+ioctlTrim :: Handle -> TrimRange -> SysRet TrimRange
+ioctlTrim = ioctlReadWrite sysIoctl 88 121 defaultCheck
+
+-- | Clone (FICLONE)
+ioctlClone :: Handle -> Int -> SysRet ()
+ioctlClone = ioctlWrite sysIoctl 0x94 9 defaultCheck
+
+-- | Clone range (FICLONERANGE)
+ioctlCloneRange :: Handle -> FileCloneRange -> SysRet ()
+ioctlCloneRange = ioctlWrite sysIoctl 0x94 13 defaultCheck
+
+-- | FIDEDUPERANGE
+-- The size parameter must be sizeOf FileDedupeRangeHeader
+-- but the actual object is a FileDedupeRangeHeader followed by an array of
+-- FileDedupeRangeInfo structures...
+--
+--ioctlDedupeRange :: Handle -> FileDe -> SysRet ()
+--ioctlDedupeRange = ioctlWrite sysIoctl 0x94 54 defaultCheck
+
+
+-- | FS_IOC_GETFLAGS
+ioctlGetFlags :: Handle -> SysRet CLong
+ioctlGetFlags = ioctlRead sysIoctl 102 1 defaultCheck
+
+-- | FS_IOC_SETFLAGS
+ioctlSetFlags :: Handle -> CLong -> SysRet ()
+ioctlSetFlags = ioctlWrite sysIoctl 102 2 defaultCheck
+
+-- | FS_IOC_GETVERSION
+ioctlGetVersion :: Handle -> SysRet CLong
+ioctlGetVersion = ioctlRead sysIoctl 118 1 defaultCheck
+
+-- | FS_IOC_SETVERSION
+ioctlSetVersion :: Handle -> CLong -> SysRet ()
+ioctlSetVersion = ioctlWrite sysIoctl 118 2 defaultCheck
+
+
+-- | FS_IOC32_GETFLAGS
+ioctlGetFlags32 :: Handle -> SysRet Int
+ioctlGetFlags32 = ioctlRead sysIoctl 102 1 defaultCheck
+
+-- | FS_IOC32_SETFLAGS
+ioctlSetFlags32 :: Handle -> Int -> SysRet ()
+ioctlSetFlags32 = ioctlWrite sysIoctl 102 2 defaultCheck
+
+-- | FS_IOC32_GETVERSION
+ioctlGetVersion32 :: Handle -> SysRet Int
+ioctlGetVersion32 = ioctlRead sysIoctl 118 1 defaultCheck
+
+-- | FS_IOC32_SETVERSION
+ioctlSetVersion32 :: Handle -> Int -> SysRet ()
+ioctlSetVersion32 = ioctlWrite sysIoctl 118 2 defaultCheck
+
+-- | FS_IOC_FSGETXATTR
+ioctlGetXAttr :: Handle -> SysRet FsxAttr
+ioctlGetXAttr = ioctlRead sysIoctl 88 31 defaultCheck
+
+-- | FS_IOC_FSSETXATTR
+ioctlSetXAttr :: Handle -> FsxAttr -> SysRet ()
+ioctlSetXAttr = ioctlWrite sysIoctl 88 32 defaultCheck
+
+
+
+-- | Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
+data InodeFlag
+   = InodeFlagSecureDeletion        -- ^ Secure deletion 
+   | InodeFlagUndelete              -- ^ Undelete 
+   | InodeFlagCompress              -- ^ Compress file 
+   | InodeFlagSynchronous           -- ^ Synchronous updates 
+   | InodeFlagImmutable             -- ^ Immutable file 
+   | InodeFlagAppend                -- ^ writes to file may only append 
+   | InodeFlagNoDump                -- ^ do not dump file 
+   | InodeFlagNoAccessTime          -- ^ do not update atime 
+   | InodeFlagDirty                 
+   | InodeFlagCompressedClusters    -- ^ One or more compressed clusters 
+   | InodeFlagNoCompression         -- ^ Don't compress 
+   | InodeFlagEncrypt               -- ^ Encrypted file 
+   | InodeFlagBTree_HashIndexed     -- ^ btree format dir / hash-indexed directory 
+   | InodeFlagAFS                   -- ^ AFS directory 
+   | InodeFlagJournalData           -- ^ Reserved for ext3 
+   | InodeFlagNoTail                -- ^ file tail should not be merged 
+   | InodeFlagDirSync               -- ^ dirsync behaviour (directories only) 
+   | InodeFlagTopDir                -- ^ Top of directory hierarchies
+   | InodeFlagHugeFile              -- ^ Reserved for ext4 
+   | InodeFlagExtent                -- ^ Extents 
+   | InodeFlagEA                    -- ^ Inode used for large EA 
+   | InodeFlagEOFBlocks             -- ^ Reserved for ext4 
+   | InodeFlagNoCow                 -- ^ Do not cow file 
+   | InodeFlagInlineData            -- ^ Reserved for ext4 
+   | InodeFlagProjectInherit        -- ^ Create with parents projid 
+   | InodeFlagReserved              -- ^ reserved for ext2 lib 
+   deriving (Show,Eq,Enum)
+
+instance CBitSet InodeFlag where
+   toBitOffset x = case x of
+      InodeFlagSecureDeletion        -> 0
+      InodeFlagUndelete              -> 1
+      InodeFlagCompress              -> 2
+      InodeFlagSynchronous           -> 3
+      InodeFlagImmutable             -> 4
+      InodeFlagAppend                -> 5
+      InodeFlagNoDump                -> 6
+      InodeFlagNoAccessTime          -> 7
+      InodeFlagDirty                 -> 8
+      InodeFlagCompressedClusters    -> 9
+      InodeFlagNoCompression         -> 10
+      InodeFlagEncrypt               -> 11
+      InodeFlagBTree_HashIndexed     -> 12
+      InodeFlagAFS                   -> 13
+      InodeFlagJournalData           -> 14
+      InodeFlagNoTail                -> 15
+      InodeFlagDirSync               -> 16
+      InodeFlagTopDir                -> 17
+      InodeFlagHugeFile              -> 18
+      InodeFlagExtent                -> 19
+      InodeFlagEA                    -> 21
+      InodeFlagEOFBlocks             -> 22
+      InodeFlagNoCow                 -> 23
+      InodeFlagInlineData            -> 28
+      InodeFlagProjectInherit        -> 29
+      InodeFlagReserved              -> 31
+
+   fromBitOffset x = case x of
+    0   -> InodeFlagSecureDeletion
+    1   -> InodeFlagUndelete
+    2   -> InodeFlagCompress
+    3   -> InodeFlagSynchronous
+    4   -> InodeFlagImmutable
+    5   -> InodeFlagAppend
+    6   -> InodeFlagNoDump
+    7   -> InodeFlagNoAccessTime
+    8   -> InodeFlagDirty
+    9   -> InodeFlagCompressedClusters
+    10  -> InodeFlagNoCompression
+    11  -> InodeFlagEncrypt
+    12  -> InodeFlagBTree_HashIndexed
+    13  -> InodeFlagAFS
+    14  -> InodeFlagJournalData
+    15  -> InodeFlagNoTail
+    16  -> InodeFlagDirSync
+    17  -> InodeFlagTopDir
+    18  -> InodeFlagHugeFile
+    19  -> InodeFlagExtent
+    21  -> InodeFlagEA
+    22  -> InodeFlagEOFBlocks
+    23  -> InodeFlagNoCow
+    28  -> InodeFlagInlineData
+    29  -> InodeFlagProjectInherit
+    31  -> InodeFlagReserved
+    _   -> error "Unknown Inode flag"
+
+
+-- | User visible flags
+inodeUserVisibleFlags :: BitSet Word32 InodeFlag
+inodeUserVisibleFlags = BitSet.fromBits 0x0003DFFF
+
+-- | User modifiable flags
+inodeUserModifiableFlags :: BitSet Word32 InodeFlag
+inodeUserModifiableFlags = BitSet.fromBits 0x000380FF
 
 data SyncFileRangeFlag
    = SyncFileRangeWaitBefore
