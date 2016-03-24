@@ -81,6 +81,7 @@ library
     ViperVM.Arch.Linux.Internals.Input
     ViperVM.Arch.Linux.Internals.Sound
     ViperVM.Arch.Linux.Internals.Graphics
+    ViperVM.Arch.Linux.Internals.Reboot
 
     ViperVM.Arch.Linux.Error
     ViperVM.Arch.Linux.ErrorCode
