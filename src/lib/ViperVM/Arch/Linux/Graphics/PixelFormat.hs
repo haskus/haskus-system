@@ -61,10 +61,10 @@ instance CStorable PixelFormat where
    cPoke        = poke
 
 type CFormat = BitFields Word32
-  '[ BitField 8 "a" Int
-   , BitField 8 "b" Int
+  '[ BitField 8 "d" Int
    , BitField 8 "c" Int
-   , BitField 8 "d" Int
+   , BitField 8 "b" Int
+   , BitField 8 "a" Int
    ]
 
 -- | Convert a format string (as in the original .h file) into a code
