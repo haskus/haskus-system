@@ -20,7 +20,7 @@ import System.Posix.Types (Fd(..))
 makeKernelEventChannel :: Sys (TChan KernelEvent)
 makeKernelEventChannel = do
    fd <- createKernelEventSocket
-   ch <- lift $ newBroadcastTChanIO
+   ch <- lift newBroadcastTChanIO
    let
       FileDescriptor lowfd = fd
       rfd = Fd (fromIntegral lowfd)

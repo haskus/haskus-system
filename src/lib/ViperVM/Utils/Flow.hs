@@ -29,8 +29,10 @@ module ViperVM.Utils.Flow
    , flowCatch
    , flowFusion
    , flowSet
+   , flowRet
    , flowLift
    , FlowT (..)
+   , Flow
    , liftFlowT
    )
 where
@@ -229,6 +231,12 @@ flowSet :: forall a l n m.
    ) => a -> m (Variant l)
 flowSet = return . setVariant
 
+-- | Set the returned value
+flowRet :: forall x xs m.
+   ( Monad m
+   ) => x -> m (Variant (x ': xs))
+flowRet = return . setVariant0
+
 -- | Lift a flow into another
 flowLift :: (Liftable xs ys , Monad m) => m (Variant xs) -> m (Variant ys)
 flowLift = fmap liftVariant
@@ -241,6 +249,7 @@ newtype FlowT m (l :: [*]) a = FlowT
 instance Monad m => Functor (FlowT m l) where
    fmap f (FlowT v) = FlowT (updateVariant0 f <$> v) 
 
+type Flow xs x = Variant (x ': xs)
 
 flowAp :: Monad m => m (Variant ((a->b) ': l)) -> m (Variant (a ': l)) -> m (Variant (b ': l))
 flowAp f x = do

@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+
 module ViperVM.Arch.Linux.Error
    ( Sys
    , runSys
@@ -20,6 +21,10 @@ module ViperVM.Arch.Linux.Error
    , sysCallAssertQuiet
    , sysCallWarn
    , sysLogPrint
+   -- * Errors
+   , NotAllowed (..)
+   , InvalidRestartCommand (..)
+   , MemoryError (..)
    )
 where
 
@@ -34,6 +39,14 @@ import Data.Foldable (traverse_)
 import Text.Printf
 
 import ViperVM.Arch.Linux.ErrorCode
+
+------------------------------------------------
+-- Errors
+------------------------------------------------
+data NotAllowed            = NotAllowed
+data InvalidRestartCommand = InvalidRestartCommand
+data MemoryError           = MemoryError
+
 
 ------------------------------------------------
 -- Sys monad
@@ -190,20 +203,18 @@ sysLogPrint = do
          traverse_ (printLog (i+1)) (logChildren l)
 
 sysAssert :: String -> Bool -> Sys ()
-sysAssert text b = case b of
-   True  -> do
+sysAssert text b = if b
+   then do
       let msg = printf "%s (success)" text
       sysLog LogInfo msg
-   False -> do
+   else do
       let msg = printf "%s (assertion failed)" text
       sysError msg
 
 sysAssertQuiet :: String -> Bool -> Sys ()
-sysAssertQuiet text b = case b of
-   True  -> return ()
-   False -> do
-      let msg = printf "%s (assertion failed)" text
-      sysError msg
+sysAssertQuiet text b = unless b $ do
+   let msg = printf "%s (assertion failed)" text
+   sysError msg
 
 sysError :: String -> Sys a
 sysError text = do
@@ -217,12 +228,12 @@ sysError text = do
 -- | Assert that the given action doesn't fail
 sysCallAssert :: String -> SysRet a -> Sys a
 sysCallAssert text act = do
-   r <- lift act
+   r <- sysIO act
    sysCallAssert' text r
 
 -- | Assert that the given action doesn't fail
 sysCallAssert' :: String -> Either ErrorCode a -> Sys a
-sysCallAssert' text r = do
+sysCallAssert' text r =
    case r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
@@ -235,7 +246,7 @@ sysCallAssert' text r = do
 -- | Assert that the given action doesn't fail, log only on error
 sysCallAssertQuiet :: String -> SysRet a -> Sys a
 sysCallAssertQuiet text act = do
-   r <- lift act
+   r <- sysIO act
    case r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
@@ -245,7 +256,7 @@ sysCallAssertQuiet text act = do
 -- | Log a warning if the given action fails
 sysCallWarn :: String -> SysRet a -> Sys (Either ErrorCode a)
 sysCallWarn text act = do
-   r <- lift act
+   r <- sysIO act
    case r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)

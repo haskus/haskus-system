@@ -4,6 +4,7 @@
 module ViperVM.Arch.Linux.ErrorCode 
    ( SysRet
    , ErrorCode (..)
+   , unhdlErr
    , defaultCheck
    , defaultCheckRet
    , checkReturn
@@ -72,6 +73,11 @@ onSuccessVoid = flip onSuccess (const ())
 defaultCheck :: Int64 -> Maybe ErrorCode
 defaultCheck x | x < 0     = Just (toErrorCode x)
                | otherwise = Nothing
+
+-- | Error to call when a syscall returns an unexpected error value
+unhdlErr :: String -> ErrorCode -> a
+unhdlErr str err =
+   error ("Unhandled error "++ show err ++" returned by \""++str++"\". Report this as a ViperVM bug.")
 
 
 -- | Linux error codes
@@ -479,4 +485,4 @@ instance Enum ErrorCode where
       132 -> ERFKILL
       133 -> EHWPOISON
 
-      _ -> error "Unrecognized error code"
+      _   -> error ("Unrecognized syscall error code "++show x++". Report this as a ViperVM bug.")
