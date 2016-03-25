@@ -20,6 +20,7 @@ import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.KernelEvent
+import ViperVM.System.Sys
 import ViperVM.System.Devices
 
 import System.FilePath

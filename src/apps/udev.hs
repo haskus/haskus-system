@@ -1,5 +1,5 @@
 import ViperVM.Arch.Linux.KernelEvent
-import ViperVM.Arch.Linux.Error
+import ViperVM.System.Sys
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (forever)

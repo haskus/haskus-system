@@ -13,6 +13,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Format.Binary.Enum
+import ViperVM.System.Sys
 
 import Data.Word
 import Control.Monad (void)

@@ -149,6 +149,7 @@ library
 
     ViperVM.Arch.Posix.Malloc
 
+    ViperVM.System.Sys
     ViperVM.System.System
     ViperVM.System.Graphics
     ViperVM.System.Input

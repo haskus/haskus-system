@@ -5,7 +5,7 @@ module ViperVM.System.Process
    )
 where
 
-import ViperVM.Arch.Linux.Error
+import ViperVM.System.Sys
 
 import Control.Concurrent
 

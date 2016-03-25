@@ -17,6 +17,7 @@ where
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Internals.Reboot
+import ViperVM.System.Sys
 
 import ViperVM.Utils.Flow
 

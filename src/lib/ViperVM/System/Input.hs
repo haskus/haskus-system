@@ -5,6 +5,7 @@ module ViperVM.System.Input
    )
 where
 
+import ViperVM.System.Sys
 import ViperVM.System.System
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.FileSystem

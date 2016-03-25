@@ -7,7 +7,7 @@ where
 
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.Arch.Linux.FileDescriptor
-import ViperVM.Arch.Linux.Error
+import ViperVM.System.Sys
 
 import Control.Concurrent.STM
 import Control.Concurrent

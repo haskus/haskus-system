@@ -3,6 +3,7 @@ module ViperVM.Arch.Linux.FileSystem.Flush
    )
 where
 
+import ViperVM.System.Sys
 import ViperVM.Arch.Linux.FileSystem (sysSync)
 import ViperVM.Arch.Linux.Error
 

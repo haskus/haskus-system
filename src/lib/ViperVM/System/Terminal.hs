@@ -11,6 +11,7 @@ module ViperVM.System.Terminal
    )
 where
 
+import ViperVM.System.Sys
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
 import ViperVM.Arch.Linux.Error

@@ -11,6 +11,7 @@ import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileSystem
+import ViperVM.System.Sys
 
 withOpenAt :: FileDescriptor -> FilePath -> HandleFlags -> FilePermissions -> (FileDescriptor -> Sys a) -> Sys (Either ErrorCode a)
 withOpenAt fd path flags perm act = do

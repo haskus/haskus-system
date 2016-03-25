@@ -12,6 +12,7 @@ module ViperVM.System.Graphics
    )
 where
 
+import ViperVM.System.Sys
 import ViperVM.System.System
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.FileSystem.OpenClose

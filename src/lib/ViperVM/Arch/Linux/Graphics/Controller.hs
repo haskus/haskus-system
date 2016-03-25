@@ -23,6 +23,7 @@ import Foreign.Ptr
 import Data.Word
 import Control.Monad (void)
 
+import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Internals.Graphics

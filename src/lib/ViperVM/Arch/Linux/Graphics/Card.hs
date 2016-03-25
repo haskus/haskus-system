@@ -13,6 +13,7 @@ module ViperVM.Arch.Linux.Graphics.Card
    )
 where
 
+import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileDescriptor

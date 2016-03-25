@@ -15,6 +15,7 @@ import ViperVM.Arch.Linux.Network
 import ViperVM.Arch.Linux.FileDescriptor
 import ViperVM.Arch.Linux.Network.SendReceive
 import ViperVM.Arch.Linux.Error
+import ViperVM.System.Sys
 
 import qualified Data.ByteString as BS
 import Data.Map (Map)
