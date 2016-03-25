@@ -4,6 +4,7 @@
 -- | Pixel formats
 module ViperVM.Arch.Linux.Graphics.PixelFormat
    ( PixelFormat
+   , makePixelFormat
    , Format(..)
    , Endianness(..)
    , formatEndianness
@@ -32,6 +33,14 @@ newtype PixelFormat = PixelFormat (BitFields Word32
   '[ BitField 1  "endianness" (EnumField Int Endianness)
    , BitField 31 "format"     (EnumField Word32 Format)
    ]) deriving (Show,Storable)
+
+makePixelFormat :: Format -> Endianness -> PixelFormat
+makePixelFormat fmt end = PixelFormat
+   $ updateField (Proxy :: Proxy "endianness") (toEnumField end)
+   $ updateField (Proxy :: Proxy "format")     (toEnumField fmt)
+   $ BitFields 0
+
+{-# INLINE makePixelFormat #-}
 
 -- | Get pixel format endianness
 formatEndianness :: PixelFormat -> Endianness
