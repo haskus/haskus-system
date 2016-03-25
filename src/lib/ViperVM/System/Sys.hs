@@ -14,6 +14,7 @@ module ViperVM.System.Sys
    , sysLog
    , sysLogPrint
    , sysLogSequence
+   , setLogStatus
    , sysAssert
    , sysAssertQuiet
    , sysError
@@ -21,7 +22,6 @@ module ViperVM.System.Sys
 where
 
 import Prelude hiding (log)
-import Data.Dequeue as DQ
 import Data.Text.Lazy as Text
 import Data.Text.Lazy.IO as Text
 import Data.String (fromString)
@@ -29,6 +29,8 @@ import qualified Data.Text.Format as Text
 import Control.Monad.State
 import Data.Foldable (traverse_)
 import Text.Printf
+import ViperVM.Utils.STM.Future
+import Control.Concurrent.STM
 
 ------------------------------------------------
 -- Sys monad
@@ -41,18 +43,28 @@ import Text.Printf
 type Sys a = StateT SysState IO a
 
 data SysState = SysState
-   { sysLogCurrent :: Log   -- ^ Current log
-   , sysLogStack   :: [Log] -- ^ Stack of logs
+   { sysLogRoot    :: Log                    -- ^ Root of the log
+   , sysLogCurrent :: FutureSource Log       -- ^ Current log
+   , sysLogStatus  :: FutureSource LogStatus -- ^ Status
+   , sysLogGroups  :: [FutureSource Log]     -- ^ Stack for groups
    }
 
 -- | Run
 runSys :: Sys a -> IO a
-runSys act = evalStateT act initState
-   where
+runSys act = do
+   (status,statusSrc) <- newFutureIO
+   (log,logSrc)       <- newFutureIO
+
+   let
+      e = LogEntry (Text.pack "Log root") LogInfo (LogNext status log)
       initState = SysState
-         { sysLogCurrent = Log (Text.pack "Log root") LogSequence DQ.empty
-         , sysLogStack   = []
+         { sysLogRoot    = e 
+         , sysLogCurrent = logSrc
+         , sysLogStatus  = statusSrc
+         , sysLogGroups  = []
          }
+
+   evalStateT act initState
 
 -- | Run and return nothing
 runSys' :: Sys a -> IO ()
@@ -84,9 +96,6 @@ sysExec s f = snd <$> sysRun s f
 -- | Called on system error
 sysOnError :: Sys a
 sysOnError = do
-   -- close the log
-   sysLogClose
-
    -- print the log
    sysLogPrint
 
@@ -97,96 +106,112 @@ sysOnError = do
 -- Logging
 ------------------------------------------------
 
--- | Hierarchical log
-data Log = Log
-   { logValue    :: Text                 -- ^ Log value
-   , logType     :: LogType              -- ^ Log type
-   , logChildren :: BankersDequeue Log   -- ^ Log children
-   } deriving (Show)
+-- | Hierarchical thread-safe log
+data Log
+   = LogEntry Text LogType       LogNext
+   | LogGroup Text (Future Log)  LogNext
+   | LogFork  Text               LogNext LogNext
+
+-- | Status of the current entry and link to the following one
+data LogNext = LogNext (Future LogStatus) (Future Log)
+
+data LogStatus
+   = LogSuccess
+   | LogFailed
+   deriving (Show,Eq)
 
 data LogType
    = LogDebug
    | LogInfo
    | LogWarning
    | LogError
-   | LogSequence
    deriving (Show,Eq)
+
+
+setLogStatus :: LogStatus -> Sys ()
+setLogStatus s = do
+   st <- gets sysLogStatus
+   sysIO (setFutureIO s st)
+
+sysLogAdd :: (LogNext -> Log) -> Sys ()
+sysLogAdd f = do
+   (status,statusSrc) <- sysIO newFutureIO
+   (log,logSrc)       <- sysIO newFutureIO
+   let e = f (LogNext status log)
+
+   -- link with previous entry
+   c <- gets sysLogCurrent
+   sysIO $ atomically (setFuture e c)
+
+   -- update state
+   modify' $ \s -> s
+      { sysLogStatus  = statusSrc
+      , sysLogCurrent = logSrc
+      }
 
 -- | Add a new entry to the log
 sysLog :: LogType -> String -> Sys ()
-sysLog typ text = sysLogAppend (Log (Text.pack text) typ DQ.empty)
+sysLog typ text = sysLogAdd (LogEntry (Text.pack text) typ)
 
 -- | Add a new sequence of actions to the log
 sysLogSequence :: String -> Sys a -> Sys a
 sysLogSequence text act = do
-   sysLogBegin (Text.pack text)
+   sysLogBegin text
    r <- act
    sysLogEnd
    return r
 
--- | Append a log entry to the current log sequence
-sysLogAppend :: Log -> Sys ()
-sysLogAppend e = do
-   s <- get
-   let
-      log = sysLogCurrent s
-      log' = log { logChildren = DQ.pushBack (logChildren log) e }
-   put $ s { sysLogCurrent = log' }
 
 -- | Start a new log sequence
-sysLogBegin :: Text -> Sys ()
+sysLogBegin :: String -> Sys ()
 sysLogBegin text = do
-   s <- get
-   let
-      current = sysLogCurrent s
-      stack   = sysLogStack s
-   
-   put $ s
-      { sysLogCurrent = Log text LogSequence DQ.empty
-      , sysLogStack   = current : stack
+   (log,logSrc) <- sysIO newFutureIO
+   sysLogAdd (LogGroup (Text.pack text) log)
+
+   -- add the group to the list
+   modify' $ \s -> s
+      { sysLogGroups = logSrc : sysLogGroups s
       }
 
 -- | End a log sequence
 sysLogEnd :: Sys ()
-sysLogEnd = do
-   s <- get
-   let
-      current = sysLogCurrent s
-      (x:xs)  = sysLogStack s
-   -- attach the current log to the parent one
-   put $ s
-      { sysLogCurrent = x
-      , sysLogStack   = xs
+sysLogEnd =
+   modify' $ \s -> s
+      { sysLogGroups  = Prelude.tail (sysLogGroups s)
+      , sysLogCurrent = Prelude.head (sysLogGroups s)
       }
-   sysLogAppend current
-
--- | Close the log
-sysLogClose :: Sys ()
-sysLogClose = gets sysLogStack >>= \case
-   [] -> return ()
-   _  -> sysLogEnd >> sysLogClose
 
 -- | Print the log on the standard output
 sysLogPrint :: Sys ()
 sysLogPrint = do
       -- print the log
-      log <- gets sysLogCurrent
+      log <- gets sysLogRoot
       lift $ printLog 0 log
    where
-      formatLog i l = Text.format (fromString "{}--{}- {}{}")
-         ( Text.replicate i (Text.pack "  |")
-         , if DQ.null (logChildren l) then "-" else "+"
-         , Text.pack $ case logType l of
-            LogSequence -> ""
-            LogWarning  -> "Warning: "
-            LogError    -> "Error: "
-            LogDebug    -> "Debug: "
-            LogInfo     -> ""
-         , logValue l
-         )
-      printLog i l = do
-         Text.putStrLn (formatLog i l)
-         traverse_ (printLog (i+1)) (logChildren l)
+      printLog i l = 
+         case l of
+            LogEntry t ty (LogNext status n) -> do
+               status' <- pollFutureIO status >>= \case
+                  Just st -> return $ Text.pack ("("++show st++")")
+                  Nothing -> return $ Text.pack ""
+
+               Text.putStrLn $ Text.format (fromString "{}---- {}{}{}")
+                  ( Text.replicate i (Text.pack "  |")
+                  , Text.pack $ case ty of
+                     LogWarning  -> "Warning: "
+                     LogError    -> "Error: "
+                     LogDebug    -> "Debug: "
+                     LogInfo     -> ""
+                  , t
+                  , status'
+                  )
+            LogGroup t fl (LogNext status n) -> do
+               Text.putStrLn $ Text.format (fromString "{}--+- {}")
+                  ( Text.replicate i (Text.pack "  |")
+                  , t
+                  )
+               traverse_ (printLog (i+1)) =<< pollFutureIO n
+               traverse_ (printLog i)     =<< pollFutureIO fl
 
 sysAssert :: String -> Bool -> Sys ()
 sysAssert text b = if b

@@ -17,7 +17,7 @@ import ViperVM.Arch.Linux.Terminal (stdin,stdout)
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
 import ViperVM.Utils.STM.TList as TList
-import ViperVM.Utils.STM.TNotify
+import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
 import ViperVM.Format.Binary.BitSet as BitSet
 
@@ -46,7 +46,7 @@ data Terminal = Terminal
 --  * in the supplied requester buffer (zero-copy)
 --  * in a buffer if there are no request pending
 data InputState = InputState
-   { inputRequests :: TList (Buffer, TNotifySource ())
+   { inputRequests :: TList (Buffer, FutureSource ())
    , inputBuffer   :: TMVar InputBuffer
    , inputHandle   :: FileDescriptor
    }
@@ -85,7 +85,7 @@ inputThread s = forever $ do
                   TList.delete e'
                   if size' == size
                      -- the buffer is filled, we signal it
-                     then signalNotify () semsrc
+                     then setFuture () semsrc
                      -- we update the remaining number of bytes to read
                      else do
                         let buf' = Buffer (size-size') (ptr `plusPtr` fromIntegral size')
@@ -117,7 +117,7 @@ inputThread s = forever $ do
    atomically $ after readBytes
 
 
-readFromHandle :: InputState -> Word64 -> Ptr () -> IO (TNotify ())
+readFromHandle :: InputState -> Word64 -> Ptr () -> IO (Future ())
 readFromHandle s sz ptr = do
    (after,bsz,bptr) <- atomically $ do
       -- read bytes from the buffer if any
@@ -145,10 +145,10 @@ readFromHandle s sz ptr = do
       -- put the buffer back
       after
 
-      (sem,semsrc) <- newTNotify
+      (sem,semsrc) <- newFuture
 
       if bsz == sz
-         then signalNotify () semsrc
+         then setFuture () semsrc
          else do
             -- if we haven't read everything, register
             let b = Buffer (sz - bsz) (ptr `plusPtr` fromIntegral bsz)
@@ -167,7 +167,7 @@ newInputState size fd = do
       
 
 data OutputState = OutputState
-   { outputBuffers :: TList (Buffer, TNotifySource ())
+   { outputBuffers :: TList (Buffer, FutureSource ())
    , outputHandle  :: FileDescriptor
    }
 
@@ -190,7 +190,7 @@ outputThread s = forever $ do
       sysWrite hdl (bufferPtr buf) (bufferSize buf)
 
    atomically $ if n == bufferSize buf
-      then signalNotify () semsrc
+      then setFuture () semsrc
       else do
          let buf' = Buffer (bufferSize buf - n)
                            (bufferPtr buf `plusPtr` fromIntegral n)
@@ -223,14 +223,14 @@ defaultTerminal = do
 
    return $ Terminal outState inState
 
-writeToHandle :: OutputState -> Word64 -> Ptr () -> IO (TNotify ())
+writeToHandle :: OutputState -> Word64 -> Ptr () -> IO (Future ())
 writeToHandle s sz ptr = atomically $ do
-   (sem,semsrc) <- newTNotify
+   (sem,semsrc) <- newFuture
    TList.prepend_ (Buffer sz ptr, semsrc) (outputBuffers s)
    return sem
 
 -- | Write bytes
-writeTermBytes :: Terminal -> Word64 -> Ptr a -> IO (TNotify ())
+writeTermBytes :: Terminal -> Word64 -> Ptr a -> IO (Future ())
 writeTermBytes term sz ptr = writeToHandle (termOut term) sz (castPtr ptr)
 
 -- | Write a string
@@ -240,10 +240,10 @@ writeStrLn term s =
       with '\n' $ \ptr2 -> do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         atomically (waitNotify sem)
+         atomically (waitFuture sem)
 
 -- | Read bytes (asynchronous)
-readTermBytes :: Terminal -> Word64 -> Ptr a -> IO (TNotify ())
+readTermBytes :: Terminal -> Word64 -> Ptr a -> IO (Future ())
 readTermBytes term sz ptr = readFromHandle (termIn term) sz (castPtr ptr)
 
 -- | Read a Storable (synchronous)
@@ -251,7 +251,7 @@ readTerm :: Storable a => Terminal -> Sys a
 readTerm term = sysIO $
    alloca $ \(ptr :: Ptr a) -> do
       sem <- readTermBytes term (fromIntegral $ sizeOf (undefined :: a)) ptr
-      atomically $ waitNotify sem
+      atomically $ waitFuture sem
       peek ptr
 
 -- | Wait for a key to pressed
