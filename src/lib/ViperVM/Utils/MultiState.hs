@@ -13,6 +13,7 @@ module ViperVM.Utils.MultiState
    ( MStateT
    , mSet
    , mGet
+   , mTryGet
    , mModify
    , mModify'
    )
@@ -22,6 +23,9 @@ import Control.Monad.State.Lazy
 
 import ViperVM.Utils.HArray
 
+-- | Multi-state monad transformer
+--
+-- States are stacked in a heterogeneous array.
 type MStateT (s :: [*]) m a = StateT (HArray s) m a
 
 -- | Set a value in the state
@@ -31,6 +35,11 @@ mSet = modify' . setHArrayT
 -- | Get a value in the state
 mGet :: (Monad m, HArrayIndexT a s) => MStateT s m a
 mGet = getHArrayT <$> get
+
+-- | Try to get a value in the state
+mTryGet :: (Monad m, HArrayTryIndexT a s) => MStateT s m (Maybe a)
+mTryGet = tryGetHArrayT <$> get
+
 
 -- | Modify a value in the state
 mModify :: (Monad m, HArrayIndexT a s) => (a -> a) -> MStateT s m ()

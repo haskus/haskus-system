@@ -12,11 +12,13 @@ module ViperVM.Utils.HArray
    ( HArray
    , HArrayIndex
    , HArrayIndexT
+   , HArrayTryIndexT
    , emptyHArray
    , getHArrayN
    , setHArrayN
    , getHArrayT
    , setHArrayT
+   , tryGetHArrayT
    , appendHArray
    , prependHArray
    , concatHArray
@@ -52,6 +54,11 @@ type HArrayIndexT t (ts :: [*]) =
    , HArrayIndex (IndexOf t ts) t ts
    )
 
+-- | A type `t` is maybe indexable in the array
+type HArrayTryIndexT t (ts :: [*]) =
+   ( HArrayIndex (MaybeIndexOf t ts) t (t ': ts)
+   )
+
 
 -- | Get an element by index
 getHArrayN :: forall (n :: Nat) (ts :: [*]) t.
@@ -76,6 +83,17 @@ getHArrayT = getHArrayN (Proxy :: Proxy (IndexOf t ts))
 setHArrayT :: forall t ts.
    (HArrayIndexT t ts) => t -> HArray ts -> HArray ts
 setHArrayT = setHArrayN (Proxy :: Proxy (IndexOf t ts))
+
+-- | Get an element by type (select the first one with this type)
+tryGetHArrayT :: forall t ts.
+   (HArrayTryIndexT t ts) => HArray ts -> Maybe t
+tryGetHArrayT as = if n == 0
+      then Nothing
+      else Just $ getHArrayN (Proxy :: Proxy (MaybeIndexOf t ts)) as'
+   where
+      n   = natVal (Proxy :: Proxy (MaybeIndexOf t ts))
+      as' :: HArray (t ': ts)
+      as' = prependHArray undefined as
 
 -- | Append a value to an array (O(n))
 appendHArray :: HArray ts -> t -> HArray (Concat ts '[t])

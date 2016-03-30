@@ -29,6 +29,7 @@ module ViperVM.Utils.HList
    , Nub
    , NubHead
    , IndexOf
+   , MaybeIndexOf
    , TypeAt
    , HFoldr' (..)
    , HTuple' (..)
@@ -132,6 +133,15 @@ type family NubHead (l :: [*]) where
 type family IndexOf a (l :: [*]) where
    IndexOf x (x ': xs) = 0
    IndexOf y (x ': xs) = 1 + IndexOf y xs
+
+-- | Get the first index (starting from 1) of a type or 0 if none
+type family MaybeIndexOf a (l :: [*]) where
+   MaybeIndexOf x xs = MaybeIndexOf' 0 x xs
+
+type family MaybeIndexOf' (n :: Nat) a (l :: [*]) where
+   MaybeIndexOf' n x '[]       = 0
+   MaybeIndexOf' n x (x ': xs) = 1 + n
+   MaybeIndexOf' n x (y ': xs) = MaybeIndexOf' (n+1) x xs
 
 -- | Indexed access into the list
 type family TypeAt (n :: Nat) (l :: [*]) where

@@ -54,6 +54,10 @@ utilsHArrayTests = testGroup "HArray" $
       , testProperty "Get by index 3" (getHArrayN (Proxy :: Proxy 3) arr21 == "Hello")
       , testProperty "Get by index 4" (getHArrayN (Proxy :: Proxy 4) arr21 == False)
       ]
+   , testGroup "TryGetHArray"
+      [ testProperty "Try get by type valid"   (tryGetHArrayT arr1 == Just "Hello")
+      , testProperty "Try get by type invalid" (tryGetHArrayT arr1 == (Nothing :: Maybe Char))
+      ]
    ]
 
 
