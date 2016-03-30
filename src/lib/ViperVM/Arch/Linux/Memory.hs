@@ -35,7 +35,7 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 
 -- | Set program break location (i.e. data segement size)
@@ -144,10 +144,10 @@ type MapFlags = BitSet Word32 MapFlag
 -- | Map files or devices into memory
 --
 -- Optional `hugepagesize` is in Log2 and on 6 bits
-sysMemMap :: Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (FileDescriptor, Word64) -> SysRet (Ptr ())
+sysMemMap :: Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (Handle, Word64) -> SysRet (Ptr ())
 sysMemMap addr len prot flags hugepagesize source = do
    let 
-      (fd,off) = fromMaybe (-1,0) ((\(FileDescriptor fd', x) -> (fd',x)) <$> source)
+      (fd,off) = fromMaybe (-1,0) ((\(Handle fd', x) -> (fd',x)) <$> source)
       flags'   = case hugepagesize of
                   Nothing -> flags
                   Just _  -> BitSet.union flags (BitSet.fromList [MapHugeTLB])

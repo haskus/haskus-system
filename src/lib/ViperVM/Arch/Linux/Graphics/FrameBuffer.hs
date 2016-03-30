@@ -21,7 +21,7 @@ import Foreign.Ptr
 import Control.Monad (void)
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Internals.Graphics

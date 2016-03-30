@@ -132,7 +132,7 @@ where
 
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.BitField
@@ -1079,93 +1079,93 @@ instance Storable StructSetClientCap where
 -- IOCTLs
 -----------------------------------------------------------------------------
 
-drmIoctl :: Storable a => Word8 -> a -> FileDescriptor -> SysRet a
+drmIoctl :: Storable a => Word8 -> a -> Handle -> SysRet a
 drmIoctl = ioctlWriteRead 0x64
 
 
-ioctlGetCapabilities :: StructGetCap -> FileDescriptor -> SysRet StructGetCap
+ioctlGetCapabilities :: StructGetCap -> Handle -> SysRet StructGetCap
 ioctlGetCapabilities = drmIoctl 0x0C
 
-ioctlSetClientCapability :: StructSetClientCap -> FileDescriptor -> SysRet StructSetClientCap
+ioctlSetClientCapability :: StructSetClientCap -> Handle -> SysRet StructSetClientCap
 ioctlSetClientCapability = drmIoctl 0x0D
  
  
-ioctlGetResources :: StructCardRes -> FileDescriptor -> SysRet StructCardRes
+ioctlGetResources :: StructCardRes -> Handle -> SysRet StructCardRes
 ioctlGetResources = drmIoctl 0xA0
 
-ioctlGetController :: StructController -> FileDescriptor -> SysRet StructController
+ioctlGetController :: StructController -> Handle -> SysRet StructController
 ioctlGetController = drmIoctl 0xA1
 
-ioctlSetController :: StructController -> FileDescriptor -> SysRet StructController
+ioctlSetController :: StructController -> Handle -> SysRet StructController
 ioctlSetController = drmIoctl 0xA2
 
-ioctlGetGamma :: StructControllerLut -> FileDescriptor -> SysRet StructControllerLut
+ioctlGetGamma :: StructControllerLut -> Handle -> SysRet StructControllerLut
 ioctlGetGamma = drmIoctl 0xA4
 
-ioctlSetGamma :: StructControllerLut -> FileDescriptor -> SysRet StructControllerLut
+ioctlSetGamma :: StructControllerLut -> Handle -> SysRet StructControllerLut
 ioctlSetGamma = drmIoctl 0xA5
 
-ioctlGetEncoder :: StructGetEncoder -> FileDescriptor -> SysRet StructGetEncoder
+ioctlGetEncoder :: StructGetEncoder -> Handle -> SysRet StructGetEncoder
 ioctlGetEncoder = drmIoctl 0xA6
 
-ioctlGetConnector :: StructGetConnector -> FileDescriptor -> SysRet StructGetConnector
+ioctlGetConnector :: StructGetConnector -> Handle -> SysRet StructGetConnector
 ioctlGetConnector = drmIoctl 0xA7
 
-ioctlGetProperty :: StructGetProperty -> FileDescriptor -> SysRet StructGetProperty
+ioctlGetProperty :: StructGetProperty -> Handle -> SysRet StructGetProperty
 ioctlGetProperty = drmIoctl 0xAA
 
-ioctlSetProperty :: StructSetProperty -> FileDescriptor -> SysRet StructSetProperty
+ioctlSetProperty :: StructSetProperty -> Handle -> SysRet StructSetProperty
 ioctlSetProperty = drmIoctl 0xAB
 
-ioctlGetBlob :: StructGetBlob -> FileDescriptor -> SysRet StructGetBlob
+ioctlGetBlob :: StructGetBlob -> Handle -> SysRet StructGetBlob
 ioctlGetBlob = drmIoctl 0xAC
 
-ioctlRemoveFrameBuffer :: Word32 -> FileDescriptor -> SysRet Word32
+ioctlRemoveFrameBuffer :: Word32 -> Handle -> SysRet Word32
 ioctlRemoveFrameBuffer = drmIoctl 0xAF
 
-ioctlPageFlip :: StructPageFlip -> FileDescriptor -> SysRet StructPageFlip
+ioctlPageFlip :: StructPageFlip -> Handle -> SysRet StructPageFlip
 ioctlPageFlip = drmIoctl 0xB0
 
-ioctlDirtyFrameBuffer :: StructFrameBufferDirty -> FileDescriptor -> SysRet StructFrameBufferDirty
+ioctlDirtyFrameBuffer :: StructFrameBufferDirty -> Handle -> SysRet StructFrameBufferDirty
 ioctlDirtyFrameBuffer = drmIoctl 0xB1
 
-ioctlCreateGenericBuffer :: StructCreateDumb -> FileDescriptor -> SysRet StructCreateDumb
+ioctlCreateGenericBuffer :: StructCreateDumb -> Handle -> SysRet StructCreateDumb
 ioctlCreateGenericBuffer = drmIoctl 0xB2
 
-ioctlMapGenericBuffer :: StructMapDumb -> FileDescriptor -> SysRet StructMapDumb
+ioctlMapGenericBuffer :: StructMapDumb -> Handle -> SysRet StructMapDumb
 ioctlMapGenericBuffer = drmIoctl 0xB3
 
-ioctlDestroyGenericBuffer :: StructDestroyDumb -> FileDescriptor -> SysRet StructDestroyDumb
+ioctlDestroyGenericBuffer :: StructDestroyDumb -> Handle -> SysRet StructDestroyDumb
 ioctlDestroyGenericBuffer = drmIoctl 0xB4
 
-ioctlGetPlaneResources :: StructGetPlaneRes -> FileDescriptor -> SysRet StructGetPlaneRes
+ioctlGetPlaneResources :: StructGetPlaneRes -> Handle -> SysRet StructGetPlaneRes
 ioctlGetPlaneResources = drmIoctl 0xB5
 
-ioctlGetPlane :: StructGetPlane -> FileDescriptor -> SysRet StructGetPlane
+ioctlGetPlane :: StructGetPlane -> Handle -> SysRet StructGetPlane
 ioctlGetPlane = drmIoctl 0xB6
 
-ioctlSetPlane :: StructSetPlane -> FileDescriptor -> SysRet StructSetPlane
+ioctlSetPlane :: StructSetPlane -> Handle -> SysRet StructSetPlane
 ioctlSetPlane = drmIoctl 0xB7
 
-ioctlAddFrameBuffer :: StructFrameBufferCommand -> FileDescriptor -> SysRet StructFrameBufferCommand
+ioctlAddFrameBuffer :: StructFrameBufferCommand -> Handle -> SysRet StructFrameBufferCommand
 ioctlAddFrameBuffer = drmIoctl 0xB8
 
-ioctlGetObjectProperties :: StructGetObjectProperties -> FileDescriptor -> SysRet StructGetObjectProperties
+ioctlGetObjectProperties :: StructGetObjectProperties -> Handle -> SysRet StructGetObjectProperties
 ioctlGetObjectProperties = drmIoctl 0xB9
 
-ioctlSetObjectProperty :: StructSetObjectProperty -> FileDescriptor -> SysRet StructSetObjectProperty
+ioctlSetObjectProperty :: StructSetObjectProperty -> Handle -> SysRet StructSetObjectProperty
 ioctlSetObjectProperty = drmIoctl 0xBA
 
-ioctlCursor :: StructCursor2 -> FileDescriptor -> SysRet StructCursor2
+ioctlCursor :: StructCursor2 -> Handle -> SysRet StructCursor2
 ioctlCursor = drmIoctl 0xBB
 
-ioctlAtomic :: StructAtomic -> FileDescriptor -> SysRet StructAtomic
+ioctlAtomic :: StructAtomic -> Handle -> SysRet StructAtomic
 ioctlAtomic = drmIoctl 0xBC
 
-ioctlCreateBlob :: StructCreateBlob -> FileDescriptor -> SysRet StructCreateBlob
+ioctlCreateBlob :: StructCreateBlob -> Handle -> SysRet StructCreateBlob
 ioctlCreateBlob = drmIoctl 0xBD
 
-ioctlDestroyBlob :: StructDestroyBlob -> FileDescriptor -> SysRet StructDestroyBlob
+ioctlDestroyBlob :: StructDestroyBlob -> Handle -> SysRet StructDestroyBlob
 ioctlDestroyBlob = drmIoctl 0xBE
 
 

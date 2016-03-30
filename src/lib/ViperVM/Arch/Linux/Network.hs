@@ -34,7 +34,7 @@ import Data.Bits
 import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 
 data ShutFlag
@@ -44,18 +44,18 @@ data ShutFlag
    deriving (Enum,Show)
 
 -- | Shut down part of a full-duplex connection
-sysShutdown :: FileDescriptor -> ShutFlag -> SysRet ()
-sysShutdown (FileDescriptor fd) flag =
+sysShutdown :: Handle -> ShutFlag -> SysRet ()
+sysShutdown (Handle fd) flag =
    onSuccess (syscall_shutdown fd (fromEnum flag)) (const ())
 
 -- | Call sendfile using implicit file cursor for input
-sysSendFile :: FileDescriptor -> FileDescriptor -> Word64 -> SysRet Word64
-sysSendFile (FileDescriptor outfd) (FileDescriptor infd) count =
+sysSendFile :: Handle -> Handle -> Word64 -> SysRet Word64
+sysSendFile (Handle outfd) (Handle infd) count =
    onSuccess (syscall_sendfile outfd infd nullPtr count) fromIntegral
 
 -- | Call sendFile using explicit input offset, returns new offset
-sysSendFileWithOffset :: FileDescriptor -> FileDescriptor -> Word64 -> Word64 -> SysRet (Word64,Word64)
-sysSendFileWithOffset (FileDescriptor outfd) (FileDescriptor infd) offset count =
+sysSendFileWithOffset :: Handle -> Handle -> Word64 -> Word64 -> SysRet (Word64,Word64)
+sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
    with offset $ \off ->
       onSuccessIO (syscall_sendfile outfd infd off count) $ \x -> do
          newOff <- peek off
@@ -154,19 +154,19 @@ instance Enum SocketOption where
 -- | Create a socket (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocket' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet FileDescriptor
+sysSocket' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet Handle
 sysSocket' typ protocol subprotocol opts =
    let
       f :: Enum a => a -> Word64
       f = fromIntegral . fromEnum
       typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
    in
-   onSuccess (syscall_socket (fromEnum protocol) typ' subprotocol) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_socket (fromEnum protocol) typ' subprotocol) (Handle . fromIntegral)
 
 -- | Create a socket pair (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocketPair' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet (FileDescriptor,FileDescriptor)
+sysSocketPair' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet (Handle,Handle)
 sysSocketPair' typ protocol subprotocol opts =
    let
       f :: Enum a => a -> Word64
@@ -176,7 +176,7 @@ sysSocketPair' typ protocol subprotocol opts =
       toTuple _     = error "Invalid tuple"
    in
    allocaArray 2 $ \ptr -> onSuccessIO (syscall_socketpair (fromEnum protocol) typ' subprotocol ptr)
-      (const $ toTuple . fmap FileDescriptor <$> peekArray 2 ptr)
+      (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
 
 -- | IP type
 data IPType
@@ -259,7 +259,7 @@ data SocketType
    deriving (Show,Eq)
 
 -- | Create a socket
-sysSocket :: SocketType -> [SocketOption] -> SysRet FileDescriptor
+sysSocket :: SocketType -> [SocketOption] -> SysRet Handle
 sysSocket typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocket' SockRawTypeStream SockProtIPv4 0 opts
@@ -269,7 +269,7 @@ sysSocket typ opts =
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Create a socket pair
-sysSocketPair :: SocketType -> [SocketOption] -> SysRet (FileDescriptor,FileDescriptor)
+sysSocketPair :: SocketType -> [SocketOption] -> SysRet (Handle,Handle)
 sysSocketPair typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocketPair' SockRawTypeStream SockProtIPv4 0 opts
@@ -279,14 +279,14 @@ sysSocketPair typ opts =
       SockTypeNetlink nt -> sysSocketPair' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Bind a socket
-sysBind :: Storable a => FileDescriptor -> a -> SysRet ()
-sysBind (FileDescriptor fd) addr =
+sysBind :: Storable a => Handle -> a -> SysRet ()
+sysBind (Handle fd) addr =
    with addr $ \addr' ->
       onSuccess (syscall_bind fd addr' (sizeOf addr)) (const ())
 
 -- | Connect a socket
-sysConnect :: Storable a => FileDescriptor -> a -> SysRet ()
-sysConnect (FileDescriptor fd) addr =
+sysConnect :: Storable a => Handle -> a -> SysRet ()
+sysConnect (Handle fd) addr =
    with addr $ \addr' ->
       onSuccess (syscall_connect fd addr' (sizeOf addr)) (const ())
 
@@ -294,21 +294,21 @@ sysConnect (FileDescriptor fd) addr =
 --
 -- We use accept4 (288) instead of accept (43) to support socket options
 --
-sysAccept :: Storable a => FileDescriptor -> a -> [SocketOption] -> SysRet FileDescriptor
-sysAccept (FileDescriptor fd) addr opts =
+sysAccept :: Storable a => Handle -> a -> [SocketOption] -> SysRet Handle
+sysAccept (Handle fd) addr opts =
    let 
       f :: Enum a => a -> Word64
       f = fromIntegral . fromEnum
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      onSuccess (syscall_accept4 fd addr' (sizeOf addr) opts') (FileDescriptor . fromIntegral)
+      onSuccess (syscall_accept4 fd addr' (sizeOf addr) opts') (Handle . fromIntegral)
 
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
-sysListen :: FileDescriptor -> Word64 -> SysRet ()
-sysListen (FileDescriptor fd) backlog =
+sysListen :: Handle -> Word64 -> SysRet ()
+sysListen (Handle fd) backlog =
    onSuccess (syscall_listen fd backlog) (const ())
 
 
@@ -326,7 +326,7 @@ instance Storable NetlinkSocket where
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
-sysBindNetlink :: FileDescriptor -> Word32 -> Word32 -> SysRet ()
+sysBindNetlink :: Handle -> Word32 -> Word32 -> SysRet ()
 sysBindNetlink fd portID groups = sysBind fd s
    where
       s = NetlinkSocket p portID groups

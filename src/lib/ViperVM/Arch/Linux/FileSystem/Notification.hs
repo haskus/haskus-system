@@ -22,7 +22,7 @@ import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 
 data PollStruct = PollStruct
@@ -43,7 +43,7 @@ data PollEvent
    | PollPriorityReadable
    | PollError
    | PollHungUp
-   | PollInvalidFileDescriptor
+   | PollInvalidHandle
    | PollMessage
    | PollRemove
    | PollPeerHungUp
@@ -60,7 +60,7 @@ instance Enum PollEvent where
       PollPriorityReadable       -> 1
       PollError                  -> 3
       PollHungUp                 -> 4
-      PollInvalidFileDescriptor  -> 5
+      PollInvalidHandle          -> 5
       PollMessage                -> 10
       PollRemove                 -> 12
       PollPeerHungUp             -> 13
@@ -74,7 +74,7 @@ instance Enum PollEvent where
       1  -> PollPriorityReadable       
       3  -> PollError                  
       4  -> PollHungUp                 
-      5  -> PollInvalidFileDescriptor  
+      5  -> PollInvalidHandle  
       10 -> PollMessage                
       12 -> PollRemove                 
       13 -> PollPeerHungUp             
@@ -88,7 +88,7 @@ instance Enum PollEvent where
 type PollEventSet = BitSet Word16 PollEvent
 
 -- | A polling entry
-data PollEntry = PollEntry FileDescriptor PollEventSet deriving (Show,Eq)
+data PollEntry = PollEntry Handle PollEventSet deriving (Show,Eq)
 
 -- | Result of a call to poll
 data PollResult
@@ -103,7 +103,7 @@ sysPoll :: [PollEntry] -> Bool -> Maybe Int64 -> SysRet PollResult
 sysPoll entries blocking timeout = do
    
    let 
-      toPollStruct (PollEntry (FileDescriptor fd) evs) = PollStruct
+      toPollStruct (PollEntry (Handle fd) evs) = PollStruct
          { pollFD             = fromIntegral fd -- poll allows negative FDs to indicate that the entry must be skipped, we don't
          , pollEvents         = toBits evs
          , pollReturnedEvents = 0
@@ -111,7 +111,7 @@ sysPoll entries blocking timeout = do
       fromPollStruct (PollStruct fd _ evs) = 
          if evs == 0
             then Nothing
-            else Just $ PollEntry (FileDescriptor (fromIntegral fd)) (fromBits evs)
+            else Just $ PollEntry (Handle (fromIntegral fd)) (fromBits evs)
       fds = fmap toPollStruct entries
       nfds = fromIntegral (length fds) :: Word64
       timeout' = if not blocking

@@ -45,7 +45,7 @@ module ViperVM.Arch.Linux.FileSystem
    , sysChangeLinkOwnershipPath
    , sysSetProcessUMask
    , sysFileStat
-   , sysFileDescriptorStat
+   , sysHandleStat
    , sysSync
    , sysSyncFS
    , sysCreateSpecialFile
@@ -72,36 +72,36 @@ import ViperVM.Format.Binary.BitSet
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Time (TimeSpec)
 import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
 import ViperVM.Arch.Linux.Internals.FileSystem
 
 -- | Open a file
-sysOpen :: FilePath -> HandleFlags -> FilePermissions -> SysRet FileDescriptor
+sysOpen :: FilePath -> HandleFlags -> FilePermissions -> SysRet Handle
 sysOpen path flags mode = 
    withCString path $ \path' -> 
       onSuccess (syscall_open path' (BitSet.toBits flags) (BitSet.toBits mode))
-         (FileDescriptor . fromIntegral)
+         (Handle . fromIntegral)
 
 -- | Open a file
-sysOpenAt :: FileDescriptor -> FilePath -> HandleFlags -> FilePermissions -> SysRet FileDescriptor
-sysOpenAt (FileDescriptor fd) path flags mode = 
+sysOpenAt :: Handle -> FilePath -> HandleFlags -> FilePermissions -> SysRet Handle
+sysOpenAt (Handle fd) path flags mode = 
    withCString path $ \path' -> 
       onSuccess (syscall_openat fd path' (BitSet.toBits flags) (BitSet.toBits mode))
-         (FileDescriptor . fromIntegral)
+         (Handle . fromIntegral)
 
-sysCreateCString :: CString -> FilePermissions -> SysRet FileDescriptor
+sysCreateCString :: CString -> FilePermissions -> SysRet Handle
 sysCreateCString path mode = 
-   onSuccess (syscall_creat path (BitSet.toBits mode)) (FileDescriptor . fromIntegral)
+   onSuccess (syscall_creat path (BitSet.toBits mode)) (Handle . fromIntegral)
 
-sysCreate :: String -> FilePermissions -> SysRet FileDescriptor
+sysCreate :: String -> FilePermissions -> SysRet Handle
 sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 
 -- | Close a file descriptor
-sysClose :: FileDescriptor -> SysRet ()
-sysClose (FileDescriptor fd) =
+sysClose :: Handle -> SysRet ()
+sysClose (Handle fd) =
    onSuccess (syscall_close fd) (const ())
 
 
@@ -122,12 +122,12 @@ type FilePermissions = BitSet Word FilePermission
 
 
 -- | Reposition read/write file offset, return the new position
-sysSeek :: FileDescriptor -> Int64 -> SeekWhence -> SysRet Int64
-sysSeek (FileDescriptor fd) off whence =
+sysSeek :: Handle -> Int64 -> SeekWhence -> SysRet Int64
+sysSeek (Handle fd) off whence =
    onSuccess (syscall_lseek fd off (fromEnum whence)) id
 
 -- | Reposition read/write file offset
-sysSeek' :: FileDescriptor -> Int64 -> SeekWhence -> SysRet ()
+sysSeek' :: Handle -> Int64 -> SeekWhence -> SysRet ()
 sysSeek' fd off whence = void <$> (sysSeek fd off whence)
 
 
@@ -147,20 +147,20 @@ sysAccess path mode = withCString path $ \path' ->
    onSuccess (syscall_access path' (BitSet.toBits mode)) (const ())
 
 
-sysDup :: FileDescriptor -> SysRet FileDescriptor
-sysDup (FileDescriptor oldfd) = 
-   onSuccess (syscall_dup oldfd) (FileDescriptor . fromIntegral)
+sysDup :: Handle -> SysRet Handle
+sysDup (Handle oldfd) = 
+   onSuccess (syscall_dup oldfd) (Handle . fromIntegral)
 
-sysDup2 :: FileDescriptor -> FileDescriptor -> SysRet FileDescriptor
-sysDup2 (FileDescriptor oldfd) (FileDescriptor newfd) = 
-   onSuccess (syscall_dup2 oldfd newfd) (FileDescriptor . fromIntegral)
+sysDup2 :: Handle -> Handle -> SysRet Handle
+sysDup2 (Handle oldfd) (Handle newfd) = 
+   onSuccess (syscall_dup2 oldfd newfd) (Handle . fromIntegral)
 
 sysSetCurrentDirectoryPath :: FilePath -> SysRet ()
 sysSetCurrentDirectoryPath path = withCString path $ \path' ->
    onSuccess (syscall_chdir path') (const ())
 
-sysSetCurrentDirectory :: FileDescriptor -> SysRet ()
-sysSetCurrentDirectory (FileDescriptor fd) = 
+sysSetCurrentDirectory :: Handle -> SysRet ()
+sysSetCurrentDirectory (Handle fd) = 
    onSuccess (syscall_fchdir fd) (const ())
 
 sysGetCurrentDirectory :: SysRet FilePath
@@ -183,8 +183,8 @@ data FileLock =
    | ExclusiveLock
    | RemoveLock
 
-sysFileLock :: FileDescriptor -> FileLock -> Bool -> SysRet ()
-sysFileLock (FileDescriptor fd) mode nonBlocking = do
+sysFileLock :: Handle -> FileLock -> Bool -> SysRet ()
+sysFileLock (Handle fd) mode nonBlocking = do
    let
       mode' = case mode of
          SharedLock     -> 1
@@ -196,18 +196,18 @@ sysFileLock (FileDescriptor fd) mode nonBlocking = do
    onSuccess (syscall_flock fd (mode' .|. nb :: Int64)) (const ())
 
 
-sysFileSync :: FileDescriptor -> SysRet ()
-sysFileSync (FileDescriptor fd) = onSuccess (syscall_fsync fd) (const ())
+sysFileSync :: Handle -> SysRet ()
+sysFileSync (Handle fd) = onSuccess (syscall_fsync fd) (const ())
 
-sysFileDataSync :: FileDescriptor -> SysRet ()
-sysFileDataSync (FileDescriptor fd) = onSuccess (syscall_fdatasync fd) (const ())
+sysFileDataSync :: Handle -> SysRet ()
+sysFileDataSync (Handle fd) = onSuccess (syscall_fdatasync fd) (const ())
 
 sysTruncatePath :: FilePath -> Word64 -> SysRet ()
 sysTruncatePath path size = withCString path $ \path' ->
    onSuccess (syscall_truncate path' size) (const ())
 
-sysTruncate :: FileDescriptor -> Word64 -> SysRet ()
-sysTruncate (FileDescriptor fd) size =
+sysTruncate :: Handle -> Word64 -> SysRet ()
+sysTruncate (Handle fd) size =
    onSuccess (syscall_ftruncate fd size) (const ())
 
 sysLink :: FilePath -> FilePath -> SysRet ()
@@ -226,16 +226,16 @@ sysUnlink :: FilePath -> SysRet ()
 sysUnlink path = withCString path $ \path' ->
    onSuccess (syscall_unlink path') (const ())
 
-sysUnlinkAt :: FileDescriptor -> FilePath -> Bool -> SysRet ()
-sysUnlinkAt (FileDescriptor fd) path rmdir = withCString path $ \path' ->
+sysUnlinkAt :: Handle -> FilePath -> Bool -> SysRet ()
+sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
    onSuccess (syscall_unlinkat fd path' (if rmdir then 0x200 else 0)) (const ())
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
    onSuccess (syscall_chmod path' (BitSet.toBits mode)) (const ())
 
-sysChangePermission :: FileDescriptor -> FilePermissions -> SysRet ()
-sysChangePermission (FileDescriptor fd) mode = 
+sysChangePermission :: Handle -> FilePermissions -> SysRet ()
+sysChangePermission (Handle fd) mode = 
    onSuccess (syscall_fchmod fd (BitSet.toBits mode)) (const ())
 
 
@@ -259,8 +259,8 @@ sysChangeLinkOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> SysRe
 sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx syscall_lchown p uid gid)
 
 -- | fchown
-sysChangeOwnership :: FileDescriptor -> Maybe UserID -> Maybe GroupID -> SysRet ()
-sysChangeOwnership (FileDescriptor fd) = chownEx syscall_fchown fd
+sysChangeOwnership :: Handle -> Maybe UserID -> Maybe GroupID -> SysRet ()
+sysChangeOwnership (Handle fd) = chownEx syscall_fchown fd
 
 -- | umask
 sysSetProcessUMask :: FilePermissions -> SysRet FilePermissions
@@ -448,8 +448,8 @@ sysFileStat path followLink = do
          onSuccessIO (sc path' s) (const (toStat <$> peek s))
 
 -- | Stat on file descriptor
-sysFileDescriptorStat :: FileDescriptor -> SysRet Stat
-sysFileDescriptorStat (FileDescriptor fd) =
+sysHandleStat :: Handle -> SysRet Stat
+sysHandleStat (Handle fd) =
    allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
       onSuccessIO (syscall_fstat fd s) (const (toStat <$> peek s))
 
@@ -457,8 +457,8 @@ sysFileDescriptorStat (FileDescriptor fd) =
 sysSync :: SysRet ()
 sysSync = onSuccess syscall_sync (const ())
 
-sysSyncFS :: FileDescriptor -> SysRet ()
-sysSyncFS (FileDescriptor fd) = onSuccess (syscall_syncfs fd) (const ())
+sysSyncFS :: Handle -> SysRet ()
+sysSyncFS (Handle fd) = onSuccess (syscall_syncfs fd) (const ())
 
 -- | Create a special file
 --
@@ -476,8 +476,8 @@ sysCreateSpecialFile path typ perm dev = do
 -- | Create a special file
 --
 -- mknodat syscall
-sysCreateSpecialFileAt :: FileDescriptor -> FilePath -> FileType -> FilePermissions -> Maybe Device -> SysRet ()
-sysCreateSpecialFileAt (FileDescriptor fd) path typ perm dev = do
+sysCreateSpecialFileAt :: Handle -> FilePath -> FileType -> FilePermissions -> Maybe Device -> SysRet ()
+sysCreateSpecialFileAt (Handle fd) path typ perm dev = do
    let 
       mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
       dev' = fromMaybe (Device 0 0) dev
@@ -493,7 +493,7 @@ data DeviceType
    deriving (Show,Eq,Ord)
 
 -- | Create a device special file
-createDeviceFile :: FileDescriptor -> FilePath -> DeviceType -> FilePermissions -> Device -> SysRet ()
+createDeviceFile :: Handle -> FilePath -> DeviceType -> FilePermissions -> Device -> SysRet ()
 createDeviceFile fd path typ perm dev = sysCreateSpecialFileAt fd path typ' perm (Just dev)
    where
       typ' = case typ of

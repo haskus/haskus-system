@@ -12,7 +12,7 @@ module ViperVM.System.Terminal
 where
 
 import ViperVM.System.Sys
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
@@ -48,7 +48,7 @@ data Terminal = Terminal
 data InputState = InputState
    { inputRequests :: TList (Buffer, FutureSource ())
    , inputBuffer   :: TMVar InputBuffer
-   , inputHandle   :: FileDescriptor
+   , inputHandle   :: Handle
    }
 
 data InputBuffer = InputBuffer
@@ -66,7 +66,7 @@ data Buffer = Buffer
 inputThread :: InputState -> IO ()
 inputThread s = forever $ do
    
-   let hdl@(FileDescriptor fd) = inputHandle s
+   let hdl@(Handle fd) = inputHandle s
 
    threadWaitRead (Fd (fromIntegral fd))
 
@@ -158,7 +158,7 @@ readFromHandle s sz ptr = do
       
             
 -- | New buffered input with given buffer size
-newInputState :: Word64 -> FileDescriptor -> IO InputState
+newInputState :: Word64 -> Handle -> IO InputState
 newInputState size fd = do
    ptr <- mallocBytes (fromIntegral size)
    req <- atomically TList.empty
@@ -168,12 +168,12 @@ newInputState size fd = do
 
 data OutputState = OutputState
    { outputBuffers :: TList (Buffer, FutureSource ())
-   , outputHandle  :: FileDescriptor
+   , outputHandle  :: Handle
    }
 
 outputThread :: OutputState -> IO ()
 outputThread s = forever $ do
-   let hdl@(FileDescriptor fd) = outputHandle s
+   let hdl@(Handle fd) = outputHandle s
 
    (buf,semsrc) <- atomically $ do
       e <- TList.last (outputBuffers s)
@@ -197,7 +197,7 @@ outputThread s = forever $ do
                            
          TList.append_ (buf',semsrc) (outputBuffers s)
    
-newOutputState :: FileDescriptor -> IO OutputState
+newOutputState :: Handle -> IO OutputState
 newOutputState fd = do
    req <- atomically TList.empty
    return $ OutputState req fd

@@ -13,7 +13,7 @@ where
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
@@ -35,10 +35,10 @@ import Text.Megaparsec.Lexer hiding (space)
 
 
 data System = System
-   { systemDevFS       :: FileDescriptor     -- ^ root of the tmpfs used to create device nodes
-   , systemSysFS       :: FileDescriptor     -- ^ SysFS
-   , systemProcFS      :: FileDescriptor     -- ^ procfs
-   , systemNetlinkChan :: TChan KernelEvent  -- ^ Netlink events
+   { systemDevFS       :: Handle            -- ^ root of the tmpfs used to create device nodes
+   , systemSysFS       :: Handle            -- ^ SysFS
+   , systemProcFS      :: Handle            -- ^ procfs
+   , systemNetlinkChan :: TChan KernelEvent -- ^ Netlink events
    }
 
 -- | Initialize the system
@@ -93,7 +93,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: System -> DeviceType -> Device -> Sys FileDescriptor
+getDeviceHandle :: System -> DeviceType -> Device -> Sys Handle
 getDeviceHandle system typ dev = do
 
    let 
@@ -110,12 +110,12 @@ getDeviceHandle system typ dev = do
       return fd
 
 -- | Release a device handle
-releaseDeviceHandle :: FileDescriptor -> Sys ()
+releaseDeviceHandle :: Handle -> Sys ()
 releaseDeviceHandle fd = do
    sysCallAssertQuiet "Close device" $ sysClose fd
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: System -> DeviceType -> Device -> SysRet FileDescriptor
+openDeviceDir :: System -> DeviceType -> Device -> SysRet Handle
 openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids
@@ -160,7 +160,7 @@ listDevicesWithClass system cls = do
             Right x -> Just (clsdir </> dir, x)
 
       -- read devices in a class
-      readDevs :: FileDescriptor -> Sys [(FilePath,Device)]
+      readDevs :: Handle -> Sys [(FilePath,Device)]
       readDevs fd = do
          dirs <- sysCallAssert "List device directories" $ listDirectory fd
          let dirs'  = fmap entryName dirs

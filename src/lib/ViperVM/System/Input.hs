@@ -7,7 +7,7 @@ where
 
 import ViperVM.System.Sys
 import ViperVM.System.System
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
@@ -30,7 +30,7 @@ import System.FilePath (takeBaseName)
 data InputDevice = InputDevice
    { inputDevicePath             :: FilePath          -- ^ SysFS path
    , inputDeviceDev              :: Device            -- ^ Device ID
-   , inputDeviceHandle           :: FileDescriptor    -- ^ Descriptor
+   , inputDeviceHandle           :: Handle            -- ^ Descriptor
    , inputDeviceName             :: String            -- ^ Device Name
    , inputDeviceInfo             :: DeviceInfo        -- ^ Device info
    , inputDeviceChan             :: TChan Input.Event -- ^ Event stream
@@ -55,8 +55,8 @@ loadInputDevices system = sysLogSequence "Load input devices" $ do
          <*> newEventWaiterThread fd
 
 -- | Create a new thread reading input events and putting them in a TChan
-newEventWaiterThread :: FileDescriptor -> Sys (TChan Input.Event)
-newEventWaiterThread fd@(FileDescriptor lowfd) = do
+newEventWaiterThread :: Handle -> Sys (TChan Input.Event)
+newEventWaiterThread fd@(Handle lowfd) = do
    let
       sz  = sizeOf (undefined :: Input.Event)
       rfd = Fd (fromIntegral lowfd)

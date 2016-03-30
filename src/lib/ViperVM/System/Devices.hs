@@ -6,7 +6,7 @@ module ViperVM.System.Devices
 where
 
 import ViperVM.Arch.Linux.KernelEvent
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.System.Sys
 
 import Control.Concurrent.STM
@@ -22,7 +22,7 @@ makeKernelEventChannel = do
    fd <- createKernelEventSocket
    ch <- lift newBroadcastTChanIO
    let
-      FileDescriptor lowfd = fd
+      Handle lowfd = fd
       rfd = Fd (fromIntegral lowfd)
       go  = forever $ do
                threadWaitRead rfd

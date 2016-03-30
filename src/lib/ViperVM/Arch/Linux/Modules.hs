@@ -9,7 +9,7 @@ module ViperVM.Arch.Linux.Modules
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
 
@@ -25,8 +25,8 @@ data LoadModuleFlag
 type LoadModuleFlags = BitSet Word LoadModuleFlag
 
 -- | Load a module from a file
-loadModuleFromFile :: FileDescriptor -> String -> LoadModuleFlags -> SysRet ()
-loadModuleFromFile (FileDescriptor fd) params flags = do
+loadModuleFromFile :: Handle -> String -> LoadModuleFlags -> SysRet ()
+loadModuleFromFile (Handle fd) params flags = do
    withCString params $ \params' ->
       onSuccess (syscall_finit_module fd  params' (BitSet.toBits flags)) (const ())
 

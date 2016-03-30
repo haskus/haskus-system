@@ -18,7 +18,7 @@ module ViperVM.Arch.Linux.Graphics.GenericBuffer
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 
 import Control.Monad (void)

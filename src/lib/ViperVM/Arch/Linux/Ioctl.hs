@@ -42,9 +42,7 @@ module ViperVM.Arch.Linux.Ioctl
    )
 where
 
-import Data.Word
 import Data.Int
-import Data.Proxy
 import Foreign.Storable
 import Foreign.Ptr
 import Control.Monad
@@ -53,46 +51,12 @@ import Foreign.Marshal.Utils (with)
 import qualified Data.ByteString as BS
 
 import ViperVM.Format.Binary.BitField
-import ViperVM.Format.Binary.Enum
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Internals.Ioctl
 
 import ViperVM.Arch.X86_64.Linux.Syscall (Arg(..))
-
------------------------------------------------------------------------------
--- Command
------------------------------------------------------------------------------
-
-newtype Command = Command (BitFields Word32
-  '[ BitField 2  "direction" (EnumField Word8 Direction)
-   , BitField 14 "size"      Word16
-   , BitField 8  "type"      CommandType
-   , BitField 8  "number"    CommandNumber
-   ]) deriving (Storable)
-
-type CommandType   = Word8
-type CommandNumber = Word8
-
--- | Direction of the IOCTL
-data Direction
-   = None 
-   | Write 
-   | Read 
-   | WriteRead
-   deriving (Show,Eq,Enum)
-
-instance CEnum Direction
-
--- | Encode a command (similar to _IO, _IOR, ... macros)
-ioctlCommand :: Direction -> Word8 -> Word8 -> Int -> Command
-ioctlCommand dir typ nb sz = Command
-   $ updateField (Proxy :: Proxy "direction") (toEnumField dir)
-   $ updateField (Proxy :: Proxy "size")      (fromIntegral sz)
-   $ updateField (Proxy :: Proxy "type")      typ
-   $ updateField (Proxy :: Proxy "number")    nb
-   $ BitFields 0
-{-# INLINE ioctlCommand #-}
 
 ---------------------------------------------------
 -- IOCTL
@@ -100,7 +64,7 @@ ioctlCommand dir typ nb sz = Command
 
 -- | Send a custom command to a device
 ioctl :: Arg a => Command -> a -> Handle -> IO Int64
-ioctl (Command cmd) arg (FileDescriptor fd) =
+ioctl (Command cmd) arg (Handle fd) =
    syscall_ioctl fd (fromIntegral (bitFieldsBits cmd)) (toArg arg)
 
 -----------------------------------------------------------------------------

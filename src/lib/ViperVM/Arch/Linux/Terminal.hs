@@ -12,35 +12,35 @@ module ViperVM.Arch.Linux.Terminal
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 
 import qualified Data.ByteString.Char8 as BS
 import Data.Word
 
 -- | Standard input (by convention)
-stdin :: FileDescriptor
-stdin = FileDescriptor 0
+stdin :: Handle
+stdin = Handle 0
 
 -- | Standard output (by convention)
-stdout :: FileDescriptor
-stdout = FileDescriptor 1
+stdout :: Handle
+stdout = Handle 1
 
 -- | Standard error output (by convention)
-stderr :: FileDescriptor
-stderr = FileDescriptor 2
+stderr :: Handle
+stderr = Handle 2
 
 -- | Write a String in the given file descriptor
-writeStr :: FileDescriptor -> String -> SysRet Word64
+writeStr :: Handle -> String -> SysRet Word64
 writeStr fd = writeByteString fd . BS.pack
 
 -- | Write a String with a newline character in the given
 -- file descriptor
-writeStrLn :: FileDescriptor -> String -> SysRet Word64
+writeStrLn :: Handle -> String -> SysRet Word64
 writeStrLn fd = writeByteString fd . BS.pack . (++ "\n")
 
 -- | Read a single character
 --
 -- Warning: only the first byte of multi-byte characters (e.g. utf8) will be
 -- read
-readChar :: FileDescriptor -> SysRet Char
+readChar :: Handle -> SysRet Char
 readChar fd = fmap (head . BS.unpack) <$> readByteString fd 1

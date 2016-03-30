@@ -16,7 +16,7 @@ import ViperVM.System.Sys
 import ViperVM.System.System
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.FileSystem.OpenClose
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
@@ -79,8 +79,8 @@ loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
 
 
 -- | Create a new thread reading input events and putting them in a TChan
-newEventWaiterThread :: FileDescriptor -> Sys (TChan Graphics.Event)
-newEventWaiterThread fd@(FileDescriptor lowfd) = do
+newEventWaiterThread :: Handle -> Sys (TChan Graphics.Event)
+newEventWaiterThread fd@(Handle lowfd) = do
    let
       bufsz = 1000 -- buffer size
       rfd = Fd (fromIntegral lowfd)

@@ -29,7 +29,7 @@ import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 
 -- | Video controller

@@ -17,7 +17,7 @@ import Foreign.Ptr (Ptr, nullPtr, castPtr)
 import Foreign.Storable
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
 
@@ -92,8 +92,8 @@ type SendReceiveFlags = BitSet Word64 SendReceiveFlag
 -- | Receive data from a socket
 --
 -- recvfrom syscall
-sysReceive :: Storable a => FileDescriptor -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> SysRet Word64
-sysReceive (FileDescriptor fd) ptr size flags addr = do
+sysReceive :: Storable a => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> SysRet Word64
+sysReceive (Handle fd) ptr size flags addr = do
    let
       call :: Ptr a -> Ptr Word64 -> SysRet Word64
       call add len = onSuccess (syscall_recvfrom fd ptr size (BitSet.toBits flags) add len) fromIntegral
@@ -103,7 +103,7 @@ sysReceive (FileDescriptor fd) ptr size flags addr = do
       Just a  -> with a $ \a' -> 
          with (fromIntegral (sizeOf a)) $ \sptr -> call a' sptr
 
-receiveByteString :: FileDescriptor -> Int -> SendReceiveFlags -> SysRet ByteString
+receiveByteString :: Handle -> Int -> SendReceiveFlags -> SysRet ByteString
 receiveByteString fd size flags = do
    b <- mallocBytes size
    ret <- sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)

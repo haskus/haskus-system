@@ -75,7 +75,7 @@ import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
 
 import Foreign.C.String (peekCString)
@@ -663,13 +663,13 @@ instance Storable Mask where
 -- | Get version
 --
 -- EVIOCGVERSION
-getVersion :: FileDescriptor -> SysRet Int
+getVersion :: Handle -> SysRet Int
 getVersion = ioctlRead 0x45 0x01
 
 -- | Get device info
 --
 -- EVIOCGID
-getDeviceInfo :: FileDescriptor -> SysRet DeviceInfo
+getDeviceInfo :: Handle -> SysRet DeviceInfo
 getDeviceInfo = ioctlRead 0x45 0x02
 
 -- | Repeat settings
@@ -691,50 +691,50 @@ instance Storable RepeatSettings where
 -- | Get repeat settings
 --
 -- EVIOCGREP
-getRepeatSettings :: FileDescriptor -> SysRet RepeatSettings
+getRepeatSettings :: Handle -> SysRet RepeatSettings
 getRepeatSettings = ioctlRead 0x45 0x03
 
 -- | Set repeat settings
 --
 -- EVIOCSREP
-setRepeatSettings :: RepeatSettings -> FileDescriptor -> SysRet ()
+setRepeatSettings :: RepeatSettings -> Handle -> SysRet ()
 setRepeatSettings = ioctlWrite 0x45 0x03
 
 
 -- | Get key code
 --
 -- EVIOCGKEYCODE_V2
-getKeyCode :: FileDescriptor -> SysRet KeymapEntry
+getKeyCode :: Handle -> SysRet KeymapEntry
 getKeyCode = ioctlRead 0x45 0x04
 
 -- | Set key code
 --
 -- EVIOCSKEYCODE_V2
-setKeyCode :: KeymapEntry -> FileDescriptor -> SysRet ()
+setKeyCode :: KeymapEntry -> Handle -> SysRet ()
 setKeyCode = ioctlWrite 0x45 0x04
 
 -- | Get device name
 --
 -- EVIOCGNAME
-getDeviceName :: FileDescriptor -> SysRet String
+getDeviceName :: Handle -> SysRet String
 getDeviceName = ioctlReadBuffer 0x45 0x06 (const peekCString) 256
 
 -- | Get physical location
 --
 -- EVIOCGPHYS
-getDevicePhysicalLocation :: FileDescriptor -> SysRet String
+getDevicePhysicalLocation :: Handle -> SysRet String
 getDevicePhysicalLocation = ioctlReadBuffer 0x45 0x07 (const peekCString) 256
 
 -- | Get unique identifier
 --
 -- EVIOCGUNIQ
-getDeviceUniqueID :: FileDescriptor -> SysRet String
+getDeviceUniqueID :: Handle -> SysRet String
 getDeviceUniqueID = ioctlReadBuffer 0x45 0x08 (const peekCString) 256
 
 -- | Get device properties
 --
 -- EVIOCGPROP
-getDeviceProperties :: FileDescriptor -> SysRet String
+getDeviceProperties :: Handle -> SysRet String
 getDeviceProperties = ioctlReadBuffer 0x45 0x09 (const peekCString) 256
 
 -- | Get multi-touch slots
@@ -761,7 +761,7 @@ getDeviceProperties = ioctlReadBuffer 0x45 0x09 (const peekCString) 256
 -- ABS_MT code.
 -- 
 -- If the request code is not an ABS_MT value, -EINVAL is returned.
-getDeviceMultiTouchSlots :: Word32 -> Int -> FileDescriptor -> SysRet [Int32]
+getDeviceMultiTouchSlots :: Word32 -> Int -> Handle -> SysRet [Int32]
 getDeviceMultiTouchSlots code nSlots fd = do
    let sz = 4 * (nSlots + 1)
    allocaBytes (fromIntegral sz) $ \ptr -> do
@@ -774,31 +774,31 @@ getDeviceMultiTouchSlots code nSlots fd = do
 -- | Get global key state (one bit per pressed key)
 --
 -- EVIOCGKEY
-getDeviceKeys :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceKeys :: Int -> Handle -> SysRet BS.ByteString
 getDeviceKeys n fd = fmap snd <$> ioctlReadByteString 0x45 0x18 ((n `div` 8) + 1) fd
 
 -- | Get all leds (one bit per led)
 --
 -- EVIOCGLED
-getDeviceLEDs :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceLEDs :: Int -> Handle -> SysRet BS.ByteString
 getDeviceLEDs n fd = fmap snd <$> ioctlReadByteString 0x45 0x19 ((n `div` 8) + 1) fd
 
 -- | Get sound status (one bit per sound)
 --
 -- EVIOCGSND
-getDeviceSoundStatus :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceSoundStatus :: Int -> Handle -> SysRet BS.ByteString
 getDeviceSoundStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1a ((n `div` 8) + 1) fd
 
 -- | Get switch status (one bit per switch)
 --
 -- EVIOCGSW
-getDeviceSwitchStatus :: Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceSwitchStatus :: Int -> Handle -> SysRet BS.ByteString
 getDeviceSwitchStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1b ((n `div` 8) + 1) fd
 
 -- | Get the number of bits that can be set by the given event type
 --
 -- EVIOCGBIT
-getDeviceBits :: EventType -> Int -> FileDescriptor -> SysRet BS.ByteString
+getDeviceBits :: EventType -> Int -> Handle -> SysRet BS.ByteString
 getDeviceBits ev n fd = do
    let code = fromCEnum ev
    fmap snd <$> ioctlReadByteString 0x45 (0x20 + code) ((n `div` 8) + 1) fd
@@ -806,13 +806,13 @@ getDeviceBits ev n fd = do
 -- | Get absolute info
 --
 -- EVIOCGABS
-getDeviceAbsoluteInfo :: Word8 -> FileDescriptor -> SysRet AbsoluteInfo
+getDeviceAbsoluteInfo :: Word8 -> Handle -> SysRet AbsoluteInfo
 getDeviceAbsoluteInfo code = ioctlRead 0x45 (0x40 + code)
 
 -- | Set absolute info
 --
 -- EVIOCSABS
-setDeviceAbsoluteInfo :: Word8 -> AbsoluteInfo -> FileDescriptor -> SysRet ()
+setDeviceAbsoluteInfo :: Word8 -> AbsoluteInfo -> Handle -> SysRet ()
 setDeviceAbsoluteInfo code = ioctlWrite 0x45 (0xc0 + code)
 
 -- | Send a force effect to a force feedback device
@@ -820,39 +820,39 @@ setDeviceAbsoluteInfo code = ioctlWrite 0x45 (0xc0 + code)
 -- TODO: we should return the effect ID
 --
 -- EVIOCSFF
-sendForceFeedback :: ForceFeedbackEffect -> FileDescriptor -> SysRet ()
+sendForceFeedback :: ForceFeedbackEffect -> Handle -> SysRet ()
 sendForceFeedback = ioctlWrite 0x45 0x80
 
 -- | Erase a force effect
 --
 -- EVIOCRMFF
-removeForceFeedback :: Int64 -> FileDescriptor -> SysRet ()
+removeForceFeedback :: Int64 -> Handle -> SysRet ()
 removeForceFeedback = ioctlWriteValue 0x45 0x81
 
 -- | Report the number of effects playable at the same time
 --
 -- EVIOCGEFFECTS
-supportedSimultaneousEffects :: FileDescriptor -> SysRet Int
+supportedSimultaneousEffects :: Handle -> SysRet Int
 supportedSimultaneousEffects = ioctlRead 0x45 0x84
 
 -- | Grab/release device
 --
 -- EVIOCGRAB
-grabReleaseDevice :: Bool -> FileDescriptor -> SysRet ()
+grabReleaseDevice :: Bool -> Handle -> SysRet ()
 grabReleaseDevice grab = ioctlWriteValue 0x45 0x90 (fromBool grab :: Int)
 
 -- | Grab device
-grabDevice :: FileDescriptor -> SysRet ()
+grabDevice :: Handle -> SysRet ()
 grabDevice = grabReleaseDevice True
 
 -- | Release device
-releaseDevice :: FileDescriptor -> SysRet ()
+releaseDevice :: Handle -> SysRet ()
 releaseDevice = grabReleaseDevice False
 
 -- | Revoke device access
 --
 -- EVIOCREVOKE
-revokeDevice :: FileDescriptor -> SysRet ()
+revokeDevice :: Handle -> SysRet ()
 revokeDevice = ioctlWriteValue 0x45 0x91 (0 :: Int)
 
 -- | Get event mask (filter by type)
@@ -884,7 +884,7 @@ revokeDevice = ioctlWriteValue 0x45 0x91 (0 :: Int)
 -- This ioctl may fail with ENODEV in case the file is revoked, EFAULT
 -- if the receive-buffer points to invalid memory, or EINVAL if the kernel
 -- does not implement the ioctl.
-getMask :: FileDescriptor -> SysRet Mask
+getMask :: Handle -> SysRet Mask
 getMask = ioctlRead 0x45 0x92
 
 
@@ -909,13 +909,13 @@ getMask = ioctlRead 0x45 0x92
 -- This ioctl may fail with ENODEV in case the file is revoked. EFAULT is
 -- returned if the receive-buffer points to invalid memory. EINVAL is returned
 -- if the kernel does not implement the ioctl.
-setMask :: Mask -> FileDescriptor -> SysRet ()
+setMask :: Mask -> Handle -> SysRet ()
 setMask = ioctlWrite 0x45 0x93
 
 -- | Set clock to use for timestamps
 --
 -- EVIOCCLOCKID
-setDeviceClock :: Clock -> FileDescriptor -> SysRet ()
+setDeviceClock :: Clock -> Handle -> SysRet ()
 setDeviceClock clk = ioctlWrite 0x45 0xa0 (fromEnum clk :: Int)
 
 

@@ -187,7 +187,7 @@ import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Time
 import ViperVM.Arch.Linux.Process (ProcessID)
 
@@ -309,22 +309,22 @@ instance Storable HwDspImage where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-hwIoctlW :: Storable a => Word8 -> a -> FileDescriptor -> SysRet ()
+hwIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
 hwIoctlW = ioctlWrite 0x48
 
-hwIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+hwIoctlR :: Storable a => Word8 -> Handle -> SysRet a
 hwIoctlR = ioctlRead 0x48
 
-ioctlHwVersion :: FileDescriptor -> SysRet Int
+ioctlHwVersion :: Handle -> SysRet Int
 ioctlHwVersion = hwIoctlR 0x00
 
-ioctlHwInfo :: FileDescriptor -> SysRet HwInfo
+ioctlHwInfo :: Handle -> SysRet HwInfo
 ioctlHwInfo = hwIoctlR 0x01
 
-ioctlHwDspStatus :: FileDescriptor -> SysRet HwDspStatus
+ioctlHwDspStatus :: Handle -> SysRet HwDspStatus
 ioctlHwDspStatus = hwIoctlR 0x02
 
-ioctlHwDspLoad :: HwDspImage -> FileDescriptor -> SysRet ()
+ioctlHwDspLoad :: HwDspImage -> Handle -> SysRet ()
 ioctlHwDspLoad = hwIoctlW 0x03
 
 -----------------------------------------------------------------------------
@@ -963,106 +963,106 @@ instance Enum ChannelOption where
       17 -> ChannelDriverSpec
       _  -> error "Unknown channel option"        
 
-pcmIoctl :: Word8 -> FileDescriptor -> SysRet ()
+pcmIoctl :: Word8 -> Handle -> SysRet ()
 pcmIoctl n = ioctlSignal 0x41 n (0 :: Int)
 
-pcmIoctlWR :: Storable a => Word8 -> a -> FileDescriptor -> SysRet a
+pcmIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
 pcmIoctlWR = ioctlWriteRead 0x41
 
-pcmIoctlW :: Storable a => Word8 -> a -> FileDescriptor -> SysRet ()
+pcmIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
 pcmIoctlW = ioctlWrite 0x41
 
-pcmIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+pcmIoctlR :: Storable a => Word8 -> Handle -> SysRet a
 pcmIoctlR = ioctlRead 0x41
 
-ioctlPcmVersion :: FileDescriptor -> SysRet Int
+ioctlPcmVersion :: Handle -> SysRet Int
 ioctlPcmVersion = pcmIoctlR 0x00
 
-ioctlPcmInfo :: FileDescriptor -> SysRet PcmInfo
+ioctlPcmInfo :: Handle -> SysRet PcmInfo
 ioctlPcmInfo = pcmIoctlR 0x01
 
-ioctlPcmTimeStamp :: Int -> FileDescriptor -> SysRet ()
+ioctlPcmTimeStamp :: Int -> Handle -> SysRet ()
 ioctlPcmTimeStamp = pcmIoctlW 0x02
 
-ioctlPcmTTimeStamp :: Int -> FileDescriptor -> SysRet ()
+ioctlPcmTTimeStamp :: Int -> Handle -> SysRet ()
 ioctlPcmTTimeStamp = pcmIoctlW 0x03
 
-ioctlPcmHwRefine :: PcmHwParams -> FileDescriptor -> SysRet PcmHwParams
+ioctlPcmHwRefine :: PcmHwParams -> Handle -> SysRet PcmHwParams
 ioctlPcmHwRefine = pcmIoctlWR 0x10
 
-ioctlPcmHwParams :: PcmHwParams -> FileDescriptor -> SysRet PcmHwParams
+ioctlPcmHwParams :: PcmHwParams -> Handle -> SysRet PcmHwParams
 ioctlPcmHwParams = pcmIoctlWR 0x11
 
-ioctlPcmHwFree :: FileDescriptor -> SysRet ()
+ioctlPcmHwFree :: Handle -> SysRet ()
 ioctlPcmHwFree = pcmIoctl 0x12
 
-ioctlPcmSwParams :: PcmSwParams -> FileDescriptor -> SysRet PcmSwParams
+ioctlPcmSwParams :: PcmSwParams -> Handle -> SysRet PcmSwParams
 ioctlPcmSwParams = pcmIoctlWR 0x13
 
-ioctlPcmStatus :: FileDescriptor -> SysRet PcmStatus
+ioctlPcmStatus :: Handle -> SysRet PcmStatus
 ioctlPcmStatus = pcmIoctlR 0x20
 
-ioctlPcmDelay :: FileDescriptor -> SysRet Int64
+ioctlPcmDelay :: Handle -> SysRet Int64
 ioctlPcmDelay = pcmIoctlR 0x21
 
-ioctlPcmHwSync :: FileDescriptor -> SysRet ()
+ioctlPcmHwSync :: Handle -> SysRet ()
 ioctlPcmHwSync = pcmIoctl 0x22
 
-ioctlPcmSyncPtr :: PcmSyncPtr -> FileDescriptor -> SysRet PcmSyncPtr
+ioctlPcmSyncPtr :: PcmSyncPtr -> Handle -> SysRet PcmSyncPtr
 ioctlPcmSyncPtr = pcmIoctlWR 0x23
 
-ioctlPcmStatusExt :: PcmStatus -> FileDescriptor -> SysRet PcmStatus
+ioctlPcmStatusExt :: PcmStatus -> Handle -> SysRet PcmStatus
 ioctlPcmStatusExt = pcmIoctlWR 0x24
 
-ioctlPcmChannelInfo :: FileDescriptor -> SysRet PcmChannelInfo
+ioctlPcmChannelInfo :: Handle -> SysRet PcmChannelInfo
 ioctlPcmChannelInfo = pcmIoctlR 0x32
 
-ioctlPcmPrepare :: FileDescriptor -> SysRet ()
+ioctlPcmPrepare :: Handle -> SysRet ()
 ioctlPcmPrepare = pcmIoctl 0x40
 
-ioctlPcmReset :: FileDescriptor -> SysRet ()
+ioctlPcmReset :: Handle -> SysRet ()
 ioctlPcmReset = pcmIoctl 0x41
 
-ioctlPcmStart :: FileDescriptor -> SysRet ()
+ioctlPcmStart :: Handle -> SysRet ()
 ioctlPcmStart = pcmIoctl 0x42
 
-ioctlPcmDrop :: FileDescriptor -> SysRet ()
+ioctlPcmDrop :: Handle -> SysRet ()
 ioctlPcmDrop = pcmIoctl 0x43
 
-ioctlPcmDrain :: FileDescriptor -> SysRet ()
+ioctlPcmDrain :: Handle -> SysRet ()
 ioctlPcmDrain = pcmIoctl 0x44
 
-ioctlPcmPause :: Int -> FileDescriptor -> SysRet ()
+ioctlPcmPause :: Int -> Handle -> SysRet ()
 ioctlPcmPause = pcmIoctlW 0x45
 
-ioctlPcmRewind :: Word64 -> FileDescriptor -> SysRet ()
+ioctlPcmRewind :: Word64 -> Handle -> SysRet ()
 ioctlPcmRewind = pcmIoctlW 0x46
 
-ioctlPcmResume :: FileDescriptor -> SysRet ()
+ioctlPcmResume :: Handle -> SysRet ()
 ioctlPcmResume = pcmIoctl 0x47
 
-ioctlPcmXRun :: FileDescriptor -> SysRet ()
+ioctlPcmXRun :: Handle -> SysRet ()
 ioctlPcmXRun = pcmIoctl 0x48
 
-ioctlPcmForward :: Word64 -> FileDescriptor -> SysRet ()
+ioctlPcmForward :: Word64 -> Handle -> SysRet ()
 ioctlPcmForward = pcmIoctlW 0x49
 
-ioctlPcmWriteIFrames :: XferI -> FileDescriptor -> SysRet ()
+ioctlPcmWriteIFrames :: XferI -> Handle -> SysRet ()
 ioctlPcmWriteIFrames = pcmIoctlW 0x50
 
-ioctlPcmReadIFrames :: FileDescriptor -> SysRet XferI
+ioctlPcmReadIFrames :: Handle -> SysRet XferI
 ioctlPcmReadIFrames = pcmIoctlR 0x51
 
-ioctlPcmWriteNFrames :: XferN -> FileDescriptor -> SysRet ()
+ioctlPcmWriteNFrames :: XferN -> Handle -> SysRet ()
 ioctlPcmWriteNFrames = pcmIoctlW 0x52
 
-ioctlPcmReadNFrames :: FileDescriptor -> SysRet XferN
+ioctlPcmReadNFrames :: Handle -> SysRet XferN
 ioctlPcmReadNFrames = pcmIoctlR 0x53
 
-ioctlPcmLink :: Int -> FileDescriptor -> SysRet ()
+ioctlPcmLink :: Int -> Handle -> SysRet ()
 ioctlPcmLink = pcmIoctlW 0x60
 
-ioctlPcmUnlink :: FileDescriptor -> SysRet ()
+ioctlPcmUnlink :: Handle -> SysRet ()
 ioctlPcmUnlink = pcmIoctl 0x61
 
 
@@ -1135,32 +1135,32 @@ instance Storable MidiStatus where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-midiIoctlW :: Storable a => Word8 -> a -> FileDescriptor -> SysRet ()
+midiIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
 midiIoctlW = ioctlWrite 0x57
 
-midiIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+midiIoctlR :: Storable a => Word8 -> Handle -> SysRet a
 midiIoctlR = ioctlRead 0x57
 
-midiIoctlWR :: Storable a => Word8 -> a -> FileDescriptor -> SysRet a
+midiIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
 midiIoctlWR = ioctlWriteRead 0x57
 
 
-ioctlMidiVersion :: FileDescriptor -> SysRet Int
+ioctlMidiVersion :: Handle -> SysRet Int
 ioctlMidiVersion = midiIoctlR 0x00
 
-ioctlMidiInfo :: FileDescriptor -> SysRet MidiInfo
+ioctlMidiInfo :: Handle -> SysRet MidiInfo
 ioctlMidiInfo = midiIoctlR 0x01
 
-ioctlMidiParams :: MidiParams -> FileDescriptor -> SysRet MidiParams
+ioctlMidiParams :: MidiParams -> Handle -> SysRet MidiParams
 ioctlMidiParams = midiIoctlWR 0x10
 
-ioctlMidiStatus :: MidiStatus -> FileDescriptor -> SysRet MidiStatus
+ioctlMidiStatus :: MidiStatus -> Handle -> SysRet MidiStatus
 ioctlMidiStatus = midiIoctlWR 0x20
 
-ioctlMidiDrop :: Int -> FileDescriptor -> SysRet ()
+ioctlMidiDrop :: Int -> Handle -> SysRet ()
 ioctlMidiDrop = midiIoctlW 0x30
 
-ioctlMidiDrain :: Int -> FileDescriptor -> SysRet ()
+ioctlMidiDrain :: Int -> Handle -> SysRet ()
 ioctlMidiDrain = midiIoctlW 0x31
 
 
@@ -1349,58 +1349,58 @@ instance Storable TimerStatus where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-timerIoctl :: Word8 -> FileDescriptor -> SysRet ()
+timerIoctl :: Word8 -> Handle -> SysRet ()
 timerIoctl n = ioctlSignal 0x54 n (0 :: Int)
 
-timerIoctlW :: Storable a => Word8 -> a -> FileDescriptor -> SysRet ()
+timerIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
 timerIoctlW = ioctlWrite 0x54
 
-timerIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+timerIoctlR :: Storable a => Word8 -> Handle -> SysRet a
 timerIoctlR = ioctlRead 0x54
 
-timerIoctlWR :: Storable a => Word8 -> a -> FileDescriptor -> SysRet a
+timerIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
 timerIoctlWR = ioctlWriteRead 0x54
 
-ioctlTimerVersion :: FileDescriptor -> SysRet Int
+ioctlTimerVersion :: Handle -> SysRet Int
 ioctlTimerVersion = timerIoctlR 0x00
 
-ioctlTimerNextDevice :: TimerId -> FileDescriptor -> SysRet TimerId
+ioctlTimerNextDevice :: TimerId -> Handle -> SysRet TimerId
 ioctlTimerNextDevice = timerIoctlWR 0x01
 
-ioctlTimerTRead :: Int -> FileDescriptor -> SysRet ()
+ioctlTimerTRead :: Int -> Handle -> SysRet ()
 ioctlTimerTRead = timerIoctlW 0x02
 
-ioctlTimerGInfo :: TimerGInfo -> FileDescriptor -> SysRet TimerGInfo
+ioctlTimerGInfo :: TimerGInfo -> Handle -> SysRet TimerGInfo
 ioctlTimerGInfo = timerIoctlWR 0x03
 
-ioctlTimerGParams :: TimerGParams -> FileDescriptor -> SysRet ()
+ioctlTimerGParams :: TimerGParams -> Handle -> SysRet ()
 ioctlTimerGParams = timerIoctlW 0x04
 
-ioctlTimerGStatus :: TimerGStatus -> FileDescriptor -> SysRet TimerGStatus
+ioctlTimerGStatus :: TimerGStatus -> Handle -> SysRet TimerGStatus
 ioctlTimerGStatus = timerIoctlWR 0x05
 
-ioctlTimerSelect :: TimerSelect -> FileDescriptor -> SysRet ()
+ioctlTimerSelect :: TimerSelect -> Handle -> SysRet ()
 ioctlTimerSelect = timerIoctlW 0x10
 
-ioctlTimerInfo :: FileDescriptor -> SysRet TimerInfo
+ioctlTimerInfo :: Handle -> SysRet TimerInfo
 ioctlTimerInfo = timerIoctlR 0x11
 
-ioctlTimerParams :: TimerParams -> FileDescriptor -> SysRet ()
+ioctlTimerParams :: TimerParams -> Handle -> SysRet ()
 ioctlTimerParams = timerIoctlW 0x12
 
-ioctlTimerStatus :: FileDescriptor -> SysRet TimerStatus
+ioctlTimerStatus :: Handle -> SysRet TimerStatus
 ioctlTimerStatus = timerIoctlR 0x14
 
-ioctlTimerStart :: FileDescriptor -> SysRet ()
+ioctlTimerStart :: Handle -> SysRet ()
 ioctlTimerStart = timerIoctl 0xa0
 
-ioctlTimerStop :: FileDescriptor -> SysRet ()
+ioctlTimerStop :: Handle -> SysRet ()
 ioctlTimerStop = timerIoctl 0xa1
 
-ioctlTimerContinue :: FileDescriptor -> SysRet ()
+ioctlTimerContinue :: Handle -> SysRet ()
 ioctlTimerContinue = timerIoctl 0xa2
 
-ioctlTimerPause :: FileDescriptor -> SysRet ()
+ioctlTimerPause :: Handle -> SysRet ()
 ioctlTimerPause = timerIoctl 0xa3
 
 data TimerRead = TimerRead
@@ -1699,88 +1699,88 @@ instance Storable ControlTLV where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-controlIoctlW :: Storable a => Word8 -> a -> FileDescriptor -> SysRet ()
+controlIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
 controlIoctlW = ioctlWrite 0x55
 
-controlIoctlR :: Storable a => Word8 -> FileDescriptor -> SysRet a
+controlIoctlR :: Storable a => Word8 -> Handle -> SysRet a
 controlIoctlR = ioctlRead 0x55
 
-controlIoctlWR :: Storable a => Word8 -> a -> FileDescriptor -> SysRet a
+controlIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
 controlIoctlWR = ioctlWriteRead 0x55
 
-ioctlControlVersion :: FileDescriptor -> SysRet Int
+ioctlControlVersion :: Handle -> SysRet Int
 ioctlControlVersion = controlIoctlR 0x00
 
-ioctlControlCardInfo :: FileDescriptor -> SysRet ControlCardInfo
+ioctlControlCardInfo :: Handle -> SysRet ControlCardInfo
 ioctlControlCardInfo = controlIoctlR 0x01
 
-ioctlControlElemList :: ControlElementList -> FileDescriptor -> SysRet ControlElementList
+ioctlControlElemList :: ControlElementList -> Handle -> SysRet ControlElementList
 ioctlControlElemList = controlIoctlWR 0x10
 
-ioctlControlElemInfo :: ControlElementInfo -> FileDescriptor -> SysRet ControlElementInfo
+ioctlControlElemInfo :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
 ioctlControlElemInfo = controlIoctlWR 0x11
 
-ioctlControlElemRead :: ControlElementValue -> FileDescriptor -> SysRet ControlElementValue
+ioctlControlElemRead :: ControlElementValue -> Handle -> SysRet ControlElementValue
 ioctlControlElemRead = controlIoctlWR 0x12
 
-ioctlControlElemWrite :: ControlElementValue -> FileDescriptor -> SysRet ControlElementValue
+ioctlControlElemWrite :: ControlElementValue -> Handle -> SysRet ControlElementValue
 ioctlControlElemWrite = controlIoctlWR 0x13
 
-ioctlControlElemLock :: ControlElementId -> FileDescriptor -> SysRet ()
+ioctlControlElemLock :: ControlElementId -> Handle -> SysRet ()
 ioctlControlElemLock = controlIoctlW 0x14
 
-ioctlControlElemUnlock :: ControlElementId -> FileDescriptor -> SysRet ()
+ioctlControlElemUnlock :: ControlElementId -> Handle -> SysRet ()
 ioctlControlElemUnlock = controlIoctlW 0x15
 
-ioctlControlSubscribeEvents :: Int -> FileDescriptor -> SysRet Int
+ioctlControlSubscribeEvents :: Int -> Handle -> SysRet Int
 ioctlControlSubscribeEvents = controlIoctlWR 0x16
 
-ioctlControlElemAdd :: ControlElementInfo -> FileDescriptor -> SysRet ControlElementInfo
+ioctlControlElemAdd :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
 ioctlControlElemAdd = controlIoctlWR 0x17
 
-ioctlControlElemReplace :: ControlElementInfo -> FileDescriptor -> SysRet ControlElementInfo
+ioctlControlElemReplace :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
 ioctlControlElemReplace = controlIoctlWR 0x18
 
-ioctlControlElemRemove :: ControlElementInfo -> FileDescriptor -> SysRet ControlElementInfo
+ioctlControlElemRemove :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
 ioctlControlElemRemove = controlIoctlWR 0x19
 
-ioctlControlTLVRead :: ControlTLV -> FileDescriptor -> SysRet ControlTLV
+ioctlControlTLVRead :: ControlTLV -> Handle -> SysRet ControlTLV
 ioctlControlTLVRead = controlIoctlWR 0x1a
 
-ioctlControlTLVWrite :: ControlTLV -> FileDescriptor -> SysRet ControlTLV
+ioctlControlTLVWrite :: ControlTLV -> Handle -> SysRet ControlTLV
 ioctlControlTLVWrite = controlIoctlWR 0x1b
 
-ioctlControlTLVCommand :: ControlTLV -> FileDescriptor -> SysRet ControlTLV
+ioctlControlTLVCommand :: ControlTLV -> Handle -> SysRet ControlTLV
 ioctlControlTLVCommand = controlIoctlWR 0x1c
 
-ioctlControlHwDepNextDevice :: Int -> FileDescriptor -> SysRet Int
+ioctlControlHwDepNextDevice :: Int -> Handle -> SysRet Int
 ioctlControlHwDepNextDevice = controlIoctlWR 0x20
 
-ioctlControlHwInfo :: FileDescriptor -> SysRet HwInfo
+ioctlControlHwInfo :: Handle -> SysRet HwInfo
 ioctlControlHwInfo = controlIoctlR 0x21
 
-ioctlControlPcmNextDevice :: FileDescriptor -> SysRet Int
+ioctlControlPcmNextDevice :: Handle -> SysRet Int
 ioctlControlPcmNextDevice = controlIoctlR 0x30
 
-ioctlControlPcmInfo :: PcmInfo -> FileDescriptor -> SysRet PcmInfo
+ioctlControlPcmInfo :: PcmInfo -> Handle -> SysRet PcmInfo
 ioctlControlPcmInfo = controlIoctlWR 0x31
 
-ioctlControlPcmPreferSubdevice :: Int -> FileDescriptor -> SysRet ()
+ioctlControlPcmPreferSubdevice :: Int -> Handle -> SysRet ()
 ioctlControlPcmPreferSubdevice = controlIoctlW 0x32
 
-ioctlControlMidiNextDevice :: Int -> FileDescriptor -> SysRet Int
+ioctlControlMidiNextDevice :: Int -> Handle -> SysRet Int
 ioctlControlMidiNextDevice = controlIoctlWR 0x40
 
-ioctlControlMidiInfo :: MidiInfo -> FileDescriptor -> SysRet MidiInfo
+ioctlControlMidiInfo :: MidiInfo -> Handle -> SysRet MidiInfo
 ioctlControlMidiInfo = controlIoctlWR 0x41
 
-ioctlControlMidiPreferSubdevice :: Int -> FileDescriptor -> SysRet ()
+ioctlControlMidiPreferSubdevice :: Int -> Handle -> SysRet ()
 ioctlControlMidiPreferSubdevice = controlIoctlW 0x42
 
-ioctlControlPower :: Int -> FileDescriptor -> SysRet Int
+ioctlControlPower :: Int -> Handle -> SysRet Int
 ioctlControlPower = controlIoctlWR 0xd0
 
-ioctlControlPowerState :: FileDescriptor -> SysRet Int
+ioctlControlPowerState :: Handle -> SysRet Int
 ioctlControlPowerState = controlIoctlR 0xd1
 
 

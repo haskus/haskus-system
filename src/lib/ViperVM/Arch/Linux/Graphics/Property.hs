@@ -14,7 +14,7 @@ module ViperVM.Arch.Linux.Graphics.Property
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 
 import Foreign.Storable
@@ -72,7 +72,7 @@ data Property = Property
 type PropertyMetaID = Word32
 
 -- | Return meta-information from a property type ID
-getPropertyMeta :: FileDescriptor -> PropertyMetaID -> SysRet PropertyMeta
+getPropertyMeta :: Handle -> PropertyMetaID -> SysRet PropertyMeta
 getPropertyMeta fd pid = runEitherT $ do
    let
       getProperty' r = EitherT (ioctlGetProperty r fd)

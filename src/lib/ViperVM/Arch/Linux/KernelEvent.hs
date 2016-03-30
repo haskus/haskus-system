@@ -12,7 +12,7 @@ where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.Network
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Network.SendReceive
 import ViperVM.Arch.Linux.Error
 import ViperVM.System.Sys
@@ -44,7 +44,7 @@ data KernelEventAction
    deriving (Show)
 
 -- | Create a socket for kernel events
-createKernelEventSocket :: Sys FileDescriptor
+createKernelEventSocket :: Sys Handle
 createKernelEventSocket = sysLogSequence "Create kernel event socket" $ do
    -- internally the socket is a Netlink socket dedicated to kernel events
    fd <- sysCallAssert "Create NetLink socket" $ sysSocket (SockTypeNetlink NetlinkTypeKernelEvent) []
@@ -54,7 +54,7 @@ createKernelEventSocket = sysLogSequence "Create kernel event socket" $ do
 
 
 -- | Block until a kernel event is received
-receiveKernelEvent :: FileDescriptor -> Sys KernelEvent
+receiveKernelEvent :: Handle -> Sys KernelEvent
 receiveKernelEvent fd = go
    where
       go = do

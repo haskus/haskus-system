@@ -1,7 +1,8 @@
--- | File descriptor (used for many things in Linux)
-module ViperVM.Arch.Linux.FileDescriptor
-   ( FileDescriptor(..)
-   , Handle
+-- | Kernel object handle
+--
+-- File descriptor in original terminology
+module ViperVM.Arch.Linux.Handle
+   ( Handle (..)
    , HandleFlag(..)
    , HandleFlags
    , getHandleFlags
@@ -20,23 +21,17 @@ import ViperVM.Format.Binary.BitSet as BitSet
 -- | Kernel object handle
 --
 -- (file descriptor in original terminology)
-newtype FileDescriptor = FileDescriptor Word deriving (Show,Eq)
-
--- | Kernel object handle
---
--- (file descriptor in original terminology)
-type Handle = FileDescriptor
-
+newtype Handle = Handle Word deriving (Show,Eq)
 
 -- | Get descriptor flags
-getHandleFlags :: FileDescriptor -> Sys (BitSet Word64 HandleFlag)
-getHandleFlags (FileDescriptor fd) =
+getHandleFlags :: Handle -> Sys (BitSet Word64 HandleFlag)
+getHandleFlags (Handle fd) =
    sysCallAssert ("Get handle "++show fd++" flags") $ 
       onSuccess (syscall_fcntl fd 1 0) (BitSet.fromBits . fromIntegral) 
 
 -- | Set descriptor flags
-setHandleFlags :: FileDescriptor -> BitSet Word64 HandleFlag -> Sys ()
-setHandleFlags (FileDescriptor fd) flgs =
+setHandleFlags :: Handle -> BitSet Word64 HandleFlag -> Sys ()
+setHandleFlags (Handle fd) flgs =
    sysCallAssert ("Set handle "++show fd++" flags") $ 
       onSuccessVoid $ syscall_fcntl fd 2 (BitSet.toBits flgs)
 

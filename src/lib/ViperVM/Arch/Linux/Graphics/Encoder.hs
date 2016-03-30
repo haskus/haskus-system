@@ -18,7 +18,7 @@ module ViperVM.Arch.Linux.Graphics.Encoder
 where
 
 import ViperVM.System.Sys
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card

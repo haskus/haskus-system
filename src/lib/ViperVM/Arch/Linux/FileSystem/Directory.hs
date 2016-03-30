@@ -26,11 +26,11 @@ import Foreign.C.String
 import ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.FileDescriptor
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem
 
-sysCreateDirectory :: Maybe FileDescriptor -> FilePath -> FilePermissions -> Bool -> SysRet ()
+sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> SysRet ()
 sysCreateDirectory fd path perm sticky = do
    let
       opt = if sticky then BitSet.fromList [FileOptSticky] else BitSet.empty
@@ -39,7 +39,7 @@ sysCreateDirectory fd path perm sticky = do
    withCString path $ \path' ->
       case fd of
          Nothing -> onSuccess (syscall_mkdir path' mode) (const ())
-         Just (FileDescriptor fd') -> onSuccess (syscall_mkdirat fd' path' mode) (const ())
+         Just (Handle fd') -> onSuccess (syscall_mkdirat fd' path' mode) (const ())
 
 
 sysRemoveDirectory :: FilePath -> SysRet ()
@@ -74,8 +74,8 @@ data DirectoryEntry = DirectoryEntry
 --
 -- TODO: propose a "pgetdents64" syscall for Linux with an additional offset
 -- (like pread, pwrite)
-sysGetDirectoryEntries :: FileDescriptor -> Int -> SysRet [DirectoryEntry]
-sysGetDirectoryEntries (FileDescriptor fd) buffersize = do
+sysGetDirectoryEntries :: Handle -> Int -> SysRet [DirectoryEntry]
+sysGetDirectoryEntries (Handle fd) buffersize = do
 
    let
       readEntries p n
@@ -104,7 +104,7 @@ sysGetDirectoryEntries (FileDescriptor fd) buffersize = do
 --
 -- Warning: reading concurrently the same file descriptor returns mixed up
 -- results because of the stateful kernel interface
-listDirectory :: FileDescriptor -> SysRet [DirectoryEntry]
+listDirectory :: Handle -> SysRet [DirectoryEntry]
 listDirectory fd = runEitherT $ do
       -- Return at the beginning of the directory
       EitherT $ sysSeek' fd 0 SeekSet

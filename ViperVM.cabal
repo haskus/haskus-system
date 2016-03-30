@@ -82,11 +82,12 @@ library
     ViperVM.Arch.Linux.Internals.Sound
     ViperVM.Arch.Linux.Internals.Graphics
     ViperVM.Arch.Linux.Internals.Reboot
+    ViperVM.Arch.Linux.Internals.Ioctl
 
     ViperVM.Arch.Linux.Error
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll
-    ViperVM.Arch.Linux.FileDescriptor
+    ViperVM.Arch.Linux.Handle
     ViperVM.Arch.Linux.FileSystem
     ViperVM.Arch.Linux.FileSystem.Directory
     ViperVM.Arch.Linux.FileSystem.Flush
