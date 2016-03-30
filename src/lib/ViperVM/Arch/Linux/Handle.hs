@@ -1,3 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+
 -- | Kernel object handle
 --
 -- File descriptor in original terminology
@@ -7,33 +10,38 @@ module ViperVM.Arch.Linux.Handle
    , HandleFlags
    , getHandleFlags
    , setHandleFlags
+   , InvalidHandle (..)
    )
 where
-
-import Data.Word
 
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.X86_64.Linux.Syscalls
+import ViperVM.Arch.Linux.Internals.Handle
+import ViperVM.Arch.Linux.Internals.Fcntl
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Utils.Flow
 
--- | Kernel object handle
---
--- (file descriptor in original terminology)
-newtype Handle = Handle Word deriving (Show,Eq)
+
+-- | Invalid handle error
+data InvalidHandle = InvalidHandle Handle
+
 
 -- | Get descriptor flags
-getHandleFlags :: Handle -> Sys (BitSet Word64 HandleFlag)
-getHandleFlags (Handle fd) =
-   sysCallAssert ("Get handle "++show fd++" flags") $ 
-      onSuccess (syscall_fcntl fd 1 0) (BitSet.fromBits . fromIntegral) 
+getHandleFlags :: Handle -> Sys (Flow '[InvalidHandle] HandleFlags)
+getHandleFlags hdl =
+   sysOnSuccess (sysFcntl hdl FcntlGetFlags (0 :: Int)) (BitSet.fromBits . fromIntegral) >>= \case
+      Right fl   -> flowRet fl
+      Left EBADF -> flowSet (InvalidHandle hdl)
+      Left e     -> unhdlErr "getHandleFlags" e
 
 -- | Set descriptor flags
-setHandleFlags :: Handle -> BitSet Word64 HandleFlag -> Sys ()
-setHandleFlags (Handle fd) flgs =
-   sysCallAssert ("Set handle "++show fd++" flags") $ 
-      onSuccessVoid $ syscall_fcntl fd 2 (BitSet.toBits flgs)
+setHandleFlags :: Handle -> HandleFlags -> Sys (Flow '[InvalidHandle] ())
+setHandleFlags hdl flgs =
+   sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs)) >>= \case
+      Right ()   -> flowRet ()
+      Left EBADF -> flowSet (InvalidHandle hdl)
+      Left e     -> unhdlErr "setHandleFlags" e
 
 -- | Handle flags 
 data HandleFlag

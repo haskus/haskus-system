@@ -16,12 +16,9 @@ module ViperVM.Arch.X86_64.Linux.Syscall
    , syscall4
    , syscall5
    , syscall6
-   , Arg (..)
 ) where
 
-import Foreign.Ptr (Ptr, ptrToIntPtr)
-import Foreign.C.Types
-import Data.Word
+import ViperVM.Arch.Linux.Internals.Arg
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -85,17 +82,6 @@ foreign import ccall "x86_64_linux_syscall1" syscall1_ :: Int64 -> Int64 -> IO I
 foreign import ccall "x86_64_linux_syscall0" syscall0_ :: Int64 -> IO Int64
 
 #endif
-
-class Arg a where
-   toArg :: a -> Int64
-
-instance Arg Int     where toArg = fromIntegral
-instance Arg Int64   where toArg = id
-instance Arg Word    where toArg = fromIntegral
-instance Arg Word64  where toArg = fromIntegral
-instance Arg Word32  where toArg = fromIntegral
-instance Arg CUShort where toArg = fromIntegral
-instance Arg (Ptr a) where toArg = fromIntegral . ptrToIntPtr
 
 syscall6 :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64
 syscall6 n a b c d e f = syscall6_ n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e) (toArg f)

@@ -104,6 +104,7 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    where
 
 import ViperVM.Arch.X86_64.Linux.Syscall
+import ViperVM.Arch.Linux.Internals.Arg
 
 import Foreign.C.String (CString)
 import Foreign.Ptr
@@ -336,7 +337,7 @@ syscall_uname = syscall1 63
 {-# INLINE syscall_uname #-}
 
 -- | fcntl
-syscall_fcntl :: FD -> Int64 -> Word64 -> IO Int64
+syscall_fcntl :: Arg a => FD -> Int64 -> a -> IO Int64
 syscall_fcntl = syscall3 72
 
 {-# INLINE syscall_fcntl #-}

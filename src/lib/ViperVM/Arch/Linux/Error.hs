@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 module ViperVM.Arch.Linux.Error
-   ( sysCallAssert
+   ( sysOnSuccess
+   , sysOnSuccessVoid
+   , sysCallAssert
    , sysCallAssert'
    , sysCallAssertQuiet
    , sysCallWarn
@@ -15,6 +17,7 @@ where
 
 import Prelude hiding (log)
 import Text.Printf
+import Data.Int
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.System.Sys
@@ -29,6 +32,12 @@ data MemoryError           = MemoryError
 ------------------------------------------------
 -- System calls
 ------------------------------------------------
+
+sysOnSuccess :: IO Int64 -> (Int64 -> a) -> Sys (Either ErrorCode a)
+sysOnSuccess a f = sysIO (onSuccess a f)
+
+sysOnSuccessVoid :: IO Int64 -> Sys (Either ErrorCode ())
+sysOnSuccessVoid a = sysIO (onSuccessVoid a)
 
 -- | Assert that the given action doesn't fail
 sysCallAssert :: String -> SysRet a -> Sys a

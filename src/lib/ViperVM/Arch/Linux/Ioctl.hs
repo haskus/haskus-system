@@ -55,8 +55,7 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Ioctl
-
-import ViperVM.Arch.X86_64.Linux.Syscall (Arg(..))
+import ViperVM.Arch.Linux.Internals.Arg
 
 ---------------------------------------------------
 -- IOCTL

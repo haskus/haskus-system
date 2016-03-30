@@ -83,6 +83,9 @@ library
     ViperVM.Arch.Linux.Internals.Graphics
     ViperVM.Arch.Linux.Internals.Reboot
     ViperVM.Arch.Linux.Internals.Ioctl
+    ViperVM.Arch.Linux.Internals.Fcntl
+    ViperVM.Arch.Linux.Internals.Handle
+    ViperVM.Arch.Linux.Internals.Arg
 
     ViperVM.Arch.Linux.Error
     ViperVM.Arch.Linux.ErrorCode
