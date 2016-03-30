@@ -319,7 +319,7 @@ matchNamedFields' bs = hZipList names values
       values = fieldValues bs
 
 -- | Get field names and values in a tuple
-instance  forall lt lv ln lnv w bs .
+instance forall lt lv ln lnv w bs.
    ( bs ~ BitFields w lt
    , HFoldr' Extract (bs, HList '[]) lt (bs, HList lv)
    , HFoldr' Name (HList '[]) lt (HList ln)
@@ -327,3 +327,16 @@ instance  forall lt lv ln lnv w bs .
    , Show (HList lnv)
    ) => Show (BitFields w lt) where
       show bs = show (matchNamedFields' bs :: HList lnv)
+
+
+instance forall lt lt2 w bs.
+   ( bs ~ BitFields w lt
+   , HFoldr' Extract (bs, HList '[]) lt (bs, HList lt2)
+   , Eq (HList lt2)
+   ) => Eq (BitFields w lt) where
+   (==) x y = x' == y'
+      where
+         x' :: HList lt2
+         x' = fieldValues x
+         y' :: HList lt2
+         y' = fieldValues y
