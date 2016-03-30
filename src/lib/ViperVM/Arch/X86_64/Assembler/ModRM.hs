@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 module ViperVM.Arch.X86_64.Assembler.ModRM
    ( ModRM(..)
    , SIB(..)
@@ -20,11 +22,18 @@ where
 
 import Data.Word
 import Data.Bits
+import Data.Proxy
 
 import ViperVM.Arch.X86_64.Assembler.Size
+import ViperVM.Format.Binary.BitField
 
 -- | ModRM byte
-newtype ModRM = ModRM Word8 deriving (Show,Eq)
+newtype ModRM = ModRM (BitFields Word8
+  '[ BitField 2 "mode" Word8
+   , BitField 3 "reg"  Word8
+   , BitField 3 "rm"   Word8
+   ])
+   deriving (Show,Eq)
 
 -- | SIB byte
 newtype SIB = SIB Word8 deriving (Show,Eq)
@@ -47,27 +56,31 @@ data RMMode
 -- | Create a ModRM byte (check inputs)
 newModRM :: Word8 -> Word8 -> Word8 -> ModRM
 newModRM md rm reg
-   | md  .&. 0xFC /= 0 = error "Invalid value for mod field (> 3)"
-   | rm  .&. 0xF8 /= 0 = error "Invalid value for rm field (> 8)"
-   | reg .&. 0xF8 /= 0 = error "Invalid value for reg field (> 8)"
-   | otherwise = ModRM $ (md `shiftL` 6) .|. (reg `shiftL` 3) .|. rm
+   | md  > 3 = error "Invalid value for mod field (> 3)"
+   | rm  > 7 = error "Invalid value for rm field (> 7)"
+   | reg > 7 = error "Invalid value for reg field (> 7)"
+   | otherwise = ModRM
+         $ updateField (Proxy :: Proxy "mode") md
+         $ updateField (Proxy :: Proxy "reg")  reg
+         $ updateField (Proxy :: Proxy "rm")   rm
+         $ BitFields 0
 
 
 -- | Get r/m field in ModRM
 rmField :: ModRM -> Word8
-rmField (ModRM x) = x .&. 0x07
+rmField (ModRM x) = extractField (Proxy :: Proxy "rm") x
 
 -- | Get reg field in ModRM
 regField :: ModRM -> Word8
-regField (ModRM x) = (x `shiftR` 3) .&. 0x07
+regField (ModRM x) = extractField (Proxy :: Proxy "reg") x
 
 -- | Get mod field in ModRM
 modField :: ModRM -> Word8
-modField (ModRM x) = (x `shiftR` 6) .&. 0x03
+modField (ModRM x) = extractField (Proxy :: Proxy "mode") x
 
 -- | Get the tree fields (mod,reg,rm)
 modRMFields :: ModRM -> (Word8,Word8,Word8)
-modRMFields m = (modField m, regField m, rmField m)
+modRMFields (ModRM x) = matchFields x
 
 -- | Indicate R/M field mode
 rmMode :: AddressSize -> ModRM -> RMMode

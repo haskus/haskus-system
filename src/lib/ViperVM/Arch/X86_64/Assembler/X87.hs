@@ -21,6 +21,7 @@ where
 
 import Data.Word
 
+import ViperVM.Format.Binary.BitField
 import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Insns
 import ViperVM.Arch.X86_64.Assembler.Registers
@@ -237,7 +238,7 @@ decodeX87 x = do
       -- instructions with ModRM
       _ -> do
          let 
-            m         = ModRM y
+            m         = ModRM (BitFields y)
             getReg    = getRMRegister OpSize8 T_ST m -- dummy operand size
             getM32FP  = M32FP  <$> getAddr m
             getM64FP  = M64FP  <$> getAddr m

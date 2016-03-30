@@ -13,6 +13,7 @@ import Control.Monad.State
 import Control.Monad.Trans.Either
 import qualified Data.Vector as V
 
+import ViperVM.Format.Binary.BitField
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.RexPrefix
 import ViperVM.Arch.X86_64.Assembler.VexPrefix
@@ -112,7 +113,7 @@ decodeInsn = do
             -- we use a dummy operand size and encoding for 3DNow! instructions
             -- because they all have the same and don't use variable sized
             -- operands
-            modrm <- Just . ModRM <$> nextWord8
+            modrm <- Just . ModRM . BitFields <$> nextWord8
             ops <- decodeOperands OpSize8 amd3DNowEncoding modrm 0
             -- read 3DNow! opcode
             opcode' <- nextWord8
@@ -215,7 +216,7 @@ findInsn opcodeMap opcode = do
       insns' = filter checkAll insns
 
    modrm <- case (any (encRequireModRM . fst) insns', all (encRequireModRM . fst) insns') of
-      (True,True)   -> Just . ModRM <$> nextWord8
+      (True,True)   -> Just . ModRM . BitFields <$> nextWord8
       (False,False) -> return Nothing
       _             -> error "Some candidates for the same opcode require ModRM, but some others don't. Please fix opcode tables."
 

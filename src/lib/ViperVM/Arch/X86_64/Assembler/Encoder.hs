@@ -13,6 +13,7 @@ import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Registers
 import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.BitField
 
 import Control.Monad (when)
 import Control.Monad.State
@@ -155,7 +156,7 @@ encode (InsnX86 _ enc opSize variant ops) = do
          rm = 0
 
       let (ModRM modrm) = newModRM md rm reg
-      emitWord8 modrm
+      emitWord8 (bitFieldsBits modrm)
 
    -- TODO
 
