@@ -159,6 +159,7 @@ library
     ViperVM.System.Process
 
     ViperVM.Utils.Variant
+    ViperVM.Utils.HArray
     ViperVM.Utils.Flow
     ViperVM.Utils.Hash
     ViperVM.Utils.HList
@@ -294,6 +295,7 @@ test-suite tests
          Common
       ,  BinaryBits
       ,  BinaryGetPut
+      ,  UtilsHArray
 
    build-depends:    
          base

@@ -4,10 +4,12 @@ import Distribution.TestSuite (Test)
 
 import BinaryBits
 import BinaryGetPut
+import UtilsHArray
 
 tests :: IO [Test]
 tests = return
-   [ binaryBitsTests
+   [ utilsHArrayTests
+   , binaryBitsTests
    , binaryGetPutTests
    ]
 
