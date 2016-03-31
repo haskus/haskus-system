@@ -10,10 +10,13 @@ module ViperVM.Arch.Linux.Graphics.Card
    , EncoderID(..)
    , getResources
    , getEntities
+   , pickEncoders
+   , pickControllers
    )
 where
 
 import ViperVM.System.Sys
+import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -116,3 +119,23 @@ getEntities getIDs getEntityFromID hdl = do
 
    xs <- traverse (getEntityFromID hdl) ids
    return (foldr f [] xs)
+
+
+-- | Pick the elements in es whose indexes are in bs
+pickResources :: [a] -> BitSet Word32 Int -> [a]
+pickResources es bs = pick es 0 (BitSet.elems bs)
+   where
+      pick :: [a] -> Int -> [Int] -> [a]
+      pick [] _ _ = []
+      pick _ _ [] = []
+      pick (x:xs) n (i:is)
+         | n == i    = x : pick xs (n+1) is
+         | otherwise = pick xs (n+1) (i:is)
+
+-- | Pick the controllers whose indexes are in bs
+pickControllers :: Resources -> BitSet Word32 Int -> [ControllerID]
+pickControllers res = pickResources (resControllerIDs res)
+
+-- | Pick the controllers whose indexes are in bs
+pickEncoders :: Resources -> BitSet Word32 Int -> [EncoderID]
+pickEncoders res = pickResources (resEncoderIDs res)

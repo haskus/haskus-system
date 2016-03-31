@@ -45,19 +45,9 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
          (if geCrtcId == 0
             then Nothing
             else Just (ControllerID geCrtcId))
-         (pick' (resControllerIDs res) gePossibleCrtcs)
-         (pick' (resEncoderIDs    res) gePossibleClones)
+         (pickControllers res gePossibleCrtcs)
+         (pickEncoders    res gePossibleClones)
          hdl
-   where
-      -- pick the elements in es whose indexes are in bs
-      pick' es bs = pick es 0 (BitSet.elems bs)
-
-      pick :: [a] -> Int -> [Int] -> [a]
-      pick [] _ _ = []
-      pick _ _ [] = []
-      pick (x:xs) n (i:is)
-         | n == i    = x : pick xs (n+1) is
-         | otherwise = pick xs (n+1) (i:is)
 
 -- | Get an encoder from its ID
 getEncoderFromID :: Handle -> EncoderID -> SysRet Encoder

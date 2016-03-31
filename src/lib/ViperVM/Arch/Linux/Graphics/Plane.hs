@@ -22,6 +22,7 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -98,13 +99,16 @@ getPlaneInfo hdl pid = runFlowT $ do
             Left ENOENT -> flowSet (InvalidPlane pid)
             Left e      -> unhdlErr "getPlaneInfo" e
             Right StructGetPlane{..} -> do
+               -- TODO: controllers are invariant, we should store them
+               -- somewhere to avoid this ioctl
+               res <- sysCallAssert "Get resources" $ getResources hdl
                fmts <- fmap (PixelFormat . BitFields)
                   <$> sysIO (peekArray (fromIntegral n) p)
                flowRet PlaneInfo
                   { planeId                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
                   , planeFrameBufferId       = toMaybe FrameBufferID gpFbId
-                  , planePossibleControllers = [] -- FIXME!!!!! need getResources
+                  , planePossibleControllers = pickControllers res gpPossibleCrtcs
                   , planeGammaSize           = gpGammaSize
                   , planeFormats             = fmts
                   }
