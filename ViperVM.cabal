@@ -50,8 +50,6 @@ library
 
     ViperVM.Arch.Common.Errors
 
-    ViperVM.Arch.GenericHost.Memory
-
     ViperVM.Arch.X86_64.Cpuid
 
     ViperVM.Arch.X86_64.Linux.Syscall

@@ -13,7 +13,7 @@ import qualified ListT
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified ViperVM.Arch.OpenCL.All as CL
-import qualified ViperVM.Arch.GenericHost.Memory as Generic
+import qualified ViperVM.Utils.Memory as Generic
 import qualified ViperVM.Arch.Linux.Topology as Linux
 
 import ViperVM.Platform.Drivers
@@ -123,7 +123,7 @@ loadOpenCLPlatform config hostMems = do
 loadHostPlatform :: PlatformConfig -> TSet Memory -> IO ()
 loadHostPlatform config hostMems = do
    numa <- Linux.loadNUMA (sysfsPath config)
-   hostEndianness <- Generic.getMemoryEndianness
+   hostEndianness <- Generic.getHostEndianness
 
    mems <- forM (Linux.numaNodes numa) $ \node -> do
       let 
