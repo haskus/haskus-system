@@ -39,7 +39,6 @@ import Control.Monad(forM_)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
-import ViperVM.Utils.Unsafe (inlinePerformIO)
 import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
 
@@ -109,7 +108,7 @@ index :: forall a (n :: Nat) (m :: Nat) .
    , Storable a
    , CmpNat n m ~ 'LT
    ) => Proxy n -> Vector m a -> a
-index n (Vector fp o) = inlinePerformIO $ withForeignPtr fp $ \p ->
+index n (Vector fp o) = unsafePerformIO $ withForeignPtr fp $ \p ->
    peekByteOff p (elemOffset (undefined :: a)
       (fromIntegral o + fromIntegral (natVal n)))
 {-# INLINE index #-}
@@ -171,13 +170,13 @@ toList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => Vector n a -> [a]
-toList (Vector fp o) = inlinePerformIO $ withForeignPtr fp $ \p ->
+toList (Vector fp o) = unsafePerformIO $ withForeignPtr fp $ \p ->
       return (go (p `plusPtr` elemOffset (undefined :: a) (fromIntegral o)) n)
    where
       n      = natVal (Proxy :: Proxy n)
       off    = elemOffset (undefined :: a) 1
       go _ 0 = []
-      go p i = inlinePerformIO (peek p) : go (p `plusPtr` off) (i-1)
+      go p i = unsafePerformIO (peek p) : go (p `plusPtr` off) (i-1)
 {-# INLINE toList #-}
 
 replicate :: forall a (n :: Nat) .

@@ -176,7 +176,6 @@ library
     ViperVM.Utils.STM.Future
     ViperVM.Utils.STM.TGraph
     ViperVM.Utils.Tuples
-    ViperVM.Utils.Unsafe
 
     ViperVM.Format.CPIO
 
@@ -208,6 +207,7 @@ library
     ViperVM.Format.Binary.BitGet
     ViperVM.Format.Binary.BitPut
     ViperVM.Format.Binary.BitField
+    ViperVM.Format.Binary.Buffer
     ViperVM.Format.Binary.Enum
     ViperVM.Format.Binary.Endianness
     ViperVM.Format.Binary.Get
