@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+
 -- | Manage graphics devices
 module ViperVM.System.Graphics
    ( GraphicCard (..)
@@ -9,12 +13,15 @@ module ViperVM.System.Graphics
    , graphicCardConnectors
    , graphicCardControllers
    , graphicCardEncoders
+   , graphicCardPlanes
    )
 where
 
 import ViperVM.System.Sys
 import ViperVM.System.System
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Utils.Flow
+import ViperVM.Utils.Variant
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
@@ -28,6 +35,7 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Encoder
+import ViperVM.Arch.Linux.Graphics.Plane
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -180,3 +188,16 @@ graphicCardControllers = sysIO . getControllers . graphicCardHandle
 -- | Retrieve graphic card encoders
 graphicCardEncoders :: GraphicCard -> Sys [Encoder]
 graphicCardEncoders = sysIO . getEncoders . graphicCardHandle
+
+-- | Retrieve graphic card planes
+graphicCardPlanes :: GraphicCard -> Sys [Plane]
+graphicCardPlanes card = do
+   let hdl = graphicCardHandle card
+       act :: Sys (Flow '[InvalidHandle,InvalidPlane] [Plane])
+       act = runFlowT $ do
+         pids <- liftFlowT $ getPlaneResources hdl
+         forM pids (liftFlowT . getPlane hdl)
+   act
+  `flowCatch` (\(InvalidHandle _) -> error "Invalid handle" :: Sys (Flow '[] [Plane]))
+  `flowCatch` (\(InvalidPlane _)  -> error "Invalid plane"  :: Sys (Flow '[] [Plane]))
+  `flowMap` singleVariant

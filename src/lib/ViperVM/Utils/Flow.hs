@@ -22,6 +22,7 @@ module ViperVM.Utils.Flow
    , flowFinallyV
    , flowFinallyM
    , flowMatch
+   , flowMap
    , flowOp2
    , flowRetry
    , flowBind
@@ -159,6 +160,11 @@ flowFinallyM v f = do
 flowMatch :: forall l t m a.  (Monad m , Matchable l t)
    => m (Variant l) -> (t -> m a) -> m a
 flowMatch v f = f . matchVariant =<< v
+
+
+-- | Map the variant
+flowMap :: (Monad m) => m (Variant l) -> (Variant l -> b) -> m b
+flowMap v f = f <$> v
 
 -- | Combine two succeeding flows with the given operator
 --

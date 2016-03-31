@@ -7,8 +7,8 @@ module ViperVM.Arch.Linux.Graphics.Plane
    ( getPlaneResources
    , PlaneId
    , InvalidPlane (..)
-   , PlaneInfo (..)
-   , getPlaneInfo
+   , Plane (..)
+   , getPlane
    )
 where
 
@@ -57,7 +57,7 @@ getPlaneResources hdl = runFlowT $ do
                ps <- fmap PlaneId <$> sysIO (peekArray (fromIntegral n) p)
                flowRet ps
 
-data PlaneInfo = PlaneInfo
+data Plane = Plane
    { planeId                  :: PlaneId
    , planeControllerId        :: Maybe ControllerID
    , planeFrameBufferId       :: Maybe FrameBufferID
@@ -67,8 +67,8 @@ data PlaneInfo = PlaneInfo
    }
    deriving (Show)
 
-getPlaneInfo :: Handle -> PlaneId -> Sys (Flow '[InvalidHandle,InvalidPlane] PlaneInfo)
-getPlaneInfo hdl pid = runFlowT $ do
+getPlane :: Handle -> PlaneId -> Sys (Flow '[InvalidHandle,InvalidPlane] Plane)
+getPlane hdl pid = runFlowT $ do
       cnt <- liftFlowT getCount
       liftFlowT (getInfo cnt)
    where
@@ -85,11 +85,11 @@ getPlaneInfo hdl pid = runFlowT $ do
       getCount = gpr (StructGetPlane pid' 0 0 BitSet.empty 0 0 0) >>= \case
          Left EINVAL -> flowSet (InvalidHandle hdl)
          Left ENOENT -> flowSet (InvalidPlane pid)
-         Left e      -> unhdlErr "getPlaneInfo" e
+         Left e      -> unhdlErr "getPlane" e
          Right s     -> flowRet (gpCountFmtTypes s)
 
       -- get the plane info (invariant for a given plane)
-      getInfo :: Word32 -> Sys (Flow '[InvalidHandle,InvalidPlane] PlaneInfo)
+      getInfo :: Word32 -> Sys (Flow '[InvalidHandle,InvalidPlane] Plane)
       getInfo n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
@@ -97,14 +97,14 @@ getPlaneInfo hdl pid = runFlowT $ do
          gpr si >>= \case
             Left EINVAL -> flowSet (InvalidHandle hdl)
             Left ENOENT -> flowSet (InvalidPlane pid)
-            Left e      -> unhdlErr "getPlaneInfo" e
+            Left e      -> unhdlErr "getPlane" e
             Right StructGetPlane{..} -> do
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid this ioctl
                res <- sysCallAssert "Get resources" $ getResources hdl
                fmts <- fmap (PixelFormat . BitFields)
                   <$> sysIO (peekArray (fromIntegral n) p)
-               flowRet PlaneInfo
+               flowRet Plane
                   { planeId                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
                   , planeFrameBufferId       = toMaybe FrameBufferID gpFbId
