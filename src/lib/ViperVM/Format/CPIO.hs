@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 -- | Module implementing the CPIO format (used by Linux initramfs)
 --
@@ -26,6 +28,9 @@ import qualified Data.ByteString.Char8 as B8
 import Control.Monad (when)
 import Data.Foldable (forM_)
 import Numeric (showHex)
+import Foreign.Storable
+import Foreign.CStorable
+import GHC.Generics
 
 
 {- We only consider the "new" CPIO format because the old ones are deprecated.
@@ -108,7 +113,13 @@ data FileDesc = FileDesc
    , fileDevMinor    :: Word64
    , fileRDevMajor   :: Word64
    , fileRDevMinor   :: Word64
-   } deriving (Show)
+   } deriving (Show,Generic,CStorable)
+
+instance Storable FileDesc where
+   peek      = cPeek
+   poke      = cPoke
+   sizeOf    = cSizeOf
+   alignment = cAlignment
 
 -- | Put a number as a 8-char string padding left with zeros
 putNumber :: Word64 -> Put

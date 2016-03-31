@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE Rank2Types #-}
 
 module ViperVM.System.Sys
    ( Sys
@@ -6,6 +8,7 @@ module ViperVM.System.Sys
    , runSys'
    , sysIO
    , sysIO'
+   , sysWith
    , sysRun
    , sysRun'
    , sysExec
@@ -77,6 +80,13 @@ sysIO' = StateT
 -- | Execute an IO action
 sysIO :: IO a -> Sys a
 sysIO = liftIO
+
+-- | Lift with* and alloca* functions
+sysWith :: (forall c. (a -> IO c) -> IO c) -> (a -> Sys b) -> Sys b
+sysWith wth f =
+   sysIO' $ \s ->
+      wth $ \a ->
+         sysRun s (f a)
 
 -- | Run with an explicit state
 sysRun :: SysState -> Sys a -> IO (a, SysState)
@@ -205,13 +215,23 @@ sysLogPrint = do
                   , t
                   , status'
                   )
-            LogGroup t fl (LogNext status n) -> do
+               traverse_ (printLog i) =<< pollFutureIO n
+
+            LogGroup t fl (LogNext _ n) -> do
                Text.putStrLn $ Text.format (fromString "{}--+- {}")
                   ( Text.replicate i (Text.pack "  |")
                   , t
                   )
                traverse_ (printLog (i+1)) =<< pollFutureIO n
                traverse_ (printLog i)     =<< pollFutureIO fl
+
+            LogFork t (LogNext _ n1) (LogNext _ n2) -> do
+               Text.putStrLn $ Text.format (fromString "{}--*- FORK: {}")
+                  ( Text.replicate i (Text.pack "  |")
+                  , t
+                  )
+               traverse_ (printLog (i+1)) =<< pollFutureIO n2
+               traverse_ (printLog i)     =<< pollFutureIO n1
 
 sysAssert :: String -> Bool -> Sys ()
 sysAssert text b = if b
