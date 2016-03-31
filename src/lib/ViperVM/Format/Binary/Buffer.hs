@@ -13,6 +13,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferTake
    , bufferPack
    , bufferPackList
+   , bufferPackPtr
    )
 where
 
@@ -22,6 +23,8 @@ import Data.Word
 import Foreign.Storable
 import System.IO.Unsafe
 import Control.Monad
+
+import ViperVM.Utils.Memory (memCopy)
 
 -- | A buffer
 data Buffer = Buffer
@@ -85,3 +88,11 @@ bufferPackList xs = unsafePerformIO $ do
          pokeElemOff p o x
 
    return (Buffer (castForeignPtr fp) (fromIntegral $ sza * lxs) 0)
+
+-- | Pack from a pointer
+bufferPackPtr :: Word64 -> Ptr () -> IO Buffer
+bufferPackPtr sz ptr = do
+   fp <- mallocForeignPtrBytes (fromIntegral sz)
+   withForeignPtr fp $ \p ->
+      memCopy p ptr sz
+   return (Buffer fp sz 0)
