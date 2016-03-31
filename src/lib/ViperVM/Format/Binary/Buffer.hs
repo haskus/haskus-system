@@ -9,6 +9,7 @@ module ViperVM.Format.Binary.Buffer
    , withBufferPtr
    , bufferSize
    , bufferPeek
+   , bufferRead
    , bufferDrop
    , bufferTake
    , bufferPack
@@ -56,6 +57,16 @@ bufferDrop n buf
          { bufferSize   = bufferSize buf - n
          , bufferOffset = bufferOffset buf + n
          }
+
+-- | Read a Storable and return the new buffer
+bufferRead :: forall a. Storable a => Buffer -> (Buffer,a)
+bufferRead buf
+   | bufferSize buf < sza = error "bufferRead: out of bounds"
+   | otherwise            = unsafePerformIO $ do
+         a <- withBufferPtr buf peek
+         return (bufferDrop sza buf, a)
+   where
+      sza = fromIntegral (sizeOf (undefined :: a)) 
 
 -- | Take some bytes O(1)
 bufferTake :: Word64 -> Buffer -> Buffer

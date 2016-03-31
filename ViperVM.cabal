@@ -215,6 +215,7 @@ library
     ViperVM.Format.Binary.VariableLength
     ViperVM.Format.Binary.Vector
     ViperVM.Format.Binary.Union
+    ViperVM.Format.Binary.Reader
 
 
     ViperVM.Platform.Drivers
