@@ -32,7 +32,11 @@ import Foreign.CStorable
 newtype PixelFormat = PixelFormat (BitFields Word32
   '[ BitField 1  "endianness" (EnumField Int Endianness)
    , BitField 31 "format"     (EnumField Word32 Format)
-   ]) deriving (Show,Storable)
+   ]) deriving (Storable)
+
+instance Show PixelFormat where
+   show fmt = show (formatFormat fmt) ++ " ("
+               ++ show (formatEndianness fmt) ++ ")"
 
 makePixelFormat :: Format -> Endianness -> PixelFormat
 makePixelFormat fmt end = PixelFormat
