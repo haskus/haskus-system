@@ -3,7 +3,7 @@
 
 -- | Pixel formats
 module ViperVM.Arch.Linux.Graphics.PixelFormat
-   ( PixelFormat
+   ( PixelFormat (..)
    , makePixelFormat
    , Format(..)
    , Endianness(..)

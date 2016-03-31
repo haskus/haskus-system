@@ -367,7 +367,7 @@ data StructGetPlane = StructGetPlane
    { gpPlaneId       :: Word32
    , gpCrtcId        :: Word32
    , gpFbId          :: Word32
-   , gpPossibleCrtcs :: Word32
+   , gpPossibleCrtcs :: BitSet Word32 Int
    , gpGammaSize     :: Word32
    , gpCountFmtTypes :: Word32
    , gpFormatTypePtr :: Word64
