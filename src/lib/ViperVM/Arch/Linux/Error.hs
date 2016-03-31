@@ -25,9 +25,9 @@ import ViperVM.System.Sys
 ------------------------------------------------
 -- Errors
 ------------------------------------------------
-data NotAllowed            = NotAllowed
-data InvalidRestartCommand = InvalidRestartCommand
-data MemoryError           = MemoryError
+data NotAllowed            = NotAllowed            deriving (Show,Eq)
+data InvalidRestartCommand = InvalidRestartCommand deriving (Show,Eq)
+data MemoryError           = MemoryError           deriving (Show,Eq)
 
 ------------------------------------------------
 -- System calls

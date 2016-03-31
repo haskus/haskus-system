@@ -24,7 +24,7 @@ import ViperVM.Utils.Flow
 
 
 -- | Invalid handle error
-data InvalidHandle = InvalidHandle Handle
+data InvalidHandle = InvalidHandle Handle deriving (Show,Eq)
 
 
 -- | Get descriptor flags
