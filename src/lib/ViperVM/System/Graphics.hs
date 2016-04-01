@@ -198,6 +198,8 @@ graphicCardPlanes card = do
          pids <- liftFlowT $ getPlaneResources hdl
          forM pids (liftFlowT . getPlane hdl)
    act
-  `flowCatch` (\(InvalidHandle _) -> error "Invalid handle" :: Sys (Flow '[] [Plane]))
-  `flowCatch` (\(InvalidPlane _)  -> error "Invalid plane"  :: Sys (Flow '[] [Plane]))
-  `flowMap` singleVariant
+   -- shouldn't happen, except if we unplug the graphic card
+   `flowMCatch` (\(InvalidHandle _) -> error "Invalid handle")
+   -- shouldn't happen, planes are invariant
+   `flowMCatch` (\(InvalidPlane _)  -> error "Invalid plane" )
+   `flowMap` singleVariant
