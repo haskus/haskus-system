@@ -2,6 +2,10 @@ module ViperVM.System
    ( module X
    , forM_
    , forM
+   , traverse_
+   , traverse
+   , void
+   , forever
    )
 where
 
@@ -16,5 +20,6 @@ import ViperVM.System.Power    as X
 
 
 -- useful helpers
-import Data.Foldable (forM_)
-import Data.Traversable (forM)
+import Data.Foldable (forM_,traverse_)
+import Data.Traversable (forM,traverse)
+import Control.Monad (void,forever)
