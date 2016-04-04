@@ -160,6 +160,7 @@ library
     ViperVM.System.Devices
     ViperVM.System.Terminal
     ViperVM.System.Process
+    ViperVM.System.Power
 
     ViperVM.Utils.Variant
     ViperVM.Utils.HArray
