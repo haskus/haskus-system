@@ -12,6 +12,7 @@ import ViperVM.System.Process  as X
 import ViperVM.System.Sys      as X
 import ViperVM.System.System   as X
 import ViperVM.System.Terminal as X
+import ViperVM.System.Power    as X
 
 
 -- useful helpers
