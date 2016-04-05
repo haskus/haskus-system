@@ -67,6 +67,8 @@ module ViperVM.Format.Binary.BitField
    , withField
    , matchFields
    , matchNamedFields
+   , BitSize
+   , Field
    )
 where
 

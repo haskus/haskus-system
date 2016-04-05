@@ -118,6 +118,7 @@ library
     ViperVM.Arch.Linux.Process.MemoryMap
     ViperVM.Arch.Linux.Process.ControlGroup
 
+    ViperVM.Arch.Linux.Graphics.Atomic
     ViperVM.Arch.Linux.Graphics.Capability
     ViperVM.Arch.Linux.Graphics.Card
     ViperVM.Arch.Linux.Graphics.Connector
@@ -210,6 +211,7 @@ library
     ViperVM.Format.Binary.Buffer
     ViperVM.Format.Binary.Enum
     ViperVM.Format.Binary.Endianness
+    ViperVM.Format.Binary.FixedPoint
     ViperVM.Format.Binary.Get
     ViperVM.Format.Binary.Put
     ViperVM.Format.Binary.VariableLength
