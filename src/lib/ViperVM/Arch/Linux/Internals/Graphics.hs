@@ -87,6 +87,9 @@ module ViperVM.Arch.Linux.Internals.Graphics
    , StructGetCap (..)
    , ClientCapability (..)
    , StructSetClientCap (..)
+   -- * Prime
+   , StructPrimeHandle (..)
+   , PrimeFlag (..)
    -- * IOCTLs
    , ioctlGetCapabilities
    , ioctlSetClientCapability
@@ -137,6 +140,7 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.FixedPoint
 
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
@@ -342,18 +346,17 @@ type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 data StructSetPlane = StructSetPlane
    { spPlaneId :: Word32
    , spCrtcId  :: Word32
-   , spFbId    :: Word32            -- ^ Frame buffer contains surface format type
+   , spFbId    :: Word32 -- ^ Frame buffer contains surface format type
    , spFlags   :: ModeFieldPresents
-   , spCrtcX   :: Int32
-
-   , spCrtcY   :: Int32             -- ^ Signed dest location allows it to be partially off screen
+   , spCrtcX   :: Int32 -- ^ Signed dest location allows it to be partially off screen
+   , spCrtcY   :: Int32  
    , spCrtcW   :: Word32
    , spCrtcH   :: Word32
 
-   , spSrcX    :: Word32            -- ^ Source values are 16.16 fixed point
-   , spSrcY    :: Word32
-   , spSrcH    :: Word32
-   , spSrcW    :: Word32
+   , spSrcX    :: FixedPoint Word32 16 16
+   , spSrcY    :: FixedPoint Word32 16 16
+   , spSrcH    :: FixedPoint Word32 16 16
+   , spSrcW    :: FixedPoint Word32 16 16
    } deriving (Generic,CStorable)
 
 instance Storable StructSetPlane where
@@ -912,12 +915,13 @@ instance Storable StructDestroyDumb where
 -- Atomic
 -----------------------------------------------------------------------------
 
+-- | Flags for the atomic state change
 data AtomicFlag
-   = AtomicFlagPageFlipEvent
-   | AtomicFlagPageFlipAsync
-   | AtomicFlagTestOnly
-   | AtomicFlagNonBlock
-   | AtomicFlagAllowModeset
+   = AtomicFlagPageFlipEvent  -- ^ Generates a page-flip event
+   | AtomicFlagPageFlipAsync  -- ^ Asynchronous page-flip, i.e. don't wait for v-blank (may not be supported)
+   | AtomicFlagTestOnly       -- ^ Only test the config, don't commit it
+   | AtomicFlagNonBlock       -- ^ Schedule an asynchronous commit (may not be supported)
+   | AtomicFlagAllowModeset   -- ^ Allow full mode-setting. This flag is useful for devices such as tablets whose screen is often shutdown: we can use a degraded mode (scaled, etc.) for a while to save power and only perform the full modeset when the screen is reactivated.
    deriving (Show,Eq,Enum)
 
 instance CBitSet AtomicFlag where
@@ -935,6 +939,7 @@ instance CBitSet AtomicFlag where
       10 -> AtomicFlagAllowModeset
       _  -> error "Unknown atomic flag"
 
+-- | Set of atomic flags
 type AtomicFlags = BitSet Word32 AtomicFlag
 
 -- | drm_mode_atomic
@@ -1070,6 +1075,33 @@ data StructSetClientCap = StructSetClientCap
    } deriving (Generic,CStorable)
 
 instance Storable StructSetClientCap where
+   sizeOf    = cSizeOf
+   alignment = cAlignment
+   peek      = cPeek
+   poke      = cPoke
+
+data PrimeFlag
+   = PrimeFlagReadWrite
+   | PrimeFlagCloseOnExec
+   deriving (Show,Eq,CBitSet)
+
+instance Enum PrimeFlag where
+   fromEnum PrimeFlagReadWrite   = fromEnum HandleReadWrite
+   fromEnum PrimeFlagCloseOnExec = fromEnum HandleCloseOnExec
+   toEnum x = case toEnum x of
+      HandleReadWrite   -> PrimeFlagReadWrite
+      HandleCloseOnExec -> PrimeFlagCloseOnExec
+      _                 -> error ("Unknown prime flag: " ++ show x)
+
+-- | struct drm_prime_handle
+data StructPrimeHandle = StructPrimeHandle
+   { sphHandle :: Word32
+   , sphFlags  :: BitSet Word32 PrimeFlag -- ^ FD flags: only applciable for handle->fd
+   , sphFD     :: Int32                   -- ^ Returned DMAbuf file descriptor
+   }
+   deriving (Generic,CStorable)
+
+instance Storable StructPrimeHandle where
    sizeOf    = cSizeOf
    alignment = cAlignment
    peek      = cPeek
@@ -1217,7 +1249,7 @@ data StructEventVBlank = StructEventVBlank
    , vblankEventSeconds      :: Word32
    , vblankEventMicroseconds :: Word32
    , vblankEventSequence     :: Word32
---   , vblankEventReserved           :: Word32
+   , vblankEventReserved     :: Word32
    } 
    deriving (Show,Generic,CStorable)
 

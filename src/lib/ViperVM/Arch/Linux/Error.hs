@@ -12,6 +12,9 @@ module ViperVM.Arch.Linux.Error
    , NotAllowed (..)
    , InvalidRestartCommand (..)
    , MemoryError (..)
+   , InvalidParam (..)
+   , EntryNotFound (..)
+   , InvalidRange (..)
    )
 where
 
@@ -28,6 +31,10 @@ import ViperVM.System.Sys
 data NotAllowed            = NotAllowed            deriving (Show,Eq)
 data InvalidRestartCommand = InvalidRestartCommand deriving (Show,Eq)
 data MemoryError           = MemoryError           deriving (Show,Eq)
+data InvalidParam          = InvalidParam          deriving (Show,Eq)
+data EntryNotFound         = EntryNotFound         deriving (Show,Eq)
+data InvalidRange          = InvalidRange          deriving (Show,Eq)
+
 
 ------------------------------------------------
 -- System calls

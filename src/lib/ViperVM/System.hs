@@ -21,5 +21,5 @@ import ViperVM.System.Power    as X
 
 -- useful helpers
 import Data.Foldable (forM_,traverse_)
-import Data.Traversable (forM,traverse)
+import Data.Traversable (forM)
 import Control.Monad (void,forever)

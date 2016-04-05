@@ -19,6 +19,7 @@ import ViperVM.Format.Binary.BitField
 
 import Data.Bits
 import Foreign.Storable
+import Foreign.CStorable
 import Data.Proxy
 import GHC.TypeLits
 
@@ -30,7 +31,7 @@ newtype FixedPoint w (n :: Nat) (d :: Nat) = FixedPoint (BitFields w
    '[ BitField n "numerator"   w
     , BitField d "denominator" w
     ])
-   deriving (Storable)
+   deriving (Storable,CStorable)
 
 deriving instance forall w n d.
    ( Integral w
