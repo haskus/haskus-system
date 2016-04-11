@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Video controller management
 --
@@ -21,7 +23,7 @@ where
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Data.Word
-import Control.Monad (void)
+import Control.Monad (void,forM)
 
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
@@ -31,6 +33,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
+import ViperVM.Utils.Flow
 
 -- | Video controller
 --
@@ -67,13 +70,16 @@ fromStructController hdl StructController{..} =
 
       
 -- | Get Controller
-getControllerFromID :: Handle -> ControllerID -> SysRet Controller
-getControllerFromID hdl crtcid = do
-   let
+getControllerFromID :: Handle -> ControllerID -> Sys (Flow '[EntryNotFound, InvalidHandle] Controller)
+getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl) >>= \case
+      Right e     -> flowRet (fromStructController hdl e)
+      Left EINVAL -> flowSet (InvalidHandle hdl)
+      Left ENOENT -> flowSet EntryNotFound
+      Left e      -> unhdlErr "getController" e
+   where
       ControllerID cid = crtcid
       crtc             = emptyStructController { contID = cid }
 
-   fmap (fromStructController hdl) <$> ioctlGetController crtc hdl
 
 setController' :: Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
 setController' hdl crtcid fb conns mode = do
@@ -119,8 +125,10 @@ switchFrameBuffer' hdl crtcid fb flags = do
    void <$> ioctlPageFlip s hdl
 
 -- | Get controllers (discard errors)
-getControllers :: Handle -> IO [Controller]
-getControllers = getEntities resControllerIDs getControllerFromID
+getControllers :: Handle -> Sys (Flow '[InvalidHandle,EntryNotFound] [Controller])
+getControllers hdl = runFlowT $ do
+   res <- liftFlowT $ getResources hdl
+   forM (resControllerIDs res) (liftFlowT . getControllerFromID hdl)
 
 -- | Get controller gama look-up table
 getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])

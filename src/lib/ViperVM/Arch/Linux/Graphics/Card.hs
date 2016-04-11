@@ -1,5 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Graphic card resources
 module ViperVM.Arch.Linux.Graphics.Card
@@ -17,16 +21,15 @@ where
 
 import ViperVM.System.Sys
 import ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Utils.Memory (allocaArrays,peekArrays)
+import ViperVM.Utils.Flow
+import ViperVM.Utils.Variant
 
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Either
 import Data.Word
-import Foreign.Ptr (Ptr,ptrToWordPtr)
+import Foreign.Ptr
 import Foreign.Storable
 
 -- | Graphic card ressources
@@ -49,69 +52,76 @@ newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable)
 
 newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
--- | Get graphic card info
---
--- It seems like the kernel fills *Count fields and min/max fields.  If *Ptr
--- fields are not NULL, the kernel fills the pointed arrays with up to *Count
--- elements.
--- 
-getResources :: Handle -> SysRet Resources
-getResources fd = runEitherT $ do
-   let 
-      res          = StructCardRes 0 0 0 0 0 0 0 0 0 0 0 0
- 
-      getCard' r   = EitherT (ioctlGetResources r fd)
+-- | Get graphic card resources
+getResources :: Handle -> Sys (Flow '[InvalidHandle] Resources)
+getResources hdl = getValues [10,10,10,10] -- try with default values
+   where 
+      getRes :: StructCardRes -> Sys (Flow '[InvalidHandle] StructCardRes)
+      getRes r = sysIO (ioctlGetResources r hdl) >>= \case
+         Left EINVAL -> flowSet (InvalidHandle hdl)
+         Left e      -> unhdlErr "getResources" e
+         Right g     -> flowRet g
 
-   -- First we get the number of each resource
-   res2 <- getCard' res
+      extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
-   -- then we allocate arrays of appropriate sizes
-   let arraySizes = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [res2]
-   (rawRes, retRes) <- EitherT $ allocaArrays arraySizes $ 
-      \(as@[fs,crs,cs,es] :: [Ptr Word32]) -> runEitherT $ do
-         -- we put them in a new struct
-         let
-            cv = fromIntegral . ptrToWordPtr
-            res3 = res2 { csFbIdPtr   = cv fs
-                        , csCrtcIdPtr = cv crs
-                        , csEncIdPtr  = cv es
-                        , csConnIdPtr = cv cs
-                        }
+      getValues :: [Word32] -> Sys (Flow '[InvalidHandle] Resources)
+      getValues arraySizes = sysWith (allocaArrays arraySizes) $ 
+         \([fs,crs,cs,es] :: [Ptr Word32]) -> runFlowT $ do
+            let 
+               -- we need to check that the number of resources is still
+               -- lower than the size of our arrays (as resources may have
+               -- appeared between the time we get the number of resources
+               -- and the time we get them...) If not, we redo the whole
+               -- process
+               testSize r = 
+                  if all (uncurry (>)) (arraySizes `zip` extractSize r)
+                     then liftFlowT $ extractValues r
+                     else liftFlowT $ getValues (extractSize r)
 
-         -- we get the values
-         res4 <- getCard' res3
+               [nfb,nct,nco,nen] = arraySizes
+               cv = fromIntegral . ptrToWordPtr
+               res3 = StructCardRes
+                           { csFbIdPtr    = cv fs
+                           , csCrtcIdPtr  = cv crs
+                           , csEncIdPtr   = cv es
+                           , csConnIdPtr  = cv cs
+                           , csCountFbs   = nfb
+                           , csCountCrtcs = nct
+                           , csCountConns = nco
+                           , csCountEncs  = nen
+                           , csMinHeight  = 0
+                           , csMaxHeight  = 0
+                           , csMinWidth   = 0
+                           , csMaxWidth   = 0
+                           }
+            r <- liftFlowT $ getRes res3
+            testSize r
 
-         [fbs,ctrls,conns,encs] <- liftIO $ peekArrays arraySizes as
 
-         let res5 = Resources
-                     (fmap FrameBufferID fbs)
-                     (fmap ControllerID  ctrls)
-                     (fmap ConnectorID   conns)
-                     (fmap EncoderID     encs)
-                     (csMinWidth res4)
-                     (csMaxWidth res4)
-                     (csMinHeight res4)
-                     (csMaxHeight res4)
-
-         right (res4, res5)
-
-   -- we need to check that the number of resources is still the same (as
-   -- resources may have appeared between the time we get the number of
-   -- resources and the time we get them...)
-   -- If not, we redo the whole process
-   if   csCountFbs   res2 < csCountFbs   rawRes
-     || csCountCrtcs res2 < csCountCrtcs rawRes
-     || csCountConns res2 < csCountConns rawRes
-     || csCountEncs  res2 < csCountEncs  rawRes
-      then EitherT $ getResources fd
-      else right retRes
+      extractValues :: StructCardRes -> Sys (Flow '[] Resources)
+      extractValues r = do
+         let 
+            as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
+            as' = fmap (wordPtrToPtr . fromIntegral) as
+            arraySizes = extractSize r
+         [fbs,ctrls,conns,encs] <- sysIO (peekArrays arraySizes as')
+         flowRet $ Resources
+               (fmap FrameBufferID fbs)
+               (fmap ControllerID  ctrls)
+               (fmap ConnectorID   conns)
+               (fmap EncoderID     encs)
+               (csMinWidth  r)
+               (csMaxWidth  r)
+               (csMinHeight r)
+               (csMaxHeight r)
 
 
 -- | Internal function to retreive card entities from their identifiers
-getEntities :: (Resources -> [a]) -> (Handle -> a -> IO (Either x b)) -> Handle -> IO [b]
+getEntities :: (Resources -> [a]) -> (Handle -> a -> Sys (Either x b)) -> Handle -> Sys [b]
 getEntities getIDs getEntityFromID hdl = do
-   res <- runSys $ sysCallAssert "Get resources" $ getResources hdl
-
+   res <- getResources hdl
+            `flowMCatch` (\(InvalidHandle _) -> error "getEntities: invalid handle")
+            `flowMap` singleVariant
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs

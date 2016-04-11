@@ -36,6 +36,7 @@ import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Plane
+import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -178,16 +179,16 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
 
 -- | Retreive graphic card connectors
-graphicCardConnectors :: GraphicCard -> Sys [Connector]
-graphicCardConnectors = sysIO . getConnectors . graphicCardHandle
+graphicCardConnectors :: GraphicCard -> Sys (Flow '[InvalidHandle,InvalidParam,EntryNotFound,InvalidProperty] [Connector])
+graphicCardConnectors = getConnectors . graphicCardHandle
 
 -- | Retrieve graphic card controllers
-graphicCardControllers :: GraphicCard -> Sys [Controller]
-graphicCardControllers = sysIO . getControllers . graphicCardHandle
+graphicCardControllers :: GraphicCard -> Sys (Flow '[InvalidHandle,EntryNotFound] [Controller])
+graphicCardControllers = getControllers . graphicCardHandle
 
 -- | Retrieve graphic card encoders
-graphicCardEncoders :: GraphicCard -> Sys [Encoder]
-graphicCardEncoders = sysIO . getEncoders . graphicCardHandle
+graphicCardEncoders :: GraphicCard -> Sys (Flow '[InvalidHandle,InvalidParam,EntryNotFound] [Encoder])
+graphicCardEncoders = getEncoders . graphicCardHandle
 
 -- | Retrieve graphic card planes
 graphicCardPlanes :: GraphicCard -> Sys [Plane]

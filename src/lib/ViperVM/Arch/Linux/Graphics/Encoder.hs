@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | Encoders management
 --
@@ -18,14 +19,17 @@ module ViperVM.Arch.Linux.Graphics.Encoder
 where
 
 import ViperVM.System.Sys
-import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Utils.Flow
+
+import Control.Monad (forM)
 
 -- | An encoder
 data Encoder = Encoder
@@ -50,19 +54,24 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
          hdl
 
 -- | Get an encoder from its ID
-getEncoderFromID :: Handle -> EncoderID -> SysRet Encoder
-getEncoderFromID hdl (EncoderID encId) = do
-   let enc = StructGetEncoder encId (toEnumField EncoderTypeNone)
+getEncoderFromID :: Handle -> Resources -> EncoderID -> Sys (Flow '[EntryNotFound,InvalidHandle] Encoder)
+getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl) >>= \case
+      Right e     -> flowRet (fromStructGetEncoder res hdl e)
+      Left EINVAL -> flowSet (InvalidHandle hdl)
+      Left ENOENT -> flowSet EntryNotFound
+      Left e      -> unhdlErr "getEncoder" e
+   where
+      enc = StructGetEncoder encId (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
-   res <- runSys $ sysCallAssert "Get resources" $ getResources hdl
-   fmap (fromStructGetEncoder res hdl) <$> ioctlGetEncoder enc hdl
 
 -- | Controller attached to the encoder, if any
-encoderController :: Encoder -> SysRet (Maybe Controller)
+encoderController :: Encoder -> Sys (Flow '[EntryNotFound,InvalidHandle] (Maybe Controller))
 encoderController enc = case encoderControllerID enc of
-   Nothing     -> return (Right Nothing)
-   Just contId -> fmap Just <$> getControllerFromID (encoderHandle enc) contId
+   Nothing     -> flowRet Nothing
+   Just contId -> getControllerFromID (encoderHandle enc) contId `flowSeqM` (return . Just)
 
 -- | Get encoders (discard errors)
-getEncoders :: Handle -> IO [Encoder]
-getEncoders = getEntities resEncoderIDs getEncoderFromID
+getEncoders :: Handle -> Sys (Flow '[InvalidHandle,InvalidParam,EntryNotFound] [Encoder])
+getEncoders hdl = runFlowT $ do
+   res <- liftFlowT $ getResources hdl
+   forM (resEncoderIDs res) (liftFlowT . getEncoderFromID hdl res)

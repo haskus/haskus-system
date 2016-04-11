@@ -36,6 +36,7 @@ module ViperVM.Utils.Flow
    , FlowT (..)
    , Flow
    , liftFlowT
+   , liftFlowM
    )
 where
 
@@ -258,7 +259,7 @@ flowLift = fmap liftVariant
 
 -- | Flow monad transformer
 newtype FlowT m (l :: [*]) a = FlowT
-   { runFlowT :: m (Variant (a ': l))
+   { runFlowT :: m (Flow l a)
    }
 
 instance Monad m => Functor (FlowT m l) where
@@ -300,3 +301,7 @@ instance Monad m => Monad (FlowT m l) where
 liftFlowT :: (Liftable (x ': xs) (x ': ys) , Monad m)
    => m (Flow xs x) -> FlowT m ys x
 liftFlowT = FlowT . flowLift
+
+-- | Lift into a FlowT
+liftFlowM :: forall x xs m. (Liftable '[x] (x ': xs), Monad m) => m x -> FlowT m xs x
+liftFlowM f = liftFlowT (f >>= flowRet :: m (Flow '[] x))

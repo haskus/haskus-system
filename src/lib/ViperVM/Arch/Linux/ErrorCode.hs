@@ -75,7 +75,7 @@ defaultCheck x | x < 0     = Just (toErrorCode x)
                | otherwise = Nothing
 
 -- | Error to call when a syscall returns an unexpected error value
-unhdlErr :: String -> ErrorCode -> a
+unhdlErr :: Show err => String -> err -> a
 unhdlErr str err =
    error ("Unhandled error "++ show err ++" returned by \""++str++"\". Report this as a ViperVM bug.")
 

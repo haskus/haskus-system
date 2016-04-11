@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | Property
 module ViperVM.Arch.Linux.Graphics.Property
@@ -10,12 +10,17 @@ module ViperVM.Arch.Linux.Graphics.Property
    , RawProperty (..)
    , Property (..)
    , getPropertyMeta
+   , InvalidProperty (..)
    )
 where
 
-import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
+import ViperVM.System.Sys
+import ViperVM.Utils.Flow
+import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Format.Binary.Vector as Vec
 
 import Foreign.Storable
 import Foreign.Ptr
@@ -27,15 +32,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
 import Control.Monad (forM)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Either
 import Foreign.C.String 
-   ( castCCharToChar
-   , castCharToCChar
-   )
-import Foreign.C.Types (CChar)
-import ViperVM.Format.Binary.Vector (Vector)
-import qualified ViperVM.Format.Binary.Vector as Vec
 
 -- | Property meta-information
 data PropertyMeta = PropertyMeta
@@ -56,8 +53,6 @@ data PropertyType
    | PropObject
    deriving (Show,Eq)
 
-type PropertyName = Vector 32 CChar
-
 data RawProperty = RawProperty
    { rawPropertyMetaID  :: Word32   -- ^ Card-wise property meta-info ID
    , rawPropertyValue   :: Word64   -- ^ Property value
@@ -71,11 +66,29 @@ data Property = Property
 
 type PropertyMetaID = Word32
 
+data InvalidProperty = InvalidProperty deriving (Show,Eq)
+
 -- | Return meta-information from a property type ID
-getPropertyMeta :: Handle -> PropertyMetaID -> SysRet PropertyMeta
-getPropertyMeta fd pid = runEitherT $ do
-   let
-      getProperty' r = EitherT (ioctlGetProperty r fd)
+getPropertyMeta :: Handle -> PropertyMetaID -> Sys (Flow '[InvalidParam,InvalidProperty] PropertyMeta)
+getPropertyMeta fd pid = runFlowT $ do
+      -- get value size/number of elements/etc.
+      g <- liftFlowT (getProperty' gp)
+      -- get values
+      ptype <- liftFlowT $ getValues (gpsCountValues g)
+                  (gpsCountEnum g) (getPropertyTypeType g)
+      return $ PropertyMeta pid
+         (isImmutable g)
+         (isPending g)
+         (convertCString (gpsName g))
+         ptype
+   where
+      getProperty' :: StructGetProperty -> Sys (Flow '[InvalidParam,InvalidProperty] StructGetProperty)
+      getProperty' r = sysIO (ioctlGetProperty r fd) >>= \case
+         Left EINVAL -> flowSet InvalidParam
+         Left ENOENT -> flowSet InvalidProperty
+         Right g     -> flowRet g
+         Left e      -> unhdlErr "getPropertyMeta" e
+
 
       gp = StructGetProperty
             { gpsValuesPtr   = 0
@@ -87,26 +100,34 @@ getPropertyMeta fd pid = runEitherT $ do
             , gpsCountEnum   = 0
             }
    
-   -- get value size/number of elements/etc.
-   g <- getProperty' gp
-
-   let
-      extractName :: PropertyName -> String
-      extractName = takeWhile (/= '\0') . fmap castCCharToChar . Vec.toList
-
-      nval  = gpsCountValues g
-      nblob = gpsCountEnum   g
-
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      getBlobStruct' r = EitherT (ioctlGetBlob r fd)
-      getBlobStruct    = runEitherT . getBlobStruct'
+      getBlobStruct :: StructGetBlob -> Sys (Flow '[InvalidParam,InvalidProperty] StructGetBlob)
+      getBlobStruct r = sysIO (ioctlGetBlob r fd) >>= \case
+         Left EINVAL -> flowSet InvalidParam
+         Left ENOENT -> flowSet InvalidProperty
+         Right g     -> flowRet g
+         Left e      -> unhdlErr "getBlobStruct" e
 
-      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b -> IO c) -> IO c
+      -- | Get a blob
+      getBlob :: Word32 -> Sys (Flow '[InvalidParam,InvalidProperty] BS.ByteString)
+      getBlob bid = runFlowT $ do
+         let gb = StructGetBlob
+                     { gbBlobId = bid
+                     , gbLength = 0
+                     , gbData   = 0
+                     }
+         gb' <- liftFlowT (getBlobStruct gb)
+         ptr <- liftFlowM $ sysIO $ mallocBytes (fromIntegral (gbLength gb'))
+         _   <- liftFlowT $ getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
+         liftFlowM $ sysIO $ BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb'))
+
+
+      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Sys (Flow '[InvalidParam,InvalidProperty] c)) -> Sys (Flow '[InvalidParam,InvalidProperty] c)
       withBuffers valueCount blobCount f =
-         allocaArray' valueCount $ \valuePtr ->
-            allocaArray' blobCount $ \blobPtr -> do
+         sysWith (allocaArray' valueCount) $ \valuePtr ->
+            sysWith (allocaArray' blobCount) $ \blobPtr -> do
                let gp' = StructGetProperty
                            { gpsValuesPtr   = fromIntegral (ptrToWordPtr valuePtr)
                            , gpsEnumBlobPtr = fromIntegral (ptrToWordPtr blobPtr)
@@ -117,48 +138,28 @@ getPropertyMeta fd pid = runEitherT $ do
                            , gpsCountEnum   = blobCount
                            }
                -- nothing changes, except for the two buffers
-               _ <- runEitherT $ getProperty' gp'
+               _ <- getProperty' gp'
                f valuePtr blobPtr
 
       withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr ()) ->
-         f =<< peekArray (fromIntegral n) ptr
+         f =<< sysIO (peekArray (fromIntegral n) ptr)
       withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr ()) ptr ->
-         f =<< peekArray (fromIntegral n) ptr
+         f =<< sysIO (peekArray (fromIntegral n) ptr)
       withBuffers' n m f = withBuffers n m $ \p1 p2 -> do
-         vs <- peekArray (fromIntegral n) p1
-         bs <- peekArray (fromIntegral m) p2
+         vs <- sysIO (peekArray (fromIntegral n) p1)
+         bs <- sysIO (peekArray (fromIntegral m) p2)
          f vs bs
          
+      getValues :: Word32 -> Word32 -> PropertyTypeType -> Sys (Flow '[InvalidParam,InvalidProperty] PropertyType)
+      getValues nval nblob ttype = case ttype of
+         PropTypeObject      -> flowRet PropObject
+         PropTypeRange       -> withValueBuffer nval (flowRet . PropRange)
+         PropTypeSignedRange -> withValueBuffer nval (flowRet . PropSignedRange)
+         PropTypeEnum        -> withBlobBuffer nblob $ \es ->
+            flowRet (PropEnum [(peValue e, convertCString $ peName e) | e <- es])
+         PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
+            flowRet (PropBitmask [(peValue e, convertCString $ peName e) | e <- es])
 
-   ptype <- liftIO $ case getPropertyTypeType g of
-
-      PropTypeObject      -> return PropObject
-      PropTypeRange       -> withValueBuffer nval (return . PropRange)
-      PropTypeSignedRange -> withValueBuffer nval (return . PropSignedRange)
-      PropTypeEnum        -> withBlobBuffer nblob $ \es ->
-         return (PropEnum [(peValue e, extractName $ peName e) | e <- es])
-      PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
-         return (PropBitmask [(peValue e, extractName $ peName e) | e <- es])
-
-      PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
-         bids' <- forM bids $ \bid -> do
-            let gb = StructGetBlob
-                        { gbBlobId = bid
-                        , gbLength = 0
-                        , gbData   = 0
-                        }
-            Right gb' <- getBlobStruct gb
-            ptr <- mallocBytes (fromIntegral (gbLength gb'))
-            _ <- getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
-            BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb'))
-         return (PropBlob (ids `zip` bids'))
-
-
-   return $ PropertyMeta pid
-      (isImmutable g)
-      (isPending g)
-      (extractName (gpsName g))
-      ptype
-   
-
-
+         PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> runFlowT $ do
+            bids' <- forM bids (liftFlowT . getBlob)
+            return (PropBlob (ids `zip` bids'))

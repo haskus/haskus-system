@@ -10,6 +10,7 @@ module ViperVM.Arch.Linux.Graphics.Plane
    , Plane (..)
    , getPlane
    , setPlane
+   , disablePlane
    , DestRect (..)
    , SrcRect (..)
    )
@@ -108,13 +109,12 @@ getPlane hdl pid = runFlowT $ do
             Left EINVAL -> flowSet (InvalidHandle hdl)
             Left ENOENT -> flowSet (InvalidPlane pid)
             Left e      -> unhdlErr "getPlane" e
-            Right StructGetPlane{..} -> do
+            Right StructGetPlane{..} -> runFlowT $ do
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid this ioctl
-               res <- sysCallAssert "Get resources" $ getResources hdl
-               fmts <- fmap (PixelFormat . BitFields)
-                  <$> sysIO (peekArray (fromIntegral n) p)
-               flowRet Plane
+               res <- liftFlowT $ getResources hdl
+               fmts <- liftFlowM (fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p))
+               liftFlowM $ return Plane
                   { planeId                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
                   , planeFrameBufferId       = toMaybe FrameBufferID gpFbId
@@ -146,6 +146,12 @@ data InvalidDestRect = InvalidDestRect deriving (Show,Eq)
 data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 
 -- | Set plane
+--
+-- If the source/destination rectangles are not the same, scaling support is
+-- required. Devices not supporting scaling will fail with InvalidParam.
+--
+-- The fractional part in SrcRect is for devices supporting sub-pixel plane
+-- coordinates.
 setPlane :: Handle -> PlaneID -> Maybe (ControllerID, FrameBufferID, SrcRect, DestRect) -> Sys (Flow '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] ())
 setPlane hdl (PlaneID pid) opts = do
 
@@ -156,8 +162,7 @@ setPlane hdl (PlaneID pid) opts = do
       e16 = toFixedPoint (0 :: Float)
 
       s = case opts of
-            Nothing ->
-               -- disable the plane
+            Nothing -> -- disable the plane
                makeS (ControllerID 0) (FrameBufferID 0)
                   0 0 0 0 e16 e16 e16 e16
 
@@ -175,3 +180,10 @@ setPlane hdl (PlaneID pid) opts = do
       Left ERANGE -> flowSet InvalidDestRect
       Left ENOSPC -> flowSet InvalidSrcRect
       Left e      -> unhdlErr "setPlane" e
+
+-- | Disable a plane
+disablePlane :: Handle -> PlaneID -> Sys (Flow '[InvalidParam,EntryNotFound] ())
+disablePlane hdl p = setPlane hdl p Nothing
+   -- these errors should not be triggered when we disable a plane
+   `flowMCatch` (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)
+   `flowMCatch` (\InvalidSrcRect  -> unhdlErr "disablePlane" InvalidSrcRect)
