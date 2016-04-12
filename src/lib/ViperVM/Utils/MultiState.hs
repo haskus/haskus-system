@@ -3,7 +3,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 
--- | State monad with multiplate states (extensible)
+-- | State monad with multiple states (extensible)
 --
 -- Similar to the multistate package, with the following differences (as of
 -- 0.7.0.0):
