@@ -7,8 +7,8 @@
 
 module ViperVM.Utils.MFlow
    ( MFlow
-   , with0
-   , withT
+   , withFlow0
+   , withFlow
    , catch
    , return0
    , return'
@@ -22,22 +22,22 @@ import GHC.TypeLits
 
 type MFlow m l = m (Variant l)
 
-with0 :: forall (k :: Nat) m l l2.
+withFlow0 :: forall (k :: Nat) m l l2.
    ( KnownNat k
    , k ~ Length l2
    , Monad m )
    => Variant l -> (TypeAt 0 l -> MFlow m l2) -> MFlow m (ReplaceAt 0 l l2)
-with0 v f = updateVariantFoldM (Proxy :: Proxy 0) f v
+withFlow0 v f = updateVariantFoldM (Proxy :: Proxy 0) f v
 
 
-withT ::
+withFlow ::
    ( Liftable xs zs
    , Liftable (Filter a l) zs
    , zs ~ Fusion xs (Filter a l)
    , Monad m
    , Catchable a l
    ) => Variant l -> (a -> MFlow m xs) -> MFlow m zs
-withT v f = case removeType v of
+withFlow v f = case removeType v of
    Left a   -> liftVariant <$> f a
    Right ys -> return (liftVariant ys)
 
