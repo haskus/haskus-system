@@ -29,8 +29,6 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Utils.Flow
 
-import Control.Monad (forM)
-
 -- | An encoder
 data Encoder = Encoder
    { encoderID                  :: EncoderID          -- ^ Encoder identifier
@@ -54,7 +52,7 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
          hdl
 
 -- | Get an encoder from its ID
-getEncoderFromID :: Handle -> Resources -> EncoderID -> Sys (Flow '[EntryNotFound,InvalidHandle] Encoder)
+getEncoderFromID :: Handle -> Resources -> EncoderID -> Flow Sys '[Encoder,EntryNotFound,InvalidHandle]
 getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl) >>= \case
       Right e     -> flowRet (fromStructGetEncoder res hdl e)
       Left EINVAL -> flowSet (InvalidHandle hdl)
@@ -65,13 +63,12 @@ getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl) >>=
                0 BitSet.empty BitSet.empty
 
 -- | Controller attached to the encoder, if any
-encoderController :: Encoder -> Sys (Flow '[EntryNotFound,InvalidHandle] (Maybe Controller))
+encoderController :: Encoder -> Flow Sys '[Maybe Controller ,EntryNotFound,InvalidHandle]
 encoderController enc = case encoderControllerID enc of
    Nothing     -> flowRet Nothing
-   Just contId -> getControllerFromID (encoderHandle enc) contId `flowSeqM` (return . Just)
+   Just contId -> getControllerFromID (encoderHandle enc) contId >~^> (return . Just)
 
 -- | Get encoders (discard errors)
-getEncoders :: Handle -> Sys (Flow '[InvalidHandle,InvalidParam,EntryNotFound] [Encoder])
-getEncoders hdl = runFlowT $ do
-   res <- liftFlowT $ getResources hdl
-   forM (resEncoderIDs res) (liftFlowT . getEncoderFromID hdl res)
+getEncoders :: Handle -> Flow Sys '[[Encoder],EntryNotFound,InvalidHandle]
+getEncoders hdl = getResources hdl >~#> \res ->
+   flowTraverse (getEncoderFromID hdl res) (resEncoderIDs res)

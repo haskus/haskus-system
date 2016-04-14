@@ -40,22 +40,20 @@ data InvalidPlane = InvalidPlane PlaneID deriving (Show)
 newtype PlaneID = PlaneID Word32 deriving (Show,Eq)
 
 -- | Get the IDs of the supported planes
-getPlaneResources :: Handle -> Sys (Flow '[InvalidHandle] [PlaneID])
-getPlaneResources hdl = runFlowT $ do
-      cnt <- liftFlowT getCount
-      liftFlowT (getIDs cnt)
+getPlaneResources :: Handle -> Flow Sys '[[PlaneID], InvalidHandle]
+getPlaneResources hdl = getCount >#~> getIDs
    where
       gpr s = sysIO (ioctlGetPlaneResources s hdl)
 
       -- get the number of planes (invariant for a given device)
-      getCount :: Sys (Flow '[InvalidHandle] Word32)
+      getCount :: Flow Sys '[Word32,InvalidHandle]
       getCount = gpr (StructGetPlaneRes 0 0) >>= \case
          Left EINVAL -> flowSet (InvalidHandle hdl)
          Left e      -> unhdlErr "getPlaneResources" e
          Right s     -> flowRet (gprsCountPlanes s)
    
       -- get the plane IDs (invariant for a given device)
-      getIDs :: Word32 -> Sys (Flow '[InvalidHandle] [PlaneID])
+      getIDs :: Word32 -> Flow Sys '[[PlaneID],InvalidHandle]
       getIDs 0 = flowRet []
       getIDs n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
@@ -78,10 +76,8 @@ data Plane = Plane
    deriving (Show)
 
 -- | Get plane information
-getPlane :: Handle -> PlaneID -> Sys (Flow '[InvalidHandle,InvalidPlane] Plane)
-getPlane hdl pid = runFlowT $ do
-      cnt <- liftFlowT getCount
-      liftFlowT (getInfo cnt)
+getPlane :: Handle -> PlaneID -> Flow Sys '[Plane,InvalidHandle,InvalidPlane]
+getPlane hdl pid = getCount >#~> getInfo
    where
 
       gpr s = sysIO (ioctlGetPlane s hdl)
@@ -92,7 +88,7 @@ getPlane hdl pid = runFlowT $ do
       toMaybe f x = Just (f x)
 
       -- get the number of formats (invariant for a given plane)
-      getCount :: Sys (Flow '[InvalidHandle,InvalidPlane] Word32)
+      getCount :: Flow Sys '[Word32,InvalidHandle,InvalidPlane]
       getCount = gpr (StructGetPlane pid' 0 0 BitSet.empty 0 0 0) >>= \case
          Left EINVAL -> flowSet (InvalidHandle hdl)
          Left ENOENT -> flowSet (InvalidPlane pid)
@@ -100,7 +96,7 @@ getPlane hdl pid = runFlowT $ do
          Right s     -> flowRet (gpCountFmtTypes s)
 
       -- get the plane info (invariant for a given plane)
-      getInfo :: Word32 -> Sys (Flow '[InvalidHandle,InvalidPlane] Plane)
+      getInfo :: Word32 -> Flow Sys '[Plane,InvalidHandle,InvalidPlane]
       getInfo n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
@@ -109,12 +105,11 @@ getPlane hdl pid = runFlowT $ do
             Left EINVAL -> flowSet (InvalidHandle hdl)
             Left ENOENT -> flowSet (InvalidPlane pid)
             Left e      -> unhdlErr "getPlane" e
-            Right StructGetPlane{..} -> runFlowT $ do
+            Right StructGetPlane{..} -> flowLift $ getResources hdl >~> \res -> do
                -- TODO: controllers are invariant, we should store them
-               -- somewhere to avoid this ioctl
-               res <- liftFlowT $ getResources hdl
-               fmts <- liftFlowM (fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p))
-               liftFlowM $ return Plane
+               -- somewhere to avoid getResources
+               fmts <- fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p)
+               flowRet' Plane
                   { planeId                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
                   , planeFrameBufferId       = toMaybe FrameBufferID gpFbId
@@ -152,7 +147,7 @@ data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 --
 -- The fractional part in SrcRect is for devices supporting sub-pixel plane
 -- coordinates.
-setPlane :: Handle -> PlaneID -> Maybe (ControllerID, FrameBufferID, SrcRect, DestRect) -> Sys (Flow '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] ())
+setPlane :: Handle -> PlaneID -> Maybe (ControllerID, FrameBufferID, SrcRect, DestRect) -> Flow Sys '[(),InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect]
 setPlane hdl (PlaneID pid) opts = do
 
    let 
@@ -182,8 +177,8 @@ setPlane hdl (PlaneID pid) opts = do
       Left e      -> unhdlErr "setPlane" e
 
 -- | Disable a plane
-disablePlane :: Handle -> PlaneID -> Sys (Flow '[InvalidParam,EntryNotFound] ())
+disablePlane :: Handle -> PlaneID -> Flow Sys '[(),InvalidParam,EntryNotFound]
 disablePlane hdl p = setPlane hdl p Nothing
    -- these errors should not be triggered when we disable a plane
-   `flowMCatch` (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)
-   `flowMCatch` (\InvalidSrcRect  -> unhdlErr "disablePlane" InvalidSrcRect)
+   >#!~> (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)
+   >#!~> (\InvalidSrcRect  -> unhdlErr "disablePlane" InvalidSrcRect)

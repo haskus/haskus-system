@@ -12,6 +12,7 @@ module ViperVM.System.Terminal
 where
 
 import ViperVM.System.Sys
+import ViperVM.System.Process
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
 import ViperVM.Arch.Linux.Error
@@ -23,7 +24,6 @@ import ViperVM.Format.Binary.BitSet as BitSet
 
 import Data.Word
 import Control.Monad (void,when,forever)
-import Control.Monad.Trans.Class (lift)
 import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
@@ -214,12 +214,12 @@ defaultTerminal = do
    -- TODO: set terminal buffering mode?
 
    -- input
-   inState <- lift $ newInputState (16 * 1024) stdin
-   lift $ void $ forkIO $ inputThread inState
+   inState <- sysIO $ newInputState (16 * 1024) stdin
+   sysFork $ sysIO $ inputThread inState
 
    -- output
-   outState <- lift $ newOutputState stdout
-   lift $ void $ forkIO $ outputThread outState
+   outState <- sysIO $ newOutputState stdout
+   sysFork $ sysIO $ outputThread outState
 
    return $ Terminal outState inState
 

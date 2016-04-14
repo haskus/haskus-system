@@ -6,6 +6,7 @@ module ViperVM.System.Input
 where
 
 import ViperVM.System.Sys
+import ViperVM.System.Process
 import ViperVM.System.System
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
@@ -19,7 +20,6 @@ import Data.Traversable (forM)
 import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
 import Control.Monad (void,forever)
-import Control.Monad.Trans.Class (lift)
 import Foreign.Storable
 import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
@@ -62,8 +62,8 @@ newEventWaiterThread fd@(Handle lowfd) = do
       rfd = Fd (fromIntegral lowfd)
       nb  = 50 -- number of events read at once
 
-   ch <- lift newBroadcastTChanIO
-   void $ lift $ forkIO $ allocaArray nb $ \ptr -> forever $ do
+   ch <- sysIO newBroadcastTChanIO
+   sysFork $ sysIO $ allocaArray nb $ \ptr -> forever $ do
       threadWaitRead rfd
       r <- sysRead fd ptr (fromIntegral sz * fromIntegral nb)
       case r of

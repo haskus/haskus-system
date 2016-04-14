@@ -26,7 +26,6 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Utils.Memory (allocaArrays,peekArrays)
 import ViperVM.Utils.Flow
-import ViperVM.Utils.Variant
 
 import Data.Word
 import Foreign.Ptr
@@ -53,10 +52,10 @@ newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable)
 newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
 -- | Get graphic card resources
-getResources :: Handle -> Sys (Flow '[InvalidHandle] Resources)
+getResources :: Handle -> Flow Sys '[Resources,InvalidHandle]
 getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
-      getRes :: StructCardRes -> Sys (Flow '[InvalidHandle] StructCardRes)
+      getRes :: StructCardRes -> Flow Sys '[StructCardRes,InvalidHandle]
       getRes r = sysIO (ioctlGetResources r hdl) >>= \case
          Left EINVAL -> flowSet (InvalidHandle hdl)
          Left e      -> unhdlErr "getResources" e
@@ -64,9 +63,9 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
-      getValues :: [Word32] -> Sys (Flow '[InvalidHandle] Resources)
+      getValues :: [Word32] -> Flow Sys '[Resources,InvalidHandle]
       getValues arraySizes = sysWith (allocaArrays arraySizes) $ 
-         \([fs,crs,cs,es] :: [Ptr Word32]) -> runFlowT $ do
+         \([fs,crs,cs,es] :: [Ptr Word32]) -> do
             let 
                -- we need to check that the number of resources is still
                -- lower than the size of our arrays (as resources may have
@@ -75,8 +74,8 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                -- process
                testSize r = 
                   if all (uncurry (>)) (arraySizes `zip` extractSize r)
-                     then liftFlowT $ extractValues r
-                     else liftFlowT $ getValues (extractSize r)
+                     then flowLift $ extractValues r
+                     else getValues (extractSize r)
 
                [nfb,nct,nco,nen] = arraySizes
                cv = fromIntegral . ptrToWordPtr
@@ -94,11 +93,10 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                            , csMinWidth   = 0
                            , csMaxWidth   = 0
                            }
-            r <- liftFlowT $ getRes res3
-            testSize r
+            getRes res3 >#~> testSize
 
 
-      extractValues :: StructCardRes -> Sys (Flow '[] Resources)
+      extractValues :: StructCardRes -> Flow Sys '[Resources]
       extractValues r = do
          let 
             as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
@@ -119,9 +117,9 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 -- | Internal function to retreive card entities from their identifiers
 getEntities :: (Resources -> [a]) -> (Handle -> a -> Sys (Either x b)) -> Handle -> Sys [b]
 getEntities getIDs getEntityFromID hdl = do
-   res <- getResources hdl
-            `flowMCatch` (\(InvalidHandle _) -> error "getEntities: invalid handle")
-            `flowMap` singleVariant
+   res <- flowRes $
+      getResources hdl >#!~>
+         (\(InvalidHandle _) -> error "getEntities: invalid handle")
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs

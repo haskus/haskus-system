@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module ViperVM.System.Sys
    ( Sys
@@ -43,7 +44,7 @@ import Control.Concurrent.STM
 --
 -- The monad that permits fun system programming:
 --  * includes an optional logger
-type Sys a = StateT SysState IO a
+newtype Sys a = Sys (StateT SysState IO a) deriving (Monad,Applicative,Functor,MonadState SysState, MonadIO)
 
 data SysState = SysState
    { sysLogRoot    :: Log                    -- ^ Root of the log
@@ -54,7 +55,7 @@ data SysState = SysState
 
 -- | Run
 runSys :: Sys a -> IO a
-runSys act = do
+runSys (Sys act) = do
    (status,statusSrc) <- newFutureIO
    (log,logSrc)       <- newFutureIO
 
@@ -75,11 +76,11 @@ runSys' = void . runSys
 
 -- | Execute an IO action that may use the state
 sysIO' :: (SysState -> IO (a,SysState)) -> Sys a
-sysIO' = StateT
+sysIO' = Sys . StateT
 
 -- | Execute an IO action
 sysIO :: IO a -> Sys a
-sysIO = liftIO
+sysIO = Sys . liftIO
 
 -- | Lift with* and alloca* functions
 sysWith :: (forall c. (a -> IO c) -> IO c) -> (a -> Sys b) -> Sys b
@@ -90,11 +91,11 @@ sysWith wth f =
 
 -- | Run with an explicit state
 sysRun :: SysState -> Sys a -> IO (a, SysState)
-sysRun s f = runStateT f s
+sysRun s (Sys f) = runStateT f s
 
 -- | Run with an explicit state
 sysRun' :: SysState -> Sys a -> IO ((), SysState)
-sysRun' s f = do
+sysRun' s (Sys f) = do
    (_, s2) <- runStateT f s
    return ((),s2)
 
@@ -196,7 +197,7 @@ sysLogPrint :: Sys ()
 sysLogPrint = do
       -- print the log
       log <- gets sysLogRoot
-      lift $ printLog 0 log
+      liftIO $ printLog 0 log
    where
       printLog i l = 
          case l of

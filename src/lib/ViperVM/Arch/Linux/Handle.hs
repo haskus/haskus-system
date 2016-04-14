@@ -28,7 +28,7 @@ data InvalidHandle = InvalidHandle Handle deriving (Show,Eq)
 
 
 -- | Get descriptor flags
-getHandleFlags :: Handle -> Sys (Flow '[InvalidHandle] HandleFlags)
+getHandleFlags :: Handle -> Flow Sys '[HandleFlags,InvalidHandle]
 getHandleFlags hdl =
    sysOnSuccess (sysFcntl hdl FcntlGetFlags (0 :: Int)) (BitSet.fromBits . fromIntegral) >>= \case
       Right fl   -> flowRet fl
@@ -36,7 +36,7 @@ getHandleFlags hdl =
       Left e     -> unhdlErr "getHandleFlags" e
 
 -- | Set descriptor flags
-setHandleFlags :: Handle -> HandleFlags -> Sys (Flow '[InvalidHandle] ())
+setHandleFlags :: Handle -> HandleFlags -> Flow Sys '[(),InvalidHandle]
 setHandleFlags hdl flgs =
    sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs)) >>= \case
       Right ()   -> flowRet ()

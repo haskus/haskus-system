@@ -31,7 +31,6 @@ import Data.Int
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
-import Control.Monad (forM)
 import Foreign.C.String 
 
 -- | Property meta-information
@@ -69,20 +68,17 @@ type PropertyMetaID = Word32
 data InvalidProperty = InvalidProperty deriving (Show,Eq)
 
 -- | Return meta-information from a property type ID
-getPropertyMeta :: Handle -> PropertyMetaID -> Sys (Flow '[InvalidParam,InvalidProperty] PropertyMeta)
-getPropertyMeta fd pid = runFlowT $ do
+getPropertyMeta :: Handle -> PropertyMetaID -> Flow Sys '[PropertyMeta,InvalidParam,InvalidProperty]
+getPropertyMeta fd pid = do
       -- get value size/number of elements/etc.
-      g <- liftFlowT (getProperty' gp)
-      -- get values
-      ptype <- liftFlowT $ getValues (gpsCountValues g)
-                  (gpsCountEnum g) (getPropertyTypeType g)
-      return $ PropertyMeta pid
-         (isImmutable g)
-         (isPending g)
-         (convertCString (gpsName g))
-         ptype
+      getProperty' gp >~#> \g -> do
+         getValues (gpsCountValues g) (gpsCountEnum g) (getPropertyTypeType g)
+            >~> flowRet' . PropertyMeta pid
+               (isImmutable g)
+               (isPending g)
+               (convertCString (gpsName g))
    where
-      getProperty' :: StructGetProperty -> Sys (Flow '[InvalidParam,InvalidProperty] StructGetProperty)
+      getProperty' :: StructGetProperty -> Flow Sys '[StructGetProperty,InvalidParam,InvalidProperty]
       getProperty' r = sysIO (ioctlGetProperty r fd) >>= \case
          Left EINVAL -> flowSet InvalidParam
          Left ENOENT -> flowSet InvalidProperty
@@ -103,7 +99,7 @@ getPropertyMeta fd pid = runFlowT $ do
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      getBlobStruct :: StructGetBlob -> Sys (Flow '[InvalidParam,InvalidProperty] StructGetBlob)
+      getBlobStruct :: StructGetBlob -> Flow Sys '[StructGetBlob,InvalidParam,InvalidProperty]
       getBlobStruct r = sysIO (ioctlGetBlob r fd) >>= \case
          Left EINVAL -> flowSet InvalidParam
          Left ENOENT -> flowSet InvalidProperty
@@ -111,20 +107,24 @@ getPropertyMeta fd pid = runFlowT $ do
          Left e      -> unhdlErr "getBlobStruct" e
 
       -- | Get a blob
-      getBlob :: Word32 -> Sys (Flow '[InvalidParam,InvalidProperty] BS.ByteString)
-      getBlob bid = runFlowT $ do
+      getBlob :: Word32 -> Flow Sys '[BS.ByteString,InvalidParam,InvalidProperty]
+      getBlob bid = do
          let gb = StructGetBlob
                      { gbBlobId = bid
                      , gbLength = 0
                      , gbData   = 0
                      }
-         gb' <- liftFlowT (getBlobStruct gb)
-         ptr <- liftFlowM $ sysIO $ mallocBytes (fromIntegral (gbLength gb'))
-         _   <- liftFlowT $ getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
-         liftFlowM $ sysIO $ BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb'))
+
+         getBlobStruct gb >~#> \gb' -> do
+            ptr <- sysIO . mallocBytes . fromIntegral . gbLength $ gb'
+            getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
+               -- free ptr on error
+               >*~^> (\_ -> sysIO (free ptr))
+               -- otherwise return a bytestring
+               >~^> (\_ -> sysIO $ BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb')))
 
 
-      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Sys (Flow '[InvalidParam,InvalidProperty] c)) -> Sys (Flow '[InvalidParam,InvalidProperty] c)
+      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow Sys '[c,InvalidParam,InvalidProperty]) -> Flow Sys '[c,InvalidParam,InvalidProperty]
       withBuffers valueCount blobCount f =
          sysWith (allocaArray' valueCount) $ \valuePtr ->
             sysWith (allocaArray' blobCount) $ \blobPtr -> do
@@ -150,7 +150,7 @@ getPropertyMeta fd pid = runFlowT $ do
          bs <- sysIO (peekArray (fromIntegral m) p2)
          f vs bs
          
-      getValues :: Word32 -> Word32 -> PropertyTypeType -> Sys (Flow '[InvalidParam,InvalidProperty] PropertyType)
+      getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow Sys '[PropertyType,InvalidParam,InvalidProperty]
       getValues nval nblob ttype = case ttype of
          PropTypeObject      -> flowRet PropObject
          PropTypeRange       -> withValueBuffer nval (flowRet . PropRange)
@@ -160,6 +160,6 @@ getPropertyMeta fd pid = runFlowT $ do
          PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
             flowRet (PropBitmask [(peValue e, convertCString $ peName e) | e <- es])
 
-         PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> runFlowT $ do
-            bids' <- forM bids (liftFlowT . getBlob)
-            return (PropBlob (ids `zip` bids'))
+         PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
+            flowTraverse getBlob bids
+               >~^> return . PropBlob . (ids `zip`)

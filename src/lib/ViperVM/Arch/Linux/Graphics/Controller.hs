@@ -23,7 +23,7 @@ where
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Data.Word
-import Control.Monad (void,forM)
+import Control.Monad (void)
 
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
@@ -70,7 +70,7 @@ fromStructController hdl StructController{..} =
 
       
 -- | Get Controller
-getControllerFromID :: Handle -> ControllerID -> Sys (Flow '[EntryNotFound, InvalidHandle] Controller)
+getControllerFromID :: Handle -> ControllerID -> Flow Sys '[Controller,EntryNotFound, InvalidHandle]
 getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl) >>= \case
       Right e     -> flowRet (fromStructController hdl e)
       Left EINVAL -> flowSet (InvalidHandle hdl)
@@ -125,10 +125,10 @@ switchFrameBuffer' hdl crtcid fb flags = do
    void <$> ioctlPageFlip s hdl
 
 -- | Get controllers (discard errors)
-getControllers :: Handle -> Sys (Flow '[InvalidHandle,EntryNotFound] [Controller])
-getControllers hdl = runFlowT $ do
-   res <- liftFlowT $ getResources hdl
-   forM (resControllerIDs res) (liftFlowT . getControllerFromID hdl)
+getControllers :: Handle -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
+getControllers hdl = do
+   res <- getResources hdl
+   res ~#> flowTraverse (getControllerFromID hdl) . resControllerIDs
 
 -- | Get controller gama look-up table
 getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])

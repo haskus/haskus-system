@@ -166,8 +166,6 @@ library
     ViperVM.Utils.Variant
     ViperVM.Utils.HArray
     ViperVM.Utils.Flow
-    ViperVM.Utils.Flow.Monad
-    ViperVM.Utils.MFlow
     ViperVM.Utils.MultiState
     ViperVM.Utils.Hash
     ViperVM.Utils.HList

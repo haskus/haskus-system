@@ -29,7 +29,7 @@ type PropID    = Word32
 type PropValue = Word64
 
 -- | Set object properties atomically
-setAtomic :: Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Sys (Flow '[InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound] ())
+setAtomic :: Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Flow Sys '[(),InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound]
 setAtomic hdl flags objProps = do
 
    let

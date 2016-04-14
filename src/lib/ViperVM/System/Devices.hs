@@ -8,11 +8,11 @@ where
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.Arch.Linux.Handle
 import ViperVM.System.Sys
+import ViperVM.System.Process
 
 import Control.Concurrent.STM
 import Control.Concurrent
-import Control.Monad (void, forever)
-import Control.Monad.Trans.Class (lift)
+import Control.Monad (forever)
 import System.Posix.Types (Fd(..))
 
 
@@ -20,16 +20,16 @@ import System.Posix.Types (Fd(..))
 makeKernelEventChannel :: Sys (TChan KernelEvent)
 makeKernelEventChannel = do
    fd <- createKernelEventSocket
-   ch <- lift newBroadcastTChanIO
+   ch <- sysIO newBroadcastTChanIO
    let
       Handle lowfd = fd
       rfd = Fd (fromIntegral lowfd)
-      go  = forever $ do
+      go  = sysIO $ forever $ do
                threadWaitRead rfd
                ev <- runSys $ receiveKernelEvent fd
                atomically $ writeTChan ch ev
 
-   void $ lift $ forkIO go
+   sysFork go
    return ch
 
 -- | Read events in the given channel forever
@@ -37,6 +37,5 @@ onEvent :: TChan e -> (e -> Sys ()) -> Sys ()
 onEvent bch f = do
    sysLog LogInfo "Creating event listener"
 
-   lift $ do
-      ch <- atomically $ dupTChan bch
-      void $ forkIO $ forever (atomically (readTChan ch) >>= runSys' . f)
+   ch <- sysIO $ atomically $ dupTChan bch
+   sysFork $ sysIO $ forever (atomically (readTChan ch) >>= runSys' . f)

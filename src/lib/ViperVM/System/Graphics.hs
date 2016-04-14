@@ -19,9 +19,9 @@ where
 
 import ViperVM.System.Sys
 import ViperVM.System.System
+import ViperVM.System.Process
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Utils.Flow
-import ViperVM.Utils.Variant
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
@@ -42,13 +42,12 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Monad (void,forM,forM_)
+import Control.Monad (forM,forM_)
 import Foreign.Ptr
 
 import Control.Concurrent.STM
 import Control.Concurrent
 import Data.Foldable (traverse_)
-import Control.Monad.Trans.Class (lift)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
 import Data.List (isPrefixOf)
@@ -94,8 +93,8 @@ newEventWaiterThread fd@(Handle lowfd) = do
       bufsz = 1000 -- buffer size
       rfd = Fd (fromIntegral lowfd)
 
-   ch <- lift $ newBroadcastTChanIO
-   void $ lift $ forkIO $ allocaBytes bufsz $ \ptr -> do
+   ch <- sysIO $ newBroadcastTChanIO
+   sysFork $ sysIO $ allocaBytes bufsz $ \ptr -> do
       let go = do
             threadWaitRead rfd
             r <- sysRead fd ptr (fromIntegral bufsz)
@@ -179,28 +178,23 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
 
 -- | Retreive graphic card connectors
-graphicCardConnectors :: GraphicCard -> Sys (Flow '[InvalidHandle,InvalidParam,EntryNotFound,InvalidProperty] [Connector])
+graphicCardConnectors :: GraphicCard -> Flow Sys '[[Connector],InvalidParam,EntryNotFound,InvalidProperty,InvalidHandle]
 graphicCardConnectors = getConnectors . graphicCardHandle
 
 -- | Retrieve graphic card controllers
-graphicCardControllers :: GraphicCard -> Sys (Flow '[InvalidHandle,EntryNotFound] [Controller])
+graphicCardControllers :: GraphicCard -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
 graphicCardControllers = getControllers . graphicCardHandle
 
 -- | Retrieve graphic card encoders
-graphicCardEncoders :: GraphicCard -> Sys (Flow '[InvalidHandle,InvalidParam,EntryNotFound] [Encoder])
+graphicCardEncoders :: GraphicCard -> Flow Sys '[[Encoder],EntryNotFound,InvalidHandle]
 graphicCardEncoders = getEncoders . graphicCardHandle
 
 -- | Retrieve graphic card planes
 graphicCardPlanes :: GraphicCard -> Sys [Plane]
-graphicCardPlanes card = do
+graphicCardPlanes card = flowRes $ do
    let hdl = graphicCardHandle card
-       act :: Sys (Flow '[InvalidHandle,InvalidPlane] [Plane])
-       act = runFlowT $ do
-         pids <- liftFlowT $ getPlaneResources hdl
-         forM pids (liftFlowT . getPlane hdl)
-   act
+   getPlaneResources hdl >~> flowTraverse (getPlane hdl)
    -- shouldn't happen, except if we unplug the graphic card
-   `flowMCatch` (\(InvalidHandle _) -> error "Invalid handle")
+   >#!~> (\(InvalidHandle _) -> error "Invalid handle")
    -- shouldn't happen, planes are invariant
-   `flowMCatch` (\(InvalidPlane _)  -> error "Invalid plane" )
-   `flowMap` singleVariant
+   >#!~> (\(InvalidPlane _)  -> error "Invalid plane" )
