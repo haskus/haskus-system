@@ -44,6 +44,7 @@ module ViperVM.Utils.Variant
    , updateVariant5
    , liftEither
    , liftEitherM
+   , Member
    , Catchable
    , Liftable
    , Matchable
@@ -375,14 +376,17 @@ prependVariant _ (Variant t a) = Variant (n+t) a
 fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)
 fusionVariant = liftVariant
 
+type Member x xs =
+   ( IsMember x xs ~ 'True
+   , x ~ TypeAt (IndexOf x xs) xs
+   , KnownNat (IndexOf x xs)
+   )
+
 -- | Set the first matching type of a Variant
-setVariant :: forall a l n.
-   ( IsMember a l ~ 'True
-   , n ~ IndexOf a l
-   , a ~ TypeAt n l
-   , KnownNat n
+setVariant :: forall a l.
+   ( Member a l
    ) => a -> Variant l
-setVariant = setVariantN (Proxy :: Proxy n)
+setVariant = setVariantN (Proxy :: Proxy (IndexOf a l))
 
 type Liftable xs ys =
    ( IsSubset xs ys ~ 'True
