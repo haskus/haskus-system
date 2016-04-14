@@ -31,6 +31,7 @@ module ViperVM.Utils.HList
    , IndexOf
    , MaybeIndexOf
    , TypeAt
+   , Fusion
    , HFoldr' (..)
    , HTuple' (..)
    , Single (..)
@@ -148,6 +149,8 @@ type family TypeAt (n :: Nat) (l :: [*]) where
    TypeAt 0 (x ': xs) = x
    TypeAt n (x ': xs) = TypeAt (n-1) xs
 
+type family Fusion (xs :: [*]) (ys :: [*]) where
+   Fusion xs ys = Nub (Concat xs ys)
 
 -- | Like HFoldr but only use types, not values!
 --
