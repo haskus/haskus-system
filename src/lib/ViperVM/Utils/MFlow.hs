@@ -12,6 +12,8 @@ module ViperVM.Utils.MFlow
    , catch
    , return0
    , return'
+   , (~>)
+   , (>~>)
    )
 where
 
@@ -40,6 +42,24 @@ withFlow ::
 withFlow v f = case removeType v of
    Left a   -> liftVariant <$> f a
    Right ys -> return (liftVariant ys)
+
+(~>) ::
+   ( Liftable xs zs
+   , Liftable (Filter a l) zs
+   , zs ~ Fusion xs (Filter a l)
+   , Monad m
+   , Catchable a l
+   ) => Variant l -> (a -> MFlow m xs) -> MFlow m zs
+(~>) = withFlow
+
+(>~>) ::
+   ( Liftable xs zs
+   , Liftable (Filter a l) zs
+   , zs ~ Fusion xs (Filter a l)
+   , Monad m
+   , Catchable a l
+   ) => m (Variant l) -> (a -> MFlow m xs) -> MFlow m zs
+(>~>) f g = f >>= (~> g)
 
 return0 :: Monad m => x -> MFlow m (x ': xs)
 return0 = return . setVariant0
