@@ -57,6 +57,7 @@ module ViperVM.Utils.Variant
    , prependVariant
    , fusionVariant
    , liftVariant
+   , toEither
    )
 where
 
@@ -433,3 +434,15 @@ liftVariant v = s
                (undefined :: HList (Indexes xs))
 
       Just s = snd res
+
+
+toEither :: forall a b. Variant '[a,b] -> Either b a
+toEither v = case removeType v1 of
+      Left x  -> x
+      Right _ -> undefined
+   where
+      v1 :: Variant '[Either b a, Either b a]
+      v1 = updateVariant0 Right v2
+      v2 :: Variant '[a, Either b a]
+      v2 = updateVariant1 Left v
+   
