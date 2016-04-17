@@ -5,11 +5,15 @@ module ViperVM.System.Graphics.Drawing
    , blendImage
    , loadPng
    , fillFrame
+   -- re-export
    , module Graphics.Rasterific
+   , module Graphics.Rasterific.Texture
+   , PixelRGBA8 (..)
    )
 where
 
 import Graphics.Rasterific
+import Graphics.Rasterific.Texture
 import Codec.Picture.Png
 import Codec.Picture.Types
 import Data.Bits
