@@ -55,6 +55,8 @@ module ViperVM.Utils.Flow
    , (>..~!>)
    , (..%~!!>)
    , (>..%~!!>)
+   , (..%~!>)
+   , (>..%~!>)
    -- * Caught element operations
    , (%~.>)
    , (>%~.>)
@@ -414,6 +416,21 @@ liftm op x a = do
    ) => Flow m (x ': xs) -> (y -> m ()) -> Flow m (x ': Filter y xs)
 (>..%~!!>) = liftm (..%~!!>)
 
+-- | Match in the tail and perform an effect
+(..%~!>) ::
+   ( Monad m
+   , Catchable y xs
+   ) => Variant (x ': xs) -> (y -> m ()) -> m ()
+(..%~!>) v f = case headVariant v of
+   Right _ -> return ()
+   Left xs -> xs %~!> f
+
+-- | Match in the tail and perform an effect
+(>..%~!>) ::
+   ( Monad m
+   , Catchable y xs
+   ) => Flow m (x ': xs) -> (y -> m ()) -> m ()
+(>..%~!>) = liftm (..%~!>)
 
 ----------------------------------------------------------
 -- Caught element operations

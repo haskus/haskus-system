@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
@@ -15,6 +17,8 @@ import ViperVM.Arch.Linux.Time
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Internals.Input
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Utils.Variant
+import ViperVM.Utils.Flow
 
 
 import Foreign.C.String (withCString)
@@ -24,9 +28,10 @@ import Data.Foldable (traverse_)
 --import Foreign.Storable (poke)
 import Text.Printf
 
-check :: Either ErrorCode a -> a
-check (Right a) = a
-check (Left err) = error ("syscall error code " ++ show err)
+check :: Variant '[a,ErrorCode] -> a
+check v = case headVariant v of
+   Right a  -> a
+   Left err -> error ("syscall error code " ++ show err)
 
 main :: IO ()
 main = do
@@ -48,7 +53,7 @@ main = do
    putStrLn "Checking for access to dummy.result file"
    fExist <- sysAccess "dummy.result" BitSet.empty
    fWrite <- sysAccess "dummy.result" [AccessWrite]
-   case (fExist,fWrite) of
+   case (headVariant fExist, headVariant fWrite) of
       (Right _, Left _) -> putStrLn " - File exists and is NOT writeable"
       (Right _, Right _) -> putStrLn " - File exists and is writeable" >> writeDummyFile
       (Left _, _) -> putStrLn " - File does not exist" >> writeDummyFile
@@ -90,22 +95,23 @@ main = do
 
 
    putStrLn "Now forking"
-   sysFork >>= \case
-      Right (ProcessID 0) -> do
-         putStrLn "I'm the child process!"
-         sysExit 0
-      Right (ProcessID n) ->
-         putStrLn (printf "Child process created with PID %d" n)
-      Left _ -> error "Error while forking"
+   sysFork
+      >%~=> \case
+         ProcessID 0 -> do
+            putStrLn "I'm the child process!"
+            sysExit 0
+         ProcessID n ->
+            putStrLn (printf "Child process created with PID %d" n)
+      >..%~!> \(err :: ErrorCode) -> error ("Error while forking: " ++ show err)
 
-   sysGetCurrentDirectory >>= \(Right cwd) -> 
+   sysGetCurrentDirectory >.~!> \cwd -> 
       putStrLn (printf "Current directory is: %s" cwd)
 
    let ncwd = "/usr/bin"
    putStrLn (printf "Setting current directory to: %s" ncwd)
-   Right _ <- sysSetCurrentDirectoryPath ncwd
+   _ <- sysSetCurrentDirectoryPath ncwd
 
-   sysGetCurrentDirectory >>= \(Right cwd) -> 
+   sysGetCurrentDirectory >.~!> \cwd -> 
       putStrLn (printf "Current directory is: %s" cwd)
 
    putStrLn "Applying stat to /usr/bin/vim"
@@ -113,12 +119,12 @@ main = do
    print stat
 
 
-   Right perm <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
+   perm <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "Previous umask: " ++ show perm
-   Right perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
+   perm2 <- sysSetProcessUMask [PermUserRead,PermUserWrite,PermUserExecute]
    putStrLn $ "New umask: " ++ show perm2
 
-   Right info <- systemInfo
+   info <- systemInfo
    print info
 
    let 
@@ -130,7 +136,7 @@ main = do
       printClock clk = do
          ret <- sysClockGetTime clk
          res <- sysClockGetResolution clk
-         putStrLn $ case (ret,res) of
+         putStrLn $ case (headVariant ret, headVariant res) of
             (Right t, Right r) -> 
                "Clock " ++ show clk ++ ": " ++ show (printTimeSpec t) ++ " (resolution: " ++ show (printTimeSpec r) ++ ")"
             (Right t, Left err) -> 
@@ -162,15 +168,16 @@ main = do
    print entries2
 
    putStrLn "Sleeping for 2 seconds (interruptible)..."
-   sysNanoSleep (TimeSpec 2 0) >>= \case
-      Left err -> putStrLn $ "Sleeping failed with " ++ show err
-      Right (WokenUp remd) -> putStrLn $ "Woken-up, remaining time: " ++ show remd
-      Right CompleteSleep -> putStrLn $ "Sleep completed"
+   sysNanoSleep (TimeSpec 2 0)
+      >..~=> (\err -> putStrLn $ "Sleeping failed with " ++ show err)
+      >.~!> \case
+         WokenUp remd  -> putStrLn $ "Woken-up, remaining time: " ++ show remd
+         CompleteSleep -> putStrLn $ "Sleep completed"
 
    putStrLn "Sleeping for 2 seconds (automatic relaunch)..."
-   nanoSleep (TimeSpec 2 0) >>= \case
-      Left err -> putStrLn $ "Sleeping failed with " ++ show err
-      Right _  -> putStrLn $ "Sleeping succeeded"
+   nanoSleep (TimeSpec 2 0)
+      >..~=> (\err -> putStrLn $ "Sleeping failed with " ++ show err)
+      >.~!> (const (putStrLn $ "Sleeping succeeded"))
 
    putStrLn "Get device info"
    dev <- check <$> sysOpen "/dev/input/event0" [] [PermUserRead]
@@ -202,14 +209,14 @@ main = do
    devLeds <- getDeviceLEDs 50 dev
    putStrLn $ "Device LEDs: " ++ show devLeds
 
-   case repeatSettings of
-      Left _ -> putStrLn "Skip: set repeat period"
-      Right rs -> do
+   repeatSettings
+      ..~=> const (putStrLn "Skip: set repeat period")
+      >.~!> \rs -> do
          putStrLn "Set repeat period very low"
          let nrs = rs { repeatDelay = 250, repeatPeriod = 33 } 
-         setRepeatSettings nrs dev >>= \case
-            Left err -> putStrLn $ "Failed: " ++ show err
-            Right _  -> do
+         setRepeatSettings nrs dev
+            >..~=> (\err -> putStrLn ("Failed: " ++ show err))
+            >.~!> \_ -> do
                rs2 <- getRepeatSettings dev
                putStrLn $ "New repeat settings: " ++ show rs2
 
