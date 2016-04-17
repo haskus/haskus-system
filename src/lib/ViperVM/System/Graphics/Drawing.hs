@@ -4,6 +4,7 @@ module ViperVM.System.Graphics.Drawing
    ( BlendOp (..)
    , blendImage
    , loadPng
+   , fill
    )
 where
 
@@ -37,13 +38,13 @@ data BlendOp
 translate :: (Int,Int,Int,Int) -> (Int,Int) -> (Int,Int,Int,Int)
 translate (x,y,w,h) (px,py) = (x+px,y+py,w,h)
 
-intersect :: (Int,Int,Int,Int) -> (Int,Int,Int,Int) -> Maybe (Int,Int,Int,Int)
+intersect :: (Int,Int,Int,Int) -> (Int,Int,Int,Int) -> (Int,Int,Int,Int)
 intersect (x1,y1,w1,h1) (x2,y2,w2,h2)
-   | x1 >= x2+w2 = Nothing
-   | x2 >= x1+w1 = Nothing
-   | y1 >= y2+h2 = Nothing
-   | y2 >= y1+h1 = Nothing
-   | otherwise   = Just (x', y', min (x1+w1) (x2+w2) - x', min (y1+h1) (y2+h2) - y')
+   | x1 >= x2+w2 = (0,0,0,0)
+   | x2 >= x1+w1 = (0,0,0,0)
+   | y1 >= y2+h2 = (0,0,0,0)
+   | y2 >= y1+h1 = (0,0,0,0)
+   | otherwise   = (x', y', min (x1+w1) (x2+w2) - x', min (y1+h1) (y2+h2) - y')
          where
             x' = max x1 x2
             y' = max y1 y2
@@ -54,19 +55,42 @@ loadPng bs = img
       Right (ImageRGBA8 img) = decodePng bs
 
 
+-- | check framebuffer pixel format
+checkPixelFormat :: FrameBuffer -> IO ()
+checkPixelFormat fb = do
+   let pixFmt = fbPixelFormat fb
+
+   case formatFormat pixFmt of
+      ARGB8888 -> return ()
+      XRGB8888 -> return ()
+      _        -> error "Unsupported pixel format"
+
+
+-- | Fill with a color
+fill :: GenericFrame -> Word32 -> IO ()
+fill gfb color = do
+   let
+      fb     = genericFrameBuffer gfb
+
+   checkPixelFormat fb
+      
+   let
+      [buf] = genericFrameBuffers gfb
+      addr  = mappedBufferPointer buf
+
+   forLoop 0 (< fromIntegral (fbHeight fb)) (+1) $ \y ->
+      forLoop 0 (< fromIntegral (fbWidth fb)) (+1) $ \x -> do
+         let !off = (x + (y*fromIntegral (fbWidth fb))) * 4
+         pokeByteOff addr off (color :: Word32)
+
+-- | Display an image
 blendImage :: GenericFrame -> Image PixelRGBA8 -> BlendOp -> (Int,Int) -> (Int,Int,Int,Int) -> IO ()
 blendImage gfb img op pos clip = do
 
    let
       fb     = genericFrameBuffer gfb
-      pixFmt = fbPixelFormat fb
 
-   -- check framebuffer pixel format
-   case formatFormat pixFmt of
-      ARGB8888 -> return ()
-      XRGB8888 -> return ()
-      _        -> error "Unsupported pixel format"
-      
+   checkPixelFormat fb
 
    let
       [buf] = genericFrameBuffers gfb
@@ -80,7 +104,7 @@ blendImage gfb img op pos clip = do
       clip'         = (cx,cy, min (imageWidth img - cx) cw, min (imageHeight img - cy) ch)
       (px,py)       = pos
       frame         = (0,0,fromIntegral w, fromIntegral h)
-      Just dstRect  = intersect (translate clip' pos) frame
+      dstRect       = translate clip' pos `intersect` frame
       srcRect       = translate dstRect (-1 * px, -1 * py)
 
       (sx,sy,sw,sh) = srcRect
