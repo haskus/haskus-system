@@ -4,10 +4,12 @@ module ViperVM.System.Graphics.Drawing
    ( BlendOp (..)
    , blendImage
    , loadPng
-   , fill
+   , fillFrame
+   , module Graphics.Rasterific
    )
 where
 
+import Graphics.Rasterific
 import Codec.Picture.Png
 import Codec.Picture.Types
 import Data.Bits
@@ -67,8 +69,8 @@ checkPixelFormat fb = do
 
 
 -- | Fill with a color
-fill :: GenericFrame -> Word32 -> IO ()
-fill gfb color = do
+fillFrame :: GenericFrame -> Word32 -> IO ()
+fillFrame gfb color = do
    let
       fb     = genericFrameBuffer gfb
 
@@ -83,9 +85,10 @@ fill gfb color = do
          let !off = (x + (y*fromIntegral (fbWidth fb))) * 4
          pokeByteOff addr off (color :: Word32)
 
+
 -- | Display an image
 blendImage :: GenericFrame -> Image PixelRGBA8 -> BlendOp -> (Int,Int) -> (Int,Int,Int,Int) -> IO ()
-blendImage gfb img op pos clip = do
+blendImage gfb img op pos clp = do
 
    let
       fb     = genericFrameBuffer gfb
@@ -100,7 +103,7 @@ blendImage gfb img op pos clip = do
    -- compute drawing rect
    let
       (w,h)         = (fbWidth fb, fbHeight fb)
-      (cx,cy,cw,ch) = clip
+      (cx,cy,cw,ch) = clp
       clip'         = (cx,cy, min (imageWidth img - cx) cw, min (imageHeight img - cy) ch)
       (px,py)       = pos
       frame         = (0,0,fromIntegral w, fromIntegral h)
