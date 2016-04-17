@@ -52,7 +52,7 @@ data TimeVal = TimeVal
 timeValDiff :: TimeVal -> TimeVal -> Word64
 timeValDiff (TimeVal s1 ms1) (TimeVal s2 ms2) = r
    where
-      r = (s2-s1)*1000000 + ms2 - ms1
+      r = (s1-s2)*1000000 + ms1 - ms2
 
 instance Storable TimeVal where
    sizeOf      = cSizeOf
