@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 
 
 module ViperVM.Arch.Linux.Time
@@ -28,6 +29,7 @@ import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Utils.Flow
 
 data TimeSpec = TimeSpec {
    tsSeconds      :: {-# UNPACK #-} !Int64,
@@ -124,17 +126,15 @@ sysNanoSleep ts =
       alloca $ \(rem' :: Ptr TimeSpec) -> do
          ret <- syscall_nanosleep ts' rem'
          case defaultCheck ret of
-            Nothing    -> return (Right CompleteSleep)
-            Just EINTR -> Right . WokenUp <$> peek rem'
-            Just err   -> return (Left err)
+            Nothing    -> flowRet CompleteSleep
+            Just EINTR -> flowRet =<< (WokenUp <$> peek rem')
+            Just err   -> flowRet1 err
 
 -- | Suspend the calling thread for the specified amount of time
 --
 -- When interrupted by a signal, suspend again for the remaining amount of time
 nanoSleep :: TimeSpec -> SysRet ()
-nanoSleep ts = do
-   ret <- sysNanoSleep ts
-   case ret of
-      Left err            -> return (Left err)
-      Right CompleteSleep -> return (Right ())
-      Right (WokenUp r)   -> nanoSleep r
+nanoSleep ts = sysNanoSleep ts
+   >.~#> \case
+      CompleteSleep -> flowRet ()
+      (WokenUp r)   -> nanoSleep r

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | The atomic interface is the new API to use DRM/KMS
 module ViperVM.Arch.Linux.Graphics.Atomic
@@ -41,7 +42,7 @@ setAtomic hdl flags objProps = do
       vals   = fmap snd (concat pvs) -- [Val]
 
 
-   r <- sysIO $ withArray objs $ \pobjs ->
+   sysIO $ withArray objs $ \pobjs ->
       withArray nprops $ \pnprops ->
          withArray props $ \pprops ->
             withArray vals $ \pvals -> do
@@ -58,13 +59,12 @@ setAtomic hdl flags objProps = do
                      , atomUserData      = 0 -- used for event generation
                      }
                ioctlAtomic s hdl
-
-   case r of
-      Right _     -> flowRet ()
-      Left EBADF  -> flowSet (InvalidHandle hdl)
-      Left EINVAL -> flowSet InvalidParam
-      Left ENOMEM -> flowSet MemoryError
-      Left ENOENT -> flowSet EntryNotFound
-      Left ERANGE -> flowSet InvalidRange
-      Left ENOSPC -> flowSet InvalidRange
-      Left e      -> unhdlErr "setAtomic" e
+                  >.-.> const ()
+                  >..%~#> \case
+                     EBADF  -> flowSet (InvalidHandle hdl)
+                     EINVAL -> flowSet InvalidParam
+                     ENOMEM -> flowSet MemoryError
+                     ENOENT -> flowSet EntryNotFound
+                     ERANGE -> flowSet InvalidRange
+                     ENOSPC -> flowSet InvalidRange
+                     e      -> unhdlErr "setAtomic" e

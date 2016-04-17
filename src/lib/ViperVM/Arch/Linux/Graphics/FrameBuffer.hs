@@ -18,7 +18,6 @@ import Data.List (zip4)
 import Data.Word
 import Foreign.Marshal.Array
 import Foreign.Ptr
-import Control.Monad (void)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -27,6 +26,7 @@ import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Utils.Tuples
+import ViperVM.Utils.Flow
 
 -- | Buffer
 data Buffer = Buffer
@@ -75,13 +75,13 @@ addFrameBuffer hdl width height fmt flags buffers = do
    let s = FrameBuffer (FrameBufferID 0) width height
                fmt flags buffers
 
-   fmap toFrameBuffer <$> ioctlAddFrameBuffer (fromFrameBuffer s) hdl
+   ioctlAddFrameBuffer (fromFrameBuffer s) hdl >.-.> toFrameBuffer
 
 -- | Release a frame buffer
 removeFrameBuffer :: Handle -> FrameBuffer -> SysRet ()
 removeFrameBuffer hdl fb = do
    let FrameBufferID fbid = fbID fb
-   void <$> ioctlRemoveFrameBuffer fbid hdl
+   ioctlRemoveFrameBuffer fbid hdl >.-.> const ()
 
 
 -- | Indicate dirty parts of a framebuffer
@@ -102,6 +102,6 @@ dirtyFrameBuffer hdl fb mode = do
                , fdNumClips = fromIntegral (length clips)
                , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
                }
-      void <$> ioctlDirtyFrameBuffer s hdl
+      ioctlDirtyFrameBuffer s hdl >.-.> const ()
 
 

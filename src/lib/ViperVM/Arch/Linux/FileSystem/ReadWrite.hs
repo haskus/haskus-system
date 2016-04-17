@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module ViperVM.Arch.Linux.FileSystem.ReadWrite
    ( IOVec(..)
@@ -31,6 +33,7 @@ import GHC.Generics (Generic)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Utils.Flow
 
 
 -- | Entry for vectors of buffers
@@ -118,21 +121,17 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
 readByteString :: Handle -> Int -> SysRet ByteString
 readByteString fd size = do
    b <- mallocBytes size
-   ret <- sysRead fd b (fromIntegral size)
-   case ret of
-      Left err -> return (Left err)
-      Right sz -> Right <$> unsafePackCStringLen (b',sz')
-         where
-            sz' = fromIntegral sz
-            b'  = castPtr b
+   sysRead fd b (fromIntegral size)
+      -- free the pointer on error
+      >..~=> const (free b)
+      -- otherwise return the bytestring
+      >.~.> \sz -> unsafePackCStringLen (castPtr b, fromIntegral sz)
 
 -- | Write a bytestring
-writeByteString :: Handle -> ByteString -> SysRet Word64
-writeByteString fd bs = unsafeUseAsCStringLen bs (go 0)
+writeByteString :: Handle -> ByteString -> SysRet ()
+writeByteString fd bs = unsafeUseAsCStringLen bs go
    where
-      go n (ptr,0)   = return (Right n)
-      go n (ptr,len) = do
-         c <- sysWrite fd ptr (fromIntegral len)
-         case c of
-            Left err -> return (Left err)
-            Right c' -> go (n+c') (ptr `plusPtr` fromIntegral c', len - fromIntegral c')
+      go (_,0)     = flowRet ()
+      go (ptr,len) = sysWrite fd ptr (fromIntegral len)
+         >.~#> \c -> go ( ptr `plusPtr` fromIntegral c
+                        , len - fromIntegral c)

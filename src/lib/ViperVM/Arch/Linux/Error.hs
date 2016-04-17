@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 
 module ViperVM.Arch.Linux.Error
-   ( sysOnSuccess
+   ( sysFlow
+   , sysOnSuccess
    , sysOnSuccessVoid
    , sysCallAssert
    , sysCallAssert'
@@ -24,6 +26,8 @@ import Data.Int
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.System.Sys
+import ViperVM.Utils.Flow
+import ViperVM.Utils.Variant
 
 ------------------------------------------------
 -- Errors
@@ -40,10 +44,13 @@ data InvalidRange          = InvalidRange          deriving (Show,Eq)
 -- System calls
 ------------------------------------------------
 
-sysOnSuccess :: IO Int64 -> (Int64 -> a) -> Sys (Either ErrorCode a)
+sysFlow :: IO Int64 -> Flow Sys '[Int64,ErrorCode]
+sysFlow f = sysIO (onSuccess f id)
+
+sysOnSuccess :: IO Int64 -> (Int64 -> a) -> Flow Sys '[a,ErrorCode]
 sysOnSuccess a f = sysIO (onSuccess a f)
 
-sysOnSuccessVoid :: IO Int64 -> Sys (Either ErrorCode ())
+sysOnSuccessVoid :: IO Int64 -> Flow Sys '[(),ErrorCode]
 sysOnSuccessVoid a = sysIO (onSuccessVoid a)
 
 -- | Assert that the given action doesn't fail
@@ -53,9 +60,9 @@ sysCallAssert text act = do
    sysCallAssert' text r
 
 -- | Assert that the given action doesn't fail
-sysCallAssert' :: String -> Either ErrorCode a -> Sys a
+sysCallAssert' :: String -> Variant '[a,ErrorCode] -> Sys a
 sysCallAssert' text r =
-   case r of
+   case toEither r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
          sysError msg
@@ -68,21 +75,21 @@ sysCallAssert' text r =
 sysCallAssertQuiet :: String -> SysRet a -> Sys a
 sysCallAssertQuiet text act = do
    r <- sysIO act
-   case r of
+   case toEither r of
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
          sysError msg
       Right v  -> return v
 
 -- | Log a warning if the given action fails
-sysCallWarn :: String -> SysRet a -> Sys (Either ErrorCode a)
+sysCallWarn :: String -> SysRet a -> Flow Sys '[a,ErrorCode]
 sysCallWarn text act = do
    r <- sysIO act
-   case r of
+   case toEither r of
+      Right _ -> do
+         let msg = printf "%s (success)" text
+         sysLog LogInfo msg
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
          sysLog LogWarning msg
-      Right _  -> do
-         let msg = printf "%s (success)" text
-         sysLog LogInfo msg
    return r

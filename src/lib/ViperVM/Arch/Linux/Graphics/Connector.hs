@@ -64,117 +64,122 @@ data Connector = Connector
    , connectorHandle             :: Handle               -- ^ Graphic card
    } deriving (Show)
 
+getConnector' :: Handle -> StructGetConnector -> Flow Sys '[StructGetConnector,InvalidParam,EntryNotFound]
+getConnector' hdl r = sysIO (ioctlGetConnector r hdl) >%~#> \case
+   EINVAL -> flowSet InvalidParam
+   ENOENT -> flowSet EntryNotFound
+   e      -> unhdlErr "getModeConnector" e
+
 -- | Get connector
 getConnectorFromID :: Handle -> ConnectorID -> Flow Sys '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
-getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' res >~#> getValues
+getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~#> getValues
    where
       res = StructGetConnector 0 0 0 0 0 0 0 0 cid
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
                (toEnumField SubPixelNone)
 
-      allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> Sys b) -> Sys b
-      allocaArray' n = sysWith (allocaArray (fromIntegral n))
-
-      peekArray' :: (Storable a, Integral c) => c -> Ptr a -> Sys [a]
-      peekArray' n ptr = sysIO (peekArray (fromIntegral n) ptr)
-
-      getConnector' :: StructGetConnector -> Flow Sys '[StructGetConnector,InvalidParam,EntryNotFound]
-      getConnector' r = sysIO (ioctlGetConnector r hdl) >>= \case
-         Left EINVAL -> flowSet InvalidParam
-         Left ENOENT -> flowSet EntryNotFound
-         Right g     -> flowRet g
-         Left e      -> unhdlErr "getModeConnector" e
-
-
       getValues :: StructGetConnector -> Flow Sys '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
       getValues res2 = do
-            rawGet >~#> \(rawRes,conn) ->
+            rawGet hdl res2 >.~#> \(rawRes,conn) ->
                -- we need to check that the number of resources is still the same (as
                -- resources may have appeared between the time we get the number of
                -- resources and the time we get them...)
                -- If not, we redo the whole process
-               if connModesCount    res2 < connModesCount    rawRes
+               if   connModesCount    res2 < connModesCount    rawRes
                  || connPropsCount    res2 < connPropsCount    rawRes
                  || connEncodersCount res2 < connEncodersCount rawRes
                   then getConnectorFromID hdl connId
                   else flowRet conn
-         where
-            rawGet :: Flow Sys '[(StructGetConnector,Connector),InvalidParam,InvalidProperty,EntryNotFound]
-            rawGet = allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->
-               allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
-                  allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
-                     allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> do
-                        let
-                           cv = fromIntegral . ptrToWordPtr
-                           res3 = res2 { connEncodersPtr   = cv es
-                                       , connModesPtr      = cv ms
-                                       , connPropsPtr      = cv ps
-                                       , connPropValuesPtr = cv pvs
-                                       }
 
-                        getConnector' res3 >~#> \res4 ->
-                           parseRes res2 res4 >~^> \res5 ->
-                              return (res4,res5)
+rawGet :: Handle -> StructGetConnector -> Flow Sys '[(StructGetConnector,Connector),InvalidParam,InvalidProperty,EntryNotFound]
+rawGet hdl res2 = do
 
+   let
+      allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> Sys b) -> Sys b
+      allocaArray' n = sysWith (allocaArray (fromIntegral n))
+
+
+   allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->
+      allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
+         allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
+            allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> do
+               let
+                  cv = fromIntegral . ptrToWordPtr
+                  res3 = res2 { connEncodersPtr   = cv es
+                              , connModesPtr      = cv ms
+                              , connPropsPtr      = cv ps
+                              , connPropValuesPtr = cv pvs
+                              }
+
+               getConnector' hdl res3 
+                  >.~^> \res4 -> do
+                     parseRes hdl res2 res4 >.-.> (res4,)
+
+
+parseRes :: Handle -> StructGetConnector -> StructGetConnector -> Flow Sys '[Connector,InvalidParam,InvalidProperty]
+parseRes hdl res2 res4 = do
+   let
+      cv = wordPtrToPtr . fromIntegral
 
       wrapZero 0 = Nothing
       wrapZero x = Just x
 
-      parseRes :: StructGetConnector -> StructGetConnector -> Flow Sys '[Connector,InvalidParam,InvalidProperty]
-      parseRes res2 res4 = do
-         let cv = wordPtrToPtr . fromIntegral
+      peekArray' :: (Storable a, Integral c) => c -> Ptr a -> Sys [a]
+      peekArray' n ptr = sysIO (peekArray (fromIntegral n) ptr)
 
-         state <- case connConnection_ res4 of
-            1 -> do
-                  -- properties
-                  rawProps <- liftM2 RawProperty
-                              <$> peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
-                              <*> peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
-                  props <- flowFor rawProps $ \raw -> do
-                     --FIXME: store property meta in the card
-                     getPropertyMeta hdl (rawPropertyMetaID raw) >~^> \meta ->
-                        return (Property meta (rawPropertyValue raw))
+   state <- case connConnection_ res4 of
+      1 -> do
+            -- properties
+            rawProps <- liftM2 RawProperty
+                        <$> peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
+                        <*> peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
+            props <- flowFor rawProps $ \raw -> do
+               --FIXME: store property meta in the card
+               getPropertyMeta hdl (rawPropertyMetaID raw)
+                  >.-.> \meta -> Property meta (rawPropertyValue raw)
 
-                  modes <- fmap fromStructMode <$> peekArray' (connModesCount res2) (cv (connModesPtr res4))
+            modes <- fmap fromStructMode <$> peekArray' (connModesCount res2) (cv (connModesPtr res4))
 
-                  props ~^> return . Connected . ConnectedDevice
-                     modes
-                     (connWidth_ res4)
-                     (connHeight_ res4)
-                     (fromEnumField (connSubPixel_ res4))
-                     
-            2 -> flowRet Disconnected
-            _ -> flowRet ConnectionUnknown
+            props .-.> (Connected . ConnectedDevice
+               modes
+               (connWidth_ res4)
+               (connHeight_ res4)
+               (fromEnumField (connSubPixel_ res4)))
+               
+      2 -> flowRet Disconnected
+      _ -> flowRet ConnectionUnknown
 
-         encs  <- fmap EncoderID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
+   encs  <- fmap EncoderID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
 
-         state ~^> \st -> return $ Connector
-               (ConnectorID (connConnectorID_ res4))
-               (fromEnumField (connConnectorType_ res4))
-               (connConnectorTypeID_ res4)
-               st
-               encs
-               (EncoderID <$> wrapZero (connEncoderID_ res4))
-               hdl
+   state .-.> \st -> Connector
+         (ConnectorID (connConnectorID_ res4))
+         (fromEnumField (connConnectorType_ res4))
+         (connConnectorTypeID_ res4)
+         st
+         encs
+         (EncoderID <$> wrapZero (connEncoderID_ res4))
+         hdl
 
 
 -- | Get connectors
 getConnectors :: Handle -> Flow Sys '[[Connector],InvalidParam,EntryNotFound,InvalidProperty,InvalidHandle]
-getConnectors hdl = getResources hdl >~> flowTraverse (getConnectorFromID hdl) . resConnectorIDs
+getConnectors hdl = getResources hdl
+   >.-.> resConnectorIDs
+   >.~^> flowTraverse (getConnectorFromID hdl)
 
 
 -- | Encoder attached to the connector, if any
 connectorEncoder :: Connector -> Flow Sys '[Maybe Encoder,EntryNotFound,InvalidHandle]
-connectorEncoder conn =
-   getResources (connectorHandle conn) >~#> \res ->
-      case connectorEncoderID conn of
-         Nothing    -> flowRet Nothing
-         Just encId -> getEncoderFromID (connectorHandle conn) res encId >~^> return . Just
+connectorEncoder conn = case connectorEncoderID conn of
+   Nothing    -> flowRet Nothing
+   Just encId -> 
+      getResources (connectorHandle conn) >.~#> \res ->
+         getEncoderFromID (connectorHandle conn) res encId >.-.> Just
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
 connectorController :: Connector -> Flow Sys '[(Maybe Controller, Maybe Encoder),EntryNotFound,InvalidHandle]
 connectorController conn =
-   connectorEncoder conn >~#> \enc ->
+   connectorEncoder conn >.~#> \enc ->
       case enc of
          Nothing -> flowRet (Nothing,Nothing)
-         Just e  -> encoderController e >~^> return . (,enc)
+         Just e  -> encoderController e >.-.> (,enc)

@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 
 module ViperVM.Arch.Linux.Signal
@@ -26,6 +27,7 @@ import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Alloc (alloca)
 import ViperVM.Format.Binary.Vector (Vector)
+import ViperVM.Utils.Flow
 
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
@@ -55,12 +57,11 @@ sysSendSignalAll sig =
 --
 -- Send signal "0" the given process
 sysCheckProcess :: ProcessID -> SysRet Bool
-sysCheckProcess pid = do
-   err <- sysSendSignal pid 0
-   return $ case err of
-      Right _ -> Right True
-      Left ESRCH -> Right False
-      Left e -> Left e
+sysCheckProcess pid = sysSendSignal pid 0
+   >.-.> const True
+   >%~-> \case
+      ESRCH -> flowRet False
+      e     -> flowRet1 e
 
 data ChangeSignals
    = BlockSignals    -- ^ Block signals in the set

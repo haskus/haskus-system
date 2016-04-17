@@ -30,18 +30,19 @@ data InvalidHandle = InvalidHandle Handle deriving (Show,Eq)
 -- | Get descriptor flags
 getHandleFlags :: Handle -> Flow Sys '[HandleFlags,InvalidHandle]
 getHandleFlags hdl =
-   sysOnSuccess (sysFcntl hdl FcntlGetFlags (0 :: Int)) (BitSet.fromBits . fromIntegral) >>= \case
-      Right fl   -> flowRet fl
-      Left EBADF -> flowSet (InvalidHandle hdl)
-      Left e     -> unhdlErr "getHandleFlags" e
+   sysFlow (sysFcntl hdl FcntlGetFlags (0 :: Int))
+      >.-.> (BitSet.fromBits . fromIntegral)
+      >..%~#> \case
+         EBADF -> flowSet (InvalidHandle hdl)
+         e     -> unhdlErr "getHandleFlags" e
 
 -- | Set descriptor flags
 setHandleFlags :: Handle -> HandleFlags -> Flow Sys '[(),InvalidHandle]
 setHandleFlags hdl flgs =
-   sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs)) >>= \case
-      Right ()   -> flowRet ()
-      Left EBADF -> flowSet (InvalidHandle hdl)
-      Left e     -> unhdlErr "setHandleFlags" e
+   sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
+      >%~#> \case
+         EBADF -> flowSet (InvalidHandle hdl)
+         e     -> unhdlErr "setHandleFlags" e
 
 -- | Handle flags 
 data HandleFlag

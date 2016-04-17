@@ -332,7 +332,7 @@ syscall_kill = syscall2 62
 {-# INLINE syscall_kill #-}
 
 -- | uname
-syscall_uname :: CString -> IO Int64
+syscall_uname :: Ptr () -> IO Int64
 syscall_uname = syscall1 63
 {-# INLINE syscall_uname #-}
 

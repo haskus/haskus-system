@@ -17,6 +17,8 @@ module ViperVM.Utils.Flow
    , flowLift
    , flowTraverse
    , flowFor
+   , Liftable
+   , Catchable
    -- * First element operations
    , (.~.>)
    , (>.~.>)
@@ -41,6 +43,18 @@ module ViperVM.Utils.Flow
    , (>..~..>)
    , (..~^>)
    , (>..~^>)
+   , (..~#>)
+   , (>..~#>)
+   , (..%~#>)
+   , (>..%~#>)
+   , (..%~^>)
+   , (>..%~^>)
+   , (..~=>)
+   , (>..~=>)
+   , (..~!>)
+   , (>..~!>)
+   , (..%~!!>)
+   , (>..%~!!>)
    -- * Caught element operations
    , (%~.>)
    , (>%~.>)
@@ -58,6 +72,8 @@ module ViperVM.Utils.Flow
    , (>%~=>)
    , (%~!>)
    , (>%~!>)
+   , (%~!!>)
+   , (>%~!!>)
    )
 where
 
@@ -308,6 +324,97 @@ liftm op x a = do
    ) => Flow m  (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': zs)
 (>..~^>) = liftm (..~^>)
 
+-- | Extract the tail, connect the result
+(..~#>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> (Variant l -> Flow m (a ': zs)) -> Flow m (a ': zs)
+(..~#>) v f = case headVariant v of
+   Right u -> flowRet u
+   Left  l -> f l
+
+-- | Extract the tail, connect the result
+(>..~#>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> (Variant l -> Flow m (a ': zs)) -> Flow m (a ': zs)
+(>..~#>) = liftm (..~#>)
+
+-- | Match in the tail, connect to the expected result
+(..%~#>) ::
+   ( Monad m
+   , Catchable a xs
+   , Liftable (Filter a xs) ys
+   ) => Variant (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': ys)
+(..%~#>) v f = v ..~..> (\v' -> v' %~#> f)
+
+-- | Match in the tail, connect to the expected result
+(>..%~#>) ::
+   ( Monad m
+   , Catchable a xs
+   , Liftable (Filter a xs) ys
+   ) => Flow m (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': ys)
+(>..%~#>) = liftm (..%~#>)
+
+-- | Match in the tail, lift to the expected result
+(..%~^>) ::
+   ( Monad m
+   , Catchable a xs
+   , Liftable (Filter a xs) zs
+   , Liftable ys zs
+   ) => Variant (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': zs)
+(..%~^>) v f = v ..~..> (\v' -> v' %~^> f)
+
+-- | Match in the tail, lift to the expected result
+(>..%~^>) ::
+   ( Monad m
+   , Catchable a xs
+   , Liftable (Filter a xs) zs
+   , Liftable ys zs
+   ) => Flow m (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': zs)
+(>..%~^>) = liftm (..%~^>)
+
+-- | Extract the tail and perform an effect. Passthrough the input value
+(..~=>) ::
+   ( Monad m
+   ) => Variant (x ': xs) -> (Variant xs -> m ()) -> Flow m (x ': xs)
+(..~=>) v f = case headVariant v of
+   Right _ -> return v
+   Left  l -> f l >> return v
+
+-- | Extract the tail and perform an effect. Passthrough the input value
+(>..~=>) ::
+   ( Monad m
+   ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> Flow m (x ': xs)
+(>..~=>) = liftm (..~=>)
+
+-- | Extract the tail and perform an effect
+(..~!>) ::
+   ( Monad m
+   ) => Variant (x ': xs) -> (Variant xs -> m ()) -> m ()
+(..~!>) v f = case headVariant v of
+   Right _ -> return ()
+   Left  l -> f l
+
+-- | Extract the tail and perform an effect
+(>..~!>) ::
+   ( Monad m
+   ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> m ()
+(>..~!>) = liftm (..~!>)
+
+-- | Match in the tail and perform an effect
+(..%~!!>) ::
+   ( Monad m
+   , Catchable y xs
+   ) => Variant (x ': xs) -> (y -> m ()) -> Flow m (x ': Filter y xs)
+(..%~!!>) v f = v ..~..> (\xs -> xs %~!!> f)
+
+-- | Match in the tail and perform an effect
+(>..%~!!>) ::
+   ( Monad m
+   , Catchable y xs
+   ) => Flow m (x ': xs) -> (y -> m ()) -> Flow m (x ': Filter y xs)
+(>..%~!!>) = liftm (..%~!!>)
+
+
 ----------------------------------------------------------
 -- Caught element operations
 ----------------------------------------------------------
@@ -448,6 +555,22 @@ liftm op x a = do
 (%~!>) v f = case removeType v of
    Left x  -> f x
    Right _ -> return ()
+
+-- | Catch element and perform effect.
+(%~!!>) :: forall x xs m.
+   ( Monad m
+   , Catchable x xs
+   ) => Variant xs -> (x -> m ()) -> Flow m (Filter x xs)
+(%~!!>) v f = case removeType v of
+   Left x  -> f x >> undefined
+   Right u -> return u
+
+-- | Catch element and perform effect.
+(>%~!!>) :: forall x xs m.
+   ( Monad m
+   , Catchable x xs
+   ) => Flow m xs -> (x -> m ()) -> Flow m (Filter x xs)
+(>%~!!>) = liftm (%~!!>)
 
 -- | Catch element and perform effect.
 (>%~!>) :: forall x xs m.

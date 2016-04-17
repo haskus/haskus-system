@@ -70,6 +70,7 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Enum
+import ViperVM.Utils.Flow
 
 import Foreign.Storable
 import Foreign.Marshal.Utils (toBool)
@@ -365,7 +366,8 @@ ioctlSetReadOnlyStatus b =
 -- | BLKROGET get read-only status (0 = read_write)
 ioctlGetReadOnlyStatus :: Handle -> SysRet Bool
 ioctlGetReadOnlyStatus fd =
-   fmap (toBool :: Int -> Bool) <$> ioctlReadCmd (ioctlCommand None 0x12 94 0) fd
+   ioctlReadCmd (ioctlCommand None 0x12 94 0) fd
+   >.-.> (toBool :: Int -> Bool)
 
 -- | BLKRRPART re-read partition table
 ioctlReReadPartitionTable :: Handle -> SysRet ()

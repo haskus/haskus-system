@@ -53,11 +53,12 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
 
 -- | Get an encoder from its ID
 getEncoderFromID :: Handle -> Resources -> EncoderID -> Flow Sys '[Encoder,EntryNotFound,InvalidHandle]
-getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl) >>= \case
-      Right e     -> flowRet (fromStructGetEncoder res hdl e)
-      Left EINVAL -> flowSet (InvalidHandle hdl)
-      Left ENOENT -> flowSet EntryNotFound
-      Left e      -> unhdlErr "getEncoder" e
+getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl)
+      >.-.> fromStructGetEncoder res hdl
+      >%~#> \case
+         EINVAL -> flowSet (InvalidHandle hdl)
+         ENOENT -> flowSet EntryNotFound
+         e      -> unhdlErr "getEncoder" e
    where
       enc = StructGetEncoder encId (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
@@ -66,9 +67,9 @@ getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl) >>=
 encoderController :: Encoder -> Flow Sys '[Maybe Controller ,EntryNotFound,InvalidHandle]
 encoderController enc = case encoderControllerID enc of
    Nothing     -> flowRet Nothing
-   Just contId -> getControllerFromID (encoderHandle enc) contId >~^> (return . Just)
+   Just contId -> getControllerFromID (encoderHandle enc) contId >.-.> Just
 
 -- | Get encoders (discard errors)
 getEncoders :: Handle -> Flow Sys '[[Encoder],EntryNotFound,InvalidHandle]
-getEncoders hdl = getResources hdl >~#> \res ->
+getEncoders hdl = getResources hdl >.~#> \res ->
    flowTraverse (getEncoderFromID hdl res) (resEncoderIDs res)

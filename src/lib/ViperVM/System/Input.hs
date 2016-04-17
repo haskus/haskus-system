@@ -13,6 +13,7 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Internals.Input as Input
+import ViperVM.Utils.Flow
 
 import Control.Concurrent.STM
 import Control.Concurrent
@@ -65,12 +66,10 @@ newEventWaiterThread fd@(Handle lowfd) = do
    ch <- sysIO newBroadcastTChanIO
    sysFork $ sysIO $ allocaArray nb $ \ptr -> forever $ do
       threadWaitRead rfd
-      r <- sysRead fd ptr (fromIntegral sz * fromIntegral nb)
-      case r of
+      sysRead fd ptr (fromIntegral sz * fromIntegral nb)
+      >.~!> \sz2 -> do
          -- FIXME: we should somehow signal that an error occured and
          -- that we won't report future events (if any)
-         Left _  -> return ()
-         Right sz2 -> do
-            evs <- peekArray (fromIntegral sz2 `div` sz) ptr
-            atomically $ traverse_ (writeTChan ch) evs
+         evs <- peekArray (fromIntegral sz2 `div` sz) ptr
+         atomically $ traverse_ (writeTChan ch) evs
    return ch

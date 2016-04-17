@@ -56,10 +56,9 @@ getResources :: Handle -> Flow Sys '[Resources,InvalidHandle]
 getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
       getRes :: StructCardRes -> Flow Sys '[StructCardRes,InvalidHandle]
-      getRes r = sysIO (ioctlGetResources r hdl) >>= \case
-         Left EINVAL -> flowSet (InvalidHandle hdl)
-         Left e      -> unhdlErr "getResources" e
-         Right g     -> flowRet g
+      getRes r = sysIO (ioctlGetResources r hdl) >..%~#> \case
+         EINVAL -> flowSet (InvalidHandle hdl)
+         e      -> unhdlErr "getResources" e
 
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
@@ -67,16 +66,6 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
       getValues arraySizes = sysWith (allocaArrays arraySizes) $ 
          \([fs,crs,cs,es] :: [Ptr Word32]) -> do
             let 
-               -- we need to check that the number of resources is still
-               -- lower than the size of our arrays (as resources may have
-               -- appeared between the time we get the number of resources
-               -- and the time we get them...) If not, we redo the whole
-               -- process
-               testSize r = 
-                  if all (uncurry (>)) (arraySizes `zip` extractSize r)
-                     then flowLift $ extractValues r
-                     else getValues (extractSize r)
-
                [nfb,nct,nco,nen] = arraySizes
                cv = fromIntegral . ptrToWordPtr
                res3 = StructCardRes
@@ -93,7 +82,15 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                            , csMinWidth   = 0
                            , csMaxWidth   = 0
                            }
-            getRes res3 >#~> testSize
+            getRes res3 >.~#> \r ->
+               -- we need to check that the number of resources is still
+               -- lower than the size of our arrays (as resources may have
+               -- appeared between the time we get the number of resources
+               -- and the time we get them...) If not, we redo the whole
+               -- process
+               if all (uncurry (>)) (arraySizes `zip` extractSize r)
+                  then extractValues r >.~#> flowRet
+                  else getValues (extractSize r)
 
 
       extractValues :: StructCardRes -> Flow Sys '[Resources]
@@ -118,8 +115,8 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 getEntities :: (Resources -> [a]) -> (Handle -> a -> Sys (Either x b)) -> Handle -> Sys [b]
 getEntities getIDs getEntityFromID hdl = do
    res <- flowRes $
-      getResources hdl >#!~>
-         (\(InvalidHandle _) -> error "getEntities: invalid handle")
+      getResources hdl
+         >..%~!!> \(InvalidHandle _) -> error "getEntities: invalid handle"
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs

@@ -14,6 +14,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Format.Binary.Enum
 import ViperVM.System.Sys
+import ViperVM.Utils.Flow
 
 import Data.Word
 import Control.Monad (void)
@@ -22,11 +23,13 @@ import Control.Monad (void)
 getCapability :: Handle -> Capability -> SysRet Word64
 getCapability hdl cap = do
    let s = StructGetCap (toEnumField cap) 0
-   fmap gcValue <$> ioctlGetCapabilities s hdl
+   ioctlGetCapabilities s hdl
+      >.-.> gcValue
 
 -- | Indicate if a capability is supported
 supports :: Handle -> Capability -> SysRet Bool
-supports hdl cap = fmap (/= 0) <$> getCapability hdl cap
+supports hdl cap = getCapability hdl cap
+   >.-.> (/= 0)
 
 -- | Set a client capability
 setClientCapability :: Handle -> ClientCapability -> Bool -> Sys ()

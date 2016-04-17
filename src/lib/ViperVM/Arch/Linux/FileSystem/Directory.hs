@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Directory
 module ViperVM.Arch.Linux.FileSystem.Directory
@@ -13,7 +16,6 @@ module ViperVM.Arch.Linux.FileSystem.Directory
    )
 where
 
-import Control.Monad.Trans.Either
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics (Generic)
@@ -29,6 +31,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Utils.Flow
 
 sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> SysRet ()
 sysCreateDirectory fd path perm sticky = do
@@ -105,14 +108,14 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
 -- Warning: reading concurrently the same file descriptor returns mixed up
 -- results because of the stateful kernel interface
 listDirectory :: Handle -> SysRet [DirectoryEntry]
-listDirectory fd = runEitherT $ do
+listDirectory fd = do
       -- Return at the beginning of the directory
-      EitherT $ sysSeek' fd 0 SeekSet
+      sysSeek' fd 0 SeekSet
       -- Read contents using a given buffer size
       -- If another thread changes the current position in the directory file
       -- descriptor, the returned list can be corrupted (redundant entries or
       -- missing ones)
-      EitherT $ rec []
+      >.~#> const (rec [])
    where
       bufferSize = 2 * 1024 * 1024
 
@@ -120,10 +123,9 @@ listDirectory fd = runEitherT $ do
       filtr x = nam /= "." && nam /= ".."
          where nam = entryName x
 
-      rec xs = do
-         ls <- sysGetDirectoryEntries fd bufferSize
-         case ls of
-            Left err -> return (Left err)
-            Right [] -> return (Right xs)
-            Right ks -> rec (filter filtr ks ++ xs)
+      rec :: [DirectoryEntry] -> SysRet [DirectoryEntry]
+      rec xs = sysGetDirectoryEntries fd bufferSize
+         >.~-> \case
+            [] -> flowRet xs
+            ks -> rec (filter filtr ks ++ xs)
 

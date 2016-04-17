@@ -1,3 +1,7 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
 module ViperVM.Arch.Linux.Info
    ( SystemInfo(..)
    , systemInfo
@@ -5,31 +9,35 @@ module ViperVM.Arch.Linux.Info
 where
 
 import Foreign.Ptr
-import Foreign.Marshal.Array
-import Foreign.C.String
-import Control.Monad
+import Foreign.Marshal.Alloc
+import Foreign.C.Types
+import Foreign.Storable
+import Foreign.CStorable
+import GHC.Generics
+import Data.Int
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Format.Binary.Vector
 
-data SystemInfo = SystemInfo {
-   systemName :: String,
-   systemNodeName :: String,
-   systemRelease :: String,
-   systemVersion :: String,
-   systemMachine :: String
-} deriving (Show)
+-- | struct utsname
+data SystemInfo = SystemInfo
+   { systemName     :: Vector 65 CChar
+   , systemNodeName :: Vector 65 CChar
+   , systemRelease  :: Vector 65 CChar
+   , systemVersion  :: Vector 65 CChar
+   , systemMachine  :: Vector 65 CChar
+   } deriving (Show,Generic,CStorable)
+
+instance Storable SystemInfo where
+   peek      = cPeek
+   poke      = cPoke
+   alignment = cAlignment
+   sizeOf    = cSizeOf
 
 -- | "uname" syscall
 systemInfo :: SysRet SystemInfo
-systemInfo = go (5 * fieldSize)
+systemInfo = alloca $ \ptr -> onSuccessIO (uname ptr) (const (peek ptr))
    where
-      fieldSize = 65
-      go sz = do
-         ret <- allocaArray sz $ \ptr ->
-            onSuccessIO (syscall_uname ptr) $ \_ -> do
-               [nam,nodeName,rel,ver,mach] <- forM [0..4] $ \n -> peekCString (ptr `plusPtr` (n*fieldSize))
-               return $ SystemInfo nam nodeName rel ver mach
-         case ret of
-            Right _ -> return ret
-            Left _  -> go (2 * sz) -- We can be sure to find a valid size
+      uname :: Ptr SystemInfo -> IO Int64
+      uname = syscall_uname . castPtr

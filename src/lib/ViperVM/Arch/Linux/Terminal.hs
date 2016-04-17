@@ -13,9 +13,9 @@ module ViperVM.Arch.Linux.Terminal
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Utils.Flow
 
 import qualified Data.ByteString.Char8 as BS
-import Data.Word
 
 -- | Standard input (by convention)
 stdin :: Handle
@@ -30,12 +30,12 @@ stderr :: Handle
 stderr = Handle 2
 
 -- | Write a String in the given file descriptor
-writeStr :: Handle -> String -> SysRet Word64
+writeStr :: Handle -> String -> SysRet ()
 writeStr fd = writeByteString fd . BS.pack
 
 -- | Write a String with a newline character in the given
 -- file descriptor
-writeStrLn :: Handle -> String -> SysRet Word64
+writeStrLn :: Handle -> String -> SysRet ()
 writeStrLn fd = writeByteString fd . BS.pack . (++ "\n")
 
 -- | Read a single character
@@ -43,4 +43,5 @@ writeStrLn fd = writeByteString fd . BS.pack . (++ "\n")
 -- Warning: only the first byte of multi-byte characters (e.g. utf8) will be
 -- read
 readChar :: Handle -> SysRet Char
-readChar fd = fmap (head . BS.unpack) <$> readByteString fd 1
+readChar fd = readByteString fd 1
+   >.-.> (head . BS.unpack)

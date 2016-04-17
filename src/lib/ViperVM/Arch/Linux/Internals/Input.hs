@@ -77,6 +77,7 @@ import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
+import ViperVM.Utils.Flow
 
 import Foreign.C.String (peekCString)
 import qualified Data.ByteString as BS
@@ -766,34 +767,32 @@ getDeviceMultiTouchSlots code nSlots fd = do
    let sz = 4 * (nSlots + 1)
    allocaBytes (fromIntegral sz) $ \ptr -> do
       pokeByteOff ptr 0 code
-      ret <- ioctlReadBytes 0x45 0x0a (fromIntegral sz) ptr fd
-      case ret of
-         Left err -> return (Left err)
-         Right _  -> Right <$> peekArray nSlots (ptr `plusPtr` 4)
+      ioctlReadBytes 0x45 0x0a (fromIntegral sz) ptr fd
+         >.~.> const (peekArray nSlots (ptr `plusPtr` 4))
 
 -- | Get global key state (one bit per pressed key)
 --
 -- EVIOCGKEY
 getDeviceKeys :: Int -> Handle -> SysRet BS.ByteString
-getDeviceKeys n fd = fmap snd <$> ioctlReadByteString 0x45 0x18 ((n `div` 8) + 1) fd
+getDeviceKeys n fd = ioctlReadByteString 0x45 0x18 ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get all leds (one bit per led)
 --
 -- EVIOCGLED
 getDeviceLEDs :: Int -> Handle -> SysRet BS.ByteString
-getDeviceLEDs n fd = fmap snd <$> ioctlReadByteString 0x45 0x19 ((n `div` 8) + 1) fd
+getDeviceLEDs n fd = ioctlReadByteString 0x45 0x19 ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get sound status (one bit per sound)
 --
 -- EVIOCGSND
 getDeviceSoundStatus :: Int -> Handle -> SysRet BS.ByteString
-getDeviceSoundStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1a ((n `div` 8) + 1) fd
+getDeviceSoundStatus n fd = ioctlReadByteString 0x45 0x1a ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get switch status (one bit per switch)
 --
 -- EVIOCGSW
 getDeviceSwitchStatus :: Int -> Handle -> SysRet BS.ByteString
-getDeviceSwitchStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1b ((n `div` 8) + 1) fd
+getDeviceSwitchStatus n fd = ioctlReadByteString 0x45 0x1b ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get the number of bits that can be set by the given event type
 --
@@ -801,7 +800,7 @@ getDeviceSwitchStatus n fd = fmap snd <$> ioctlReadByteString 0x45 0x1b ((n `div
 getDeviceBits :: EventType -> Int -> Handle -> SysRet BS.ByteString
 getDeviceBits ev n fd = do
    let code = fromCEnum ev
-   fmap snd <$> ioctlReadByteString 0x45 (0x20 + code) ((n `div` 8) + 1) fd
+   ioctlReadByteString 0x45 (0x20 + code) ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get absolute info
 --

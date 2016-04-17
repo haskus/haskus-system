@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Management of returned values from syscalls
 module ViperVM.Arch.Linux.ErrorCode 
@@ -17,9 +18,10 @@ module ViperVM.Arch.Linux.ErrorCode
 where
 
 import Data.Int (Int64)
+import ViperVM.Utils.Flow
 
 -- | Syscall return type
-type SysRet a = IO (Either ErrorCode a)
+type SysRet a = Flow IO '[a,ErrorCode]
 
 -- | Convert an error code into ErrorCode type
 toErrorCode :: Int64 -> ErrorCode
@@ -30,39 +32,35 @@ toErrorCode = toEnum . fromIntegral . (*(-1))
 -- Similar to LIBC's behavior (return 0 except on error)
 defaultCheckRet :: Int64 -> SysRet ()
 defaultCheckRet x = case defaultCheck x of
-   Nothing  -> return (Right ())
-   Just err -> return (Left err)
+   Nothing  -> flowRet ()
+   Just err -> flowRet1 err
 
 checkReturn :: Int64 -> SysRet Int64
 checkReturn x = case defaultCheck x of
-   Nothing  -> return (Right x)
-   Just err -> return (Left err)
+   Nothing  -> flowRet x
+   Just err -> flowRet1 err
 
--- | Apply an IO function to the result of the action if no error occured (use
--- `defaultCheck` to detect an error)
-onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
-onSuccessIO sc f = do
-   ret <- sc
-   case defaultCheck ret of
-      Just err -> return (Left err)
-      Nothing  -> Right <$> f ret
+-- | Check for error and return the value otherwise
+onSuccessId :: IO Int64 -> SysRet Int64
+onSuccessId f = do
+   r <- f
+   case defaultCheck r of
+      Just err -> flowRet1 err
+      Nothing  -> flowRet r
 
 -- | Apply a function to the result of the action if no error occured (use
 -- `defaultCheck` to detect an error)
 onSuccess :: IO Int64 -> (Int64 -> a) -> SysRet a
-onSuccess sc f = do
-   ret <- sc
-   return $ case defaultCheck ret of
-      Just err -> Left err
-      Nothing  -> Right (f ret)
-
--- | Check for error and return the value otherwise
-onSuccessId :: IO Int64 -> SysRet Int64
-onSuccessId = flip onSuccess id
+onSuccess f g = onSuccessId f >.-.> g
 
 -- | Check for error and return void
 onSuccessVoid :: IO Int64 -> SysRet ()
-onSuccessVoid = flip onSuccess (const ())
+onSuccessVoid f = onSuccessId f >.-.> const ()
+
+-- | Apply an IO function to the result of the action if no error occured (use
+-- `defaultCheck` to detect an error)
+onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
+onSuccessIO f g = onSuccessId f >.~.> g
 
 
 ------------------------------------------------

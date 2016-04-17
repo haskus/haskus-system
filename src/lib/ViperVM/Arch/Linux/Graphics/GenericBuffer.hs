@@ -20,8 +20,8 @@ where
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
+import ViperVM.Utils.Flow
 
-import Control.Monad (void)
 import Data.Word
 
 type GenericBuffer = StructCreateDumb
@@ -37,7 +37,7 @@ createGenericBuffer hdl width height bpp flags = do
 destroyGenericBuffer :: Handle -> GenericBuffer -> SysRet ()
 destroyGenericBuffer hdl buffer = do
    let s = StructDestroyDumb (cdHandle buffer)
-   void <$> ioctlDestroyGenericBuffer s hdl
+   ioctlDestroyGenericBuffer s hdl >.-.> const ()
 
 -- | Map a Generic buffer
 mapGenericBuffer :: Handle -> GenericBuffer -> SysRet GenericBufferMap

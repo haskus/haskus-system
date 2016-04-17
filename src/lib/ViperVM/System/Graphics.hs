@@ -42,7 +42,7 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Monad (forM,forM_)
+import Control.Monad (forM,forM_,forever)
 import Foreign.Ptr
 
 import Control.Concurrent.STM
@@ -94,19 +94,14 @@ newEventWaiterThread fd@(Handle lowfd) = do
       rfd = Fd (fromIntegral lowfd)
 
    ch <- sysIO $ newBroadcastTChanIO
-   sysFork $ sysIO $ allocaBytes bufsz $ \ptr -> do
-      let go = do
-            threadWaitRead rfd
-            r <- sysRead fd ptr (fromIntegral bufsz)
-            case r of
-               -- FIXME: we should somehow signal that an error occured and
-               -- that we won't report future events (if any)
-               Left _  -> return ()
-               Right sz2 -> do
-                  evs <- peekEvents ptr (fromIntegral sz2)
-                  atomically $ traverse_ (writeTChan ch) evs
-                  go
-      go
+   sysFork $ sysIO $ allocaBytes bufsz $ \ptr -> forever $ do
+      threadWaitRead rfd
+      sysRead fd ptr (fromIntegral bufsz)
+         >.~!> \sz2 -> do
+         -- FIXME: we should somehow signal that an error occured and
+         -- that we won't report future events (if any)
+         evs <- peekEvents ptr (fromIntegral sz2)
+         atomically $ traverse_ (writeTChan ch) evs
    return ch
 
 
@@ -193,8 +188,8 @@ graphicCardEncoders = getEncoders . graphicCardHandle
 graphicCardPlanes :: GraphicCard -> Sys [Plane]
 graphicCardPlanes card = flowRes $ do
    let hdl = graphicCardHandle card
-   getPlaneResources hdl >~> flowTraverse (getPlane hdl)
+   getPlaneResources hdl >.~#> flowTraverse (getPlane hdl)
    -- shouldn't happen, except if we unplug the graphic card
-   >#!~> (\(InvalidHandle _) -> error "Invalid handle")
+   >..%~!!> (\(InvalidHandle _) -> error "Invalid handle")
    -- shouldn't happen, planes are invariant
-   >#!~> (\(InvalidPlane _)  -> error "Invalid plane" )
+   >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )

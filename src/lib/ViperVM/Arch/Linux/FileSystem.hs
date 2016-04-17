@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module ViperVM.Arch.Linux.FileSystem
    ( FilePermission(..)
@@ -65,11 +68,11 @@ import Foreign.C.String (CString, withCString, peekCString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
-import Control.Monad (void)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.BitSet
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Utils.Flow
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -128,7 +131,7 @@ sysSeek (Handle fd) off whence =
 
 -- | Reposition read/write file offset
 sysSeek' :: Handle -> Int64 -> SeekWhence -> SysRet ()
-sysSeek' fd off whence = void <$> (sysSeek fd off whence)
+sysSeek' fd off whence = sysSeek fd off whence >.-.> const ()
 
 
 -- | Access mode
@@ -167,10 +170,11 @@ sysGetCurrentDirectory :: SysRet FilePath
 sysGetCurrentDirectory = go 128
    where
       go n = allocaArray n $ \ptr -> do
-         ret <- onSuccessIO (syscall_getcwd ptr (fromIntegral n)) (const (peekCString ptr))
-         case ret of
-            Left ERANGE -> go (2 * n)
-            _ -> return ret
+         onSuccessId (syscall_getcwd ptr (fromIntegral n))
+            >.~.> const (peekCString ptr)
+            >%~#> \case
+               ERANGE -> go (2 * n)
+               e      -> flowSet e
 
 sysRename :: FilePath -> FilePath -> SysRet ()
 sysRename oldPath newPath =

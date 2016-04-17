@@ -23,7 +23,6 @@ where
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Data.Word
-import Control.Monad (void)
 
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
@@ -71,11 +70,12 @@ fromStructController hdl StructController{..} =
       
 -- | Get Controller
 getControllerFromID :: Handle -> ControllerID -> Flow Sys '[Controller,EntryNotFound, InvalidHandle]
-getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl) >>= \case
-      Right e     -> flowRet (fromStructController hdl e)
-      Left EINVAL -> flowSet (InvalidHandle hdl)
-      Left ENOENT -> flowSet EntryNotFound
-      Left e      -> unhdlErr "getController" e
+getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl)
+      >.-.> fromStructController hdl
+      >%~#> \case
+         EINVAL -> flowSet (InvalidHandle hdl)
+         ENOENT -> flowSet EntryNotFound
+         e      -> unhdlErr "getController" e
    where
       ControllerID cid = crtcid
       crtc             = emptyStructController { contID = cid }
@@ -109,7 +109,7 @@ setController' hdl crtcid fb conns mode = do
             , contGammaSize = 0
             }
 
-      void <$> ioctlSetController crtc hdl
+      ioctlSetController crtc hdl >.-.> const ()
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
@@ -122,13 +122,13 @@ switchFrameBuffer' hdl crtcid fb flags = do
       FrameBufferID fid = fb
       s = StructPageFlip cid fid flags 0 0
 
-   void <$> ioctlPageFlip s hdl
+   ioctlPageFlip s hdl >.-.> const ()
 
 -- | Get controllers (discard errors)
 getControllers :: Handle -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
-getControllers hdl = do
-   res <- getResources hdl
-   res ~#> flowTraverse (getControllerFromID hdl) . resControllerIDs
+getControllers hdl = getResources hdl
+   >.-.> resControllerIDs
+   >.~#> flowTraverse (getControllerFromID hdl)
 
 -- | Get controller gama look-up table
 getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])

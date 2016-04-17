@@ -1,3 +1,7 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TupleSections #-}
+
 -- | System
 module ViperVM.System.System
    ( System(..)
@@ -22,6 +26,7 @@ import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
 import ViperVM.System.Devices
+import ViperVM.Utils.Flow
 
 import System.FilePath
 
@@ -29,6 +34,7 @@ import Prelude hiding (init,tail)
 import Control.Monad (void)
 import Control.Concurrent.STM
 import Data.Maybe (catMaybes)
+import Data.ByteString (ByteString)
 
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
@@ -59,10 +65,9 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 
    -- create root path (allowed to fail if it already exists)
    sysCallAssert "Create root directory" $ do
-      r <- createDir path
-      case r of
-         Left EEXIST -> return (Right ())
-         _           -> return r
+      createDir path >%~#> \case
+         EEXIST -> flowRet ()
+         e      -> flowSet e
 
    -- mount a tmpfs in root path
    sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount path
@@ -134,40 +139,40 @@ listDevicesWithClass system cls = do
    let 
       clsdir = "class" </> cls
 
-      -- read device major and minor in "dev" file
+      -- parser for dev files
       -- content format is: MMM:mmm\n (where M is major and m is minor)
+      parseDevFile :: Parsec ByteString Device
+      parseDevFile = do
+         major <- fromIntegral <$> decimal
+         void (char ':')
+         minor <- fromIntegral <$> decimal
+         void eol
+         return (Device major minor)
+
+      -- read device major and minor in "dev" file
+      readDevFile :: Handle -> Flow Sys '[Device,ErrorCode]
       readDevFile devfd = do
-         content <- sysCallAssert "Read dev file" $
-                     readByteString devfd 16 -- 16 bytes should be enough
-         let 
-            parseDevFile = do
-               major <- fromIntegral <$> decimal
-               void (char ':')
-               minor <- fromIntegral <$> decimal
-               void eol
-               return (Device major minor)
-            dev = case parseMaybe parseDevFile content of
-               Nothing -> error "Invalid dev file format"
-               Just x  -> x
-         return dev
+         -- 16 bytes should be enough
+         sysCallWarn "Read dev file" (readByteString devfd 16)
+         >.-.> \content -> case parseMaybe parseDevFile content of
+            Nothing -> error "Invalid dev file format"
+            Just x  -> x
 
       -- read device directory
-      readDev fd dir = do
-         dev <- withOpenAt fd (dir </> "dev") BitSet.empty BitSet.empty readDevFile
-         -- skip entries without "dev" file
-         return $ case dev of
-            Left _  -> Nothing
-            Right x -> Just (clsdir </> dir, x)
+      readDev :: Handle -> FilePath -> Flow Sys '[Maybe (FilePath,Device)]
+      readDev fd dir =
+         withOpenAt fd (dir </> "dev") BitSet.empty BitSet.empty readDevFile
+            -- skip entries without "dev" file
+            >.-.>  (Just . (clsdir </> dir,))
+            >..~#> const (flowRet Nothing)
 
       -- read devices in a class
-      readDevs :: Handle -> Sys [(FilePath,Device)]
+      readDevs :: Handle -> Flow Sys '[[(FilePath,Device)]]
       readDevs fd = do
          dirs <- sysCallAssert "List device directories" $ listDirectory fd
          let dirs'  = fmap entryName dirs
-         catMaybes <$> traverse (readDev fd) dirs'
+         flowTraverse (readDev fd) dirs' >.-.> catMaybes
 
-   devs <- withOpenAt (systemSysFS system) clsdir BitSet.empty BitSet.empty readDevs
-
-   case devs of
-      Left _  -> return []
-      Right v -> return v
+   flowRes $ withOpenAt (systemSysFS system) clsdir BitSet.empty BitSet.empty readDevs
+      -- in case of error, we don't return any dev
+      >..~#> const (flowRet [])

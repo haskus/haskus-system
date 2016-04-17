@@ -1,4 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module ViperVM.Arch.Linux.FileSystem.OpenClose
    ( withOpenAt
    , HandleFlag(..)
@@ -12,14 +15,18 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.System.Sys
+import ViperVM.Utils.Flow
+import ViperVM.Utils.HList
 
-withOpenAt :: Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Sys a) -> Sys (Either ErrorCode a)
+import GHC.TypeLits
+
+withOpenAt :: 
+   ( KnownNat (Length xs)
+   ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> Flow Sys (Concat xs '[ErrorCode])
 withOpenAt fd path flags perm act = do
-   fd1 <- sysCallWarn "Open file" $ sysOpenAt fd path flags perm
-   case fd1 of
-      Left err  -> return (Left err)
-      Right fd2 -> do
-         res <- act fd2
-         sysCallAssert "Close file" $ sysClose fd2
-         return (Right res)
+   sysCallWarn "Open file" (sysOpenAt fd path flags perm)
+      >.~:> \fd1 -> do
+         res <- act fd1
+         sysCallAssert "Close file" $ sysClose fd1
+         return res
 

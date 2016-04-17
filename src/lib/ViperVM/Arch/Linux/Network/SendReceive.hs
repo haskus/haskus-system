@@ -20,6 +20,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Utils.Flow
 
 
 data SendReceiveFlag
@@ -106,7 +107,8 @@ sysReceive (Handle fd) ptr size flags addr = do
 receiveByteString :: Handle -> Int -> SendReceiveFlags -> SysRet ByteString
 receiveByteString fd size flags = do
    b <- mallocBytes size
-   ret <- sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
-   case ret of
-      Left err -> return (Left err)
-      Right sz -> Right <$> unsafePackMallocCStringLen (castPtr b, fromIntegral sz)
+   sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
+      -- free the buffer on error
+      >..~=> const (free b)
+      -- otherwise make a bytestring
+      >.~.> \sz -> unsafePackMallocCStringLen (castPtr b, fromIntegral sz)

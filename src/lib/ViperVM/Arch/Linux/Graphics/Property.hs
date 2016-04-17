@@ -71,19 +71,18 @@ data InvalidProperty = InvalidProperty deriving (Show,Eq)
 getPropertyMeta :: Handle -> PropertyMetaID -> Flow Sys '[PropertyMeta,InvalidParam,InvalidProperty]
 getPropertyMeta fd pid = do
       -- get value size/number of elements/etc.
-      getProperty' gp >~#> \g -> do
+      getProperty' gp >.~#> \g -> do
          getValues (gpsCountValues g) (gpsCountEnum g) (getPropertyTypeType g)
-            >~> flowRet' . PropertyMeta pid
+            >.-.> PropertyMeta pid
                (isImmutable g)
                (isPending g)
                (convertCString (gpsName g))
    where
       getProperty' :: StructGetProperty -> Flow Sys '[StructGetProperty,InvalidParam,InvalidProperty]
-      getProperty' r = sysIO (ioctlGetProperty r fd) >>= \case
-         Left EINVAL -> flowSet InvalidParam
-         Left ENOENT -> flowSet InvalidProperty
-         Right g     -> flowRet g
-         Left e      -> unhdlErr "getPropertyMeta" e
+      getProperty' r = sysIO (ioctlGetProperty r fd) >%~#> \case
+         EINVAL -> flowSet InvalidParam
+         ENOENT -> flowSet InvalidProperty
+         e      -> unhdlErr "getPropertyMeta" e
 
 
       gp = StructGetProperty
@@ -100,11 +99,10 @@ getPropertyMeta fd pid = do
       allocaArray' n f = allocaArray (fromIntegral n) f
 
       getBlobStruct :: StructGetBlob -> Flow Sys '[StructGetBlob,InvalidParam,InvalidProperty]
-      getBlobStruct r = sysIO (ioctlGetBlob r fd) >>= \case
-         Left EINVAL -> flowSet InvalidParam
-         Left ENOENT -> flowSet InvalidProperty
-         Right g     -> flowRet g
-         Left e      -> unhdlErr "getBlobStruct" e
+      getBlobStruct r = sysIO (ioctlGetBlob r fd) >%~#> \case
+         EINVAL -> flowSet InvalidParam
+         ENOENT -> flowSet InvalidProperty
+         e      -> unhdlErr "getBlobStruct" e
 
       -- | Get a blob
       getBlob :: Word32 -> Flow Sys '[BS.ByteString,InvalidParam,InvalidProperty]
@@ -115,13 +113,13 @@ getPropertyMeta fd pid = do
                      , gbData   = 0
                      }
 
-         getBlobStruct gb >~#> \gb' -> do
+         getBlobStruct gb >.~#> \gb' -> do
             ptr <- sysIO . mallocBytes . fromIntegral . gbLength $ gb'
             getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
                -- free ptr on error
-               >*~^> (\_ -> sysIO (free ptr))
+               >..~=> const (sysIO (free ptr))
                -- otherwise return a bytestring
-               >~^> (\_ -> sysIO $ BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb')))
+               >.~.> const (sysIO (BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb'))))
 
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow Sys '[c,InvalidParam,InvalidProperty]) -> Flow Sys '[c,InvalidParam,InvalidProperty]
@@ -162,4 +160,4 @@ getPropertyMeta fd pid = do
 
          PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
             flowTraverse getBlob bids
-               >~^> return . PropBlob . (ids `zip`)
+               >.-.> (PropBlob . (ids `zip`))
