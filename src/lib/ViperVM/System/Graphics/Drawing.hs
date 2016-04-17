@@ -1,5 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 
+-- | Drawing methods for frame buffers
+-- 
+-- Use and re-export parts of JuicyPixels and Rasterific.
 module ViperVM.System.Graphics.Drawing
    ( BlendOp (..)
    , blendImage

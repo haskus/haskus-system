@@ -7,6 +7,7 @@
 module ViperVM.Arch.Linux.Time
    ( TimeSpec(..)
    , TimeVal(..)
+   , timeValDiff
    , Clock(..)
    , sysClockGetTime
    , sysClockSetTime
@@ -44,8 +45,14 @@ instance Storable TimeSpec where
 
 data TimeVal = TimeVal
    { tvSeconds       :: Word64
-   , tvMilliSeconds  :: Word64
+   , tvMicroSeconds  :: Word64
    } deriving (Show, Eq, Ord, Generic, CStorable)
+
+-- | Timeval difference in microseconds
+timeValDiff :: TimeVal -> TimeVal -> Word64
+timeValDiff (TimeVal s1 ms1) (TimeVal s2 ms2) = r
+   where
+      r = (s2-s1)*1000000 + ms2 - ms1
 
 instance Storable TimeVal where
    sizeOf      = cSizeOf
