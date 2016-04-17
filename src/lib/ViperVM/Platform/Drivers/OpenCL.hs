@@ -143,6 +143,7 @@ transfer net f (hostPtr,Region off1 sh1) (buffer,Region off2 sh2) = do
          | otherwise  -> return (TransferError ErrTransferIncompatibleRegions)
 
       -- TODO: 2D transfers
+      _ -> error "Unsupported transfer"
 
 
 
