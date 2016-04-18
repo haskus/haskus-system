@@ -25,7 +25,7 @@ import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
-import ViperVM.System.Devices
+import ViperVM.System.Event
 import ViperVM.Utils.Flow
 
 import System.FilePath
@@ -88,7 +88,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath BitSet.empty BitSet.empty
 
    -- create netlink reader
-   netlink <- makeKernelEventChannel
+   netlink <- newKernelEventReader
 
    return (System devfd sysfd procfd netlink)
 

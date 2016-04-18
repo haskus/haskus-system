@@ -6,24 +6,17 @@ module ViperVM.System.Input
 where
 
 import ViperVM.System.Sys
-import ViperVM.System.Process
 import ViperVM.System.System
+import ViperVM.System.Event
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
-import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Internals.Input as Input
-import ViperVM.Utils.Flow
 
 import Control.Concurrent.STM
-import Control.Concurrent
 import Data.Traversable (forM)
-import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
-import Control.Monad (void,forever)
-import Foreign.Storable
-import Foreign.Marshal (allocaArray, peekArray)
-import System.Posix.Types (Fd(..))
+import Control.Monad (void)
 import Data.List (isPrefixOf)
 import System.FilePath (takeBaseName)
 
@@ -53,23 +46,4 @@ loadInputDevices system = sysLogSequence "Load input devices" $ do
                   (Input.getDeviceName fd)
          <*> sysCallAssert "Get device info"
                   (Input.getDeviceInfo fd)
-         <*> newEventWaiterThread fd
-
--- | Create a new thread reading input events and putting them in a TChan
-newEventWaiterThread :: Handle -> Sys (TChan Input.Event)
-newEventWaiterThread fd@(Handle lowfd) = do
-   let
-      sz  = sizeOf (undefined :: Input.Event)
-      rfd = Fd (fromIntegral lowfd)
-      nb  = 50 -- number of events read at once
-
-   ch <- sysIO newBroadcastTChanIO
-   sysFork $ sysIO $ allocaArray nb $ \ptr -> forever $ do
-      threadWaitRead rfd
-      sysRead fd ptr (fromIntegral sz * fromIntegral nb)
-      >.~!> \sz2 -> do
-         -- FIXME: we should somehow signal that an error occured and
-         -- that we won't report future events (if any)
-         evs <- peekArray (fromIntegral sz2 `div` sz) ptr
-         atomically $ traverse_ (writeTChan ch) evs
-   return ch
+         <*> newEventReader fd

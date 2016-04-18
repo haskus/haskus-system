@@ -160,10 +160,10 @@ library
     ViperVM.System.Graphics.Drawing
     ViperVM.System.Graphics.Diagrams
     ViperVM.System.Input
-    ViperVM.System.Devices
     ViperVM.System.Terminal
     ViperVM.System.Process
     ViperVM.System.Power
+    ViperVM.System.Event
 
     ViperVM.Utils.Variant
     ViperVM.Utils.HArray

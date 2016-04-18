@@ -9,7 +9,7 @@ module ViperVM.System
    )
 where
 
-import ViperVM.System.Devices  as X
+import ViperVM.System.Event    as X
 import ViperVM.System.Graphics as X
 import ViperVM.System.Input    as X
 import ViperVM.System.Process  as X
