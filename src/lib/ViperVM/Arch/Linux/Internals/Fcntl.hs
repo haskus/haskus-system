@@ -18,6 +18,7 @@ import ViperVM.Format.Binary.Enum
 --    From linux/include/uapi/asm-generic/fcntl.h
 -- =============================================================
 
+-- | File control command
 data FcntlCommand
    = FcntlDupHandle        -- ^ dup
    | FcntlGetHandle        -- ^ get close_on_exec

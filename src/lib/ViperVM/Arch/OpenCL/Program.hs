@@ -39,6 +39,7 @@ import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)
 import Foreign.Storable (peek, sizeOf)
 import Data.Word
+import Data.Int
 import Data.List (elemIndex)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
@@ -64,6 +65,7 @@ instance CLConstant ProgramBuildStatus where
    toCL x = fromIntegral (fromEnum x * (-1))
    fromCL x = toEnum (fromIntegral x * (-1))
 
+-- | Program info tag
 data ProgramInfo
    = CL_PROGRAM_REFERENCE_COUNT
    | CL_PROGRAM_CONTEXT
@@ -78,6 +80,7 @@ instance CLConstant ProgramInfo where
    toCL x = fromIntegral (0x1160 + fromEnum x)
    fromCL x = toEnum (fromIntegral x - 0x1160)
 
+-- | Program build info tag
 data ProgramBuildInfo
    = CL_PROGRAM_BUILD_STATUS
    | CL_PROGRAM_BUILD_OPTIONS
@@ -98,9 +101,9 @@ retainProgram prog = void (rawClRetainProgram (cllib prog) (unwrap prog))
 
 -- | Build a program for the specified device
 buildProgram :: Program -> Device -> String -> CLRet ()
-buildProgram prog dev options = do
+buildProgram prog dev options =
    withCString options $ \options' ->
-      withArray [(unwrap dev)] $ \dev' ->
+      withArray [unwrap dev] $ \dev' ->
          whenSuccess
             (rawClBuildProgram (cllib prog) (unwrap prog) 1 dev' options' nullFunPtr nullPtr)
             (return ())
@@ -125,7 +128,7 @@ getProgramDeviceCount' = fmap toException . getProgramDeviceCount
 -- | Get devices associated with the program
 getProgramDevices :: Program -> CLRet [Device]
 getProgramDevices prog = runEitherT $ do
-   count <- EitherT $ fmap (fmap fromIntegral) $ getProgramDeviceCount prog
+   count <- EitherT $ fmap fromIntegral <$> getProgramDeviceCount prog
    
    let 
       size = fromIntegral $ count * sizeOf (undefined :: Device_)
@@ -146,7 +149,7 @@ getProgramDevices' = fmap toException . getProgramDevices
 -- | Get binary sizes for all devices (0 if not available)
 getProgramBinarySizes :: Program -> CLRet [CSize]
 getProgramBinarySizes prog = runEitherT $ do
-   count <- EitherT $ fmap (fmap fromIntegral) $ getProgramDeviceCount prog
+   count <- EitherT $ fmap fromIntegral <$> getProgramDeviceCount prog
 
    let 
       size = fromIntegral $ count * sizeOf (undefined :: CSize)
@@ -181,7 +184,7 @@ getProgramBinary prog dev = runEitherT $ do
 
          case binsize of
             0 -> right Nothing
-            _ -> EitherT $ do
+            _ -> EitherT $
                -- alloc buffer for the binary
                allocaBytes binsize $ \(binPtr :: Ptr Word8) -> do
 
@@ -229,7 +232,7 @@ createProgramFromBinary ctx binaries = do
          withMany BS.unsafeUseAsCString bins $ \bins' ->
             -- Convert [CString] into [Ptr Word8] into Ptr CString
             withArray (map castPtr bins') $ \bins'' ->
-               allocaArray n $ \(status' :: Ptr CLint) -> do
+               allocaArray n $ \(status' :: Ptr Int32) -> do
                   p' <- wrapPError (rawClCreateProgramWithBinary (cllib ctx) (unwrap ctx) 
                                   (fromIntegral n) devs' lens' bins'' status')
                   -- if there is no error, get status for each binary

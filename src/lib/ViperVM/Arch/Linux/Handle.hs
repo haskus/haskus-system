@@ -66,6 +66,7 @@ data HandleFlag
    | HandleTruncate
    deriving (Show,Eq,Enum)
 
+-- | Handle flags
 type HandleFlags = BitSet Int HandleFlag
 
 instance CBitSet HandleFlag where

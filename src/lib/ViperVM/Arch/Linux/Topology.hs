@@ -45,7 +45,7 @@ readMemInfo p = do
       Right v  -> return v
       Left err -> error ("meminfo parsing error: " ++ show err)
    
-
+-- | Parse meminfo files
 parseMemInfo :: Parser (Map Text Word64)
 parseMemInfo = parseFile
    where
@@ -79,7 +79,7 @@ parseCPUMap :: Parser CPUMap
 parseCPUMap = parseFile
    where
       parseFile = do
-         es <- (fromIntegral <$> hexadecimal) `sepBy1` (char ',')
+         es <- (fromIntegral <$> hexadecimal) `sepBy1` char ','
          void eol
          void eof
          return $ CPUMap . V.fromList . reverse . dropWhile (==0) $ es
@@ -106,7 +106,7 @@ data NUMA = NUMA
 
 -- | A NUMA node
 data Node = Node
-   { nodeId :: Word
+   { nodeId     :: Word
    , nodeCPUMap :: CPUMap
    , nodeMemory :: NodeMemory
    } deriving (Show)

@@ -204,12 +204,13 @@ instance CLConstant DeviceLocalMemType where
    toCL x = fromIntegral (fromEnum x + 1)
    fromCL x = toEnum (fromIntegral x - 1)
 
--- | Command queue properties
+-- | Command queue property
 data CommandQueueProperty
    = CL_QUEUE_OUT_OF_ORDER -- ^ Replace looong CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
    | CL_QUEUE_PROFILING    -- ^ Replace CL_QUEUE_PROFILING_ENABLE
    deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
+-- | Command queue properties
 type CommandQueueProperties = BitSet Word64 CommandQueueProperty
 
 -- | Return the required size to return a device info
@@ -224,7 +225,7 @@ getDeviceInfoString :: DeviceInfo -> Device -> CLRet String
 getDeviceInfoString infoid dev =
    getDeviceInfoRetSize infoid dev >>= \case
       Left err   -> return (Left err)
-      Right size -> do
+      Right size ->
          allocaBytes (fromIntegral size) $ \dat -> whenSuccess 
             (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
             (peekCString dat)

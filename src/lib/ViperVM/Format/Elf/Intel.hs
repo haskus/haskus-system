@@ -41,12 +41,14 @@ import Control.Monad (when, forM)
 import qualified Data.ByteString as BS
 
 
+-- | ZCA table
 data ZCATable = ZCATable
    { zcaHeader          :: ZCATableHeader
    , zcaEntries         :: [ZCATableEntry]
    }
    deriving (Show)
 
+-- | ZCA table header
 data ZCATableHeader = ZCATableHeader
    { zcaVersionMajor    :: Word8    -- ^ Major version number
    , zcaVersionMinor    :: Word8    -- ^ Minor version number
@@ -60,9 +62,11 @@ data ZCATableHeader = ZCATableHeader
    }
    deriving (Show)
 
+-- | ZCA table name
 zcaMagic :: Text
 zcaMagic = Text.pack ".itt_notify_tab"
 
+-- | Getter for a ZcA table header
 getZCATableHeader :: Get ZCATableHeader
 getZCATableHeader = do
    magic <- Text.decodeUtf8 <$> getByteString (Text.length zcaMagic)
@@ -86,7 +90,7 @@ getZCATableHeader = do
       <*> getWord32le
       <*> getWord32le
 
-
+-- | ZCA table entry
 data ZCATableEntry = ZCATableEntry
    { zcaIP              :: Word64         -- ^ Instruction pointer on entry
    , zcaNameIndex       :: Word32         -- ^ Offset in bytes into strings table
@@ -96,6 +100,7 @@ data ZCATableEntry = ZCATableEntry
    }
    deriving (Show)
 
+-- | Getter for a table entry
 getZCATableEntry :: Map Int Text -> Get ZCATableEntry
 getZCATableEntry strs = do
    off  <- getWord64le
@@ -106,40 +111,38 @@ getZCATableEntry strs = do
 
    return (ZCATableEntry off nidx name eoff BS.empty)
 
-
+-- | Getter for table entries
 getZCATableEntries :: ZCATableHeader -> BS.ByteString -> [ZCATableEntry]
 getZCATableEntries hdr bs = es
    where
       -- extract raw table
       raw =   BS.take (fromIntegral $ zcaEntryCount hdr * 16)
-            $ BS.drop (fromIntegral $ zcaEntryOffset hdr) 
-            $ bs
+            $ BS.drop (fromIntegral $ zcaEntryOffset hdr) bs
       -- get strings
       strs = getZCAStringTable hdr bs
       -- decode entries
       getEntries = forM [1..zcaEntryCount hdr] (const $ getZCATableEntry strs)
       es = runGetOrFail getEntries raw
 
-
+-- | Get string table
 getZCAStringTable :: ZCATableHeader -> BS.ByteString -> Map Int Text
 getZCAStringTable hdr bs = Map.fromList (offs `zip` strs)
    where
       -- extract raw table
       raw =   BS.take (fromIntegral $ zcaStringsSize hdr)
-            $ BS.drop (fromIntegral $ zcaStringsOffset hdr) 
-            $ bs
+            $ BS.drop (fromIntegral $ zcaStringsOffset hdr) bs
       -- decode strings
       strs = fmap Text.decodeUtf8 . BS.split 0 . BS.init $ raw
       -- add offsets
       offs = scanl (+) 0 $ fmap (\s -> Text.length s + 1) strs
 
+-- | Get values
 getZCAValues :: ZCATableHeader -> BS.ByteString -> [ZCATableEntry] -> [ZCATableEntry]
 getZCAValues hdr bs es = values
    where
       -- raw table of values
       raw    = BS.take (fromIntegral $ zcaExprsSize hdr)
-               $ BS.drop (fromIntegral $ zcaExprsOffset hdr) 
-               $ bs
+               $ BS.drop (fromIntegral $ zcaExprsOffset hdr) bs
       -- offsets
       offs   = fmap (fromIntegral . zcaValueIndex) es
       -- sizes
@@ -151,6 +154,7 @@ getZCAValues hdr bs es = values
 
       values = fmap (uncurry update) (es `zip` szs)
 
+-- | Get table
 getZCATable :: BS.ByteString -> ZCATable
 getZCATable bs = zca
    where

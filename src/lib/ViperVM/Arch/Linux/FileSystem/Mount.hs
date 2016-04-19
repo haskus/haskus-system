@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | Filesystem mount
 module ViperVM.Arch.Linux.FileSystem.Mount
    ( MountFlag(..)
    , MountFlags
@@ -24,6 +25,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Internals.FileSystem
 
+-- | Unmount flag
 data UnmountFlag
    = UnmountForce       -- ^ Force unmounting
    | UnmountDetach      -- ^ Just detach from the tree
@@ -31,6 +33,7 @@ data UnmountFlag
    | UnmountDontFollow  -- ^ Don't follow symlink on unmount
    deriving (Show,Eq,Enum,CBitSet)
 
+-- | Unmount flags
 type UnmountFlags = BitSet Word64 UnmountFlag
 
 -- | Mount a file system

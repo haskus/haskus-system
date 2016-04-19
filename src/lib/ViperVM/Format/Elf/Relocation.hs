@@ -1,3 +1,4 @@
+-- | ELF relocations
 module ViperVM.Format.Elf.Relocation
    ( RelocationEntry (..)
    , getRelocationEntry
@@ -24,7 +25,7 @@ data RelocationEntry = RelocationEntry
    }
    deriving (Show)
 
-
+-- | Getter for a relocation entry
 getRelocationEntry :: PreHeader -> Header -> Bool -> Get RelocationEntry
 getRelocationEntry i h withAddend = do
    let (_,_,_,_,gwN) = getGetters i
@@ -41,11 +42,12 @@ getRelocationEntry i h withAddend = do
          WordSize64 -> fromIntegral (info `shiftR` 32)
 
    ad <- if withAddend
-      then (Just . fromIntegral <$> gwN) 
+      then Just . fromIntegral <$> gwN
       else return Nothing
 
    return $ RelocationEntry addr typ sym ad
 
+-- | Putter for a relocation entry
 putRelocationEntry :: PreHeader -> Bool -> RelocationEntry -> Put
 putRelocationEntry i withAddend rel = do
    let 

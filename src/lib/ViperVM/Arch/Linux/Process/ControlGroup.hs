@@ -16,6 +16,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Control.Monad (void)
 
+-- | Control group entry
 data ControlGroupEntry = ControlGroupEntry
    { cgroupHierarchy  :: Int
    , cgroupSubsystems :: [Text]

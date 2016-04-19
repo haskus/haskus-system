@@ -1,3 +1,4 @@
+-- | ELF header
 module ViperVM.Format.Elf.Header
    ( Header (..)
    , Type (..)
@@ -32,6 +33,7 @@ data Header = Header
    , headerSectionNameIndex   :: Word16   -- ^ Index of the section containing section names
    } deriving (Show)
 
+-- | ELF file type
 data Type
    = TypeNone           -- ^ No file type
    | TypeRelocatable    -- ^ Relocatable file
@@ -40,6 +42,7 @@ data Type
    | TypeCoreFile       -- ^ Core file
    deriving (Show,Eq,Enum)
 
+-- | ELF architecture
 data Arch
    = ArchNone         -- ^ No machine
    | ArchM32          -- ^ AT&T WE 32100
@@ -287,6 +290,7 @@ instance Enum Arch where
       191 -> ArchTILEGX
       v   -> ArchCustom (fromIntegral v)
 
+-- | Getter for the header
 getHeader :: PreHeader -> Get Header
 getHeader i = do
    let (_,gw16,gw32,_,gwN) = getGetters i
@@ -306,6 +310,7 @@ getHeader i = do
       <*> gw16
       <*> gw16
 
+-- | Putter for the header
 putHeader :: PreHeader -> Header -> Put
 putHeader i h = do
    let (_,pw16,pw32,_, pwN) = getPutters i
@@ -323,6 +328,3 @@ putHeader i h = do
    pw16 (headerSectionEntrySize h)
    pw16 (headerSectionEntryCount h)
    pw16 (headerSectionNameIndex h)
-
-
-

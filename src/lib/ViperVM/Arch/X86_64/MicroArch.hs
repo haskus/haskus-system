@@ -4,6 +4,7 @@ module ViperVM.Arch.X86_64.MicroArch
    )
 where
 
+-- | X86 micro-architecture
 data X86Arch
    = Intel486
    | IntelPentium

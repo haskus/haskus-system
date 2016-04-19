@@ -1,3 +1,4 @@
+-- | Pipe
 module ViperVM.Arch.Linux.Pipe
    ( createPipe
    )

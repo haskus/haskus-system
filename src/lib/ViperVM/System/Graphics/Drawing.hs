@@ -39,6 +39,7 @@ import ViperVM.Arch.Linux.Graphics.PixelFormat
 -- http://projects.haskell.org/diagrams/blog/2015-04-30-GTK-coordinates.html
 
 
+-- | Blanding method
 data BlendOp
    = BlendCopy
    | BlendAlpha
@@ -58,6 +59,7 @@ intersect (x1,y1,w1,h1) (x2,y2,w2,h2)
             x' = max x1 x2
             y' = max y1 y2
 
+-- | Load a PNG
 loadPng :: ByteString -> Image PixelRGBA8
 loadPng bs = img
    where

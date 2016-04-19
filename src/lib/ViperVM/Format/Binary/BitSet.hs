@@ -147,6 +147,7 @@ union (BitSet b1) (BitSet b2) = BitSet (b1 .|. b2)
 
 {-# INLINE union #-}
 
+-- | Bit set indexed with a
 class CBitSet a where
    -- | Return the bit offset of an element
    toBitOffset         :: a -> Int

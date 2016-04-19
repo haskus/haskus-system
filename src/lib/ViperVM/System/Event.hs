@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- | Event management
 module ViperVM.System.Event
    ( newEventReader
    , onEvent
@@ -36,8 +37,7 @@ newEventReader fd@(Handle lowfd) = do
       threadWaitRead rfd
       sysRead fd ptr (fromIntegral sz * fromIntegral nb)
       >.~!> \sz2 -> do
-         -- FIXME: we should somehow signal that an error occured and
-         -- that we won't report future events (if any)
+         -- FIXME: we should somehow signal that an error occured
          evs <- peekArray (fromIntegral sz2 `div` sz) ptr
          atomically $ traverse_ (writeTChan ch) evs
    return ch

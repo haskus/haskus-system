@@ -12,6 +12,7 @@ where
 import ViperVM.Format.Elf.Header
 import Data.Word
 
+-- | Create relocation type
 toRelocType :: Arch -> Word32 -> RelocationType
 toRelocType arch typ =
    case arch of
@@ -20,6 +21,7 @@ toRelocType arch typ =
       ArchX86_64 -> RelocationX86_64 (toEnum (fromIntegral typ))
       _          -> RelocationTypeUnknown typ
 
+-- | Get relocation type code
 fromRelocType :: RelocationType -> Word32
 fromRelocType typ =
    case typ of
@@ -170,6 +172,7 @@ instance Enum M68K_Relocation where
       _     -> error $ "Unknown m68K relocation (" ++ show x ++ ")"
 
 
+-- | I386 relocations
 data I386_Relocation
    = I386_NONE            -- ^ No reloc
    | I386_32              -- ^ Direct 32 bit

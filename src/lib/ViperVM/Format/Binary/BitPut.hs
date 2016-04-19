@@ -1,3 +1,4 @@
+-- | Bit putter
 module ViperVM.Format.Binary.BitPut
    ( BitPutState(..)
    , newBitPutState
@@ -41,9 +42,11 @@ data BitPutState = BitPutState
    , bitPutStateBitOrder         :: !BitOrder      -- ^ Bit order
    }
 
+-- | Create a new BitPut state
 newBitPutState :: BitOrder -> BitPutState
 newBitPutState = BitPutState mempty 0 0
 
+-- | Put bits
 putBits :: (Integral a, FiniteBits a, BitReversable a) => Word -> a -> BitPutState -> BitPutState
 putBits n w s@(BitPutState builder b o bo) = s'
    where
@@ -70,8 +73,8 @@ putBits n w s@(BitPutState builder b o bo) = s'
       -- bits of the returned value
       selectBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => a -> Word8
       selectBits x = fromIntegral $ case bo of
-         BB ->                       maskLeastBits cn $ x `shiftR` (fromIntegral $ n-cn)
-         LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` (fromIntegral $ n-cn)
+         BB ->                       maskLeastBits cn $ x `shiftR` fromIntegral (n-cn)
+         LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` fromIntegral (n-cn)
          LL ->                       maskLeastBits cn x
          BL -> reverseLeastBits cn $ maskLeastBits cn x
 
@@ -111,34 +114,43 @@ putBitsBS bs s
    where
       rev    = BS.map reverseBits
 
-
+-- | Flush the current byte
 flushIncomplete :: BitPutState -> BitPutState
 flushIncomplete s@(BitPutState b w o bo)
-  | o == 0 = s
-  | otherwise = (BitPutState (b `mappend` B.word8 w) 0 0 bo)
+  | o == 0    = s
+  | otherwise = BitPutState (b `mappend` B.word8 w) 0 0 bo
 
+-- | Get a lazy byte string
 getBitPutLBS :: BitPutState -> LBS.ByteString
 getBitPutLBS = B.toLazyByteString . bitPutStateBuilder . flushIncomplete 
 
+-- | Get a byte string
 getBitPutBS :: BitPutState -> BS.ByteString
 getBitPutBS = LBS.toStrict . getBitPutLBS
 
-
+-- | BitPut monad transformer
 type BitPutT m a = StateT BitPutState m a
+
+-- | BitPut monad
 type BitPut a    = BitPutT Identity a
 
+-- | Evaluate a BitPut monad
 runBitPutT :: Monad m => BitOrder -> BitPutT m a -> m BS.ByteString
 runBitPutT bo m = getBitPutBS <$> execStateT m (newBitPutState bo)
 
+-- | Evaluate a BitPut monad
 runBitPut :: BitOrder -> BitPut a -> BS.ByteString
 runBitPut bo m = runIdentity (runBitPutT bo m)
 
+-- | Put bits (monadic)
 putBitsM :: (Monad m, Integral a, FiniteBits a, BitReversable a) => Word -> a -> BitPutT m ()
 putBitsM n w = modify (putBits n w)
 
+-- | Put a single bit (monadic)
 putBitBoolM :: (Monad m) => Bool -> BitPutT m ()
 putBitBoolM b = putBitsM 1 (if b then 1 else  0 :: Word)
 
+-- | Put a byte string (monadic)
 putBitsBSM :: Monad m => BS.ByteString -> BitPutT m ()
 putBitsBSM bs = modify (putBitsBS bs)
 

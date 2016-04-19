@@ -18,10 +18,11 @@ import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable, peek)
 import Foreign.C.Types (CSize)
+import Data.Int
 
 import ViperVM.Arch.OpenCL.Bindings
-import ViperVM.Arch.OpenCL.Types
 
+-- | OpenCL return type
 type CLRet a = IO (Either CLError a)
 
 -- | An OpenCL error code
@@ -115,8 +116,8 @@ toException :: Either CLError a -> a
 toException (Right a) = a
 toException (Left a) = throw a
 
--- | Wrap an OpenCL call taking an CLint error pointer as last parameter
-wrapPError :: (Ptr CLint -> IO a) -> CLRet a
+-- | Wrap an OpenCL call taking an Int32 error pointer as last parameter
+wrapPError :: (Ptr Int32 -> IO a) -> CLRet a
 wrapPError f = alloca $ \perr -> do
   v <- f perr
   errcode <- fromCL <$> peek perr
@@ -125,11 +126,11 @@ wrapPError f = alloca $ \perr -> do
     else Left errcode
   
 -- | Return True if the given OpenCL call returns CL_SUCCESS
-wrapCheckSuccess :: IO CLint -> IO Bool
+wrapCheckSuccess :: IO Int32 -> IO Bool
 wrapCheckSuccess f = (== CL_SUCCESS) . fromCL <$> f
 
 -- | Wrap an OpenCL call to get entity info
-wrapGetInfo :: Storable a => (Ptr a -> Ptr CSize -> IO CLint) -> (a -> b) -> CLRet b
+wrapGetInfo :: Storable a => (Ptr a -> Ptr CSize -> IO Int32) -> (a -> b) -> CLRet b
 wrapGetInfo fget fconvert= alloca $ \dat -> do
   errcode <- fget dat nullPtr
   if errcode == toCL CL_SUCCESS
@@ -137,7 +138,7 @@ wrapGetInfo fget fconvert= alloca $ \dat -> do
     else return (Left (fromCL errcode))
 
 -- | If the OpenCL call (first parameter) is successful, evaluate and return the second parameter, otherwise return the error
-whenSuccess :: IO CLint -> IO a -> IO (Either CLError a)
+whenSuccess :: IO Int32 -> IO a -> IO (Either CLError a)
 whenSuccess fcheck fval = do
   errcode <- fcheck
   if errcode == toCL CL_SUCCESS

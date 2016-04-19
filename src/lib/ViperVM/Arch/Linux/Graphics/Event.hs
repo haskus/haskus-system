@@ -1,6 +1,6 @@
+-- | Graphics events
 module ViperVM.Arch.Linux.Graphics.Event
    ( Event(..)
-   , UnknownEventInfo(..)
    , peekEvents
    , EventType (..)
    , StructEventVBlank (..)
@@ -14,17 +14,13 @@ import Data.Word
 
 import ViperVM.Arch.Linux.Internals.Graphics
 
+-- | Graphics events
 data Event
-   = VBlankEvent  EventType StructEventVBlank
-   | UnknownEvent Word32 ByteString
+   = VBlankEvent EventType StructEventVBlank   -- ^ VBlank event
+   | CustomEvent Word32 ByteString             -- ^ Custom event
    deriving (Show)
 
-data UnknownEventInfo = UnknownEventInfo
-   { unknownEventType :: Word32
-   , unknownEventData :: ByteString
-   }
-   deriving (Show)
-
+-- | Peek events
 peekEvents :: Ptr () -> Word32 -> IO [Event]
 peekEvents = go
    where
@@ -39,7 +35,7 @@ peekEvents = go
          e <- peek (castPtr ptr)
          v <- case toEventType (eventType e) of
             Just t  -> VBlankEvent t <$> peek (castPtr ptr)
-            Nothing -> UnknownEvent (eventType e) <$>
+            Nothing -> CustomEvent (eventType e) <$>
                packCStringLen (castPtr ptr `plusPtr` 8,
                                fromIntegral (eventLength e) - 8)
          return (v,eventLength e)

@@ -13,6 +13,7 @@ import ViperVM.Format.Binary.Put
 
 import ViperVM.Format.Elf.PreHeader
 
+-- | Note
 data RawNote = RawNote
    { rawnoteNameLength        :: Word32
    , rawnoteDescriptorSize    :: Word32
@@ -20,6 +21,7 @@ data RawNote = RawNote
    }
    deriving (Show,Eq)
 
+-- | Getter for a note
 getRawNote :: PreHeader -> Get RawNote
 getRawNote pre = do
    let (_,_,gw32,_,_) = getGetters pre
@@ -29,6 +31,7 @@ getRawNote pre = do
       <*> gw32
       <*> gw32
 
+-- | Putter for a note
 putRawNote :: PreHeader -> RawNote -> Put
 putRawNote pre note = do
    let (_,_,pw32,_,_) = getPutters pre
@@ -36,4 +39,3 @@ putRawNote pre note = do
    pw32 (rawnoteNameLength note)
    pw32 (rawnoteDescriptorSize note)
    pw32 (rawnoteType note)
-

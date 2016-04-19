@@ -3,7 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 
-
+-- | Linux signals
 module ViperVM.Arch.Linux.Signal
    ( SignalSet(..)
    , ChangeSignals(..)
@@ -13,7 +13,7 @@ module ViperVM.Arch.Linux.Signal
    , sysSendSignalGroup
    , sysSendSignalAll
    , sysCheckProcess
-   , sysChangeBlockedSignals
+   , sysChangeSignalMask
    )
 where
 
@@ -29,11 +29,14 @@ import Foreign.Marshal.Alloc (alloca)
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Utils.Flow
 
+-- | Signal set
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
+-- | Pause
 sysPause :: SysRet ()
 sysPause = onSuccess syscall_pause (const ())
 
+-- | Alarm
 sysAlarm :: Word-> SysRet Word
 sysAlarm seconds =
    onSuccess (syscall_alarm seconds) fromIntegral
@@ -63,14 +66,16 @@ sysCheckProcess pid = sysSendSignal pid 0
       ESRCH -> flowRet False
       e     -> flowRet1 e
 
+-- | Signal actions
 data ChangeSignals
    = BlockSignals    -- ^ Block signals in the set
    | UnblockSignals  -- ^ Unblock signals in the set
    | SetSignals      -- ^ Set blocked signals to the set
    deriving (Show,Eq,Enum)
 
-sysChangeBlockedSignals :: ChangeSignals -> Maybe SignalSet -> SysRet SignalSet
-sysChangeBlockedSignals act set =
+-- | Change signal mask
+sysChangeSignalMask :: ChangeSignals -> Maybe SignalSet -> SysRet SignalSet
+sysChangeSignalMask act set =
    let f x = alloca $ \(ret :: Ptr SignalSet) ->
                onSuccessIO (syscall_sigprocmask (fromEnum act) x ret) (const $ peek ret)
    in

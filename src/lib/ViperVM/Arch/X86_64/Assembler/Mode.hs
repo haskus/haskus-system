@@ -39,8 +39,7 @@ data RelativeAddressing
 
 -- | Information on a given mode
 data ModeInfo = ModeInfo
-   -- | IP-relative addressing support
-   { relativeAddressing :: RelativeAddressing
+   { relativeAddressing :: RelativeAddressing -- ^ IP-relative addressing support
    }
 
 -- | Return information for the selected mode

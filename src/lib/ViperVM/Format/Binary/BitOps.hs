@@ -1,3 +1,4 @@
+-- | Bit operations
 module ViperVM.Format.Binary.BitOps
    ( makeMask
    , maskLeastBits
@@ -54,14 +55,14 @@ byteOffset n = n `shiftR` 3
 reverseLeastBits :: (FiniteBits a, BitReversable a) => Word -> a -> a
 reverseLeastBits n value = reverseBits value `shiftR` (finiteBitSize value - fromIntegral n)
 
-
+-- | Convert bits into a string composed of '0' and '1' chars
 bitsToString :: FiniteBits a => a -> String
 bitsToString x = fmap b [s, s-1 .. 0]
    where
       s   = finiteBitSize x - 1
       b v = if testBit x v then '1' else '0'
 
-
+-- | Convert a string of '0' and '1' chars into a word
 bitsFromString :: Bits a => String -> a
 bitsFromString xs = foldl' b zeroBits (reverse xs `zip` [0..])
    where
@@ -99,13 +100,12 @@ instance BitReversable Word where
 -- bits of the result
 getBitRange :: (BitReversable b, FiniteBits b) => BitOrder -> Word -> Word -> b -> b
 getBitRange bo o n c = case bo of
-      BB -> maskLeastBits n $ c `shiftR` d
-      BL -> maskLeastBits n $ (reverseBits c) `shiftR` o'
-      LB -> maskLeastBits n $ (reverseBits c) `shiftR` d
-      LL -> maskLeastBits n $ c `shiftR` o'
+      BB -> maskLeastBits n $ c             `shiftR` d
+      BL -> maskLeastBits n $ reverseBits c `shiftR` o'
+      LB -> maskLeastBits n $ reverseBits c `shiftR` d
+      LL -> maskLeastBits n $ c             `shiftR` o'
    where 
       o' = fromIntegral o
       d  = finiteBitSize c - fromIntegral n - fromIntegral o
 
 {-# INLINE getBitRange #-}
-

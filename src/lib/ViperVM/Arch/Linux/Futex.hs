@@ -1,3 +1,4 @@
+-- | Futex (user-space mutex)
 module ViperVM.Arch.Linux.Futex
    ( FutexOp(..)
    , sysFutex
@@ -14,11 +15,12 @@ import Data.Int
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Time
-import ViperVM.Arch.Linux.Utils
+import ViperVM.Utils.Memory
 import ViperVM.Utils.Flow
 
-data FutexOp =
-     FutexWait
+-- | Futex operation
+data FutexOp
+   = FutexWait
    | FutexWake
    | FutexFD
    | FutexRequeue
@@ -34,7 +36,7 @@ sysFutex uaddr op val timeout uaddr2 val3 =
 futexWait :: Ptr Int64 -> Int64 -> Maybe TimeSpec -> SysRet ()
 futexWait addr val timeout =
    withMaybeOrNull timeout $ \timeout' ->
-      (sysFutex addr FutexWait val timeout' nullPtr 0 >.-.> const ())
+      sysFutex addr FutexWait val timeout' nullPtr 0 >.-.> const ()
 
 -- | Wake `count` processes waiting on the futex
 --  Return the number of processes woken up

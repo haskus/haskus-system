@@ -24,6 +24,7 @@ import Foreign.Ptr (wordPtrToPtr)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
+-- | Memory map entry
 data MemoryMapEntry = MemoryMapEntry
    { entryStartAddr :: Word64
    , entryStopAddr  :: Word64
@@ -35,12 +36,14 @@ data MemoryMapEntry = MemoryMapEntry
    , entryPath      :: Text
    } deriving (Show)
 
+-- | Memory permission
 data Perm
    = PermRead
    | PermWrite
    | PermExec
    deriving (Show)
 
+-- | Memory sharing
 data Sharing
    = Shared 
    | Private
@@ -98,5 +101,6 @@ memoryMapToBytestring e = unsafePackCStringLen (ptr,len)
       ptr = wordPtrToPtr (fromIntegral (entryStartAddr e))
       len = fromIntegral $ entryStopAddr e - entryStartAddr e
 
+-- | Convert a memory-map entry into a lazy ByteString
 memoryMapToLazyBytestring :: MemoryMapEntry -> IO LBS.ByteString
 memoryMapToLazyBytestring = fmap LBS.fromStrict . memoryMapToBytestring

@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 
+-- | Linux error management
 module ViperVM.Arch.Linux.Error
    ( sysFlow
    , sysOnSuccess
@@ -32,11 +33,23 @@ import ViperVM.Utils.Variant
 ------------------------------------------------
 -- Errors
 ------------------------------------------------
+
+-- | Not allowed
 data NotAllowed            = NotAllowed            deriving (Show,Eq)
+
+-- | Invalid restart commmand
 data InvalidRestartCommand = InvalidRestartCommand deriving (Show,Eq)
+
+-- | Memory error
 data MemoryError           = MemoryError           deriving (Show,Eq)
+
+-- | Invalid parameter
 data InvalidParam          = InvalidParam          deriving (Show,Eq)
+
+-- | Entry not found
 data EntryNotFound         = EntryNotFound         deriving (Show,Eq)
+
+-- | Invalid range
 data InvalidRange          = InvalidRange          deriving (Show,Eq)
 
 
@@ -44,14 +57,17 @@ data InvalidRange          = InvalidRange          deriving (Show,Eq)
 -- System calls
 ------------------------------------------------
 
+-- | Convert a syscall into a flow
 sysFlow :: IO Int64 -> Flow Sys '[Int64,ErrorCode]
 sysFlow f = sysIO (onSuccess f id)
 
+-- | Convert a syscall result into a flow
 sysOnSuccess :: IO Int64 -> (Int64 -> a) -> Flow Sys '[a,ErrorCode]
-sysOnSuccess a f = sysIO (onSuccess a f)
+sysOnSuccess a f = sysFlow a >.-.> f
 
+-- | Convert a syscall result into a void flow
 sysOnSuccessVoid :: IO Int64 -> Flow Sys '[(),ErrorCode]
-sysOnSuccessVoid a = sysIO (onSuccessVoid a)
+sysOnSuccessVoid a = sysFlow a >.-.> const ()
 
 -- | Assert that the given action doesn't fail
 sysCallAssert :: String -> SysRet a -> Sys a

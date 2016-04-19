@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
+-- | Bit getter
 module ViperVM.Format.Binary.BitGet
    ( BitGetState(..)
    , newBitGetState
@@ -63,7 +64,7 @@ isEmpty (BitGetState bs o _) = o == 0 && BS.null bs
 skipBits :: Word -> BitGetState -> BitGetState
 skipBits o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
    where
-      !o' = (n+o)
+      !o' = n+o
       !d  = fromIntegral $ byteOffset o'
       !n' = bitOffset o'
 
@@ -126,10 +127,10 @@ getBitsBS n (BitGetState bs o bo) =
             bs'' = BS.unsafeTake (fromIntegral n) bs
             rev  = BS.map reverseBits
          in case (o,bo) of
-            (0,BB) ->                    bs''
-            (0,LL) ->       BS.reverse $ bs''
-            (0,LB) -> rev $              bs''
-            (0,BL) -> rev $ BS.reverse $ bs''
+            (0,BB) ->                  bs''
+            (0,LL) ->       BS.reverse bs''
+            (0,LB) -> rev              bs''
+            (0,BL) -> rev $ BS.reverse bs''
             (_,LL) ->                    getBitsBS n (BitGetState (BS.reverse bs') (8-o)  BB)
             (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     BB)
             (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     LL)
@@ -148,28 +149,37 @@ getBitsBS n (BitGetState bs o bo) =
 
 
 
-
+-- | BitGet monad transformer
 type BitGetT m a = StateT BitGetState m a
+
+-- | BitGet monad
 type BitGet a    = BitGetT Identity a
 
+-- | Evaluate a BitGet monad
 runBitGetT :: Monad m => BitOrder -> BitGetT m a -> BS.ByteString -> m a
 runBitGetT bo m bs = evalStateT m (newBitGetState bo bs)
 
+-- | Evaluate a BitGet monad
 runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
 
+-- | Evaluate a BitGet monad, return the remaining state
 runBitGetPartialT :: Monad m => BitOrder -> BitGetT m a -> BS.ByteString -> m (a, BitGetState)
 runBitGetPartialT bo m bs = runStateT m (newBitGetState bo bs)
 
+-- | Evaluate a BitGet monad, return the remaining state
 runBitGetPartial :: BitOrder -> BitGet a -> BS.ByteString -> (a, BitGetState)
 runBitGetPartial bo m bs = runIdentity (runBitGetPartialT bo m bs)
 
+-- | Resume a BitGet evaluation
 resumeBitGetPartialT :: Monad m => BitGetT m a -> BitGetState -> m (a, BitGetState)
 resumeBitGetPartialT = runStateT 
 
+-- | Resume a BitGet evaluation
 resumeBitGetPartial :: BitGet a -> BitGetState -> (a,BitGetState)
 resumeBitGetPartial m s = runIdentity (resumeBitGetPartialT m s)
 
+-- | Indicate if all bits have been read
 isEmptyM :: Monad m => BitGetT m Bool
 isEmptyM = gets isEmpty
 

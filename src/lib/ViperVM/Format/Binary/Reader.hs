@@ -30,6 +30,7 @@ import Foreign.Storable
 -- | The phantom type `a` is used to distinguish between several readers
 newtype Reader a = Reader Buffer
 
+-- | Constraint: reader 'r' is in state 's'
 type ReaderM r s =
    ( HArrayIndexT (Reader r) s)
 

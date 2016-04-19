@@ -1,4 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+-- | Process management
 module ViperVM.Arch.Linux.Process
    ( ProcessID(..)
    , ThreadID(..)
@@ -32,9 +34,16 @@ import Foreign.CStorable
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 
+-- | Process ID
 newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+
+-- | Thread ID
 newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+
+-- | User ID
 newtype UserID = UserID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+
+-- | Group ID
 newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
 
 -- | Exit the current process with the given return value

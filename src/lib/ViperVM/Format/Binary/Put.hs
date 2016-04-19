@@ -1,3 +1,4 @@
+-- | Put monad
 module ViperVM.Format.Binary.Put
    ( module Data.Serialize.Put
    )

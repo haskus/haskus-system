@@ -135,8 +135,8 @@ instance CBitSet MapFlag where
       _  -> error "Invalid map flag bit offset"
 
 type MapFlagField = BitFields Word32
-   '[ BitField 6  "HugeTLBSize" Word8                   -- ^ Log2 of the huge page size
-    , BitField 26 "MapFlags"    (BitSet Word32 MapFlag) -- ^ Flags
+   '[ BitField 6  "HugeTLBSize" Word8                   -- Log2 of the huge page size
+    , BitField 26 "MapFlags"    (BitSet Word32 MapFlag) -- Flags
     ]
 
 type MapFlags = BitSet Word32 MapFlag

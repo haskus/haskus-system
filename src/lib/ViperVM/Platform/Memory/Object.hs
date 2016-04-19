@@ -34,6 +34,7 @@ data DataInstance r = DataInstance
    , instanceNode :: TMVar (TList.TNode (DataInstance r)) -- ^ Node in the instance list
    }
 
+-- | Multi data
 class MultiDatable s where
    toMultiData :: s -> STM MultiData
 

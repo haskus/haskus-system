@@ -1,3 +1,4 @@
+-- | Tuples helpers
 module ViperVM.Utils.Tuples
    ( uncurry4
    , take4

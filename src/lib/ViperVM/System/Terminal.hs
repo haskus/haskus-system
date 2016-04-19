@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- | Terminal helpers
 module ViperVM.System.Terminal
    ( Terminal
    , defaultTerminal
@@ -33,7 +34,7 @@ import Foreign.C.String (withCStringLen)
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils (with)
 
-
+-- | Terminal (input and output, no error output)
 data Terminal = Terminal
    { termOut :: OutputState
    , termIn  :: InputState
@@ -51,6 +52,7 @@ data InputState = InputState
    , inputHandle   :: Handle
    }
 
+-- | Input buffer
 data InputBuffer = InputBuffer
    { inputBufferPtr   :: Ptr () -- ^ Buffer pointer
    , inputBufferSize  :: Word64 -- ^ Buffer size
@@ -58,6 +60,7 @@ data InputBuffer = InputBuffer
    , inputBufferStop  :: Word64 -- ^ End offset of the input values
    }
 
+-- | Buffer
 data Buffer = Buffer
    { bufferSize :: Word64
    , bufferPtr  :: Ptr ()
@@ -202,6 +205,7 @@ newOutputState fd = do
    req <- atomically TList.empty
    return $ OutputState req fd
 
+-- | Initialize a default terminal (using stdin, stdout)
 defaultTerminal :: Sys Terminal
 defaultTerminal = do
    -- switch to non-blocking modes

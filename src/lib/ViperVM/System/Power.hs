@@ -1,3 +1,4 @@
+-- | Power management
 module ViperVM.System.Power
    ( module X
    )

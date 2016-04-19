@@ -1,3 +1,4 @@
+-- | Linux syscalls on X86
 module ViperVM.Arch.X86_64.Linux.Syscalls
    ( syscall_access
    , syscall_chdir

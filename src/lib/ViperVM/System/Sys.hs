@@ -3,6 +3,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+-- | Sys monad
 module ViperVM.System.Sys
    ( Sys
    , runSys
@@ -126,11 +127,13 @@ data Log
 -- | Status of the current entry and link to the following one
 data LogNext = LogNext (Future LogStatus) (Future Log)
 
+-- | Status
 data LogStatus
    = LogSuccess
    | LogFailed
    deriving (Show,Eq)
 
+-- | Log type
 data LogType
    = LogDebug
    | LogInfo
@@ -138,12 +141,13 @@ data LogType
    | LogError
    deriving (Show,Eq)
 
-
+-- | Set log status
 setLogStatus :: LogStatus -> Sys ()
 setLogStatus s = do
    st <- gets sysLogStatus
    sysIO (setFutureIO s st)
 
+-- | Add a log entry
 sysLogAdd :: (LogNext -> Log) -> Sys ()
 sysLogAdd f = do
    (status,statusSrc) <- sysIO newFutureIO
@@ -234,6 +238,7 @@ sysLogPrint = do
                traverse_ (printLog (i+1)) =<< pollFutureIO n2
                traverse_ (printLog i)     =<< pollFutureIO n1
 
+-- | Assert in Sys (log the success)
 sysAssert :: String -> Bool -> Sys ()
 sysAssert text b = if b
    then do
@@ -243,11 +248,13 @@ sysAssert text b = if b
       let msg = printf "%s (assertion failed)" text
       sysError msg
 
+-- | Assert in Sys (don't log on success)
 sysAssertQuiet :: String -> Bool -> Sys ()
 sysAssertQuiet text b = unless b $ do
    let msg = printf "%s (assertion failed)" text
    sysError msg
 
+-- | Fail in Sys
 sysError :: String -> Sys a
 sysError text = do
    sysLog LogError text

@@ -1,3 +1,4 @@
+-- | Process utilities
 module ViperVM.System.Process
    ( threadDelaySec
    , threadDelayMilliSec

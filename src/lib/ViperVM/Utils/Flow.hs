@@ -4,8 +4,9 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures #-}
 
-
+-- | First-class control-flow (based on Variant)
 module ViperVM.Utils.Flow
    ( Flow
    -- * Flow utils
@@ -84,32 +85,26 @@ import ViperVM.Utils.HList
 import Data.Proxy
 import GHC.TypeLits
 
-type Flow m l = m (Variant l)
-
---infixl 1  ~>,  ~#>,  #!~>,  #->
---infixl 1 >~>, >~#>, >#!~>, >#->
---
---infixl 1 #~>, >#~>, >#~#>
---
----- lifted actions in m
---infixl 1  #~^>,  ~^>
---infixl 1 >#~^>, >~^>
---
---infixl 1 *~^>, >*~^>
+-- | Control-flow
+type Flow m (l :: [*]) = m (Variant l)
 
 ----------------------------------------------------------
 -- Flow utils
 ----------------------------------------------------------
 
+-- | Return in the first element
 flowRet :: Monad m => x -> Flow m (x ': xs)
 flowRet = return . setVariant0
 
+-- | Return in the second element
 flowRet1 :: Monad m => x -> Flow m (y ': x ': xs)
 flowRet1 = return . setVariant1
 
+-- | Return a single element
 flowRet' :: Monad m => x -> Flow m '[x]
 flowRet' = flowRet
 
+-- | Return in the first well-typed element
 flowSet :: (Member x xs, Monad m) => x -> Flow m xs
 flowSet = return . setVariant
 
@@ -117,7 +112,7 @@ flowSet = return . setVariant
 flowLift :: (Liftable xs ys , Monad m) => Flow m xs -> Flow m ys
 flowLift = fmap liftVariant
 
-
+-- | Traverse a list and stop on first error
 flowTraverse :: forall m a b xs.
    ( Monad m
    ) => (a -> Flow m (b ': xs)) -> [a] -> Flow m ([b] ': xs)
@@ -131,6 +126,7 @@ flowTraverse f = go (flowRet [])
             -- prepend the result to the list
             rs' = rs >.~-> \bs -> (f a >.-.> (:bs))
 
+-- | Traverse a list and stop on first error
 flowFor :: forall m a b xs.
    ( Monad m
    ) => [a] -> (a -> Flow m (b ': xs)) -> Flow m ([b] ': xs)

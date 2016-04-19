@@ -88,7 +88,7 @@ import ViperVM.Utils.HList
 -- | Bit fields on a base type b
 newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
 
-
+-- | Get backing word
 bitFieldsBits :: BitFields b f -> b
 bitFieldsBits (BitFields b) = b
 
@@ -109,6 +109,8 @@ instance Storable s => CStorable (BitField n name s) where
    cAlignment = alignment
    cSizeOf    = sizeOf
 
+-- | Bit size
+-- TODO: use custom Storable class with sizeOf as type literal
 type family BitSize a :: Nat
 type instance BitSize Word8  = 8
 type instance BitSize Word16 = 16

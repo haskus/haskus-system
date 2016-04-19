@@ -1,3 +1,4 @@
+-- | Sizes
 module ViperVM.Arch.X86_64.Assembler.Size
    ( Size(..)
    , AddressSize(..)
@@ -7,6 +8,7 @@ module ViperVM.Arch.X86_64.Assembler.Size
 
 import Data.Word
 
+-- | Size
 data Size
    = Size8
    | Size16
@@ -17,18 +19,21 @@ data Size
    | Size512
    deriving (Show,Eq)
 
+-- | Address size
 data AddressSize
    = AddrSize16 
    | AddrSize32 
    | AddrSize64 
    deriving (Show,Eq)
 
+-- | Address size to size
 addressSize :: AddressSize -> Size
 addressSize op = case op of
    AddrSize16 -> Size16
    AddrSize32 -> Size32
    AddrSize64 -> Size64
 
+-- | Sized value
 data SizedValue
    = SizedValue8  !Word8
    | SizedValue16 !Word16

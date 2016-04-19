@@ -1,3 +1,4 @@
+-- | Matrix operations
 module ViperVM.Library.Maths.MatrixOps
    ( BasicOp (..)
    , BasicType (..)
@@ -7,14 +8,21 @@ where
 
 import ViperVM.Library.Kernel
 
-data BasicOp = OpAdd | OpSub | OpMul | OpDiv
+-- | Arithmetic operators
+data BasicOp
+   = OpAdd
+   | OpSub
+   | OpMul
+   | OpDiv
 
-data BasicType = TyUInt | TyInt | TyFloat | TyDouble
+-- | Expression types
+data BasicType
+   = TyUInt
+   | TyInt
+   | TyFloat
+   | TyDouble
 
----------------------------------------------
--- ADDITION
----------------------------------------------
-
+-- | Combine two matrices with the given operator
 clMapOpKernel :: BasicType -> BasicOp -> Kernel
 clMapOpKernel ty op = OpenCLSource code
    where
@@ -44,4 +52,3 @@ clMapOpKernel ty op = OpenCLSource code
          \     r[k] = a[k] " ++ opS ++ " b[k];\
          \  }\
          \}"
-

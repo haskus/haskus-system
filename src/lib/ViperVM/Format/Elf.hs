@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+
+-- | ELF binary format
 module ViperVM.Format.Elf
    ( Elf (..)
    , parseElf
@@ -317,6 +319,7 @@ getRelocationEntriesFromSection elf sec =
 -- Dynamic sections
 --------------------------------------------------------------
 
+-- | Dynamic entries
 getDynamicEntriesFromSection :: Elf -> Section -> [DynamicEntry]
 getDynamicEntriesFromSection elf sec =
       case sectionType sec of
@@ -410,6 +413,7 @@ getDynamicEntry elf sec = toDynamicEntry elf sec <$> getRawDynamicEntry pre
 -- Version sections
 --------------------------------------------------------------
 
+-- | Version needed
 data VersionNeeded = VersionNeeded
    { vnVersion       :: VersionNeededVersion       -- ^ Version of structure
    , vnFileName      :: Text                       -- ^ Dependency file name
@@ -417,7 +421,7 @@ data VersionNeeded = VersionNeeded
    }
    deriving (Show,Eq)
 
-
+-- | Version needed auxiliary
 data VersionNeededAuxiliary = VersionNeededAuxiliary
    { vnaHash   :: Word32   -- ^ Hash value of dependency name
    , vnaFlags  :: Word16   -- ^ Dependency specific information
@@ -473,6 +477,7 @@ getVersionNeededEntriesFromSection elf sec =
 -- Note sections
 --------------------------------------------------------------
 
+-- | Note
 data Note = Note
    { noteName        :: Text
    , noteDescriptor  :: BS.ByteString
@@ -498,6 +503,8 @@ getNoteEntriesFromSection elf sec = runGetOrFail (getEntriesWithAlignment 4 gett
 --------------------------------------------------------------
 -- Debug sections
 --------------------------------------------------------------
+
+-- | Get debug info
 getDebugInfoFromSection :: Elf -> Section -> [DebugInfo]
 getDebugInfoFromSection elf sec = runGetOrFail (getEntriesWithAlignment 1 (getDebugInfo endian secAbbrev secStrings)) bs
    where
@@ -507,13 +514,15 @@ getDebugInfoFromSection elf sec = runGetOrFail (getEntriesWithAlignment 1 (getDe
       Just secAbbrev = getSectionContentBS elf <$> findSectionByName elf (Text.pack ".debug_abbrev")
       -- section containing debug strings
       secStrings     = getSectionContentBS elf <$> findSectionByName elf (Text.pack ".debug_str")
-   
+
+-- | Get debug type
 getDebugTypeFromSection :: Elf -> Section -> [DebugType]
 getDebugTypeFromSection elf sec = runGetOrFail (getEntriesWithAlignment 1 (getDebugType endian)) bs
    where
       endian = preHeaderEndianness (elfPreHeader elf)
       bs = getSectionContentBS elf sec
 
+-- | Get debug abbrev
 getDebugAbbrevFromSection :: Elf -> Section -> [DebugAbbrevEntry]
 getDebugAbbrevFromSection elf sec = runGetOrFail getDebugAbbrevEntries bs
    where

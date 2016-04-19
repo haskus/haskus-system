@@ -1,3 +1,4 @@
+-- | ELF sections
 module ViperVM.Format.Elf.Section
    ( Section (..)
    , SectionFlag (..)
@@ -30,8 +31,10 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 
+-- | Section index
 type SectionIndex = Word32
 
+-- | Section
 data Section = Section
    { sectionNameIndex :: SectionIndex
    , sectionType      :: SectionType
@@ -45,6 +48,7 @@ data Section = Section
    , sectionEntrySize :: Word64
    } deriving (Show)
 
+-- | Getter for a section table
 getSectionTable :: ByteString -> Header -> PreHeader -> Vector Section
 getSectionTable bs h pre = fmap f offs
    where
@@ -61,6 +65,7 @@ getFirstSection bs hdr pre = runGetOrFail (getSection pre) (BS.drop off bs)
    where
       off  = fromIntegral $ headerSectionTableOffset hdr
 
+-- | Getter for a section
 getSection :: PreHeader -> Get Section
 getSection i = do
    let (_,_,gw32,_,gwN) = getGetters i
@@ -76,6 +81,7 @@ getSection i = do
       <*> gwN
       <*> gwN
 
+-- | Putter for a section
 putSection :: PreHeader -> Section -> Put
 putSection i s = do
    let (_,_,pw32,_,pwN) = getPutters i
@@ -91,6 +97,7 @@ putSection i s = do
    pwN  (sectionAlignment s)
    pwN  (sectionEntrySize s)
 
+-- | Section type
 data SectionType
    = SectionTypeNone                    -- ^ Section header table entry unused
    | SectionTypePROGBITS                -- ^ Program data
@@ -233,6 +240,7 @@ instance CBitSet SectionFlag where
       31 -> SectionFlagExclude
       v  -> SectionFlagOther (fromIntegral v)
 
+-- | Section flags
 type SectionFlags = BitSet Word64 SectionFlag
 
 -- | Compressed section type
@@ -251,12 +259,14 @@ instance CEnum CompressionType where
       v -> CompressionUnknown (fromIntegral v)
 
 
+-- | Section compression
 data SectionCompression = SectionCompression
    { sectionCompressionType       :: CompressionType  -- ^ Compression type
    , sectionCompressionSize       :: Word64           -- ^ Uncompressed data size
    , sectionCompressionAlignement :: Word64           -- ^ Uncompressed data alignment
    } deriving (Show)
 
+-- | Getter for section compression
 getSectionCompression :: PreHeader -> Get SectionCompression
 getSectionCompression i = do
    let (_,_,gw32,_,gwN) = getGetters i
@@ -270,6 +280,7 @@ getSectionCompression i = do
          <*> gwN
          <*> gwN
 
+-- | Putter for section compression
 putSectionCompression :: PreHeader -> SectionCompression -> Put
 putSectionCompression i (SectionCompression typ sz align) = do
    let (_,_,pw32,_,pwN) = getPutters i
@@ -283,6 +294,3 @@ putSectionCompression i (SectionCompression typ sz align) = do
          pw32 0 -- reserved word
          pwN sz
          pwN align
-
-
-

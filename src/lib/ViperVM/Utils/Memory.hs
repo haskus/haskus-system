@@ -1,5 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
+-- | Memory utilities
 module ViperVM.Utils.Memory
    ( memCopy
    , memSet
@@ -8,6 +9,7 @@ module ViperVM.Utils.Memory
    , pokeArrays
    , withArrays
    , getHostEndianness
+   , withMaybeOrNull
    )
 where
 
@@ -16,6 +18,7 @@ import Data.Foldable (traverse_)
 import Foreign.Ptr
 import Control.Monad (void)
 import Foreign.Storable
+import Foreign.Marshal.Utils
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc (alloca)
 import Data.Bits ((.|.), shiftL)
@@ -29,6 +32,7 @@ memCopy dest src size = void (memcpy dest src size)
 
 {-# INLINE memCopy #-}
 
+-- | memcpy
 foreign import ccall unsafe memcpy  :: Ptr a -> Ptr b -> Word64 -> IO (Ptr c)
 
 
@@ -39,6 +43,7 @@ memSet dest size fill = void (memset dest fill size)
 
 {-# INLINE memSet #-}
 
+-- | memset
 foreign import ccall unsafe memset  :: Ptr a -> Word8 -> Word64 -> IO (Ptr c)
 
 
@@ -77,3 +82,9 @@ getHostEndianness = do
       poke p magic
       rs <- peekArray 4 (castPtr p :: Ptr Word8)
       return $ if rs == [1,2,3,4] then BigEndian else LittleEndian
+
+-- | Execute f with a pointer to 'a' or NULL
+withMaybeOrNull :: Storable a => Maybe a -> (Ptr a -> IO b) -> IO b
+withMaybeOrNull s f = case s of
+   Nothing -> f nullPtr
+   Just x  -> with x f

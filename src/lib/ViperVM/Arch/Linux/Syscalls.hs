@@ -1,3 +1,4 @@
+-- | Linux syscalls
 module ViperVM.Arch.Linux.Syscalls
    ( module X
    )

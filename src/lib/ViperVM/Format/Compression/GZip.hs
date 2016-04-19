@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | GZip compression
 module ViperVM.Format.Compression.GZip
    ( Member(..)
    , Flag(..)
@@ -23,6 +24,7 @@ import Data.ByteString.Char8 (unpack)
 import Data.ByteString (pack,ByteString)
 import Text.Printf
 
+-- | Member file
 data Member = Member 
    { memberFlags        :: Flags
    , memberTime         :: Word32
@@ -94,7 +96,7 @@ getMember = do
       return $ Member flags mtime xfl os name comment (pack (toList content)) crc crc32 isize
       
 
-
+-- | Information flag
 data Flag
    = FlagText
    | FlagCRC
@@ -103,5 +105,5 @@ data Flag
    | FlagComment
    deriving (Show,Eq,Enum,CBitSet)
 
+-- | Flags
 type Flags = BitSet Word8 Flag
-

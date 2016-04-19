@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 
-
+-- | Linux time
 module ViperVM.Arch.Linux.Time
    ( TimeSpec(..)
    , TimeVal(..)
@@ -32,6 +32,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Utils.Flow
 
+-- | Time spec
 data TimeSpec = TimeSpec {
    tsSeconds      :: {-# UNPACK #-} !Int64,
    tsNanoSeconds  :: {-# UNPACK #-} !Int64
@@ -43,6 +44,7 @@ instance Storable TimeSpec where
    poke        = cPoke
    peek        = cPeek
 
+-- | Time val
 data TimeVal = TimeVal
    { tvSeconds       :: Word64
    , tvMicroSeconds  :: Word64
@@ -60,6 +62,7 @@ instance Storable TimeVal where
    poke        = cPoke
    peek        = cPeek
 
+-- | Clocks
 data Clock
    = ClockWall             -- ^ System-wide wall clock
    | ClockMonotonic        -- ^ Monotonic clock from unspecified starting point
@@ -119,6 +122,7 @@ sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
       onSuccessIO (syscall_clock_getres (fromEnum clk) t) (const $ peek t)
 
+-- | Result of a sleep
 data SleepResult
    = WokenUp TimeSpec   -- ^ Woken up by a signal, returns the remaining time to sleep
    | CompleteSleep      -- ^ Sleep completed

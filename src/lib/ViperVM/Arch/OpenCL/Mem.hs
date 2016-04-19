@@ -32,7 +32,8 @@ import ViperVM.Arch.OpenCL.Bindings
 import Foreign.C.Types (CSize)
 import Control.Monad (void)
 import Data.Ord (comparing)
-import Data.Word (Word64)
+import Data.Word
+import Data.Int
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,pokeArray)
@@ -64,6 +65,7 @@ data MemFlag
    | CL_MEM_HOST_NO_ACCESS
    deriving (Show, Bounded, Eq, Ord, Enum, CBitSet)
 
+-- | Memory flags
 type MemFlags = BitSet Word64 MemFlag
 
 -- | Memory object mapping flags
@@ -122,7 +124,7 @@ retainMem :: Mem -> IO ()
 retainMem mem = void (rawClRetainMemObject (cllib mem) (unwrap mem))
 
 -- | Helper function to enqueue commands
-enqueue :: Library -> (CLuint -> Ptr Event_ -> Ptr Event_ -> IO CLint) -> [Event] -> CLRet Event
+enqueue :: Library -> (Word32 -> Ptr Event_ -> Ptr Event_ -> IO Int32) -> [Event] -> CLRet Event
 enqueue lib f [] = alloca $ \event -> whenSuccess (f 0 nullPtr event) (Event lib <$> peek event)
 enqueue lib f events = allocaArray nevents $ \pevents -> do
   pokeArray pevents (fmap unwrap events)

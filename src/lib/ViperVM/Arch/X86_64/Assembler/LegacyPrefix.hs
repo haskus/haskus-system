@@ -1,3 +1,4 @@
+-- | Legacy prefixes
 module ViperVM.Arch.X86_64.Assembler.LegacyPrefix 
    ( LegacyPrefix(..)
    , RepeatMode(..)
@@ -62,6 +63,7 @@ legacyPrefixGroup x = case x of
    _     -> Nothing
 
 
+-- | Legacy prefix
 data LegacyPrefix
    = PrefixOperandSizeOverride
    | PrefixAddressSizeOverride
@@ -70,11 +72,13 @@ data LegacyPrefix
    | PrefixRepeat RepeatMode
    deriving (Eq, Show)
 
+-- | Repeat mode
 data RepeatMode
    = RepeatEqual 
    | RepeatNotEqual 
    deriving (Eq,Show)
 
+-- | Segment
 data Segment
    = CS 
    | DS 

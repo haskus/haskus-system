@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -32,6 +33,7 @@ module ViperVM.Utils.HList
    , MaybeIndexOf
    , TypeAt
    , Fusion
+   , Member
    , HFoldr' (..)
    , HTuple' (..)
    , Single (..)
@@ -92,6 +94,7 @@ type family IsSubset l1 l2 :: Bool where
    IsSubset l1 l1 = 'True
    IsSubset l1 l2 = IsSubsetEx l1 l2 l2
 
+-- | Helper for IsSubset
 type family IsSubsetEx l1 l2 i :: Bool where
    IsSubsetEx '[] l2 i = 'True
    IsSubsetEx l1 '[] i = 'False
@@ -149,8 +152,25 @@ type family TypeAt (n :: Nat) (l :: [*]) where
    TypeAt 0 (x ': xs) = x
    TypeAt n (x ': xs) = TypeAt (n-1) xs
 
+-- | Fusion two lists
 type family Fusion (xs :: [*]) (ys :: [*]) where
    Fusion xs ys = Nub (Concat xs ys)
+
+--------------------------------------
+-- Constraints
+--------------------------------------
+
+-- | Constraint: x member of xs
+type Member x xs =
+   ( IsMember x xs ~ 'True
+   , x ~ TypeAt (IndexOf x xs) xs
+   , KnownNat (IndexOf x xs)
+   )
+
+
+--------------------------------------
+-- Folding
+--------------------------------------
 
 -- | Like HFoldr but only use types, not values!
 --
@@ -168,13 +188,19 @@ instance (ApplyAB f (e, r) r', HFoldr' f v l r) => HFoldr' f v (e ': l) r' where
    hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
 
 
+--------------------------------------
+-- Tuple convertion
+--------------------------------------
 
 -- * Conversion to and from tuples (original HList only supports up to 6
 -- elements)
 
+-- | Convert between hlists and tuples
 class HTuple' v t | v -> t, t -> v where
-    -- | alternatively: @hUncurry (,,,)@
-    hToTuple' :: HList v -> t
+    -- | Convert an heterogeneous list into a tuple
+    hToTuple'   :: HList v -> t
+
+    -- | Convert a tuple into an heterogeneous list
     hFromTuple' :: t -> HList v
 
 -- | @Iso (HList v) (HList v') a b@
@@ -187,44 +213,45 @@ instance HTuple' '[] () where
     hToTuple' HNil = ()
     hFromTuple' () = HNil
 
+-- | Tuple of a single element
 data Single a = Single a deriving (Show,Eq)
 
 instance HTuple' '[a] (Single a) where
     hToTuple' (a `HCons` HNil) = Single a
-    hFromTuple' (Single a) = (a `HCons` HNil)
+    hFromTuple' (Single a) = a `HCons` HNil
 
 instance HTuple' '[a,b] (a,b) where
     hToTuple' (a `HCons` b `HCons` HNil) = (a,b)
-    hFromTuple' (a,b) = (a `HCons` b `HCons` HNil)
+    hFromTuple' (a,b) = a `HCons` b `HCons` HNil
 
 instance HTuple' '[a,b,c] (a,b,c) where
     hToTuple' (a `HCons` b `HCons` c `HCons` HNil) = (a,b,c)
-    hFromTuple' (a,b,c) = (a `HCons` b `HCons` c `HCons` HNil)
+    hFromTuple' (a,b,c) = a `HCons` b `HCons` c `HCons` HNil
 
 instance HTuple' '[a,b,c,d] (a,b,c,d) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` HNil) = (a,b,c,d)
-    hFromTuple' (a,b,c,d) = (a `HCons` b `HCons` c `HCons` d `HCons` HNil)
+    hFromTuple' (a,b,c,d) = a `HCons` b `HCons` c `HCons` d `HCons` HNil
 
 instance HTuple' '[a,b,c,d,e] (a,b,c,d,e) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` HNil) = (a,b,c,d,e)
-    hFromTuple' (a,b,c,d,e) = (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` HNil)
+    hFromTuple' (a,b,c,d,e) = a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` HNil
 
 instance HTuple' '[a,b,c,d,e,f] (a,b,c,d,e,f) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` HNil) = (a,b,c,d,e,f)
-    hFromTuple' (a,b,c,d,e,f) = (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` HNil)
+    hFromTuple' (a,b,c,d,e,f) = a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` HNil
 
 instance HTuple' '[a,b,c,d,e,f,g] (a,b,c,d,e,f,g) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` HNil) = (a,b,c,d,e,f,g)
-    hFromTuple' (a,b,c,d,e,f,g) = (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` HNil)
+    hFromTuple' (a,b,c,d,e,f,g) = a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` HNil
 
 instance HTuple' '[a,b,c,d,e,f,g,h] (a,b,c,d,e,f,g,h) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` HNil) = (a,b,c,d,e,f,g,h)
-    hFromTuple' (a,b,c,d,e,f,g,h) = (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` HNil)
+    hFromTuple' (a,b,c,d,e,f,g,h) = a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` HNil
 
 instance HTuple' '[a,b,c,d,e,f,g,h,i] (a,b,c,d,e,f,g,h,i) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` i `HCons` HNil) = (a,b,c,d,e,f,g,h,i)
-    hFromTuple' (a,b,c,d,e,f,g,h,i) = (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` i `HCons` HNil)
+    hFromTuple' (a,b,c,d,e,f,g,h,i) = a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` i `HCons` HNil
 
 instance HTuple' '[a,b,c,d,e,f,g,h,i,j] (a,b,c,d,e,f,g,h,i,j) where
     hToTuple' (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` i `HCons` j `HCons` HNil) = (a,b,c,d,e,f,g,h,i,j)
-    hFromTuple' (a,b,c,d,e,f,g,h,i,j) = (a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` i `HCons` j `HCons` HNil)
+    hFromTuple' (a,b,c,d,e,f,g,h,i,j) = a `HCons` b `HCons` c `HCons` d `HCons` e `HCons` f `HCons` g `HCons` h `HCons` i `HCons` j `HCons` HNil

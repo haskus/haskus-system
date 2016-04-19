@@ -40,10 +40,11 @@ import Data.Ord (comparing)
 import Data.Sequence (Seq,viewl,ViewL(..),(|>),(><))
 import qualified Data.Sequence as Seq
 
+-- | A code (prefix + single value)
 data Code a = Code 
-   { codePosition :: Int
-   , codeLength   :: Int
-   , codeElem     :: a
+   { codePosition :: Int   -- ^ Position of the prefix in the window
+   , codeLength   :: Int   -- ^ Length of the prefix
+   , codeElem     :: a     -- ^ Value after the prefix
    } deriving (Show)
 
 -- | Compress a sequence, using LZ77
@@ -56,7 +57,7 @@ compress ls n ini = rec (Seq.replicate (n-ls) ini)
    where
       -- return the length and the value of the longest prefix
       prefixLen :: Eq a => [a] -> Seq a -> Int
-      prefixLen ss bs = prefixLen' 0 ss bs
+      prefixLen = prefixLen' 0
 
       prefixLen' len u v = case (u, viewl v) of
          (s:ss,b:<bs) | s == b -> prefixLen' (len+1) ss (bs |> s) 
@@ -69,7 +70,7 @@ compress ls n ini = rec (Seq.replicate (n-ls) ini)
             w = take (ls-1) s
 
             -- prefix lengths and their position [(len,pos)]
-            prefixes = (fmap (prefixLen w) (Seq.tails b)) `Seq.zip` Seq.fromList [0..Seq.length b]
+            prefixes = fmap (prefixLen w) (Seq.tails b) `Seq.zip` Seq.fromList [0..Seq.length b]
 
             -- longest prefix length and its position
             (len,pos) = maximumBy (comparing fst) prefixes

@@ -32,6 +32,7 @@ import GHC.TypeLits
 
 import ViperVM.Utils.HList
 
+-- | heterogeneous array
 data HArray (types :: [*]) = forall a. HArray (Vector a)
 
 type role HArray representational

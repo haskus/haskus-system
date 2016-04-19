@@ -1,3 +1,4 @@
+-- | Operand size
 module ViperVM.Arch.X86_64.Assembler.OperandSize
    ( OperandSize(..)
    , operandSize

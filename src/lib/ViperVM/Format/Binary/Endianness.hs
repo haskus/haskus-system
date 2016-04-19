@@ -30,6 +30,7 @@ data Endianness
    | BigEndian       -- ^ Most significant bytes first
    deriving (Eq,Show,Enum,CEnum)
 
+-- | Word getter
 data WordGetters = WordGetters
    { wordGetter8  :: Get Word8   -- ^ Read a Word8
    , wordGetter16 :: Get Word16  -- ^ Read a Word16
@@ -37,6 +38,7 @@ data WordGetters = WordGetters
    , wordGetter64 :: Get Word64  -- ^ Read a Word64
    }
 
+-- | Word putters
 data WordPutters = WordPutters
    { wordPutter8  :: Word8  -> Put -- ^ Write a Word8
    , wordPutter16 :: Word16 -> Put -- ^ Write a Word16
@@ -64,6 +66,7 @@ data WordSize
    | WordSize64      -- ^ 64-bit
    deriving (Show, Eq)
 
+-- | Extended word getters
 data ExtendedWordGetters = ExtendedWordGetters
    { extwordGetter8  :: Get Word8   -- ^ Read a Word8
    , extwordGetter16 :: Get Word16  -- ^ Read a Word16
@@ -72,6 +75,7 @@ data ExtendedWordGetters = ExtendedWordGetters
    , extwordGetterN  :: Get Word64  -- ^ Read a native size word into a Word64
    }
 
+-- | Extended word putters
 data ExtendedWordPutters = ExtendedWordPutters
    { extwordPutter8  :: Word8  -> Put -- ^ Write a Word8
    , extwordPutter16 :: Word16 -> Put -- ^ Write a Word16

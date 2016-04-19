@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- | Planes
 module ViperVM.Arch.Linux.Graphics.Plane
    ( getPlaneResources
    , PlaneID
@@ -13,6 +14,8 @@ module ViperVM.Arch.Linux.Graphics.Plane
    , disablePlane
    , DestRect (..)
    , SrcRect (..)
+   , InvalidDestRect (..)
+   , InvalidSrcRect (..)
    )
 where
 
@@ -119,6 +122,7 @@ getPlane hdl pid = getCount >.~#> getInfo
 
 type FP16 = FixedPoint Word32 16 16
 
+-- | Destination rectangle
 data DestRect = DestRect
    { destX      :: Int32
    , destY      :: Int32
@@ -127,6 +131,7 @@ data DestRect = DestRect
    }
    deriving (Show,Eq)
 
+-- | Source rectangle
 data SrcRect = SrcRect
    { srcX      :: FP16
    , srcY      :: FP16
@@ -135,8 +140,10 @@ data SrcRect = SrcRect
    }
    deriving (Show,Eq)
 
-
+-- | Invalid destination rectangle
 data InvalidDestRect = InvalidDestRect deriving (Show,Eq)
+
+-- | Invalid source rectangle
 data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 
 -- | Set plane

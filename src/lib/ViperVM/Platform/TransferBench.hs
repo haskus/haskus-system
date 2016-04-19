@@ -1,3 +1,4 @@
+-- | Transfer bench
 module ViperVM.Platform.TransferBench
    ( bench
    , benchStr

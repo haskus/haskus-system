@@ -1,3 +1,4 @@
+-- | Get utilities
 module ViperVM.Format.Binary.Get
    ( module Data.Serialize.Get
    , getWhile
@@ -68,7 +69,7 @@ alignAfter alignment getter = do
 -- | Get ByteString terminated with \0 (consume \0)
 getByteStringNul :: Get BS.ByteString
 getByteStringNul = do
-   bs <- lookAhead $ getRemaining
+   bs <- lookAhead getRemaining
    let v = BS.takeWhile (/= 0) bs
    uncheckedSkip (BS.length v + 1)
    return v

@@ -18,6 +18,7 @@ import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.RegisterFile (makeRegSequence,RegisterFile,mergeRegisterFiles,makeRegisterFile)
 import qualified ViperVM.Arch.X86_64.Assembler.RegisterFile as RF
 
+-- | Register family
 data RegFamily
    = RF_GPR    -- general purpose register: xL, xX, ExX, RxX
    | RF_X87 
@@ -31,6 +32,7 @@ data RegFamily
    | RF_DBG
    deriving (Show,Eq)
 
+-- | X86 registers
 data Register
    = R_AL | R_BL | R_CL | R_DL
    | R_AH | R_BH | R_CH | R_DH
@@ -70,7 +72,7 @@ regSupportRex r = case r of
    R_DH -> False
    _    -> True
    
-
+-- | Get register from its encoding
 regFromCode :: RegFamily -> Maybe Size -> Bool -> Word8 -> Register
 regFromCode fm sz useExtRegs code = case fm of
    RF_GPR -> case (fromJust sz, code, useExtRegs) of
@@ -193,7 +195,7 @@ regFromCode fm sz useExtRegs code = case fm of
       Just s       -> error $ "Invalid vector size: " ++ show s
       Nothing      -> error "Vector register without size"
 
-
+-- | Get register code
 regToCode :: Register -> Word8
 regToCode r = case r of
    R_AL     -> 0

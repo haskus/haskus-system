@@ -1,3 +1,4 @@
+-- | Linux 'reboot' syscall
 module ViperVM.Arch.Linux.Internals.Reboot
    ( PowerCommand(..)
    , sysPower

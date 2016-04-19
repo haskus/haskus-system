@@ -1,3 +1,4 @@
+-- | Allocation errors
 module ViperVM.Arch.Common.Errors
    ( AllocError(..)
    )

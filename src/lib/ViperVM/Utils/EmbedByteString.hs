@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+
+-- | Embed a bytestring
 module ViperVM.Utils.EmbedByteString
    ( embedBS
    )

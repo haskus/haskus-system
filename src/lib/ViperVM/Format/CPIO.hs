@@ -25,7 +25,7 @@ import qualified Data.Text.Read as Text
 import qualified Data.Text.Encoding as Text
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
-import Control.Monad (when)
+import Control.Monad (when,replicateM_)
 import Data.Foldable (forM_)
 import Numeric (showHex)
 import Foreign.Storable
@@ -102,6 +102,7 @@ import GHC.Generics
  -   metic.  Only the least-significant 32 bits of the sum are stored.
  -}
 
+-- | File description
 data FileDesc = FileDesc
    { fileInode       :: Word64
    , fileMode        :: Word64
@@ -146,7 +147,7 @@ pad4 n = case n `mod` 4 of
 
 -- | Put null bytes to pad to 4
 putPad4 :: Integral a => a -> Put
-putPad4 n = sequence_ (replicate (pad4 $ fromIntegral n) (putWord8 0x00))
+putPad4 n = replicateM_ (pad4 $ fromIntegral n) (putWord8 0x00)
 
 -- | Skip padding bytes for padding to 4
 skipPad4 :: Word64 -> Get ()
@@ -156,7 +157,7 @@ skipPad4 n = skip (pad4 n)
 --
 -- * path is the path in the archive
 putFile :: FileDesc -> Text -> ByteString -> Put
-putFile (FileDesc {..}) path content = do
+putFile FileDesc {..} path content = do
    -- Write magic number
    putByteString (B8.pack "070701")
    -- Put file description

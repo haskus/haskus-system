@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase, TupleSections #-}
+
+-- | DWARF debugging information
 module ViperVM.Format.Dwarf
    ( Entry (..)
    , DwarfFormat (..)
@@ -178,6 +180,7 @@ data Tag
    | TagCustom Word16
    deriving (Show,Eq)
 
+-- | Get tag value
 fromTag :: Tag -> Word16
 fromTag x = case x of
    TagAccessDeclaration       -> 0x23
@@ -242,6 +245,7 @@ fromTag x = case x of
    TagWithStatement           -> 0x22
    TagCustom v                -> v
 
+-- | Get tag from value
 toTag :: Word16 -> Tag
 toTag x = case x of
    0x23   -> TagAccessDeclaration
@@ -307,7 +311,7 @@ toTag x = case x of
    v      -> TagCustom v
 
 
-
+-- | Attribute
 data Attribute
    = AttrAbstractOrigin
    | AttrAccessibility
@@ -404,6 +408,7 @@ data Attribute
    | AttrCustom Word16
    deriving (Show,Eq)
 
+-- | Attribute to value
 fromAttribute :: Attribute -> Word16
 fromAttribute x = case x of
    AttrAbstractOrigin            -> 0x31
@@ -500,6 +505,7 @@ fromAttribute x = case x of
    AttrVTableElemLocation        -> 0x4d
    AttrCustom v                  -> v
 
+-- | Attribute from value
 toAttribute :: Word16 -> Attribute
 toAttribute x = case x of
    0x31  -> AttrAbstractOrigin
@@ -596,7 +602,7 @@ toAttribute x = case x of
    0x4d  -> AttrVTableElemLocation
    v     -> AttrCustom v
 
-
+-- | Form
 data Form
    = FormAddress
    | FormBlock2
@@ -625,6 +631,7 @@ data Form
    | FormRefSig8
    deriving (Show,Eq)
 
+-- | Form to value
 fromForm :: Form -> Word16
 fromForm x = case x of
    FormAddress       -> 0x01
@@ -653,6 +660,7 @@ fromForm x = case x of
    FormFlagPresent   -> 0x19
    FormRefSig8       -> 0x20
 
+-- | Form from value
 toForm :: Word16 -> Form
 toForm x = case x of
    0x01  -> FormAddress
@@ -750,6 +758,7 @@ data DwarfExpr
    | ExprCustom ByteString
    deriving (Show)
 
+-- | Getter for a dwarf expression
 getDwarfExpr :: Endianness -> DwarfFormat -> Get DwarfExpr
 getDwarfExpr endian format = do
 
@@ -839,6 +848,7 @@ data CompilationUnitHeader = CompilationUnitHeader
    }
    deriving (Show,Eq)
 
+-- | Type unit header
 data TypeUnitHeader = TypeUnitHeader
    { tuhDwarfFormat     :: DwarfFormat
    , tuhUnitLength      :: Word64
@@ -868,6 +878,7 @@ getPutters endian format = (pw8,pw16,pw32,pw64,pwN)
          Dwarf64 -> WordSize64
          Dwarf32 -> WordSize32
 
+-- | Getter for the dwarf format
 getFormat :: Endianness -> Get DwarfFormat
 getFormat endian = do
    let WordGetters _ _ gw32 _ = getWordGetters endian
@@ -876,6 +887,7 @@ getFormat endian = do
       l | l < 0xfffffff0 -> return Dwarf32
         | otherwise      -> error $ "Invalid unit length ("++show l++")"
 
+-- | Putter for a dwarf format
 putFormat :: Endianness -> DwarfFormat -> Put
 putFormat endian format = do
    let WordPutters _ _ pw32 _  = getWordPutters endian
@@ -883,6 +895,7 @@ putFormat endian format = do
       Dwarf64 -> pw32 0xffffffff
       Dwarf32 -> return ()
 
+-- | Getter for unit length
 getUnitLength :: Endianness -> Get (DwarfFormat,Word64)
 getUnitLength endian = do
    format <- getFormat endian
@@ -890,6 +903,7 @@ getUnitLength endian = do
    len <- gwN
    return (format,len)
 
+-- | Putter for unit length
 putUnitLength :: Endianness -> DwarfFormat -> Word64 -> Put
 putUnitLength endian format len = do
    putFormat endian format
@@ -900,7 +914,7 @@ putUnitLength endian format len = do
          | len > 0xfffffff0 -> error $ "Invalid unit length in 32-bit format ("++show len++")"
       _                     -> pwN len
    
-
+-- | Getter for compilation unit
 getCompilationUnitHeader :: Endianness -> Get CompilationUnitHeader
 getCompilationUnitHeader endian = do
    (format,len) <- getUnitLength endian
@@ -913,6 +927,7 @@ getCompilationUnitHeader endian = do
       <*> gwN
       <*> gw8
 
+-- | Putter for compilation unit
 putCompilationUnitHeader :: Endianness -> CompilationUnitHeader -> Put
 putCompilationUnitHeader endian cuh = do
    let (pw8,pw16,_,_,pwN) = getPutters endian (cuhDwarfFormat cuh)
@@ -922,6 +937,7 @@ putCompilationUnitHeader endian cuh = do
    pwN  (cuhAbbrevOffset cuh)
    pw8  (cuhAddressSize cuh)
 
+-- | Getter for type unit header
 getTypeUnitHeader :: Endianness -> Get TypeUnitHeader
 getTypeUnitHeader endian = do
    (format,len) <- getUnitLength endian
@@ -936,6 +952,7 @@ getTypeUnitHeader endian = do
       <*> gw64
       <*> gwN
 
+-- | Putter for type unit header
 putTypeUnitHeader :: Endianness -> TypeUnitHeader -> Put
 putTypeUnitHeader endian tuh = do
    let (pw8,pw16,_,pw64,pwN) = getPutters endian (tuhDwarfFormat tuh)
@@ -948,20 +965,21 @@ putTypeUnitHeader endian tuh = do
    pwN  (tuhTypeOffset tuh)
 
 
-
+-- | Debug info
 data DebugInfo = DebugInfo
    { debugInfoCompilationUnitHeader :: CompilationUnitHeader   -- ^ Header
    , debugInfoEntries               :: [Maybe DebugEntry]      -- ^ Entries (NULL entries are used as siblings group delimiter)
    }
    deriving (Show)
 
+-- | Debug type
 data DebugType = DebugType
    { debugTypeUnitHeader            :: TypeUnitHeader
    , debugTypeContent               :: ByteString
    }
    deriving (Show)
 
-
+-- | Debug entry
 data DebugEntry = DebugEntry
    { debugEntryAbbrevCode     :: Word64
    , debugEntryTag            :: Tag
@@ -970,6 +988,7 @@ data DebugEntry = DebugEntry
    }
    deriving (Show)
 
+-- | Debug attribute
 data DebugAttribute = DebugAttribute
    { debugAttrName   :: Attribute
    , debugAttrValue  :: AttributeValue
@@ -996,7 +1015,7 @@ debugEntryTree es = case rec es of
       rec []                       = ([],[])
 
 
-
+-- | Getter for a debug entry
 getDebugEntry :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe BS.ByteString -> Get (Maybe DebugEntry)
 getDebugEntry endian cuh abbrevs strings = do
    let 
@@ -1020,6 +1039,7 @@ getDebugEntry endian cuh abbrevs strings = do
                            (debugAbbrevHasChildren abbrev)
                            attrs 
 
+-- | Getter for debug entries
 getDebugEntries :: Endianness -> CompilationUnitHeader -> [DebugAbbrevEntry] -> Maybe BS.ByteString -> Get [Maybe DebugEntry]
 getDebugEntries endian cuh abbrevs strings = 
    getWhole (getDebugEntry endian cuh abbrevs strings)
@@ -1033,12 +1053,14 @@ data DebugAbbrevEntry = DebugAbbrevEntry
    }
    deriving (Show)
 
+-- | Abbrev attribute
 data DebugAbbrevAttribute = DebugAbbrevAttribute
    { debugAbbrevAttrName  :: Attribute
    , debugAbbrevAttrForm  :: Form
    }
    deriving (Show)
 
+-- | Getter for abbrev attribute
 getAbbrevAttribute :: Get (Maybe DebugAbbrevAttribute)
 getAbbrevAttribute = do
    attr <- getULEB128
@@ -1058,9 +1080,11 @@ getDebugAbbrevEntry = do
                <*> ((== 1) <$> getWord8)
                <*> (fmap fromJust <$> getWhile isJust getAbbrevAttribute)
          
+-- | Getter for abbrev attributes
 getDebugAbbrevEntries :: Get [DebugAbbrevEntry]
 getDebugAbbrevEntries = fmap fromJust <$> getWhile isJust getDebugAbbrevEntry
 
+-- | Raw attribute value
 data RawAttributeValue
    = RawAttrValueAddress           ByteString
    | RawAttrValueBlock             ByteString
@@ -1076,6 +1100,7 @@ data RawAttributeValue
    | RawAttrValueStringPointer     Word64          -- ^ String pointer in the .debug_str section
    deriving (Show)
 
+-- | Attribute value
 data AttributeValue
    = AttrValueAddress           ByteString
    | AttrValueBlock             ByteString
@@ -1101,24 +1126,28 @@ data AttributeValue
    | AttrValueArrayOrdering     ArrayOrdering
    deriving (Show)
 
+-- | Array ordering
 data ArrayOrdering
    = ArrayOrderingRowMajor
    | ArrayOrderingColMajor
    | ArrayOrderingCustom Word8
    deriving (Show,Eq)
 
+-- | Value to array ordering
 toArrayOrdering :: Word8 -> ArrayOrdering
 toArrayOrdering x = case x of
    0x00 -> ArrayOrderingRowMajor
    0x01 -> ArrayOrderingColMajor
    v    -> ArrayOrderingCustom v
 
+-- | Array ordering to value
 fromArrayOrdering :: ArrayOrdering -> Word8
 fromArrayOrdering x = case x of
    ArrayOrderingRowMajor  -> 0x00
    ArrayOrderingColMajor  -> 0x01
    ArrayOrderingCustom v  -> v
 
+-- | Inlining
 data Inlining
    = InliningNotInlined
    | InliningInlined
@@ -1127,6 +1156,7 @@ data Inlining
    | InliningCustom Word8
    deriving (Show,Eq)
 
+-- | Value to inlining
 toInlining :: Word8 -> Inlining
 toInlining x = case x of
    0x00 -> InliningNotInlined
@@ -1135,6 +1165,7 @@ toInlining x = case x of
    0x03 -> InliningDeclaredInlined
    v    -> InliningCustom v
 
+-- | Inlining to value
 fromInlining :: Inlining -> Word8
 fromInlining x = case x of
    InliningNotInlined         -> 0x00
@@ -1143,7 +1174,7 @@ fromInlining x = case x of
    InliningDeclaredInlined    -> 0x03
    InliningCustom v           -> v
    
-
+-- | Calling convention
 data CallingConvention
    = CallingConventionNormal
    | CallingConventionProgram
@@ -1151,6 +1182,7 @@ data CallingConvention
    | CallingConventionCustom Word8
    deriving (Show,Eq)
 
+-- | Value to calling convention
 toCallingConvention :: Word8 -> CallingConvention
 toCallingConvention x = case x of
    0x01 -> CallingConventionNormal
@@ -1158,6 +1190,7 @@ toCallingConvention x = case x of
    0x03 -> CallingConventionNoCall
    v    -> CallingConventionCustom v
    
+-- | Calling convention to value
 fromCallingConvention :: CallingConvention -> Word8
 fromCallingConvention x = case x of
    CallingConventionNormal    -> 0x01
@@ -1165,7 +1198,7 @@ fromCallingConvention x = case x of
    CallingConventionNoCall    -> 0x03
    CallingConventionCustom v  -> v
    
-
+-- | Case sensitivity
 data CaseSensitivity
    = CaseSensitive
    | CaseUp
@@ -1174,6 +1207,7 @@ data CaseSensitivity
    | CaseCustom Word8
    deriving (Show,Eq)
 
+-- | Value to case sensitivity
 toCaseSensitivity :: Word8 -> CaseSensitivity
 toCaseSensitivity x = case x of
    0x00 -> CaseSensitive
@@ -1182,6 +1216,7 @@ toCaseSensitivity x = case x of
    0x03 -> CaseInsensitive
    v    -> CaseCustom v
 
+-- | Case sensitivity to value
 fromCaseSensitivity :: CaseSensitivity -> Word8
 fromCaseSensitivity x = case x of
    CaseSensitive     -> 0x00
@@ -1190,7 +1225,7 @@ fromCaseSensitivity x = case x of
    CaseInsensitive   -> 0x03
    CaseCustom v      -> v
    
-
+-- | Source language
 data Language
    = LanguageC89
    | LanguageC
@@ -1216,6 +1251,7 @@ data Language
    | LanguageCustom Word16
    deriving (Show,Eq)
 
+-- | Value to language
 toLanguage :: Word16 -> Language
 toLanguage x = case x of
    0x01 -> LanguageC89
@@ -1241,6 +1277,7 @@ toLanguage x = case x of
    0x18 -> LanguageHaskell
    v    -> LanguageCustom v
 
+-- | Language to value
 fromLanguage :: Language -> Word16
 fromLanguage x = case x of
    LanguageC89                -> 0x01
@@ -1266,6 +1303,7 @@ fromLanguage x = case x of
    LanguageHaskell            -> 0x18
    LanguageCustom v           -> v
 
+-- | Virtuality
 data Virtuality
    = VirtualityNone
    | VirtualityVirtual
@@ -1273,6 +1311,7 @@ data Virtuality
    | VirtualityCustom Word8
    deriving (Show,Eq)
 
+-- | Value to virtuality
 toVirtuality :: Word8 -> Virtuality
 toVirtuality x = case x of
    0x00 -> VirtualityNone
@@ -1280,6 +1319,7 @@ toVirtuality x = case x of
    0x02 -> VirtualityPureVirtual
    v    -> VirtualityCustom v
 
+-- | Virtuality to value
 fromVirtuality :: Virtuality -> Word8
 fromVirtuality x = case x of
    VirtualityNone        -> 0x00
@@ -1287,7 +1327,7 @@ fromVirtuality x = case x of
    VirtualityPureVirtual -> 0x02
    VirtualityCustom v    -> v
    
-
+-- | Visibility
 data Visibility
    = VisibilityLocal
    | VisibilityExported
@@ -1295,6 +1335,7 @@ data Visibility
    | VisibilityCustom Word8
    deriving (Show,Eq)
 
+-- | Value to visibility
 toVisibility :: Word8 -> Visibility
 toVisibility x = case x of
    0x01 -> VisibilityLocal
@@ -1302,6 +1343,7 @@ toVisibility x = case x of
    0x03 -> VisibilityQualified
    v    -> VisibilityCustom v
 
+-- | Visibility to value
 fromVisibility :: Visibility -> Word8
 fromVisibility x = case x of
    VisibilityLocal      -> 0x01
@@ -1309,6 +1351,7 @@ fromVisibility x = case x of
    VisibilityQualified  -> 0x03
    VisibilityCustom v   -> v
 
+-- | Accessibility
 data Accessibility
    = AccessibilityPublic
    | AccessibilityProtected
@@ -1316,6 +1359,7 @@ data Accessibility
    | AccessibilityCustom Word8
    deriving (Show,Eq)
 
+-- | Value to accessibility
 toAccessibility :: Word8 -> Accessibility
 toAccessibility x = case x of
    0x01 -> AccessibilityPublic
@@ -1323,6 +1367,7 @@ toAccessibility x = case x of
    0x03 -> AccessibilityPrivate
    v    -> AccessibilityCustom v
 
+-- | Accessibility to value
 fromAccessibility :: Accessibility -> Word8
 fromAccessibility x = case x of
    AccessibilityPublic     -> 0x01
@@ -1330,6 +1375,7 @@ fromAccessibility x = case x of
    AccessibilityPrivate    -> 0x03
    AccessibilityCustom v   -> v
 
+-- | Decimal sign
 data DecimalSign
    = DecimalSignUnsigned
    | DecimalSignLeadingOverpunch
@@ -1339,6 +1385,7 @@ data DecimalSign
    | DecimalSignCustom Word8
    deriving (Show,Eq)
 
+-- | Value to decimal sign
 toDecimalSign :: Word8 -> DecimalSign
 toDecimalSign x = case x of
    0x01 -> DecimalSignUnsigned
@@ -1348,6 +1395,7 @@ toDecimalSign x = case x of
    0x05 -> DecimalSignTrailingSeparate
    v    -> DecimalSignCustom v
 
+-- | Decimal sign to value
 fromDecimalSign :: DecimalSign -> Word8
 fromDecimalSign x = case x of
    DecimalSignUnsigned           -> 0x01
@@ -1357,6 +1405,7 @@ fromDecimalSign x = case x of
    DecimalSignTrailingSeparate   -> 0x05
    DecimalSignCustom v           -> v
 
+-- | Endianity
 data Endianity
    = EndianDefault
    | EndianBig
@@ -1364,6 +1413,7 @@ data Endianity
    | EndianCustom Word8
    deriving (Show,Eq)
 
+-- | Value to endianity
 toEndianity :: Word8 -> Endianity
 toEndianity x = case x of
    0x00 -> EndianDefault
@@ -1371,6 +1421,7 @@ toEndianity x = case x of
    0x02 -> EndianLittle
    v    -> EndianCustom v
 
+-- | Endianity to value
 fromEndianity :: Endianity -> Word8
 fromEndianity x = case x of
    EndianDefault  -> 0x00
@@ -1378,6 +1429,7 @@ fromEndianity x = case x of
    EndianLittle   -> 0x02
    EndianCustom v -> v
 
+-- | Encoding
 data Encoding
    = EncodingAddress
    | EncodingBoolean
@@ -1398,6 +1450,7 @@ data Encoding
    | EncodingCustom Word8
    deriving (Show,Eq)
 
+-- | Value to encoding
 toEncoding :: Word8 -> Encoding
 toEncoding x = case x of
    0x01  -> EncodingAddress
@@ -1418,6 +1471,7 @@ toEncoding x = case x of
    0x10  -> EncodingUTF
    _     -> EncodingCustom x
 
+-- | Encoding to value
 fromEncoding :: Encoding -> Word8
 fromEncoding x = case x of
    EncodingAddress         -> 0x01
@@ -1506,6 +1560,7 @@ getValueFromForm addressSize endian format form = do
       FormStringPointer -> RawAttrValueStringPointer     <$> gwN
       FormIndirect      -> getValueFromForm addressSize endian format =<< (toForm <$> getULEB128)
 
+-- | Getter for debug info
 getDebugInfo :: Endianness -> BS.ByteString -> Maybe BS.ByteString -> Get DebugInfo
 getDebugInfo endian secAbbrevs strings = do
    cuh <- getCompilationUnitHeader endian
@@ -1523,6 +1578,7 @@ getDebugInfo endian secAbbrevs strings = do
 
    return $ DebugInfo cuh entries
 
+-- | Getter for debug type
 getDebugType :: Endianness -> Get DebugType
 getDebugType endian = do
    tuh <- getTypeUnitHeader endian

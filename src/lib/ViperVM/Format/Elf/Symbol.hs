@@ -1,3 +1,4 @@
+-- | ELF symbol tables
 module ViperVM.Format.Elf.Symbol
    ( SymbolEntry (..)
    , SymbolBinding (..)
@@ -142,6 +143,7 @@ instance Enum SymbolInfo where
          | v < 0xff00 -> SymbolInfoSectionIndex (fromIntegral v)
          | otherwise  -> SymbolInfoUnknown (fromIntegral v)
 
+-- | Getter for a symbol entry
 getSymbolEntry :: PreHeader -> Get SymbolEntry
 getSymbolEntry i = do
    let (gw8,gw16,gw32,_,gwN) = getGetters i
@@ -171,6 +173,7 @@ getSymbolEntry i = do
       ifo  = toEnum (fromIntegral sec)
    return (SymbolEntry name bind typ visi ifo value size)
 
+-- | Putter for a symbol entry
 putSymbolEntry :: PreHeader -> SymbolEntry -> Put
 putSymbolEntry i (SymbolEntry name bind typ visi ifo value size) = do
    let 

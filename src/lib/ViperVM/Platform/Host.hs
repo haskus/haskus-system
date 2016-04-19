@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+
+-- | Host platform
 module ViperVM.Platform.Host
    ( Host
    , newHost

@@ -25,6 +25,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 
+-- | Poll struct
 data PollStruct = PollStruct
    { pollFD             :: Int32
    , pollEvents         :: Word16
@@ -37,6 +38,7 @@ instance Storable PollStruct where
    poke        = cPoke
    peek        = cPeek
 
+-- | Polling event
 data PollEvent
    = PollReadable
    | PollWritable

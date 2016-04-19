@@ -1,3 +1,5 @@
+
+-- | Future values
 module ViperVM.Utils.STM.Future
    ( Future
    , FutureSource
@@ -15,7 +17,10 @@ where
 import Control.Concurrent.STM
 import Control.Monad (void)
 
+-- | Future value of type a
 newtype Future a       = Future (TMVar a)
+
+-- | Setter for a future value
 newtype FutureSource a = FutureSource (TMVar a)
 
 -- | Create a Future and its source

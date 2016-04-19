@@ -43,12 +43,16 @@ data Resources = Resources
    , resMaxHeight       :: Word32            -- ^ Maximal height
    } deriving (Show)
 
+-- | Connector ID
 newtype ConnectorID   = ConnectorID Word32 deriving (Show,Eq,Storable)
 
+-- | Controller ID
 newtype ControllerID  = ControllerID Word32 deriving (Show,Eq,Storable)
 
+-- | Encoder ID
 newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable)
 
+-- | Framebuffer ID
 newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
 -- | Get graphic card resources

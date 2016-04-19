@@ -91,41 +91,52 @@ getVariantN _ (Variant t a) = do
    guard (t == fromIntegral (natVal (Proxy :: Proxy n)))
    return (unsafeCoerce a) -- we know it is the effective type
 
+-- | Get first element
 getVariant0 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 0 l)
 getVariant0 = getVariantN (Proxy :: Proxy 0)
 
+-- | Get second element
 getVariant1 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 1 l)
 getVariant1 = getVariantN (Proxy :: Proxy 1)
 
+-- | Get third element
 getVariant2 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 2 l)
 getVariant2 = getVariantN (Proxy :: Proxy 2)
 
+-- | Get fourth element
 getVariant3 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 3 l)
 getVariant3 = getVariantN (Proxy :: Proxy 3)
 
+-- | Get fifth element
 getVariant4 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 4 l)
 getVariant4 = getVariantN (Proxy :: Proxy 4)
 
+-- | Get sixth element
 getVariant5 :: forall (l :: [*]). Variant l -> Maybe (TypeAt 5 l)
 getVariant5 = getVariantN (Proxy :: Proxy 5)
 
 
-
+-- | Set first element
 setVariant0 :: forall (l :: [*]). TypeAt 0 l -> Variant l
 setVariant0 = setVariantN (Proxy :: Proxy 0)
 
+-- | Set second element
 setVariant1 :: forall (l :: [*]). TypeAt 1 l -> Variant l
 setVariant1 = setVariantN (Proxy :: Proxy 1)
 
+-- | Set third element
 setVariant2 :: forall (l :: [*]). TypeAt 2 l -> Variant l
 setVariant2 = setVariantN (Proxy :: Proxy 2)
 
+-- | Set fourth element
 setVariant3 :: forall (l :: [*]). TypeAt 3 l -> Variant l
 setVariant3 = setVariantN (Proxy :: Proxy 3)
 
+-- | Set fifth element
 setVariant4 :: forall (l :: [*]). TypeAt 4 l -> Variant l
 setVariant4 = setVariantN (Proxy :: Proxy 4)
 
+-- | Set sixth element
 setVariant5 :: forall (l :: [*]). TypeAt 5 l -> Variant l
 setVariant5 = setVariantN (Proxy :: Proxy 5)
 
@@ -147,26 +158,32 @@ updateVariant _ f v@(Variant t a) =
       Nothing -> Variant t a
       Just x  -> Variant t (f x)
 
+-- | Update first element
 updateVariant0 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 0 l -> TypeAt 0 l2) -> Variant l -> Variant l2
 updateVariant0 = updateVariant (Proxy :: Proxy 0)
 
+-- | Update second element
 updateVariant1 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 1 l -> TypeAt 1 l2) -> Variant l -> Variant l2
 updateVariant1 = updateVariant (Proxy :: Proxy 1)
 
+-- | Update third element
 updateVariant2 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 2 l -> TypeAt 2 l2) -> Variant l -> Variant l2
 updateVariant2 = updateVariant (Proxy :: Proxy 2)
 
+-- | Update fourth element
 updateVariant3 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 3 l -> TypeAt 3 l2) -> Variant l -> Variant l2
 updateVariant3 = updateVariant (Proxy :: Proxy 3)
 
+-- | Update fifth element
 updateVariant4 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 4 l -> TypeAt 4 l2) -> Variant l -> Variant l2
 updateVariant4 = updateVariant (Proxy :: Proxy 4)
 
+-- | Update sixth element
 updateVariant5 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 5 l -> TypeAt 5 l2) -> Variant l -> Variant l2
 updateVariant5 = updateVariant (Proxy :: Proxy 5)
@@ -259,6 +276,7 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
             -- if (a /= TypeAt n l), same == 0, else same == 1
             same = fromIntegral (natVal (Proxy :: Proxy same))
 
+-- | a is catchable in xs
 type Catchable a xs =
    ( IsMember a xs ~ 'True
    , HFoldr' RemoveType (Variant xs, Int, Maybe Found)
@@ -266,6 +284,8 @@ type Catchable a xs =
          (Variant xs, Int, Maybe Found)
    )
 
+-- | Extract a type from a variant. Return either the value of this type or the
+-- remaining variant
 removeType :: forall l a l2 r is.
    ( r ~ (Variant l, Int, Maybe Found)
    , is ~ Zip (Indexes l) (MapTest a l)
@@ -377,18 +397,13 @@ prependVariant _ (Variant t a) = Variant (n+t) a
 fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)
 fusionVariant = liftVariant
 
-type Member x xs =
-   ( IsMember x xs ~ 'True
-   , x ~ TypeAt (IndexOf x xs) xs
-   , KnownNat (IndexOf x xs)
-   )
-
 -- | Set the first matching type of a Variant
 setVariant :: forall a l.
    ( Member a l
    ) => a -> Variant l
 setVariant = setVariantN (Proxy :: Proxy (IndexOf a l))
 
+-- | xs is liftable in ys
 type Liftable xs ys =
    ( IsSubset xs ys ~ 'True
    , HFoldr' VariantLift (Variant xs, Maybe (Variant ys))
@@ -435,7 +450,7 @@ liftVariant v = s
 
       Just s = snd res
 
-
+-- | Convert a variant of two values in a Either
 toEither :: forall a b. Variant '[a,b] -> Either b a
 toEither v = case removeType v1 of
       Left x  -> x

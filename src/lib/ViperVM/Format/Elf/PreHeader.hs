@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+
+-- | ELF preheader: doesn't depend on the arch
 module ViperVM.Format.Elf.PreHeader
    ( PreHeader (..)
    , WordSize (..)
@@ -22,7 +24,7 @@ import ViperVM.Format.Binary.Endianness
 
 import Text.Printf
 
-
+-- | Pre-header
 data PreHeader = PreHeader
    { preHeaderWordSize   :: WordSize      -- ^ Size of a word
    , preHeaderEndianness :: Endianness    -- ^ Endianness
@@ -31,9 +33,11 @@ data PreHeader = PreHeader
    , preHeaderABIVersion :: Word8         -- ^ ABI version
    } deriving (Show)
 
+-- | Current version (still 1...)
 elfCurrentVersion :: Word8
 elfCurrentVersion = 1
 
+-- | Getter for the pre-header
 getPreHeader :: Get PreHeader
 getPreHeader = do
    -- check magic number (0x7F + "ELF")
@@ -57,7 +61,7 @@ getPreHeader = do
       <*> (toEnum . fromIntegral <$> getWord8)
       <*> (getWord8 <* skip 7) -- skip padding bytes (16 - already read bytes)
 
-
+-- | Putter for a pre-header
 putPreHeader :: PreHeader -> Put
 putPreHeader i = do
    -- put magic number (0x7F + "ELF")
@@ -134,13 +138,14 @@ instance Enum OSABI where
       255 -> ABI_STANDALONE
       v   -> ABI_CUSTOM (fromIntegral v)
 
-
+-- | Get the getters appropriate for the ELF file
 getGetters :: PreHeader -> (Get Word8, Get Word16, Get Word32, Get Word64, Get Word64)
 getGetters i = (gw8, gw16, gw32, gw64, gwN)
    where
       ExtendedWordGetters gw8 gw16 gw32 gw64 gwN =
          getExtendedWordGetters (preHeaderEndianness i) (preHeaderWordSize i)
 
+-- | Get the putters appropriate for the ELF file
 getPutters :: PreHeader -> (Word8 -> Put, Word16 -> Put, Word32 -> Put, Word64 -> Put, Word64 -> Put)
 getPutters i = (pw8, pw16, pw32, pw64, pwN)
    where

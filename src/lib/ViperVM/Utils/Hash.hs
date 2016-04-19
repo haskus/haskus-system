@@ -1,3 +1,4 @@
+-- | Hash utilities (MD5)
 module ViperVM.Utils.Hash
    ( hashString
    )

@@ -1,5 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 
+-- | Network transfer
 module ViperVM.Platform.Transfer 
    ( Transfer(..)
    , networkTransferData

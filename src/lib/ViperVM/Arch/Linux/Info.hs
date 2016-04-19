@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | System info (uname)
 module ViperVM.Arch.Linux.Info
    ( SystemInfo(..)
    , systemInfo

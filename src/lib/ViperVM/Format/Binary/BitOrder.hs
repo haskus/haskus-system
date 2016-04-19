@@ -1,3 +1,4 @@
+-- | Bit orderings
 module ViperVM.Format.Binary.BitOrder
    ( BitOrder(..)
    )

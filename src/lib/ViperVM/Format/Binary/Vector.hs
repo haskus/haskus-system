@@ -117,6 +117,7 @@ index n (Vector fp o) = unsafePerformIO $ withForeignPtr fp $ \p ->
       (fromIntegral o + fromIntegral (natVal n)))
 {-# INLINE index #-}
 
+-- | Convert a list into a vector
 fromList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
@@ -170,6 +171,7 @@ fromFilledListZ z v = unsafePerformIO $ do
    return (Vector fp 0)
 {-# INLINE fromFilledListZ #-}
 
+-- | Convert a vector into a list
 toList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
@@ -183,6 +185,7 @@ toList (Vector fp o) = unsafePerformIO $ withForeignPtr fp $ \p ->
       go p i = unsafePerformIO (peek p) : go (p `plusPtr` off) (i-1)
 {-# INLINE toList #-}
 
+-- | Create a vector by replicating a value
 replicate :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a

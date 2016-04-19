@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | Kernel module management
 module ViperVM.Arch.Linux.Modules
    ( loadModuleFromFile
    , loadModuleFromMemory
@@ -17,11 +18,13 @@ import Data.Word
 import Foreign.Ptr
 import Foreign.C.String (withCString)
 
+-- | Load module flag
 data LoadModuleFlag
    = IgnoreSymbolVersions
    | IgnoreKernelVersion
    deriving (Show,Eq,Enum,CBitSet)
 
+-- | Load module flags
 type LoadModuleFlags = BitSet Word LoadModuleFlag
 
 -- | Load a module from a file

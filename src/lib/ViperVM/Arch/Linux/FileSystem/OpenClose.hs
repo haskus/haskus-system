@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+-- | Open/Close
 module ViperVM.Arch.Linux.FileSystem.OpenClose
    ( withOpenAt
    , HandleFlag(..)
@@ -20,10 +21,11 @@ import ViperVM.Utils.HList
 
 import GHC.TypeLits
 
+-- | Open at
 withOpenAt :: 
    ( KnownNat (Length xs)
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> Flow Sys (Concat xs '[ErrorCode])
-withOpenAt fd path flags perm act = do
+withOpenAt fd path flags perm act =
    sysCallWarn "Open file" (sysOpenAt fd path flags perm)
       >.~:> \fd1 -> do
          res <- act fd1

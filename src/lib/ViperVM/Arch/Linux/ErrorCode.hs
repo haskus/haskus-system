@@ -7,8 +7,8 @@ module ViperVM.Arch.Linux.ErrorCode
    , ErrorCode (..)
    , unhdlErr
    , defaultCheck
-   , defaultCheckRet
    , checkReturn
+   , checkReturn'
    , toErrorCode
    , onSuccessIO
    , onSuccess
@@ -27,18 +27,18 @@ type SysRet a = Flow IO '[a,ErrorCode]
 toErrorCode :: Int64 -> ErrorCode
 toErrorCode = toEnum . fromIntegral . (*(-1))
 
--- | Use defaultCheck to check for error and return () otherwise
---
--- Similar to LIBC's behavior (return 0 except on error)
-defaultCheckRet :: Int64 -> SysRet ()
-defaultCheckRet x = case defaultCheck x of
-   Nothing  -> flowRet ()
-   Just err -> flowRet1 err
-
+-- | Use defaultCheck to check for error and return the value otherwise
 checkReturn :: Int64 -> SysRet Int64
 checkReturn x = case defaultCheck x of
    Nothing  -> flowRet x
    Just err -> flowRet1 err
+
+-- | Use defaultCheck to check for error and return () otherwise
+--
+-- Similar to LIBC's behavior (return 0 except on error)
+checkReturn' :: Int64 -> SysRet ()
+checkReturn' x = checkReturn x >.-.> const ()
+
 
 -- | Check for error and return the value otherwise
 onSuccessId :: IO Int64 -> SysRet Int64

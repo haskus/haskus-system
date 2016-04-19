@@ -18,6 +18,7 @@ import Foreign.Ptr
 -- EnumField b a: directly store the value of enum "a" as a "b"
 -----------------------------------------------------------------------------
 
+-- | Store enum 'a' as a 'b'
 newtype EnumField b a = EnumField a deriving (Show,Eq)
 
 instance (Storable b, Integral b, CEnum a) => Storable (EnumField b a) where
@@ -32,11 +33,13 @@ instance (Integral b, Storable b, CEnum a) => CStorable (EnumField b a) where
    cAlignment = alignment
    cSizeOf    = sizeOf
 
+-- | Read an enum field
 fromEnumField :: CEnum a => EnumField b a -> a
 fromEnumField (EnumField a) = a
 
 {-# INLINE fromEnumField #-}
 
+-- | Create an enum field
 toEnumField :: CEnum a => a -> EnumField b a
 toEnumField = EnumField
 
@@ -48,7 +51,7 @@ toEnumField = EnumField
 
 -- | By default, use fromEnum/toEnum to convert from/to an Integral.
 --
--- But it can be overloaded so to perform transformation before using
+-- But it can be overloaded to perform transformation before using
 -- fromEnum/toEnum. E.g. if values are shifted by 1 compared to Enum values,
 -- define fromCEnum = (+1) . fromIntegral . fromEnum
 --

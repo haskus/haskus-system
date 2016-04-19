@@ -1,3 +1,4 @@
+-- | EVEX prefix
 module ViperVM.Arch.X86_64.Assembler.EvexPrefix
    (
    )

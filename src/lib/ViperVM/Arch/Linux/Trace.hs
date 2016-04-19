@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | Process tracing (ptrace)
 module ViperVM.Arch.Linux.Trace
    ( TraceRequest(..)
    , TraceFlag(..)
@@ -19,6 +20,7 @@ import Data.Word
 import Data.Int
 import Foreign.Ptr
 
+-- | Tracing request
 data TraceRequest
    = ReqTraceMe          -- ^ Indicate that the process making this request should be
                          --   traced.  All signals received by this process can be intercepted by its
@@ -116,6 +118,7 @@ instance Enum TraceRequest where
       0x4209   -> ReqPeekSignals
       _        -> error "Invalid request"
 
+-- | Tracing flag
 data TraceFlag
    = FlagSeizeDevel
 
@@ -124,6 +127,7 @@ instance Enum TraceFlag where
    toEnum 0x80000000 = FlagSeizeDevel
    toEnum _          = error "Invalid trace flag"
 
+-- | Tracing options
 data TraceOption
    = OptFlagSyscallTrap -- ^ When delivering system call traps set bit 7 in the signal number
    | OptTraceFork       -- ^ Stop the tracee at the next fork and automatically start tracing the newly forked process
@@ -144,6 +148,7 @@ instance CBitSet TraceOption where
       20 -> OptTraceExitKill
       _  -> toEnum x
 
+-- | Event code
 data EventCode
    = EventFork
    | EventVFork
@@ -173,12 +178,14 @@ instance Enum EventCode where
       7 -> EventSecComp
       _ -> error "Invalid event code"
 
+-- | Peek signals
 data PeekSigInfoArgs = PeekSigInfoArgs
    { peekSigOffset :: Word64
    , peekSigFlags  :: Word32
    , peekSigCount  :: Int32
    }
 
+-- | Peek signals flags
 data PeekSigInfoFlags
    = PeekSigInfoShared
    deriving (Enum,CBitSet)

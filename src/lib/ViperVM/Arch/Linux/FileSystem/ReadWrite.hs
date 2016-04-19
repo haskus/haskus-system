@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 
+-- | Read/write
 module ViperVM.Arch.Linux.FileSystem.ReadWrite
    ( IOVec(..)
    , sysRead
