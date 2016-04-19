@@ -20,7 +20,7 @@ import Foreign.Storable (Storable, peek)
 import Foreign.C.Types (CSize)
 import Data.Int
 
-import ViperVM.Arch.OpenCL.Bindings
+import ViperVM.Format.Binary.Enum
 
 -- | OpenCL return type
 type CLRet a = IO (Either CLError a)
@@ -102,12 +102,12 @@ data CLError
    | CL_PLATFORM_NOT_FOUND_KHR                   -- -1001
    deriving (Show, Eq, Enum, Typeable)
 
-instance CLConstant CLError where
-   toCL CL_PLATFORM_NOT_FOUND_KHR = -1001
-   toCL x = fromIntegral (-1 * fromEnum x)
+instance CEnum CLError where
+   fromCEnum CL_PLATFORM_NOT_FOUND_KHR = -1001
+   fromCEnum x = fromIntegral (-1 * fromEnum x)
 
-   fromCL (-1001) = CL_PLATFORM_NOT_FOUND_KHR
-   fromCL x = toEnum (-1 * fromIntegral x)
+   toCEnum (-1001) = CL_PLATFORM_NOT_FOUND_KHR
+   toCEnum x = toEnum (-1 * fromIntegral x)
 
 instance Exception CLError where
 
@@ -120,27 +120,27 @@ toException (Left a) = throw a
 wrapPError :: (Ptr Int32 -> IO a) -> CLRet a
 wrapPError f = alloca $ \perr -> do
   v <- f perr
-  errcode <- fromCL <$> peek perr
+  errcode <- toCEnum <$> peek perr
   return $ if errcode == CL_SUCCESS
     then Right v
     else Left errcode
   
 -- | Return True if the given OpenCL call returns CL_SUCCESS
 wrapCheckSuccess :: IO Int32 -> IO Bool
-wrapCheckSuccess f = (== CL_SUCCESS) . fromCL <$> f
+wrapCheckSuccess f = (== CL_SUCCESS) . toCEnum <$> f
 
 -- | Wrap an OpenCL call to get entity info
 wrapGetInfo :: Storable a => (Ptr a -> Ptr CSize -> IO Int32) -> (a -> b) -> CLRet b
 wrapGetInfo fget fconvert= alloca $ \dat -> do
   errcode <- fget dat nullPtr
-  if errcode == toCL CL_SUCCESS
+  if errcode == fromCEnum CL_SUCCESS
     then Right . fconvert <$> peek dat
-    else return (Left (fromCL errcode))
+    else return (Left (toCEnum errcode))
 
 -- | If the OpenCL call (first parameter) is successful, evaluate and return the second parameter, otherwise return the error
 whenSuccess :: IO Int32 -> IO a -> IO (Either CLError a)
 whenSuccess fcheck fval = do
   errcode <- fcheck
-  if errcode == toCL CL_SUCCESS
+  if errcode == fromCEnum CL_SUCCESS
     then Right <$> fval
-    else return $ Left (fromCL errcode)
+    else return $ Left (toCEnum errcode)

@@ -37,9 +37,9 @@ import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
-import ViperVM.Arch.OpenCL.Bindings
 
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Enum
 
 import Data.Word (Word64)
 import Data.Ord (comparing)
@@ -141,9 +141,9 @@ data DeviceInfo
    | CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT
    deriving (Enum)
 
-instance CLConstant DeviceInfo where
-   toCL x = fromIntegral (0x1000 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x1000)
+instance CEnum DeviceInfo where
+   fromCEnum x = fromIntegral (0x1000 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x1000)
 
 -- | Device type
 data DeviceType
@@ -190,9 +190,9 @@ data DeviceMemCacheType
    | CL_READ_WRITE_CACHE
    deriving (Show,Enum)
 
-instance CLConstant DeviceMemCacheType where
-   toCL x = fromIntegral (fromEnum x)
-   fromCL x = toEnum (fromIntegral x)
+instance CEnum DeviceMemCacheType where
+   fromCEnum x = fromIntegral (fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x)
 
 -- | Device local memory type
 data DeviceLocalMemType
@@ -200,9 +200,9 @@ data DeviceLocalMemType
    | CL_GLOBAL
    deriving (Show,Enum)
 
-instance CLConstant DeviceLocalMemType where
-   toCL x = fromIntegral (fromEnum x + 1)
-   fromCL x = toEnum (fromIntegral x - 1)
+instance CEnum DeviceLocalMemType where
+   fromCEnum x = fromIntegral (fromEnum x + 1)
+   toCEnum x   = toEnum (fromIntegral x - 1)
 
 -- | Command queue property
 data CommandQueueProperty
@@ -217,7 +217,7 @@ type CommandQueueProperties = BitSet Word64 CommandQueueProperty
 getDeviceInfoRetSize :: DeviceInfo -> Device -> CLRet CSize
 getDeviceInfoRetSize infoid dev =
    alloca $ \(dat :: Ptr CSize) -> whenSuccess 
-      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) 0 nullPtr dat)
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum infoid) 0 nullPtr dat)
       (peek dat)
 
 -- | Return a string device info
@@ -227,7 +227,7 @@ getDeviceInfoString infoid dev =
       Left err   -> return (Left err)
       Right size ->
          allocaBytes (fromIntegral size) $ \dat -> whenSuccess 
-            (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
+            (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum infoid) size (castPtr dat) nullPtr)
             (peekCString dat)
          
 
@@ -236,7 +236,7 @@ getDeviceInfoBool :: DeviceInfo -> Device -> CLRet Bool
 getDeviceInfoBool infoid dev = do
    let size = fromIntegral $ sizeOf (fromBool False)
    alloca $ \(dat :: Ptr CLbool) -> whenSuccess 
-      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (fromCLBool <$> peek dat)
 
 -- | Return a unsigned long device info
@@ -244,7 +244,7 @@ getDeviceInfoWord64 :: DeviceInfo -> Device -> CLRet Word64
 getDeviceInfoWord64 infoid dev = do
    let size = fromIntegral $ sizeOf (0 :: Word64)
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
-      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (peek dat)
 
 

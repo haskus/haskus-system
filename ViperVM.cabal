@@ -134,7 +134,6 @@ library
     ViperVM.Arch.Linux.Graphics.Helper
 
     ViperVM.Arch.OpenCL.All
-    ViperVM.Arch.OpenCL.Bindings
     ViperVM.Arch.OpenCL.CommandQueue
     ViperVM.Arch.OpenCL.Context
     ViperVM.Arch.OpenCL.Device

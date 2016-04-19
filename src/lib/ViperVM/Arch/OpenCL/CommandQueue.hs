@@ -15,11 +15,11 @@ module ViperVM.Arch.OpenCL.CommandQueue
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Enum
 
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Types
-import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
@@ -64,9 +64,9 @@ data CommandType
    | CL_COMMAND_FILL_IMAGE          
    deriving (Show,Enum)
 
-instance CLConstant CommandType where
-   toCL x = fromIntegral (fromEnum x + 0x11F0)
-   fromCL x = toEnum (fromIntegral x - 0x11F0)
+instance CEnum CommandType where
+   fromCEnum x = fromIntegral (fromEnum x + 0x11F0)
+   toCEnum x   = toEnum (fromIntegral x - 0x11F0)
 
 -- | Command execution status
 data CommandExecutionStatus
@@ -77,9 +77,9 @@ data CommandExecutionStatus
    | CL_QUEUED       -- 3
    deriving (Show,Enum)
 
-instance CLConstant CommandExecutionStatus where
-   toCL x = fromIntegral (fromEnum x - 1)
-   fromCL x = toEnum (fromIntegral x + 1)
+instance CEnum CommandExecutionStatus where
+   fromCEnum x = fromIntegral (fromEnum x - 1)
+   toCEnum x   = toEnum (fromIntegral x + 1)
 
 -- | Command profiling information
 data ProfilingInfo
@@ -89,9 +89,9 @@ data ProfilingInfo
    | CL_PROFILING_COMMAND_END
    deriving (Show,Enum)
 
-instance CLConstant ProfilingInfo where
-   toCL x = fromIntegral (fromEnum x + 0x1280)
-   fromCL x = toEnum (fromIntegral x - 0x1280)
+instance CEnum ProfilingInfo where
+   fromCEnum x = fromIntegral (fromEnum x + 0x1280)
+   toCEnum x   = toEnum (fromIntegral x - 0x1280)
 
 -- | Command queue information
 data CommandQueueInfo
@@ -101,9 +101,9 @@ data CommandQueueInfo
    | CL_QUEUE_PROPERTIES
    deriving (Enum)
 
-instance CLConstant CommandQueueInfo where
-   toCL x = fromIntegral (fromEnum x + 0x1090)
-   fromCL x = toEnum (fromIntegral x - 0x1090)
+instance CEnum CommandQueueInfo where
+   fromCEnum x = fromIntegral (fromEnum x + 0x1090)
+   toCEnum x   = toEnum (fromIntegral x - 0x1090)
 
 
 -- | Create a command queue
@@ -126,12 +126,12 @@ retainCommandQueue cq = void (rawClRetainCommandQueue (cllib cq) (unwrap cq))
 
 -- | Flush commands
 flush :: CommandQueue -> IO CLError
-flush cq = fromCL <$> rawClFlush (cllib cq) (unwrap cq)
+flush cq = toCEnum <$> rawClFlush (cllib cq) (unwrap cq)
 
 -- | Finish commands
 finish :: CommandQueue -> IO CLError
-finish cq = fromCL <$> rawClFinish (cllib cq) (unwrap cq)
+finish cq = toCEnum <$> rawClFinish (cllib cq) (unwrap cq)
 
 -- | Enqueue barrier
 enqueueBarrier :: CommandQueue -> IO CLError
-enqueueBarrier cq = fromCL <$> rawClEnqueueBarrier (cllib cq) (unwrap cq)
+enqueueBarrier cq = toCEnum <$> rawClEnqueueBarrier (cllib cq) (unwrap cq)

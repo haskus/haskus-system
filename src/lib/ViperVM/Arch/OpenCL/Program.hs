@@ -24,10 +24,10 @@ where
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
-import ViperVM.Arch.OpenCL.Bindings
 import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
+import ViperVM.Format.Binary.Enum
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
@@ -61,9 +61,9 @@ data ProgramBuildStatus
    | CL_BUILD_IN_PROGRESS
    deriving (Show,Enum)
 
-instance CLConstant ProgramBuildStatus where
-   toCL x = fromIntegral (fromEnum x * (-1))
-   fromCL x = toEnum (fromIntegral x * (-1))
+instance CEnum ProgramBuildStatus where
+   fromCEnum x = fromIntegral (fromEnum x * (-1))
+   toCEnum x   = toEnum (fromIntegral x * (-1))
 
 -- | Program info tag
 data ProgramInfo
@@ -76,9 +76,9 @@ data ProgramInfo
    | CL_PROGRAM_BINARIES
    deriving (Show,Eq,Enum)
 
-instance CLConstant ProgramInfo where
-   toCL x = fromIntegral (0x1160 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x1160)
+instance CEnum ProgramInfo where
+   fromCEnum x = fromIntegral (0x1160 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x1160)
 
 -- | Program build info tag
 data ProgramBuildInfo
@@ -87,9 +87,9 @@ data ProgramBuildInfo
    | CL_PROGRAM_BUILD_LOG
    deriving (Eq,Show, Enum)
 
-instance CLConstant ProgramBuildInfo where
-   toCL x = fromIntegral (0x1181 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x1181)
+instance CEnum ProgramBuildInfo where
+   fromCEnum x = fromIntegral (0x1181 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x1181)
 
 -- | Release a program
 releaseProgram :: Program -> IO ()
@@ -113,7 +113,7 @@ getProgramInfoWord32 :: ProgramInfo -> Program -> CLRet Word32
 getProgramInfoWord32 infoid prog = do
    let size = fromIntegral $ sizeOf (0 :: Word32)
    alloca $ \(dat :: Ptr Word32) -> whenSuccess 
-      (rawClGetProgramInfo (cllib prog) (unwrap prog) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetProgramInfo (cllib prog) (unwrap prog) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (peek dat)
 
 -- | Return the number of associated devices
@@ -135,7 +135,7 @@ getProgramDevices prog = runEitherT $ do
       infoid = CL_PROGRAM_DEVICES
 
    devs <- EitherT $ allocaArray count $ \(dat :: Ptr Device_) -> whenSuccess 
-      (rawClGetProgramInfo (cllib prog) (unwrap prog) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetProgramInfo (cllib prog) (unwrap prog) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (peekArray count dat)
 
    return $ fmap (Device (cllib prog)) devs
@@ -156,7 +156,7 @@ getProgramBinarySizes prog = runEitherT $ do
       infoid = CL_PROGRAM_BINARY_SIZES
 
    EitherT $ allocaArray count $ \(dat :: Ptr CSize) -> whenSuccess 
-      (rawClGetProgramInfo (cllib prog) (unwrap prog) (toCL infoid) size (castPtr dat) nullPtr)
+      (rawClGetProgramInfo (cllib prog) (unwrap prog) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (peekArray count dat)
 
 -- | Get binary sizes for all devices (0 if not available)
@@ -196,7 +196,7 @@ getProgramBinary prog dev = runEitherT $ do
                      -- get the binary
                      whenSuccess 
                         (rawClGetProgramInfo (cllib prog) (unwrap prog) 
-                           (toCL infoid) size (castPtr ptrs) nullPtr)
+                           (fromCEnum infoid) size (castPtr ptrs) nullPtr)
                         (Just . BS.pack <$> peekArray binsize binPtr)
    
 
@@ -239,14 +239,14 @@ createProgramFromBinary ctx binaries = do
                   case Program (cllib ctx) <$> p' of
                      Left err -> return (Left err)
                      Right p  -> do
-                        status <- fmap fromCL <$> peekArray n status'
+                        status <- fmap toCEnum <$> peekArray n status'
                         return (Right (p,status))
 
 -- | Return program build log for the specified device
 getProgramBuildLog :: Program -> Device -> CLRet String
 getProgramBuildLog prog dev = do
    let call = rawClGetProgramBuildInfo (cllib prog) (unwrap prog) (unwrap dev)
-                  (toCL CL_PROGRAM_BUILD_LOG) 
+                  (fromCEnum CL_PROGRAM_BUILD_LOG) 
 
    runEitherT $ do
       -- Get log size

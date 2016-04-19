@@ -12,7 +12,7 @@ import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble)
 import Data.Word (Word32)
 
-import ViperVM.Arch.OpenCL.Bindings (CLConstant(..))
+import ViperVM.Format.Binary.Enum
 
 -- | Image storage format
 data ImageFormat = ImageFormat
@@ -24,12 +24,12 @@ instance Storable ImageFormat where
    alignment _ = alignment (undefined :: CDouble)
    sizeOf _ = 64
    peek p = do
-      a <- fmap fromCL (peekByteOff p 0 :: IO Word32)
-      b <- fmap fromCL (peekByteOff p 4 :: IO Word32)
+      a <- fmap toCEnum (peekByteOff p 0 :: IO Word32)
+      b <- fmap toCEnum (peekByteOff p 4 :: IO Word32)
       return $ ImageFormat a b
    poke p (ImageFormat a b) = do
-      pokeByteOff p 0 (toCL a :: Word32)
-      pokeByteOff p 4 (toCL b :: Word32)
+      pokeByteOff p 0 (fromCEnum a :: Word32)
+      pokeByteOff p 4 (fromCEnum b :: Word32)
 
 -- | Image addressing mode
 data AddressingMode
@@ -40,9 +40,9 @@ data AddressingMode
    | CL_ADDRESS_MIRRORED_REPEAT
    deriving (Show,Enum)
 
-instance CLConstant AddressingMode where
-   toCL x = fromIntegral (fromEnum x + 0x1130)
-   fromCL x = toEnum (fromIntegral x - 0x1130)
+instance CEnum AddressingMode where
+   fromCEnum x = fromIntegral (fromEnum x + 0x1130)
+   toCEnum x   = toEnum (fromIntegral x - 0x1130)
 
 -- | Image fitlering mode
 data FilterMode =
@@ -50,9 +50,9 @@ data FilterMode =
    | CL_FILTER_LINEAR
    deriving (Show,Enum)
 
-instance CLConstant FilterMode where
-   toCL x = fromIntegral (fromEnum x + 0x1140)
-   fromCL x = toEnum (fromIntegral x - 0x1140)
+instance CEnum FilterMode where
+   fromCEnum x = fromIntegral (fromEnum x + 0x1140)
+   toCEnum x   = toEnum (fromIntegral x - 0x1140)
 
 -- | Image channel order
 data ChannelOrder
@@ -73,9 +73,9 @@ data ChannelOrder
    | CL_DEPTH_STENCIL
    deriving (Show,Enum)
 
-instance CLConstant ChannelOrder where
-   toCL x = fromIntegral (0x10B0 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x10B0)
+instance CEnum ChannelOrder where
+   fromCEnum x = fromIntegral (0x10B0 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x10B0)
 
 -- | Image channel type
 data ChannelType
@@ -97,6 +97,6 @@ data ChannelType
    | CL_UNORM_INT24
    deriving (Show,Enum)
 
-instance CLConstant ChannelType where
-   toCL x = fromIntegral (0x10D0 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x10D0)
+instance CEnum ChannelType where
+   fromCEnum x = fromIntegral (0x10D0 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x10D0)

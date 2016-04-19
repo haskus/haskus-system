@@ -18,6 +18,7 @@ where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitSet (CBitSet, BitSet)
+import ViperVM.Format.Binary.Enum
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -27,7 +28,6 @@ import ViperVM.Arch.OpenCL.Event
 import ViperVM.Arch.OpenCL.CommandQueue
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
-import ViperVM.Arch.OpenCL.Bindings
 
 import Foreign.C.Types (CSize)
 import Control.Monad (void)
@@ -88,9 +88,9 @@ data MemObjectType
    | CL_MEM_OBJECT_IMAGE1D_BUFFER
    deriving (Show, Enum)
 
-instance CLConstant MemObjectType where
-   toCL x = fromIntegral (fromEnum x + 0x10F0)
-   fromCL x = toEnum (fromIntegral x - 0x10F0)
+instance CEnum MemObjectType where
+   fromCEnum x = fromIntegral (fromEnum x + 0x10F0)
+   toCEnum x   = toEnum (fromIntegral x - 0x10F0)
 
 
 -- | Create a buffer

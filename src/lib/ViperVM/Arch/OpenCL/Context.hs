@@ -11,7 +11,7 @@ import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Platform
 import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
-import ViperVM.Arch.OpenCL.Bindings
+import ViperVM.Format.Binary.Enum
 
 import Control.Monad (void)
 import Foreign.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
@@ -35,14 +35,14 @@ data CLContextInfo
    | CL_CONTEXT_PLATFORM
    deriving (Eq,Enum)
 
-instance CLConstant CLContextInfo where
-   toCL x = fromIntegral (0x1080 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x1080)
+instance CEnum CLContextInfo where
+   fromCEnum x = fromIntegral (0x1080 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x1080)
 
 -- | Create a context
 createContext :: Platform -> [Device] -> CLRet Context
 createContext pf devs = do
-   let props = [toCL CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
+   let props = [fromCEnum CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
        ndevs = fromIntegral (length devs)
        lib = cllib pf
    withArray (fmap unwrap devs) $ \devs' ->

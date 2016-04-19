@@ -26,13 +26,13 @@ module ViperVM.Arch.OpenCL.Platform
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Enum
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Device
-import ViperVM.Arch.OpenCL.Bindings
 
 import Control.Monad.Trans.Either
 import Foreign.C.Types (CSize)
@@ -61,15 +61,15 @@ data PlatformInfo
    | CL_PLATFORM_EXTENSIONS
    deriving (Show,Enum)
 
-instance CLConstant PlatformInfo where
-   toCL x = fromIntegral (0x0900 + fromEnum x)
-   fromCL x = toEnum (fromIntegral x - 0x0900)
+instance CEnum PlatformInfo where
+   fromCEnum x = fromIntegral (0x0900 + fromEnum x)
+   toCEnum x   = toEnum (fromIntegral x - 0x0900)
 
 -- | Return the number of available platforms
 getNumPlatforms :: Library -> IO Word32
 getNumPlatforms lib = alloca $ \numPlatforms -> do 
    err <- rawClGetPlatformIDs lib 0 nullPtr numPlatforms
-   case fromCL err of
+   case toCEnum err of
       CL_SUCCESS -> peek numPlatforms
       _ -> return 0 -- the ICD may return an error CL_PLATFORM_NOT_FOUND_KHR...
 
@@ -81,7 +81,7 @@ getPlatforms lib = do
       then return []
       else allocaArray (fromIntegral nplats) $ \plats -> do
          err <- rawClGetPlatformIDs lib nplats plats nullPtr
-         case fromCL err of
+         case toCEnum err of
             CL_SUCCESS -> fmap (Platform lib) <$> peekArray (fromIntegral nplats) plats
             _ -> return []
 
@@ -89,7 +89,7 @@ getPlatforms lib = do
 getPlatformNumDevices :: Platform -> IO Word32
 getPlatformNumDevices pf = alloca $ \numDevices -> do 
    err <- rawClGetDeviceIDs (cllib pf) (unwrap pf) (BitSet.toBits allDeviceTypes) 0 nullPtr numDevices
-   case fromCL err of
+   case toCEnum err of
       CL_SUCCESS -> peek numDevices
       _ -> return 0
 
@@ -102,7 +102,7 @@ getPlatformDevices pf = do
       then return []
       else allocaArray (fromIntegral nbDevices) $ \devs -> do
          err <- rawClGetDeviceIDs lib (unwrap pf) (BitSet.toBits allDeviceTypes) nbDevices devs nullPtr
-         case fromCL err of
+         case toCEnum err of
             CL_SUCCESS -> fmap (Device lib) <$> peekArray (fromIntegral nbDevices) devs
             _ -> return []
 
@@ -115,12 +115,12 @@ getPlatformInfo infoid pf =
 
       -- Get output size
       getSize =  EitherT $ alloca $ \(sz :: Ptr CSize) -> whenSuccess 
-         (rawClGetPlatformInfo lib (unwrap pf) (toCL infoid) 0 nullPtr sz) 
+         (rawClGetPlatformInfo lib (unwrap pf) (fromCEnum infoid) 0 nullPtr sz) 
          (peek sz)
 
       -- Get info
       getInfo size = EitherT $ allocaArray (fromIntegral size) $ \buff -> whenSuccess 
-         (rawClGetPlatformInfo lib (unwrap pf) (toCL infoid) size (castPtr buff) nullPtr)
+         (rawClGetPlatformInfo lib (unwrap pf) (fromCEnum infoid) size (castPtr buff) nullPtr)
          (peekCString buff)
 
 -- | Get platform info (throw an exception if an error occurs)
@@ -193,5 +193,5 @@ getDevicePlatform dev = do
    let
       sz = fromIntegral (sizeOf (undefined :: Platform_))
    alloca $ \(dat :: Ptr Platform_) -> whenSuccess 
-      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (toCL CL_DEVICE_PLATFORM) sz (castPtr dat) nullPtr)
+      (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum CL_DEVICE_PLATFORM) sz (castPtr dat) nullPtr)
       (Platform (cllib dev) <$> peek dat)
