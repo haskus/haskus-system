@@ -43,6 +43,7 @@ import Foreign.C.Types (CChar)
 
 import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
+import qualified ViperVM.Format.Binary.Storable as BS
 
 -- | Vector with type-checked size
 --
@@ -55,6 +56,31 @@ data Vector (n :: Nat) a = Vector
 
 instance (Storable a, Show a, KnownNat n) => Show (Vector n a) where
    show v = "fromList " ++ show (toList v)
+
+
+instance forall a n s.
+   ( BS.Storable a
+   , s ~ (n * BS.SizeOf a)
+   , KnownNat s
+   , KnownNat (BS.SizeOf a)
+   )=> BS.Storable (Vector n a) where
+
+   type SizeOf (Vector n a)    = (n * BS.SizeOf a)
+   type Alignment (Vector n a) = BS.Alignment a
+
+   peek ptr = do
+      let sz = fromIntegral (natVal (Proxy :: Proxy s))
+      fp <- mallocForeignPtrBytes sz
+      withForeignPtr fp $ \p ->
+         memCopy p ptr (fromIntegral sz)
+      return (Vector fp 0)
+
+   poke ptr (Vector fp o) = do
+      let
+         off = fromIntegral o * fromIntegral (natVal (Proxy :: Proxy (BS.SizeOf a)))
+         sz = fromIntegral (natVal (Proxy :: Proxy s))
+      withForeignPtr fp $ \p ->
+         memCopy ptr (p `plusPtr` off) sz
 
 -- | Offset the i-th element in a stored vector
 -- Take into account the padding after each element
