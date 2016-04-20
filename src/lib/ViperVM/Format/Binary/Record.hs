@@ -6,6 +6,10 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Record (similar to C struct)
 module ViperVM.Format.Binary.Record
@@ -19,6 +23,7 @@ module ViperVM.Format.Binary.Record
    , recordAlignment
    , recordFieldOffset
    , recordField
+   , recordToList
    )
 where
 
@@ -27,6 +32,7 @@ import GHC.TypeLits
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import ViperVM.Format.Binary.Storable
+import ViperVM.Utils.HList
 import ViperVM.Utils.Memory
 import System.IO.Unsafe
 
@@ -107,7 +113,7 @@ recordAlignment _ = fromIntegral $ natVal (Proxy :: Proxy a)
 recordFieldOffset :: forall name fs o.
    ( o ~ FieldOffset name fs 0
    , KnownNat o
-   ) => Record fs -> Proxy (name :: Symbol) -> Int
+   ) => Proxy (name :: Symbol) -> Record fs -> Int
 recordFieldOffset _ _ = fromIntegral $ natVal (Proxy :: Proxy o)
 
 -- | Get a field
@@ -116,10 +122,10 @@ recordField :: forall name a fs o.
    , a ~ FieldType name fs
    , KnownNat o
    , Storable a
-   ) => Record fs -> Proxy (name :: Symbol) -> a
-recordField r@(Record fp) p = unsafePerformIO $
+   ) => Proxy (name :: Symbol) -> Record fs -> a
+recordField p r@(Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr ->do
-      let ptr' = ptr `plusPtr` recordFieldOffset r p
+      let ptr' = ptr `plusPtr` recordFieldOffset p r
       peek (castPtr ptr')
 
 
@@ -143,3 +149,36 @@ instance forall fs s.
          let sz = recordSize (undefined :: Record fs)
          withForeignPtr fp $ \p ->
             memCopy ptr p (fromIntegral sz)
+
+
+data Extract = Extract
+
+instance forall fs typ name rec b l2 i r.
+   ( rec ~ Record fs                        -- the record
+   , b ~ Field name typ                     -- the current field
+   , i ~ (rec, HList l2)                    -- input type
+   , typ ~ FieldType name fs
+   , KnownNat (FieldOffset name fs 0)
+   , Storable typ
+   , KnownSymbol name
+   , r ~ (rec, HList ((String,typ) ': l2))  -- result type
+   ) => ApplyAB Extract (b, i) r where
+      applyAB _ (_, (rec,xs)) =
+         (rec, HCons (symbolVal (Proxy :: Proxy name), recordField (Proxy :: Proxy name) rec) xs)
+
+
+recordToList :: forall fs l.
+   ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList l)
+   ) => Record fs -> HList l
+recordToList rec = snd res
+   where
+      res :: (Record fs, HList l)
+      res = hFoldr' Extract ((rec,HNil) :: (Record fs, HList '[])) (undefined :: HList fs)
+
+instance forall fs l.
+      ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList l)
+      , Show (HList l)
+      )
+      => Show (Record fs)
+   where
+      show rec = show (recordToList rec :: HList l)

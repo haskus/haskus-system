@@ -37,6 +37,8 @@ module ViperVM.Utils.HList
    , HFoldr' (..)
    , HTuple' (..)
    , Single (..)
+   , HList (..)
+   , ApplyAB (..)
    )
 where
 
