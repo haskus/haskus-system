@@ -26,8 +26,6 @@ module ViperVM.Format.Binary.Vector
    )
 where
 
-import Data.HList.FakePrelude (ApplyAB(..))
-import Data.HList.HList
 import GHC.TypeLits
 import Data.Proxy
 import Data.Word

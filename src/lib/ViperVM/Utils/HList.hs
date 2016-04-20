@@ -37,8 +37,13 @@ module ViperVM.Utils.HList
    , HFoldr' (..)
    , HTuple' (..)
    , Single (..)
+   --re-export
    , HList (..)
    , ApplyAB (..)
+   , HZipList
+   , hZipList
+   , HFoldr
+   , hFoldr
    )
 where
 

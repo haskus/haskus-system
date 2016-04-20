@@ -61,8 +61,6 @@ module ViperVM.Utils.Variant
    )
 where
 
-import Data.HList.FakePrelude (ApplyAB(..))
-import Data.HList.HList
 import GHC.TypeLits
 import Unsafe.Coerce
 import Data.Proxy

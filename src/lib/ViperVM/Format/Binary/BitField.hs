@@ -72,8 +72,6 @@ module ViperVM.Format.Binary.BitField
    )
 where
 
-import Data.HList.FakePrelude (ApplyAB(..))
-import Data.HList.HList
 import Data.Word
 import Data.Int
 import Data.Bits

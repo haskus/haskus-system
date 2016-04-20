@@ -50,8 +50,6 @@ where
 import ViperVM.Utils.Memory (memCopy, memSet)
 import ViperVM.Utils.HList
 
-import Data.HList.FakePrelude (ApplyAB(..))
-import Data.HList.HList
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr
