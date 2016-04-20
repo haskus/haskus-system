@@ -19,10 +19,13 @@ module ViperVM.Format.Binary.Record
    , Alignment
    , Modulo
    , IfThenElse
+   , Path
    , recordSize
    , recordAlignment
-   , recordFieldOffset
    , recordField
+   , recordFieldOffset
+   , recordFieldPath
+   , recordFieldPathOffset
    , recordToList
    )
 where
@@ -97,6 +100,23 @@ type family RecordAlignment (fs :: [*]) a where
       RecordAlignment fs
          (IfThenElse (a <=? Alignment typ) (Alignment typ) a)
 
+-- | Return offset from a field path
+type family FieldPathOffset (fs :: [*]) (path :: [*]) (off :: Nat) where
+   FieldPathOffset fs '[Proxy p] off = off + FieldOffset p fs 0
+   FieldPathOffset fs (Proxy p ': ps) off
+      = FieldPathOffset (ExtractRecord (FieldType p fs))
+            ps (off + FieldOffset p fs 0)
+
+-- | Return type from a field path
+type family FieldPathType (fs :: [*]) (path :: [*]) where
+   FieldPathType fs '[Proxy p] = FieldType p fs
+
+   FieldPathType fs (Proxy p ': ps)
+      = FieldPathType (ExtractRecord (FieldType p fs)) ps
+   
+type family ExtractRecord x where
+   ExtractRecord (Record fs) = fs
+
 -- | Get record size
 recordSize :: forall s fs.
    ( s ~ FullRecordSize fs
@@ -126,6 +146,31 @@ recordField :: forall name a fs o.
 recordField p r@(Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr ->do
       let ptr' = ptr `plusPtr` recordFieldOffset p r
+      peek (castPtr ptr')
+
+data Path (fs :: [*])
+
+-- | Get a field offset from its path
+recordFieldPathOffset :: forall path fs o.
+   ( o ~ FieldPathOffset fs path 0
+   , KnownNat o
+   ) => Path path -> Record fs -> Int
+recordFieldPathOffset _ _ = o
+   where
+      o    = fromIntegral (natVal (Proxy :: Proxy o))
+
+-- | Get a field from its path
+recordFieldPath :: forall path a fs o.
+   ( o ~ FieldPathOffset fs path 0
+   , a ~ FieldPathType fs path
+   , KnownNat o
+   , Storable a
+   ) => Path path -> Record fs -> a
+recordFieldPath _ (Record fp) = unsafePerformIO $
+   withForeignPtr fp $ \ptr ->do
+      let
+         o    = fromIntegral (natVal (Proxy :: Proxy o))
+         ptr' = ptr `plusPtr` o
       peek (castPtr ptr')
 
 
@@ -166,7 +211,7 @@ instance forall fs typ name rec b l2 i r.
       applyAB _ (_, (rec,xs)) =
          (rec, HCons (symbolVal (Proxy :: Proxy name), recordField (Proxy :: Proxy name) rec) xs)
 
-
+-- | Convert a record into a HList
 recordToList :: forall fs l.
    ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList l)
    ) => Record fs -> HList l
@@ -174,6 +219,7 @@ recordToList rec = snd res
    where
       res :: (Record fs, HList l)
       res = hFoldr' Extract ((rec,HNil) :: (Record fs, HList '[])) (undefined :: HList fs)
+
 
 instance forall fs l.
       ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList l)
