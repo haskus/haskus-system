@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Store an Enum in the given backing word type
 module ViperVM.Format.Binary.Enum
@@ -10,6 +11,7 @@ module ViperVM.Format.Binary.Enum
    )
 where
 
+import qualified ViperVM.Format.Binary.Storable as S
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.Ptr
@@ -21,17 +23,38 @@ import Foreign.Ptr
 -- | Store enum 'a' as a 'b'
 newtype EnumField b a = EnumField a deriving (Show,Eq)
 
-instance (Storable b, Integral b, CEnum a) => Storable (EnumField b a) where
-   sizeOf _             = sizeOf (undefined :: b)
-   alignment _          = alignment (undefined :: b)
-   peek p               = (EnumField . toCEnum) <$> peek (castPtr p :: Ptr b)
-   poke p (EnumField v) = poke (castPtr p :: Ptr b) (fromCEnum v)
+instance
+      ( Storable b
+      , Integral b
+      , CEnum a
+      ) => Storable (EnumField b a)
+   where
+      sizeOf _             = sizeOf (undefined :: b)
+      alignment _          = alignment (undefined :: b)
+      peek p               = (EnumField . toCEnum) <$> peek (castPtr p :: Ptr b)
+      poke p (EnumField v) = poke (castPtr p :: Ptr b) (fromCEnum v)
 
-instance (Integral b, Storable b, CEnum a) => CStorable (EnumField b a) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf
+instance
+      ( Integral b
+      , Storable b
+      , CEnum a
+      ) => CStorable (EnumField b a)
+   where
+      cPeek      = peek
+      cPoke      = poke
+      cAlignment = alignment
+      cSizeOf    = sizeOf
+
+instance
+      ( Integral b
+      , S.Storable b
+      , CEnum a
+      ) => S.Storable (EnumField b a)
+   where
+      type SizeOf (EnumField b a)    = S.SizeOf b
+      type Alignment (EnumField b a) = S.Alignment b
+      peek p               = (EnumField . toCEnum) <$> S.peek (castPtr p :: Ptr b)
+      poke p (EnumField v) = S.poke (castPtr p :: Ptr b) (fromCEnum v)
 
 -- | Read an enum field
 fromEnumField :: CEnum a => EnumField b a -> a
