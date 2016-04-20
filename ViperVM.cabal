@@ -171,6 +171,7 @@ library
     ViperVM.Utils.HList
     ViperVM.Utils.EmbedByteString
     ViperVM.Utils.Memory
+    ViperVM.Utils.Types
     ViperVM.Utils.STM.TMap
     ViperVM.Utils.STM.TSet
     ViperVM.Utils.STM.TList

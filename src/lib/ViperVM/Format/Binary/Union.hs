@@ -49,7 +49,10 @@ where
 
 import ViperVM.Utils.Memory (memCopy, memSet)
 import ViperVM.Utils.HList
+import qualified ViperVM.Format.Binary.Storable as S
 
+import GHC.TypeLits
+import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr
@@ -91,6 +94,36 @@ toUnion' zero v = unsafePerformIO $ do
       poke (castPtr p) v
    return $ Union fp
 
+
+type family MapSizeOf fs where
+   MapSizeOf '[]       = '[]
+   MapSizeOf (x ': xs) = S.SizeOf x ': MapSizeOf xs
+
+type family MapAlignment fs where
+   MapAlignment '[]       = '[]
+   MapAlignment (x ': xs) = S.Alignment x ': MapAlignment xs
+
+
+instance forall fs.
+      ( KnownNat (Max (MapSizeOf fs))
+      , KnownNat (Max (MapAlignment fs))
+      )
+      => S.Storable (Union fs)
+   where
+      type SizeOf (Union fs)    = Max (MapSizeOf fs)
+      type Alignment (Union fs) = Max (MapAlignment fs)
+
+      peek ptr = do
+         let sz = fromIntegral $ natVal (Proxy :: Proxy (S.SizeOf (Union fs)))
+         fp <- mallocForeignPtrBytes sz
+         withForeignPtr fp $ \p -> 
+            memCopy p (castPtr ptr) (fromIntegral sz)
+         return (Union fp)
+
+      poke ptr (Union fp) = do
+         let sz = natVal (Proxy :: Proxy (S.SizeOf (Union fs)))
+         withForeignPtr fp $ \p ->
+            memCopy (castPtr ptr) p (fromIntegral sz)
 
 -------------------------------------------------------------------------------------
 -- We use HFoldr' to get the maximum size and alignment of the types in the union

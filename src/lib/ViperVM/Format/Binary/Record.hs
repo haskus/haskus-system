@@ -18,7 +18,6 @@ module ViperVM.Format.Binary.Record
    , RecordSize
    , Alignment
    , Modulo
-   , IfThenElse
    , Path
    , recordSize
    , recordAlignment
@@ -37,6 +36,7 @@ import Foreign.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.HList
 import ViperVM.Utils.Memory
+import ViperVM.Utils.Types
 import System.IO.Unsafe
 
 -- | Record
@@ -44,17 +44,6 @@ newtype Record (fields :: [*]) = Record (ForeignPtr ())
 
 -- | Field
 data Field (name :: Symbol) typ
-
-type family IfThenElse c (t :: Nat) (e :: Nat) where
-   IfThenElse 'True  t e = t
-   IfThenElse 'False t e = e
-
-type family Modulo (a :: Nat) (b :: Nat) where
-   Modulo a b = ModuloEx (a <=? b) a b
-
-type family ModuloEx c a b where
-   ModuloEx 'True  a b = a
-   ModuloEx 'False a b = ModuloEx ((a-b) <=? b) (a-b) b
 
 type family Padding modulo alignment where
    Padding 0 a = 0

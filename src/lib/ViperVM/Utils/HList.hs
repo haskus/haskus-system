@@ -13,7 +13,9 @@
 
 -- | Heterogeneous list utils
 module ViperVM.Utils.HList
-   ( Tail
+   ( MapNat
+   , Max
+   , Tail
    , Head
    , ReplaceAt
    , RemoveAt
@@ -47,10 +49,25 @@ module ViperVM.Utils.HList
    )
 where
 
+import ViperVM.Utils.Types
 import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
 import Data.Proxy
 import GHC.TypeLits
+
+-- | Map a type function returning a Nat
+type family MapNat (f :: * -> Nat) (xs :: [*]) where
+   MapNat f '[]       = '[]
+   MapNat f (x ': xs) = f x ': MapNat f xs
+
+-- | Get the max of a list of Nats
+type family Max (xs :: [Nat]) where
+   Max (x ': xs) = Max' x xs
+
+-- | Helper for Max
+type family Max' (x :: Nat) (xs :: [Nat]) where
+   Max' x '[]       = x
+   Max' x (a ': xs) = Max' (IfThenElse (x <=? a) a x) xs
 
 -- | Tail of a list
 type family Tail xs where
@@ -149,6 +166,7 @@ type family IndexOf a (l :: [*]) where
 type family MaybeIndexOf a (l :: [*]) where
    MaybeIndexOf x xs = MaybeIndexOf' 0 x xs
 
+-- | Helper for MaybeIndexOf
 type family MaybeIndexOf' (n :: Nat) a (l :: [*]) where
    MaybeIndexOf' n x '[]       = 0
    MaybeIndexOf' n x (x ': xs) = 1 + n

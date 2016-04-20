@@ -43,7 +43,7 @@ import Foreign.C.Types (CChar)
 
 import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
-import qualified ViperVM.Format.Binary.Storable as BS
+import qualified ViperVM.Format.Binary.Storable as S
 
 -- | Vector with type-checked size
 --
@@ -59,14 +59,14 @@ instance (Storable a, Show a, KnownNat n) => Show (Vector n a) where
 
 
 instance forall a n s.
-   ( BS.Storable a
-   , s ~ (n * BS.SizeOf a)
+   ( S.Storable a
+   , s ~ (n * S.SizeOf a)
    , KnownNat s
-   , KnownNat (BS.SizeOf a)
-   )=> BS.Storable (Vector n a) where
+   , KnownNat (S.SizeOf a)
+   )=> S.Storable (Vector n a) where
 
-   type SizeOf (Vector n a)    = (n * BS.SizeOf a)
-   type Alignment (Vector n a) = BS.Alignment a
+   type SizeOf (Vector n a)    = (n * S.SizeOf a)
+   type Alignment (Vector n a) = S.Alignment a
 
    peek ptr = do
       let sz = fromIntegral (natVal (Proxy :: Proxy s))
@@ -77,7 +77,7 @@ instance forall a n s.
 
    poke ptr (Vector fp o) = do
       let
-         off = fromIntegral o * fromIntegral (natVal (Proxy :: Proxy (BS.SizeOf a)))
+         off = fromIntegral o * fromIntegral (natVal (Proxy :: Proxy (S.SizeOf a)))
          sz = fromIntegral (natVal (Proxy :: Proxy s))
       withForeignPtr fp $ \p ->
          memCopy ptr (p `plusPtr` off) sz
