@@ -218,6 +218,8 @@ library
     ViperVM.Format.Binary.Vector
     ViperVM.Format.Binary.Union
     ViperVM.Format.Binary.Reader
+    ViperVM.Format.Binary.Record
+    ViperVM.Format.Binary.Storable
 
 
     ViperVM.Platform.Drivers
