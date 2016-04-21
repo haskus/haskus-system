@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Byte order ("endianness")
 --
@@ -16,19 +18,35 @@ module ViperVM.Format.Binary.Endianness
    , ExtendedWordPutters (..)
    , getExtendedWordGetters
    , getExtendedWordPutters
+   , getHostEndianness
+   , hostEndianness
+   , ByteReversable (..)
+   , AsBigEndian (..)
+   , AsLittleEndian (..)
    )
 where
 
-import Data.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Enum
+import qualified ViperVM.Format.Binary.Storable as S
+
+import GHC.Word
+import Foreign.Ptr
+import Foreign.Storable
+import Foreign.CStorable
+import System.IO.Unsafe
+import Foreign.Marshal.Array
+import Foreign.Marshal.Alloc (alloca)
+import Data.Bits ((.|.), shiftL)
 
 -- | Endianness
 data Endianness 
    = LittleEndian    -- ^ Less significant bytes first
    | BigEndian       -- ^ Most significant bytes first
-   deriving (Eq,Show,Enum,CEnum)
+   deriving (Eq,Show,Enum)
+
+instance CEnum Endianness
 
 -- | Word getter
 data WordGetters = WordGetters
@@ -104,3 +122,104 @@ getExtendedWordPutters endian ws = ExtendedWordPutters pw8 pw16 pw32 pw64 pwN
             then error $ "Number too big to be stored in 32-bit word ("++show x++")"
             else pw32 (fromIntegral x)
 
+-- | Detect the endianness of the host memory
+getHostEndianness :: IO Endianness
+getHostEndianness = do
+   -- Write a 32 bit Int and check byte ordering
+   let magic = 1 .|. shiftL 8 2 .|. shiftL 16 3 .|. shiftL 24 4 :: Word32
+   alloca $ \p -> do
+      poke p magic
+      rs <- peekArray 4 (castPtr p :: Ptr Word8)
+      return $ if rs == [1,2,3,4] then BigEndian else LittleEndian
+
+-- | Detected host endianness
+hostEndianness :: Endianness
+hostEndianness = unsafePerformIO getHostEndianness
+
+{-# NOINLINE hostEndianness #-}
+
+
+-- | Reverse bytes in a word
+class ByteReversable w where
+   reverseBytes       :: w -> w
+
+   hostToBigEndian    :: w -> w
+   hostToBigEndian w = case hostEndianness of
+      BigEndian    -> w
+      LittleEndian -> reverseBytes w
+
+   bigEndianToHost    :: w -> w
+   bigEndianToHost w = case hostEndianness of
+      BigEndian    -> w
+      LittleEndian -> reverseBytes w
+
+
+   hostToLittleEndian :: w -> w
+   hostToLittleEndian w = case hostEndianness of
+      BigEndian    -> reverseBytes w
+      LittleEndian -> w
+
+   littleEndianToHost :: w -> w
+   littleEndianToHost w = case hostEndianness of
+      BigEndian    -> reverseBytes w
+      LittleEndian -> w
+
+instance ByteReversable Word8 where
+   reverseBytes = id
+
+instance ByteReversable Word16 where
+   reverseBytes = byteSwap16
+                  
+instance ByteReversable Word32 where
+   reverseBytes = byteSwap32
+
+instance ByteReversable Word64 where
+   reverseBytes = byteSwap64
+
+
+
+newtype AsBigEndian a    = AsBigEndian a    deriving (Show,Eq,Ord,Enum,Num,Integral,Real)
+newtype AsLittleEndian a = AsLittleEndian a deriving (Show,Eq,Ord,Enum,Num,Integral,Real)
+
+instance (ByteReversable a, S.Storable a) => S.Storable (AsBigEndian a) where
+   type SizeOf (AsBigEndian a)    = S.SizeOf a
+   type Alignment (AsBigEndian a) = S.Alignment a
+
+   peek ptr                 = AsBigEndian . bigEndianToHost <$> S.peek (castPtr ptr)
+   poke ptr (AsBigEndian v) = S.poke (castPtr ptr) (hostToBigEndian v)
+
+
+instance (ByteReversable a, Storable a) => Storable (AsBigEndian a) where
+   sizeOf _    = sizeOf (undefined :: a)
+   alignment _ = alignment (undefined :: a)
+
+   peek ptr                 = AsBigEndian . bigEndianToHost <$> peek (castPtr ptr)
+   poke ptr (AsBigEndian v) = poke (castPtr ptr) (hostToBigEndian v)
+
+instance (ByteReversable a, Storable a) => CStorable (AsBigEndian a) where
+   cPeek      = peek
+   cPoke      = poke
+   cSizeOf    = sizeOf
+   cAlignment = alignment
+
+
+   
+instance (ByteReversable a, S.Storable a) => S.Storable (AsLittleEndian a) where
+   type SizeOf (AsLittleEndian a)    = S.SizeOf a
+   type Alignment (AsLittleEndian a) = S.Alignment a
+
+   peek ptr                    = AsLittleEndian . bigEndianToHost <$> S.peek (castPtr ptr)
+   poke ptr (AsLittleEndian v) = S.poke (castPtr ptr) (hostToLittleEndian v)
+
+instance (ByteReversable a, Storable a) => Storable (AsLittleEndian a) where
+   sizeOf _    = sizeOf (undefined :: a)
+   alignment _ = alignment (undefined :: a)
+
+   peek ptr                 = AsLittleEndian . bigEndianToHost <$> peek (castPtr ptr)
+   poke ptr (AsLittleEndian v) = poke (castPtr ptr) (hostToLittleEndian v)
+
+instance (ByteReversable a, Storable a) => CStorable (AsLittleEndian a) where
+   cPeek      = peek
+   cPoke      = poke
+   cSizeOf    = sizeOf
+   cAlignment = alignment

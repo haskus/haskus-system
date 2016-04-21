@@ -8,7 +8,6 @@ module ViperVM.Utils.Memory
    , peekArrays
    , pokeArrays
    , withArrays
-   , getHostEndianness
    , withMaybeOrNull
    )
 where
@@ -20,11 +19,6 @@ import Control.Monad (void)
 import Foreign.Storable
 import Foreign.Marshal.Utils
 import Foreign.Marshal.Array
-import Foreign.Marshal.Alloc (alloca)
-import Data.Bits ((.|.), shiftL)
-
-import ViperVM.Format.Binary.Endianness
-
 
 -- | Copy memory
 memCopy :: Ptr a -> Ptr b -> Word64 -> IO ()
@@ -72,16 +66,6 @@ withArrays vs f = go [] vs
    where
       go as []     = f (reverse as)
       go as (x:xs) = withArray x $ \a -> go (a:as) xs
-
--- | Detect the endianness of the host memory
-getHostEndianness :: IO Endianness
-getHostEndianness = do
-   -- Write a 32 bit Int and check byte ordering
-   let magic = 1 .|. shiftL 8 2 .|. shiftL 16 3 .|. shiftL 24 4 :: Word32
-   alloca $ \p -> do
-      poke p magic
-      rs <- peekArray 4 (castPtr p :: Ptr Word8)
-      return $ if rs == [1,2,3,4] then BigEndian else LittleEndian
 
 -- | Execute f with a pointer to 'a' or NULL
 withMaybeOrNull :: Storable a => Maybe a -> (Ptr a -> IO b) -> IO b

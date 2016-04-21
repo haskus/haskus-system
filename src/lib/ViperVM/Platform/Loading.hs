@@ -13,7 +13,7 @@ import qualified ListT
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified ViperVM.Arch.OpenCL.All as CL
-import qualified ViperVM.Utils.Memory as Generic
+import qualified ViperVM.Format.Binary.Endianness as Generic
 import qualified ViperVM.Arch.Linux.Topology as Linux
 
 import ViperVM.Platform.Drivers
