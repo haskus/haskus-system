@@ -16,12 +16,14 @@ module ViperVM.Utils.MultiState
    , mTryGet
    , mModify
    , mModify'
+   , mWith
    )
 where
 
 import Control.Monad.State.Lazy
 
 import ViperVM.Utils.HArray
+import ViperVM.Utils.HList
 
 -- | Multi-state monad transformer
 --
@@ -48,3 +50,14 @@ mModify f = modify (\s -> setHArrayT (f (getHArrayT s)) s)
 -- | Modify a value in the state (strict version)
 mModify' :: (Monad m, HArrayIndexT a s) => (a -> a) -> MStateT s m ()
 mModify' f = modify' (\s -> setHArrayT (f (getHArrayT s)) s)
+
+-- | Execute an action with an extended state
+mWith ::
+   ( Monad m
+   , s ~ Init (Concat s '[a])
+   ) => a -> MStateT (Concat s '[a]) m b -> MStateT s m b
+mWith v act = do
+   s <- get
+   (r,s') <- lift $ runStateT act (appendHArray s v)
+   put (initHArray s')
+   return r

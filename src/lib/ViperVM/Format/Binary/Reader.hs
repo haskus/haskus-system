@@ -8,10 +8,12 @@
 --
 -- Rely on the MultiState monad to allow concurrent Readers/Writers.
 module ViperVM.Format.Binary.Reader
-   ( Reader
+   ( Reader (..)
    , ReaderM
    , binReadT
    , binRead
+   , binPeekT
+   , binPeek
    , binSkipT
    , binSkip
    , binRemainingT
@@ -42,10 +44,21 @@ binReadT _ = do
    mSet (Reader b' :: Reader r)
    return a
 
-
 -- | Read an element from a predefined `Reader ()`
 binRead :: forall m s a. (Monad m, ReaderM () s, Storable a) => MStateT s m a
 binRead = binReadT (Proxy :: Proxy ()) 
+
+-- | Peek an element from the specified reader
+binPeekT :: forall r m s a. (Monad m, ReaderM r s, Storable a) => Proxy r -> MStateT s m a
+binPeekT _ = do
+   Reader b <- mGet :: MStateT s m (Reader r)
+   let (_,a) = bufferRead b
+   return a
+
+-- | Peek an element from a predefined `Reader ()`
+binPeek :: forall m s a. (Monad m, ReaderM () s, Storable a) => MStateT s m a
+binPeek = binPeekT (Proxy :: Proxy ()) 
+
 
 -- | Skip the specified number of bytes
 binSkipT :: forall r m s. (Monad m, ReaderM r s) => Proxy r -> Word64 -> MStateT s m ()

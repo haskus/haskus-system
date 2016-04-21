@@ -22,6 +22,8 @@ module ViperVM.Utils.HArray
    , appendHArray
    , prependHArray
    , concatHArray
+   , initHArray
+   , tailHArray
    )
 where
 
@@ -107,3 +109,11 @@ prependHArray a (HArray as) = HArray (V.cons (unsafeCoerce a) as)
 -- | Concat arrays
 concatHArray :: HArray ts1 -> HArray ts2 -> HArray (Concat ts1 ts2)
 concatHArray (HArray as1) (HArray as2) = HArray (V.concat [as1,unsafeCoerce as2])
+
+-- | Drop the last element
+initHArray :: HArray ts -> HArray (Init ts)
+initHArray (HArray as) = HArray (V.init as)
+
+-- | Drop the first element
+tailHArray :: HArray ts -> HArray (Tail ts)
+tailHArray (HArray as) = HArray (V.tail as)

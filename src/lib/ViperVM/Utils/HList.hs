@@ -16,6 +16,7 @@ module ViperVM.Utils.HList
    ( MapNat
    , Max
    , Tail
+   , Init
    , Head
    , ReplaceAt
    , RemoveAt
@@ -72,6 +73,12 @@ type family Max' (x :: Nat) (xs :: [Nat]) where
 -- | Tail of a list
 type family Tail xs where
    Tail (x ': xs) = xs
+
+-- | Init of a list
+type family Init xs where
+   Init '[x]      = '[]
+   Init (x ': xs) = x ': (Init xs)
+
 
 -- | Head of a list
 type family Head xs where

@@ -4,6 +4,7 @@
 --
 -- A buffer is similar to a ByteString with the following differences:
 --    * use Word64 for size and offset
+--    * integrate nicely with Storable and other binary stuff
 module ViperVM.Format.Binary.Buffer
    ( Buffer
    , withBufferPtr
