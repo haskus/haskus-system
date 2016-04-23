@@ -14,7 +14,9 @@ module ViperVM.Utils.HArray
    , HArrayIndexT
    , HArrayTryIndexT
    , emptyHArray
+   , singleHArray
    , getHArrayN
+   , getHArray0
    , setHArrayN
    , getHArrayT
    , setHArrayT
@@ -24,6 +26,8 @@ module ViperVM.Utils.HArray
    , concatHArray
    , initHArray
    , tailHArray
+   , HArrayT (..)
+   , (>~:~>)
    )
 where
 
@@ -31,6 +35,7 @@ import Data.Vector as V
 import Data.Proxy
 import Unsafe.Coerce
 import GHC.TypeLits
+import Control.Monad
 
 import ViperVM.Utils.HList
 
@@ -42,6 +47,10 @@ type role HArray representational
 -- | Empty array
 emptyHArray :: HArray '[]
 emptyHArray = HArray V.empty
+
+-- | Empty array
+singleHArray :: a -> HArray '[a]
+singleHArray = HArray . V.singleton
 
 -- | The type `t` with index `n` is indexable in the array
 type HArrayIndex (n :: Nat) t (ts :: [*]) =
@@ -69,6 +78,10 @@ getHArrayN :: forall (n :: Nat) (ts :: [*]) t.
 getHArrayN _ (HArray as) = unsafeCoerce (as ! idx)
    where
       idx = fromIntegral (natVal (Proxy :: Proxy n))
+
+-- | Get first element
+getHArray0 :: (HArrayIndex 0 t ts) => HArray ts -> t
+getHArray0 = getHArrayN (Proxy :: Proxy 0)
 
 -- | Set an element by index
 setHArrayN :: forall (n :: Nat) (ts :: [*]) t.
@@ -99,7 +112,7 @@ tryGetHArrayT as = if n == 0
       as' = prependHArray undefined as
 
 -- | Append a value to an array (O(n))
-appendHArray :: HArray ts -> t -> HArray (Concat ts '[t])
+appendHArray :: HArray ts -> t -> HArray (Snoc ts t)
 appendHArray (HArray as) a = HArray (V.snoc as (unsafeCoerce a))
 
 -- | Prepend a value to an array (O(n))
@@ -117,3 +130,11 @@ initHArray (HArray as) = HArray (V.init as)
 -- | Drop the first element
 tailHArray :: HArray ts -> HArray (Tail ts)
 tailHArray (HArray as) = HArray (V.tail as)
+
+newtype HArrayT m xs ys = HArrayT
+   { runHArrayT :: HArray xs -> m (HArray ys)
+   }
+
+-- | Compose HArrayT
+(>~:~>) :: (Monad m) => HArrayT m xs ys -> HArrayT m ys zs -> HArrayT m xs zs
+(>~:~>) (HArrayT f) (HArrayT g) = HArrayT (f >=> g)

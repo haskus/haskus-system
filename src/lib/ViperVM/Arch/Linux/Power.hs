@@ -66,7 +66,7 @@ restartWithCommand cmd = sysPower' (PowerRestartCommand cmd) >%~#> \case
    EPERM  -> flowSet NotAllowed
    EFAULT -> flowSet MemoryError
    EINVAL -> flowSet InvalidRestartCommand
-   e      -> unhdlErr "restart" e
+   e      -> unhdlErr "restartWithCommand" e
 
 -- | Suspend system using software suspend if compiled in.
 softSuspend :: Flow Sys '[(),NotAllowed]

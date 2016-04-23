@@ -18,6 +18,7 @@ module ViperVM.Utils.HList
    , Tail
    , Init
    , Head
+   , Snoc
    , ReplaceAt
    , RemoveAt
    , Concat
@@ -71,21 +72,25 @@ type family Max' (x :: Nat) (xs :: [Nat]) where
    Max' x (a ': xs) = Max' (IfThenElse (x <=? a) a x) xs
 
 -- | Tail of a list
-type family Tail xs where
+type family Tail (xs :: [*]) where
    Tail (x ': xs) = xs
 
 -- | Init of a list
-type family Init xs where
+type family Init (xs :: [*]) where
    Init '[x]      = '[]
    Init (x ': xs) = x ': (Init xs)
 
+-- | Snoc
+type family Snoc (xs :: [*]) x where
+   Snoc '[] x       = '[x]
+   Snoc (y ': ys) x = y ': (Snoc ys x)
 
 -- | Head of a list
-type family Head xs where
+type family Head (xs :: [*]) where
    Head (x ': xs) = x
 
 -- | Concat two type lists
-type family Concat xs ys where
+type family Concat (xs :: [*]) (ys :: [*]) where
    Concat '[] '[]      = '[]
    Concat '[] ys       = ys
    Concat (x ': xs) ys = x ': Concat xs ys

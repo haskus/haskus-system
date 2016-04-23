@@ -112,7 +112,7 @@ rawGet hdl res2 = do
                               }
 
                getConnector' hdl res3 
-                  >.~^> \res4 -> do
+                  >.~^^> \res4 ->
                      parseRes hdl res2 res4 >.-.> (res4,)
 
 
@@ -165,7 +165,7 @@ parseRes hdl res2 res4 = do
 getConnectors :: Handle -> Flow Sys '[[Connector],InvalidParam,EntryNotFound,InvalidProperty,InvalidHandle]
 getConnectors hdl = getResources hdl
    >.-.> resConnectorIDs
-   >.~^> flowTraverse (getConnectorFromID hdl)
+   >.~^^> flowTraverse (getConnectorFromID hdl)
 
 
 -- | Encoder attached to the connector, if any
