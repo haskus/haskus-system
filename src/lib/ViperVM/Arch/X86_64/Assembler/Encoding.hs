@@ -9,13 +9,13 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , OperandEnc(..)
    , hasImmediate
    , isImmediate
-   , LegacyOpcodeFields(..)
    , OpcodeMap(..)
    , LegacyMap(..)
    , AccessMode(..)
    , Variant(..)
    -- * Generic API
    , Encoding(..)
+   , VexLW (..)
    , isLegacyEncoding
    , isVexEncoding
    , encOpcode
@@ -29,11 +29,6 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , encReversableBit
    , encLockable
    , encRequireModRM
-   -- * Legacy encoding
-   , LegEnc(..)
-   -- * VEX encoding
-   , VexEnc (..)
-   , VexLW (..)
    )
 where
 
@@ -88,97 +83,84 @@ isImmediate = \case
 hasImmediate :: Encoding -> Bool
 hasImmediate e = any (isImmediate . opEnc) (encOperands e)
 
-data Encoding
-   = LegacyEncoding LegEnc
-   | VexEncoding    VexEnc
-   deriving (Show)
-
-
 isLegacyEncoding :: Encoding -> Bool
-isLegacyEncoding (LegacyEncoding _) = True
+isLegacyEncoding (LegacyEncoding {}) = True
 isLegacyEncoding _                  = False
 
 isVexEncoding :: Encoding -> Bool
-isVexEncoding (VexEncoding _) = True
+isVexEncoding (VexEncoding {}) = True
 isVexEncoding _               = False
 
 encOpcode :: Encoding -> Word8
-encOpcode (LegacyEncoding e) = legacyOpcode e
-encOpcode (VexEncoding    e) = vexOpcode e
+encOpcode e@LegacyEncoding {} = legacyOpcode e
+encOpcode e@VexEncoding    {} = vexOpcode e
 
 encOpcodeExt :: Encoding -> Maybe Word8
-encOpcodeExt (LegacyEncoding e) = legacyOpcodeExt e
-encOpcodeExt (VexEncoding    e) = vexOpcodeExt e
+encOpcodeExt e@LegacyEncoding {} = legacyOpcodeExt e
+encOpcodeExt e@VexEncoding    {} = vexOpcodeExt e
 
 encOpcodeMap :: Encoding -> OpcodeMap
-encOpcodeMap (LegacyEncoding e) = MapLegacy (legacyOpcodeMap e)
-encOpcodeMap (VexEncoding    e) = vexOpcodeMap e
+encOpcodeMap e@LegacyEncoding {} = MapLegacy (legacyOpcodeMap e)
+encOpcodeMap e@VexEncoding    {} = vexOpcodeMap e
 
 encOperands :: Encoding -> [OperandSpec]
-encOperands (LegacyEncoding e)  = legacyParams e
-encOperands (VexEncoding    e)  = vexParams e
+encOperands e@LegacyEncoding {}  = legacyParams e
+encOperands e@VexEncoding    {}  = vexParams e
 
 encMandatoryPrefix :: Encoding -> Maybe Word8
-encMandatoryPrefix (LegacyEncoding e) = legacyMandatoryPrefix e
-encMandatoryPrefix (VexEncoding    e) = vexMandatoryPrefix e
+encMandatoryPrefix e@LegacyEncoding {} = legacyMandatoryPrefix e
+encMandatoryPrefix e@VexEncoding    {} = vexMandatoryPrefix e
 
 encProperties :: Encoding -> [EncodingProperties]
-encProperties (LegacyEncoding e) = legacyProperties e
-encProperties (VexEncoding    _) = []
+encProperties e@LegacyEncoding {} = legacyProperties e
+encProperties VexEncoding      {} = []
 
 encSizableBit :: Encoding -> Maybe Int
-encSizableBit (LegacyEncoding e) = sizable (legacyOpcodeFields e)
-encSizableBit _                  = Nothing
+encSizableBit e@LegacyEncoding {} = legacySizable e
+encSizableBit _                   = Nothing
 
 encSignExtendImmBit :: Encoding -> Maybe Int
-encSignExtendImmBit (LegacyEncoding e) = signExtendableImm8 (legacyOpcodeFields e)
-encSignExtendImmBit _                  = Nothing
+encSignExtendImmBit e@LegacyEncoding {} = legacySignExtendable e
+encSignExtendImmBit _                   = Nothing
 
 encReversableBit :: Encoding -> Maybe Int
-encReversableBit (LegacyEncoding e) = reversable (legacyOpcodeFields e)
-encReversableBit _                  = Nothing
+encReversableBit e@LegacyEncoding {} = legacyReversable e
+encReversableBit _                   = Nothing
 
 -- | Indicate if LOCK prefix is allowed
 encLockable :: Encoding -> Bool
 encLockable e = Lockable `elem` encProperties e
 
-data LegEnc = LegEnc
-   { legacyMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
-   , legacyOpcodeMap       :: LegacyMap            -- ^ Map
-   , legacyOpcode          :: Word8                -- ^ Opcode
-   , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-   , legacyOpcodeFields    :: LegacyOpcodeFields   -- ^ Fields in the opcode
-   , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
-   , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
-   }
+data Encoding
+   = LegacyEncoding
+      { legacyMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+      , legacyOpcodeMap       :: LegacyMap            -- ^ Map
+      , legacyOpcode          :: Word8                -- ^ Opcode
+      , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+      , legacyOpcodeFullExt   :: Maybe Word8          -- ^ Opcode extension in full ModRM byte
+      , legacyReversable      :: Maybe Int            -- ^ Args are reversed if the given bit is
+                                                      --   set in the opcode.
+      , legacySizable         :: Maybe Int            -- ^ Operand size is 8 if the given bit is
+                                                      --   unset in the opcode. Otherwise, the
+                                                      --   size is defined by operand-size
+                                                      --   prefix and REX.W bit
+      , legacySignExtendable  :: Maybe Int            -- ^ Used in conjunction with a set
+                                                      --   Sizable bit.  Imm8 operand is used
+                                                      --   and sign-extended if the given bit is
+                                                      --   set
+      , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
+      , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
+      }
+   | VexEncoding
+      { vexMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+      , vexOpcodeMap       :: OpcodeMap            -- ^ Map
+      , vexOpcode          :: Word8                -- ^ Opcode
+      , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+      , vexLW              :: VexLW
+      , vexProperties      :: [EncodingProperties] -- ^ Encoding properties
+      , vexParams          :: [OperandSpec]        -- ^ Operand encoding
+      }
    deriving (Show)
-
-data VexEnc = VexEnc
-   { vexMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
-   , vexOpcodeMap       :: OpcodeMap            -- ^ Map
-   , vexOpcode          :: Word8                -- ^ Opcode
-   , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-   , vexLW              :: VexLW
-   , vexProperties      :: [EncodingProperties] -- ^ Encoding properties
-   , vexParams          :: [OperandSpec]        -- ^ Operand encoding
-   } deriving (Show)
-
--- | Fields in a legacy opcode
-data LegacyOpcodeFields = LegacyOpcodeFields
-   { reversable         :: Maybe Int -- ^ Args are reversed if the given bit is
-                                     --   set in the opcode.
-
-   , sizable            :: Maybe Int -- ^ Operand size is 8 if the given bit is
-                                     --   unset in the opcode. Otherwise, the
-                                     --   size is defined by operand-size
-                                     --   prefix and REX.W bit
-
-   , signExtendableImm8 :: Maybe Int -- ^ Used in conjunction with a set
-                                     --   Sizable bit.  Imm8 operand is used
-                                     --   and sign-extended if the given bit is
-                                     --   set
-   }
-   deriving (Show,Eq)
 
 encRequireModRM :: Encoding -> Bool
 encRequireModRM e = hasOpExt || hasOps
