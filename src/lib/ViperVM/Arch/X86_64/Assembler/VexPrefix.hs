@@ -1,30 +1,19 @@
 module ViperVM.Arch.X86_64.Assembler.VexPrefix
-   ( Vex(..)
-   , vexW
+   ( vexW
    , vexR
    , vexX
    , vexB
    , vexL
    , vexVVVV
    , vexMMMMM
+   , vexMapSelect
    , vexPP
-   , decodeVEX
-   , decodeXOP
    ) where
 
 import Data.Word
 import Data.Bits
-import Control.Monad.State
 
-import ViperVM.Arch.X86_64.Assembler.X86Dec
-import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.Encoding
-
--- | A VEX prefix
-data Vex
-   = Vex2 !Word8           -- ^ Two-byte VEX prefix
-   | Vex3 !Word8 !Word8    -- ^ Three-byte VEX prefix
-   deriving (Show)
+import ViperVM.Arch.X86_64.Assembler.Opcode
 
 vexW :: Vex -> Maybe Bool
 vexW (Vex2 _) = Nothing
@@ -65,83 +54,83 @@ vexMapSelect v = case (v, vexMMMMM v) of
    _           -> error "Reserved map select in VEX/XOP prefix"
    
 
--- Try to decode VEX prefixes
-decodeVEX :: X86Dec ()
-decodeVEX = do
-   mode        <- gets decStateMode
-   allowedSets <- gets decStateSets
-
-   when (SetVEX `elem` allowedSets) $ lookWord8 >>= \x -> do
-      when (x .&. 0xFE == 0xC4) $ do
-         when (is64bitMode mode) $ decodeVex' x
-
-         -- VEX prefixes are supported in 32-bit and 16-bit modes
-         -- They overload LES and LDS opcodes so that the first two bits
-         -- of what would be ModRM are invalid (11b) for LES/LDS
-         when (not $ is64bitMode mode) $ lookWord16 >>= \y ->
-            when (y `shiftR` 14 == 0x3) $ decodeVex' x
-
-decodeVex' :: Word8 -> X86Dec ()
-decodeVex' x = do
-  assertNoRex ErrRexPrefixBeforeVex
-  assertNoLegacyPrefix ErrLegacyPrefixBeforeVex [0xF0,0x66,0xF3,0xF2]
-  assertNoXop ErrXopPrefixBeforeVex
-  skipWord8
-  vex <- case x of
-     0xC4 -> Vex3 <$> nextWord8 <*> nextWord8
-     0xC5 -> Vex2 <$> nextWord8
-     _    -> error "Invalid VEX prefix"
-  modify (\s -> s { decStateHasVexPrefix = True})
-  decodeVexXop vex
-
--- | Decode a XOP prefix
---
--- XOP is just like Vex3 except that the first byte is 0x8F instead of 0xC4
-decodeXOP :: X86Dec ()
-decodeXOP = do
-   allowedSets <- gets decStateSets
-
-   -- Try to decode XOP prefix
-   when (SetXOP `elem` allowedSets) $ lookWord8 >>= \x -> do
-      when (x == 0x8F) $ do
-         assertNoRex ErrRexPrefixBeforeXop
-         assertNoVex ErrRexPrefixBeforeXop
-         assertNoLegacyPrefix ErrLegacyPrefixBeforeXop [0xF0,0x66,0xF3,0xF2]
-         skipWord8
-         vex <- Vex3 <$> nextWord8 <*> nextWord8
-         modify (\y -> y { decStateHasXopPrefix = True})
-         decodeVexXop vex
-
-
--- | Decode a VEX or XOP prefix
-decodeVexXop :: Vex -> X86Dec ()
-decodeVexXop vex = do
-   modify (\s -> s
-      { decStateBaseRegExt       = case vexB vex of
-                                    Nothing    -> decStateBaseRegExt s
-                                    Just True  -> 1
-                                    Just False -> 0
-      , decStateIndexRegExt      = case vexX vex of
-                                    Nothing    -> decStateIndexRegExt s
-                                    Just True  -> 1
-                                    Just False -> 0
-      , decStateRegExt           = case vexR vex of
-                                    True  -> 1
-                                    False -> 0
-      , decStateOpSize64         = case vexW vex of
-                                    Just True -> True
-                                    _         -> decStateOpSize64 s
-      , decStateOpcodeExtE       = vexW vex
-      , decStateOpcodeMap        = vexMapSelect vex
-      , decStateAdditionalOp     = Just (vexVVVV vex)
-      , decStateLegacyPrefixes   = decStateLegacyPrefixes s ++ case vexPP vex of
-                                    0 -> []
-                                    1 -> [0x66]
-                                    2 -> [0xF3]
-                                    3 -> [0xF2]
-                                    _ -> error "Invalid PP in VEX prefix"
-      , decStateVectorLength     = case vexL vex of
-                                    False -> Just VL128
-                                    True  -> Just VL256
-      })
-
+-- -- Try to decode VEX prefixes
+-- decodeVEX :: X86Dec ()
+-- decodeVEX = do
+--    mode        <- gets decStateMode
+--    allowedSets <- gets decStateSets
+-- 
+--    when (SetVEX `elem` allowedSets) $ lookWord8 >>= \x -> do
+--       when (x .&. 0xFE == 0xC4) $ do
+--          when (is64bitMode mode) $ decodeVex' x
+-- 
+--          -- VEX prefixes are supported in 32-bit and 16-bit modes
+--          -- They overload LES and LDS opcodes so that the first two bits
+--          -- of what would be ModRM are invalid (11b) for LES/LDS
+--          when (not $ is64bitMode mode) $ lookWord16 >>= \y ->
+--             when (y `shiftR` 14 == 0x3) $ decodeVex' x
+-- 
+-- decodeVex' :: Word8 -> X86Dec ()
+-- decodeVex' x = do
+--   assertNoRex ErrRexPrefixBeforeVex
+--   assertNoLegacyPrefix ErrLegacyPrefixBeforeVex [0xF0,0x66,0xF3,0xF2]
+--   assertNoXop ErrXopPrefixBeforeVex
+--   skipWord8
+--   vex <- case x of
+--      0xC4 -> Vex3 <$> nextWord8 <*> nextWord8
+--      0xC5 -> Vex2 <$> nextWord8
+--      _    -> error "Invalid VEX prefix"
+--   modify (\s -> s { decStateHasVexPrefix = True})
+--   decodeVexXop vex
+-- 
+-- -- | Decode a XOP prefix
+-- --
+-- -- XOP is just like Vex3 except that the first byte is 0x8F instead of 0xC4
+-- decodeXOP :: X86Dec ()
+-- decodeXOP = do
+--    allowedSets <- gets decStateSets
+-- 
+--    -- Try to decode XOP prefix
+--    when (SetXOP `elem` allowedSets) $ lookWord8 >>= \x -> do
+--       when (x == 0x8F) $ do
+--          assertNoRex ErrRexPrefixBeforeXop
+--          assertNoVex ErrRexPrefixBeforeXop
+--          assertNoLegacyPrefix ErrLegacyPrefixBeforeXop [0xF0,0x66,0xF3,0xF2]
+--          skipWord8
+--          vex <- Vex3 <$> nextWord8 <*> nextWord8
+--          modify (\y -> y { decStateHasXopPrefix = True})
+--          decodeVexXop vex
+-- 
+-- 
+-- -- | Decode a VEX or XOP prefix
+-- decodeVexXop :: Vex -> X86Dec ()
+-- decodeVexXop vex = do
+--    modify (\s -> s
+--       { decStateBaseRegExt       = case vexB vex of
+--                                     Nothing    -> decStateBaseRegExt s
+--                                     Just True  -> 1
+--                                     Just False -> 0
+--       , decStateIndexRegExt      = case vexX vex of
+--                                     Nothing    -> decStateIndexRegExt s
+--                                     Just True  -> 1
+--                                     Just False -> 0
+--       , decStateRegExt           = case vexR vex of
+--                                     True  -> 1
+--                                     False -> 0
+--       , decStateOpSize64         = case vexW vex of
+--                                     Just True -> True
+--                                     _         -> decStateOpSize64 s
+--       , decStateOpcodeExtE       = vexW vex
+--       , decStateOpcodeMap        = vexMapSelect vex
+--       , decStateAdditionalOp     = Just (vexVVVV vex)
+--       , decStateLegacyPrefixes   = decStateLegacyPrefixes s ++ case vexPP vex of
+--                                     0 -> []
+--                                     1 -> [0x66]
+--                                     2 -> [0xF3]
+--                                     3 -> [0xF2]
+--                                     _ -> error "Invalid PP in VEX prefix"
+--       , decStateVectorLength     = case vexL vex of
+--                                     False -> Just VL128
+--                                     True  -> Just VL256
+--       })
+-- 

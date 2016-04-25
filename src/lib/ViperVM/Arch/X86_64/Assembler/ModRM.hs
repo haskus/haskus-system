@@ -5,10 +5,12 @@ module ViperVM.Arch.X86_64.Assembler.ModRM
    , SIB(..)
    , Scale(..)
    , RMMode(..)
+   , Mode(..)
    , newModRM
    , rmField
    , regField
    , modField
+   , modeField
    , modRMFields
    , rmMode
    , useDisplacement
@@ -77,6 +79,19 @@ regField (ModRM x) = extractField (Proxy :: Proxy "reg") x
 -- | Get mod field in ModRM
 modField :: ModRM -> Word8
 modField (ModRM x) = extractField (Proxy :: Proxy "mode") x
+
+
+-- | Mode for pattern matching
+data Mode
+   = Mode00
+   | Mode01
+   | Mode10
+   | Mode11
+   deriving (Show,Eq,Enum)
+
+-- | Get mod field in ModRM
+modeField :: ModRM -> Mode
+modeField = toEnum . fromIntegral . modField
 
 -- | Get the tree fields (mod,reg,rm)
 modRMFields :: ModRM -> (Word8,Word8,Word8)

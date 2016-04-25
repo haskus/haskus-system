@@ -19,7 +19,6 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , opcodeMap0F38
    , opcodeMap0F3A
    , opcodeMap3DNow
-   , opcodeMap0F01
    , opcodeMapVex1
    , opcodeMapVex2
    , opcodeMapVex3
@@ -137,11 +136,11 @@ maybeOpTypeReg = \case
 opf :: LegacyOpcodeFields
 opf = LegacyOpcodeFields Nothing Nothing Nothing
 
-legacyEncoding :: Maybe Word8 -> OpcodeMap -> Word8 -> Maybe Word8 -> LegacyOpcodeFields -> [EncodingProperties] -> [OperandSpec] -> Encoding
+legacyEncoding :: Maybe Word8 -> LegacyMap -> Word8 -> Maybe Word8 -> LegacyOpcodeFields -> [EncodingProperties] -> [OperandSpec] -> Encoding
 legacyEncoding a b c d e f g = LegacyEncoding $ LegEnc a b c d e f g
 
-vexEncoding :: Maybe Word8 -> OpcodeMap -> Word8 -> Maybe Word8 -> VexLW -> [EncodingProperties] -> [OperandSpec] -> Encoding
-vexEncoding a b c d e f g = VexEncoding $ VexEnc a b c d e f g
+vexoding :: Maybe Word8 -> OpcodeMap -> Word8 -> Maybe Word8 -> VexLW -> [EncodingProperties] -> [OperandSpec] -> Encoding
+vexoding a b c d e f g = VexEncoding $ VexEnc a b c d e f g
 
 
 i :: String -> String -> [Properties] -> [FlagOp Flag] -> [Encoding] -> X86Insn
@@ -225,7 +224,6 @@ instructions =
    , i_abs_far_call 
    , i_abs_ind_far_call 
    , i_extend_signed 
-   , i_clac 
    , i_clc 
    , i_cld 
    , i_clflush 
@@ -334,7 +332,7 @@ i_aaa = i "ASCII adjust AL after addition" "AAA"
    [legacyEncoding Nothing MapPrimary 0x37 Nothing 
       opf
       [LegacyModeSupport]
-      [ op    RW    T_AX     E_Implicit
+      [ op    RW    T_AX     Implicit
       ]]
 
 i_aad :: X86Insn
@@ -344,8 +342,8 @@ i_aad = i "ASCII adjust AX before division" "AAD"
    [legacyEncoding Nothing MapPrimary 0xD5 Nothing
       opf
       [LegacyModeSupport]
-      [ op    RW    T_AX     E_Implicit
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_AX     Implicit
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_aam :: X86Insn
@@ -355,8 +353,8 @@ i_aam = i "ASCII adjust AX after multiply" "AAM"
    [legacyEncoding Nothing MapPrimary 0xD4 Nothing
       opf
       [LegacyModeSupport]
-      [ op    RW    T_AX     E_Implicit
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_AX     Implicit
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_aas :: X86Insn
@@ -366,7 +364,7 @@ i_aas = i "ASCII adjust AL after subtraction" "AAS"
    [legacyEncoding Nothing MapPrimary 0x3F Nothing
       opf
       [LegacyModeSupport]
-      [ op    RW    T_AX     E_Implicit
+      [ op    RW    T_AX     Implicit
       ]]
 
 i_adc :: X86Insn
@@ -376,20 +374,20 @@ i_adc = i "Add with carry" "ADC"
    [legacyEncoding Nothing MapPrimary 0x14 Nothing
       (opf { sizable = Just 0})
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_Accu   E_Implicit
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_Accu   Implicit
+      , op    RO    T_Imm    Imm
       ]
    ,legacyEncoding Nothing MapPrimary 0x10 Nothing
       (opf { sizable = Just 0, reversable = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_R      E_ModReg
+      [ op    RW    T_RM     RM
+      , op    RO    T_R      Reg
       ]
    ,legacyEncoding Nothing MapPrimary 0x80 (Just 2)
       (opf {sizable = Just 0, signExtendableImm8 = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_RM     RM
+      , op    RO    T_Imm    Imm
       ]]
 
 i_adcx :: X86Insn
@@ -399,8 +397,8 @@ i_adcx = i "Unsigned integer addition with carry flags" "ADCX"
    [legacyEncoding (Just 0x66) Map0F38 0xF6 Nothing
       opf
       [Extension ADX]
-      [ op    RW    T_R32_64    E_ModReg
-      , op    RO    T_RM32_64   E_ModRM
+      [ op    RW    T_R32_64    Reg
+      , op    RO    T_RM32_64   RM
       ]]
 
 i_add :: X86Insn
@@ -410,20 +408,20 @@ i_add = i "Add" "ADD"
    [legacyEncoding Nothing MapPrimary 0x04 Nothing
       (opf { sizable = Just 0})
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_Accu   E_Implicit
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_Accu   Implicit
+      , op    RO    T_Imm    Imm
       ]
    ,legacyEncoding Nothing MapPrimary 0x00 Nothing
       (opf { sizable = Just 0, reversable = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_R      E_ModReg
+      [ op    RW    T_RM     RM
+      , op    RO    T_R      Reg
       ]
    ,legacyEncoding Nothing MapPrimary 0x80 (Just 0)
       (opf { sizable = Just 0, signExtendableImm8 = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_RM     RM
+      , op    RO    T_Imm    Imm
       ]]
 
 i_addpd :: X86Insn
@@ -433,19 +431,19 @@ i_addpd = i "Add packed double-precision floating-point values" "ADDPD"
    [legacyEncoding (Just 0x66) Map0F 0x58 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vaddpd :: X86Insn
 i_vaddpd = i "Add packed double-precision floating-point values" "VADDPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x58 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x58 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_addps :: X86Insn
@@ -455,19 +453,19 @@ i_addps = i "Add packed float-precision floating-point values" "ADDPS"
    [legacyEncoding Nothing Map0F 0x58 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vaddps :: X86Insn
 i_vaddps = i "Add packed float-precision floating-point values" "VADDPS"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0x58 Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0x58 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_addsd :: X86Insn
@@ -477,19 +475,19 @@ i_addsd = i "Add scalar double-precision floating-point values" "ADDSD"
    [legacyEncoding (Just 0xF2) Map0F 0x58 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_vaddsd :: X86Insn
 i_vaddsd = i "Add scalar double-precision floating-point values" "VADDSD"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0x58 Nothing LWIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0x58 Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128_Low64  E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128_Low64  RM
       ]]
 
 i_addss :: X86Insn
@@ -499,19 +497,19 @@ i_addss = i "Add scalar single-precision floating-point values" "ADDSS"
    [legacyEncoding (Just 0xF3) Map0F 0x58 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128_Low32  E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128_Low32  RM
       ]]
 
 i_vaddss :: X86Insn
 i_vaddss = i "Add scalar single-precision floating-point values" "VADDSS"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x58 Nothing LWIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x58 Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128_Low32  E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128_Low32  RM
       ]]
 
 i_addsubpd :: X86Insn
@@ -521,19 +519,19 @@ i_addsubpd = i "Packed double-FP add/subtract" "ADDSUBPD"
    [legacyEncoding (Just 0x66) Map0F 0xD0 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE3]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vaddsubpd :: X86Insn
 i_vaddsubpd = i "Packed double-FP add/subtract" "VADDSUBPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0xD0 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0xD0 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_addsubps :: X86Insn
@@ -543,19 +541,19 @@ i_addsubps = i "Packed single-FP add/subtract" "ADDSUBPS"
    [legacyEncoding (Just 0xF2) Map0F 0xD0 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE3]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vaddsubps :: X86Insn
 i_vaddsubps = i "Packed single-FP add/subtract" "VADDSUBPS"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0xD0 Nothing WIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0xD0 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_adox :: X86Insn
@@ -565,8 +563,8 @@ i_adox = i "Unsigned integer addition of two operands with overflow flag" "ADOX"
    [legacyEncoding (Just 0xF3) Map0F38 0xF6 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension ADX]
-      [ op    RW    T_R32_64       E_ModReg
-      , op    RO    T_RM32_64      E_ModRM
+      [ op    RW    T_R32_64       Reg
+      , op    RO    T_RM32_64      RM
       ]]
 
 i_aesdec :: X86Insn
@@ -576,19 +574,19 @@ i_aesdec = i "Perform one round of an AES decryption flow" "AESDEC"
    [legacyEncoding (Just 0x66) Map0F38 0xDE Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension AES]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vaesdec :: X86Insn
 i_vaesdec = i "Perform one round of an AES decryption flow" "VAESDEC"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x02) 0xDE Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x02) 0xDE Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AES, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128        E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128        RM
       ]]
 
 i_aesdeclast :: X86Insn
@@ -598,19 +596,19 @@ i_aesdeclast = i "Perform last round of an AES decryption flow" "AESDECLAST"
    [legacyEncoding (Just 0x66) Map0F38 0xDF Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension AES]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vaesdeclast :: X86Insn
 i_vaesdeclast = i "Perform last round of an AES decryption flow" "VAESDECLAST"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x02) 0xDF Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x02) 0xDF Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AES, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128        E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128        RM
       ]]
 
 i_aesenc :: X86Insn
@@ -620,19 +618,19 @@ i_aesenc = i "Perform one round of an AES encryption flow" "AESENC"
    [legacyEncoding (Just 0x66) Map0F38 0xDC Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension AES]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vaesenc :: X86Insn
 i_vaesenc = i "Perform one round of an AES encryption flow" "VAESENC"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x02) 0xDC Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x02) 0xDC Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AES, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128        E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128        RM
       ]]
 
 i_aesenclast :: X86Insn
@@ -642,19 +640,19 @@ i_aesenclast = i "Perform last round of an AES encryption flow" "AESENCLAST"
    [legacyEncoding (Just 0x66) Map0F38 0xDD Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension AES]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vaesenclast :: X86Insn
 i_vaesenclast = i "Perform last round of an AES encryption flow" "VAESENCLAST"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x02) 0xDD Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x02) 0xDD Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AES, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128        E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128        RM
       ]]
 
 i_aesimc :: X86Insn
@@ -664,18 +662,18 @@ i_aesimc = i "Perform the AES InvMixColumn transformation" "AESIMC"
    [legacyEncoding (Just 0x66) Map0F38 0xDB Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension AES]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vaesimc :: X86Insn
 i_vaesimc = i "Perform the AES InvMixColumn transformation" "VAESIMC"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x02) 0xDB Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x02) 0xDB Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AES, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_VM128        E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_VM128        RM
       ]]
 
 i_aeskeygenassist :: X86Insn
@@ -685,20 +683,20 @@ i_aeskeygenassist = i "AES round key generation assist" "AESKEYGENASSIST"
    [legacyEncoding (Just 0x66) Map0F3A 0xDF Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension AES]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_vaeskeygenassist :: X86Insn
 i_vaeskeygenassist = i "AES round key generation assist" "VAESKEYGENASSIST"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0xDF Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x03) 0xDF Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AES, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_VM128        E_ModRM
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_V128         Reg
+      , op     RO    T_VM128        RM
+      , op     RO    T_Imm8         Imm
       ]]
 
 i_and :: X86Insn
@@ -708,20 +706,20 @@ i_and = i "Logical AND" "AND"
    [legacyEncoding Nothing MapPrimary 0x24 Nothing
       (opf { sizable = Just 0})
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_Accu   E_Implicit
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_Accu   Implicit
+      , op    RO    T_Imm    Imm
       ]
    ,legacyEncoding Nothing MapPrimary 0x20 Nothing
       (opf { sizable = Just 0, reversable = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_R      E_ModReg
+      [ op    RW    T_RM     RM
+      , op    RO    T_R      Reg
       ]
    ,legacyEncoding Nothing MapPrimary 0x80 (Just 4)
       (opf { sizable = Just 0, signExtendableImm8 = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_RM     RM
+      , op    RO    T_Imm    Imm
       ]
    ]
 
@@ -729,11 +727,11 @@ i_andn :: X86Insn
 i_andn = i "Logical AND NOT" "ANDN"
    []
    [Modified [SF,ZF], Unset [OF,CF], Undefined [AF,PF]]
-   [vexEncoding Nothing (MapVex 0x02) 0xF2 Nothing L0
+   [vexoding Nothing (MapVex 0x02) 0xF2 Nothing L0
       [LegacyModeSupport, LongModeSupport, Extension BMI1]
-      [ op    WO    T_R32_64     E_ModReg
-      , op    RO    T_R32_64     E_VexV
-      , op    RO    T_RM32_64    E_ModRM
+      [ op    WO    T_R32_64     Reg
+      , op    RO    T_R32_64     Vvvv
+      , op    RO    T_RM32_64    RM
       ]]
 
 i_andpd :: X86Insn
@@ -743,19 +741,19 @@ i_andpd = i "Bitwise logical AND of packed double-precision floating-point value
    [legacyEncoding (Just 0x66) Map0F 0x54 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vandpd :: X86Insn
 i_vandpd = i "Bitwise logical AND of packed double-precision floating-point values" "VANDPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x54 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x54 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_andps :: X86Insn
@@ -765,19 +763,19 @@ i_andps = i "Bitwise logical AND of packed float-precision floating-point values
    [legacyEncoding Nothing Map0F 0x54 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vandps :: X86Insn
 i_vandps = i "Bitwise logical AND of packed float-precision floating-point values" "VANDPS"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0x54 Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0x54 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_andnpd :: X86Insn
@@ -787,19 +785,19 @@ i_andnpd = i "Bitwise logical AND NOT of packed double-precision floating-point 
    [legacyEncoding (Just 0x66) Map0F 0x55 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vandnpd :: X86Insn
 i_vandnpd = i "Bitwise logical AND NOT of packed double-precision floating-point values" "VANDNPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x55 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x55 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_andnps :: X86Insn
@@ -809,19 +807,19 @@ i_andnps = i "Bitwise logical AND of packed float-precision floating-point value
    [legacyEncoding Nothing Map0F 0x55 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vandnps :: X86Insn
 i_vandnps = i "Bitwise logical AND of packed float-precision floating-point values" "VANDNPS"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0x55 Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0x55 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_arpl :: X86Insn
@@ -831,8 +829,8 @@ i_arpl = i "Adjust RPL field of segment selector" "ARPL"
    [legacyEncoding Nothing MapPrimary 0x63 Nothing
       opf
       [LegacyModeSupport]
-      [ op    RW    T_RM16   E_ModRM
-      , op    RO    T_R16    E_ModReg
+      [ op    RW    T_RM16   RM
+      , op    RO    T_R16    Reg
       ]]
 
 i_blendpd :: X86Insn
@@ -842,32 +840,32 @@ i_blendpd = i "Blend packed double-precision floating-point values" "BLENDPD"
    [legacyEncoding (Just 0x66) Map0F3A 0x0D Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_vblendpd :: X86Insn
 i_vblendpd = i "Blend packed double-precision floating-point values" "VBLENDPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x0D Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x03) 0x0D Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_Mask         E_Imm8_3_0
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_Mask         Imm8l
       ]]
 
 i_bextr :: X86Insn
 i_bextr = i "Bit field extract" "BEXTR"
    []
    [Modified [ZF], Undefined [AF,SF,PF], Unset (allFlags \\ [ZF,AF,SF,PF])]
-   [vexEncoding Nothing (MapVex 0x02) 0xF7 Nothing L0
+   [vexoding Nothing (MapVex 0x02) 0xF7 Nothing L0
       [LegacyModeSupport, LongModeSupport, Extension BMI1]
-      [ op    WO    T_R32_64     E_ModReg
-      , op    RO    T_RM32_64    E_ModRM
-      , op    RO    T_R32_64     E_VexV
+      [ op    WO    T_R32_64     Reg
+      , op    RO    T_RM32_64    RM
+      , op    RO    T_R32_64     Vvvv
       ]]
 
 i_blendps :: X86Insn
@@ -877,21 +875,21 @@ i_blendps = i "Blend packed single-precision floating-point values" "BLENDPS"
    [legacyEncoding (Just 0x66) Map0F3A 0x0C Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_vblendps :: X86Insn
 i_vblendps = i "Blend packed single-precision floating-point values" "VBLENDPS"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x0C Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x03) 0x0C Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_Imm8         Imm
       ]]
 
 i_blendvpd :: X86Insn
@@ -901,21 +899,21 @@ i_blendvpd = i "Variable blend packed double-precision floating-point values" "B
    [legacyEncoding (Just 0x66) Map0F38 0x15 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_XMM0   E_Implicit
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_XMM0   Implicit
       ]]
 
 i_vblendvpd :: X86Insn
 i_vblendvpd = i "Variable blend packed double-precision floating-point values" "VBLENDVPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x4B Nothing W0
+   [vexoding (Just 0x66) (MapVex 0x03) 0x4B Nothing W0
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_V128_256     E_Imm8_7_4
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_V128_256     Imm8h
       ]]
 
 i_blendvps :: X86Insn
@@ -925,51 +923,51 @@ i_blendvps = i "Variable blend packed single-precision floating-point values" "B
    [legacyEncoding (Just 0x66) Map0F38 0x14 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_XMM0   E_Implicit
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_XMM0   Implicit
       ]]
 
 i_vblendvps :: X86Insn
 i_vblendvps = i "Variable blend packed single-precision floating-point values" "VBLENDVPS"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x4A Nothing W0
+   [vexoding (Just 0x66) (MapVex 0x03) 0x4A Nothing W0
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_V128_256     E_Imm8_7_4
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_V128_256     Imm8h
       ]]
 
 i_blsi :: X86Insn
 i_blsi = i "Extract lowest set isolated bit" "BLSI"
    []
    [Modified [ZF,SF, CF], Unset [OF], Undefined [AF,PF]]
-   [vexEncoding Nothing (MapVex 0x02) 0xF3 (Just 3) L0
+   [vexoding Nothing (MapVex 0x02) 0xF3 (Just 3) L0
       [LegacyModeSupport, LongModeSupport, Extension BMI1]
-      [ op    WO    T_R32_64     E_VexV
-      , op    RO    T_RM32_64    E_ModRM
+      [ op    WO    T_R32_64     Vvvv
+      , op    RO    T_RM32_64    RM
       ]]
 
 i_blsmsk :: X86Insn
 i_blsmsk = i "Get mask up to lowest set bit" "BLSMSK"
    []
    [Modified [SF,CF], Unset [ZF,OF], Undefined [AF,PF]]
-   [vexEncoding Nothing (MapVex 0x02) 0xF3 (Just 2) L0
+   [vexoding Nothing (MapVex 0x02) 0xF3 (Just 2) L0
       [LegacyModeSupport, LongModeSupport, Extension BMI1]
-      [ op    WO    T_R32_64     E_VexV
-      , op    RO    T_RM32_64    E_ModRM
+      [ op    WO    T_R32_64     Vvvv
+      , op    RO    T_RM32_64    RM
       ]]
 
 i_blsr :: X86Insn
 i_blsr = i "Reset lowest set bit" "BLSR"
    []
    [Modified [ZF,SF,CF], Unset [OF], Undefined [AF,PF]]
-   [vexEncoding Nothing (MapVex 0x02) 0xF3 (Just 1) L0
+   [vexoding Nothing (MapVex 0x02) 0xF3 (Just 1) L0
       [LegacyModeSupport, LongModeSupport, Extension BMI1]
-      [ op    WO    T_R32_64     E_VexV
-      , op    RO    T_RM32_64    E_ModRM
+      [ op    WO    T_R32_64     Vvvv
+      , op    RO    T_RM32_64    RM
       ]]
 
 i_bound :: X86Insn
@@ -979,8 +977,8 @@ i_bound = i "Check array index against bounds" "BOUND"
    [legacyEncoding Nothing MapPrimary 0x62 Nothing
       opf
       [LegacyModeSupport]
-      [ op    RO    T_R16_32 E_ModReg
-      , op    RO    T_M_PAIR E_ModRM
+      [ op    RO    T_R16_32 Reg
+      , op    RO    T_M_PAIR RM
       ]]
 
 i_bsf :: X86Insn
@@ -990,8 +988,8 @@ i_bsf = i "Bit scan forward" "BSF"
    [legacyEncoding Nothing Map0F 0xBC Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_R      E_ModReg
-      , op    RO    T_RM     E_ModRM
+      [ op    WO    T_R      Reg
+      , op    RO    T_RM     RM
       ]]
 
 i_bsr :: X86Insn
@@ -1001,8 +999,8 @@ i_bsr = i "Bit scan reverse" "BSR"
    [legacyEncoding Nothing Map0F 0xBD Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_R      E_ModReg
-      , op    RO    T_RM     E_ModRM
+      [ op    WO    T_R      Reg
+      , op    RO    T_RM     RM
       ]]
 
 i_bswap :: X86Insn
@@ -1012,7 +1010,7 @@ i_bswap = i "Byte swap" "BSWAP"
    [legacyEncoding Nothing Map0F 0xC8 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Arch Intel486]
-      [ op    RW    T_R32_64 E_OpReg
+      [ op    RW    T_R32_64 OpcodeLow3
       ]]
 
 i_bt :: X86Insn
@@ -1022,8 +1020,8 @@ i_bt = i "Bit test" "BT"
    [legacyEncoding Nothing Map0F 0xA3 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_RM16_32_64   E_ModRM
-      , op    RO    T_R16_32_64    E_ModReg
+      [ op    RO    T_RM16_32_64   RM
+      , op    RO    T_R16_32_64    Reg
       ]]
 
 i_bt_imm :: X86Insn
@@ -1033,8 +1031,8 @@ i_bt_imm = i "Bit test with immediate index" "BT"
    [legacyEncoding Nothing Map0F 0xBA (Just 4)
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_RM16_32_64   E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RO    T_RM16_32_64   RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_btc :: X86Insn
@@ -1044,8 +1042,8 @@ i_btc = i "Bit test and complement" "BTC"
    [legacyEncoding Nothing Map0F 0xBB Nothing
       opf
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM16_32_64   E_ModRM
-      , op    RO    T_R16_32_64    E_ModReg
+      [ op    RW    T_RM16_32_64   RM
+      , op    RO    T_R16_32_64    Reg
       ]]
 
 i_btc_imm :: X86Insn
@@ -1055,8 +1053,8 @@ i_btc_imm = i "Bit test with immediate index and complement" "BTC"
    [legacyEncoding Nothing Map0F 0xBA (Just 7)
       opf
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM16_32_64   E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_RM16_32_64   RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_btr :: X86Insn
@@ -1066,8 +1064,8 @@ i_btr = i "Bit test and reset" "BTR"
    [legacyEncoding Nothing Map0F 0xB3 Nothing
       opf
       [Lockable,  LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM16_32_64   E_ModRM
-      , op    RO    T_R16_32_64    E_ModReg
+      [ op    RW    T_RM16_32_64   RM
+      , op    RO    T_R16_32_64    Reg
       ]]
 
 i_btr_imm :: X86Insn
@@ -1077,8 +1075,8 @@ i_btr_imm = i "Bit test with immediate index and reset" "BTR"
    [legacyEncoding Nothing Map0F 0xBA (Just 6)
       opf
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM16_32_64   E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_RM16_32_64   RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_bts :: X86Insn
@@ -1088,8 +1086,8 @@ i_bts = i "Bit test and set" "BTS"
    [legacyEncoding Nothing Map0F 0xAB Nothing
       opf
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM16_32_64   E_ModRM
-      , op    RO    T_R16_32_64    E_ModReg
+      [ op    RW    T_RM16_32_64   RM
+      , op    RO    T_R16_32_64    Reg
       ]]
 
 i_bts_imm :: X86Insn
@@ -1099,19 +1097,19 @@ i_bts_imm = i "Bit test with immediate index and set" "BTS"
    [legacyEncoding Nothing Map0F 0xBA (Just 5)
       opf
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM16_32_64   E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_RM16_32_64   RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_bzhi :: X86Insn
 i_bzhi = i "Zero high bits starting with specified bit position" "BZHI"
    []
    [Modified [ZF,CF,SF], Unset [OF], Undefined [AF,PF]]
-   [vexEncoding Nothing (MapVex 0x02) 0xF5 Nothing L0
+   [vexoding Nothing (MapVex 0x02) 0xF5 Nothing L0
       [LegacyModeSupport, LongModeSupport, Extension BMI2]
-      [ op    WO    T_R32_64     E_ModReg
-      , op    RO    T_RM32_64    E_ModRM
-      , op    RO    T_R32_64     E_VexV
+      [ op    WO    T_R32_64     Reg
+      , op    RO    T_RM32_64    RM
+      , op    RO    T_R32_64     Vvvv
       ]]
 
 i_rel_near_call :: X86Insn
@@ -1121,7 +1119,7 @@ i_rel_near_call = i "Relative near call" "CALL"
    [legacyEncoding Nothing MapPrimary 0xE8 Nothing
       opf
       [DefaultOperandSize64, LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_REL_16_32    E_Imm ]]
+      [ op    RO    T_REL_16_32    Imm ]]
 
 i_ind_near_call :: X86Insn
 i_ind_near_call = i "Indirect near call" "CALL"
@@ -1130,12 +1128,12 @@ i_ind_near_call = i "Indirect near call" "CALL"
    [legacyEncoding Nothing MapPrimary 0xFF (Just 2)
       opf
       [LegacyModeSupport]
-      [ op    RO    T_RM16_32      E_ModRM 
+      [ op    RO    T_RM16_32      RM 
       ]
    ,legacyEncoding Nothing MapPrimary 0xFF (Just 2)
       opf
       [LongModeSupport, DefaultOperandSize64]
-      [ op    RO    T_RM64         E_ModRM
+      [ op    RO    T_RM64         RM
       ]
    ]
 
@@ -1146,11 +1144,11 @@ i_abs_far_call = i "Absolute far call" "CALL"
    [legacyEncoding Nothing MapPrimary 0x9A Nothing
       opf
       [LegacyModeSupport]
-      [ op    RO    T_PTR_16_16    E_Imm ]
+      [ op    RO    T_PTR_16_16    Imm ]
    ,legacyEncoding Nothing MapPrimary 0x9A Nothing
       opf
       [LegacyModeSupport]
-      [ op    RO    T_PTR_16_32    E_Imm ]
+      [ op    RO    T_PTR_16_32    Imm ]
    ]
 
 i_abs_ind_far_call :: X86Insn
@@ -1160,7 +1158,7 @@ i_abs_ind_far_call = i "Absolute indirect far call" "CALL"
    [legacyEncoding Nothing MapPrimary 0xFF (Just 3)
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_M16_XX       E_ModRM     ]]
+      [ op    RO    T_M16_XX       RM     ]]
 
 i_extend_signed :: X86Insn
 i_extend_signed = i "Extend signed word" "CBW/CWDE/CDQE"
@@ -1169,15 +1167,16 @@ i_extend_signed = i "Extend signed word" "CBW/CWDE/CDQE"
    [legacyEncoding Nothing MapPrimary 0x98 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_Accu         E_Implicit  ]]
+      [ op    RW    T_Accu         Implicit  ]]
 
-i_clac :: X86Insn
-i_clac = i "Clear AC flag in EFLAGS register" "CLAC"
-   []
-   [Unset [AC]]
-   [legacyEncoding Nothing Map0F01 0xCA Nothing opf
-      [LegacyModeSupport, LongModeSupport, Extension SMAP]
-      []]
+-- FIXME: 0F01 isn't a map, but an extension in the whole ModRM byte
+-- i_clac :: X86Insn
+-- i_clac = i "Clear AC flag in EFLAGS register" "CLAC"
+--    []
+--    [Unset [AC]]
+--    [legacyEncoding Nothing Map0F01 0xCA Nothing opf
+--       [LegacyModeSupport, LongModeSupport, Extension SMAP]
+--       []]
 
 i_clc :: X86Insn
 i_clc = i "Clear carry flag" "CLC"
@@ -1202,7 +1201,7 @@ i_clflush = i "Flush cache line" "CLFLUSH"
    [legacyEncoding Nothing Map0F 0xAE (Just 7)
       opf
       [LegacyModeSupport, LongModeSupport, Extension CLFLUSH]
-      [ op    RO    T_M      E_ModRM  ]]
+      [ op    RO    T_M      RM  ]]
 
 i_cli :: X86Insn
 i_cli = i "Clear interrupt flag" "CLI"
@@ -1235,8 +1234,8 @@ i_cmovo = i "Move if overflow (OF=1)" "CMOVO"
    [legacyEncoding Nothing Map0F 0x40 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovno :: X86Insn
@@ -1246,8 +1245,8 @@ i_cmovno = i "Move if not overflow (OF=0)" "CMOVNO"
    [legacyEncoding Nothing Map0F 0x41 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovc :: X86Insn
@@ -1257,8 +1256,8 @@ i_cmovc = i "Move if carry (CF=1)" "CMOVC"
    [legacyEncoding Nothing Map0F 0x42 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovnc :: X86Insn
@@ -1268,8 +1267,8 @@ i_cmovnc = i "Move if not carry (CF=0)" "CMOVNC"
    [legacyEncoding Nothing Map0F 0x43 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovz :: X86Insn
@@ -1279,8 +1278,8 @@ i_cmovz = i "Move if zero (ZF=1)" "CMOVZ"
    [legacyEncoding Nothing Map0F 0x44 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovnz :: X86Insn
@@ -1290,8 +1289,8 @@ i_cmovnz = i "Move if not zero (ZF=0)" "CMOVNZ"
    [legacyEncoding Nothing Map0F 0x45 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovbe :: X86Insn
@@ -1301,8 +1300,8 @@ i_cmovbe = i "Move if below or equal (CF=1, ZF=1)" "CMOVBE"
    [legacyEncoding Nothing Map0F 0x46 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmova :: X86Insn
@@ -1312,8 +1311,8 @@ i_cmova = i "Move if above (CF=0, ZF=0)" "CMOVA"
    [legacyEncoding Nothing Map0F 0x47 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovs :: X86Insn
@@ -1323,8 +1322,8 @@ i_cmovs = i "Move if sign (SF=1)" "CMOVS"
    [legacyEncoding Nothing Map0F 0x48 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovns :: X86Insn
@@ -1334,8 +1333,8 @@ i_cmovns = i "Move if not sign (SF=0)" "CMOVNS"
    [legacyEncoding Nothing Map0F 0x49 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovp :: X86Insn
@@ -1345,8 +1344,8 @@ i_cmovp = i "Move if parity even (PF=1)" "CMOVP"
    [legacyEncoding Nothing Map0F 0x4a Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovnp :: X86Insn
@@ -1356,8 +1355,8 @@ i_cmovnp = i "Move if parity odd (PF=0)" "CMOVNP"
    [legacyEncoding Nothing Map0F 0x4b Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovl :: X86Insn
@@ -1367,8 +1366,8 @@ i_cmovl = i "Move if less (SF /= OF)" "CMOVL"
    [legacyEncoding Nothing Map0F 0x4c Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovge :: X86Insn
@@ -1378,8 +1377,8 @@ i_cmovge = i "Move if greater or equal (SF = OF)" "CMOVGE"
    [legacyEncoding Nothing Map0F 0x4d Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovle :: X86Insn
@@ -1389,8 +1388,8 @@ i_cmovle = i "Move if less or equal (ZF = 1 or SF <> OF)" "CMOVLE"
    [legacyEncoding Nothing Map0F 0x4e Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 i_cmovg :: X86Insn
@@ -1400,8 +1399,8 @@ i_cmovg = i "Move if greater (ZF = 0 or SF = OF)" "CMOVG"
    [legacyEncoding Nothing Map0F 0x4f Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R16_32_64   E_ModReg
-      , op    RO    T_RM16_32_64  E_ModRM
+      [ op    RW    T_R16_32_64   Reg
+      , op    RO    T_RM16_32_64  RM
       ]]
 
 
@@ -1412,20 +1411,20 @@ i_cmp = i "Compare" "CMP"
    [legacyEncoding Nothing MapPrimary 0x3C Nothing
       (opf { sizable = Just 0})
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_Accu   E_Implicit
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_Accu   Implicit
+      , op    RO    T_Imm    Imm
       ]
    ,legacyEncoding Nothing MapPrimary 0x38 Nothing
       (opf { sizable = Just 0, reversable = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_R      E_ModReg
+      [ op    RW    T_RM     RM
+      , op    RO    T_R      Reg
       ]
    ,legacyEncoding Nothing MapPrimary 0x80 (Just 7)
       (opf { sizable = Just 0, signExtendableImm8 = Just 1})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_Imm    E_Imm
+      [ op    RW    T_RM     RM
+      , op    RO    T_Imm    Imm
       ]
    ]
 
@@ -1436,21 +1435,21 @@ i_cmppd = i "Compare packed double-precision floating-point values" "CMPPD"
    [legacyEncoding (Just 0x66) Map0F 0xC2 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_vcmppd :: X86Insn
 i_vcmppd = i "Compare packed double-precision floating-point values" "VCMPPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0xC2 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0xC2 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_Imm8         Imm
       ]]
 
 i_cmpps :: X86Insn
@@ -1460,21 +1459,21 @@ i_cmpps = i "Compare packed single-precision floating-point values" "CMPPS"
    [legacyEncoding Nothing Map0F 0xC2 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_vcmpps :: X86Insn
 i_vcmpps = i "Compare packed single-precision floating-point values" "VCMPPS"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0xC2 Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0xC2 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_Imm8         Imm
       ]]
 
 i_cmps :: X86Insn
@@ -1484,8 +1483,8 @@ i_cmps = i "Compare string operands" "CMPS"
    [legacyEncoding Nothing MapPrimary 0xA6 Nothing
       (opf { sizable = Just 0})
       [LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_rSI    E_Implicit
-      , op    RO    T_rDI    E_Implicit
+      [ op    RO    T_rSI    Implicit
+      , op    RO    T_rDI    Implicit
       ]]
 
 i_cmpsd :: X86Insn
@@ -1495,21 +1494,21 @@ i_cmpsd = i "Compare scalar double-precision floating-point values" "CMPSD"
    [legacyEncoding (Just 0xF2) Map0F 0xC2 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_vcmpsd :: X86Insn
 i_vcmpsd = i "Compare scalar double-precision floating-point values" "VCMPSD"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0xC2 Nothing LWIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0xC2 Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128      E_ModReg
-      , op     RO    T_V128      E_VexV
-      , op     RO    T_VM128     E_ModRM
-      , op     RO    T_Imm8      E_Imm
+      [ op     WO    T_V128      Reg
+      , op     RO    T_V128      Vvvv
+      , op     RO    T_VM128     RM
+      , op     RO    T_Imm8      Imm
       ]]
 
 i_cmpss :: X86Insn
@@ -1519,21 +1518,21 @@ i_cmpss = i "Compare scalar single-precision floating-point values" "CMPSS"
    [legacyEncoding (Just 0xF3) Map0F 0xC2 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
-      , op    RO    T_Imm8   E_Imm
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
+      , op    RO    T_Imm8   Imm
       ]]
 
 i_vcmpss :: X86Insn
 i_vcmpss = i "Compare scalar single-precision floating-point values" "VCMPSS"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0xC2 Nothing LWIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0xC2 Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128      E_ModReg
-      , op     RO    T_V128      E_VexV
-      , op     RO    T_VM128     E_ModRM
-      , op     RO    T_Imm8      E_Imm
+      [ op     WO    T_V128      Reg
+      , op     RO    T_V128      Vvvv
+      , op     RO    T_VM128     RM
+      , op     RO    T_Imm8      Imm
       ]]
 
 i_cmpxchg :: X86Insn
@@ -1543,9 +1542,9 @@ i_cmpxchg = i "Compare and exchange" "CMPXCHG"
    [legacyEncoding Nothing Map0F 0xB0 Nothing
       (opf {sizable = Just 0})
       [Lockable, LegacyModeSupport, LongModeSupport, Arch Intel486]
-      [ op    RW    T_RM     E_ModRM
-      , op    RO    T_Accu   E_Implicit
-      , op    RO    T_R      E_ModReg
+      [ op    RW    T_RM     RM
+      , op    RO    T_Accu   Implicit
+      , op    RO    T_R      Reg
       ]]
 
 i_cmpxch8b :: X86Insn
@@ -1555,7 +1554,7 @@ i_cmpxch8b = i "Compare and exchange bytes" "CMPXCHG8B/CMPXCHG16B"
    [legacyEncoding Nothing Map0F 0xC7 Nothing
       opf
       [DoubleSizable, Lockable, LegacyModeSupport, LongModeSupport, Arch IntelPentium, Extension CX8]
-      [ op    RW    T_M64_128   E_ModRM ]]
+      [ op    RW    T_M64_128   RM ]]
 
 
 i_comisd :: X86Insn
@@ -1565,18 +1564,18 @@ i_comisd = i "Compare scalar ordered double-precision floating-point values and 
    [legacyEncoding (Just 0x66) Map0F 0x2F Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RO    T_V128_Low64      E_ModReg
-      , op    RO    T_VM128_Low64     E_ModRM
+      [ op    RO    T_V128_Low64      Reg
+      , op    RO    T_VM128_Low64     RM
       ]]
 
 i_vcomisd :: X86Insn
 i_vcomisd = i "Compare scalar ordered double-precision floating-point values and set EFLAGS" "VCOMISD"
    []
    [Modified [ZF,PF,CF], Unset [OF,SF,AF]]
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x2F Nothing LWIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x2F Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     RO    T_V128_Low64      E_ModReg
-      , op     RO    T_VM128_Low64     E_ModRM
+      [ op     RO    T_V128_Low64      Reg
+      , op     RO    T_VM128_Low64     RM
       ]]
 
 i_comiss :: X86Insn
@@ -1586,18 +1585,18 @@ i_comiss = i "Compare scalar ordered single-precision floating-point values and 
    [legacyEncoding Nothing Map0F 0x2F Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RO    T_V128_Low32      E_ModReg
-      , op    RO    T_VM128_Low32     E_ModRM
+      [ op    RO    T_V128_Low32      Reg
+      , op    RO    T_VM128_Low32     RM
       ]]
 
 i_vcomiss :: X86Insn
 i_vcomiss = i "Compare scalar ordered single-precision floating-point values and set EFLAGS" "VCOMISS"
    []
    [Modified [ZF,PF,CF], Unset [OF,SF,AF]]
-   [vexEncoding Nothing (MapVex 0x01) 0x2F Nothing LWIG
+   [vexoding Nothing (MapVex 0x01) 0x2F Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     RO    T_V128_Low32      E_ModReg
-      , op     RO    T_VM128_Low32     E_ModRM
+      [ op     RO    T_V128_Low32      Reg
+      , op     RO    T_VM128_Low32     RM
       ]]
 
 i_cpuid :: X86Insn
@@ -1607,10 +1606,10 @@ i_cpuid = i "CPU identification" "CPUID"
    [legacyEncoding Nothing Map0F 0xA2 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_xAX     E_Implicit
-      , op    RW    T_xCX     E_Implicit
-      , op    WO    T_xBX     E_Implicit
-      , op    WO    T_xDX     E_Implicit
+      [ op    RW    T_xAX     Implicit
+      , op    RW    T_xCX     Implicit
+      , op    WO    T_xBX     Implicit
+      , op    WO    T_xDX     Implicit
       ]]
 
 i_crc32 :: X86Insn
@@ -1620,8 +1619,8 @@ i_crc32 = i "Accumulate CRC32 value" "CRC32"
    [legacyEncoding (Just 0xF2) Map0F38 0xF0 Nothing
       (opf { sizable = Just 0 })
       [LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_R      E_ModReg
-      , op    RO    T_RM     E_ModRM
+      [ op    RW    T_R      Reg
+      , op    RO    T_RM     RM
       ]]
 
 i_cvtdq2pd :: X86Insn
@@ -1631,18 +1630,18 @@ i_cvtdq2pd = i "Convert packed Int32 to packed double-precision floating-point v
    [legacyEncoding (Just 0xF3) Map0F 0xE6 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM     -- FIXME: it should be xmm_low64/m64 
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM     -- FIXME: it should be xmm_low64/m64 
       ]]
 
 i_vcvtdq2pd :: X86Insn
 i_vcvtdq2pd = i "Convert packed Int32 to packed double-precision floating-point values" "VCVTDQ2PD"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0xE6 Nothing WIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0xE6 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_VM128        E_ModRM     -- FIXME: it should be xmm_low64/m64 or xmm/m128
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_VM128        RM     -- FIXME: it should be xmm_low64/m64 or xmm/m128
       ]]
 
 i_cvtdq2ps :: X86Insn
@@ -1652,18 +1651,18 @@ i_cvtdq2ps = i "Convert packed Int32 to packed single-precision floating-point v
    [legacyEncoding Nothing Map0F 0x5B Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvtdq2ps :: X86Insn
 i_vcvtdq2ps = i "Convert packed Int32 to packed single-precision floating-point values" "VCVTDQ2PS"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0x5B Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0x5B Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvtpd2dq :: X86Insn
@@ -1673,18 +1672,18 @@ i_cvtpd2dq = i "Convert packed double-precision floating-point values to packed 
    [legacyEncoding (Just 0xF2) Map0F 0xE6 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvtpd2dq :: X86Insn
 i_vcvtpd2dq = i "Convert packed double-precision floating-point values to packed Int32" "VCVTPD2DQ"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0xE6 Nothing WIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0xE6 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvtpd2di :: X86Insn
@@ -1694,8 +1693,8 @@ i_cvtpd2di = i "Convert packed double-precision floating-point values to packed 
    [legacyEncoding (Just 0x66) Map0F 0x2D Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_V64          E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V64          Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_cvtpd2ps :: X86Insn
@@ -1705,18 +1704,18 @@ i_cvtpd2ps = i "Convert packed double-precision floating-point values to packed 
    [legacyEncoding (Just 0x66) Map0F 0x5A Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvtpd2ps :: X86Insn
 i_vcvtpd2ps = i "Convert packed double-precision floating-point values to packed single-precision floating-point values" "VCVTPD2PS"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x5A Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x5A Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvtpi2pd :: X86Insn
@@ -1726,8 +1725,8 @@ i_cvtpi2pd = i "Convert packed Int32 to packed double-precision floating-point v
    [legacyEncoding (Just 0x66) Map0F 0x2A Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM64         E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM64         RM
       ]]
 
 i_cvtpi2ps :: X86Insn
@@ -1737,8 +1736,8 @@ i_cvtpi2ps = i "Convert packed Int32 to packed single-precision floating-point v
    [legacyEncoding Nothing Map0F 0x2A Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM64         E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM64         RM
       ]]
 
 i_cvtps2dq :: X86Insn
@@ -1748,18 +1747,18 @@ i_cvtps2dq = i "Convert packed single-precision floating-point values to packed 
    [legacyEncoding (Just 0x66) Map0F 0x5B Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvtps2dq :: X86Insn
 i_vcvtps2dq = i "Convert packed single-precision floating-point values to packed Int32" "VCVTPS2DQ"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x5B Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x5B Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvtps2pd :: X86Insn
@@ -1769,18 +1768,18 @@ i_cvtps2pd = i "Convert packed single-precision floating-point values to packed 
    [legacyEncoding Nothing Map0F 0x5A Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvtps2pd :: X86Insn
 i_vcvtps2pd = i "Convert packed single-precision floating-point values to packed double-precision floating-point values" "VCVTPS2PD"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0x5A Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0x5A Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvtps2pi :: X86Insn
@@ -1790,8 +1789,8 @@ i_cvtps2pi = i "Convert packed single-precision floating-point values to packed 
    [legacyEncoding Nothing Map0F 0x2D Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_V64          E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    WO    T_V64          Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_cvtsd2si :: X86Insn
@@ -1801,18 +1800,18 @@ i_cvtsd2si = i "Convert scalar double-precision floating-point value to integer"
    [legacyEncoding (Just 0xF2) Map0F 0x2D Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_R32_64       E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    WO    T_R32_64       Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_vcvtsd2si :: X86Insn
 i_vcvtsd2si = i "Convert scalar double-precision floating-point value to integer" "VCVTSD2SI"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0x2D Nothing LIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0x2D Nothing LIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_R32_64         E_ModReg
-      , op     RO    T_VM128_Low64    E_ModRM
+      [ op     WO    T_R32_64         Reg
+      , op     RO    T_VM128_Low64    RM
       ]]
 
 i_cvtsd2ss :: X86Insn
@@ -1822,19 +1821,19 @@ i_cvtsd2ss = i "Convert scalar double-precision floating-point value to scalar s
    [legacyEncoding (Just 0xF2) Map0F 0x5A Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_vcvtsd2ss :: X86Insn
 i_vcvtsd2ss = i "Convert scalar double-precision floating-point value to scalar single-precision floating-point value" "VCVTSD2SS"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0x5A Nothing LWIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0x5A Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128_Low64  E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128_Low64  RM
       ]]
 
 i_cvtsi2sd :: X86Insn
@@ -1844,19 +1843,19 @@ i_cvtsi2sd = i "Convert Int32 to scalar double-precision floating-point value" "
    [legacyEncoding (Just 0xF2) Map0F 0x2A Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128      E_ModReg
-      , op    RO    T_RM32_64   E_ModRM
+      [ op    WO    T_V128      Reg
+      , op    RO    T_RM32_64   RM
       ]]
 
 i_vcvtsi2sd :: X86Insn
 i_vcvtsi2sd = i "Convert Int32 to scalar double-precision floating-point value" "VCVTSI2SD"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0x2A Nothing LIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0x2A Nothing LIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128     E_ModReg
-      , op     RO    T_V128     E_VexV
-      , op     RO    T_RM32_64  E_ModRM
+      [ op     WO    T_V128     Reg
+      , op     RO    T_V128     Vvvv
+      , op     RO    T_RM32_64  RM
       ]]
 
 
@@ -1867,19 +1866,19 @@ i_cvtsi2ss = i "Convert Int32 to scalar single-precision floating-point value" "
    [legacyEncoding (Just 0xF3) Map0F 0x2A Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128      E_ModReg
-      , op    RO    T_RM32_64   E_ModRM
+      [ op    WO    T_V128      Reg
+      , op    RO    T_RM32_64   RM
       ]]
 
 i_vcvtsi2ss :: X86Insn
 i_vcvtsi2ss = i "Convert Int32 to scalar single-precision floating-point value" "VCVTSI2SS"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x2A Nothing LIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x2A Nothing LIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128     E_ModReg
-      , op     RO    T_V128     E_VexV
-      , op     RO    T_RM32_64  E_ModRM
+      [ op     WO    T_V128     Reg
+      , op     RO    T_V128     Vvvv
+      , op     RO    T_RM32_64  RM
       ]]
 
 i_cvtss2sd :: X86Insn
@@ -1889,19 +1888,19 @@ i_cvtss2sd = i "Convert scalar single-precision floating-point value to scalar d
    [legacyEncoding (Just 0xF3) Map0F 0x5A Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128_Low32  E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128_Low32  RM
       ]]
 
 i_vcvtss2sd :: X86Insn
 i_vcvtss2sd = i "Convert scalar single-precision floating-point value to scalar double-precision floating-point value" "VCVTSS2SD"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x5A Nothing LWIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x5A Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128_Low32  E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128_Low32  RM
       ]]
 
 i_cvtss2si :: X86Insn
@@ -1911,18 +1910,18 @@ i_cvtss2si = i "Convert scalar single-precision floating-point value to Int32" "
    [legacyEncoding (Just 0xF3) Map0F 0x2D Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    WO    T_R32_64       E_ModReg
-      , op    RO    T_VM128_Low32  E_ModRM
+      [ op    WO    T_R32_64       Reg
+      , op    RO    T_VM128_Low32  RM
       ]]
 
 i_vcvtss2si :: X86Insn
 i_vcvtss2si = i "Convert scalar single-precision floating-point value to Int32" "VCVTSS2SI"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x2D Nothing LIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x2D Nothing LIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_R32_64       E_ModReg
-      , op     RO    T_VM128_Low32  E_ModRM
+      [ op     WO    T_R32_64       Reg
+      , op     RO    T_VM128_Low32  RM
       ]]
 
 i_cvttpd2dq :: X86Insn
@@ -1932,18 +1931,18 @@ i_cvttpd2dq = i "Convert with truncation packed double-precision floating-point 
    [legacyEncoding (Just 0x66) Map0F 0xE6 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvttpd2dq :: X86Insn
 i_vcvttpd2dq = i "Convert with truncation packed double-precision floating-point values to packed Int32" "VCVTTPD2DQ"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0xE6  Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0xE6  Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvttpd2pi :: X86Insn
@@ -1953,8 +1952,8 @@ i_cvttpd2pi = i "Convert with truncation packed double-precision floating-point 
    [legacyEncoding (Just 0x66) Map0F 0x2C Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_V64          E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V64          Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_cvttps2dq :: X86Insn
@@ -1964,18 +1963,18 @@ i_cvttps2dq = i "Convert with truncation packed single-precision floating-point 
    [legacyEncoding (Just 0xF3) Map0F 0x5B Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
+      [ op    WO    T_V128         Reg
+      , op    RO    T_VM128        RM
       ]]
 
 i_vcvttps2dq :: X86Insn
 i_vcvttps2dq = i "Convert with truncation packed single-precision floating-point values to packed Int32" "VCVTTPS2DQ"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x5B Nothing WIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x5B Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_cvttps2pi :: X86Insn
@@ -1985,8 +1984,8 @@ i_cvttps2pi = i "Convert with truncation packed single-precision floating-point 
    [legacyEncoding Nothing Map0F 0x2C Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_V64          E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    WO    T_V64          Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_cvttsd2si :: X86Insn
@@ -1996,18 +1995,18 @@ i_cvttsd2si = i "Convert with truncation scalar double-precision floating-point 
    [legacyEncoding (Just 0xF2) Map0F 0x2C Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    WO    T_R32_64       E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    WO    T_R32_64       Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_vcvttsd2si :: X86Insn
 i_vcvttsd2si = i "Convert with truncation scalar double-precision floating-point value to integer" "VCVTTSD2SI"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0x2C Nothing LIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0x2C Nothing LIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_R32_64         E_ModReg
-      , op     RO    T_VM128_Low64    E_ModRM
+      [ op     WO    T_R32_64         Reg
+      , op     RO    T_VM128_Low64    RM
       ]]
 
 i_cvttss2si :: X86Insn
@@ -2017,18 +2016,18 @@ i_cvttss2si = i "Convert with truncation scalar single-precision floating-point 
    [legacyEncoding (Just 0xF3) Map0F 0x2C Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    WO    T_R32_64       E_ModReg
-      , op    RO    T_VM128_Low32  E_ModRM
+      [ op    WO    T_R32_64       Reg
+      , op    RO    T_VM128_Low32  RM
       ]]
 
 i_vcvttss2si :: X86Insn
 i_vcvttss2si = i "Convert with truncation scalar single-precision floating-point value to Int32" "VCVTTSS2SI"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x2C Nothing LIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x2C Nothing LIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_R32_64       E_ModReg
-      , op     RO    T_VM128_Low32  E_ModRM
+      [ op     WO    T_R32_64       Reg
+      , op     RO    T_VM128_Low32  RM
       ]]
 
 i_cwd :: X86Insn
@@ -2038,8 +2037,8 @@ i_cwd = i "Convert between words (sign-extend)" "CWD/CDQ/CQO"
    [legacyEncoding Nothing MapPrimary 0x99 Nothing
       opf
       [LegacyModeSupport, LongModeSupport]
-      [ op    WO    T_xDX_xAX      E_Implicit
-      , op    RO    T_AX_EAX_RAX   E_Implicit
+      [ op    WO    T_xDX_xAX      Implicit
+      , op    RO    T_AX_EAX_RAX   Implicit
       ]]
 
 i_daa :: X86Insn
@@ -2049,7 +2048,7 @@ i_daa = i "Decimal adjust AL after addition" "DAA"
    [legacyEncoding Nothing MapPrimary 0x27 Nothing
       opf
       [LegacyModeSupport]
-      [ op    RW    T_AL     E_Implicit ]]
+      [ op    RW    T_AL     Implicit ]]
 
 i_das :: X86Insn
 i_das = i "Decimal adjust AL after subtraction" "DAS"
@@ -2058,7 +2057,7 @@ i_das = i "Decimal adjust AL after subtraction" "DAS"
    [legacyEncoding Nothing MapPrimary 0x2F Nothing
       opf
       [LegacyModeSupport]
-      [ op    RW    T_AL     E_Implicit ]]
+      [ op    RW    T_AL     Implicit ]]
 
 i_dec :: X86Insn
 i_dec = i "Decrement by 1" "DEC"
@@ -2067,12 +2066,12 @@ i_dec = i "Decrement by 1" "DEC"
    [legacyEncoding Nothing MapPrimary 0xFE (Just 1)
       (opf { sizable = Just 0})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RW    T_RM     E_ModRM
+      [ op    RW    T_RM     RM
       ]
    ,legacyEncoding Nothing MapPrimary 0x48 Nothing
       opf
       [LegacyModeSupport,Lockable]
-      [ op    RW    T_R16_32    E_OpReg
+      [ op    RW    T_R16_32    OpcodeLow3
       ]
    ]
 
@@ -2083,8 +2082,8 @@ i_div = i "Unsigned divide" "DIV"
    [legacyEncoding Nothing MapPrimary 0xF6 (Just 6)
       (opf {sizable = Just 0})
       [Lockable, LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_RM        E_ModRM 
-      , op    RW    T_xDX_xAX   E_Implicit
+      [ op    RO    T_RM        RM 
+      , op    RW    T_xDX_xAX   Implicit
       ]]
 
 i_divpd :: X86Insn
@@ -2094,19 +2093,19 @@ i_divpd = i "Divide packed double-precision floating-point values" "DIVPD"
    [legacyEncoding (Just 0x66) Map0F 0x5E Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vdivpd :: X86Insn
 i_vdivpd = i "Divide packed double-precision floating-point values" "VDIVPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x01) 0x5E Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x01) 0x5E Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_divps :: X86Insn
@@ -2116,19 +2115,19 @@ i_divps = i "Divide packed float-precision floating-point values" "DIVPS"
    [legacyEncoding Nothing Map0F 0x5E Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128   E_ModReg
-      , op    RO    T_VM128  E_ModRM
+      [ op    RW    T_V128   Reg
+      , op    RO    T_VM128  RM
       ]]
 
 i_vdivps :: X86Insn
 i_vdivps = i "Divide packed float-precision floating-point values" "VDIVPS"
    []
    []
-   [vexEncoding Nothing (MapVex 0x01) 0x5E Nothing WIG
+   [vexoding Nothing (MapVex 0x01) 0x5E Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
       ]]
 
 i_divsd :: X86Insn
@@ -2138,19 +2137,19 @@ i_divsd = i "Divide scalar double-precision floating-point values" "DIVSD"
    [legacyEncoding (Just 0xF2) Map0F 0x5E Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE2]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128_Low64  E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128_Low64  RM
       ]]
 
 i_vdivsd :: X86Insn
 i_vdivsd = i "Divide scalar double-precision floating-point values" "VDIVSD"
    []
    []
-   [vexEncoding (Just 0xF2) (MapVex 0x01) 0x5E Nothing LWIG
+   [vexoding (Just 0xF2) (MapVex 0x01) 0x5E Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128_Low64  E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128_Low64  RM
       ]]
 
 i_divss :: X86Insn
@@ -2160,19 +2159,19 @@ i_divss = i "Divide scalar single-precision floating-point values" "DIVSS"
    [legacyEncoding (Just 0xF3) Map0F 0x5E Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128_Low32  E_ModRM
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128_Low32  RM
       ]]
 
 i_vdivss :: X86Insn
 i_vdivss = i "Divide scalar single-precision floating-point values" "VDIVSS"
    []
    []
-   [vexEncoding (Just 0xF3) (MapVex 0x01) 0x5E Nothing LWIG
+   [vexoding (Just 0xF3) (MapVex 0x01) 0x5E Nothing LWIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128_Low32  E_ModRM
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128_Low32  RM
       ]]
 
 i_dppd :: X86Insn
@@ -2182,21 +2181,21 @@ i_dppd = i "Dot product of packed double precision floating-point values" "DPPD"
    [legacyEncoding (Just 0x66) Map0F3A 0x41 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_vdppd :: X86Insn
 i_vdppd = i "Dot product of packed double precision floating-point values" "VDPPD"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x41 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x03) 0x41 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128         E_ModReg
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_VM128        E_ModRM
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_V128         Reg
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_VM128        RM
+      , op     RO    T_Imm8         Imm
       ]]
 
 i_dpps :: X86Insn
@@ -2206,21 +2205,21 @@ i_dpps = i "Dot product of packed single precision floating-point values" "DPPS"
    [legacyEncoding (Just 0x66) Map0F3A 0x40 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_V128         E_ModReg
-      , op    RO    T_VM128        E_ModRM
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_V128         Reg
+      , op    RO    T_VM128        RM
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_vdpps :: X86Insn
 i_vdpps = i "Dot product of packed single precision floating-point values" "VDPPS"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x40 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x03) 0x40 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_V128_256     E_ModReg
-      , op     RO    T_V128_256     E_VexV
-      , op     RO    T_VM128_256    E_ModRM
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_V128_256     Reg
+      , op     RO    T_V128_256     Vvvv
+      , op     RO    T_VM128_256    RM
+      , op     RO    T_Imm8         Imm
       ]]
 
 i_emms :: X86Insn
@@ -2238,8 +2237,8 @@ i_enter = i "Make stack frame for procedure parameters" "ENTER"
    [legacyEncoding Nothing MapPrimary 0xC8 Nothing
       opf
       [DefaultOperandSize64, LegacyModeSupport, LongModeSupport]
-      [ op    RO    T_Imm16     E_Imm
-      , op    RO    T_Imm8      E_Imm
+      [ op    RO    T_Imm16     Imm
+      , op    RO    T_Imm8      Imm
       ]]
 
 i_extractps :: X86Insn
@@ -2249,20 +2248,20 @@ i_extractps = i "Extract packed single precision floating-point value" "EXTRACTP
    [legacyEncoding (Just 0x66) Map0F3A 0x17 Nothing
       opf
       [LegacyModeSupport, LongModeSupport, Extension SSE4_1]
-      [ op    RW    T_RM32         E_ModRM
-      , op    RO    T_V128         E_ModReg
-      , op    RO    T_Imm8         E_Imm
+      [ op    RW    T_RM32         RM
+      , op    RO    T_V128         Reg
+      , op    RO    T_Imm8         Imm
       ]]
 
 i_vextractps :: X86Insn
 i_vextractps = i "Extract packed single precision floating-point value" "VEXTRACTPS"
    []
    []
-   [vexEncoding (Just 0x66) (MapVex 0x03) 0x17 Nothing WIG
+   [vexoding (Just 0x66) (MapVex 0x03) 0x17 Nothing WIG
       [LegacyModeSupport, LongModeSupport, Extension AVX]
-      [ op     WO    T_RM32         E_ModRM
-      , op     RO    T_V128         E_VexV
-      , op     RO    T_Imm8         E_Imm
+      [ op     WO    T_RM32         RM
+      , op     RO    T_V128         Vvvv
+      , op     RO    T_Imm8         Imm
       ]]
 
 
@@ -2278,10 +2277,10 @@ data FlaggedOpcode = FlaggedOpcode
 getLegacyOpcodes :: LegEnc -> [FlaggedOpcode]
 getLegacyOpcodes e = os
    where
-      sz = sizable            (legEncOpcodeFields e)
-      rv = reversable         (legEncOpcodeFields e)
-      se = signExtendableImm8 (legEncOpcodeFields e)
-      oc = legEncOpcode e
+      sz = sizable            (legacyOpcodeFields e)
+      rv = reversable         (legacyOpcodeFields e)
+      se = signExtendableImm8 (legacyOpcodeFields e)
+      oc = legacyOpcode e
    
       os' = orig : szb ++ opb
       -- with reversable bit set
@@ -2305,7 +2304,7 @@ getLegacyOpcodes e = os
             , FlaggedOpcode (setBit (setBit oc x) y) False True True
             ]
       -- with operand in the last 3 bits of the opcode
-      opb = case any ((==) E_OpReg) $ fmap opEnc (legEncParams e) of
+      opb = case any ((==) OpcodeLow3) $ fmap opEnc (legacyParams e) of
          False -> []
          True  ->  fmap (\x -> FlaggedOpcode (oc+x) False False False) [1..7]
 
@@ -2315,16 +2314,16 @@ getEncodings is = concatMap f is
       f x = fmap (,x) (iEncoding x)
 
 getVexOpcodes :: VexEnc -> [FlaggedOpcode]
-getVexOpcodes e = [FlaggedOpcode (vexEncOpcode e) False False False]
+getVexOpcodes e = [FlaggedOpcode (vexOpcode e) False False False]
 
 
 -- | Build a legacy opcode map
-buildLegacyOpcodeMap :: OpcodeMap -> [X86Insn] -> V.Vector [(Encoding,X86Insn)]
+buildLegacyOpcodeMap :: LegacyMap -> [X86Insn] -> V.Vector [(Encoding,X86Insn)]
 buildLegacyOpcodeMap omap insns = buildOpcodeMap encs
    where
       encs = filter (ff . fst) (getEncodings insns)
       ff = \case
-         LegacyEncoding x -> legEncOpcodeMap x == omap 
+         LegacyEncoding x -> legacyOpcodeMap x == omap 
          _                -> False
 
 -- | Build a VEX opcode map
@@ -2333,7 +2332,7 @@ buildVexOpcodeMap omap insns = buildOpcodeMap encs
    where
       encs = filter (ff . fst) (getEncodings insns)
       ff = \case
-         VexEncoding x -> vexEncOpcodeMap x == omap 
+         VexEncoding x -> vexOpcodeMap x == omap 
          _             -> False
             
             
@@ -2368,9 +2367,6 @@ opcodeMap0F38 = buildLegacyOpcodeMap Map0F38 instructions
 opcodeMap0F3A :: V.Vector [(Encoding,X86Insn)]
 opcodeMap0F3A = buildLegacyOpcodeMap Map0F3A instructions
 
-opcodeMap0F01 :: V.Vector [(Encoding,X86Insn)]
-opcodeMap0F01 = buildLegacyOpcodeMap Map0F01 instructions
-
 opcodeMap3DNow :: V.Vector [(Encoding,X86Insn)]
 opcodeMap3DNow = buildLegacyOpcodeMap Map3DNow instructions
 
@@ -2389,6 +2385,6 @@ amd3DNowEncoding =
    legacyEncoding Nothing Map3DNow 0x0 Nothing
      opf
      []
-     [ op    RW    T_V64          E_ModReg
-     , op    RO    T_VM64         E_ModRM
+     [ op    RW    T_V64          Reg
+     , op    RO    T_VM64         RM
      ]

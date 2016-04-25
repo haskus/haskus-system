@@ -1,5 +1,8 @@
 module ViperVM.Arch.X86_64.Assembler.Operand
    ( OperandType(..)
+   , OperandEnc(..)
+   , OperandSpec (..)
+   , AccessMode (..)
    , Op(..)
    , Addr(..)
    )
@@ -11,6 +14,7 @@ import ViperVM.Arch.X86_64.Assembler.ModRM
 
 import Data.Word
 
+-- | An operand
 data Op
    = OpImmediate SizedValue               -- ^ Immediate value
    | OpSignExtendImmediate SizedValue     -- ^ Sign-extended immediate value
@@ -110,4 +114,27 @@ data OperandType
    | T_ST         -- ^ ST(i)
    | T_STMem      -- ^ ST(i) register or memory
    deriving (Show)
+
+data OperandEnc
+   = RM         -- ^ Operand stored in ModRM.rm
+   | Reg        -- ^ Operand stored in ModRM.reg
+   | Imm        -- ^ Operand stored in immediate bytes
+   | Imm8h      -- ^ Operand stored in bits [7:4] of the immediate byte
+   | Imm8l      -- ^ Operand stored in bits [3:0] of the immediate byte
+   | Implicit   -- ^ Implicit
+   | Vvvv       -- ^ Operand stored in Vex.vvvv field
+   | OpcodeLow3 -- ^ Operand stored in opcode 3 last bits
+   deriving (Show,Eq)
+
+data OperandSpec = OperandSpec
+   { opMode :: AccessMode
+   , opType :: OperandType
+   , opEnc  :: OperandEnc
+   } deriving (Show)
+
+data AccessMode
+   = RO         -- ^ Read-only
+   | RW         -- ^ Read-write
+   | WO         -- ^ Write-only
+   deriving (Show,Eq)
 

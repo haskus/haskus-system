@@ -348,7 +348,7 @@ decodeX87 x = do
             (0xDE, 7, False) -> skipWord8 >> FIDIVR_m16        <$> getM16INT
             (0xDF, 7, False) -> skipWord8 >> FISTP_m64         <$> getM64INT
 
-            _                -> left $ ErrUnknownOpcode MapX87 x
+            _                -> left $ ErrUnknownOpcode (MapLegacy MapX87) x
 
 -- getX87Info :: X87Instruction -> X87Insn
 -- getX87Info x = case x of

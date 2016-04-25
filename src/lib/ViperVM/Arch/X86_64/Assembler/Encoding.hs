@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.Assembler.Encoding
    , isImmediate
    , LegacyOpcodeFields(..)
    , OpcodeMap(..)
+   , LegacyMap(..)
    , AccessMode(..)
    , Variant(..)
    -- * Generic API
@@ -40,6 +41,7 @@ import Data.Word
 import Data.Maybe (isJust)
 import ViperVM.Arch.X86_64.MicroArch
 import ViperVM.Arch.X86_64.Assembler.Operand
+import ViperVM.Arch.X86_64.Assembler.Opcode
 
 -- | Instruction properties
 data Properties
@@ -76,23 +78,12 @@ data X86Extension
    | FPU             -- ^ x87 instructions
    deriving (Show,Eq)
 
-data OperandEnc
-   = E_ModRM      -- ^ Operand stored in ModRM.rm
-   | E_ModReg     -- ^ Operand stored in ModRM.reg
-   | E_Imm        -- ^ Operand stored in immediate bytes
-   | E_Imm8_7_4   -- ^ Operand stored in bits [7:4] of the immediate byte
-   | E_Imm8_3_0   -- ^ Operand stored in bits [3:0] of the immediate byte
-   | E_Implicit   -- ^ Implicit
-   | E_VexV       -- ^ Operand stored in Vex.vvvv field
-   | E_OpReg      -- ^ Operand stored in opcode 3 last bits
-   deriving (Show,Eq)
-
 isImmediate :: OperandEnc -> Bool
 isImmediate = \case
-   E_Imm       -> True
-   E_Imm8_7_4  -> True
-   E_Imm8_3_0  -> True
-   _           -> False
+   Imm    -> True
+   Imm8h  -> True
+   Imm8l  -> True
+   _      -> False
 
 hasImmediate :: Encoding -> Bool
 hasImmediate e = any (isImmediate . opEnc) (encOperands e)
@@ -112,39 +103,39 @@ isVexEncoding (VexEncoding _) = True
 isVexEncoding _               = False
 
 encOpcode :: Encoding -> Word8
-encOpcode (LegacyEncoding e) = legEncOpcode e
-encOpcode (VexEncoding    e) = vexEncOpcode e
+encOpcode (LegacyEncoding e) = legacyOpcode e
+encOpcode (VexEncoding    e) = vexOpcode e
 
 encOpcodeExt :: Encoding -> Maybe Word8
-encOpcodeExt (LegacyEncoding e) = legEncOpcodeExt e
-encOpcodeExt (VexEncoding    e) = vexEncOpcodeExt e
+encOpcodeExt (LegacyEncoding e) = legacyOpcodeExt e
+encOpcodeExt (VexEncoding    e) = vexOpcodeExt e
 
 encOpcodeMap :: Encoding -> OpcodeMap
-encOpcodeMap (LegacyEncoding e) = legEncOpcodeMap e
-encOpcodeMap (VexEncoding    e) = vexEncOpcodeMap e
+encOpcodeMap (LegacyEncoding e) = MapLegacy (legacyOpcodeMap e)
+encOpcodeMap (VexEncoding    e) = vexOpcodeMap e
 
 encOperands :: Encoding -> [OperandSpec]
-encOperands (LegacyEncoding e)  = legEncParams e
-encOperands (VexEncoding    e)  = vexEncParams e
+encOperands (LegacyEncoding e)  = legacyParams e
+encOperands (VexEncoding    e)  = vexParams e
 
 encMandatoryPrefix :: Encoding -> Maybe Word8
-encMandatoryPrefix (LegacyEncoding e) = legEncMandatoryPrefix e
-encMandatoryPrefix (VexEncoding    e) = vexEncMandatoryPrefix e
+encMandatoryPrefix (LegacyEncoding e) = legacyMandatoryPrefix e
+encMandatoryPrefix (VexEncoding    e) = vexMandatoryPrefix e
 
 encProperties :: Encoding -> [EncodingProperties]
-encProperties (LegacyEncoding e) = legEncProperties e
+encProperties (LegacyEncoding e) = legacyProperties e
 encProperties (VexEncoding    _) = []
 
 encSizableBit :: Encoding -> Maybe Int
-encSizableBit (LegacyEncoding e) = sizable (legEncOpcodeFields e)
+encSizableBit (LegacyEncoding e) = sizable (legacyOpcodeFields e)
 encSizableBit _                  = Nothing
 
 encSignExtendImmBit :: Encoding -> Maybe Int
-encSignExtendImmBit (LegacyEncoding e) = signExtendableImm8 (legEncOpcodeFields e)
+encSignExtendImmBit (LegacyEncoding e) = signExtendableImm8 (legacyOpcodeFields e)
 encSignExtendImmBit _                  = Nothing
 
 encReversableBit :: Encoding -> Maybe Int
-encReversableBit (LegacyEncoding e) = reversable (legEncOpcodeFields e)
+encReversableBit (LegacyEncoding e) = reversable (legacyOpcodeFields e)
 encReversableBit _                  = Nothing
 
 -- | Indicate if LOCK prefix is allowed
@@ -152,24 +143,24 @@ encLockable :: Encoding -> Bool
 encLockable e = Lockable `elem` encProperties e
 
 data LegEnc = LegEnc
-   { legEncMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
-   , legEncOpcodeMap       :: OpcodeMap            -- ^ Map
-   , legEncOpcode          :: Word8                -- ^ Opcode
-   , legEncOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-   , legEncOpcodeFields    :: LegacyOpcodeFields   -- ^ Fields in the opcode
-   , legEncProperties      :: [EncodingProperties] -- ^ Encoding properties
-   , legEncParams          :: [OperandSpec]        -- ^ Operand encoding
+   { legacyMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+   , legacyOpcodeMap       :: LegacyMap            -- ^ Map
+   , legacyOpcode          :: Word8                -- ^ Opcode
+   , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+   , legacyOpcodeFields    :: LegacyOpcodeFields   -- ^ Fields in the opcode
+   , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
+   , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
    }
    deriving (Show)
 
 data VexEnc = VexEnc
-   { vexEncMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
-   , vexEncOpcodeMap       :: OpcodeMap            -- ^ Map
-   , vexEncOpcode          :: Word8                -- ^ Opcode
-   , vexEncOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-   , vexEncLW              :: VexLW
-   , vexEncProperties      :: [EncodingProperties] -- ^ Encoding properties
-   , vexEncParams          :: [OperandSpec]        -- ^ Operand encoding
+   { vexMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+   , vexOpcodeMap       :: OpcodeMap            -- ^ Map
+   , vexOpcode          :: Word8                -- ^ Opcode
+   , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+   , vexLW              :: VexLW
+   , vexProperties      :: [EncodingProperties] -- ^ Encoding properties
+   , vexParams          :: [OperandSpec]        -- ^ Operand encoding
    } deriving (Show)
 
 -- | Fields in a legacy opcode
@@ -198,14 +189,14 @@ encRequireModRM e = hasOpExt || hasOps
       -- has operands in ModRM
       hasOps   = any matchEnc (encOperands e)
       matchEnc x = case opEnc x of
-         E_ModRM     -> True
-         E_ModReg    -> True
-         E_Imm       -> False
-         E_Imm8_7_4  -> False
-         E_Imm8_3_0  -> False
-         E_Implicit  -> False
-         E_VexV      -> False
-         E_OpReg     -> False
+         RM         -> True
+         Reg        -> True
+         Imm        -> False
+         Imm8h      -> False
+         Imm8l      -> False
+         Implicit   -> False
+         Vvvv       -> False
+         OpcodeLow3 -> False
 
 {-
  Note [Opcode maps]
@@ -224,30 +215,6 @@ encRequireModRM e = hasOpExt || hasOps
  be required: opcode extension in ModRM.reg or invalid parameters (i.e. invalid
  ModRM.mod).
 -}
-
-data OpcodeMap
-   = MapPrimary
-   | Map0F
-   | Map0F01
-   | Map0F38
-   | Map0F3A
-   | Map3DNow
-   | MapX87
-   | MapVex !Word8
-   | MapXop !Word8
-   deriving (Show,Eq)
-
-data OperandSpec = OperandSpec
-   { opMode :: AccessMode
-   , opType :: OperandType
-   , opEnc  :: OperandEnc
-   } deriving (Show)
-
-data AccessMode
-   = RO         -- ^ Read-only
-   | RW         -- ^ Read-write
-   | WO         -- ^ Write-only
-   deriving (Show,Eq)
 
 data VexLW
    = W0     -- ^ Vex.W set to 0
