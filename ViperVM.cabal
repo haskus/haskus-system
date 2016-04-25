@@ -69,7 +69,7 @@ library
 
     -- ViperVM.Arch.X86_64.Assembler.Insn
     -- ViperVM.Arch.X86_64.Assembler.Utils
-    -- ViperVM.Arch.X86_64.Assembler.Operand
+    ViperVM.Arch.X86_64.Assembler.Operand
     ViperVM.Arch.X86_64.Assembler.Encoding
     -- ViperVM.Arch.X86_64.Assembler.OperandSize
     -- ViperVM.Arch.X86_64.Assembler.EvexPrefix

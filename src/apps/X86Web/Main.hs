@@ -79,27 +79,27 @@ showWelcome = do
 
 showInsnByMnemo :: String -> Html
 showInsnByMnemo mnemo = do
-   let is = filter (\i -> X86.iMnemonic i == mnemo) X86.instructions
+   let is = filter (\i -> X86.insnMnemonic i == mnemo) X86.instructions
    forM_ is showInsn
 
 -- | List all instructions
 showAll :: Html
 showAll = do
-   let is = List.nub . fmap X86.iMnemonic $ X86.instructions
-   H.ul $ forM_ is $ \i -> do
+   let is = List.nub . fmap X86.insnMnemonic $ X86.instructions
+   H.ul $ forM_ is $ \i ->
       H.li $ showMnemo i
 
 -- | Show an instruction
 showInsn :: X86.X86Insn -> Html
 showInsn i = do
-   H.h2 $ toHtml $ X86.iMnemonic i ++ " - " ++ X86.iDesc i
+   H.h2 $ toHtml $ X86.insnMnemonic i ++ " - " ++ X86.insnDesc i
    H.h3 (toHtml "Properties")
-   H.ul $ forM_ (X86.iProperties i) $ \p -> H.li (toHtml (show p))
+   H.ul $ forM_ (X86.insnProperties i) $ \p -> H.li (toHtml (show p))
    H.h3 (toHtml "Flags")
-   H.ul $ forM_ (X86.iFlags i) $ \f -> H.li (toHtml (show f))
+   H.ul $ forM_ (X86.insnFlags i) $ \f -> H.li (toHtml (show f))
    H.h3 (toHtml "Encodings")
-   forM_ (X86.iEncoding i) $ \case
-      X86.LegacyEncoding e -> do
+   forM_ (X86.insnEncodings i) $ \case
+      e@X86.LegacyEncoding {} -> do
          H.h4 (toHtml "Legacy encoding")
          H.table (do
             H.tr $ do
@@ -108,12 +108,12 @@ showInsn i = do
                H.th (toHtml "Opcode")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            forM_ (X86.getLegacyOpcodes e) $ \x -> do
+            forM_ (X86.getLegacyOpcodes e) $ \x ->
                showLegEnc (X86.fgOpcode x) (X86.fgReversed x) (X86.fgSized x) (X86.fgSignExtended x) e
 
 
             ) ! A.class_ (toValue "insn_table")
-      X86.VexEncoding    e -> do
+      e@X86.VexEncoding {} -> do
          H.h4 (toHtml "VEX encoding")
          H.table (do
             H.tr $ do
@@ -123,14 +123,14 @@ showInsn i = do
                H.th (toHtml "LW")
                H.th (toHtml "Operands")
             H.tr $ do
-               case X86.vexEncMandatoryPrefix e of
+               case X86.vexMandatoryPrefix e of
                   Nothing -> H.td (toHtml " ")
                   Just p  -> H.td (toHtml (showHex p ""))
-               H.td (toHtml (show (X86.vexEncOpcodeMap e)))
-               H.td (toHtml (showHex (X86.vexEncOpcode e) ""))
-               H.td (toHtml (show (X86.vexEncLW e)))
+               H.td (toHtml (show (X86.vexOpcodeMap e)))
+               H.td (toHtml (showHex (X86.vexOpcode e) ""))
+               H.td (toHtml (show (X86.vexLW e)))
                let 
-                  ops = X86.vexEncParams e
+                  ops = X86.vexParams e
                H.td $ (H.table $ do
                   H.tr $ do
                      H.th (toHtml "Mode")
@@ -141,14 +141,14 @@ showInsn i = do
                   H.tr $ do
                      H.th (toHtml "Encoding")
                      forM_ ops $ \o -> H.td . toHtml $ case X86.opEnc o of
-                        X86.E_ModRM     -> "ModRM.rm"
-                        X86.E_ModReg    -> "ModRM.reg"
-                        X86.E_Imm       -> "Imm"
-                        X86.E_Imm8_7_4  -> "Imm8 [7:4]"
-                        X86.E_Imm8_3_0  -> "Imm8 [3:0]"
-                        X86.E_Implicit  -> "Implicit"
-                        X86.E_VexV      -> "VEX.vvvv"
-                        X86.E_OpReg     -> error "Unsupported OpReg for VEX encoding"
+                        X86.RM          -> "ModRM.rm"
+                        X86.Reg         -> "ModRM.reg"
+                        X86.Imm         -> "Imm"
+                        X86.Imm8h       -> "Imm8 [7:4]"
+                        X86.Imm8l       -> "Imm8 [3:0]"
+                        X86.Implicit    -> "Implicit"
+                        X86.Vvvv        -> "VEX.vvvv"
+                        X86.OpcodeLow3  -> error "Unsupported OpReg for VEX encoding"
                   ) ! A.class_ (toValue "insn_table")
 
             ) ! A.class_ (toValue "insn_table")
@@ -157,20 +157,20 @@ showInsn i = do
 
 
 
-showLegEnc :: Word8 -> Bool -> Bool -> Bool -> X86.LegEnc -> Html
+showLegEnc :: Word8 -> Bool -> Bool -> Bool -> X86.Encoding -> Html
 showLegEnc oc rv sz se e = H.tr $ do
-   case X86.legEncMandatoryPrefix e of
+   case X86.legacyMandatoryPrefix e of
       Nothing -> H.td (toHtml " ")
       Just p  -> H.td (toHtml (showHex p ""))
-   H.td (toHtml (show (X86.legEncOpcodeMap e)))
+   H.td (toHtml (show (X86.legacyOpcodeMap e)))
    H.td $ do
       toHtml (showHex oc "")
-      case X86.legEncOpcodeExt e of
+      case X86.legacyOpcodeExt e of
          Nothing -> return ()
          Just p  -> toHtml (" /" ++ (showHex p ""))
-   H.td (toHtml (show (X86.legEncProperties e)))
+   H.td (toHtml (show (X86.legacyProperties e)))
    let 
-      ops = X86.legEncParams e
+      ops = X86.legacyParams e
       rev = if rv then reverse else id
    H.td $ (H.table $ do
       H.tr $ do
@@ -182,17 +182,17 @@ showLegEnc oc rv sz se e = H.tr $ do
       H.tr $ do
          H.th (toHtml "Encoding")
          forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opEnc o of
-            X86.E_ModRM     -> "ModRM.rm"
-            X86.E_ModReg    -> "ModRM.reg"
-            X86.E_Imm       -> case (sz,se) of
+            X86.RM          -> "ModRM.rm"
+            X86.Reg         -> "ModRM.reg"
+            X86.Imm         -> case (sz,se) of
                (False,_)    -> "Imm8"
                (True,False) -> "ImmN"
                (True,True)  -> "Sign-extended Imm8"
-            X86.E_Imm8_7_4  -> "Imm8 [7:4]"
-            X86.E_Imm8_3_0  -> "Imm8 [3:0]"
-            X86.E_Implicit  -> "Implicit"
-            X86.E_VexV      -> "VEX.vvvv"
-            X86.E_OpReg     -> "Opcode [2:0]"
+            X86.Imm8h       -> "Imm8 [7:4]"
+            X86.Imm8l       -> "Imm8 [3:0]"
+            X86.Implicit    -> "Implicit"
+            X86.Vvvv        -> "VEX.vvvv"
+            X86.OpcodeLow3  -> "Opcode [2:0]"
       ) ! A.class_ (toValue "insn_table")
 
 
@@ -232,7 +232,7 @@ showMap v = (H.table $ do
             $ List.intersperse (toHtml ", ")
             $ fmap showMnemo 
             $ List.nub
-            $ fmap X86.iMnemonic is
+            $ fmap X86.insnMnemonic is
    ) ! A.class_ (toValue "opcode_map")
 
 showMnemo :: String -> Html
