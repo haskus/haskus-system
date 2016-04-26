@@ -58,26 +58,20 @@ library
 
     ViperVM.Arch.X86_64.Assembler.Opcode
     ViperVM.Arch.X86_64.Assembler.New
-    ViperVM.Arch.X86_64.Assembler.RexPrefix
-    ViperVM.Arch.X86_64.Assembler.VexPrefix
     ViperVM.Arch.X86_64.Assembler.LegacyPrefix
     ViperVM.Arch.X86_64.Assembler.ModRM
     ViperVM.Arch.X86_64.Assembler.Mode
     ViperVM.Arch.X86_64.Assembler.Registers
     ViperVM.Arch.X86_64.Assembler.RegisterFile
     ViperVM.Arch.X86_64.Assembler.Size
+    ViperVM.Arch.X86_64.Assembler.Tables
 
-    -- ViperVM.Arch.X86_64.Assembler.Insn
     -- ViperVM.Arch.X86_64.Assembler.Utils
     ViperVM.Arch.X86_64.Assembler.Operand
-    ViperVM.Arch.X86_64.Assembler.Encoding
-    -- ViperVM.Arch.X86_64.Assembler.OperandSize
-    -- ViperVM.Arch.X86_64.Assembler.EvexPrefix
     -- ViperVM.Arch.X86_64.Assembler.Decoder
     -- ViperVM.Arch.X86_64.Assembler.Encoder
     ViperVM.Arch.X86_64.Assembler.Insns
     -- ViperVM.Arch.X86_64.Assembler.X86Dec
-    -- ViperVM.Arch.X86_64.Assembler.X87
 
     ViperVM.Arch.Linux.Internals.FileSystem
     ViperVM.Arch.Linux.Internals.Input

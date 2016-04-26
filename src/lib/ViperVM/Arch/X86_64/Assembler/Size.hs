@@ -4,6 +4,8 @@ module ViperVM.Arch.X86_64.Assembler.Size
    , AddressSize(..)
    , SizedValue(..)
    , addressSize
+   , OperandSize(..)
+   , operandSize
    ) where
 
 import Data.Word
@@ -40,3 +42,19 @@ data SizedValue
    | SizedValue32 !Word32
    | SizedValue64 !Word64
    deriving (Show,Eq)
+
+-- | Operand size
+data OperandSize
+   = OpSize8 
+   | OpSize16 
+   | OpSize32 
+   | OpSize64 
+   deriving (Show,Eq)
+
+-- | Convert an OperandSize into a more generic Size
+operandSize :: OperandSize -> Size
+operandSize op = case op of
+   OpSize8  -> Size8
+   OpSize16 -> Size16
+   OpSize32 -> Size32
+   OpSize64 -> Size64

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module ViperVM.Arch.X86_64.Assembler.Operand
    ( OperandType(..)
    , OperandEnc(..)
@@ -5,6 +7,7 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    , AccessMode (..)
    , Op(..)
    , Addr(..)
+   , maybeOpTypeReg
    )
 where
 
@@ -148,4 +151,78 @@ data AccessMode
    | RW         -- ^ Read-write
    | WO         -- ^ Write-only
    deriving (Show,Eq)
+
+-- | Indicate if the operand type can be register when stored in ModRM.rm
+-- (i.e. ModRM.mod may be 11b)
+maybeOpTypeReg :: OperandType -> Bool
+maybeOpTypeReg = \case
+   T_Imm8        -> False
+   T_Imm16       -> False
+   T_Imm         -> False
+   T_REL_16_32   -> False
+   T_PTR_16_16   -> False
+   T_PTR_16_32   -> False
+   T_Mask        -> False
+
+   T_R           -> True
+   T_R16         -> True
+   T_R32         -> True
+   T_RM          -> True
+   T_RM16        -> True
+   T_RM32        -> True
+   T_RM16_32     -> True
+   T_RM32_64     -> True
+   T_RM16_32_64  -> True
+   T_RM64        -> True
+   T_R16_32      -> True
+   T_R32_64      -> True
+   T_R16_32_64   -> True
+
+   T_M_PAIR      -> False
+   T_M16_XX      -> False
+   T_M64_128     -> False
+   T_M           -> False
+   T_MFP         -> False
+   T_M512        -> False
+
+   T_Vec         -> True
+   T_V64         -> True
+   T_VM64        -> True
+   T_V128        -> True
+   T_VM128       -> True
+   T_V128_Low32  -> True
+   T_VM128_Low32 -> True
+   T_V128_Low64  -> True
+   T_VM128_Low64 -> True
+   T_V128_256    -> True
+   T_VM128_256   -> True
+
+   T_Accu        -> False
+   T_AX_EAX_RAX  -> False
+   T_xDX_xAX     -> False
+   T_xCX_xBX     -> False
+   T_xAX         -> False
+   T_xBX         -> False
+   T_xCX         -> False
+   T_xDX         -> False
+   T_AL          -> False
+   T_AX          -> False
+   T_XMM0        -> False
+   T_rSI         -> False
+   T_rDI         -> False
+
+   T_ST0         -> False
+   T_ST1         -> False
+   T_ST          -> True
+   T_ST_MReal    -> True
+   T_MInt        -> False
+   T_MInt16      -> False
+   T_MInt32      -> False
+   T_MInt64      -> False
+   T_M80real     -> False
+   T_M80dec      -> False
+   T_M80bcd      -> False
+   T_M16         -> False
+   T_M14_28      -> False
+   T_M94_108     -> False
 

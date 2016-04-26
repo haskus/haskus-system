@@ -14,8 +14,6 @@ where
 
 import ViperVM.Arch.X86_64.Assembler.Opcode
 import ViperVM.Arch.X86_64.Assembler.LegacyPrefix
-import ViperVM.Arch.X86_64.Assembler.RexPrefix
-import ViperVM.Arch.X86_64.Assembler.VexPrefix
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Operand
@@ -185,7 +183,6 @@ readRexPrefix = do
 --    - Secondary (escaped with 0x0F)
 --    - 0x0F38
 --    - 0x0F3A
---    - X87
 --    - 3DNow! (escaped with 0x0F0F, opcode byte in last instruction byte)
 ---------------------------------------------------------------------------
 
@@ -202,14 +199,9 @@ readLegacyOpcode = do
    let
       -- TODO: use mode or sets...
       is3DNowAllowed    = True
-      isX87Allowed      = True
       ret m x = return (Just (OpLegacy ps rex m x))
 
    case w of
-      _ | isX87Allowed && w .&. 0xF8 == 0xD8 -> do
-            binSkip 1
-            ret MapX87 w
-
       0x0F -> binSkip 1 >> binRead >>= \case
          
          0x0F | is3DNowAllowed ->
@@ -302,6 +294,61 @@ readOpcode = firstJust
             Just _  -> return r
             Nothing -> firstJust xs
 
+
+-- ===========================================================================
+-- Identify the instruction
+-- ===========================================================================
+-- identifyInsn ::
+--    ( ReaderM () s
+--    , HArrayIndexT X86Mode s
+--    ) => Opcode -> MState s (Maybe Insn)
+-- identifyInsn oc = do
+-- 
+--    -- get the opcode table
+--    table <- case getOpcodeMap oc of
+--       MapLegacy
+--       --TODO
+-- 
+--    -- get the candidate instructions for the opcode
+--    -- TODO
+--    -- cs <-
+-- 
+--    -- if there is none, return an error
+--    -- TODO
+-- 
+--    -- determine if we need to read the next byte
+--    -- TODO
+-- 
+--    -- check that we can read the next byte
+--    -- if we can read the next byte, do it
+--    rem <- binRemaining
+--    if rem == 0
+--       then -- return an error
+--       else -- 
+-- 
+--    m <- binPeek
+-- 
+--    -- filter out invalid full extension (extension in the whole second byte)
+--    -- TODO
+-- 
+--    -- filter out invalid ModRM.reg extension
+--    -- TODO
+-- 
+--    -- filter out invalid ModRM.mod (e.g., only 11b)
+--    -- TODO
+-- 
+--    -- Filter out invalid enabled extensions/architecture. Return sensible error
+--    -- if no instruction left (e.g., in order to provide suggestion to enable an
+--    -- extension).
+--    -- TODO
+--    
+--    -- If there are more than on instruction left, signal a bug
+--    -- TODO
+-- 
+--    -- Return the instruction
+--    -- TODO
+
+
 -- ===========================================================================
 -- Operands
 -- ===========================================================================
@@ -313,19 +360,15 @@ readOpcode = firstJust
 data Insn
    = InsnInvalid
    | InsnReserved
-   | InsnX87 X87Op [X87Operand]
 
 readOperands ::
    ( ReaderM () s
    , HArrayIndexT Opcode s
    , HArrayIndexT X86Mode s
    ) => MState s Insn
-readOperands = do
+readOperands = undefined
 
-   opcode <- mGet
 
-   case opcode of
-      OpLegacy _ _ MapX87 x -> readX87Operands x
 
 
 -- | Extended ModRM.reg (with REX.R, VEX.R, etc.)
@@ -381,13 +424,11 @@ getVectorLength = do
       _         -> return Nothing
 
 -- | Get the opcode map
-getOpcodeMap ::
-   (HArrayIndexT Opcode s
-   ) => MState s OpcodeMap
-getOpcodeMap = mGet >>= \case
-   OpLegacy _ _ t _ -> return $ MapLegacy t
-   OpVex  v    _    -> return $ vexMapSelect v
-   OpXop  v    _    -> return $ vexMapSelect v
+getOpcodeMap :: Opcode -> OpcodeMap
+getOpcodeMap = \case
+   OpLegacy _ _ t _ -> MapLegacy t
+   OpVex  v    _    -> vexMapSelect v
+   OpXop  v    _    -> vexMapSelect v
 
 
 getAddr :: ModRM -> MState s Addr
@@ -411,295 +452,3 @@ getAddr m = undefined
 --          (_,7) -> Addr (Just R_BX) Nothing     disp Nothing
 --          _     -> error "Invalid 16-bit addressing"
 -- 
-
-
-----------------------------------------
--- X87
-----------------------------------------
-
-data X87Op
-   = FADD
-   | FMUL
-   | FCOM
-   | FCOMP
-   | FSUB
-   | FSUBR
-   | FDIV
-   | FDIVR
-   | FLD
-   | FXCH
-   | FST
-   | FNOP
-   | FSTP
-   | FLDENV
-   | FCHS
-   | FABS
-   | FTST
-   | FXAM
-   | FLDCW
-   | FLD1
-   | FLDL2T
-   | FLDL2E
-   | FLDPI
-   | FLDLG2
-   | FLDLN2
-   | FLDZ
-   | FNSTENV
-   | F2XM1
-   | FYL2X
-   | FPTAN
-   | FPATAN
-   | FXTACT
-   | FPREM1
-   | FDECSTP
-   | FINCSTP
-   | FNSTCW
-   | FPREM
-   | FYL2XP1
-   | FSQRT
-   | FSINCOS
-   | FRNDINT
-   | FSCALE
-   | FSIN
-   | FCOS
-   | FIADD
-   | FIMUL
-   | FICOM
-   | FICOMP
-   | FISUB
-   | FISUBR
-   | FIDIV
-   | FIDIVR
-   | FCMOVB
-   | FCMOVE
-   | FCMOVBE
-   | FCMOVU
-   | FUCOMPP
-   | FILD
-   | FISTTP
-   | FIST
-   | FISTP
-   | FCMOVNB
-   | FCMOVNE
-   | FCMOVNBE
-   | FCMOVNU
-   | FNCLEX
-   | FNINIT
-   | FUCOMI
-   | FCOMI
-   | FFREE
-   | FNSAVE
-   | FRSTOR
-   | FUCOM
-   | FUCOMP
-   | FNSTSW
-   | FADDP
-   | FMULP
-   | FCOMPP
-   | FSUBRP
-   | FSUBP
-   | FDIVRP
-   | FDIVP
-   | FUCOMIP
-   | FCOMIP
-   | FBLD
-   | FBSTP
-   deriving (Show,Eq,Enum)
-
-
-data X87Operand
-   = ST0
-   | ST !Word8
-   | Mem32Real Addr
-   | Mem64Real Addr
-   | Mem80Real Addr
-   | Mem16Int  Addr
-   | Mem32Int  Addr
-   | Mem64Int  Addr
-   | MemEnv    Addr
-   | MemState  Addr
-   | Mem16     Addr
-   | Mem80Dec  Addr
-   deriving (Show,Eq)
-
-readX87Operands ::
-   ( ReaderM () s
-   , HArrayIndexT X86Mode s
-   ) => Word8 -> MState s Insn
-readX87Operands x = do
-   y <- binRead 
-
-   let
-      m    = ModRM (BitFields y)
-      mode = modeField m
-      sti  = ST (rmField m)
-      reg  = regField m
-      ext  = y .&. 0x3F
-      mkList x = [x]
-      getMem32Real = (mkList . Mem32Real) <$> getAddr m
-      getMem64Real = (mkList . Mem64Real) <$> getAddr m
-      getMem16Int  = (mkList . Mem16Int ) <$> getAddr m
-      getMem32Int  = (mkList . Mem32Int ) <$> getAddr m
-      getMem64Int  = (mkList . Mem64Int ) <$> getAddr m
-      getMem80Real = (mkList . Mem80Real) <$> getAddr m
-      getMemEnv    = (mkList . MemEnv   ) <$> getAddr m
-      getMemState  = (mkList . MemState ) <$> getAddr m
-      getMem16     = (mkList . Mem16    ) <$> getAddr m
-      getMem80Dec  = (mkList . Mem80Dec ) <$> getAddr m
-
-
-   case x of
-      0xD8 -> InsnX87 op <$> ops
-         where
-            vs  = V.fromList [FADD,FMUL,FCOM,FCOMP,FSUB,FSUBR,FDIV,FDIVR]
-            op  = vs V.! fromIntegral reg
-            ops = if mode == Mode11
-               then return [ST0, sti]
-               else getMem32Real
-         
-      0xD9 -> case (reg,mode) of
-         (0,Mode11) -> return (InsnX87 FLD [ST0, sti])
-         (0,_)      -> InsnX87 FLD <$> getMem32Real
-         (1,Mode11) -> return (InsnX87 FXCH [ST0, sti])
-         (1,_)      -> return InsnInvalid
-         (2,Mode11) -> return $ if ext == 0xD0
-                           then InsnX87 FNOP []
-                           else InsnInvalid
-         (2,_)      -> InsnX87 FST <$> getMem32Real
-         (3,Mode11) -> return InsnReserved
-         (3,_)      -> InsnX87 FSTP <$> getMem32Real
-         (_,Mode11) -> return $ case ext of
-                           0xE0 -> InsnX87 FCHS    []
-                           0xE1 -> InsnX87 FABS    []
-                           0xE4 -> InsnX87 FTST    []
-                           0xE5 -> InsnX87 FXAM    []
-                           0xE8 -> InsnX87 FLD1    []
-                           0xE9 -> InsnX87 FLDL2T  []
-                           0xEA -> InsnX87 FLDL2E  []
-                           0xEB -> InsnX87 FLDPI   []
-                           0xEC -> InsnX87 FLDLG2  []
-                           0xED -> InsnX87 FLDLN2  []
-                           0xEE -> InsnX87 FLDZ    []
-                           0xF0 -> InsnX87 F2XM1   []
-                           0xF1 -> InsnX87 FYL2X   []
-                           0xF2 -> InsnX87 FPTAN   []
-                           0xF3 -> InsnX87 FPATAN  []
-                           0xF4 -> InsnX87 FXTACT  []
-                           0xF5 -> InsnX87 FPREM1  []
-                           0xF6 -> InsnX87 FDECSTP []
-                           0xF7 -> InsnX87 FINCSTP []
-                           0xF8 -> InsnX87 FPREM   []
-                           0xF9 -> InsnX87 FYL2XP1 []
-                           0xFA -> InsnX87 FSQRT   []
-                           0xFB -> InsnX87 FSINCOS []
-                           0xFC -> InsnX87 FRNDINT []
-                           0xFD -> InsnX87 FSCALE  []
-                           0xFE -> InsnX87 FSIN    []
-                           0xFF -> InsnX87 FCOS    []
-                           _    -> InsnInvalid
-         (4,_)      -> InsnX87 FLDENV  <$> getMemEnv
-         (5,_)      -> InsnX87 FLDCW   <$> getMem16
-         (6,_)      -> InsnX87 FNSTENV <$> getMemEnv
-         (7,_)      -> InsnX87 FNSTCW  <$> getMem16
-         _          -> error "Invalid X87 opcode"
-
-      0xDA -> case (reg,mode) of
-         (0,Mode11) -> return (InsnX87 FCMOVB  [ST0, sti])
-         (1,Mode11) -> return (InsnX87 FCMOVE  [ST0, sti])
-         (2,Mode11) -> return (InsnX87 FCMOVBE [ST0, sti])
-         (3,Mode11) -> return (InsnX87 FCMOVU  [ST0, sti])
-         (0,_) -> InsnX87 op <$> getMem32Int
-            where
-               vs  = V.fromList [FIADD,FIMUL,FICOM,FICOMP,FISUB,FISUBR,FIDIV,FIDIVR]
-               op  = vs V.! fromIntegral reg
-         (5,Mode11) | ext == 0xE9 -> return (InsnX87 FUCOMPP [])
-         _  -> return InsnInvalid
-
-      0xDB -> case (reg,mode) of
-         (0,Mode11) -> return (InsnX87 FCMOVNB  [ST0, sti])
-         (1,Mode11) -> return (InsnX87 FCMOVNE  [ST0, sti])
-         (2,Mode11) -> return (InsnX87 FCMOVNBE [ST0, sti])
-         (3,Mode11) -> return (InsnX87 FCMOVNU  [ST0, sti])
-         (5,Mode11) -> return (InsnX87 FUCOMI   [ST0, sti])
-         (4,Mode11) -> case ext of
-                           0xE2 -> return (InsnX87 FNCLEX [])
-                           0xE3 -> return (InsnX87 FNINIT [])
-                           _ | ext < 0xE5 -> return InsnReserved
-                           _ -> return InsnInvalid
-         (6,Mode11) -> return (InsnX87 FCOMI    [ST0, sti])
-         (7,Mode11) -> return InsnInvalid
-         (0,_)      -> InsnX87 FILD   <$> getMem32Int
-         (1,_)      -> InsnX87 FISTTP <$> getMem32Int
-         (2,_)      -> InsnX87 FIST   <$> getMem32Int
-         (3,_)      -> InsnX87 FISTP  <$> getMem32Int
-         (4,_)      -> return InsnInvalid
-         (5,_)      -> InsnX87 FLD    <$> getMem80Real
-         (6,_)      -> return InsnInvalid
-         (7,_)      -> InsnX87 FSTP   <$> getMem80Real
-         _          -> error "Invalid X87 opcode"
-
-      0xDC -> case (reg,mode) of
-         (2,Mode11) -> return InsnReserved
-         (3,Mode11) -> return InsnReserved
-         _ -> InsnX87 op <$> ops
-            where
-               vs  = V.fromList [FADD,FMUL,FCOM,FCOMP,FSUB,FSUBR,FDIV,FDIVR]
-               op  = vs V.! fromIntegral reg
-               ops = if mode == Mode11
-                  then return [sti,ST0]
-                  else getMem64Real
-
-      0xDD -> case (reg,mode) of
-         (0,Mode11) -> return (InsnX87 FFREE  [sti])
-         (1,Mode11) -> return InsnReserved
-         (2,Mode11) -> return (InsnX87 FST    [sti])
-         (3,Mode11) -> return (InsnX87 FSTP   [sti])
-         (4,Mode11) -> return (InsnX87 FUCOM  [sti,ST0])
-         (5,Mode11) -> return (InsnX87 FUCOMP [sti])
-         (_,Mode11) -> return InsnInvalid
-         (0,_)      -> InsnX87 FLD    <$> getMem64Real
-         (1,_)      -> InsnX87 FISTTP <$> getMem64Int
-         (2,_)      -> InsnX87 FST    <$> getMem64Real
-         (3,_)      -> InsnX87 FSTP   <$> getMem64Real
-         (4,_)      -> InsnX87 FRSTOR <$> getMemState
-         (5,_)      -> return InsnInvalid
-         (6,_)      -> InsnX87 FNSAVE <$> getMemState
-         (7,_)      -> InsnX87 FNSTSW <$> getMem16
-         _          -> error "Invalid X87 opcode"
-
-      0xDE -> case (reg,mode) of
-         (0,Mode11) -> return (InsnX87 FADDP [sti,ST0])
-         (1,Mode11) -> return (InsnX87 FMULP [sti,ST0])
-         (2,Mode11) -> return InsnReserved
-         (3,Mode11) -> if ext == 0xD9
-                        then return (InsnX87 FCOMPP [])
-                        else return InsnInvalid
-         (4,Mode11) -> return (InsnX87 FSUBRP [sti,ST0])
-         (5,Mode11) -> return (InsnX87 FSUBP  [sti,ST0])
-         (6,Mode11) -> return (InsnX87 FDIVRP [sti,ST0])
-         (7,Mode11) -> return (InsnX87 FDIVP  [sti,ST0])
-         _ -> InsnX87 op <$> getMem16Int
-            where
-               vs  = V.fromList [FIADD,FIMUL,FICOM,FICOMP,FISUB,FISUBR,FIDIV,FIDIVR]
-               op  = vs V.! fromIntegral reg
-
-      0xDF -> case (reg,mode) of
-         (4,Mode11) -> if ext == 0xE0
-                        then return (InsnX87 FNSTSW [])
-                        else return InsnInvalid
-         (5,Mode11) -> return (InsnX87 FUCOMIP [ST0,sti])
-         (6,Mode11) -> return (InsnX87 FCOMIP  [ST0,sti])
-         (7,Mode11) -> return InsnInvalid
-         (_,Mode11) -> return InsnReserved
-         (0,_)      -> InsnX87 FILD   <$> getMem16Int
-         (1,_)      -> InsnX87 FISTTP <$> getMem16Int
-         (2,_)      -> InsnX87 FIST   <$> getMem16Int
-         (3,_)      -> InsnX87 FISTP  <$> getMem16Int
-         (4,_)      -> InsnX87 FBLD   <$> getMem80Dec
-         (5,_)      -> InsnX87 FILD   <$> getMem64Int
-         (6,_)      -> InsnX87 FBSTP  <$> getMem80Dec
-         (7,_)      -> InsnX87 FISTP  <$> getMem64Int
-         _          -> error "Invalid X87 opcode"
-         
-      _ -> error "Invalid X87 opcode"
-         

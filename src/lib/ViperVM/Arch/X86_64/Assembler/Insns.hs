@@ -1,47 +1,58 @@
-{-# LANGUAGE LambdaCase, TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | X86 (and X87) instructions
 --
 -- FIXME: X87 instructions don't encode precisely the stack popping (e.g., it is
 -- not enough to say that ST(1) is accessed in Read/Write mode, we need to
 -- encode that ST(n+1) becomes ST(n) for all n)
+--
+-- TODO: X87 instructions: FPU status flags (C0,C1,C2,C3) are not indicated yet
 module ViperVM.Arch.X86_64.Assembler.Insns
    ( X86Insn(..)
    , X86Arch(..)
    , X86Extension(..)
    , Properties(..)
-   , Flag(..)
    , FlagOp(..)
+   , Encoding(..)
+   , VexLW (..)
+   , EncodingProperties(..)
+   , OperandSpec(..)
+   , OperandEnc(..)
+   , OpcodeMap(..)
+   , LegacyMap(..)
+   , AccessMode(..)
+   , EncodingVariant(..)
    , instructions
-   , getLegacyOpcodes
-   , FlaggedOpcode(..)
-   , buildLegacyOpcodeMap
-   , buildVexOpcodeMap
-   , maybeOpTypeReg
+   -- * Helper methods
+   , hasImmediate
+   , isImmediate
+   , isLegacyEncoding
+   , isVexEncoding
+   , encOpcode
+   , encOpcodeExt
+   , encOpcodeMap
+   , encOperands
+   , encMandatoryPrefix
+   , encProperties
+   , encSizableBit
+   , encSignExtendImmBit
+   , encReversableBit
+   , encLockable
+   , encRequireModRM
    , amd3DNowEncoding
-   -- * Opcode maps
-   , opcodeMapPrimary
-   , opcodeMap0F
-   , opcodeMap0F38
-   , opcodeMap0F3A
-   , opcodeMap3DNow
-   , opcodeMapVex1
-   , opcodeMapVex2
-   , opcodeMapVex3
    )
 where
 
 import Data.Word
-import Data.Bits
-import Data.Maybe
-import qualified Data.Map as Map
 import Data.List ((\\))
-import qualified Data.Vector as V
+import Data.Maybe
 
 import ViperVM.Arch.X86_64.MicroArch
 import ViperVM.Arch.X86_64.Assembler.Operand
-import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.Assembler.Opcode
+import ViperVM.Arch.X86_64.Assembler.Mode
 
+-- | X86 instruction
 data X86Insn = X86Insn
    { insnDesc        :: String
    , insnMnemonic    :: String
@@ -50,6 +61,96 @@ data X86Insn = X86Insn
    , insnEncodings   :: [Encoding]
    } deriving (Show)
 
+-- | Flag state modification
+data FlagOp a
+   = St        [a]  -- ^ Set flag to 1
+   | Unset     [a]  -- ^ Set flag to 0
+   | Modified  [a]  -- ^ Set flag depending on the result
+   | Undefined [a]  -- ^ Flag is undefined after the operation
+   | Read      [a]  -- ^ Flag read by the instruction
+   deriving (Show,Eq)
+
+-- | Instruction encoding
+data Encoding
+   = LegacyEncoding
+      { legacyMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+      , legacyOpcodeMap       :: LegacyMap            -- ^ Map
+      , legacyOpcode          :: Word8                -- ^ Opcode
+      , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+      , legacyOpcodeFullExt   :: Maybe Word8          -- ^ Opcode extension in full ModRM byte
+      , legacyReversable      :: Maybe Int            -- ^ Args are reversed if the given bit is
+                                                      --   set in the opcode.
+      , legacySizable         :: Maybe Int            -- ^ Operand size is 8 if the given bit is
+                                                      --   unset in the opcode. Otherwise, the
+                                                      --   size is defined by operand-size
+                                                      --   prefix and REX.W bit
+      , legacySignExtendable  :: Maybe Int            -- ^ Used in conjunction with a set
+                                                      --   Sizable bit.  Imm8 operand is used
+                                                      --   and sign-extended if the given bit is
+                                                      --   set
+      , legacyFPUDest         :: Maybe Int            -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
+                                                      --   only if both operands are registers!
+      , legacyFPUPop          :: Maybe Int            -- ^ Opcode bit: pop the FPU register,
+                                                      --   only if destination is (ST(i))
+      , legacyFPUSizable      :: Maybe Int            -- ^ Opcode bit: change the FPU size (only if memory operand)
+      , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
+      , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
+      }
+   | VexEncoding
+      { vexMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+      , vexOpcodeMap       :: OpcodeMap            -- ^ Map
+      , vexOpcode          :: Word8                -- ^ Opcode
+      , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+      , vexLW              :: VexLW
+      , vexProperties      :: [EncodingProperties] -- ^ Encoding properties
+      , vexParams          :: [OperandSpec]        -- ^ Operand encoding
+      }
+   deriving (Show)
+
+-- | VEX.(L/W) spec
+data VexLW
+   = W0     -- ^ Vex.W set to 0
+   | W1     -- ^ Vex.W set to 1
+   | WIG    -- ^ Vex.W ignored
+   | L0     -- ^ Vex.L set to 0
+   | L1     -- ^ Vex.L set to 1
+   | LIG    -- ^ Vex.L ignored
+   | LWIG   -- ^ Ignore Vex.W and Vex.L
+   deriving (Show)
+
+-- | Instruction properties
+data Properties
+   = FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
+   deriving (Show,Eq)
+
+-- | Encoding properties
+data EncodingProperties
+   = LongModeSupport          -- ^ Supported in 64 bit mode
+   | LegacyModeSupport        -- ^ Supported in legacy/compatibility mode
+   | Lockable                 -- ^ Support LOCK prefix (only if a memory operand
+                              --   is used)
+   | DoubleSizable            -- ^ Default size is 32+32 (a pair of registers is used)
+                              --   Can be extended to 64+64 with Rex.W
+   | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
+                              --   instruction in LongMode
+   | Extension X86Extension   -- ^ Required CPU extension
+   | Arch X86Arch             -- ^ Instruction added starting at the given arch
+   | RequireRexW              -- ^ Require REX.W
+   deriving (Show,Eq)
+
+-- | Instruction variant encoding
+data EncodingVariant
+   = Locked        -- ^ Locked memory access
+   | Reversed      -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   | ExplicitParam -- ^ A variant exists with an implicit parameter, but the explicit variant is used
+   deriving (Show,Eq)
+
+
+-------------------------------------------------------------------
+-- Helper methods
+-------------------------------------------------------------------
+
+-- | Instruction
 insn :: X86Insn
 insn = X86Insn
    { insnDesc        = ""
@@ -59,107 +160,11 @@ insn = X86Insn
    , insnEncodings   = []
    }
 
-data FlagOp a
-   = St        [a]  -- ^ Set flag to 1
-   | Unset     [a]  -- ^ Set flag to 0
-   | Modified  [a]  -- ^ Set flag depending on the result
-   | Undefined [a]  -- ^ Flag is undefined after the operation
-   | Read      [a]  -- ^ Flag read by the instruction
-   deriving (Show,Eq)
-
-data Flag
-   -- Status flag
-   = CF     -- ^ Carry flag
-   | PF     -- ^ Parity flag
-   | AF     -- ^ Adjust flag
-   | ZF     -- ^ Zero flag
-   | SF     -- ^ Sign flag
-   | TF     -- ^ Trap flag
-   | OF     -- ^ Overflow flag
-
-   -- Control flags
-   | DF     -- ^ Direction flag
-   | IF     -- ^ Interrupt flag
-   | AC     -- ^ Alignment check
-   deriving (Show,Bounded,Enum,Eq)
-
+-- | Flags
 allFlags :: [Flag]
-allFlags = [minBound .. maxBound] \\ [AC,DF,IF]
+allFlags = [CF,PF,AF,ZF,SF,TF,OF]
 
--- | Indicate if the operand type can be register when stored in ModRM.rm
--- (i.e. ModRM.mod may be 11b)
-maybeOpTypeReg :: OperandType -> Bool
-maybeOpTypeReg = \case
-   T_Imm8       -> False
-   T_Imm16      -> False
-   T_Imm        -> False
-   T_REL_16_32  -> False
-   T_PTR_16_16  -> False
-   T_PTR_16_32  -> False
-   T_Mask       -> False
-
-   T_R          -> True
-   T_R16        -> True
-   T_R32        -> True
-   T_RM         -> True
-   T_RM16       -> True
-   T_RM32       -> True
-   T_RM16_32    -> True
-   T_RM32_64    -> True
-   T_RM16_32_64 -> True
-   T_RM64       -> True
-   T_R16_32     -> True
-   T_R32_64     -> True
-   T_R16_32_64  -> True
-
-   T_M_PAIR     -> False
-   T_M16_XX     -> False
-   T_M64_128    -> False
-   T_M          -> False
-   T_MFP        -> False
-   T_M512       -> False
-
-   T_Vec           -> True
-   T_V64           -> True
-   T_VM64          -> True
-   T_V128          -> True
-   T_VM128         -> True
-   T_V128_Low32    -> True
-   T_VM128_Low32   -> True
-   T_V128_Low64    -> True
-   T_VM128_Low64   -> True
-   T_V128_256      -> True
-   T_VM128_256     -> True
-
-   T_Accu       -> False
-   T_AX_EAX_RAX -> False
-   T_xDX_xAX    -> False
-   T_xCX_xBX    -> False
-   T_xAX        -> False
-   T_xBX        -> False
-   T_xCX        -> False
-   T_xDX        -> False
-   T_AL         -> False
-   T_AX         -> False
-   T_XMM0       -> False
-   T_rSI        -> False
-   T_rDI        -> False
-
-   T_ST0        -> False
-   T_ST1        -> False
-   T_ST         -> True
-   T_ST_MReal   -> True
-   T_MInt       -> False
-   T_MInt16     -> False
-   T_MInt32     -> False
-   T_MInt64     -> False
-   T_M80real    -> False
-   T_M80dec     -> False
-   T_M80bcd     -> False
-   T_M16        -> False
-   T_M14_28     -> False
-   T_M94_108    -> False
-
+-- | Legacy encoding
 leg :: Encoding
 leg = LegacyEncoding
    { legacyMandatoryPrefix = Nothing
@@ -177,6 +182,7 @@ leg = LegacyEncoding
    , legacyParams          = []
    }
 
+-- | Vex encoding
 vex :: Encoding
 vex = VexEncoding
    { vexMandatoryPrefix = Nothing
@@ -188,8 +194,102 @@ vex = VexEncoding
    , vexParams          = []
    }
 
+-- | Operand
 op :: AccessMode -> OperandType -> OperandEnc -> OperandSpec
 op = OperandSpec
+
+-- We use a dummy encoding for 3DNow: because all the instructions use the same
+amd3DNowEncoding :: Encoding
+amd3DNowEncoding = leg
+   { legacyOpcodeMap = Map3DNow
+   , legacyParams    = [ op    RW    T_V64          Reg
+                       , op    RO    T_VM64         RM
+                       ]
+   }
+
+isImmediate :: OperandEnc -> Bool
+isImmediate = \case
+   Imm    -> True
+   Imm8h  -> True
+   Imm8l  -> True
+   _      -> False
+
+hasImmediate :: Encoding -> Bool
+hasImmediate e = any (isImmediate . opEnc) (encOperands e)
+
+isLegacyEncoding :: Encoding -> Bool
+isLegacyEncoding LegacyEncoding {} = True
+isLegacyEncoding _                 = False
+
+isVexEncoding :: Encoding -> Bool
+isVexEncoding VexEncoding {} = True
+isVexEncoding _              = False
+
+encOpcode :: Encoding -> Word8
+encOpcode e@LegacyEncoding {} = legacyOpcode e
+encOpcode e@VexEncoding    {} = vexOpcode e
+
+encOpcodeExt :: Encoding -> Maybe Word8
+encOpcodeExt e@LegacyEncoding {} = legacyOpcodeExt e
+encOpcodeExt e@VexEncoding    {} = vexOpcodeExt e
+
+encOpcodeFullExt :: Encoding -> Maybe Word8
+encOpcodeFullExt e@LegacyEncoding {} = legacyOpcodeFullExt e
+encOpcodeFullExt VexEncoding    {}   = Nothing
+
+encOpcodeMap :: Encoding -> OpcodeMap
+encOpcodeMap e@LegacyEncoding {} = MapLegacy (legacyOpcodeMap e)
+encOpcodeMap e@VexEncoding    {} = vexOpcodeMap e
+
+encOperands :: Encoding -> [OperandSpec]
+encOperands e@LegacyEncoding {}  = legacyParams e
+encOperands e@VexEncoding    {}  = vexParams e
+
+encMandatoryPrefix :: Encoding -> Maybe Word8
+encMandatoryPrefix e@LegacyEncoding {} = legacyMandatoryPrefix e
+encMandatoryPrefix e@VexEncoding    {} = vexMandatoryPrefix e
+
+encProperties :: Encoding -> [EncodingProperties]
+encProperties e@LegacyEncoding {} = legacyProperties e
+encProperties VexEncoding      {} = []
+
+encSizableBit :: Encoding -> Maybe Int
+encSizableBit e@LegacyEncoding {} = legacySizable e
+encSizableBit _                   = Nothing
+
+encSignExtendImmBit :: Encoding -> Maybe Int
+encSignExtendImmBit e@LegacyEncoding {} = legacySignExtendable e
+encSignExtendImmBit _                   = Nothing
+
+encReversableBit :: Encoding -> Maybe Int
+encReversableBit e@LegacyEncoding {} = legacyReversable e
+encReversableBit _                   = Nothing
+
+-- | Indicate if LOCK prefix is allowed
+encLockable :: Encoding -> Bool
+encLockable e = Lockable `elem` encProperties e
+
+encRequireModRM :: Encoding -> Bool
+encRequireModRM e = hasOpExt || hasOps
+   where
+      -- use opcode extension in ModRM.reg 
+      hasOpExt = isJust (encOpcodeExt e) || isJust (encOpcodeFullExt e)
+
+      -- has operands in ModRM
+      hasOps   = any matchEnc (encOperands e)
+      matchEnc x = case opEnc x of
+         RM         -> True
+         Reg        -> True
+         Imm        -> False
+         Imm8h      -> False
+         Imm8l      -> False
+         Implicit   -> False
+         Vvvv       -> False
+         OpcodeLow3 -> False
+
+-------------------------------------------------------------------
+-- Instructions
+-------------------------------------------------------------------
 
 instructions :: [X86Insn]
 instructions =
@@ -5282,125 +5382,5 @@ i_fyl2xp1 = insn
                                                    , op  RO    T_ST1  Implicit 
                                                    ]
                            }
-                       ]
-   }
-
-data FlaggedOpcode = FlaggedOpcode
-   { fgOpcode        :: Word8
-   , fgReversed      :: Bool
-   , fgSized         :: Bool
-   , fgSignExtended  :: Bool
-   } deriving (Show)
-
--- | Return the different opcodes for a legacy encoding
-getLegacyOpcodes :: Encoding -> [FlaggedOpcode]
-getLegacyOpcodes e = os
-   where
-      sz = legacySizable e
-      rv = legacyReversable e
-      se = legacySignExtendable e
-      oc = legacyOpcode e
-   
-      os' = orig : szb ++ opb
-      -- with reversable bit set
-      os = case rv of
-         Nothing -> os'
-         Just x  -> os' ++ fmap rev os'
-            where
-               rev o = o { fgOpcode   = setBit (fgOpcode o) x
-                         , fgReversed = True
-                         }
-
-      -- original opcode
-      orig = FlaggedOpcode oc False False False
-      -- with sizable and sign-extendable bits
-      szb = case (sz,se) of
-         (Nothing,Nothing) -> []
-         (Nothing,Just _)  -> error "Invalid opcode fields"
-         (Just x,Nothing)  -> [FlaggedOpcode (setBit oc x) False True False]
-         (Just x,Just y)   -> 
-            [ FlaggedOpcode (setBit oc x)            False True False
-            , FlaggedOpcode (setBit (setBit oc x) y) False True True
-            ]
-      -- with operand in the last 3 bits of the opcode
-      opb = case OpcodeLow3 `elem` fmap opEnc (legacyParams e) of
-         False -> []
-         True  ->  fmap (\x -> FlaggedOpcode (oc+x) False False False) [1..7]
-
-getEncodings :: [X86Insn] -> [(Encoding,X86Insn)]
-getEncodings = concatMap f
-   where
-      f x = fmap (,x) (insnEncodings x)
-
-getVexOpcodes :: Encoding -> [FlaggedOpcode]
-getVexOpcodes e = [FlaggedOpcode (vexOpcode e) False False False]
-
-
--- | Build a legacy opcode map
-buildLegacyOpcodeMap :: LegacyMap -> [X86Insn] -> V.Vector [(Encoding,X86Insn)]
-buildLegacyOpcodeMap omap insns = buildOpcodeMap encs
-   where
-      encs = filter (ff . fst) (getEncodings insns)
-      ff = \case
-         x@LegacyEncoding {} -> legacyOpcodeMap x == omap 
-         _                   -> False
-
--- | Build a VEX opcode map
-buildVexOpcodeMap :: OpcodeMap -> [X86Insn] -> V.Vector [(Encoding,X86Insn)]
-buildVexOpcodeMap omap insns = buildOpcodeMap encs
-   where
-      encs = filter (ff . fst) (getEncodings insns)
-      ff = \case
-         x@VexEncoding {} -> vexOpcodeMap x == omap 
-         _                -> False
-            
-            
--- | Build the opcode maps
-buildOpcodeMap :: [(Encoding,X86Insn)] -> V.Vector [(Encoding,X86Insn)]
-buildOpcodeMap encs = go encs Map.empty
-   where
-      go [] rs     = V.generate 256 (fromMaybe [] . (`Map.lookup` rs))
-      go ((e,x):xs) rs = let
-            os = fmap (fromIntegral . fgOpcode) (getOpcodes e)
-         in go xs (insertAll os (e,x) rs)
-      
-      getOpcodes = \case
-         x@LegacyEncoding {} -> getLegacyOpcodes x
-         x@VexEncoding    {} -> getVexOpcodes x
-
-      insertAll [] _ rs     = rs
-      insertAll (o:os) x rs = insertAll os x (Map.insertWith (++) o [x] rs)
-
-
-opcodeMapPrimary :: V.Vector [(Encoding,X86Insn)]
-opcodeMapPrimary = buildLegacyOpcodeMap MapPrimary instructions
-
-opcodeMap0F :: V.Vector [(Encoding,X86Insn)]
-opcodeMap0F = buildLegacyOpcodeMap Map0F instructions
-
-opcodeMap0F38 :: V.Vector [(Encoding,X86Insn)]
-opcodeMap0F38 = buildLegacyOpcodeMap Map0F38 instructions
-
-opcodeMap0F3A :: V.Vector [(Encoding,X86Insn)]
-opcodeMap0F3A = buildLegacyOpcodeMap Map0F3A instructions
-
-opcodeMap3DNow :: V.Vector [(Encoding,X86Insn)]
-opcodeMap3DNow = buildLegacyOpcodeMap Map3DNow instructions
-
-opcodeMapVex1 :: V.Vector [(Encoding,X86Insn)]
-opcodeMapVex1 = buildVexOpcodeMap (MapVex 1) instructions
-
-opcodeMapVex2 :: V.Vector [(Encoding,X86Insn)]
-opcodeMapVex2 = buildVexOpcodeMap (MapVex 2) instructions
-
-opcodeMapVex3 :: V.Vector [(Encoding,X86Insn)]
-opcodeMapVex3 = buildVexOpcodeMap (MapVex 3) instructions
-
--- We use a dummy encoding for 3DNow: because all the instructions use the same
-amd3DNowEncoding :: Encoding
-amd3DNowEncoding = leg
-   { legacyOpcodeMap = Map3DNow
-   , legacyParams    = [ op    RW    T_V64          Reg
-                       , op    RO    T_VM64         RM
                        ]
    }

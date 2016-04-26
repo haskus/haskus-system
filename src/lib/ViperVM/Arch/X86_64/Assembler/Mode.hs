@@ -1,10 +1,12 @@
 -- | X86 architectures support several operating modes.
 -- This module gives information for each mode
 module ViperVM.Arch.X86_64.Assembler.Mode 
-   ( X86Mode(..)
-   , LongSubMode(..)
-   , LegacySubMode(..)
-   , ModeInfo(..)
+   ( X86Mode (..)
+   , LongSubMode (..)
+   , LegacySubMode (..)
+   , Flag (..)
+   , X86Extension(..)
+   , ModeInfo (..)
    , getModeInfo
    , is64bitMode
    , is32bitMode
@@ -30,6 +32,41 @@ data LegacySubMode
    | Virtual8086Mode 
    | RealMode 
    deriving (Show,Eq)
+
+-- | Status flag
+data Flag
+   -- Status flag
+   = CF     -- ^ Carry flag
+   | PF     -- ^ Parity flag
+   | AF     -- ^ Adjust flag
+   | ZF     -- ^ Zero flag
+   | SF     -- ^ Sign flag
+   | TF     -- ^ Trap flag
+   | OF     -- ^ Overflow flag
+
+   -- Control flags
+   | DF     -- ^ Direction flag
+   | IF     -- ^ Interrupt flag
+   | AC     -- ^ Alignment check
+   deriving (Show,Enum,Eq)
+
+data X86Extension
+   = ADX             -- ^ ADX extension
+   | AVX             -- ^ AVX extension
+   | SSE             -- ^ SSE extension
+   | SSE2            -- ^ SSE2 extension
+   | SSE3            -- ^ SSE3 extension
+   | SSE4_1          -- ^ SSE4.1 extension
+   | AES             -- ^ AES extension
+   | BMI1            -- ^ BMI1 extension
+   | BMI2            -- ^ BMI2 extension
+   | SMAP            -- ^ Supervisor Mode Access Prevention (SMAP)
+   | CLFLUSH         -- ^ CLFLUSH instruction
+   | CX8             -- ^ CMPXCHG8B instruction
+   | FPU             -- ^ x87 instructions
+   | CMOV            -- ^ CMOVs instructions (and FCMOVcc if FPU is set too)
+   deriving (Show,Eq)
+
 
 -- | IP-relative addressing support
 data RelativeAddressing
