@@ -78,8 +78,12 @@ data OperandType
    | T_M16_XX     -- ^ Pair of words in memory: m16:XX where XX can be 16, 32 or 64
    | T_M64_128    -- ^ 64- or 128-bit memory
    | T_M          -- ^ Any memory address
+   | T_M16        -- ^ 16-bit memory
+   | T_M14_28     -- ^ FPU environement
+   | T_M94_108    -- ^ FPU state
    | T_MFP        -- ^ Floating-point value in memory
    | T_M80dec     -- ^ Binary-coded decimal
+   | T_M512       -- ^ FXRSTOR, FXSAVE
 
    -- Vector registers
    | T_Vec           -- ^ Vector register (XMM, YMM, ZMM)
@@ -111,8 +115,15 @@ data OperandType
 
    -- x87
    | T_ST0        -- ^ ST(0)
+   | T_ST1        -- ^ ST(1)
    | T_ST         -- ^ ST(i)
-   | T_STMem      -- ^ ST(i) register or memory
+   | T_ST_MReal   -- ^ ST(i) register or real memory
+   | T_MInt       -- ^ Int memory
+   | T_MInt16     -- ^ Int memory
+   | T_MInt32     -- ^ Int memory
+   | T_MInt64     -- ^ Int memory
+   | T_M80bcd     -- ^ 80-bit decimal
+   | T_M80real    -- ^ 80-bit real
    deriving (Show)
 
 data OperandEnc

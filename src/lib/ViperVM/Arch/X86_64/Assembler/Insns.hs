@@ -1,4 +1,10 @@
 {-# LANGUAGE LambdaCase, TupleSections #-}
+
+-- | X86 (and X87) instructions
+--
+-- FIXME: X87 instructions don't encode precisely the stack popping (e.g., it is
+-- not enough to say that ST(1) is accessed in Read/Write mode, we need to
+-- encode that ST(n+1) becomes ST(n) for all n)
 module ViperVM.Arch.X86_64.Assembler.Insns
    ( X86Insn(..)
    , X86Arch(..)
@@ -111,7 +117,7 @@ maybeOpTypeReg = \case
    T_M64_128    -> False
    T_M          -> False
    T_MFP        -> False
-   T_M80dec     -> False
+   T_M512       -> False
 
    T_Vec           -> True
    T_V64           -> True
@@ -140,8 +146,19 @@ maybeOpTypeReg = \case
    T_rDI        -> False
 
    T_ST0        -> False
+   T_ST1        -> False
    T_ST         -> True
-   T_STMem      -> True
+   T_ST_MReal   -> True
+   T_MInt       -> False
+   T_MInt16     -> False
+   T_MInt32     -> False
+   T_MInt64     -> False
+   T_M80real    -> False
+   T_M80dec     -> False
+   T_M80bcd     -> False
+   T_M16        -> False
+   T_M14_28     -> False
+   T_M94_108    -> False
 
 leg :: Encoding
 leg = LegacyEncoding
@@ -153,6 +170,9 @@ leg = LegacyEncoding
    , legacyReversable      = Nothing
    , legacySizable         = Nothing
    , legacySignExtendable  = Nothing
+   , legacyFPUDest         = Nothing
+   , legacyFPUPop          = Nothing
+   , legacyFPUSizable      = Nothing
    , legacyProperties      = []
    , legacyParams          = []
    }
@@ -342,6 +362,88 @@ instructions =
    , i_enter 
    , i_extractps 
    , i_vextractps 
+   , i_f2xm1
+   , i_fabs
+   , i_fadd
+   , i_fiadd
+   , i_fbld
+   , i_fbstp
+   , i_fchs
+   , i_fnclex
+   , i_fcmovb
+   , i_fcmove
+   , i_fcmovbe
+   , i_fcmovu
+   , i_fcmovnb
+   , i_fcmovne
+   , i_fcmovnbe
+   , i_fcmovnu
+   , i_fcom
+   , i_fcomp
+   , i_fcompp
+   , i_fcomi
+   , i_fucomi
+   , i_fcos
+   , i_fdecstp
+   , i_fdiv
+   , i_fidiv
+   , i_fdivr
+   , i_fidivr
+   , i_ffree
+   , i_ficom
+   , i_ficomp
+   , i_fild
+   , i_fincstp
+   , i_finit
+   , i_fist
+   , i_fistp
+   , i_fisttp
+   , i_fld
+   , i_fld1
+   , i_fldl2t
+   , i_fldl2e
+   , i_fldpi
+   , i_fldlg2
+   , i_fldln2
+   , i_fldz
+   , i_fldcw
+   , i_fldenv
+   , i_fmul
+   , i_fimul
+   , i_fnop
+   , i_fpatan
+   , i_fprem
+   , i_fprem1
+   , i_fptan
+   , i_frndint
+   , i_frstor
+   , i_fnsave
+   , i_fscale
+   , i_fsin
+   , i_fsincos
+   , i_fsqrt
+   , i_fst
+   , i_fstp
+   , i_fnstcw
+   , i_fnstenv
+   , i_fnstsw
+   , i_fsub
+   , i_fisub
+   , i_fsubr
+   , i_fisubr
+   , i_ftst
+   , i_fucom
+   , i_fucomp
+   , i_fucompp
+   , i_fxam
+   , i_fxch
+   , i_fxrstor
+   , i_fxrstor64
+   , i_fxsave
+   , i_fxsave64
+   , i_fxtract
+   , i_fyl2x
+   , i_fyl2xp1
    ]
 
 i_aaa :: X86Insn
@@ -3803,6 +3905,1385 @@ i_vextractps = insn
    }
 
 
+i_f2xm1 :: X86Insn
+i_f2xm1 = insn
+   { insnDesc        = "Compute 2^x - 1"
+   , insnMnemonic    = "F2XM1"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit ]
+                           }
+                       ]
+   }
+                                       
+i_fabs :: X86Insn
+i_fabs = insn
+   { insnDesc        = "Absolute value"
+   , insnMnemonic    = "FABS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xE1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit ]
+                           }
+                       ]
+   }
+
+i_fadd :: X86Insn
+i_fadd = insn
+   { insnDesc        = "Add"
+   , insnMnemonic    = "FADD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 0
+                           , legacyFPUSizable    = Just 2
+                           , legacyFPUDest       = Just 2
+                           , legacyFPUPop        = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fiadd :: X86Insn
+i_fiadd = insn
+   { insnDesc        = "Add"
+   , insnMnemonic    = "FIADD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 0
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RO    T_MInt   RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fbld :: X86Insn
+i_fbld = insn
+   { insnDesc        = "Load binary coded decimal"
+   , insnMnemonic    = "FBLD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDF
+                           , legacyOpcodeExt     = Just 4
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0     Implicit
+                                                   , op  RO    T_M80dec  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fbstp :: X86Insn
+i_fbstp = insn
+   { insnDesc        = "Store BCD integer and pop"
+   , insnMnemonic    = "FBSTP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDF
+                           , legacyOpcodeExt     = Just 6
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0     Implicit
+                                                   , op  RW    T_M80bcd  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fchs :: X86Insn
+i_fchs = insn
+   { insnDesc        = "Change sign"
+   , insnMnemonic    = "FCHS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xE0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit ]
+                           }
+                       ]
+   }
+
+i_fnclex :: X86Insn
+i_fnclex = insn
+   { insnDesc        = "Clear exceptions"
+   , insnMnemonic    = "FNCLEX"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeFullExt = Just 0xE2
+                           , legacyProperties    = [ Extension FPU ]
+                           }
+                       ]
+   }
+
+i_fcmovb :: X86Insn
+i_fcmovb = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVB"
+   , insnFlags       = [ Read [CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmove :: X86Insn
+i_fcmove = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVE"
+   , insnFlags       = [ Read [ZF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 1
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmovbe :: X86Insn
+i_fcmovbe = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVBE"
+   , insnFlags       = [ Read [ZF,CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 2
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmovu :: X86Insn
+i_fcmovu = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVU"
+   , insnFlags       = [ Read [PF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 3
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmovnb :: X86Insn
+i_fcmovnb = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVNB"
+   , insnFlags       = [ Read [CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmovne :: X86Insn
+i_fcmovne = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVNE"
+   , insnFlags       = [ Read [ZF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 1
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmovnbe :: X86Insn
+i_fcmovnbe = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVNBE"
+   , insnFlags       = [ Read [ZF,CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 2
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcmovnu :: X86Insn
+i_fcmovnu = insn
+   { insnDesc        = "Floating-point conditional move"
+   , insnMnemonic    = "FCMOVNU"
+   , insnFlags       = [ Read [PF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 3
+                           , legacyProperties    = [ Extension FPU
+                                                   , Extension CMOV
+                                                   ]
+                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcom :: X86Insn
+i_fcom = insn
+   { insnDesc        = "Compare floating point values"
+   , insnMnemonic    = "FCOM"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 2
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcomp :: X86Insn
+i_fcomp = insn
+   { insnDesc        = "Compare floating point values and pop"
+   , insnMnemonic    = "FCOMP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 3
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcompp :: X86Insn
+i_fcompp = insn
+   { insnDesc        = "Compare floating point values and pop twice"
+   , insnMnemonic    = "FCOMPP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDE
+                           , legacyOpcodeFullExt = Just 0xD9
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  RO    T_ST1       Implicit
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcomi :: X86Insn
+i_fcomi = insn
+   { insnDesc        = "Compare floating point values and set eflags"
+   , insnMnemonic    = "FCOMI"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 6
+                           , legacyFPUPop        = Just 2   -- FCOMIP
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  RO    T_ST        RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fucomi :: X86Insn
+i_fucomi = insn
+   { insnDesc        = "Compare floating point values and set eflags"
+   , insnMnemonic    = "FUCOMI"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 5
+                           , legacyFPUPop        = Just 2   -- FUCOMIP
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  RO    T_ST        RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fcos :: X86Insn
+i_fcos = insn
+   { insnDesc        = "Cosine"
+   , insnMnemonic    = "FCOS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xff
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fdecstp :: X86Insn
+i_fdecstp = insn
+   { insnDesc        = "Decrement stack-top pointer"
+   , insnMnemonic    = "FDECSTP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xf6
+                           , legacyProperties    = [ Extension FPU ]
+                           }
+                       ]
+   }
+
+i_fdiv :: X86Insn
+i_fdiv = insn
+   { insnDesc        = "Divide ST(O)"
+   , insnMnemonic    = "FDIV"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 6
+                           , legacyFPUSizable    = Just 2
+                           , legacyFPUDest       = Just 2
+                           , legacyFPUPop        = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fidiv :: X86Insn
+i_fidiv = insn
+   { insnDesc        = "Divide ST(0)"
+   , insnMnemonic    = "FIDIV"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 6
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RO    T_MInt   RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+
+i_fdivr :: X86Insn
+i_fdivr = insn
+   { insnDesc        = "Divide by ST(0)"
+   , insnMnemonic    = "FDIVR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 7
+                           , legacyFPUSizable    = Just 2
+                           , legacyFPUDest       = Just 2
+                           , legacyFPUPop        = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fidivr :: X86Insn
+i_fidivr = insn
+   { insnDesc        = "Divide by ST(0)"
+   , insnMnemonic    = "FIDIVR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 7
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RO    T_MInt   RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_ffree :: X86Insn
+i_ffree = insn
+   { insnDesc        = "Free floating-point register"
+   , insnMnemonic    = "FFREE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST   RM   -- not really RO, only change the tag
+                                                   ]                       -- associated to the register
+                           }
+                       ]
+   }
+
+i_ficom :: X86Insn
+i_ficom = insn
+   { insnDesc        = "Compare integer"
+   , insnMnemonic    = "FICOM"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 2
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                                                   , op  RO    T_MInt  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_ficomp :: X86Insn
+i_ficomp = insn
+   { insnDesc        = "Compare integer and pop"
+   , insnMnemonic    = "FICOMP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 3
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                                                   , op  RO    T_MInt  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fild :: X86Insn
+i_fild = insn
+   { insnDesc        = "Load integer"
+   , insnMnemonic    = "FILD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_MInt32  RM ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDF
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_MInt16  RM ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDF
+                           , legacyOpcodeExt     = Just 5
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_MInt64  RM ]
+                           }
+                       ]
+   }
+
+i_fincstp :: X86Insn
+i_fincstp = insn
+   { insnDesc        = "Increment stack-top pointer"
+   , insnMnemonic    = "FINCSTP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xf7
+                           , legacyProperties    = [ Extension FPU ]
+                           }
+                       ]
+   }
+
+i_finit :: X86Insn
+i_finit = insn
+   { insnDesc        = "Initialize floating-point unit"
+   , insnMnemonic    = "FINIT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeFullExt = Just 0xE3
+                           , legacyProperties    = [ Extension FPU ]
+                           }
+                       ]
+   }
+
+i_fist :: X86Insn
+i_fist = insn
+   { insnDesc        = "Store integer"
+   , insnMnemonic    = "FIST"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 2
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                                                   , op  WO    T_MInt  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fistp :: X86Insn
+i_fistp = insn
+   { insnDesc        = "Store integer and pop"
+   , insnMnemonic    = "FISTP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 3
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                                                   , op  WO    T_MInt  RM 
+                                                   ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDF
+                           , legacyOpcodeExt     = Just 7
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0     Implicit
+                                                   , op  WO    T_MInt64  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fisttp :: X86Insn
+i_fisttp = insn
+   { insnDesc        = "Store integer with truncation and pop"
+   , insnMnemonic    = "FISTTP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 1
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                                                   , op  WO    T_MInt  RM 
+                                                   ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0     Implicit
+                                                   , op  WO    T_MInt64  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fld :: X86Insn
+i_fld = insn
+   { insnDesc        = "Load floating-point value"
+   , insnMnemonic    = "FLD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 0
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM
+                                                   ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 5
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit
+                                                   , op  RO    T_M80real   RM
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fld1 :: X86Insn
+i_fld1 = insn
+   { insnDesc        = "Load constant +1.0"
+   , insnMnemonic    = "FLD1"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xE8
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fldl2t :: X86Insn
+i_fldl2t = insn
+   { insnDesc        = "Load constant log2(10)"
+   , insnMnemonic    = "FLDL2T"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xE9
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fldl2e :: X86Insn
+i_fldl2e = insn
+   { insnDesc        = "Load constant log2(e)"
+   , insnMnemonic    = "FLDL2E"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xEA
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fldpi :: X86Insn
+i_fldpi = insn
+   { insnDesc        = "Load constant pi"
+   , insnMnemonic    = "FLDPI"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xEB
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fldlg2 :: X86Insn
+i_fldlg2 = insn
+   { insnDesc        = "Load constant log10(2)"
+   , insnMnemonic    = "FLDLG2"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xEC
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+
+i_fldln2 :: X86Insn
+i_fldln2 = insn
+   { insnDesc        = "Load constant log_e(2)"
+   , insnMnemonic    = "FLDLN2"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xED
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+
+i_fldz :: X86Insn
+i_fldz = insn
+   { insnDesc        = "Load constant +0.0"
+   , insnMnemonic    = "FLDZ"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xEE
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fldcw :: X86Insn
+i_fldcw = insn
+   { insnDesc        = "Load x87 FPU control word"
+   , insnMnemonic    = "FLDCW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 5
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_M16  RM ]
+                           }
+                       ]
+   }
+
+
+i_fldenv :: X86Insn
+i_fldenv = insn
+   { insnDesc        = "Load x87 FPU environment"
+   , insnMnemonic    = "FLDENV"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 4
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_M14_28  RM ]
+                           }
+                       ]
+   }
+
+i_fmul :: X86Insn
+i_fmul = insn
+   { insnDesc        = "Multiply"
+   , insnMnemonic    = "FMUL"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 1
+                           , legacyFPUSizable    = Just 2
+                           , legacyFPUDest       = Just 2
+                           , legacyFPUPop        = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fimul :: X86Insn
+i_fimul = insn
+   { insnDesc        = "Multiply"
+   , insnMnemonic    = "FIMUL"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 1
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RO    T_MInt   RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+
+i_fnop :: X86Insn
+i_fnop = insn
+   { insnDesc        = "No operation"
+   , insnMnemonic    = "FNOP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xD0
+                           , legacyProperties    = [ Extension FPU ]
+                           }
+                       ]
+   }
+
+i_fpatan :: X86Insn
+i_fpatan = insn
+   { insnDesc        = "Partial arctangent"
+   , insnMnemonic    = "FPATAN"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF3
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RO    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fprem :: X86Insn
+i_fprem = insn
+   { insnDesc        = "Partial remainder"
+   , insnMnemonic    = "FPREM"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF8
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RO    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fprem1 :: X86Insn
+i_fprem1 = insn
+   { insnDesc        = "Partial remainder"
+   , insnMnemonic    = "FPREM1"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF5
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RO    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fptan :: X86Insn
+i_fptan = insn
+   { insnDesc        = "Partial tangent"
+   , insnMnemonic    = "FPTAN"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RW    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_frndint :: X86Insn
+i_frndint = insn
+   { insnDesc        = "Round to integer"
+   , insnMnemonic    = "FRNDINT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xFC
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit ]
+                           }
+                       ]
+   }
+
+i_frstor :: X86Insn
+i_frstor = insn
+   { insnDesc        = "Restore x87 FPU state"
+   , insnMnemonic    = "FRSTOR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 4
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_M94_108  RM ]
+                           }
+                       ]
+   }
+
+i_fnsave :: X86Insn
+i_fnsave = insn
+   { insnDesc        = "Store x87 FPU state"
+   , insnMnemonic    = "FNSAVE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 6
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_M94_108  RM ]
+                           }
+                       ]
+   }
+
+i_fscale :: X86Insn
+i_fscale = insn
+   { insnDesc        = "Scale"
+   , insnMnemonic    = "FSCALE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xFD
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RO    T_ST1  Implicit
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fsin :: X86Insn
+i_fsin = insn
+   { insnDesc        = "Sine"
+   , insnMnemonic    = "FSIN"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xfe
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fsincos :: X86Insn
+i_fsincos = insn
+   { insnDesc        = "Sine and cosine"
+   , insnMnemonic    = "FSINCOS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xfb
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  WO    T_ST1       Implicit
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fsqrt :: X86Insn
+i_fsqrt = insn
+   { insnDesc        = "Square root"
+   , insnMnemonic    = "FSQRT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xfa
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fst :: X86Insn
+i_fst = insn
+   { insnDesc        = "Store floating-point value"
+   , insnMnemonic    = "FST"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 2
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  WO    T_ST_MReal  RM
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fstp :: X86Insn
+i_fstp = insn
+   { insnDesc        = "Store floating-point value and pop"
+   , insnMnemonic    = "FSTP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 3
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  WO    T_ST_MReal  RM
+                                                   ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDB
+                           , legacyOpcodeExt     = Just 7
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0      Implicit
+                                                   , op  WO    T_M80real  RM
+                                                   ]
+                           }
+                       , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 3
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0      Implicit
+                                                   , op  WO    T_ST       RM
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fnstcw :: X86Insn
+i_fnstcw = insn
+   { insnDesc        = "Store x87 FPU control word"
+   , insnMnemonic    = "FNSTCW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 7
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_M16  RM ]
+                           }
+                       ]
+   }
+
+
+i_fnstenv :: X86Insn
+i_fnstenv = insn
+   { insnDesc        = "Store x87 FPU environment"
+   , insnMnemonic    = "FNSTENV"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 6
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_M14_28  RM ]
+                           }
+                       ]
+   }
+
+
+i_fnstsw :: X86Insn
+i_fnstsw = insn
+   { insnDesc        = "Store x87 FPU status word"
+   , insnMnemonic    = "FNSTSW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 7
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_M16  RM ]
+                           }
+                        , leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDF
+                           , legacyOpcodeFullExt = Just 0xE0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_AX  Implicit ]
+                           }
+                       ]
+   }
+
+i_fsub :: X86Insn
+i_fsub = insn
+   { insnDesc        = "Subtract from ST(O)"
+   , insnMnemonic    = "FSUB"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 4
+                           , legacyFPUSizable    = Just 2
+                           , legacyFPUDest       = Just 2
+                           , legacyFPUPop        = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fisub :: X86Insn
+i_fisub = insn
+   { insnDesc        = "Subtract from ST(0)"
+   , insnMnemonic    = "FISUB"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 4
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RO    T_MInt   RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fsubr :: X86Insn
+i_fsubr = insn
+   { insnDesc        = "Subtract ST(0)"
+   , insnMnemonic    = "FSUBR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD8
+                           , legacyOpcodeExt     = Just 5
+                           , legacyFPUSizable    = Just 2
+                           , legacyFPUDest       = Just 2
+                           , legacyFPUPop        = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                                                   , op  RO    T_ST_MReal  RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fisubr :: X86Insn
+i_fisubr = insn
+   { insnDesc        = "Subtract ST(0)"
+   , insnMnemonic    = "FISUBR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeExt     = Just 5
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RO    T_MInt   RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_ftst :: X86Insn
+i_ftst = insn
+   { insnDesc        = "Test"
+   , insnMnemonic    = "FTST"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xE4
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+i_fucom :: X86Insn
+i_fucom = insn
+   { insnDesc        = "Unordered compare floating point values"
+   , insnMnemonic    = "FUCOM"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 4
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fucomp :: X86Insn
+i_fucomp = insn
+   { insnDesc        = "Unordered compare floating point values and pop"
+   , insnMnemonic    = "FUCOMP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDD
+                           , legacyOpcodeExt     = Just 5
+                           , legacyFPUSizable    = Just 2
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0    Implicit
+                                                   , op  RO    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fucompp :: X86Insn
+i_fucompp = insn
+   { insnDesc        = "Unorderd compare floating point values and pop twice"
+   , insnMnemonic    = "FUCOMPP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xDA
+                           , legacyOpcodeFullExt = Just 0xE9
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                                                   , op  RO    T_ST1       Implicit
+                                                   ]
+                           }
+                       ]
+   }
+
+
+i_fxam :: X86Insn
+i_fxam = insn
+   { insnDesc        = "Examine (classify)"
+   , insnMnemonic    = "FXAM"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xE5
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_ST0       Implicit ]
+                           }
+                       ]
+   }
+
+
+i_fxch :: X86Insn
+i_fxch = insn
+   { insnDesc        = "Exchange register contents"
+   , insnMnemonic    = "FXCH"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeExt     = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                                                   , op  RW    T_ST     RM 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fxrstor :: X86Insn
+i_fxrstor = insn
+   { insnDesc        = "Restore x87 FPU, MMX, XMM, and MXCSR state"
+   , insnMnemonic    = "FXRSTOR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = Map0F
+                           , legacyOpcode        = 0xAE
+                           , legacyOpcodeExt     = Just 1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RO    T_M512     RM ]
+                           }
+                       ]
+   }
+
+i_fxrstor64 :: X86Insn
+i_fxrstor64 = insn
+   { insnDesc        = "Restore x87 FPU, MMX, XMM, and MXCSR state"
+   , insnMnemonic    = "FXRSTOR64"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = Map0F
+                           , legacyOpcode        = 0xAE
+                           , legacyOpcodeExt     = Just 1
+                           , legacyProperties    = [ Extension FPU
+                                                   , RequireRexW
+                                                   ]
+                           , legacyParams        = [ op  RO    T_M512     RM ]
+                           }
+                       ]
+   }
+
+i_fxsave :: X86Insn
+i_fxsave = insn
+   { insnDesc        = "Save x87 FPU, MMX, XMM, and MXCSR state"
+   , insnMnemonic    = "FXSAVE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = Map0F
+                           , legacyOpcode        = 0xAE
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  WO    T_M512     RM ]
+                           }
+                       ]
+   }
+
+i_fxsave64 :: X86Insn
+i_fxsave64 = insn
+   { insnDesc        = "Restore x87 FPU, MMX, XMM, and MXCSR state"
+   , insnMnemonic    = "FXSAVE64"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = Map0F
+                           , legacyOpcode        = 0xAE
+                           , legacyOpcodeExt     = Just 0
+                           , legacyProperties    = [ Extension FPU
+                                                   , RequireRexW
+                                                   ]
+                           , legacyParams        = [ op  RO    T_M512     RM ]
+                           }
+                       ]
+   }
+
+
+i_fxtract :: X86Insn
+i_fxtract = insn
+   { insnDesc        = "Extract exponent and significand"
+   , insnMnemonic    = "FXTRACT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF4
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  WO    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fyl2x :: X86Insn
+i_fyl2x = insn
+   { insnDesc        = "Compute y * log_2(x)"
+   , insnMnemonic    = "FYL2X"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF1
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RO    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
+
+i_fyl2xp1 :: X86Insn
+i_fyl2xp1 = insn
+   { insnDesc        = "Compute y * log_2(x+1)"
+   , insnMnemonic    = "FYL2XP1"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = MapPrimary
+                           , legacyOpcode        = 0xD9
+                           , legacyOpcodeFullExt = Just 0xF9
+                           , legacyProperties    = [ Extension FPU ]
+                           , legacyParams        = [ op  RW    T_ST0  Implicit
+                                                   , op  RO    T_ST1  Implicit 
+                                                   ]
+                           }
+                       ]
+   }
 
 data FlaggedOpcode = FlaggedOpcode
    { fgOpcode        :: Word8

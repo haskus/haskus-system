@@ -55,6 +55,7 @@ data EncodingProperties
                               --   instruction in LongMode
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
+   | RequireRexW              -- ^ Require REX.W
    deriving (Show,Eq)
 
 data X86Extension
@@ -71,6 +72,7 @@ data X86Extension
    | CLFLUSH         -- ^ CLFLUSH instruction
    | CX8             -- ^ CMPXCHG8B instruction
    | FPU             -- ^ x87 instructions
+   | CMOV            -- ^ CMOVs instructions (and FCMOVcc if FPU is set too)
    deriving (Show,Eq)
 
 isImmediate :: OperandEnc -> Bool
@@ -148,6 +150,11 @@ data Encoding
                                                       --   Sizable bit.  Imm8 operand is used
                                                       --   and sign-extended if the given bit is
                                                       --   set
+      , legacyFPUDest         :: Maybe Int            -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
+                                                      --   only if both operands are registers!
+      , legacyFPUPop          :: Maybe Int            -- ^ Opcode bit: pop the FPU register,
+                                                      --   only if destination is (ST(i))
+      , legacyFPUSizable      :: Maybe Int            -- ^ Opcode bit: change the FPU size (only if memory operand)
       , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
       , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
       }
