@@ -20,12 +20,26 @@ where
 
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Insns
+import ViperVM.Arch.X86_64.Assembler.Size
 
 import Data.Bits
 import Data.Maybe
 import Data.Word
 import qualified Data.Map as Map
 import qualified Data.Vector as V
+
+data MapEntry = MapEntry
+   { entryInsn :: X86Insn        -- ^ Instruction
+   , entryEncoding :: Encoding   -- ^ Encoding
+   }
+
+data MatchedEntry = MatchedEntry
+   { matchedInsn        :: X86Insn
+   , matchedEncoding    :: Encoding
+   , matchedVariant     :: EncodingVariant
+   , matchedOperandSize :: OperandSize
+   , matchedParams      :: [Operand]
+   }
 
 data FlaggedOpcode = FlaggedOpcode
    { fgOpcode        :: Word8

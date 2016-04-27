@@ -7,6 +7,13 @@
 -- encode that ST(n+1) becomes ST(n) for all n)
 --
 -- TODO: X87 instructions: FPU status flags (C0,C1,C2,C3) are not indicated yet
+--
+-- FIXME: MemAlign property needs to be checked (added only since vhaddpd)
+--
+-- TODO: add potential exceptions
+-- TODO: add required privilege 
+--
+-- TODO: add pseudo-code for each op
 module ViperVM.Arch.X86_64.Assembler.Insns
    ( X86Insn(..)
    , X86Arch(..)
@@ -121,6 +128,7 @@ data VexLW
 -- | Instruction properties
 data Properties
    = FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
+   | MemAlign Int             -- ^ Memory alignment constraint in bytes
    deriving (Show,Eq)
 
 -- | Encoding properties
@@ -129,6 +137,7 @@ data EncodingProperties
    | LegacyModeSupport        -- ^ Supported in legacy/compatibility mode
    | Lockable                 -- ^ Support LOCK prefix (only if a memory operand
                               --   is used)
+   | Repeatable               -- ^ Allow repeat prefix
    | DoubleSizable            -- ^ Default size is 32+32 (a pair of registers is used)
                               --   Can be extended to 64+64 with Rex.W
    | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
@@ -357,10 +366,7 @@ instructions =
    , i_btr 
    , i_bts 
    , i_bzhi 
-   , i_rel_near_call 
-   , i_ind_near_call 
-   , i_abs_far_call 
-   , i_abs_ind_far_call 
+   , i_call 
    , i_extend_signed 
    , i_clac
    , i_clc
@@ -544,6 +550,28 @@ instructions =
    , i_fxtract
    , i_fyl2x
    , i_fyl2xp1
+   , i_haddpd
+   , i_vhaddpd
+   , i_haddps
+   , i_vhaddps
+   , i_hlt
+   , i_hsubpd
+   , i_vhsubpd
+   , i_hsubps
+   , i_vhsubps
+   , i_idiv
+   , i_imul
+   , i_in
+   , i_inc
+   , i_ins
+   , i_insertps
+   , i_vinsertps
+   , i_int
+   , i_into
+   , i_invd
+   , i_invlpg
+   , i_invpcid
+   , i_iret
    ]
 
 i_aaa :: X86Insn
@@ -1969,9 +1997,9 @@ i_bzhi = insn
                           ]
    }
 
-i_rel_near_call :: X86Insn
-i_rel_near_call = insn
-   { insnDesc        = "Relative near call"
+i_call :: X86Insn
+i_call = insn
+   { insnDesc        = "Call procedure"
    , insnMnemonic    = "CALL"
    , insnFlags       = [Undefined allFlags]
    , insnEncodings   = [ leg
@@ -1983,15 +2011,7 @@ i_rel_near_call = insn
                                                   ]
                            , legacyParams       = [ op    RO    T_REL_16_32    Imm ]
                            }
-                       ]
-   }
-
-i_ind_near_call :: X86Insn
-i_ind_near_call = insn
-   { insnDesc        = "Indirect near call"
-   , insnMnemonic    = "CALL"
-   , insnFlags       = [Undefined allFlags]
-   , insnEncodings   = [ leg
+                       , leg
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0xFF
                            , legacyOpcodeExt    = Just 2
@@ -2007,15 +2027,7 @@ i_ind_near_call = insn
                                                   ]
                            , legacyParams       = [ op    RO    T_RM64         RM ]
                            }
-                       ]
-   }
-
-i_abs_far_call :: X86Insn
-i_abs_far_call = insn
-   { insnDesc        = "Absolute far call"
-   , insnMnemonic    = "CALL"
-   , insnFlags       = [Undefined allFlags]
-   , insnEncodings   = [ leg
+                       , leg
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x9A
                            , legacyProperties   = [LegacyModeSupport]
@@ -2027,15 +2039,7 @@ i_abs_far_call = insn
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ op    RO    T_PTR_16_32    Imm ]
                            }
-                       ]
-   }
-
-i_abs_ind_far_call :: X86Insn
-i_abs_ind_far_call = insn
-   { insnDesc        = "Absolute indirect far call"
-   , insnMnemonic    = "CALL"
-   , insnFlags       = [Undefined allFlags]
-   , insnEncodings   = [ leg
+                       , leg
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0xFF
                            , legacyOpcodeExt    = Just 3
@@ -3678,12 +3682,11 @@ i_div = insn
                            , legacyOpcode       = 0xF6
                            , legacyOpcodeExt    = Just 6
                            , legacySizable      = Just 0
-                           , legacyProperties   = [ Lockable
-                                                  , LegacyModeSupport
+                           , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    T_RM        RM 
-                                                  , op    RW    T_xDX_xAX   Implicit
+                           , legacyParams       = [ op    RW    T_xDX_xAX   Implicit
+                                                  , op    RO    T_RM        RM 
                                                   ]
                            }
                        ]
@@ -5381,6 +5384,475 @@ i_fyl2xp1 = insn
                            , legacyParams        = [ op  RW    T_ST0  Implicit
                                                    , op  RO    T_ST1  Implicit 
                                                    ]
+                           }
+                       ]
+   }
+
+i_haddpd :: X86Insn
+i_haddpd = insn
+   { insnDesc        = "Packed double-FP horizontal add"
+   , insnMnemonic    = "HADDPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x7C
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE3
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vhaddpd :: X86Insn
+i_vhaddpd = insn
+   { insnDesc        = "Packed double-FP horizontal add"
+   , insnMnemonic    = "VHADDPD"
+   , insnProperties  = [ MemAlign 16 ]
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x7C
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_V128_256     Vvvv
+                                                  , op     RO    T_VM128_256    RM
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_haddps :: X86Insn
+i_haddps = insn
+   { insnDesc        = "Packed single-FP horizontal add"
+   , insnMnemonic    = "HADDPS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF2
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x7C
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE3
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vhaddps :: X86Insn
+i_vhaddps = insn
+   { insnDesc        = "Packed single-FP horizontal add"
+   , insnMnemonic    = "VHADDPS"
+   , insnProperties  = [ MemAlign 16 ]
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF2
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x7C
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_V128_256     Vvvv
+                                                  , op     RO    T_VM128_256    RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_hlt :: X86Insn
+i_hlt = insn
+   { insnDesc        = "Halt"
+   , insnMnemonic    = "HLT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap    = MapPrimary
+                           , legacyOpcode       = 0xF4
+                           , legacyProperties   = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  ]
+                           }
+                       ]
+   }
+
+i_hsubpd :: X86Insn
+i_hsubpd = insn
+   { insnDesc        = "Packed double-FP horizontal subtract"
+   , insnMnemonic    = "HSUBPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x7D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE3
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vhsubpd :: X86Insn
+i_vhsubpd = insn
+   { insnDesc        = "Packed double-FP horizontal subtract"
+   , insnMnemonic    = "VHSUBPD"
+   , insnProperties  = [ MemAlign 16 ]
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x7D
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_V128_256     Vvvv
+                                                  , op     RO    T_VM128_256    RM
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_hsubps :: X86Insn
+i_hsubps = insn
+   { insnDesc        = "Packed single-FP horizontal subtract"
+   , insnMnemonic    = "HSUBPS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF2
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x7D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE3
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vhsubps :: X86Insn
+i_vhsubps = insn
+   { insnDesc        = "Packed single-FP horizontal subtract"
+   , insnMnemonic    = "VHSUBPS"
+   , insnProperties  = [ MemAlign 16 ]
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF2
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x7D
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_V128_256     Vvvv
+                                                  , op     RO    T_VM128_256    RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_idiv :: X86Insn
+i_idiv = insn
+   { insnDesc        = "Signed divide"
+   , insnMnemonic    = "IDIV"
+   , insnProperties  = [FailOnZero 0]
+   , insnFlags       = [Undefined [CF,OF,SF,ZF,AF,PF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xF6
+                           , legacyOpcodeExt       = Just 7
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_xDX_xAX   Implicit
+                                                     , op    RO    T_RM        RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_imul :: X86Insn
+i_imul = insn
+   { insnDesc        = "Signed multiply"
+   , insnMnemonic    = "IMUL"
+   , insnFlags       = [ Modified  [OF,CF]
+                       , Undefined [SF,ZF,AF,PF]
+                       ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xF6
+                           , legacyOpcodeExt       = Just 5
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_xDX_xAX   Implicit
+                                                     , op    RO    T_RM        RM
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAF
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_R16_32_64     Reg
+                                                     , op    RO    T_RM16_32_64    RM
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x69
+                           , legacySignExtendable  = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_R16_32_64    Reg
+                                                     , op    RO    T_RM16_32_64   RM
+                                                     , op    RO    T_Imm          Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+i_in :: X86Insn
+i_in = insn
+   { insnDesc        = "Input from port"
+   , insnMnemonic    = "IN"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xE4
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    WO    T_AL_AX_EAX   Implicit
+                                                     , op    RO    T_Imm8        Imm
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xEC
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    WO    T_AL_AX_EAX   Implicit
+                                                     , op    RO    T_DX          Implicit
+                                                     ]
+                           }
+
+                       ]
+   }
+
+i_inc :: X86Insn
+i_inc = insn
+   { insnDesc        = "Increment by 1"
+   , insnMnemonic    = "INC"
+   , insnFlags       = [ Modified [OF,SF,ZF,AF,PF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xFE
+                           , legacyOpcodeExt       = Just 0
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ Lockable
+                                                     , LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_RM   RM ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x40
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , Lockable
+                                                     ]
+                           , legacyParams          = [ op    RW    T_R16_32    OpcodeLow3 ]
+                           }
+                       ]
+   }
+
+i_ins :: X86Insn
+i_ins = insn
+   { insnDesc        = "Input from port to string"
+   , insnMnemonic    = "IN"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x6C
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultOperandSize64
+                                                     , Repeatable
+                                                     ]
+                           , legacyParams          = [ op    RW    T_rDI   Implicit
+                                                     , op    RO    T_DX    Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_insertps :: X86Insn
+i_insertps = insn
+   { insnDesc        = "Insert packed single precision floating-point value"
+   , insnMnemonic    = "INSERTPS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcode          = 0x21
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     , op    RO    T_Imm8   Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vinsertps :: X86Insn
+i_vinsertps = insn
+   { insnDesc        = "Insert packed single precision floating-point value"
+   , insnMnemonic    = "VINSERTPS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x21
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128     Reg
+                                                  , op     RO    T_V128     Vvvv
+                                                  , op     RO    T_VM128    RM
+                                                  , op     RO    T_Imm8     Imm
+                                                  ]
+                           }
+                       ]
+   }
+
+i_int :: X86Insn
+i_int = insn
+   { insnDesc        = "Call to interrupt procedure"
+   , insnMnemonic    = "INT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xCC
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RO    T_3   Implicit ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xCD
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RO    T_Imm8 Imm ]
+                           }
+                       ]
+   }
+
+i_into :: X86Insn
+i_into = insn
+   { insnDesc        = "Call to interrupt procedure if overflow"
+   , insnMnemonic    = "INTO"
+   , insnFlags       = [ Read [OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xCE
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RO    T_3   Implicit ]
+                           }
+                       ]
+   }
+
+i_invd :: X86Insn
+i_invd = insn
+   { insnDesc        = "Invalid internal caches"
+   , insnMnemonic    = "INVD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x08
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Arch Intel486
+                                                     ]
+                           }
+                       ]
+   }
+
+i_invlpg :: X86Insn
+i_invlpg = insn
+   { insnDesc        = "Invalid TLB entry"
+   , insnMnemonic    = "INVLPG"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x01
+                           , legacyOpcodeExt       = Just 7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Arch Intel486
+                                                     ]
+                           , legacyParams          = [ op    RO    T_M   RM ]
+                           }
+                       ]
+   }
+
+i_invpcid :: X86Insn
+i_invpcid = insn
+   { insnDesc        = "Invalid process-context identifier"
+   , insnMnemonic    = "INVPCID"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x82
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension INVPCID
+                                                     ]
+                           , legacyParams          = [ op   RO    T_R32_64    Reg
+                                                     , op   RO    T_M128      RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_iret :: X86Insn
+i_iret = insn
+   { insnDesc        = "Interrupt return"
+   , insnMnemonic    = "IRET"
+   , insnFlags       = [ Undefined allFlags ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xCF
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
                            }
                        ]
    }

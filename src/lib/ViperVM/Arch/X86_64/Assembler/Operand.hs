@@ -5,7 +5,7 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    , OperandEnc(..)
    , OperandSpec (..)
    , AccessMode (..)
-   , Op(..)
+   , Operand(..)
    , Addr(..)
    , maybeOpTypeReg
    )
@@ -18,7 +18,7 @@ import ViperVM.Arch.X86_64.Assembler.ModRM
 import Data.Word
 
 -- | An operand
-data Op
+data Operand
    = OpImmediate SizedValue               -- ^ Immediate value
    | OpSignExtendImmediate SizedValue     -- ^ Sign-extended immediate value
    | OpReg Register                       -- ^ Register
@@ -60,6 +60,8 @@ data OperandType
    | T_PTR_16_16  -- ^ Absolute address
    | T_PTR_16_32  -- ^ Absolute address
    | T_Mask       -- ^ Mask for vectors
+   | T_3          -- ^ Immediate value 3
+   | T_4          -- ^ Immediate value 4
 
    -- General purpose registers
    | T_R          -- ^ General purpose register
@@ -80,6 +82,7 @@ data OperandType
    | T_M_PAIR     -- ^ Pair of words in memory (words are operand-size large)
    | T_M16_XX     -- ^ Pair of words in memory: m16:XX where XX can be 16, 32 or 64
    | T_M64_128    -- ^ 64- or 128-bit memory
+   | T_M128       -- ^ 128-bit memory
    | T_M          -- ^ Any memory address
    | T_M16        -- ^ 16-bit memory
    | T_M14_28     -- ^ FPU environement
@@ -103,6 +106,7 @@ data OperandType
 
    -- Specific registers
    | T_Accu       -- ^ Accumulator register (xAX)
+   | T_AL_AX_EAX  -- ^ Accumulator registers except RAX
    | T_AX_EAX_RAX -- ^ Accumulator registers except AL
    | T_xDX_xAX    -- ^ The pair (DX:AX), (EDX:EAX) or (RDX:RAX). If 8-bit mode is supported, it is only AX
    | T_xCX_xBX    -- ^ The pair (CX:BX), (ECX:EBX) or (RCX:RBX)
@@ -112,6 +116,7 @@ data OperandType
    | T_xDX        -- ^ EDX or RDX
    | T_AL         -- ^ AL register
    | T_AX         -- ^ AX register
+   | T_DX         -- ^ AX register
    | T_XMM0       -- ^ XMM0 register
    | T_rSI        -- ^ DS:rSI
    | T_rDI        -- ^ ES:rDI
@@ -163,6 +168,8 @@ maybeOpTypeReg = \case
    T_PTR_16_16   -> False
    T_PTR_16_32   -> False
    T_Mask        -> False
+   T_3           -> False
+   T_4           -> False
 
    T_R           -> True
    T_R16         -> True
@@ -181,6 +188,7 @@ maybeOpTypeReg = \case
    T_M_PAIR      -> False
    T_M16_XX      -> False
    T_M64_128     -> False
+   T_M128        -> False
    T_M           -> False
    T_MFP         -> False
    T_M512        -> False
@@ -198,6 +206,7 @@ maybeOpTypeReg = \case
    T_VM128_256   -> True
 
    T_Accu        -> False
+   T_AL_AX_EAX   -> False
    T_AX_EAX_RAX  -> False
    T_xDX_xAX     -> False
    T_xCX_xBX     -> False
@@ -205,6 +214,7 @@ maybeOpTypeReg = \case
    T_xBX         -> False
    T_xCX         -> False
    T_xDX         -> False
+   T_DX          -> False
    T_AL          -> False
    T_AX          -> False
    T_XMM0        -> False

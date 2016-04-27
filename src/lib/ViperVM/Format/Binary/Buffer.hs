@@ -13,6 +13,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferRead
    , bufferDrop
    , bufferTake
+   , bufferTakeAtMost
    , bufferPack
    , bufferPackList
    , bufferPackPtr
@@ -76,6 +77,12 @@ bufferTake n buf
    | otherwise          = buf
          { bufferSize   = n
          }
+
+-- | Take some bytes O(1)
+bufferTakeAtMost :: Word64 -> Buffer -> Buffer
+bufferTakeAtMost n buf
+   | bufferSize buf < n = buf
+   | otherwise          = bufferTake n buf
 
 -- | Pack a Storable
 bufferPack :: forall a. Storable a => a -> Buffer

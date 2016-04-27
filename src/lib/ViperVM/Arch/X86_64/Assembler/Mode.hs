@@ -65,6 +65,7 @@ data X86Extension
    | CX8             -- ^ CMPXCHG8B instruction
    | FPU             -- ^ x87 instructions
    | CMOV            -- ^ CMOVs instructions (and FCMOVcc if FPU is set too)
+   | INVPCID         -- ^ Invalid process-context identifier (INVPCID) extension
    deriving (Show,Eq)
 
 

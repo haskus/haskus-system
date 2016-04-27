@@ -35,6 +35,21 @@ import Control.Monad
 import Control.Monad.Identity
 
 -- ===========================================================================
+-- X86 Instruction
+-- ===========================================================================
+
+---------------------------------------------------------------------------
+-- Instruction length
+-- ~~~~~~~~~~~~~~~~~~
+-- 
+-- An instruction is at most 15 bytes long.
+---------------------------------------------------------------------------
+
+-- | Prepare a buffer for instruction reading
+prepareBuffer :: Buffer -> Buffer
+prepareBuffer = bufferTakeAtMost 15
+
+-- ===========================================================================
 -- Legacy encoding
 -- ===========================================================================
 
@@ -63,11 +78,8 @@ readLegacyPrefixes ::
    (ReaderM () s
    ) => MState s LegacyPrefixes
 readLegacyPrefixes = do
-   ws <- forM [0..4] $ \(_ :: Int) -> do
-      w <- binPeek
-      if isLegacyPrefix w
-         then binSkip 1 >> return (Just w)
-         else return Nothing
+   ws <- forM [0..4] $ \(_ :: Int) ->
+      binTryReadIf isLegacyPrefix
 
    return $ LegacyPrefixes (checkLegacyPrefixes (catMaybes ws))
 
@@ -167,11 +179,10 @@ readRexPrefix ::
 readRexPrefix = do
    
    mode <- mGet
-   w <- binPeek
 
    -- REX is only supported in 64-bit mode
-   if is64bitMode mode && isRexPrefix w
-      then binSkip 1 >> return (Just (Rex w))
+   if is64bitMode mode
+      then fmap Rex <$> binTryReadIf isRexPrefix
       else return Nothing
 
 ---------------------------------------------------------------------------
@@ -180,7 +191,7 @@ readRexPrefix = do
 --
 -- Legacy opcode can belong to one of the following opcode maps:
 --    - Primary
---    - Secondary (escaped with 0x0F)
+--    - 0x0F
 --    - 0x0F38
 --    - 0x0F3A
 --    - 3DNow! (escaped with 0x0F0F, opcode byte in last instruction byte)
@@ -194,26 +205,21 @@ readLegacyOpcode ::
 readLegacyOpcode = do
    ps  <- readLegacyPrefixes
    rex <- readRexPrefix
-   w   <- binPeek
 
    let
       -- TODO: use mode or sets...
       is3DNowAllowed    = True
       ret m x = return (Just (OpLegacy ps rex m x))
 
-   case w of
-      0x0F -> binSkip 1 >> binRead >>= \case
-         
-         0x0F | is3DNowAllowed ->
-            -- the real 3DNow! opcode is stored in the last byte and will be set
-            -- later
-            ret Map3DNow 0
-
-         0x3A -> ret Map0F3A =<< binRead
-         0x38 -> ret Map0F38 =<< binRead
-         w2   -> ret Map0F w2
-
-      w1 -> ret MapPrimary w1
+   binWith $ \case
+      0x0F -> binWith $ \case
+         -- the real 3DNow! opcode is stored in the last byte and
+         -- will be set later
+         0x0F | is3DNowAllowed -> ret Map3DNow 0
+         0x3A                  -> binWith (ret Map0F3A)
+         0x38                  -> binWith (ret Map0F38)
+         w2                    -> ret Map0F w2
+      w1   -> ret MapPrimary w1
 
 -- ===========================================================================
 -- VEX/XOP encodings
@@ -235,38 +241,47 @@ readVexXopOpcode ::
    , HArrayIndexT X86Mode s
    ) => MState s (Maybe Opcode)
 readVexXopOpcode = do
-   w    <- binPeek
-   w16  <- binPeek
    mode <- mGet
 
    let
       -- TODO: use mode or sets...
-      isXOPAllowed      = True
-      isVEXAllowed      = True
+      isXOPAllowed = True
+      isVEXAllowed = True
 
       -- VEX prefixes are supported in 32-bit and 16-bit modes
       -- They overload LES and LDS opcodes so that the first two bits
       -- of what would be ModRM are invalid (11b) for LES/LDS
-      modrmMode         = (w16 :: Word16) `unsafeShiftR` 14
-      isVexMode         = is64bitMode mode || modrmMode == 0x03
+      testMod :: Word8 -> Bool
+      testMod w    = w `unsafeShiftR` 6 == 0x03
+      isVexMode    = if is64bitMode mode
+                        then return True
+                        else binTryPeek >>= \case
+                              Just w | testMod w -> return True
+                              _                  -> return False
+                        
+   binWith $ \case
+      0x8F  |  isXOPAllowed ->
+                  binWith $ \a ->
+                     binWith $ \b ->
+                        binWith $ \c ->
+                           return (Just (OpXop (Vex3 a b) c))
 
-   case (w :: Word8) of
-      0x8F  |  isXOPAllowed -> do
-                  binSkip 1
-                  o <- OpXop <$> (Vex3 <$> binRead <*> binRead) <*> binRead
-                  return (Just o)
+      0xC4  |  isVEXAllowed -> isVexMode >>= \case
+                  False -> return Nothing
+                  True  ->
+                     binWith $ \a ->
+                        binWith $ \b ->
+                           binWith $ \c ->
+                              return (Just (OpVex (Vex3 a b) c))
 
-      0xC4  |  isVEXAllowed && isVexMode -> do
-                  binSkip 1
-                  o <- OpVex <$> (Vex3 <$> binRead <*> binRead) <*> binRead
-                  return (Just o)
+      0xC5  |  isVEXAllowed -> isVexMode >>= \case
+                  False -> return Nothing
+                  True  ->
+                     binWith $ \a ->
+                        binWith $ \b ->
+                           return (Just (OpVex (Vex2 a) b))
 
-      0xC5  |  isVEXAllowed && isVexMode -> do
-                  binSkip 1
-                  o <- OpVex <$> (Vex2 <$> binRead) <*> binRead
-                  return (Just o)
-
-      _  -> return Nothing
+      (_ :: Word8) -> return Nothing
 
       
 -- ===========================================================================
