@@ -333,6 +333,9 @@ readOpcode = firstJust
 -- 
 --    -- if there is none, return an error
 --    -- TODO
+--
+--    -- check for required prefixes
+--    -- TODO
 -- 
 --    -- determine if we need to read the next byte
 --    -- TODO

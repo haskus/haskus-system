@@ -132,9 +132,9 @@ showInsn i = do
             H.tr $ do
                case X86.vexMandatoryPrefix e of
                   Nothing -> H.td (toHtml " ")
-                  Just p  -> H.td (toHtml (myShowHex p))
+                  Just p  -> H.td (toHtml (myShowHex True p))
                H.td (toHtml (show (X86.vexOpcodeMap e)))
-               H.td (toHtml (myShowHex (X86.vexOpcode e)))
+               H.td (toHtml (myShowHex True (X86.vexOpcode e)))
                H.td (toHtml (show (X86.vexLW e)))
                let 
                   ops = X86.vexParams e
@@ -162,10 +162,10 @@ showInsn i = do
    H.hr
 
 
-myShowHex :: (Show a,Integral a,Ord a,Num a) => a -> String
-myShowHex x = pad ++ fmap toUpper (showHex x "")
+myShowHex :: (Show a,Integral a,Ord a,Num a) => Bool -> a -> String
+myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
    where
-      pad = if x <= 0xF then "0" else ""
+      pad = if usePad && x <= 0xF then "0" else ""
 
 
 
@@ -173,13 +173,13 @@ showLegEnc :: Word8 -> Bool -> Bool -> Bool -> X86.Encoding -> Html
 showLegEnc oc rv sz se e = H.tr $ do
    case X86.legacyMandatoryPrefix e of
       Nothing -> H.td (toHtml " ")
-      Just p  -> H.td (toHtml (myShowHex p))
+      Just p  -> H.td (toHtml (myShowHex True p))
    H.td (toHtml (show (X86.legacyOpcodeMap e)))
    H.td $ do
-      toHtml (myShowHex oc)
+      toHtml (myShowHex True oc)
       case X86.legacyOpcodeFullExt e of
          Nothing -> return ()
-         Just p  -> toHtml (" " ++ myShowHex p)
+         Just p  -> toHtml (" " ++ myShowHex True p)
       case X86.legacyOpcodeExt e of
          Nothing -> return ()
          Just p  -> toHtml (" /" ++ show p)
@@ -238,9 +238,9 @@ showMap :: V.Vector [X86.MapEntry] -> Html
 showMap v = (H.table $ do
    H.tr $ do
       H.th (toHtml "Nibble")
-      forM_ [0..15] $ \x -> H.th (toHtml (myShowHex (x :: Int)))
+      forM_ [0..15] $ \x -> H.th (toHtml (myShowHex False (x :: Int)))
    forM_ [0..15] $ \l -> H.tr $ do
-      H.th (toHtml (myShowHex l))
+      H.th (toHtml (myShowHex False l))
       forM_ [0..15] $ \h -> do
          let is = fmap X86.entryInsn $ v V.! (l `shiftL` 4 + h)
          H.td $ sequence_
