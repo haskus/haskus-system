@@ -29,13 +29,16 @@ data MapEntry = MapEntry
 -- | Some instructions store flags and values into the opcode byte. This method
 -- returns the list of potential opcodes for an encoding
 genEncodingOpcodeVariants :: Encoding -> [Word8]
-genEncodingOpcodeVariants e = oc : (opoc ++ catMaybes [roc,szoc,seoc,fdoc,fpoc,fsoc])
+genEncodingOpcodeVariants e = oc : (opoc ++ catMaybes [roc,rsoc,szoc,seoc,fdoc,fpoc,fsoc])
    where
       -- the original opcode
       oc = encOpcode e
       -- reversed (check: can we have reversed + operand in opcode (or something
       -- else)?)
-      roc = setBit oc <$> encReversableBit e
+      (roc,rsoc) = case (encReversableBit e, encSizableBit e) of
+               (Just i, Nothing) -> (Just (setBit oc i), Nothing)
+               (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
+               _                 -> (Nothing,Nothing)
       -- sizable, sign-extended
       (szoc,seoc) = case (encSizableBit e, encSignExtendImmBit e) of
                (Nothing,Nothing) -> (Nothing,Nothing)
