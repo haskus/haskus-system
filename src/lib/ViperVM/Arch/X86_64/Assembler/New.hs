@@ -323,6 +323,9 @@ readOpcode = firstJust
 --    table <- case getOpcodeMap oc of
 --       MapLegacy
 --       --TODO
+--
+--    -- handle 3DNow!
+--    -- TODO
 -- 
 --    -- get the candidate instructions for the opcode
 --    -- TODO

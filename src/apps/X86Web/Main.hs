@@ -2,7 +2,7 @@
 
 import CmdLine (Options(..), getOptions)
 
-import qualified ViperVM.Arch.X86_64.Assembler.Insns as X86
+import qualified ViperVM.Arch.X86_64.Assembler.Insns  as X86
 import qualified ViperVM.Arch.X86_64.Assembler.Tables as X86
 
 import Paths_ViperVM
@@ -17,6 +17,7 @@ import Happstack.Server
 import Data.Word
 import Data.Bits
 import qualified Data.List as List
+import qualified Data.Map  as Map
 import qualified Data.Vector as V
 
 import Text.Blaze.Html5 ((!), toHtml, docTypeHtml, Html, toValue)
@@ -99,17 +100,17 @@ showInsn i = do
    H.ul $ forM_ (X86.insnFlags i) $ \f -> H.li (toHtml (show f))
    H.h3 (toHtml "Encodings")
    forM_ (X86.insnEncodings i) $ \case
-      e@X86.LegacyEncoding {} -> do
+      X86.LegacyEncoding {} -> do
          H.h4 (toHtml "Legacy encoding")
-         H.table (do
+         H.table (
             H.tr $ do
                H.th (toHtml "Mandatory prefix")
                H.th (toHtml "Opcode map")
                H.th (toHtml "Opcode")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            forM_ (X86.getLegacyOpcodes e) $ \x ->
-               showLegEnc (X86.fgOpcode x) (X86.fgReversed x) (X86.fgSized x) (X86.fgSignExtended x) e
+            -- forM_ (X86.getLegacyOpcodes e) $ \x ->
+            --    showLegEnc (X86.fgOpcode x) (X86.fgReversed x) (X86.fgSized x) (X86.fgSignExtended x) e
 
 
             ) ! A.class_ (toValue "insn_table")
@@ -200,26 +201,26 @@ showMaps :: Html
 showMaps = do
    H.h1 (toHtml "Legacy encodings")
    H.h2 (toHtml "Primary opcode map")
-   showMap X86.opcodeMapPrimary
+   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.MapPrimary)
    H.h2 (toHtml "Secondary opcode map")
-   showMap X86.opcodeMap0F
+   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map0F)
    H.h2 (toHtml "0F38 opcode map")
-   showMap X86.opcodeMap0F38
+   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map0F38)
    H.h2 (toHtml "0F3A opcode map")
-   showMap X86.opcodeMap0F3A
+   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map0F3A)
    H.h2 (toHtml "3DNow! opcode map")
-   showMap X86.opcodeMap3DNow
+   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map3DNow)
 
    H.h1 (toHtml "VEX encodings")
    H.h2 (toHtml "VEX 1 opcode map")
-   showMap X86.opcodeMapVex1
+   showMap (X86.opcodeMaps Map.! X86.MapVex 1)
    H.h2 (toHtml "VEX 2 opcode map")
-   showMap X86.opcodeMapVex2
+   showMap (X86.opcodeMaps Map.! X86.MapVex 2)
    H.h2 (toHtml "VEX 3 opcode map")
-   showMap X86.opcodeMapVex3
+   showMap (X86.opcodeMaps Map.! X86.MapVex 3)
 
 
-showMap :: V.Vector [(X86.Encoding,X86.X86Insn)] -> Html
+showMap :: V.Vector [X86.MapEntry] -> Html
 showMap v = (H.table $ do
    H.tr $ do
       H.th (toHtml "Nibble")
@@ -227,7 +228,7 @@ showMap v = (H.table $ do
    forM_ [0..15] $ \h -> H.tr $ do
       H.th (toHtml (showHex h ""))
       forM_ [0..15] $ \l -> do
-         let is = fmap snd $ v V.! (l `shiftL` 4 + h)
+         let is = fmap X86.entryInsn $ v V.! (l `shiftL` 4 + h)
          H.td $ sequence_
             $ List.intersperse (toHtml ", ")
             $ fmap showMnemo 

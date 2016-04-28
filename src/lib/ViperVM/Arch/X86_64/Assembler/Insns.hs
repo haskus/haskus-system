@@ -41,9 +41,13 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , encOperands
    , encMandatoryPrefix
    , encProperties
+   , encParams
    , encSizableBit
    , encSignExtendImmBit
    , encReversableBit
+   , encFPUSizableBit
+   , encFPUDestBit
+   , encFPUPopBit
    , encLockable
    , encRequireModRM
    , amd3DNowEncoding
@@ -262,6 +266,10 @@ encProperties :: Encoding -> [EncodingProperties]
 encProperties e@LegacyEncoding {} = legacyProperties e
 encProperties VexEncoding      {} = []
 
+encParams :: Encoding -> [OperandSpec]
+encParams e@LegacyEncoding {} = legacyParams e
+encParams e@VexEncoding    {} = vexParams e
+
 encSizableBit :: Encoding -> Maybe Int
 encSizableBit e@LegacyEncoding {} = legacySizable e
 encSizableBit _                   = Nothing
@@ -273,6 +281,18 @@ encSignExtendImmBit _                   = Nothing
 encReversableBit :: Encoding -> Maybe Int
 encReversableBit e@LegacyEncoding {} = legacyReversable e
 encReversableBit _                   = Nothing
+
+encFPUSizableBit :: Encoding -> Maybe Int
+encFPUSizableBit e@LegacyEncoding {} = legacyFPUSizable e
+encFPUSizableBit _                   = Nothing
+
+encFPUDestBit :: Encoding -> Maybe Int
+encFPUDestBit e@LegacyEncoding {} = legacyFPUDest e
+encFPUDestBit _                   = Nothing
+
+encFPUPopBit :: Encoding -> Maybe Int
+encFPUPopBit e@LegacyEncoding {} = legacyFPUPop e
+encFPUPopBit _                   = Nothing
 
 -- | Indicate if LOCK prefix is allowed
 encLockable :: Encoding -> Bool

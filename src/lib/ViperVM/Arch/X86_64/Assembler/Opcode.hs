@@ -39,7 +39,7 @@ data OpcodeMap
    = MapLegacy LegacyMap
    | MapVex    !Word8
    | MapXop    !Word8
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 data LegacyMap
    = MapPrimary
@@ -48,7 +48,7 @@ data LegacyMap
    | Map0F3A
    | Map3DNow
    | MapX87
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -------------------------------------------------------------------
 -- REX prefix

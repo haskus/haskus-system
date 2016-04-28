@@ -386,6 +386,7 @@ executable X86Web
       ,  optparse-applicative >= 0.12
       ,  vector               >= 0.10
       ,  HTTP                 >= 4000
+      ,  containers           >= 0.5
 
 
 executable ElfWeb
