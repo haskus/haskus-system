@@ -16,6 +16,7 @@ import Numeric
 import Happstack.Server
 import Data.Word
 import Data.Bits
+import Data.Maybe
 import qualified Data.List as List
 import qualified Data.Map  as Map
 import qualified Data.Vector as V
@@ -100,17 +101,21 @@ showInsn i = do
    H.ul $ forM_ (X86.insnFlags i) $ \f -> H.li (toHtml (show f))
    H.h3 (toHtml "Encodings")
    forM_ (X86.insnEncodings i) $ \case
-      X86.LegacyEncoding {} -> do
+      e@X86.LegacyEncoding {} -> do
          H.h4 (toHtml "Legacy encoding")
-         H.table (
+         H.table ( do
             H.tr $ do
                H.th (toHtml "Mandatory prefix")
                H.th (toHtml "Opcode map")
                H.th (toHtml "Opcode")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            -- forM_ (X86.getLegacyOpcodes e) $ \x ->
-            --    showLegEnc (X86.fgOpcode x) (X86.fgReversed x) (X86.fgSized x) (X86.fgSignExtended x) e
+            forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
+               let
+                  rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
+                  sz  = fromMaybe False (testBit x <$> X86.encSizableBit e)
+                  se  = fromMaybe False (testBit x <$> X86.encSignExtendImmBit e)
+               showLegEnc x rev sz se e
 
 
             ) ! A.class_ (toValue "insn_table")
@@ -200,24 +205,24 @@ showLegEnc oc rv sz se e = H.tr $ do
 showMaps :: Html
 showMaps = do
    H.h1 (toHtml "Legacy encodings")
-   H.h2 (toHtml "Primary opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.MapPrimary)
-   H.h2 (toHtml "Secondary opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map0F)
-   H.h2 (toHtml "0F38 opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map0F38)
-   H.h2 (toHtml "0F3A opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map0F3A)
-   H.h2 (toHtml "3DNow! opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapLegacy X86.Map3DNow)
+   showOpcodeMap "Primary opcode map"   (X86.MapLegacy X86.MapPrimary)
+   showOpcodeMap "Secondary opcode map" (X86.MapLegacy X86.Map0F)
+   showOpcodeMap "0F38 opcode map"      (X86.MapLegacy X86.Map0F38)
+   showOpcodeMap "0F3A opcode map"      (X86.MapLegacy X86.Map0F3A)
+   showOpcodeMap "3DNow! opcode map"    (X86.MapLegacy X86.Map3DNow)
 
    H.h1 (toHtml "VEX encodings")
-   H.h2 (toHtml "VEX 1 opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapVex 1)
-   H.h2 (toHtml "VEX 2 opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapVex 2)
-   H.h2 (toHtml "VEX 3 opcode map")
-   showMap (X86.opcodeMaps Map.! X86.MapVex 3)
+   showOpcodeMap "VEX 1 opcode map" (X86.MapVex 1)
+   showOpcodeMap "VEX 2 opcode map" (X86.MapVex 2)
+   showOpcodeMap "VEX 3 opcode map" (X86.MapVex 3)
+
+showOpcodeMap :: String -> X86.OpcodeMap -> Html
+showOpcodeMap s ocm = do
+   case Map.lookup ocm X86.opcodeMaps of
+      Just m -> do
+         H.h2 (toHtml s)
+         showMap m
+      Nothing -> return ()
 
 
 showMap :: V.Vector [X86.MapEntry] -> Html

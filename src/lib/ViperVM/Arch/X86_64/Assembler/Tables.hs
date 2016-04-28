@@ -6,6 +6,7 @@ module ViperVM.Arch.X86_64.Assembler.Tables
    ( opcodeMaps
    , buildOpcodeMaps
    , buildOpcodeMap
+   , genEncodingOpcodeVariants
    , MapEntry (..)
    )
 where
@@ -40,7 +41,7 @@ genEncodingOpcodeVariants e = oc : (opoc ++ catMaybes [roc,szoc,seoc,fdoc,fpoc,f
                (Nothing,Nothing) -> (Nothing,Nothing)
                (Just i, Nothing) -> (Just (setBit oc i),Nothing)
                (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
-               (Nothing, Just _) -> error "Found sign-extendable bit without sizable bit"
+               (Nothing, Just i) ->  (Nothing,Just (setBit oc i))
       -- FPU dest
       fdoc = setBit oc <$> encFPUDestBit e
       -- FPU pop
