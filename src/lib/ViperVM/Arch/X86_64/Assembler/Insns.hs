@@ -123,6 +123,7 @@ data VexLW
    = W0     -- ^ Vex.W set to 0
    | W1     -- ^ Vex.W set to 1
    | WIG    -- ^ Vex.W ignored
+   | L0_WIG -- ^ Vex.L set to 0, ignore Vex.W
    | L0     -- ^ Vex.L set to 0
    | L1     -- ^ Vex.L set to 1
    | LIG    -- ^ Vex.L ignored
@@ -610,6 +611,12 @@ instructions =
    , i_jp
    , i_js
    , i_jmp
+   , i_lahf
+   , i_lar
+   , i_lddqu
+   , i_vlddqu
+   , i_ldmxcsr
+   , i_vldmxcsr
    ]
 
 i_aaa :: X86Insn
@@ -6332,6 +6339,115 @@ i_jmp = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op   RO    T_M16_XX    Imm ]
+                           }
+                       ]
+   }
+
+i_lahf :: X86Insn
+i_lahf = insn
+   { insnDesc        = "Load status flags into AH register"
+   , insnMnemonic    = "LAHF"
+   , insnFlags       = [ Read [SF,ZF,AF,PF,CF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x9F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension LAHF
+                                                     ]
+                           , legacyParams          = [ op   WO    T_AH    Implicit ]
+                           }
+                       ]
+   }
+
+i_lar :: X86Insn
+i_lar = insn
+   { insnDesc        = "Load access rights"
+   , insnMnemonic    = "LAR"
+   , insnFlags       = [ Modified [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x0F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   WO    T_R16_32  Reg
+                                                     , op   RO    T_RM16_32 RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_lddqu :: X86Insn
+i_lddqu = insn
+   { insnDesc        = "Load unaligned integer 128 bits"
+   , insnMnemonic    = "LDDQU"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF2
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE3
+                                                     ]
+                           , legacyParams          = [ op    WO    T_V128   Reg
+                                                     , op    RO    T_M128   RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vlddqu :: X86Insn
+i_vlddqu = insn
+   { insnDesc        = "Load unaligned integer 128 bits"
+   , insnMnemonic    = "VLDDQU"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF2
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0xF0
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_M128_256     RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_ldmxcsr :: X86Insn
+i_ldmxcsr = insn
+   { insnDesc        = "Load MXCSR register"
+   , insnMnemonic    = "LDMXCSR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAE
+                           , legacyOpcodeExt       = Just 2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ op    RO    T_M32   RM ]
+                           }
+                       ]
+   }
+
+i_vldmxcsr :: X86Insn
+i_vldmxcsr = insn
+   { insnDesc        = "Load MXCSR register"
+   , insnMnemonic    = "VLDMXCSR"
+   , insnEncodings   = [ vex
+                           { vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0xAE
+                           , vexOpcodeExt       = Just 2
+                           , vexLW              = L0_WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     RO    T_M32     RM ]
                            }
                        ]
    }
