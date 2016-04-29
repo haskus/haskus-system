@@ -592,6 +592,23 @@ instructions =
    , i_invlpg
    , i_invpcid
    , i_iret
+   , i_ja
+   , i_jae
+   , i_jb
+   , i_jbe
+   , i_jcxz
+   , i_je
+   , i_jg
+   , i_jge
+   , i_jl
+   , i_jle
+   , i_jne
+   , i_jno
+   , i_jnp
+   , i_jns
+   , i_jo
+   , i_jp
+   , i_js
    ]
 
 i_aaa :: X86Insn
@@ -5876,3 +5893,406 @@ i_iret = insn
                            }
                        ]
    }
+
+i_ja :: X86Insn
+i_ja = insn
+   { insnDesc        = "Jump if above"
+   , insnMnemonic    = "JA/JNBE"
+   , insnFlags       = [ Read [CF,ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x77
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x87
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jae :: X86Insn
+i_jae = insn
+   { insnDesc        = "Jump if above or equal"
+   , insnMnemonic    = "JAE/JNB/JNC"
+   , insnFlags       = [ Read [CF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x73
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x83
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jb :: X86Insn
+i_jb = insn
+   { insnDesc        = "Jump if below"
+   , insnMnemonic    = "JB/JC/JNAE"
+   , insnFlags       = [ Read [CF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x72
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x82
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jbe :: X86Insn
+i_jbe = insn
+   { insnDesc        = "Jump if below or equal"
+   , insnMnemonic    = "JBE/JNA"
+   , insnFlags       = [ Read [CF,ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x76
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x86
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+
+i_jcxz :: X86Insn
+i_jcxz = insn
+   { insnDesc        = "Jump if rCX is 0"
+   , insnMnemonic    = "JCXZ"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xE3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_CX_ECX_RCX    Implicit
+                                                     , op   RO    T_Rel8          Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+i_je :: X86Insn
+i_je = insn
+   { insnDesc        = "Jump if equal"
+   , insnMnemonic    = "JE/JZ"
+   , insnFlags       = [ Read [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x74
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x84
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jg :: X86Insn
+i_jg = insn
+   { insnDesc        = "Jump if greater"
+   , insnMnemonic    = "JG/JNLE"
+   , insnFlags       = [ Read [ZF,SF,OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x7F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x8F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jge :: X86Insn
+i_jge = insn
+   { insnDesc        = "Jump if greater or equal"
+   , insnMnemonic    = "JGE/JNL"
+   , insnFlags       = [ Read [SF,OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x7D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x8D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jl :: X86Insn
+i_jl = insn
+   { insnDesc        = "Jump if less"
+   , insnMnemonic    = "JL/JNGE"
+   , insnFlags       = [ Read [SF,OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x7C
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x8C
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jle :: X86Insn
+i_jle = insn
+   { insnDesc        = "Jump if less or equal"
+   , insnMnemonic    = "JLE/JNG"
+   , insnFlags       = [ Read [ZF,SF,OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x7E
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x8E
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jne :: X86Insn
+i_jne = insn
+   { insnDesc        = "Jump if not equal"
+   , insnMnemonic    = "JNE/JNZ"
+   , insnFlags       = [ Read [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x75
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x85
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jno :: X86Insn
+i_jno = insn
+   { insnDesc        = "Jump if not overflow"
+   , insnMnemonic    = "JNO"
+   , insnFlags       = [ Read [OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x71
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x81
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jnp :: X86Insn
+i_jnp = insn
+   { insnDesc        = "Jump if not parity"
+   , insnMnemonic    = "JNP/JPO"
+   , insnFlags       = [ Read [PF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x7B
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x8B
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jns :: X86Insn
+i_jns = insn
+   { insnDesc        = "Jump if not sign"
+   , insnMnemonic    = "JNS"
+   , insnFlags       = [ Read [SF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x79
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x89
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jo :: X86Insn
+i_jo = insn
+   { insnDesc        = "Jump if overflow"
+   , insnMnemonic    = "JO"
+   , insnFlags       = [ Read [OF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x70
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x80
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jp :: X86Insn
+i_jp = insn
+   { insnDesc        = "Jump if parity"
+   , insnMnemonic    = "JP/JPE"
+   , insnFlags       = [ Read [PF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x7A
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x8A
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_js :: X86Insn
+i_js = insn
+   { insnDesc        = "Jump if sign"
+   , insnMnemonic    = "JS"
+   , insnFlags       = [ Read [SF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x78
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x88
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
