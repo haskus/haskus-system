@@ -633,6 +633,27 @@ instructions =
    , i_loopne
    , i_lsl
    , i_ltr
+   , i_maskmovdqu
+   , i_vmaskmovdqu
+   , i_maskmovq
+   , i_maxpd
+   , i_vmaxpd
+   , i_maxps
+   , i_vmaxps
+   , i_maxsd
+   , i_vmaxsd
+   , i_maxss
+   , i_vmaxss
+   , i_mfence
+   , i_minpd
+   , i_vminpd
+   , i_minps
+   , i_vminps
+   , i_minsd
+   , i_vminsd
+   , i_minss
+   , i_vminss
+   , i_monitor
    ]
 
 i_aaa :: X86Insn
@@ -860,7 +881,7 @@ i_vaddpd = insn
 
 i_addps :: X86Insn
 i_addps = insn
-   { insnDesc        = "Add packed float-precision floating-point values"
+   { insnDesc        = "Add packed single-precision floating-point values"
    , insnMnemonic    = "ADDPS"
    , insnEncodings   = [ leg
                            { legacyOpcodeMap       = Map0F
@@ -878,7 +899,7 @@ i_addps = insn
 
 i_vaddps :: X86Insn
 i_vaddps = insn
-   { insnDesc        = "Add packed float-precision floating-point values"
+   { insnDesc        = "Add packed single-precision floating-point values"
    , insnMnemonic    = "VADDPS"
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
@@ -6754,6 +6775,419 @@ i_ltr = insn
                                                      -- real/virtual modes
                                                      ]
                            , legacyParams          = [ op RO   T_RM16  RM ]
+                           }
+                       ]
+   }
+
+i_maskmovdqu :: X86Insn
+i_maskmovdqu = insn
+   { insnDesc        = "Store selected bytes of double quadword"
+   , insnMnemonic    = "MASKMOVDQU"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_V128   RM
+                                                     , op    RO    T_rDI    Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vmaskmovdqu :: X86Insn
+i_vmaskmovdqu = insn
+   { insnDesc        = "Store selected bytes of double quadword"
+   , insnMnemonic    = "VMASKMOVDQU"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF7
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ op   WO    T_V128   Reg
+                                                     , op   RO    T_V128   RM
+                                                     , op   RO    T_rDI    Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_maskmovq :: X86Insn
+i_maskmovq = insn
+   { insnDesc        = "Store selected bytes of quadword"
+   , insnMnemonic    = "MASKMOVQ"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V64    Reg
+                                                     , op    RO    T_V64    RM
+                                                     , op    RO    T_rDI    Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_maxpd :: X86Insn
+i_maxpd = insn
+   { insnDesc        = "Return maximum packed double-precision floating-point values"
+   , insnMnemonic    = "MAXPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vmaxpd :: X86Insn
+i_vmaxpd = insn
+   { insnDesc        = "Return maximum packed double-precision floating-point values"
+   , insnMnemonic    = "VMAXPD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x5F
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ op     WO    T_V128_256     Reg
+                                                     , op     RO    T_V128_256     Vvvv
+                                                     , op     RO    T_VM128_256    RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_maxps :: X86Insn
+i_maxps = insn
+   { insnDesc        = "Return maximum packed single-precision floating-point values"
+   , insnMnemonic    = "MAXPS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vmaxps :: X86Insn
+i_vmaxps = insn
+   { insnDesc        = "Return maximum packed single-precision floating-point values"
+   , insnMnemonic    = "VMAXPS"
+   , insnEncodings   = [ vex
+                           { vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x5F
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_V128_256     Vvvv
+                                                  , op     RO    T_VM128_256    RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_maxsd :: X86Insn
+i_maxsd = insn
+   { insnDesc        = "Return maximum scalar double-precision floating-point values"
+   , insnMnemonic    = "MAXSD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF2
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128         Reg
+                                                     , op    RO    T_VM128_Low64  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vmaxsd :: X86Insn
+i_vmaxsd = insn
+   { insnDesc        = "Return maximum scalar double-precision floating-point values"
+   , insnMnemonic    = "VMAXSD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF2
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x5F
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128         Reg
+                                                  , op     RO    T_V128         Vvvv
+                                                  , op     RO    T_VM128_Low64  RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_maxss :: X86Insn
+i_maxss = insn
+   { insnDesc        = "Return maximum scalar single-precision floating-point values"
+   , insnMnemonic    = "MAXSS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128         Reg
+                                                     , op    RO    T_VM128_Low32  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vmaxss :: X86Insn
+i_vmaxss = insn
+   { insnDesc        = "Return maximum scalar single-precision floating-point values"
+   , insnMnemonic    = "VMAXSS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF3
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x5F
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128         Reg
+                                                  , op     RO    T_V128         Vvvv
+                                                  , op     RO    T_VM128_Low32  RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_mfence :: X86Insn
+i_mfence = insn
+   { insnDesc        = "Memory fence"
+   , insnMnemonic    = "MFENCE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAE
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           }
+                       ]
+   }
+
+i_minpd :: X86Insn
+i_minpd = insn
+   { insnDesc        = "Return minimum packed double-precision floating-point values"
+   , insnMnemonic    = "MINPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vminpd :: X86Insn
+i_vminpd = insn
+   { insnDesc        = "Return minimum packed double-precision floating-point values"
+   , insnMnemonic    = "VMINPD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x5D
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ op     WO    T_V128_256     Reg
+                                                     , op     RO    T_V128_256     Vvvv
+                                                     , op     RO    T_VM128_256    RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_minps :: X86Insn
+i_minps = insn
+   { insnDesc        = "Return minimum packed single-precision floating-point values"
+   , insnMnemonic    = "MINPS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128   Reg
+                                                     , op    RO    T_VM128  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vminps :: X86Insn
+i_vminps = insn
+   { insnDesc        = "Return minimum packed single-precision floating-point values"
+   , insnMnemonic    = "VMINPS"
+   , insnEncodings   = [ vex
+                           { vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x5D
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128_256     Reg
+                                                  , op     RO    T_V128_256     Vvvv
+                                                  , op     RO    T_VM128_256    RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_minsd :: X86Insn
+i_minsd = insn
+   { insnDesc        = "Return minimum scalar double-precision floating-point values"
+   , insnMnemonic    = "MINSD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF2
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128         Reg
+                                                     , op    RO    T_VM128_Low64  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vminsd :: X86Insn
+i_vminsd = insn
+   { insnDesc        = "Return minimum scalar double-precision floating-point values"
+   , insnMnemonic    = "VMINSD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF2
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x5D
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128         Reg
+                                                  , op     RO    T_V128         Vvvv
+                                                  , op     RO    T_VM128_Low64  RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_minss :: X86Insn
+i_minss = insn
+   { insnDesc        = "Return minimum scalar single-precision floating-point values"
+   , insnMnemonic    = "MINSS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x5D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ op    RW    T_V128         Reg
+                                                     , op    RO    T_VM128_Low32  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_vminss :: X86Insn
+i_vminss = insn
+   { insnDesc        = "Return minimum scalar single-precision floating-point values"
+   , insnMnemonic    = "VMINSS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0xF3
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x5D
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ op     WO    T_V128         Reg
+                                                  , op     RO    T_V128         Vvvv
+                                                  , op     RO    T_VM128_Low32  RM
+                                                  ]
+                           }
+                       ]
+   }
+
+i_monitor :: X86Insn
+i_monitor = insn
+   { insnDesc        = "Set up monitor address"
+   , insnMnemonic    = "MONITOR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap     = Map0F
+                           , legacyOpcode        = 0x01
+                           , legacyOpcodeFullExt = Just 0xC8
+                           , legacyProperties    = [ LegacyModeSupport
+                                                   , LongModeSupport
+                                                   , Extension MONITOR
+                                                   ]
+                           , legacyParams          = [ op    RO    T_xCX   Implicit
+                                                     , op    RO    T_xDX   Implicit
+                                                     , op    RO    T_xAX   Implicit
+                                                     ]
                            }
                        ]
    }
