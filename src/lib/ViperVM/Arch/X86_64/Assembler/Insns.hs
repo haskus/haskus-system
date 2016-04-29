@@ -609,6 +609,7 @@ instructions =
    , i_jo
    , i_jp
    , i_js
+   , i_jmp
    ]
 
 i_aaa :: X86Insn
@@ -2046,7 +2047,7 @@ i_call = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    T_REL_16_32    Imm ]
+                           , legacyParams       = [ op    RO    T_Rel16_32    Imm ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
@@ -2068,13 +2069,7 @@ i_call = insn
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x9A
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RO    T_PTR_16_16    Imm ]
-                           }
-                       , leg
-                           { legacyOpcodeMap    = MapPrimary
-                           , legacyOpcode       = 0x9A
-                           , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RO    T_PTR_16_32    Imm ]
+                           , legacyParams       = [ op    RO    T_PTR16_16_32    Imm ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
@@ -6292,6 +6287,51 @@ i_js = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                       ]
+   }
+
+i_jmp :: X86Insn
+i_jmp = insn
+   { insnDesc        = "Jump"
+   , insnMnemonic    = "JMP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xEB
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           }
+                        , leg
+                           { legacyOpcode          = 0xE9
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           }
+                        , leg
+                           { legacyOpcode          = 0xFF
+                           , legacyOpcodeExt       = Just 4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_RM16_32_64    RM ]
+                           }
+                        , leg
+                           { legacyOpcode          = 0xEA
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_PTR16_16_32    Imm ]
+                           }
+                        , leg
+                           { legacyOpcode          = 0xFF
+                           , legacyOpcodeExt       = Just 5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op   RO    T_M16_XX    Imm ]
                            }
                        ]
    }
