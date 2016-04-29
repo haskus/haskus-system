@@ -62,6 +62,7 @@ import ViperVM.Arch.X86_64.MicroArch
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Opcode
 import ViperVM.Arch.X86_64.Assembler.Mode
+import ViperVM.Arch.X86_64.Assembler.Registers
 
 -- | X86 instruction
 data X86Insn = X86Insn
@@ -150,6 +151,7 @@ data EncodingProperties
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
    | RequireRexW              -- ^ Require REX.W
+   | DefaultSegment Register  -- ^ Default register
    deriving (Show,Eq)
 
 -- | Instruction variant encoding
@@ -617,6 +619,20 @@ instructions =
    , i_vlddqu
    , i_ldmxcsr
    , i_vldmxcsr
+   , i_ldfarptr
+   , i_lea
+   , i_leave
+   , i_lfence
+   , i_lgdt
+   , i_lidt
+   , i_lldt
+   , i_lmsw
+   , i_lods
+   , i_loop
+   , i_loope
+   , i_loopne
+   , i_lsl
+   , i_ltr
    ]
 
 i_aaa :: X86Insn
@@ -6448,6 +6464,296 @@ i_vldmxcsr = insn
                                                   , Extension AVX
                                                   ]
                            , vexParams          = [ op     RO    T_M32     RM ]
+                           }
+                       ]
+   }
+
+
+i_ldfarptr :: X86Insn
+i_ldfarptr = insn
+   { insnDesc        = "Load far pointer"
+   , insnMnemonic    = "LDS/LES/LFS/LGS/LSS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultSegment R_DS
+                                                     ]
+                           , legacyParams          = [ op RO T_R16_32   Reg
+                                                     , op RO T_M16_XX   RM
+                                                     ]
+                           }
+                       ,  leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultSegment R_ES
+                                                     ]
+                           , legacyParams          = [ op RO T_R16_32   Reg
+                                                     , op RO T_M16_XX   RM
+                                                     ]
+                           }
+                       ,  leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xB2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultSegment R_SS
+                                                     ]
+                           , legacyParams          = [ op RO T_R16_32   Reg
+                                                     , op RO T_M16_XX   RM
+                                                     ]
+                           }
+                       ,  leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xB4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultSegment R_FS
+                                                     ]
+                           , legacyParams          = [ op RO T_R16_32   Reg
+                                                     , op RO T_M16_XX   RM
+                                                     ]
+                           }
+                       ,  leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xB5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultSegment R_GS
+                                                     ]
+                           , legacyParams          = [ op RO T_R16_32   Reg
+                                                     , op RO T_M16_XX   RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_lea :: X86Insn
+i_lea = insn
+   { insnDesc        = "Load effective address"
+   , insnMnemonic    = "LEA"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x8D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op WO T_R16_32_64 Reg
+                                                     , op RO T_M         RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_leave :: X86Insn
+i_leave = insn
+   { insnDesc        = "High level procedure exit"
+   , insnMnemonic    = "LEAVE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC9
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op WO   T_rSP   Implicit
+                                                     , op RW   T_rBP   Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_lfence :: X86Insn
+i_lfence = insn
+   { insnDesc        = "Load fence"
+   , insnMnemonic    = "LFENCE"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAE
+                           , legacyOpcodeExt       = Just 5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           }
+                       ]
+   }
+
+i_lgdt :: X86Insn
+i_lgdt = insn
+   { insnDesc        = "Load global descriptor table register"
+   , insnMnemonic    = "LGDT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x01
+                           , legacyOpcodeExt       = Just 2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RO   T_M16n32_64   RM ]
+                           }
+                       ]
+   }
+
+i_lidt :: X86Insn
+i_lidt = insn
+   { insnDesc        = "Load interrupt descriptor table register"
+   , insnMnemonic    = "LIDT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x01
+                           , legacyOpcodeExt       = Just 3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RO   T_M16n32_64   RM ]
+                           }
+                       ]
+   }
+
+i_lldt :: X86Insn
+i_lldt = insn
+   { insnDesc        = "Load local descriptor table register"
+   , insnMnemonic    = "LLDT"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x00
+                           , legacyOpcodeExt       = Just 2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     -- TODO: not supported in
+                                                     -- real/virtual mode
+                                                     ]
+                           , legacyParams          = [ op RO   T_RM16   RM ]
+                           }
+                       ]
+   }
+
+i_lmsw :: X86Insn
+i_lmsw = insn
+   { insnDesc        = "Load machine status word"
+   , insnMnemonic    = "LMSW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x01
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RO   T_RM16   RM ]
+                           }
+                       ]
+   }
+
+i_lods :: X86Insn
+i_lods = insn
+   { insnDesc        = "Load string"
+   , insnMnemonic    = "LODS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xAC
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op WO   T_Accu   Implicit
+                                                     , op RO   T_rSI    Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_loop :: X86Insn
+i_loop = insn
+   { insnDesc        = "Loop according to rCX counter"
+   , insnMnemonic    = "LOOP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xE2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
+                                                     , op RO   T_Rel8       Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_loope :: X86Insn
+i_loope = insn
+   { insnDesc        = "Loop according to rCX counter and ZF"
+   , insnMnemonic    = "LOOPE"
+   , insnFlags       = [ Read [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xE1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
+                                                     , op RO   T_Rel8       Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_loopne :: X86Insn
+i_loopne = insn
+   { insnDesc        = "Loop according to rCX counter and ZF"
+   , insnMnemonic    = "LOOPNE"
+   , insnFlags       = [ Read [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xE0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
+                                                     , op RO   T_Rel8       Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_lsl :: X86Insn
+i_lsl = insn
+   { insnDesc        = "Load segment limit"
+   , insnMnemonic    = "LSL"
+   , insnFlags       = [ Modified [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xE0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op RW   T_R16_32_64   Reg
+                                                     , op RO   T_RM16_32_64  RM
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_ltr :: X86Insn
+i_ltr = insn
+   { insnDesc        = "Load task register"
+   , insnMnemonic    = "LTR"
+   , insnFlags       = [ Modified [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x00
+                           , legacyOpcodeExt       = Just 3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     -- TODO: invalid in
+                                                     -- real/virtual modes
+                                                     ]
+                           , legacyParams          = [ op RO   T_RM16  RM ]
                            }
                        ]
    }
