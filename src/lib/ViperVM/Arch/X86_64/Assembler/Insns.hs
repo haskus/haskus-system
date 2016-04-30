@@ -654,6 +654,9 @@ instructions =
    , i_minss
    , i_vminss
    , i_monitor
+   , i_mov
+   , i_movcr
+   , i_movdr
    ]
 
 i_aaa :: X86Insn
@@ -7192,3 +7195,106 @@ i_monitor = insn
                        ]
    }
 
+i_mov :: X86Insn
+i_mov = insn
+   { insnDesc        = "Move"
+   , insnMnemonic    = "MOV"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xA0
+                           , legacySizable         = Just 0
+                           , legacyReversable      = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_Accu   Implicit
+                                                     , op    RO    T_MOffs  Imm
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x88
+                           , legacySizable         = Just 0
+                           , legacyReversable      = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    WO    T_RM     RM
+                                                     , op    RO    T_R      Reg
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x8C
+                           , legacyReversable      = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    WO    T_RM16_64   RM
+                                                     , op    RO    T_Sreg      Reg
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xB0
+                           , legacySizable         = Just 3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_R              OpcodeLow3
+                                                     , op    RO    T_Imm8_16_32_64  Imm
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC6
+                           , legacyOpcodeExt       = Just 0
+                           , legacySizable         = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    RW    T_RM     RM
+                                                     , op    RO    T_Imm    Imm
+                                                     ]
+                           }
+                       ]
+   }
+
+i_movcr :: X86Insn
+i_movcr = insn
+   { insnDesc        = "Move control register"
+   , insnMnemonic    = "MOV"
+   , insnFlags       = [ Undefined [OF,SF,ZF,AF,PF,CF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x20
+                           , legacyReversable      = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    WO    T_R32_64     RM
+                                                     , op    RO    T_Creg       Reg
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_movdr :: X86Insn
+i_movdr = insn
+   { insnDesc        = "Move debug register"
+   , insnMnemonic    = "MOV"
+   , insnFlags       = [ Undefined [OF,SF,ZF,AF,PF,CF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x21
+                           , legacyReversable      = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ op    WO    T_R32_64     RM
+                                                     , op    RO    T_Dreg       Reg
+                                                     ]
+                           }
+                       ]
+   }
