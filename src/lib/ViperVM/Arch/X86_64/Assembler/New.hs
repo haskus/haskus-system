@@ -378,17 +378,119 @@ readOpcode = firstJust
 -- Read operands
 ----------------------------------------
 
-data Insn
-   = InsnInvalid
-   | InsnReserved
 
-readOperands ::
-   ( ReaderM () s
-   , HArrayIndexT Opcode s
-   , HArrayIndexT X86Mode s
-   ) => MState s Insn
-readOperands = undefined
-
+-- | Read instruction operands
+-- readOperands ::
+--    ( ReaderM () s
+--    , HArrayIndexT X86Mode s
+--    , HArrayIndexT AddressSize s
+--    ) => Opcode -> Encoding -> MState s [Operand]
+-- readOperands oc enc = do
+-- 
+--    mode  <- mGet
+--    asize <- mGet
+--    
+--    let
+--       ps = encParams enc
+--       es = fmap opEnc ps
+-- 
+--    -- read ModRM if necessary
+--    m <- if encRequireModRM enc
+--             then binTryRead
+--             else return Nothing
+-- 
+--    let modrm = ModRM . BitFields <$> m
+--    
+--    -- read a memory address if necessary
+-- 
+--    let 
+--        getAddr asize m = do
+--           case asize of
+--              -- if we are in 16-bit addressing mode, we don't care about the base
+--              -- register extension
+--              AddrSize16 -> case (modField m, rmField modrm) of
+--                 (_,0) -> Addr (Just R_BX) (Just R_SI) disp Nothing
+--                 (_,1) -> Addr (Just R_BX) (Just R_DI) disp Nothing
+--                 (_,2) -> Addr (Just R_BP) (Just R_SI) disp Nothing
+--                 (_,3) -> Addr (Just R_BP) (Just R_DI) disp Nothing
+--                 (_,4) -> Addr (Just R_SI) Nothing     disp Nothing
+--                 (_,5) -> Addr (Just R_DI) Nothing     disp Nothing
+--                 (0,6) -> Addr Nothing     Nothing     disp Nothing
+--                 (_,6) -> Addr (Just R_BP) Nothing     disp Nothing
+--                 (_,7) -> Addr (Just R_BX) Nothing     disp Nothing
+--                 _     -> error "Invalid 16-bit addressing"
+--        
+-- 
+-- 
+--    addr <- case modrm of
+--       Just m' | not (rmRegMode m') -> Just <$> getAddr m'
+--       _                            -> return Nothing
+-- 
+--    -- read an immediate if necessary
+--    imm <- case filter isImmediate es of
+--       []   -> return Nothing
+--       [im] -> do
+--          case (opEnc im, opType im) of
+--             (E_Imm8_3_0, T_Mask)     -> Just . OpMask . SizedValue8 <$> nextWord8
+--             (E_Imm8_7_4, T_V128_256) -> Just . OpRegId . (`shiftR` 4) <$> nextWord8
+--             (E_Imm, T_Imm8)          -> Just . OpImmediate . SizedValue8 <$> nextWord8
+--             (E_Imm, T_PTR_16_16)     -> Just <$> (OpPtr16_16 <$> nextWord16 <*> nextWord16)
+--             (E_Imm, T_PTR_16_32)     -> Just <$> (OpPtr16_32 <$> nextWord16 <*> nextWord32)
+--             (E_Imm, T_REL_16_32) -> case opSize of
+--                OpSize8  -> error "Invalid operand size"
+--                OpSize16 -> Just . OpRel . SizedValue16 <$> nextWord16
+--                OpSize32 -> Just . OpRel . SizedValue32 <$> nextWord32
+--                OpSize64 -> Just . OpRel . SizedValue32 <$> nextWord32
+--             (E_Imm, T_Imm) -> case (opSize, encSignExtendImmBit enc) of
+--                (OpSize8, _)
+--                   -> Just . OpImmediate . SizedValue8 <$> nextWord8
+--                (_, Just se) | testBit opcode se
+--                   -> Just . OpSignExtendImmediate . SizedValue8 <$> nextWord8
+--                (OpSize16,_)
+--                   -> Just . OpImmediate . SizedValue16 <$> nextWord16
+--                (OpSize32,_)
+--                   -> Just . OpImmediate . SizedValue32 <$> nextWord32
+--                (OpSize64,_)
+--                   -> Just . OpSignExtendImmediate . SizedValue32 <$> nextWord32
+-- 
+--             _  -> error $ "Don't know how to read immediate operand: " ++ show im
+--       _    -> error "Invalid encoding (more than one immediate operand)"
+-- 
+--    -- match what we have read with required parameters
+--    ops <- forM (encOperands enc) $ \op -> do
+--       let doImm = case imm of
+--             Just (OpRegId rid) -> getOpFromRegId opSize (opType op) rid
+--             Just o  -> return o
+--             Nothing -> error "Immediate operand expected, but nothing found"
+-- 
+--       case opEnc op of
+--          E_Imm      -> doImm
+--          E_Imm8_3_0 -> doImm
+--          E_Imm8_7_4 -> doImm
+--          E_ModRM -> case (modrm, rmAddr) of
+--             (_, Just addr) -> return (OpMem addr)
+--             (Just m, _)    -> getRMOp opSize (opType op) m
+--             (Nothing,_)    -> error "ModRM expected, but nothing found"
+--          E_ModReg -> case modrm of
+--             Just m  -> getRegOp opSize (opType op) m
+--             Nothing -> error "ModRM expected, but nothing found"
+--          E_Implicit -> getImplicitOp opSize (opType op)
+--          E_VexV     -> gets decStateAdditionalOp >>= \case
+--             Just vvvv -> getOpFromRegId opSize (opType op) vvvv
+--             Nothing   -> error "Expecting additional operand (VEX.vvvv)"
+--          E_OpReg    -> getOpFromRegId opSize (opType op) (opcode .&. 0x07)
+-- 
+--    -- reverse operands if reversable bit is set
+--    let ops' = case encReversableBit enc of
+--          Just b | testBit opcode b -> reverse ops
+--          _                         -> ops
+-- 
+--    return ops'
+-- 
+--    -- reverse FPU operands if necessary (FPU dest bit set)
+--    -- TODO
+-- 
+--    undefined
 
 
 
@@ -455,21 +557,3 @@ getOpcodeMap = \case
 getAddr :: ModRM -> MState s Addr
 getAddr m = undefined
 
--- getAddr :: AddressSize -> ModRM -> Addr
--- getAddr asize m = undefined
--- do
---    case asize of
---       -- if we are in 16-bit addressing mode, we don't care about the base
---       -- register extension
---       AddrSize16 -> case (modField m, rmField modrm) of
---          (_,0) -> Addr (Just R_BX) (Just R_SI) disp Nothing
---          (_,1) -> Addr (Just R_BX) (Just R_DI) disp Nothing
---          (_,2) -> Addr (Just R_BP) (Just R_SI) disp Nothing
---          (_,3) -> Addr (Just R_BP) (Just R_DI) disp Nothing
---          (_,4) -> Addr (Just R_SI) Nothing     disp Nothing
---          (_,5) -> Addr (Just R_DI) Nothing     disp Nothing
---          (0,6) -> Addr Nothing     Nothing     disp Nothing
---          (_,6) -> Addr (Just R_BP) Nothing     disp Nothing
---          (_,7) -> Addr (Just R_BX) Nothing     disp Nothing
---          _     -> error "Invalid 16-bit addressing"
--- 

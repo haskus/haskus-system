@@ -28,44 +28,6 @@ import ViperVM.Arch.X86_64.Assembler.Encoding
 import ViperVM.Arch.X86_64.Assembler.OperandSize
 import ViperVM.Arch.X86_64.Assembler.Insn
 
--- | Decode several instruction (until the end of the stream)
-decodeMany :: X86Mode -> [InstructionSet] -> AddressSize -> OperandSize -> Get [Either DecodeError Instruction]
-decodeMany mode sets defAddrSize defOprndSize =
-   G.isEmpty >>= \case
-      True  -> return []
-      False -> do
-         i <- decode mode sets defAddrSize defOprndSize
-         is <- decodeMany mode sets defAddrSize defOprndSize
-         return (i:is)
-
--- | Decode an instruction
-decode :: X86Mode -> [InstructionSet] -> AddressSize -> OperandSize -> Get (Either DecodeError Instruction)
-decode mode sets defAddrSize defOprndSize = evalStateT (runEitherT decodeInsn) initState
-   where
-      initState = X86State 
-         { decStateMode                = mode
-         , decStateSets                = sets
-         , decStateDefaultAddressSize  = defAddrSize
-         , decStateDefaultOperandSize  = defOprndSize
-         , decStateByteCount           = 0
-         , decStateLegacyPrefixes      = []
-         , decStateBaseRegExt          = 0
-         , decStateIndexRegExt         = 0
-         , decStateRegExt              = 0
-         , decStateOpSize64            = False
-         , decStateUseExtRegs          = False
-         , decStateHasRexPrefix        = False
-         , decStateOpcodeMap           = MapPrimary
-         , decStateHasVexPrefix        = False
-         , decStateHasXopPrefix        = False
-         , decStateOpcodeExtE          = Nothing
-         , decStateAdditionalOp        = Nothing
-         , decStateVectorLength        = Nothing
-         }
-
-setOpcodeMap :: OpcodeMap -> X86Dec ()
-setOpcodeMap m = modify (\y -> y { decStateOpcodeMap = m })
-
 decodeInsn :: X86Dec Instruction
 decodeInsn = do
    allowedSets <- gets decStateSets
@@ -76,31 +38,6 @@ decodeInsn = do
    decodeVEX
    decodeXOP
 
-   -- Decode opcode
-   opcode <- nextWord8 >>= \case
-      -- escaped opcode
-      0x0F -> do
-         assertNoVex ErrVexEscapedOpcode
-         nextWord8 >>= \case
-            0x0F | Set3DNow `elem` allowedSets -> do
-               setOpcodeMap Map3DNow
-               right 0x00  -- we return a dummy opcode for now
-            0x38 -> nextWord8 >>= \y -> do
-               setOpcodeMap Map0F38
-               right y
-            0x3A -> nextWord8 >>= \y -> do
-               setOpcodeMap Map0F3A
-               right y
-            0x01 -> nextWord8 >>= \y -> do
-               setOpcodeMap Map0F01
-               right y
-            y    -> do
-               setOpcodeMap Map0F
-               right y
-      -- Decode unescaped opcode
-      y    -> right y
-
-   opcodeMap <- gets decStateOpcodeMap
 
    case opcodeMap of
       -- X87 instructions

@@ -114,12 +114,11 @@ showInsn i = do
             forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
-                  sz  = fromMaybe False (testBit x <$> X86.encSizableBit e)
+                  sz  = fromMaybe False (testBit x <$> X86.encNoForce8Bit e)
                   se  = fromMaybe False (testBit x <$> X86.encSignExtendImmBit e)
-               showLegEnc x rev sz se e
-
-
+               showEnc x rev sz se e
             ) ! A.class_ (toValue "insn_table")
+
       e@X86.VexEncoding {} -> do
          H.h4 (toHtml "VEX encoding")
          H.table (do
@@ -128,36 +127,14 @@ showInsn i = do
                H.th (toHtml "Opcode map")
                H.th (toHtml "Opcode")
                H.th (toHtml "LW")
+               H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            H.tr $ do
-               case X86.vexMandatoryPrefix e of
-                  Nothing -> H.td (toHtml " ")
-                  Just p  -> H.td (toHtml (myShowHex True p))
-               H.td (toHtml (show (X86.vexOpcodeMap e)))
-               H.td (toHtml (myShowHex True (X86.vexOpcode e)))
-               H.td (toHtml (show (X86.vexLW e)))
-               let 
-                  ops = X86.vexParams e
-               H.td $ (H.table $ do
-                  H.tr $ do
-                     H.th (toHtml "Mode")
-                     forM_ ops $ \o -> H.td (toHtml (show (X86.opMode o)))
-                  H.tr $ do
-                     H.th (toHtml "Type")
-                     forM_ ops $ \o -> H.td (toHtml (show (X86.opType o)))
-                  H.tr $ do
-                     H.th (toHtml "Encoding")
-                     forM_ ops $ \o -> H.td . toHtml $ case X86.opEnc o of
-                        X86.RM          -> "ModRM.rm"
-                        X86.Reg         -> "ModRM.reg"
-                        X86.Imm         -> "Imm"
-                        X86.Imm8h       -> "Imm8 [7:4]"
-                        X86.Imm8l       -> "Imm8 [3:0]"
-                        X86.Implicit    -> "Implicit"
-                        X86.Vvvv        -> "VEX.vvvv"
-                        X86.OpcodeLow3  -> error "Unsupported OpReg for VEX encoding"
-                  ) ! A.class_ (toValue "insn_table")
-
+            forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
+               let
+                  rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
+                  sz  = fromMaybe False (testBit x <$> X86.encNoForce8Bit e)
+                  se  = fromMaybe False (testBit x <$> X86.encSignExtendImmBit e)
+               showEnc x rev sz se e
             ) ! A.class_ (toValue "insn_table")
    H.hr
 
@@ -169,23 +146,27 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
 
 
 
-showLegEnc :: Word8 -> Bool -> Bool -> Bool -> X86.Encoding -> Html
-showLegEnc oc rv sz se e = H.tr $ do
-   case X86.legacyMandatoryPrefix e of
+showEnc :: Word8 -> Bool -> Bool -> Bool -> X86.Encoding -> Html
+showEnc oc rv sz se e = H.tr $ do
+   case X86.encMandatoryPrefix e of
       Nothing -> H.td (toHtml " ")
       Just p  -> H.td (toHtml (myShowHex True p))
-   H.td (toHtml (show (X86.legacyOpcodeMap e)))
+   H.td (toHtml (show (X86.encOpcodeMap e)))
    H.td $ do
       toHtml (myShowHex True oc)
-      case X86.legacyOpcodeFullExt e of
+      case X86.encOpcodeFullExt e of
          Nothing -> return ()
          Just p  -> toHtml (" " ++ myShowHex True p)
-      case X86.legacyOpcodeExt e of
+      case X86.encOpcodeExt e of
          Nothing -> return ()
          Just p  -> toHtml (" /" ++ show p)
-   H.td (toHtml (show (X86.legacyProperties e)))
+
+   when (X86.isVexEncoding e) $ 
+      H.td (toHtml (show (X86.vexLW e)))
+
+   H.td (toHtml (show (X86.encProperties e)))
    let 
-      ops = X86.legacyParams e
+      ops = X86.encParams e
       rev = if rv then reverse else id
    H.td $ (H.table $ do
       H.tr $ do

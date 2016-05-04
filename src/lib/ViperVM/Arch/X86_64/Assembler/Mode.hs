@@ -52,6 +52,7 @@ data Flag
 
 data X86Extension
    = ADX             -- ^ ADX extension
+   | MMX             -- ^ MMX
    | AVX             -- ^ AVX extension
    | SSE             -- ^ SSE extension
    | SSE2            -- ^ SSE2 extension
@@ -66,6 +67,8 @@ data X86Extension
    | FPU             -- ^ x87 instructions
    | CMOV            -- ^ CMOVs instructions (and FCMOVcc if FPU is set too)
    | INVPCID         -- ^ Invalid process-context identifier (INVPCID) extension
+   | LAHF            -- ^ LAHF extension in 64-bit mode
+   | MONITOR         -- ^ MONITOR/MWAIT
    deriving (Show,Eq)
 
 

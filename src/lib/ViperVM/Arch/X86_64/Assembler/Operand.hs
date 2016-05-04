@@ -50,33 +50,92 @@ data Addr = Addr
    }
    deriving (Show,Eq)
 
+-- Note [Operand size]
+-- ~~~~~~~~~~~~~~~~~~~
+--
+-- Default operand size(s)
+-- -----------------------
+--   * In virtual 8086-mode, real-mode and system management mode: 16-bit
+--   * In protected mode or compatibility mode: 16-bit or 32-bit (a flag is set
+--   for each segment)
+--   * In 64-bit mode: 32-bit. Some instructions have 64-bit default.
+-- 
+-- 0x66 prefix
+-- -----------
+-- In protected mode and compatibility mode, the 0x66 prefix can be used to
+-- switch to the second default mode.
+--
+-- Instruction specific operand size
+-- ---------------------------------
+-- Some instructions have a bit in the operand indicating whether they use the
+-- default operand size or a fixed 8-bit operand size.
+--
+-- W bit
+-- -----
+-- REX/VEX/XOP prefixes have a W flag that indicates whether the operand size is
+-- the default one or 64-bit. The flag is ignored by some instructions.
+--
+-- Some instructions only use 32- or 64-bit selected with the W bit (e.g. ADOX).
+--
+-- L bit
+-- -----
+-- VEX/XOP prefixes have a L flag that indicates the size of the vector register
+-- (XMM or YMM). It can be ignored of fixed at a specified value.
+--
+-- Immediate operands
+-- ------------------
+-- Immediate operands can be of the operand size (e.g. MOV)
+--
+-- More commonly, they are of the operand size *except in 64-bit*:
+--    Operand size   | 8 | 16 | 32 | 64
+--    Immediate size | 8 | 16 | 32 | 32 (sign-extended)
+--
+-- Or the immediate size can be fixed to 8-bit and it is sign-extended.
+--
+-- Or the immediate size can be arbitrarily fixed.
+--
+-- Per-operand size
+-- ----------------
+--
+-- Some instructions (e.g. CRC32) have one operand that follows REX.W (i.e.
+-- 32-bit or 64-bit) while the other one follows the default size (or sizable
+-- bit in the opcode).
+
+-- Note [Operands]
+-- ~~~~~~~~~~~~~~~
+--
+-- The ModRM.RM field allows the encoding of either a memory address or a
+-- register.
+--
+-- Only a subset of a register may be used (e.g. the low-order 64-bits of a XMM
+-- register).
+
+
+
 -- | Operand types
 data OperandType
+   = TE OperandType OperandType -- ^ One of the two types (for ModRM.rm)
+
    -- Immediates
-   = T_Imm8       -- ^ Word8 immediate
-   | T_Imm16      -- ^ Word16 immediate
-   | T_Imm        -- ^ Variable sized immediate
-   | T_REL_16_32  -- ^ Relative displacement (16-bit invalid in 64-bit mode)
-   | T_PTR_16_16  -- ^ Absolute address
-   | T_PTR_16_32  -- ^ Absolute address
-   | T_Mask       -- ^ Mask for vectors
-   | T_3          -- ^ Immediate value 3
-   | T_4          -- ^ Immediate value 4
+   | T_Imm8          -- ^ Word8 immediate
+   | T_Imm16         -- ^ Word16 immediate
+   | T_Imm8_16_32_64 -- ^ Word16 immediate
+   | T_Imm           -- ^ Variable sized immediate
+   | T_Rel8          -- ^ Relative 8-bit displacement
+   | T_Rel16_32      -- ^ Relative displacement (16-bit invalid in 64-bit mode)
+   | T_PTR_16_16     -- ^ Absolute address
+   | T_PTR_16_32     -- ^ Absolute address
+   | T_PTR16_16_32   -- ^ Absolute address (PTR 16:16 or 16:32)
+   | T_Mask          -- ^ Mask for vectors
+   | T_3             -- ^ Immediate value 3
+   | T_4             -- ^ Immediate value 4
 
    -- General purpose registers
-   | T_R          -- ^ General purpose register
+   | T_R          -- ^ General purpose register: 8 (if sizable bit), 16, 32 or 64-bit (if 64-bit mode supported)
    | T_R16        -- ^ 16-bit general purpose register
    | T_R32        -- ^ 32-bit general purpose register
-   | T_R16_32     -- ^ 16- or 32-bit general purpose register
+   | T_R64        -- ^ 64-bit general purpose register
    | T_R32_64     -- ^ 32- or 64-bit general purpose register
-   | T_R16_32_64  -- ^ 16-, 32- or 64-bit general purpose register
-   | T_RM         -- ^ Register or memory
-   | T_RM16       -- ^ 16-bit general purpose register or memory
-   | T_RM32       -- ^ 32-bit general purpose register or memory
-   | T_RM16_32    -- ^ 16- or 32-bit general purpose register or memory
-   | T_RM32_64    -- ^ 32- or 64-bit general purpose register or memory
-   | T_RM16_32_64 -- ^ 16-, 32- or 64-bit general purpose register or memory
-   | T_RM64       -- ^ 64-bit general purpose register or memory
 
    -- Memory
    | T_M_PAIR     -- ^ Pair of words in memory (words are operand-size large)
@@ -85,18 +144,27 @@ data OperandType
    | T_M128       -- ^ 128-bit memory
    | T_M          -- ^ Any memory address
    | T_M16        -- ^ 16-bit memory
+   | T_M32        -- ^ 32-bit memory
+   | T_M64        -- ^ 64-bit memory
+   | T_M16_32     -- ^ 16-bit or 32-bit memory
+   | T_M32_64     -- ^ 32-bit or 64-bit memory
    | T_M14_28     -- ^ FPU environement
    | T_M94_108    -- ^ FPU state
    | T_MFP        -- ^ Floating-point value in memory
    | T_M80dec     -- ^ Binary-coded decimal
    | T_M512       -- ^ FXRSTOR, FXSAVE
+   | T_M128_256   -- ^ 128- or 256-bit memory
+   | T_M16n32_64  -- ^ LGDT/LIDT
+   | T_MOffs      -- ^ Moffs8, 16, 32, 64
 
    -- Vector registers
    | T_Vec           -- ^ Vector register (XMM, YMM, ZMM)
    | T_V64           -- ^ MMX Vector register
    | T_VM64          -- ^ MMX Vector register or 64-bit memory
    | T_V128          -- ^ XMM Vector register
+   | T_V256          -- ^ YMM Vector register
    | T_VM128         -- ^ XMM Vector register or memory
+   | T_VM256         -- ^ YMM Vector register or memory
    | T_V128_Low32    -- ^ Low 32-bits of a XMM Vector register
    | T_VM128_Low32   -- ^ Low 32-bits of a XMM Vector register or 32-bit memory
    | T_V128_Low64    -- ^ Low 64-bits of a XMM Vector register
@@ -113,13 +181,20 @@ data OperandType
    | T_xAX        -- ^ EAX or RAX
    | T_xBX        -- ^ EBX or RBX
    | T_xCX        -- ^ ECX or RCX
+   | T_CX_ECX_RCX -- ^ CX, ECX or RCX
    | T_xDX        -- ^ EDX or RDX
    | T_AL         -- ^ AL register
+   | T_AH         -- ^ AH register
    | T_AX         -- ^ AX register
    | T_DX         -- ^ AX register
    | T_XMM0       -- ^ XMM0 register
    | T_rSI        -- ^ DS:rSI
    | T_rDI        -- ^ ES:rDI
+   | T_rSP        -- ^ SP, ESP, RSP
+   | T_rBP        -- ^ BP, EBP, RBP
+   | T_Sreg       -- ^ Segment register
+   | T_Creg       -- ^ Control register
+   | T_Dreg       -- ^ Debug register
 
    -- x87
    | T_ST0        -- ^ ST(0)
@@ -161,78 +236,90 @@ data AccessMode
 -- (i.e. ModRM.mod may be 11b)
 maybeOpTypeReg :: OperandType -> Bool
 maybeOpTypeReg = \case
-   T_Imm8        -> False
-   T_Imm16       -> False
-   T_Imm         -> False
-   T_REL_16_32   -> False
-   T_PTR_16_16   -> False
-   T_PTR_16_32   -> False
-   T_Mask        -> False
-   T_3           -> False
-   T_4           -> False
+   TE x y          -> maybeOpTypeReg x || maybeOpTypeReg y
+   T_Imm8          -> False
+   T_Imm16         -> False
+   T_Imm8_16_32_64 -> False
+   T_Imm           -> False
+   T_Rel16_32      -> False
+   T_Rel8          -> False
+   T_PTR_16_16     -> False
+   T_PTR_16_32     -> False
+   T_PTR16_16_32   -> False
+   T_CX_ECX_RCX    -> False
+   T_Mask          -> False
+   T_3             -> False
+   T_4             -> False
 
-   T_R           -> True
-   T_R16         -> True
-   T_R32         -> True
-   T_RM          -> True
-   T_RM16        -> True
-   T_RM32        -> True
-   T_RM16_32     -> True
-   T_RM32_64     -> True
-   T_RM16_32_64  -> True
-   T_RM64        -> True
-   T_R16_32      -> True
-   T_R32_64      -> True
-   T_R16_32_64   -> True
+   T_R             -> True
+   T_R16           -> True
+   T_R32           -> True
+   T_R64           -> True
+   T_R32_64        -> True
+   T_Sreg          -> True
+   T_Dreg          -> True
+   T_Creg          -> True
 
-   T_M_PAIR      -> False
-   T_M16_XX      -> False
-   T_M64_128     -> False
-   T_M128        -> False
-   T_M           -> False
-   T_MFP         -> False
-   T_M512        -> False
+   T_M_PAIR        -> False
+   T_M16_XX        -> False
+   T_M16_32        -> False
+   T_M64_128       -> False
+   T_M32_64        -> False
+   T_M64           -> False
+   T_M128          -> False
+   T_M             -> False
+   T_MFP           -> False
+   T_M512          -> False
+   T_M128_256      -> False
+   T_MOffs         -> False
 
-   T_Vec         -> True
-   T_V64         -> True
-   T_VM64        -> True
-   T_V128        -> True
-   T_VM128       -> True
-   T_V128_Low32  -> True
-   T_VM128_Low32 -> True
-   T_V128_Low64  -> True
-   T_VM128_Low64 -> True
-   T_V128_256    -> True
-   T_VM128_256   -> True
+   T_Vec           -> True
+   T_V64           -> True
+   T_VM64          -> True
+   T_V128          -> True
+   T_V256          -> True
+   T_VM128         -> True
+   T_VM256         -> True
+   T_V128_Low32    -> True
+   T_VM128_Low32   -> True
+   T_V128_Low64    -> True
+   T_VM128_Low64   -> True
+   T_V128_256      -> True
+   T_VM128_256     -> True
 
-   T_Accu        -> False
-   T_AL_AX_EAX   -> False
-   T_AX_EAX_RAX  -> False
-   T_xDX_xAX     -> False
-   T_xCX_xBX     -> False
-   T_xAX         -> False
-   T_xBX         -> False
-   T_xCX         -> False
-   T_xDX         -> False
-   T_DX          -> False
-   T_AL          -> False
-   T_AX          -> False
-   T_XMM0        -> False
-   T_rSI         -> False
-   T_rDI         -> False
+   T_Accu          -> False
+   T_AL_AX_EAX     -> False
+   T_AX_EAX_RAX    -> False
+   T_xDX_xAX       -> False
+   T_xCX_xBX       -> False
+   T_xAX           -> False
+   T_xBX           -> False
+   T_xCX           -> False
+   T_xDX           -> False
+   T_DX            -> False
+   T_AL            -> False
+   T_AH            -> False
+   T_AX            -> False
+   T_XMM0          -> False
+   T_rSI           -> False
+   T_rDI           -> False
+   T_rSP           -> False
+   T_rBP           -> False
 
-   T_ST0         -> False
-   T_ST1         -> False
-   T_ST          -> True
-   T_ST_MReal    -> True
-   T_MInt        -> False
-   T_MInt16      -> False
-   T_MInt32      -> False
-   T_MInt64      -> False
-   T_M80real     -> False
-   T_M80dec      -> False
-   T_M80bcd      -> False
-   T_M16         -> False
-   T_M14_28      -> False
-   T_M94_108     -> False
+   T_ST0           -> False
+   T_ST1           -> False
+   T_ST            -> True
+   T_ST_MReal      -> True
+   T_MInt          -> False
+   T_MInt16        -> False
+   T_MInt32        -> False
+   T_MInt64        -> False
+   T_M80real       -> False
+   T_M80dec        -> False
+   T_M80bcd        -> False
+   T_M16           -> False
+   T_M32           -> False
+   T_M14_28        -> False
+   T_M94_108       -> False
+   T_M16n32_64     -> False
 

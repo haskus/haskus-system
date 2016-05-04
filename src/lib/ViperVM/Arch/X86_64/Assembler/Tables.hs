@@ -29,18 +29,19 @@ data MapEntry = MapEntry
 -- | Some instructions store flags and values into the opcode byte. This method
 -- returns the list of potential opcodes for an encoding
 genEncodingOpcodeVariants :: Encoding -> [Word8]
-genEncodingOpcodeVariants e = oc : (opoc ++ catMaybes [roc,rsoc,szoc,seoc,fdoc,fpoc,fsoc])
+genEncodingOpcodeVariants e = ocs
    where
       -- the original opcode
       oc = encOpcode e
+
       -- reversed (check: can we have reversed + operand in opcode (or something
       -- else)?)
-      (roc,rsoc) = case (encReversableBit e, encSizableBit e) of
+      (roc,rsoc) = case (encReversableBit e, encNoForce8Bit e) of
                (Just i, Nothing) -> (Just (setBit oc i), Nothing)
                (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
                _                 -> (Nothing,Nothing)
       -- sizable, sign-extended
-      (szoc,seoc) = case (encSizableBit e, encSignExtendImmBit e) of
+      (szoc,seoc) = case (encNoForce8Bit e, encSignExtendImmBit e) of
                (Nothing,Nothing) -> (Nothing,Nothing)
                (Just i, Nothing) -> (Just (setBit oc i),Nothing)
                (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
@@ -51,10 +52,14 @@ genEncodingOpcodeVariants e = oc : (opoc ++ catMaybes [roc,rsoc,szoc,seoc,fdoc,f
       fpoc = setBit oc <$> encFPUPopBit e
       -- FPU sizable
       fsoc = setBit oc <$> encFPUSizableBit e
+
+      -- opcodes with differetnt flags
+      ocs' = oc : catMaybes [roc,rsoc,szoc,seoc,fdoc,fpoc,fsoc]
+
       -- operand stored in the opcode
-      opoc = if OpcodeLow3 `elem` fmap opEnc (encParams e)
-               then [oc + i | i <- [1..7]]
-               else []
+      ocs = if OpcodeLow3 `elem` fmap opEnc (encParams e)
+               then [o + i | o <- ocs', i <- [0..7]]
+               else ocs'
 
 
 -- | Build an opcode map
