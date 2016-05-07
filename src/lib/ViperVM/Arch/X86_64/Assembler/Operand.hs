@@ -7,6 +7,11 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    , AccessMode (..)
    , Operand(..)
    , Addr(..)
+   , ImmSize (..)
+   , RegType (..)
+   , SubRegType (..)
+   , MemType (..)
+   , RelType (..)
    , maybeOpTypeReg
    )
 where
@@ -110,19 +115,74 @@ data Addr = Addr
 -- Only a subset of a register may be used (e.g. the low-order 64-bits of a XMM
 -- register).
 
+-- | Immediate size
+data ImmSize
+   = ImmSize8    -- ^ 8-bit immediate
+   | ImmSize16   -- ^ 16-bit immediate
+   | ImmSizeOp   -- ^ operand-size immediate
+   | ImmSizeSE   -- ^ sign-extendable immediate:
+                 --     * if sign-extendable bit is set: sign-extended 8-bit immediate
+                 --     * if 64-bit operand size: sign-extended 32-bit immediate
+                 --     * otherwise: operand-size immediate
+   deriving (Show,Eq)
 
+-- | Memory address type
+data MemType
+   = MemPair16o32 -- ^ Pair of words in memory (words are operand-size large)
+   | Mem16        -- ^ 16-bit memory
+   | Mem32        -- ^ 32-bit memory
+   | Mem64        -- ^ 64-bit memory
+   | Mem128       -- ^ 128-bit memory
+   | Mem256       -- ^ 256-bit memory
+   | Mem512       -- ^ 512-bit memory
+   | MemOpSize    -- ^ operand-size-bit memory
+   | MemVoid      -- ^ The pointer is used to identify a page, etc. (e.g., CLFLUSH)
+   deriving (Show,Eq)
+
+-- | Register type
+data RegType
+   = RegVec64          -- ^  64-bit vector register (mmx)
+   | RegVec128         -- ^ 128-bit vector register (xmm)
+   | RegVec256         -- ^ 256-bit vector register (ymm)
+   | RegFixed Register -- ^ Fixed register
+   | RegSegment        -- ^ Segment register
+   | RegControl        -- ^ Control register
+   | RegDebug          -- ^ Debug register
+   | Reg16             -- ^ General purpose 32-bit register
+   | Reg32             -- ^ General purpose 32-bit register
+   | Reg64             -- ^ General purpose 64-bit register
+   | Reg32o64          -- ^ General purpose 32-bit register in legacy mode,
+                       --   general purpose 64-bit register in 64-bit mode
+   | RegOpSize         -- ^ General purpose register: 8, 16, 32 or 64-bit
+   deriving (Show,Eq)
+
+-- | Sub register type
+data SubRegType
+   = SubLow32     -- ^ Low 32-bit of a register
+   | SubLow64     -- ^ Low 64-bit of a register
+   | SubEven64    -- ^ [63:0] and [191:128], etc.
+   deriving (Show,Eq)
+
+-- | Relative type
+data RelType
+   = Rel8         -- ^ Relative 8-bit displacement
+   | Rel16o32     -- ^ Relative displacement (16-bit invalid in 64-bit mode)
+   deriving (Show,Eq)
 
 -- | Operand types
 data OperandType
-   = TE OperandType OperandType -- ^ One of the two types (for ModRM.rm)
+   = TME OperandType OperandType -- ^ One of the two types (for ModRM.rm)
+   | TLE OperandType OperandType -- ^ One of the two types depending on Vex.L
+   | TWE OperandType OperandType -- ^ One of the two types depending on Rex.W
 
-   -- Immediates
-   | T_Imm8          -- ^ Word8 immediate
-   | T_Imm16         -- ^ Word16 immediate
-   | T_Imm8_16_32_64 -- ^ Word16 immediate
-   | T_Imm           -- ^ Variable sized immediate
-   | T_Rel8          -- ^ Relative 8-bit displacement
-   | T_Rel16_32      -- ^ Relative displacement (16-bit invalid in 64-bit mode)
+   | T_Imm ImmSize                 -- ^ Immediate value
+   | T_Mem MemType                 -- ^ Memory address
+   | T_Reg RegType                 -- ^ Register
+   | T_SubReg SubRegType RegType   -- ^ Sub-part of a register
+   | T_Rel RelType                 -- ^ Relative offset
+
+   | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
+
    | T_PTR_16_16     -- ^ Absolute address
    | T_PTR_16_32     -- ^ Absolute address
    | T_PTR16_16_32   -- ^ Absolute address (PTR 16:16 or 16:32)
@@ -130,47 +190,14 @@ data OperandType
    | T_3             -- ^ Immediate value 3
    | T_4             -- ^ Immediate value 4
 
-   -- General purpose registers
-   | T_R          -- ^ General purpose register: 8 (if sizable bit), 16, 32 or 64-bit (if 64-bit mode supported)
-   | T_R16        -- ^ 16-bit general purpose register
-   | T_R32        -- ^ 32-bit general purpose register
-   | T_R64        -- ^ 64-bit general purpose register
-   | T_R32_64     -- ^ 32- or 64-bit general purpose register
-
    -- Memory
-   | T_M_PAIR     -- ^ Pair of words in memory (words are operand-size large)
    | T_M16_XX     -- ^ Pair of words in memory: m16:XX where XX can be 16, 32 or 64
-   | T_M64_128    -- ^ 64- or 128-bit memory
-   | T_M128       -- ^ 128-bit memory
-   | T_M          -- ^ Any memory address
-   | T_M16        -- ^ 16-bit memory
-   | T_M32        -- ^ 32-bit memory
-   | T_M64        -- ^ 64-bit memory
-   | T_M16_32     -- ^ 16-bit or 32-bit memory
-   | T_M32_64     -- ^ 32-bit or 64-bit memory
    | T_M14_28     -- ^ FPU environement
    | T_M94_108    -- ^ FPU state
    | T_MFP        -- ^ Floating-point value in memory
    | T_M80dec     -- ^ Binary-coded decimal
-   | T_M512       -- ^ FXRSTOR, FXSAVE
-   | T_M128_256   -- ^ 128- or 256-bit memory
    | T_M16n32_64  -- ^ LGDT/LIDT
    | T_MOffs      -- ^ Moffs8, 16, 32, 64
-
-   -- Vector registers
-   | T_Vec           -- ^ Vector register (XMM, YMM, ZMM)
-   | T_V64           -- ^ MMX Vector register
-   | T_VM64          -- ^ MMX Vector register or 64-bit memory
-   | T_V128          -- ^ XMM Vector register
-   | T_V256          -- ^ YMM Vector register
-   | T_VM128         -- ^ XMM Vector register or memory
-   | T_VM256         -- ^ YMM Vector register or memory
-   | T_V128_Low32    -- ^ Low 32-bits of a XMM Vector register
-   | T_VM128_Low32   -- ^ Low 32-bits of a XMM Vector register or 32-bit memory
-   | T_V128_Low64    -- ^ Low 64-bits of a XMM Vector register
-   | T_VM128_Low64   -- ^ Low 64-bits of a XMM Vector register or 64-bit memory
-   | T_V128_256      -- ^ XMM/YMM Vector register
-   | T_VM128_256     -- ^ XMM/YMM Vector register or memory
 
    -- Specific registers
    | T_Accu       -- ^ Accumulator register (xAX)
@@ -183,22 +210,12 @@ data OperandType
    | T_xCX        -- ^ ECX or RCX
    | T_CX_ECX_RCX -- ^ CX, ECX or RCX
    | T_xDX        -- ^ EDX or RDX
-   | T_AL         -- ^ AL register
-   | T_AH         -- ^ AH register
-   | T_AX         -- ^ AX register
-   | T_DX         -- ^ AX register
-   | T_XMM0       -- ^ XMM0 register
    | T_rSI        -- ^ DS:rSI
    | T_rDI        -- ^ ES:rDI
    | T_rSP        -- ^ SP, ESP, RSP
    | T_rBP        -- ^ BP, EBP, RBP
-   | T_Sreg       -- ^ Segment register
-   | T_Creg       -- ^ Control register
-   | T_Dreg       -- ^ Debug register
 
    -- x87
-   | T_ST0        -- ^ ST(0)
-   | T_ST1        -- ^ ST(1)
    | T_ST         -- ^ ST(i)
    | T_ST_MReal   -- ^ ST(i) register or real memory
    | T_MInt       -- ^ Int memory
@@ -230,19 +247,18 @@ data AccessMode
    = RO         -- ^ Read-only
    | RW         -- ^ Read-write
    | WO         -- ^ Write-only
+   | NA         -- ^ Meta use of the operand
    deriving (Show,Eq)
 
 -- | Indicate if the operand type can be register when stored in ModRM.rm
 -- (i.e. ModRM.mod may be 11b)
 maybeOpTypeReg :: OperandType -> Bool
 maybeOpTypeReg = \case
-   TE x y          -> maybeOpTypeReg x || maybeOpTypeReg y
-   T_Imm8          -> False
-   T_Imm16         -> False
-   T_Imm8_16_32_64 -> False
-   T_Imm           -> False
-   T_Rel16_32      -> False
-   T_Rel8          -> False
+   TME x y         -> maybeOpTypeReg x || maybeOpTypeReg y
+   T_Imm _         -> False
+   T_Rel _         -> False
+   T_Reg _         -> True
+
    T_PTR_16_16     -> False
    T_PTR_16_32     -> False
    T_PTR16_16_32   -> False
@@ -251,41 +267,9 @@ maybeOpTypeReg = \case
    T_3             -> False
    T_4             -> False
 
-   T_R             -> True
-   T_R16           -> True
-   T_R32           -> True
-   T_R64           -> True
-   T_R32_64        -> True
-   T_Sreg          -> True
-   T_Dreg          -> True
-   T_Creg          -> True
-
-   T_M_PAIR        -> False
    T_M16_XX        -> False
-   T_M16_32        -> False
-   T_M64_128       -> False
-   T_M32_64        -> False
-   T_M64           -> False
-   T_M128          -> False
-   T_M             -> False
    T_MFP           -> False
-   T_M512          -> False
-   T_M128_256      -> False
    T_MOffs         -> False
-
-   T_Vec           -> True
-   T_V64           -> True
-   T_VM64          -> True
-   T_V128          -> True
-   T_V256          -> True
-   T_VM128         -> True
-   T_VM256         -> True
-   T_V128_Low32    -> True
-   T_VM128_Low32   -> True
-   T_V128_Low64    -> True
-   T_VM128_Low64   -> True
-   T_V128_256      -> True
-   T_VM128_256     -> True
 
    T_Accu          -> False
    T_AL_AX_EAX     -> False
@@ -296,18 +280,11 @@ maybeOpTypeReg = \case
    T_xBX           -> False
    T_xCX           -> False
    T_xDX           -> False
-   T_DX            -> False
-   T_AL            -> False
-   T_AH            -> False
-   T_AX            -> False
-   T_XMM0          -> False
    T_rSI           -> False
    T_rDI           -> False
    T_rSP           -> False
    T_rBP           -> False
 
-   T_ST0           -> False
-   T_ST1           -> False
    T_ST            -> True
    T_ST_MReal      -> True
    T_MInt          -> False
@@ -317,8 +294,6 @@ maybeOpTypeReg = \case
    T_M80real       -> False
    T_M80dec        -> False
    T_M80bcd        -> False
-   T_M16           -> False
-   T_M32           -> False
    T_M14_28        -> False
    T_M94_108       -> False
    T_M16n32_64     -> False

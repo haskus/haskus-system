@@ -131,7 +131,6 @@ data VexLW
    | WIG    -- ^ Vex.W ignored
    | L0_WIG -- ^ Vex.L set to 0, ignore Vex.W
    | L0     -- ^ Vex.L set to 0
-   | L1     -- ^ Vex.L set to 1
    | LIG    -- ^ Vex.L ignored
    | LWIG   -- ^ Ignore Vex.W and Vex.L
    deriving (Show)
@@ -149,8 +148,6 @@ data EncodingProperties
    | Lockable                 -- ^ Support LOCK prefix (only if a memory operand
                               --   is used)
    | Repeatable               -- ^ Allow repeat prefix
-   | DoubleSizable            -- ^ Default size is 32+32 (a pair of registers is used)
-                              --   Can be extended to 64+64 with Rex.W
    | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
                               --   instruction in LongMode
    | Extension X86Extension   -- ^ Required CPU extension
@@ -220,12 +217,185 @@ vex = VexEncoding
 op :: AccessMode -> OperandType -> OperandEnc -> OperandSpec
 op = OperandSpec
 
+
+-- | Immediate helpers. Immediate operands are always read-only and encoded in
+-- the same way.
+imm :: ImmSize -> OperandSpec
+imm s = op RO (T_Imm s) Imm
+
+-- | 8-bit immediate operand
+imm8 :: OperandSpec
+imm8 = imm ImmSize8
+
+-- | 16-bit immediate operand
+imm16 :: OperandSpec
+imm16 = imm ImmSize16
+
+-- | operand-sized immediate operand
+immOp :: OperandSpec
+immOp = imm ImmSizeOp
+
+-- | operand-sized immediate operand, sign-extended 32-bit for 64-bit
+immSE :: OperandSpec
+immSE = imm ImmSizeSE
+
+-- | 128-bit memory
+mem128 :: AccessMode -> OperandSpec
+mem128 m = op m (T_Mem Mem128) RM
+
+-- | 64-bit vector or memory
+mvec64 :: AccessMode -> OperandSpec
+mvec64 m = op m (TME (T_Reg RegVec64) (T_Mem Mem64)) RM
+
+-- | 128-bit vector or memory
+mvec128 :: AccessMode -> OperandSpec
+mvec128 m = op m (TME (T_Reg RegVec128) (T_Mem Mem128)) RM
+
+-- | 128-bit or 256-bit vector or memory
+mvec128o256 :: AccessMode -> OperandSpec
+mvec128o256 m = op m (TLE
+   (TME (T_Reg RegVec128) (T_Mem Mem128))
+   (TME (T_Reg RegVec256) (T_Mem Mem256)))
+   RM
+
+-- | low 64-bit of 128-bit vector or 64-bit memory
+mvec128low64 :: AccessMode -> OperandSpec
+mvec128low64 m = op m (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64)) RM
+
+-- | low 32-bit of 128-bit vector or 32-bit memory
+mvec128low32 :: AccessMode -> OperandSpec
+mvec128low32 m = op m (TME (T_SubReg SubLow32 RegVec128) (T_Mem Mem32)) RM
+
+-- | 64-bit even positioned values in vector register or memory
+--    * low 64-bit of 128-bit vector
+--    * [63,0] and [191,128] of 256-bit vector
+mvecEven64 :: AccessMode -> OperandSpec
+mvecEven64 m = op m (TLE
+   (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64))
+   (TME (T_SubReg SubEven64 RegVec256) (T_Mem Mem256))
+   ) RM
+
+-- | low bytes of a vector or memory
+mveclow :: AccessMode -> OperandSpec
+mveclow m = op m (TLE 
+   (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64))
+   (TME (T_Reg RegVec128) (T_Mem Mem128))) RM
+
+-- | 128-bit or 256-bit memory depending on Vex.L
+m128o256 :: AccessMode -> OperandSpec
+m128o256 m = op m (TLE (T_Mem Mem128) (T_Mem Mem256)) RM
+
+-- | 128-bit vector
+vec128 :: AccessMode -> OperandEnc -> OperandSpec
+vec128 m e = op m (T_Reg RegVec128) e
+
+-- | 64-bit vector
+vec64 :: AccessMode -> OperandEnc -> OperandSpec
+vec64 m e = op m (T_Reg RegVec64) e
+
+-- | Low 64-bit of 128-bit vector
+vec128low64 :: AccessMode -> OperandEnc -> OperandSpec
+vec128low64 m e = op m (T_SubReg SubLow64 RegVec128) e
+
+-- | Low 32-bit of 128-bit vector
+vec128low32 :: AccessMode -> OperandEnc -> OperandSpec
+vec128low32 m e = op m (T_SubReg SubLow32 RegVec128) e
+
+-- | 128-bit or 256-bit vector depending on Vex.L
+vec128o256 :: AccessMode -> OperandEnc -> OperandSpec
+vec128o256 m e = op m (TLE (T_Reg RegVec128) (T_Reg RegVec256)) e
+
+-- | 32-bit or 64-bit general purpose register (depending on Rex.W)
+reg32o64 :: AccessMode -> OperandEnc -> OperandSpec
+reg32o64 m e = op m (TWE (T_Reg Reg32) (T_Reg Reg64)) e
+
+-- | 32-bit or 64-bit general purpose register (depending on Rex.W) or memory
+rm32o64 :: AccessMode -> OperandSpec
+rm32o64 m = op m (TME
+   (TWE (T_Reg Reg32) (T_Reg Reg64))
+   (TWE (T_Mem Mem32) (T_Mem Mem64)))
+   RM
+
+-- | 16-bit general purpose register
+reg16 :: AccessMode -> OperandEnc -> OperandSpec
+reg16 m e = op m (T_Reg Reg16) e
+
+-- | 16-bit memory
+mem16 :: AccessMode -> OperandSpec
+mem16 m = op m (T_Mem Mem16) RM
+
+-- | 16-bit general purpose register or memory
+rm16 :: AccessMode -> OperandSpec
+rm16 m = op m (TME (T_Reg Reg16) (T_Mem Mem16)) RM
+
+-- | 32-bit memory
+mem32 :: AccessMode -> OperandSpec
+mem32 m = op m (T_Mem Mem32) RM
+
+-- | 512-bit memory
+mem512 :: AccessMode -> OperandSpec
+mem512 m = op m (T_Mem Mem512) RM
+
+-- | 32-bit general purpose register or memory
+rm32 :: AccessMode -> OperandSpec
+rm32 m = op m (TME (T_Reg Reg32) (T_Mem Mem32)) RM
+
+-- | 64-bit general purpose register or memory
+rm64 :: AccessMode -> OperandSpec
+rm64 m = op m (TME (T_Reg Reg64) (T_Mem Mem64)) RM
+
+-- | 64-bit or 128-bit memory (depending on Rex.W)
+m64o128 :: AccessMode -> OperandSpec
+m64o128 m = op m (TWE (T_Mem Mem64) (T_Mem Mem128)) RM
+
+-- | General purpose register with the operand-size
+gpr :: AccessMode -> OperandEnc -> OperandSpec
+gpr m e = op m (T_Reg RegOpSize) e
+
+-- | General purpose register with the operand-size or memory
+mgpr :: AccessMode -> OperandSpec
+mgpr m = op m (TME (T_Reg RegOpSize) (T_Mem MemOpSize)) RM
+
+-- | Memory with the operand-size
+mem :: AccessMode -> OperandSpec
+mem m = op m (T_Mem MemOpSize) RM
+
+-- | Any memory address (the pointed type doesn't matter)
+mvoid :: OperandSpec
+mvoid = op NA (T_Mem MemVoid) RM
+
+-- | Fixed register
+reg :: Register -> AccessMode -> OperandEnc -> OperandSpec
+reg r m e = op m (T_Reg (RegFixed r)) e
+
+-- | EDX:EAX or RDX:RAX pair
+rDXrAX :: AccessMode -> OperandSpec
+rDXrAX m = op m (TWE
+   (T_Pair (T_Reg (RegFixed R_EDX)) (T_Reg (RegFixed R_EAX)))
+   (T_Pair (T_Reg (RegFixed R_RDX)) (T_Reg (RegFixed R_RAX))))
+   Implicit
+
+-- | ECX:EBX or RCX:RBX pair
+rCXrBX :: AccessMode -> OperandSpec
+rCXrBX m = op m (TWE
+   (T_Pair (T_Reg (RegFixed R_ECX)) (T_Reg (RegFixed R_EBX)))
+   (T_Pair (T_Reg (RegFixed R_RCX)) (T_Reg (RegFixed R_RBX))))
+   Implicit
+
+-- | 8-bit relative offset
+rel8 :: OperandSpec
+rel8 = op RO (T_Rel Rel8) Imm
+
+-- | 16-bit or 32-bit relative offset (16-bit invalid in 64-bit mode)
+rel16o32 :: OperandSpec
+rel16o32 = op RO (T_Rel Rel16o32) Imm
+
 -- We use a dummy encoding for 3DNow: because all the instructions use the same
 amd3DNowEncoding :: Encoding
 amd3DNowEncoding = leg
    { legacyOpcodeMap = Map3DNow
-   , legacyParams    = [ op    RW    T_V64          Reg
-                       , op    RO    T_VM64         RM
+   , legacyParams    = [ vec64 RW Reg
+                       , mvec64 RO
                        ]
    }
 
@@ -683,7 +853,7 @@ i_aaa = insn
                            { legacyOpcodeMap       = MapPrimary
                            , legacyOpcode          = 0x37
                            , legacyProperties      = [LegacyModeSupport]
-                           , legacyParams          = [ op    RW    T_AX     Implicit ]
+                           , legacyParams          = [ reg R_AX RW Implicit ]
                            }
                         ]
    }
@@ -699,8 +869,8 @@ i_aad = insn
                            { legacyOpcodeMap       = MapPrimary
                            , legacyOpcode          = 0xD5
                            , legacyProperties      = [LegacyModeSupport]
-                           , legacyParams          = [ op    RW    T_AX     Implicit
-                                                     , op    RO    T_Imm8   Imm
+                           , legacyParams          = [ reg R_AX RW Implicit
+                                                     , imm8
                                                      ]
                            }
                         ]
@@ -718,8 +888,8 @@ i_aam = insn
                            { legacyOpcodeMap       = MapPrimary
                            , legacyOpcode          = 0xD4
                            , legacyProperties      = [LegacyModeSupport]
-                           , legacyParams          = [ op    RW    T_AX     Implicit
-                                                     , op    RO    T_Imm8   Imm
+                           , legacyParams          = [ reg R_AX RW Implicit
+                                                     , imm8
                                                      ]
                            }
                         ]
@@ -737,7 +907,7 @@ i_aas = insn
                            { legacyOpcodeMap       = MapPrimary
                            , legacyOpcode          = 0x3F
                            , legacyProperties      = [LegacyModeSupport]
-                           , legacyParams          = [ op    RW    T_AX     Implicit ]
+                           , legacyParams          = [ reg R_AX RW Implicit ]
                            }
                        ]
    }
@@ -757,7 +927,7 @@ i_adc = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op    RW    T_Accu   Implicit
-                                                     , op    RO    T_Imm    Imm
+                                                     , immSE 
                                                      ]
                            }
                         , leg
@@ -769,8 +939,8 @@ i_adc = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_R      Reg
+                           , legacyParams          = [ mgpr RW
+                                                     , gpr RO Reg
                                                      ]
                            }
                         , leg
@@ -783,8 +953,8 @@ i_adc = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_Imm    Imm
+                           , legacyParams          = [ mgpr RW
+                                                     , immSE
                                                      ]
                            }
                         ]
@@ -802,8 +972,8 @@ i_adcx = insn
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [Extension ADX]
-                           , legacyParams          = [ op    RW    T_R32_64    Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)   RM
+                           , legacyParams          = [ reg32o64 RW Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                         ]
@@ -822,7 +992,7 @@ i_add = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op    RW    T_Accu   Implicit
-                                                     , op    RO    T_Imm    Imm
+                                                     , immSE
                                                      ]
                            }
                        , leg
@@ -834,8 +1004,8 @@ i_add = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_R      Reg
+                           , legacyParams          = [ mgpr RW
+                                                     , gpr RO Reg
                                                      ]
                            }
                        , leg
@@ -848,8 +1018,8 @@ i_add = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_Imm    Imm
+                           , legacyParams          = [ mgpr RW
+                                                     , immSE
                                                      ]
                            }
                        ]
@@ -867,8 +1037,8 @@ i_addpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -887,9 +1057,9 @@ i_vaddpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128_256     Reg
-                                                     , op     RO    T_V128_256     Vvvv
-                                                     , op     RO    T_VM128_256    RM
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
                                                      ]
                            }
                        ]
@@ -906,8 +1076,8 @@ i_addps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128  RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -925,9 +1095,9 @@ i_vaddps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -945,8 +1115,8 @@ i_addsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -965,9 +1135,9 @@ i_vaddsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low64  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -985,8 +1155,8 @@ i_addss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -1005,9 +1175,9 @@ i_vaddss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -1025,8 +1195,8 @@ i_addsubpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1045,9 +1215,9 @@ i_vaddsubpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -1065,8 +1235,8 @@ i_addsubps = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1085,9 +1255,9 @@ i_vaddsubps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128_256     Reg
-                                                     , op     RO    T_V128_256     Vvvv
-                                                     , op     RO    T_VM128_256    RM
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
                                                      ]
                            }
                        ]
@@ -1108,8 +1278,8 @@ i_adox = insn
                                                      , LongModeSupport
                                                      , Extension ADX
                                                      ]
-                           , legacyParams          = [ op    RW    T_R32_64       Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)      RM
+                           , legacyParams          = [ reg32o64 RW Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                        ]
@@ -1127,8 +1297,8 @@ i_aesdec = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1148,9 +1318,9 @@ i_vaesdec = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128        RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1168,8 +1338,8 @@ i_aesdeclast = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1189,9 +1359,9 @@ i_vaesdeclast = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128        RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1209,8 +1379,8 @@ i_aesenc = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1230,9 +1400,9 @@ i_vaesenc = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128        RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1250,8 +1420,8 @@ i_aesenclast = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1271,9 +1441,9 @@ i_vaesenclast = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128        RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1291,8 +1461,8 @@ i_aesimc = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1312,8 +1482,8 @@ i_vaesimc = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_VM128        RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1331,9 +1501,9 @@ i_aeskeygenassist = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
-                                                     , op    RO    T_Imm8         Imm
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -1353,9 +1523,9 @@ i_vaeskeygenassist = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_VM128        RM
-                                                  , op     RO    T_Imm8         Imm
+                           , vexParams          = [ vec128 WO Reg
+                                                  , mvec128 RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -1377,7 +1547,7 @@ i_and = insn
                                                   , LongModeSupport
                                                   ]
                            , legacyParams       = [ op    RW    T_Accu   Implicit
-                                                  , op    RO    T_Imm    Imm
+                                                  , immSE
                                                   ]
                            }
                        , leg
@@ -1389,8 +1559,8 @@ i_and = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)     RM
-                                                  , op    RO    T_R      Reg
+                           , legacyParams       = [ mgpr RW
+                                                  , gpr RO Reg
                                                   ]
                            }
                        , leg
@@ -1403,8 +1573,8 @@ i_and = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_Imm    Imm
+                           , legacyParams          = [ mgpr RW
+                                                     , immSE
                                                      ]
                            }
                        ]
@@ -1426,9 +1596,9 @@ i_andn = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , vexParams       = [ op    WO    T_R32_64     Reg
-                                               , op    RO    T_R32_64     Vvvv
-                                               , op    RO    (TE T_R32_64 T_M32_64)    RM
+                           , vexParams       = [ reg32o64 WO Reg
+                                               , reg32o64 RO Vvvv
+                                               , rm32o64 RO
                                                ]
                            }
                        ]
@@ -1446,8 +1616,8 @@ i_andpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1466,9 +1636,9 @@ i_vandpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -1485,8 +1655,8 @@ i_andps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           , legacyParams       = [ op    RW    T_V128   Reg
-                                                  , op    RO    T_VM128  RM
+                           , legacyParams       = [ vec128 RW Reg
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1504,9 +1674,9 @@ i_vandps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     WO    T_V128_256     Reg
-                                               , op     RO    T_V128_256     Vvvv
-                                               , op     RO    T_VM128_256    RM
+                           , vexParams       = [ vec128o256 WO Reg
+                                               , vec128o256 RO Vvvv
+                                               , mvec128o256 RO
                                                ]
                            }
                        ]
@@ -1524,8 +1694,8 @@ i_andnpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -1544,9 +1714,9 @@ i_vandnpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -1563,8 +1733,8 @@ i_andnps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           , legacyParams       = [ op    RW    T_V128   Reg
-                                                  , op    RO    T_VM128  RM
+                           , legacyParams       = [ vec128 RW Reg
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -1582,9 +1752,9 @@ i_vandnps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     WO    T_V128_256     Reg
-                                               , op     RO    T_V128_256     Vvvv
-                                               , op     RO    T_VM128_256    RM
+                           , vexParams       = [ vec128o256 WO Reg
+                                               , vec128o256 RO Vvvv
+                                               , mvec128o256 RO
                                                ]
                            }
                        ]
@@ -1599,8 +1769,8 @@ i_arpl = insn
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x63
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op RW (TE T_R16 T_M16)   RM
-                                                  , op RO T_R16    Reg
+                           , legacyParams       = [ rm16 RW
+                                                  , reg16 RO Reg
                                                   ]
                            }
                        ]
@@ -1618,9 +1788,9 @@ i_blendpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
-                                                     , op    RO    T_Imm8   Imm
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -1639,9 +1809,9 @@ i_vblendpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   , op     RO    T_Mask         Imm8l
                                                   ]
                            }
@@ -1664,9 +1834,9 @@ i_bextr = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , vexParams       = [ op    WO    T_R32_64     Reg
-                                               , op    RO    (TE T_R32_64 T_M32_64)    RM
-                                               , op    RO    T_R32_64     Vvvv
+                           , vexParams       = [ reg32o64 WO Reg
+                                               , rm32o64 RO
+                                               , reg32o64 RO Vvvv
                                                ]
                            }
                        ]
@@ -1684,9 +1854,9 @@ i_blendps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
-                                                     , op    RO    T_Imm8   Imm
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -1705,10 +1875,10 @@ i_vblendps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
-                                                  , op     RO    T_Imm8         Imm
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -1726,9 +1896,9 @@ i_blendvpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
-                                                     , op    RO    T_XMM0   Implicit
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , reg (R_XMM 0) RO Implicit
                                                      ]
                            }
                        ]
@@ -1747,10 +1917,10 @@ i_vblendvpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
-                                                  , op     RO    T_V128_256     Imm8h
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  , vec128o256 RO Imm8h
                                                   ]
                            }
                        ]
@@ -1768,9 +1938,9 @@ i_blendvps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
-                                                     , op    RO    T_XMM0   Implicit
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , reg (R_XMM 0) RO Implicit
                                                      ]
                            }
                        ]
@@ -1789,10 +1959,10 @@ i_vblendvps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
-                                                  , op     RO    T_V128_256     Imm8h
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  , vec128o256 RO Imm8h
                                                   ]
                            }
                        ]
@@ -1815,8 +1985,8 @@ i_blsi = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , vexParams       = [ op    WO    T_R32_64     Vvvv
-                                               , op    RO    (TE T_R32_64 T_M32_64)    RM
+                           , vexParams       = [ reg32o64 WO Vvvv
+                                               , rm32o64 RO
                                                ]
                            }
                        ]
@@ -1839,8 +2009,8 @@ i_blsmsk = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , vexParams       = [ op    WO    T_R32_64     Vvvv
-                                               , op    RO    (TE T_R32_64 T_M32_64)    RM
+                           , vexParams       = [ reg32o64 WO Vvvv
+                                               , rm32o64 RO
                                                ]
                            }
                        ]
@@ -1863,8 +2033,8 @@ i_blsr = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , vexParams       = [ op    WO    T_R32_64     Vvvv
-                                               , op    RO    (TE T_R32_64 T_M32_64)    RM
+                           , vexParams       = [ reg32o64 WO Vvvv
+                                               , rm32o64 RO
                                                ]
                            }
                        ]
@@ -1878,8 +2048,8 @@ i_bound = insn
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x62
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RO    T_R      Reg
-                                                  , op    RO    T_M_PAIR RM
+                           , legacyParams       = [ gpr RO Reg
+                                                  , op    RO    (T_Mem MemPair16o32) RM
                                                   ]
                            }
                        ]
@@ -1898,8 +2068,8 @@ i_bsf = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    WO    T_R      Reg
-                                                  , op    RO    (TE T_R T_M)     RM
+                           , legacyParams       = [ gpr WO Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -1918,8 +2088,8 @@ i_bsr = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    WO    T_R      Reg
-                                                  , op    RO    (TE T_R T_M)     RM
+                           , legacyParams       = [ gpr WO Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -1936,7 +2106,7 @@ i_bswap = insn
                                                   , LongModeSupport
                                                   , Arch Intel486
                                                   ]
-                           , legacyParams       = [ op    RW    T_R32_64 OpcodeLow3 ]
+                           , legacyParams       = [ reg32o64 RW OpcodeLow3 ]
                            }
                        ]
    }
@@ -1954,8 +2124,8 @@ i_bt = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op RO (TE T_R T_M) RM
-                                                  , op RO T_R          Reg
+                           , legacyParams       = [ mgpr RO
+                                                  , gpr RO Reg
                                                   ]
                            }
                        , leg
@@ -1965,8 +2135,8 @@ i_bt = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    (TE T_R T_M)   RM
-                                                  , op    RO    T_Imm8         Imm
+                           , legacyParams       = [ mgpr RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -1986,8 +2156,8 @@ i_btc = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)   RM
-                                                  , op    RO    T_R            Reg
+                           , legacyParams       = [ mgpr RW
+                                                  , gpr RO Reg
                                                   ]
                            }
                        , leg
@@ -1998,8 +2168,8 @@ i_btc = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)   RM
-                                                  , op    RO    T_Imm8         Imm
+                           , legacyParams       = [ mgpr RW
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -2019,8 +2189,8 @@ i_btr = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)   RM
-                                                  , op    RO    T_R            Reg
+                           , legacyParams       = [ mgpr RW
+                                                  , gpr RO Reg
                                                   ]
                            }
                        , leg
@@ -2031,8 +2201,8 @@ i_btr = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)   RM
-                                                  , op    RO    T_Imm8         Imm
+                           , legacyParams       = [ mgpr RW
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -2052,8 +2222,8 @@ i_bts = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)   RM
-                                                  , op    RO    T_R            Reg
+                           , legacyParams       = [ mgpr RW
+                                                  , gpr RO Reg
                                                   ]
                            }
                        , leg
@@ -2064,8 +2234,8 @@ i_bts = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)   RM
-                                                  , op    RO    T_Imm8         Imm
+                           , legacyParams       = [ mgpr RW
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -2087,9 +2257,9 @@ i_bzhi = insn
                                                   , LongModeSupport
                                                   , Extension BMI2
                                                   ]
-                              , vexParams       = [ op    WO    T_R32_64     Reg
-                                                  , op    RO    (TE T_R32_64 T_M32_64)    RM
-                                                  , op    RO    T_R32_64     Vvvv
+                              , vexParams       = [ reg32o64 WO Reg
+                                                  , rm32o64 RO
+                                                  , reg32o64 RO Vvvv
                                                   ]
                               }
                           ]
@@ -2107,14 +2277,14 @@ i_call = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    T_Rel16_32    Imm ]
+                           , legacyParams       = [ rel16o32 ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0xFF
                            , legacyOpcodeExt    = Just 2
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RO    (TE T_R T_M)   RM ]
+                           , legacyParams       = [ mgpr RO ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
@@ -2123,7 +2293,7 @@ i_call = insn
                            , legacyProperties   = [ LongModeSupport
                                                   , DefaultOperandSize64
                                                   ]
-                           , legacyParams       = [ op    RO    (TE T_R64 T_M64)         RM ]
+                           , legacyParams       = [ rm64 RO ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
@@ -2217,7 +2387,7 @@ i_clflush = insn
                                                   , LongModeSupport
                                                   , Extension CLFLUSH
                                                   ]
-                           , legacyParams       = [ op    RO    T_M      RM  ]
+                           , legacyParams       = [ mvoid ]
                            }
                        ]
    }
@@ -2278,8 +2448,8 @@ i_cmovo = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2296,8 +2466,8 @@ i_cmovno = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2314,8 +2484,8 @@ i_cmovc = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2332,8 +2502,8 @@ i_cmovnc = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2350,8 +2520,8 @@ i_cmovz = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2368,8 +2538,8 @@ i_cmovnz = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2386,8 +2556,8 @@ i_cmovbe = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2404,8 +2574,8 @@ i_cmova = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2422,8 +2592,8 @@ i_cmovs = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2440,8 +2610,8 @@ i_cmovns = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2458,8 +2628,8 @@ i_cmovp = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2476,8 +2646,8 @@ i_cmovnp = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2494,8 +2664,8 @@ i_cmovl = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2512,8 +2682,8 @@ i_cmovge = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2530,8 +2700,8 @@ i_cmovle = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2548,8 +2718,8 @@ i_cmovg = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_R           Reg
-                                                  , op    RO    (TE T_R T_M)  RM
+                           , legacyParams       = [ gpr RW Reg
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -2569,7 +2739,7 @@ i_cmp = insn
                                                   , LongModeSupport
                                                   ]
                            , legacyParams       = [ op    RW    T_Accu   Implicit
-                                                  , op    RO    T_Imm    Imm
+                                                  , immSE
                                                   ]
                            }
                        , leg
@@ -2581,8 +2751,8 @@ i_cmp = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)     RM
-                                                  , op    RO    T_R      Reg
+                           , legacyParams       = [ mgpr RW
+                                                  , gpr RO Reg
                                                   ]
                            }
                        , leg
@@ -2595,8 +2765,8 @@ i_cmp = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_Imm    Imm
+                           , legacyParams          = [ mgpr RW
+                                                     , immSE
                                                      ]
                            }
                        ]
@@ -2614,9 +2784,9 @@ i_cmppd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           , legacyParams             = [ op    RW    T_V128   Reg
-                                                        , op    RO    T_VM128  RM
-                                                        , op    RO    T_Imm8   Imm
+                           , legacyParams             = [ vec128 RW Reg
+                                                        , mvec128 RO
+                                                        , imm8
                                                         ]
                            }
                        ]
@@ -2635,10 +2805,10 @@ i_vcmppd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128_256     Reg
-                                                     , op     RO    T_V128_256     Vvvv
-                                                     , op     RO    T_VM128_256    RM
-                                                     , op     RO    T_Imm8         Imm
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -2655,9 +2825,9 @@ i_cmpps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           , legacyParams       = [ op    RW    T_V128   Reg
-                                                  , op    RO    T_VM128  RM
-                                                  , op    RO    T_Imm8   Imm
+                           , legacyParams       = [ vec128 RW Reg
+                                                  , mvec128 RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -2675,10 +2845,10 @@ i_vcmpps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     WO    T_V128_256     Reg
-                                               , op     RO    T_V128_256     Vvvv
-                                               , op     RO    T_VM128_256    RM
-                                               , op     RO    T_Imm8         Imm
+                           , vexParams       = [ vec128o256 WO Reg
+                                               , vec128o256 RO Vvvv
+                                               , mvec128o256 RO
+                                               , imm8
                                                ]
                            }
                        ]
@@ -2715,9 +2885,9 @@ i_cmpsd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           , legacyParams             = [ op    RW    T_V128   Reg
-                                                        , op    RO    T_VM128  RM
-                                                        , op    RO    T_Imm8   Imm
+                           , legacyParams             = [ vec128 RW Reg
+                                                        , mvec128 RO
+                                                        , imm8
                                                         ]
                            }
                        ]
@@ -2736,10 +2906,10 @@ i_vcmpsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128      Reg
-                                                     , op     RO    T_V128      Vvvv
-                                                     , op     RO    T_VM128     RM
-                                                     , op     RO    T_Imm8      Imm
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -2757,9 +2927,9 @@ i_cmpss = insn
                                                         , LongModeSupport
                                                         , Extension SSE
                                                         ]
-                           , legacyParams             = [ op    RW    T_V128   Reg
-                                                        , op    RO    T_VM128  RM
-                                                        , op    RO    T_Imm8   Imm
+                           , legacyParams             = [ vec128 RW Reg
+                                                        , mvec128 RO
+                                                        , imm8
                                                         ]
                            }
                        ]
@@ -2778,10 +2948,10 @@ i_vcmpss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128      Reg
-                                                     , op     RO    T_V128      Vvvv
-                                                     , op     RO    T_VM128     RM
-                                                     , op     RO    T_Imm8      Imm
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -2801,9 +2971,9 @@ i_cmpxchg = insn
                                                   , LongModeSupport
                                                   , Arch Intel486
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)     RM
+                           , legacyParams       = [ mgpr RW
                                                   , op    RO    T_Accu   Implicit
-                                                  , op    RO    T_R      Reg
+                                                  , gpr RO Reg
                                                   ]
                            }
                        ]
@@ -2817,14 +2987,16 @@ i_cmpxch8b = insn
    , insnEncodings   = [ leg
                            { legacyOpcodeMap    = Map0F
                            , legacyOpcode       = 0xC7
-                           , legacyProperties   = [ DoubleSizable
-                                                  , Lockable
+                           , legacyProperties   = [ Lockable
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   , Arch IntelPentium
                                                   , Extension CX8
                                                   ]
-                           , legacyParams       = [ op    RW    T_M64_128   RM ]
+                           , legacyParams       = [ rDXrAX RW
+                                                  , rCXrBX RO
+                                                  , m64o128 RW
+                                                  ]
                            }
                        ]
    }
@@ -2845,8 +3017,8 @@ i_comisd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           , legacyParams             = [ op    RO    T_V128_Low64      Reg
-                                                        , op    RO    T_VM128_Low64     RM
+                           , legacyParams             = [ vec128low64 RO Reg
+                                                        , mvec128low64 RO
                                                         ]
                            }
                        ]
@@ -2868,8 +3040,8 @@ i_vcomisd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     RO    T_V128_Low64      Reg
-                                                  , op     RO    T_VM128_Low64     RM
+                           , vexParams          = [ vec128low64 RO Reg
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -2889,8 +3061,8 @@ i_comiss = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           , legacyParams       = [ op    RO    T_V128_Low32      Reg
-                                                  , op    RO    T_VM128_Low32     RM
+                           , legacyParams       = [ vec128low32 RO Reg
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -2911,8 +3083,8 @@ i_vcomiss = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     RO    T_V128_Low32      Reg
-                                               , op     RO    T_VM128_Low32     RM
+                           , vexParams       = [ vec128low32 RO Reg
+                                               , mvec128low32 RO
                                                ]
                            }
                        ]
@@ -2949,8 +3121,8 @@ i_crc32 = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_R      Reg
-                                                     , op    RO    (TE T_R T_M)     RM
+                           , legacyParams          = [ gpr RW Reg
+                                                     , mgpr RO
                                                      ]
                            }
                        ]
@@ -2968,8 +3140,8 @@ i_cvtdq2pd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128        RM     -- FIXME: it should be xmm_low64/m64 
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -2988,8 +3160,8 @@ i_vcvtdq2pd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_VM128        RM     -- FIXME: it should be xmm_low64/m64 or xmm/m128
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mveclow RO
                                                   ]
                            }
                        ]
@@ -3006,8 +3178,8 @@ i_cvtdq2ps = insn
                                                   , LongModeSupport
                                                   , Extension SSE2
                                                   ]
-                           , legacyParams       = [ op    WO    T_V128         Reg
-                                                  , op    RO    T_VM128        RM
+                           , legacyParams       = [ vec128 WO Reg
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -3025,8 +3197,8 @@ i_vcvtdq2ps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     WO    T_V128_256     Reg
-                                               , op     RO    T_VM128_256    RM
+                           , vexParams       = [ vec128o256 WO Reg
+                                               , mvec128o256 RO
                                                ]
                            }
                        ]
@@ -3044,8 +3216,8 @@ i_cvtpd2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3064,8 +3236,8 @@ i_vcvtpd2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -3082,8 +3254,8 @@ i_cvtpd2di = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    T_V64          Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3101,8 +3273,8 @@ i_cvtpd2ps = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3121,8 +3293,8 @@ i_vcvtpd2ps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -3139,8 +3311,8 @@ i_cvtpi2pd = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM64         RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec64 RO
                                                      ]
                            }
                        ]
@@ -3156,8 +3328,8 @@ i_cvtpi2ps = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    WO    T_V128         Reg
-                                                  , op    RO    T_VM64         RM
+                           , legacyParams       = [ vec128 WO Reg
+                                                  , mvec64 RO
                                                   ]
                            }
                        ]
@@ -3175,8 +3347,8 @@ i_cvtps2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3195,8 +3367,8 @@ i_vcvtps2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -3213,8 +3385,8 @@ i_cvtps2pd = insn
                                                   , LongModeSupport
                                                   , Extension SSE2
                                                   ]
-                           , legacyParams       = [ op    WO    T_V128         Reg
-                                                  , op    RO    T_VM128        RM
+                           , legacyParams       = [ vec128 WO Reg
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -3232,8 +3404,8 @@ i_vcvtps2pd = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     WO    T_V128         Reg
-                                               , op     RO    T_VM128_256    RM
+                           , vexParams       = [ vec128 WO Reg
+                                               , mvec128o256 RO
                                                ]
                            }
                        ]
@@ -3249,8 +3421,8 @@ i_cvtps2pi = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    WO    T_V64          Reg
-                                                  , op    RO    T_VM128_Low64  RM
+                           , legacyParams       = [ vec64 WO Reg
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -3268,8 +3440,8 @@ i_cvtsd2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_R32_64       Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ reg32o64 WO Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -3288,8 +3460,8 @@ i_vcvtsd2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_R32_64         Reg
-                                                  , op     RO    T_VM128_Low64    RM
+                           , vexParams          = [ reg32o64 WO Reg
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -3307,8 +3479,8 @@ i_cvtsd2ss = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -3327,9 +3499,9 @@ i_vcvtsd2ss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low64  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -3347,8 +3519,8 @@ i_cvtsi2sd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128      Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)   RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                        ]
@@ -3367,9 +3539,9 @@ i_vcvtsi2sd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128     Reg
-                                                  , op     RO    T_V128     Vvvv
-                                                  , op     RO    (TE T_R32_64 T_M32_64)  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , rm32o64 RO
                                                   ]
                            }
                        ]
@@ -3388,8 +3560,8 @@ i_cvtsi2ss = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128      Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)   RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                        ]
@@ -3408,9 +3580,9 @@ i_vcvtsi2ss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128     Reg
-                                                  , op     RO    T_V128     Vvvv
-                                                  , op     RO    (TE T_R32_64 T_M32_64)  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , rm32o64 RO
                                                   ]
                            }
                        ]
@@ -3428,8 +3600,8 @@ i_cvtss2sd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -3448,9 +3620,9 @@ i_vcvtss2sd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -3468,8 +3640,8 @@ i_cvtss2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    WO    T_R32_64       Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ reg32o64 WO Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -3488,8 +3660,8 @@ i_vcvtss2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_R32_64       Reg
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ reg32o64 WO Reg
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -3507,8 +3679,8 @@ i_cvttpd2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3527,8 +3699,8 @@ i_vcvttpd2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -3545,8 +3717,8 @@ i_cvttpd2pi = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    T_V64          Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3564,8 +3736,8 @@ i_cvttps2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3584,8 +3756,8 @@ i_vcvttps2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -3601,8 +3773,8 @@ i_cvttps2pi = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    WO    T_V64          Reg
-                                                  , op    RO    T_VM128_Low64  RM
+                           , legacyParams       = [ vec64 WO Reg
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -3620,8 +3792,8 @@ i_cvttsd2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_R32_64       Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ reg32o64 WO Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -3640,8 +3812,8 @@ i_vcvttsd2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_R32_64         Reg
-                                                  , op     RO    T_VM128_Low64    RM
+                           , vexParams          = [ reg32o64 WO Reg
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -3659,8 +3831,8 @@ i_cvttss2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    WO    T_R32_64       Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ reg32o64 WO Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -3679,8 +3851,8 @@ i_vcvttss2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_R32_64       Reg
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ reg32o64 WO Reg
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -3714,7 +3886,7 @@ i_daa = insn
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x27
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RW    T_AL     Implicit ]
+                           , legacyParams       = [ reg R_AL RW Implicit ]
                            }
                        ]
    }
@@ -3730,7 +3902,7 @@ i_das = insn
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x2F
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RW    T_AL     Implicit ]
+                           , legacyParams       = [ reg R_AL RW Implicit ]
                            }
                        ]
    }
@@ -3750,7 +3922,7 @@ i_dec = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    (TE T_R T_M)     RM ]
+                           , legacyParams       = [ mgpr RW ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
@@ -3758,7 +3930,7 @@ i_dec = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , Lockable
                                                   ]
-                           , legacyParams       = [ op    RW    T_R    OpcodeLow3]
+                           , legacyParams       = [ gpr RW OpcodeLow3 ]
                            }
                        ]
    }
@@ -3778,7 +3950,7 @@ i_div = insn
                                                   , LongModeSupport
                                                   ]
                            , legacyParams       = [ op    RW    T_xDX_xAX   Implicit
-                                                  , op    RO    (TE T_R T_M)        RM 
+                                                  , mgpr RO
                                                   ]
                            }
                        ]
@@ -3796,8 +3968,8 @@ i_divpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -3816,9 +3988,9 @@ i_vdivpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -3835,8 +4007,8 @@ i_divps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           , legacyParams       = [ op    RW    T_V128   Reg
-                                                  , op    RO    T_VM128  RM
+                           , legacyParams       = [ vec128 RW Reg
+                                                  , mvec128 RO
                                                   ]
                            }
                        ]
@@ -3854,9 +4026,9 @@ i_vdivps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , vexParams       = [ op     WO    T_V128_256     Reg
-                                               , op     RO    T_V128_256     Vvvv
-                                               , op     RO    T_VM128_256    RM
+                           , vexParams       = [ vec128o256 WO Reg
+                                               , vec128o256 RO Vvvv
+                                               , mvec128o256 RO
                                                ]
                            }
                        ]
@@ -3874,8 +4046,8 @@ i_divsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -3894,9 +4066,9 @@ i_vdivsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low64  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -3914,8 +4086,8 @@ i_divss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -3934,9 +4106,9 @@ i_vdivss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -3954,9 +4126,9 @@ i_dppd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
-                                                     , op    RO    T_Imm8         Imm
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -3975,10 +4147,10 @@ i_vdppd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128        RM
-                                                  , op     RO    T_Imm8         Imm
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128 RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -3996,9 +4168,9 @@ i_dpps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128        RM
-                                                     , op    RO    T_Imm8         Imm
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -4017,10 +4189,10 @@ i_vdpps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
-                                                  , op     RO    T_Imm8         Imm
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -4051,8 +4223,8 @@ i_enter = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    T_Imm16     Imm
-                                                  , op    RO    T_Imm8      Imm
+                           , legacyParams       = [ imm16
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -4070,9 +4242,9 @@ i_extractps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R32 T_M32)         RM
-                                                     , op    RO    T_V128         Reg
-                                                     , op    RO    T_Imm8         Imm
+                           , legacyParams          = [ rm32 RW
+                                                     , vec128 RO Reg
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -4091,9 +4263,9 @@ i_vextractps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op WO (TE T_R32 T_M32) RM
-                                                  , op RO T_V128         Vvvv
-                                                  , op RO T_Imm8         Imm
+                           , vexParams          = [ rm32 WO
+                                                  , vec128 RO Vvvv
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -4109,7 +4281,7 @@ i_f2xm1 = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF0
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -4123,7 +4295,7 @@ i_fabs = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -4140,7 +4312,7 @@ i_fadd = insn
                            , legacyFPUDest       = Just 2
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -4157,7 +4329,7 @@ i_fiadd = insn
                            , legacyOpcodeExt     = Just 0
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_MInt   RM 
                                                    ]
                            }
@@ -4173,7 +4345,7 @@ i_fbld = insn
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0     Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_M80dec  RM 
                                                    ]
                            }
@@ -4189,7 +4361,7 @@ i_fbstp = insn
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0     Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RW    T_M80bcd  RM 
                                                    ]
                            }
@@ -4205,7 +4377,7 @@ i_fchs = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE0
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -4233,7 +4405,7 @@ i_fcmovb = insn
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4252,7 +4424,7 @@ i_fcmove = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4271,7 +4443,7 @@ i_fcmovbe = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4290,7 +4462,7 @@ i_fcmovu = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4309,7 +4481,7 @@ i_fcmovnb = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4328,7 +4500,7 @@ i_fcmovne = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4347,7 +4519,7 @@ i_fcmovnbe = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4366,7 +4538,7 @@ i_fcmovnu = insn
                            , legacyProperties    = [ Extension FPU
                                                    , Extension CMOV
                                                    ]
-                           , legacyParams        = [ op  WO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -4383,7 +4555,7 @@ i_fcom = insn
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -4400,7 +4572,7 @@ i_fcomp = insn
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -4416,8 +4588,8 @@ i_fcompp = insn
                            , legacyOpcode        = 0xDE
                            , legacyOpcodeFullExt = Just 0xD9
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
-                                                   , op  RO    T_ST1       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -4433,7 +4605,7 @@ i_fcomi = insn
                            , legacyOpcodeExt     = Just 6
                            , legacyFPUPop        = Just 2   -- FCOMIP
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_ST        RM 
                                                    ]
                            }
@@ -4450,7 +4622,7 @@ i_fucomi = insn
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUPop        = Just 2   -- FUCOMIP
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_ST        RM 
                                                    ]
                            }
@@ -4466,7 +4638,7 @@ i_fcos = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xff
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -4496,7 +4668,7 @@ i_fdiv = insn
                            , legacyFPUDest       = Just 2
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -4513,7 +4685,7 @@ i_fidiv = insn
                            , legacyOpcodeExt     = Just 6
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_MInt   RM 
                                                    ]
                            }
@@ -4533,7 +4705,7 @@ i_fdivr = insn
                            , legacyFPUDest       = Just 2
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -4550,7 +4722,7 @@ i_fidivr = insn
                            , legacyOpcodeExt     = Just 7
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_MInt   RM 
                                                    ]
                            }
@@ -4582,7 +4754,7 @@ i_ficom = insn
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_MInt  RM 
                                                    ]
                            }
@@ -4599,7 +4771,7 @@ i_ficomp = insn
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_MInt  RM 
                                                    ]
                            }
@@ -4670,7 +4842,7 @@ i_fist = insn
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_MInt  RM 
                                                    ]
                            }
@@ -4687,7 +4859,7 @@ i_fistp = insn
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_MInt  RM 
                                                    ]
                            }
@@ -4696,7 +4868,7 @@ i_fistp = insn
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0     Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_MInt64  RM 
                                                    ]
                            }
@@ -4713,7 +4885,7 @@ i_fisttp = insn
                            , legacyOpcodeExt     = Just 1
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0   Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_MInt  RM 
                                                    ]
                            }
@@ -4722,7 +4894,7 @@ i_fisttp = insn
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0     Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_MInt64  RM 
                                                    ]
                            }
@@ -4739,7 +4911,7 @@ i_fld = insn
                            , legacyOpcodeExt     = Just 0
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_ST_MReal  RM
                                                    ]
                            }
@@ -4748,7 +4920,7 @@ i_fld = insn
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit
                                                    , op  RO    T_M80real   RM
                                                    ]
                            }
@@ -4764,7 +4936,7 @@ i_fld1 = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE8
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4778,7 +4950,7 @@ i_fldl2t = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE9
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4792,7 +4964,7 @@ i_fldl2e = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEA
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4806,7 +4978,7 @@ i_fldpi = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEB
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4820,7 +4992,7 @@ i_fldlg2 = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEC
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4835,7 +5007,7 @@ i_fldln2 = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xED
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4850,7 +5022,7 @@ i_fldz = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEE
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
    }
@@ -4864,7 +5036,7 @@ i_fldcw = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_M16  RM ]
+                           , legacyParams        = [ mem16 RO ]
                            }
                        ]
    }
@@ -4896,7 +5068,7 @@ i_fmul = insn
                            , legacyFPUDest       = Just 2
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -4913,7 +5085,7 @@ i_fimul = insn
                            , legacyOpcodeExt     = Just 1
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_MInt   RM 
                                                    ]
                            }
@@ -4943,8 +5115,8 @@ i_fpatan = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF3
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RO    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -4959,8 +5131,8 @@ i_fprem = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF8
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RO    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -4975,8 +5147,8 @@ i_fprem1 = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF5
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RO    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -4991,8 +5163,8 @@ i_fptan = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RW    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RW Implicit
                                                    ]
                            }
                        ]
@@ -5007,7 +5179,7 @@ i_frndint = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xFC
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -5049,8 +5221,8 @@ i_fscale = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xFD
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RO    T_ST1  Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -5065,7 +5237,7 @@ i_fsin = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xfe
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -5079,8 +5251,8 @@ i_fsincos = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xfb
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
-                                                   , op  WO    T_ST1       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) WO Implicit
                                                    ]
                            }
                        ]
@@ -5095,7 +5267,7 @@ i_fsqrt = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xfa
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
    }
@@ -5110,7 +5282,7 @@ i_fst = insn
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_ST_MReal  RM
                                                    ]
                            }
@@ -5127,7 +5299,7 @@ i_fstp = insn
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_ST_MReal  RM
                                                    ]
                            }
@@ -5136,7 +5308,7 @@ i_fstp = insn
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0      Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_M80real  RM
                                                    ]
                            }
@@ -5145,7 +5317,7 @@ i_fstp = insn
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 3
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0      Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  WO    T_ST       RM
                                                    ]
                            }
@@ -5161,7 +5333,7 @@ i_fnstcw = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_M16  RM ]
+                           , legacyParams        = [ mem16 WO ]
                            }
                        ]
    }
@@ -5191,14 +5363,14 @@ i_fnstsw = insn
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_M16  RM ]
+                           , legacyParams        = [ mem16 WO ]
                            }
                         , leg
                            { legacyOpcodeMap     = MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeFullExt = Just 0xE0
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_AX  Implicit ]
+                           , legacyParams        = [ reg R_AX RO Implicit ]
                            }
                        ]
    }
@@ -5215,7 +5387,7 @@ i_fsub = insn
                            , legacyFPUDest       = Just 2
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -5232,7 +5404,7 @@ i_fisub = insn
                            , legacyOpcodeExt     = Just 4
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_MInt   RM 
                                                    ]
                            }
@@ -5251,7 +5423,7 @@ i_fsubr = insn
                            , legacyFPUDest       = Just 2
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_ST_MReal  RM 
                                                    ]
                            }
@@ -5268,7 +5440,7 @@ i_fisubr = insn
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RO    T_MInt   RM 
                                                    ]
                            }
@@ -5284,7 +5456,7 @@ i_ftst = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE4
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit ]
                            }
                        ]
    }
@@ -5299,7 +5471,7 @@ i_fucom = insn
                            , legacyOpcodeExt     = Just 4
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -5316,7 +5488,7 @@ i_fucomp = insn
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
                                                    , op  RO    T_ST     RM 
                                                    ]
                            }
@@ -5332,8 +5504,8 @@ i_fucompp = insn
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeFullExt = Just 0xE9
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit
-                                                   , op  RO    T_ST1       Implicit
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -5349,7 +5521,7 @@ i_fxam = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE5
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST0       Implicit ]
+                           , legacyParams        = [ reg (R_ST 0) RO Implicit ]
                            }
                        ]
    }
@@ -5364,7 +5536,7 @@ i_fxch = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0    Implicit
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
                                                    , op  RW    T_ST     RM 
                                                    ]
                            }
@@ -5380,7 +5552,7 @@ i_fxrstor = insn
                            , legacyOpcode        = 0xAE
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_M512     RM ]
+                           , legacyParams        = [ mem512 RO ]
                            }
                        ]
    }
@@ -5396,7 +5568,7 @@ i_fxrstor64 = insn
                            , legacyProperties    = [ Extension FPU
                                                    , RequireRexW
                                                    ]
-                           , legacyParams        = [ op  RO    T_M512     RM ]
+                           , legacyParams        = [ mem512 RO ]
                            }
                        ]
    }
@@ -5410,7 +5582,7 @@ i_fxsave = insn
                            , legacyOpcode        = 0xAE
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_M512     RM ]
+                           , legacyParams        = [ mem512 WO ]
                            }
                        ]
    }
@@ -5426,7 +5598,7 @@ i_fxsave64 = insn
                            , legacyProperties    = [ Extension FPU
                                                    , RequireRexW
                                                    ]
-                           , legacyParams        = [ op  RO    T_M512     RM ]
+                           , legacyParams        = [ mem512 WO ]
                            }
                        ]
    }
@@ -5441,8 +5613,8 @@ i_fxtract = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF4
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  WO    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) WO Implicit
                                                    ]
                            }
                        ]
@@ -5457,8 +5629,8 @@ i_fyl2x = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF1
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RO    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -5473,8 +5645,8 @@ i_fyl2xp1 = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF9
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RW    T_ST0  Implicit
-                                                   , op  RO    T_ST1  Implicit 
+                           , legacyParams        = [ reg (R_ST 0) RW Implicit
+                                                   , reg (R_ST 1) RO Implicit
                                                    ]
                            }
                        ]
@@ -5492,8 +5664,8 @@ i_haddpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -5513,9 +5685,9 @@ i_vhaddpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -5534,8 +5706,8 @@ i_haddps = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -5555,9 +5727,9 @@ i_vhaddps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -5589,8 +5761,8 @@ i_hsubpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -5610,9 +5782,9 @@ i_vhsubpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -5631,8 +5803,8 @@ i_hsubps = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -5652,9 +5824,9 @@ i_vhsubps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -5675,7 +5847,7 @@ i_idiv = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op    RW    T_xDX_xAX   Implicit
-                                                     , op    RO    (TE T_R T_M)        RM
+                                                     , mgpr RO
                                                      ]
                            }
                        ]
@@ -5697,7 +5869,7 @@ i_imul = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op    RW    T_xDX_xAX   Implicit
-                                                     , op    RO    (TE T_R T_M)        RM
+                                                     , mgpr RO
                                                      ]
                            }
                        , leg
@@ -5706,8 +5878,8 @@ i_imul = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_R             Reg
-                                                     , op    RO    (TE T_R T_M)    RM
+                           , legacyParams          = [ gpr RW Reg
+                                                     , mgpr RO
                                                      ]
                            }
                        , leg
@@ -5717,9 +5889,9 @@ i_imul = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_R            Reg
-                                                     , op    RO    (TE T_R T_M)   RM
-                                                     , op    RO    T_Imm          Imm
+                           , legacyParams          = [ gpr RW Reg
+                                                     , mgpr RO
+                                                     , immSE
                                                      ]
                            }
                        ]
@@ -5737,7 +5909,7 @@ i_in = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op    WO    T_AL_AX_EAX   Implicit
-                                                     , op    RO    T_Imm8        Imm
+                                                     , imm8
                                                      ]
                            }
                        , leg
@@ -5748,7 +5920,7 @@ i_in = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op    WO    T_AL_AX_EAX   Implicit
-                                                     , op    RO    T_DX          Implicit
+                                                     , reg R_DX RO Implicit
                                                      ]
                            }
 
@@ -5769,7 +5941,7 @@ i_inc = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)   RM ]
+                           , legacyParams          = [ mgpr RW ]
                            }
                        , leg
                            { legacyOpcodeMap       = MapPrimary
@@ -5777,7 +5949,7 @@ i_inc = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , Lockable
                                                      ]
-                           , legacyParams          = [ op    RW    T_R    OpcodeLow3 ]
+                           , legacyParams          = [ gpr RW OpcodeLow3 ]
                            }
                        ]
    }
@@ -5796,7 +5968,7 @@ i_ins = insn
                                                      , Repeatable
                                                      ]
                            , legacyParams          = [ op    RW    T_rDI   Implicit
-                                                     , op    RO    T_DX    Implicit
+                                                     , reg R_DX RO Implicit
                                                      ]
                            }
                        ]
@@ -5814,9 +5986,9 @@ i_insertps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
-                                                     , op    RO    T_Imm8   Imm
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
                                                      ]
                            }
                        ]
@@ -5835,10 +6007,10 @@ i_vinsertps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128     Reg
-                                                  , op     RO    T_V128     Vvvv
-                                                  , op     RO    T_VM128    RM
-                                                  , op     RO    T_Imm8     Imm
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128 RO
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -5862,7 +6034,7 @@ i_int = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RO    T_Imm8 Imm ]
+                           , legacyParams          = [ imm8 ]
                            }
                        ]
    }
@@ -5910,7 +6082,7 @@ i_invlpg = insn
                                                      , LongModeSupport
                                                      , Arch Intel486
                                                      ]
-                           , legacyParams          = [ op    RO    T_M   RM ]
+                           , legacyParams          = [ mvoid ]
                            }
                        ]
    }
@@ -5927,8 +6099,8 @@ i_invpcid = insn
                                                      , LongModeSupport
                                                      , Extension INVPCID
                                                      ]
-                           , legacyParams          = [ op   RO    T_R32_64    Reg
-                                                     , op   RO    T_M128      RM
+                           , legacyParams          = [ reg32o64 WO Reg
+                                                     , mem128 RO
                                                      ]
                            }
                        ]
@@ -5960,7 +6132,7 @@ i_ja = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -5968,7 +6140,7 @@ i_ja = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -5984,7 +6156,7 @@ i_jae = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -5992,7 +6164,7 @@ i_jae = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6008,7 +6180,7 @@ i_jb = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6016,7 +6188,7 @@ i_jb = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6032,7 +6204,7 @@ i_jbe = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6040,7 +6212,7 @@ i_jbe = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6057,7 +6229,7 @@ i_jcxz = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op   RO    T_CX_ECX_RCX    Implicit
-                                                     , op   RO    T_Rel8          Imm
+                                                     , rel8
                                                      ]
                            }
                        ]
@@ -6074,7 +6246,7 @@ i_je = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6082,7 +6254,7 @@ i_je = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6098,7 +6270,7 @@ i_jg = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6106,7 +6278,7 @@ i_jg = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6122,7 +6294,7 @@ i_jge = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6130,7 +6302,7 @@ i_jge = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6146,7 +6318,7 @@ i_jl = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6154,7 +6326,7 @@ i_jl = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6170,7 +6342,7 @@ i_jle = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6178,7 +6350,7 @@ i_jle = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6194,7 +6366,7 @@ i_jne = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6202,7 +6374,7 @@ i_jne = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6218,7 +6390,7 @@ i_jno = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6226,7 +6398,7 @@ i_jno = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6242,7 +6414,7 @@ i_jnp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6250,7 +6422,7 @@ i_jnp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6266,7 +6438,7 @@ i_jns = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6274,7 +6446,7 @@ i_jns = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6290,7 +6462,7 @@ i_jo = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6298,7 +6470,7 @@ i_jo = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6314,7 +6486,7 @@ i_jp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6322,7 +6494,7 @@ i_jp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6338,7 +6510,7 @@ i_js = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcodeMap       = Map0F
@@ -6346,7 +6518,7 @@ i_js = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                        ]
    }
@@ -6361,14 +6533,14 @@ i_jmp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel8    Imm ]
+                           , legacyParams          = [ rel8 ]
                            }
                         , leg
                            { legacyOpcode          = 0xE9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_Rel16_32    Imm ]
+                           , legacyParams          = [ rel16o32 ]
                            }
                         , leg
                            { legacyOpcode          = 0xFF
@@ -6376,7 +6548,7 @@ i_jmp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    (TE T_R T_M)    RM ]
+                           , legacyParams          = [ mgpr RO ]
                            }
                         , leg
                            { legacyOpcode          = 0xEA
@@ -6408,7 +6580,7 @@ i_lahf = insn
                                                      , LongModeSupport
                                                      , Extension LAHF
                                                      ]
-                           , legacyParams          = [ op   WO    T_AH    Implicit ]
+                           , legacyParams          = [ reg R_AH WO Implicit ]
                            }
                        ]
    }
@@ -6424,8 +6596,8 @@ i_lar = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   WO    T_R          Reg
-                                                     , op   RO    (TE T_R T_M) RM
+                           , legacyParams          = [ gpr WO Reg
+                                                     , mgpr RO
                                                      ]
                            }
                        ]
@@ -6443,8 +6615,8 @@ i_lddqu = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128   Reg
-                                                     , op    RO    T_M128   RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mem128 RO
                                                      ]
                            }
                        ]
@@ -6463,8 +6635,8 @@ i_vlddqu = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_M128_256     RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , m128o256 RO
                                                   ]
                            }
                        ]
@@ -6482,7 +6654,7 @@ i_ldmxcsr = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RO    T_M32   RM ]
+                           , legacyParams          = [ mem32 RO ]
                            }
                        ]
    }
@@ -6500,7 +6672,7 @@ i_vldmxcsr = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     RO    T_M32     RM ]
+                           , vexParams          = [ mem32 RO ]
                            }
                        ]
    }
@@ -6516,7 +6688,7 @@ i_ldfarptr = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , DefaultSegment R_DS
                                                      ]
-                           , legacyParams          = [ op RO T_R        Reg
+                           , legacyParams          = [ gpr RO Reg
                                                      , op RO T_M16_XX   RM
                                                      ]
                            }
@@ -6526,7 +6698,7 @@ i_ldfarptr = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , DefaultSegment R_ES
                                                      ]
-                           , legacyParams          = [ op RO T_R        Reg
+                           , legacyParams          = [ gpr RO Reg
                                                      , op RO T_M16_XX   RM
                                                      ]
                            }
@@ -6537,7 +6709,7 @@ i_ldfarptr = insn
                                                      , LongModeSupport
                                                      , DefaultSegment R_SS
                                                      ]
-                           , legacyParams          = [ op RO T_R        Reg
+                           , legacyParams          = [ gpr RO Reg
                                                      , op RO T_M16_XX   RM
                                                      ]
                            }
@@ -6548,7 +6720,7 @@ i_ldfarptr = insn
                                                      , LongModeSupport
                                                      , DefaultSegment R_FS
                                                      ]
-                           , legacyParams          = [ op RO T_R        Reg
+                           , legacyParams          = [ gpr RO Reg
                                                      , op RO T_M16_XX   RM
                                                      ]
                            }
@@ -6559,7 +6731,7 @@ i_ldfarptr = insn
                                                      , LongModeSupport
                                                      , DefaultSegment R_GS
                                                      ]
-                           , legacyParams          = [ op RO T_R        Reg
+                           , legacyParams          = [ gpr RO Reg
                                                      , op RO T_M16_XX   RM
                                                      ]
                            }
@@ -6576,8 +6748,8 @@ i_lea = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op WO T_R Reg
-                                                     , op RO T_M RM
+                           , legacyParams          = [ gpr WO Reg
+                                                     , mvoid
                                                      ]
                            }
                        ]
@@ -6660,7 +6832,7 @@ i_lldt = insn
                                                      -- TODO: not supported in
                                                      -- real/virtual mode
                                                      ]
-                           , legacyParams          = [ op RO (TE T_R16 T_M16)   RM ]
+                           , legacyParams          = [ rm16 RO ]
                            }
                        ]
    }
@@ -6676,7 +6848,7 @@ i_lmsw = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RO (TE T_R16 T_M16)   RM ]
+                           , legacyParams          = [ rm16 RO ]
                            }
                        ]
    }
@@ -6710,7 +6882,7 @@ i_loop = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
-                                                     , op RO   T_Rel8       Imm
+                                                     , rel8
                                                      ]
                            }
                        ]
@@ -6729,7 +6901,7 @@ i_loope = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
-                                                     , op RO   T_Rel8       Imm
+                                                     , rel8
                                                      ]
                            }
                        ]
@@ -6748,7 +6920,7 @@ i_loopne = insn
                                                      , LongModeSupport
                                                      ]
                            , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
-                                                     , op RO   T_Rel8       Imm
+                                                     , rel8
                                                      ]
                            }
                        ]
@@ -6766,8 +6938,8 @@ i_lsl = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RW   T_R           Reg
-                                                     , op RO   (TE T_R T_M)  RM
+                           , legacyParams          = [ gpr RW Reg
+                                                     , mgpr RO
                                                      ]
                            }
                        ]
@@ -6788,7 +6960,7 @@ i_ltr = insn
                                                      -- TODO: invalid in
                                                      -- real/virtual modes
                                                      ]
-                           , legacyParams          = [ op RO   (TE T_R16 T_M16)  RM ]
+                           , legacyParams          = [ rm16 RO ]
                            }
                        ]
    }
@@ -6805,8 +6977,8 @@ i_maskmovdqu = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_V128   RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , vec128 RO RM
                                                      , op    RO    T_rDI    Implicit
                                                      ]
                            }
@@ -6826,8 +6998,8 @@ i_vmaskmovdqu = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op   WO    T_V128   Reg
-                                                     , op   RO    T_V128   RM
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO RM
                                                      , op   RO    T_rDI    Implicit
                                                      ]
                            }
@@ -6846,8 +7018,8 @@ i_maskmovq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           , legacyParams          = [ op    RW    T_V64    Reg
-                                                     , op    RO    T_V64    RM
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , vec64 RO RM
                                                      , op    RO    T_rDI    Implicit
                                                      ]
                            }
@@ -6866,8 +7038,8 @@ i_maxpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -6886,9 +7058,9 @@ i_vmaxpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128_256     Reg
-                                                     , op     RO    T_V128_256     Vvvv
-                                                     , op     RO    T_VM128_256    RM
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
                                                      ]
                            }
                        ]
@@ -6905,8 +7077,8 @@ i_maxps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -6924,9 +7096,9 @@ i_vmaxps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -6944,8 +7116,8 @@ i_maxsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -6964,9 +7136,9 @@ i_vmaxsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low64  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -6984,8 +7156,8 @@ i_maxss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -7004,9 +7176,9 @@ i_vmaxss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -7040,8 +7212,8 @@ i_minpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -7060,9 +7232,9 @@ i_vminpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128_256     Reg
-                                                     , op     RO    T_V128_256     Vvvv
-                                                     , op     RO    T_VM128_256    RM
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
                                                      ]
                            }
                        ]
@@ -7079,8 +7251,8 @@ i_minps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -7098,9 +7270,9 @@ i_vminps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_V128_256     Vvvv
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -7118,8 +7290,8 @@ i_minsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        ]
@@ -7138,9 +7310,9 @@ i_vminsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low64  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
                                                   ]
                            }
                        ]
@@ -7158,8 +7330,8 @@ i_minss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    RW    T_V128         Reg
-                                                     , op    RO    T_VM128_Low32  RM
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128low32 RO
                                                      ]
                            }
                        ]
@@ -7178,9 +7350,9 @@ i_vminss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128         Reg
-                                                  , op     RO    T_V128         Vvvv
-                                                  , op     RO    T_VM128_Low32  RM
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]
@@ -7230,8 +7402,8 @@ i_mov = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    (TE T_R T_M)     RM
-                                                     , op    RO    T_R      Reg
+                           , legacyParams          = [ mgpr WO
+                                                     , gpr RO Reg
                                                      ]
                            }
                        , leg
@@ -7241,8 +7413,8 @@ i_mov = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    (TE T_R T_M) RM
-                                                     , op    RO    T_Sreg       Reg
+                           , legacyParams          = [ mgpr WO
+                                                     , op RO (T_Reg RegSegment) Reg
                                                      ]
                            }
                        , leg
@@ -7252,8 +7424,8 @@ i_mov = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_R              OpcodeLow3
-                                                     , op    RO    T_Imm8_16_32_64  Imm
+                           , legacyParams          = [ gpr RW OpcodeLow3
+                                                     , immOp
                                                      ]
                            }
                        , leg
@@ -7264,8 +7436,8 @@ i_mov = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    (TE T_R T_M)     RM
-                                                     , op    RO    T_Imm    Imm
+                           , legacyParams          = [ mgpr RW
+                                                     , immSE
                                                      ]
                            }
                        ]
@@ -7283,8 +7455,8 @@ i_movcr = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    T_R32_64     RM
-                                                     , op    RO    T_Creg       Reg
+                           , legacyParams          = [ op WO (T_Reg Reg32o64)   RM
+                                                     , op RO (T_Reg RegControl) Reg
                                                      ]
                            }
                        ]
@@ -7303,8 +7475,8 @@ i_movdr = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    T_R32_64     RM
-                                                     , op    RO    T_Dreg       Reg
+                           , legacyParams          = [ op    WO (T_Reg Reg32o64) RM
+                                                     , op    RO (T_Reg RegDebug) Reg
                                                      ]
                            }
                        ]
@@ -7325,8 +7497,8 @@ i_movapd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -7346,8 +7518,8 @@ i_vmovapd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op     WO    T_V128_256     Reg
-                                                     , op     RO    T_VM128_256    RM
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , mvec128o256 RO
                                                      ]
                            }
                        ]
@@ -7365,8 +7537,8 @@ i_movaps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128   Reg
-                                                     , op    RO    T_VM128  RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
                                                      ]
                            }
                        ]
@@ -7385,8 +7557,8 @@ i_vmovaps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , vexParams          = [ op     WO    T_V128_256     Reg
-                                                  , op     RO    T_VM128_256    RM
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
                                                   ]
                            }
                        ]
@@ -7403,8 +7575,8 @@ i_movbe = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    WO    T_R  Reg
-                                                     , op    RO    T_M  RM
+                           , legacyParams          = [ gpr WO Reg
+                                                     , mem RO
                                                      ]
                            }
                        ]
@@ -7422,8 +7594,8 @@ i_movdq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           , legacyParams          = [ op    WO    T_V64      Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)  RM
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                        , leg
@@ -7435,8 +7607,8 @@ i_movdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128     Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)  RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                        , vex
@@ -7449,8 +7621,8 @@ i_movdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op    WO    T_V128     Reg
-                                                     , op    RO    (TE T_R32_64 T_M32_64)  RM
+                           , vexParams             = [ vec128 WO Reg
+                                                     , rm32o64 RO
                                                      ]
                            }
                        ]
@@ -7468,34 +7640,21 @@ i_movddup = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           , legacyParams          = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
                                                      ]
                            }
                        , vex
                            { vexMandatoryPrefix    = Just 0xF2
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
-                           , vexLW                 = L0
+                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , vexParams             = [ op    WO    T_V128         Reg
-                                                     , op    RO    T_VM128_Low64  RM
-                                                     ]
-                           }
-                       , vex
-                           { vexMandatoryPrefix    = Just 0xF2
-                           , vexOpcodeMap          = MapVex 1
-                           , vexOpcode             = 0x12
-                           , vexLW                 = L1
-                           , vexProperties         = [ LegacyModeSupport
-                                                     , LongModeSupport
-                                                     , Extension AVX
-                                                     ]
-                           , vexParams             = [ op    WO    T_V256   Reg
-                                                     , op    RO    T_VM256  RM
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , mvecEven64 RO
                                                      ]
                            }
                        ]

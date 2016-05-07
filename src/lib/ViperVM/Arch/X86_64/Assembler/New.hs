@@ -233,6 +233,8 @@ readLegacyOpcode = do
 -- existing instructions but add new ones (new opcode maps). Moreover they are
 -- mutually exclusive with the REX prefix as they subsume it.
 --
+-- Some legacy prefixes are supported: address-size and sesgment override.
+--
 ---------------------------------------------------------------------------
 
 -- | Read VEX/XOP encoded opcode
@@ -295,6 +297,9 @@ readOpcode ::
    , HArrayIndexT X86Mode s
    ) => MState s (Maybe Opcode)
 readOpcode = firstJust
+      -- TODO: read legacy prefixes beforehand!
+      -- BOth legacy and VEX support them
+
       -- check for overloaded prefixes/opcodes first!
       [ readVexXopOpcode
       , readLegacyOpcode
