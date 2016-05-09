@@ -438,6 +438,9 @@ mstate m = op m (T_Mem MemState) RM
 mdt :: AccessMode -> OperandSpec
 mdt m = op m (T_Mem MemDescTable) RM
 
+regCounter :: AccessMode -> OperandSpec
+regCounter m = op m (T_Reg RegCounter) Implicit
+
 -- We use a dummy encoding for 3DNow: because all the instructions use the same
 amd3DNowEncoding :: Encoding
 amd3DNowEncoding = leg
@@ -6269,7 +6272,7 @@ i_jcxz = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_CX_ECX_RCX    Implicit
+                           , legacyParams          = [ regCounter RO
                                                      , rel8
                                                      ]
                            }
@@ -6922,7 +6925,7 @@ i_loop = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
+                           , legacyParams          = [ regCounter RW
                                                      , rel8
                                                      ]
                            }
@@ -6941,7 +6944,7 @@ i_loope = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
+                           , legacyParams          = [ regCounter RW
                                                      , rel8
                                                      ]
                            }
@@ -6960,7 +6963,7 @@ i_loopne = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RW   T_CX_ECX_RCX Implicit
+                           , legacyParams          = [ regCounter RW
                                                      , rel8
                                                      ]
                            }

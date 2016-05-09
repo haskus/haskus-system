@@ -165,6 +165,7 @@ data RegType
                        --   general purpose 64-bit register in 64-bit mode
    | RegOpSize         -- ^ General purpose register: 8, 16, 32 or 64-bit
    | RegST             -- ^ x87 register
+   | RegCounter        -- ^ CX, ECX or RCX depending on the address-size
    deriving (Show,Eq)
 
 -- | Sub register type
@@ -207,7 +208,6 @@ data OperandType
    | T_xAX        -- ^ EAX or RAX
    | T_xBX        -- ^ EBX or RBX
    | T_xCX        -- ^ ECX or RCX
-   | T_CX_ECX_RCX -- ^ CX, ECX or RCX
    | T_xDX        -- ^ EDX or RDX
    | T_rSI        -- ^ DS:rSI
    | T_rDI        -- ^ ES:rDI
@@ -248,7 +248,6 @@ maybeOpTypeReg = \case
    T_Rel _         -> False
    T_Reg _         -> True
 
-   T_CX_ECX_RCX    -> False
    T_Mask          -> False
 
    T_MOffs         -> False
