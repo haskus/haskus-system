@@ -138,6 +138,15 @@ data MemType
    | Mem512       -- ^ 512-bit memory
    | MemOpSize    -- ^ operand-size-bit memory
    | MemVoid      -- ^ The pointer is used to identify a page, etc. (e.g., CLFLUSH)
+   | MemPtr       -- ^ m16:16, m16:32 or m16:64 (16-bit selector + offset)
+   | MemDescTable -- ^ Descriptor table: m16&32 (legacy)  or m16&64 (64-bit mode)
+   | MemFP        -- ^ m32fp or m64fp (x87)
+   | MemFP80      -- ^ m80fp (x87)
+   | MemInt       -- ^ m32int or m16int (x87)
+   | MemInt64     -- ^ m64int (x87)
+   | MemDec80     -- ^ Binary coded decimal (m80dec (x87))
+   | MemEnv       -- ^ 14/28 bit FPU environment (x87)
+   | MemState     -- ^ 94/108 bit FPU state (x87)
    deriving (Show,Eq)
 
 -- | Register type
@@ -149,12 +158,13 @@ data RegType
    | RegSegment        -- ^ Segment register
    | RegControl        -- ^ Control register
    | RegDebug          -- ^ Debug register
-   | Reg16             -- ^ General purpose 32-bit register
+   | Reg16             -- ^ General purpose 16-bit register
    | Reg32             -- ^ General purpose 32-bit register
    | Reg64             -- ^ General purpose 64-bit register
    | Reg32o64          -- ^ General purpose 32-bit register in legacy mode,
                        --   general purpose 64-bit register in 64-bit mode
    | RegOpSize         -- ^ General purpose register: 8, 16, 32 or 64-bit
+   | RegST             -- ^ x87 register
    deriving (Show,Eq)
 
 -- | Sub register type
@@ -167,7 +177,7 @@ data SubRegType
 -- | Relative type
 data RelType
    = Rel8         -- ^ Relative 8-bit displacement
-   | Rel16o32     -- ^ Relative displacement (16-bit invalid in 64-bit mode)
+   | Rel16o32     -- ^ Relative 16- or 32-bit displacement (16-bit invalid in 64-bit mode)
    deriving (Show,Eq)
 
 -- | Operand types
@@ -184,16 +194,9 @@ data OperandType
 
    | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
 
-   | T_Mask          -- ^ Mask for vectors
+   | T_MOffs      -- ^ Immediate offset: Moffs8, 16, 32, 64
 
-   -- Memory
-   | T_M16_XX     -- ^ Pair of words in memory: m16:XX where XX can be 16, 32 or 64
-   | T_M14_28     -- ^ FPU environement
-   | T_M94_108    -- ^ FPU state
-   | T_MFP        -- ^ Floating-point value in memory
-   | T_M80dec     -- ^ Binary-coded decimal
-   | T_M16n32_64  -- ^ LGDT/LIDT
-   | T_MOffs      -- ^ Moffs8, 16, 32, 64
+   | T_Mask          -- ^ Mask for vectors
 
    -- Specific registers
    | T_Accu       -- ^ Accumulator register (xAX)
@@ -210,16 +213,6 @@ data OperandType
    | T_rDI        -- ^ ES:rDI
    | T_rSP        -- ^ SP, ESP, RSP
    | T_rBP        -- ^ BP, EBP, RBP
-
-   -- x87
-   | T_ST         -- ^ ST(i)
-   | T_ST_MReal   -- ^ ST(i) register or real memory
-   | T_MInt       -- ^ Int memory
-   | T_MInt16     -- ^ Int memory
-   | T_MInt32     -- ^ Int memory
-   | T_MInt64     -- ^ Int memory
-   | T_M80bcd     -- ^ 80-bit decimal
-   | T_M80real    -- ^ 80-bit real
    deriving (Show)
 
 data OperandEnc
@@ -258,8 +251,6 @@ maybeOpTypeReg = \case
    T_CX_ECX_RCX    -> False
    T_Mask          -> False
 
-   T_M16_XX        -> False
-   T_MFP           -> False
    T_MOffs         -> False
 
    T_Accu          -> False
@@ -275,17 +266,3 @@ maybeOpTypeReg = \case
    T_rDI           -> False
    T_rSP           -> False
    T_rBP           -> False
-
-   T_ST            -> True
-   T_ST_MReal      -> True
-   T_MInt          -> False
-   T_MInt16        -> False
-   T_MInt32        -> False
-   T_MInt64        -> False
-   T_M80real       -> False
-   T_M80dec        -> False
-   T_M80bcd        -> False
-   T_M14_28        -> False
-   T_M94_108       -> False
-   T_M16n32_64     -> False
-

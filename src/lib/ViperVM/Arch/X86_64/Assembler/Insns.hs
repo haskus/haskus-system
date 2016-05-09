@@ -398,6 +398,46 @@ ptr16x = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp)) Imm
 constImm :: Int -> OperandSpec
 constImm x = op RO (T_Imm (ImmConst x)) Implicit
 
+-- | Address of a pointer
+m16x :: OperandSpec
+m16x = op RO (T_Mem MemPtr) RM
+
+-- | x87 register (there are all in RM)
+st :: AccessMode -> OperandSpec
+st m = op m (T_Reg RegST) RM
+
+-- | real memory or x87 register
+mst :: AccessMode -> OperandSpec
+mst m = op m (TME (T_Reg RegST) (T_Mem MemFP)) RM
+
+-- | x87 int memory
+mint :: AccessMode -> OperandSpec
+mint m = op m (T_Mem MemInt) RM
+
+-- | x87 int64 memory
+mint64 :: AccessMode -> OperandSpec
+mint64 m = op m (T_Mem MemInt64) RM
+
+-- | x87 m80real memory
+mfp80 :: AccessMode -> OperandSpec
+mfp80 m = op m (T_Mem MemFP80) RM
+
+-- | x87 m80dec memory
+mdec80 :: AccessMode -> OperandSpec
+mdec80 m = op m (T_Mem MemDec80) RM
+
+-- | x87 14/28 env memory
+menv :: AccessMode -> OperandSpec
+menv m = op m (T_Mem MemEnv) RM
+
+-- | x87 14/28 state memory
+mstate :: AccessMode -> OperandSpec
+mstate m = op m (T_Mem MemState) RM
+
+-- | descriptor table memory
+mdt :: AccessMode -> OperandSpec
+mdt m = op m (T_Mem MemDescTable) RM
+
 -- We use a dummy encoding for 3DNow: because all the instructions use the same
 amd3DNowEncoding :: Encoding
 amd3DNowEncoding = leg
@@ -2316,7 +2356,7 @@ i_call = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    T_M16_XX       RM]
+                           , legacyParams       = [ m16x ]
                            }
                        ]
    }
@@ -4321,7 +4361,7 @@ i_fadd = insn
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -4338,7 +4378,7 @@ i_fiadd = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_MInt   RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -4354,7 +4394,7 @@ i_fbld = insn
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_M80dec  RM 
+                                                   , mdec80 RO
                                                    ]
                            }
                        ]
@@ -4370,7 +4410,7 @@ i_fbstp = insn
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RW    T_M80bcd  RM 
+                                                   , mdec80 RW
                                                    ]
                            }
                        ]
@@ -4414,7 +4454,7 @@ i_fcmovb = insn
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4433,7 +4473,7 @@ i_fcmove = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4452,7 +4492,7 @@ i_fcmovbe = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4471,7 +4511,7 @@ i_fcmovu = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4490,7 +4530,7 @@ i_fcmovnb = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4509,7 +4549,7 @@ i_fcmovne = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4528,7 +4568,7 @@ i_fcmovnbe = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4547,7 +4587,7 @@ i_fcmovnu = insn
                                                    , Extension CMOV
                                                    ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4564,7 +4604,7 @@ i_fcom = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -4581,7 +4621,7 @@ i_fcomp = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -4614,7 +4654,7 @@ i_fcomi = insn
                            , legacyFPUPop        = Just 2   -- FCOMIP
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_ST        RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4631,7 +4671,7 @@ i_fucomi = insn
                            , legacyFPUPop        = Just 2   -- FUCOMIP
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_ST        RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -4677,7 +4717,7 @@ i_fdiv = insn
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -4694,7 +4734,7 @@ i_fidiv = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_MInt   RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -4714,7 +4754,7 @@ i_fdivr = insn
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -4731,7 +4771,7 @@ i_fidivr = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_MInt   RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -4746,8 +4786,7 @@ i_ffree = insn
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_ST   RM   -- not really RO, only change the tag
-                                                   ]                       -- associated to the register
+                           , legacyParams        = [ st NA ]
                            }
                        ]
    }
@@ -4763,7 +4802,7 @@ i_ficom = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_MInt  RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -4780,7 +4819,7 @@ i_ficomp = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_MInt  RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -4794,22 +4833,16 @@ i_fild = insn
                            { legacyOpcodeMap     = MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 0
+                           , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_MInt32  RM ]
-                           }
-                       , leg
-                           { legacyOpcodeMap     = MapPrimary
-                           , legacyOpcode        = 0xDF
-                           , legacyOpcodeExt     = Just 0
-                           , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_MInt16  RM ]
+                           , legacyParams        = [ mint RO ]
                            }
                        , leg
                            { legacyOpcodeMap     = MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_MInt64  RM ]
+                           , legacyParams        = [ mint64 RO ]
                            }
                        ]
    }
@@ -4851,7 +4884,7 @@ i_fist = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_MInt  RM 
+                                                   , mint WO
                                                    ]
                            }
                        ]
@@ -4868,7 +4901,7 @@ i_fistp = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_MInt  RM 
+                                                   , mint WO
                                                    ]
                            }
                        , leg
@@ -4877,7 +4910,7 @@ i_fistp = insn
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_MInt64  RM 
+                                                   , mint64 WO
                                                    ]
                            }
                        ]
@@ -4894,7 +4927,7 @@ i_fisttp = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_MInt  RM 
+                                                   , mint WO
                                                    ]
                            }
                        , leg
@@ -4903,7 +4936,7 @@ i_fisttp = insn
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_MInt64  RM 
+                                                   , mint64 WO
                                                    ]
                            }
                        ]
@@ -4920,7 +4953,7 @@ i_fld = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_ST_MReal  RM
+                                                   , mst RO
                                                    ]
                            }
                        , leg
@@ -4929,7 +4962,7 @@ i_fld = insn
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) WO Implicit
-                                                   , op  RO    T_M80real   RM
+                                                   , mfp80 RO
                                                    ]
                            }
                        ]
@@ -5059,7 +5092,7 @@ i_fldenv = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_M14_28  RM ]
+                           , legacyParams        = [ menv RO ]
                            }
                        ]
    }
@@ -5077,7 +5110,7 @@ i_fmul = insn
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -5094,7 +5127,7 @@ i_fimul = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_MInt   RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -5201,7 +5234,7 @@ i_frstor = insn
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  RO    T_M94_108  RM ]
+                           , legacyParams        = [ mstate RO ]
                            }
                        ]
    }
@@ -5215,7 +5248,7 @@ i_fnsave = insn
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_M94_108  RM ]
+                           , legacyParams        = [ mstate WO ]
                            }
                        ]
    }
@@ -5291,7 +5324,7 @@ i_fst = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_ST_MReal  RM
+                                                   , mst WO
                                                    ]
                            }
                        ]
@@ -5308,7 +5341,7 @@ i_fstp = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_ST_MReal  RM
+                                                   , mst WO
                                                    ]
                            }
                        , leg
@@ -5317,7 +5350,7 @@ i_fstp = insn
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_M80real  RM
+                                                   , mfp80 WO
                                                    ]
                            }
                        , leg
@@ -5326,7 +5359,7 @@ i_fstp = insn
                            , legacyOpcodeExt     = Just 3
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  WO    T_ST       RM
+                                                   , st WO
                                                    ]
                            }
                        ]
@@ -5356,7 +5389,7 @@ i_fnstenv = insn
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
-                           , legacyParams        = [ op  WO    T_M14_28  RM ]
+                           , legacyParams        = [ menv WO ]
                            }
                        ]
    }
@@ -5396,7 +5429,7 @@ i_fsub = insn
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -5413,7 +5446,7 @@ i_fisub = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_MInt   RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -5432,7 +5465,7 @@ i_fsubr = insn
                            , legacyFPUPop        = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_ST_MReal  RM 
+                                                   , mst RO
                                                    ]
                            }
                        ]
@@ -5449,7 +5482,7 @@ i_fisubr = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RO    T_MInt   RM 
+                                                   , mint RO
                                                    ]
                            }
                        ]
@@ -5480,7 +5513,7 @@ i_fucom = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -5497,7 +5530,7 @@ i_fucomp = insn
                            , legacyFPUSizable    = Just 2
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RO Implicit
-                                                   , op  RO    T_ST     RM 
+                                                   , st RO
                                                    ]
                            }
                        ]
@@ -5545,7 +5578,7 @@ i_fxch = insn
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ reg (R_ST 0) RW Implicit
-                                                   , op  RW    T_ST     RM 
+                                                   , st RW
                                                    ]
                            }
                        ]
@@ -6571,7 +6604,7 @@ i_jmp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_M16_XX    Imm ]
+                           , legacyParams          = [ m16x ]
                            }
                        ]
    }
@@ -6697,7 +6730,7 @@ i_ldfarptr = insn
                                                      , DefaultSegment R_DS
                                                      ]
                            , legacyParams          = [ gpr RO Reg
-                                                     , op RO T_M16_XX   RM
+                                                     , m16x
                                                      ]
                            }
                        ,  leg
@@ -6707,7 +6740,7 @@ i_ldfarptr = insn
                                                      , DefaultSegment R_ES
                                                      ]
                            , legacyParams          = [ gpr RO Reg
-                                                     , op RO T_M16_XX   RM
+                                                     , m16x
                                                      ]
                            }
                        ,  leg
@@ -6718,7 +6751,7 @@ i_ldfarptr = insn
                                                      , DefaultSegment R_SS
                                                      ]
                            , legacyParams          = [ gpr RO Reg
-                                                     , op RO T_M16_XX   RM
+                                                     , m16x
                                                      ]
                            }
                        ,  leg
@@ -6729,7 +6762,7 @@ i_ldfarptr = insn
                                                      , DefaultSegment R_FS
                                                      ]
                            , legacyParams          = [ gpr RO Reg
-                                                     , op RO T_M16_XX   RM
+                                                     , m16x
                                                      ]
                            }
                        ,  leg
@@ -6740,7 +6773,7 @@ i_ldfarptr = insn
                                                      , DefaultSegment R_GS
                                                      ]
                            , legacyParams          = [ gpr RO Reg
-                                                     , op RO T_M16_XX   RM
+                                                     , m16x
                                                      ]
                            }
                        ]
@@ -6806,7 +6839,7 @@ i_lgdt = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RO   T_M16n32_64   RM ]
+                           , legacyParams          = [ mdt RO ]
                            }
                        ]
    }
@@ -6822,7 +6855,7 @@ i_lidt = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op RO   T_M16n32_64   RM ]
+                           , legacyParams          = [ mdt RO ]
                            }
                        ]
    }
