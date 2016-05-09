@@ -7,7 +7,7 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    , AccessMode (..)
    , Operand(..)
    , Addr(..)
-   , ImmSize (..)
+   , ImmType (..)
    , RegType (..)
    , SubRegType (..)
    , MemType (..)
@@ -115,8 +115,8 @@ data Addr = Addr
 -- Only a subset of a register may be used (e.g. the low-order 64-bits of a XMM
 -- register).
 
--- | Immediate size
-data ImmSize
+-- | Immediate type
+data ImmType
    = ImmSize8    -- ^ 8-bit immediate
    | ImmSize16   -- ^ 16-bit immediate
    | ImmSizeOp   -- ^ operand-size immediate
@@ -124,6 +124,7 @@ data ImmSize
                  --     * if sign-extendable bit is set: sign-extended 8-bit immediate
                  --     * if 64-bit operand size: sign-extended 32-bit immediate
                  --     * otherwise: operand-size immediate
+   | ImmConst Int -- ^ Constant immediate (used in implicit)
    deriving (Show,Eq)
 
 -- | Memory address type
@@ -175,7 +176,7 @@ data OperandType
    | TLE OperandType OperandType -- ^ One of the two types depending on Vex.L
    | TWE OperandType OperandType -- ^ One of the two types depending on Rex.W
 
-   | T_Imm ImmSize                 -- ^ Immediate value
+   | T_Imm ImmType                 -- ^ Immediate value
    | T_Mem MemType                 -- ^ Memory address
    | T_Reg RegType                 -- ^ Register
    | T_SubReg SubRegType RegType   -- ^ Sub-part of a register
@@ -183,12 +184,7 @@ data OperandType
 
    | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
 
-   | T_PTR_16_16     -- ^ Absolute address
-   | T_PTR_16_32     -- ^ Absolute address
-   | T_PTR16_16_32   -- ^ Absolute address (PTR 16:16 or 16:32)
    | T_Mask          -- ^ Mask for vectors
-   | T_3             -- ^ Immediate value 3
-   | T_4             -- ^ Immediate value 4
 
    -- Memory
    | T_M16_XX     -- ^ Pair of words in memory: m16:XX where XX can be 16, 32 or 64
@@ -259,13 +255,8 @@ maybeOpTypeReg = \case
    T_Rel _         -> False
    T_Reg _         -> True
 
-   T_PTR_16_16     -> False
-   T_PTR_16_32     -> False
-   T_PTR16_16_32   -> False
    T_CX_ECX_RCX    -> False
    T_Mask          -> False
-   T_3             -> False
-   T_4             -> False
 
    T_M16_XX        -> False
    T_MFP           -> False

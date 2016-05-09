@@ -220,7 +220,7 @@ op = OperandSpec
 
 -- | Immediate helpers. Immediate operands are always read-only and encoded in
 -- the same way.
-imm :: ImmSize -> OperandSpec
+imm :: ImmType -> OperandSpec
 imm s = op RO (T_Imm s) Imm
 
 -- | 8-bit immediate operand
@@ -389,6 +389,14 @@ rel8 = op RO (T_Rel Rel8) Imm
 -- | 16-bit or 32-bit relative offset (16-bit invalid in 64-bit mode)
 rel16o32 :: OperandSpec
 rel16o32 = op RO (T_Rel Rel16o32) Imm
+
+-- | Immediate pointer: 16:16 or 16:32
+ptr16x :: OperandSpec
+ptr16x = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp)) Imm
+
+-- | Implicit immediate constant
+constImm :: Int -> OperandSpec
+constImm x = op RO (T_Imm (ImmConst x)) Implicit
 
 -- We use a dummy encoding for 3DNow: because all the instructions use the same
 amd3DNowEncoding :: Encoding
@@ -2299,7 +2307,7 @@ i_call = insn
                            { legacyOpcodeMap    = MapPrimary
                            , legacyOpcode       = 0x9A
                            , legacyProperties   = [LegacyModeSupport]
-                           , legacyParams       = [ op    RO    T_PTR16_16_32    Imm ]
+                           , legacyParams       = [ ptr16x ]
                            }
                        , leg
                            { legacyOpcodeMap    = MapPrimary
@@ -6026,7 +6034,7 @@ i_int = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RO    T_3   Implicit ]
+                           , legacyParams          = [ constImm 3 ]
                            }
                         , leg
                            { legacyOpcodeMap       = MapPrimary
@@ -6050,7 +6058,7 @@ i_into = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RO    T_3   Implicit ]
+                           , legacyParams          = [ constImm 3 ]
                            }
                        ]
    }
@@ -6555,7 +6563,7 @@ i_jmp = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op   RO    T_PTR16_16_32    Imm ]
+                           , legacyParams          = [ ptr16x ]
                            }
                         , leg
                            { legacyOpcode          = 0xFF
