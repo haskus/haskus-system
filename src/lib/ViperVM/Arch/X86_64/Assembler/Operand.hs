@@ -188,6 +188,7 @@ data RegFamilies
 data SubRegType
    = SubLow32     -- ^ Low 32-bit of a register
    | SubLow64     -- ^ Low 64-bit of a register
+   | SubHigh64    -- ^ High 64-bit of a register
    | SubEven64    -- ^ [63:0] and [191:128], etc.
    deriving (Show,Eq)
 

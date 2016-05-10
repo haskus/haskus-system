@@ -54,6 +54,7 @@ data X86Extension
    = ADX             -- ^ ADX extension
    | MMX             -- ^ MMX
    | AVX             -- ^ AVX extension
+   | AVX2            -- ^ AVX2 extension
    | SSE             -- ^ SSE extension
    | SSE2            -- ^ SSE2 extension
    | SSE3            -- ^ SSE3 extension
