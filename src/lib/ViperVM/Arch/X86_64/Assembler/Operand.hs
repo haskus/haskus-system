@@ -131,6 +131,7 @@ data ImmType
 -- | Memory address type
 data MemType
    = MemPair16o32 -- ^ Pair of words in memory (words are operand-size large)
+   | Mem8         -- ^ 8-bit memory
    | Mem16        -- ^ 16-bit memory
    | Mem32        -- ^ 32-bit memory
    | Mem64        -- ^ 64-bit memory
@@ -162,6 +163,7 @@ data RegType
    | RegSegment         -- ^ Segment register
    | RegControl         -- ^ Control register
    | RegDebug           -- ^ Debug register
+   | Reg8               -- ^ General purpose 8-bit register
    | Reg16              -- ^ General purpose 16-bit register
    | Reg32              -- ^ General purpose 32-bit register
    | Reg64              -- ^ General purpose 64-bit register
