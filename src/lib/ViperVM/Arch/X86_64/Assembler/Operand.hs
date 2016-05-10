@@ -12,6 +12,7 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    , SubRegType (..)
    , MemType (..)
    , RelType (..)
+   , RegFamilies (..)
    , maybeOpTypeReg
    )
 where
@@ -147,25 +148,40 @@ data MemType
    | MemDec80     -- ^ Binary coded decimal (m80dec (x87))
    | MemEnv       -- ^ 14/28 bit FPU environment (x87)
    | MemState     -- ^ 94/108 bit FPU state (x87)
+   | MemDSrSI     -- ^ operand-size memory at DS:rSI (rSI depends on address-size, DS if fixed)
+   | MemESrDI     -- ^ operand-size memory at ES:rDI (rDI depends on address-size, ES is fixed)
+   | MemDSrDI     -- ^ operand-size memory at DS:rDI (rDI depends on address-size, DS is overridable with prefixes)
    deriving (Show,Eq)
 
 -- | Register type
 data RegType
-   = RegVec64          -- ^  64-bit vector register (mmx)
-   | RegVec128         -- ^ 128-bit vector register (xmm)
-   | RegVec256         -- ^ 256-bit vector register (ymm)
-   | RegFixed Register -- ^ Fixed register
-   | RegSegment        -- ^ Segment register
-   | RegControl        -- ^ Control register
-   | RegDebug          -- ^ Debug register
-   | Reg16             -- ^ General purpose 16-bit register
-   | Reg32             -- ^ General purpose 32-bit register
-   | Reg64             -- ^ General purpose 64-bit register
-   | Reg32o64          -- ^ General purpose 32-bit register in legacy mode,
-                       --   general purpose 64-bit register in 64-bit mode
-   | RegOpSize         -- ^ General purpose register: 8, 16, 32 or 64-bit
-   | RegST             -- ^ x87 register
-   | RegCounter        -- ^ CX, ECX or RCX depending on the address-size
+   = RegVec64           -- ^  64-bit vector register (mmx)
+   | RegVec128          -- ^ 128-bit vector register (xmm)
+   | RegVec256          -- ^ 256-bit vector register (ymm)
+   | RegFixed Register  -- ^ Fixed register
+   | RegSegment         -- ^ Segment register
+   | RegControl         -- ^ Control register
+   | RegDebug           -- ^ Debug register
+   | Reg16              -- ^ General purpose 16-bit register
+   | Reg32              -- ^ General purpose 32-bit register
+   | Reg64              -- ^ General purpose 64-bit register
+   | Reg32o64           -- ^ General purpose 32-bit register in legacy mode,
+                        -- general purpose 64-bit register in 64-bit mode
+   | RegOpSize          -- ^ General purpose register: 8, 16, 32 or 64-bit
+   | RegST              -- ^ x87 register
+   | RegCounter         -- ^ CX, ECX or RCX depending on the address-size
+   | RegAccu            -- ^ AL, AX, EAX, RAX depending on the operand-size
+   | RegStackPtr        -- ^ SP, ESP, RSP (default in 64-bit mode)
+   | RegBasePtr         -- ^ BP, EBP, RBP (default in 64-bit mode)
+   | RegFam RegFamilies -- ^ DX, EDX, RDX (depending on operand-size)
+   deriving (Show,Eq)
+
+-- | Register family
+data RegFamilies
+   = RegFamAX          -- ^ AX, EAX, RAX (depending on operand-size)
+   | RegFamDX          -- ^ DX, EDX, RDX (depending on operand-size)
+   | RegFamDXAX        -- ^ AX, DX:AX, EDX:EAX, RDX:RAX
+   | RegFamDSrAX       -- ^ DS:EAX, DS:RAX in 64-bit mode
    deriving (Show,Eq)
 
 -- | Sub register type
@@ -183,38 +199,20 @@ data RelType
 
 -- | Operand types
 data OperandType
-   = TME OperandType OperandType -- ^ One of the two types (for ModRM.rm)
-   | TLE OperandType OperandType -- ^ One of the two types depending on Vex.L
-   | TWE OperandType OperandType -- ^ One of the two types depending on Rex.W
-
-   | T_Imm ImmType                 -- ^ Immediate value
-   | T_Mem MemType                 -- ^ Memory address
-   | T_Reg RegType                 -- ^ Register
-   | T_SubReg SubRegType RegType   -- ^ Sub-part of a register
-   | T_Rel RelType                 -- ^ Relative offset
-
+   = TME OperandType OperandType    -- ^ One of the two types (for ModRM.rm)
+   | TLE OperandType OperandType    -- ^ One of the two types depending on Vex.L
+   | TWE OperandType OperandType    -- ^ One of the two types depending on Rex.W
+   | T_Mem MemType                  -- ^ Memory address
+   | T_Reg RegType                  -- ^ Register
+   | T_SubReg SubRegType RegType    -- ^ Sub-part of a register
+   | T_Rel RelType                  -- ^ Relative offset
    | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
-
-   | T_MOffs      -- ^ Immediate offset: Moffs8, 16, 32, 64
-
-   | T_Mask          -- ^ Mask for vectors
-
-   -- Specific registers
-   | T_Accu       -- ^ Accumulator register (xAX)
-   | T_AL_AX_EAX  -- ^ Accumulator registers except RAX
-   | T_AX_EAX_RAX -- ^ Accumulator registers except AL
-   | T_xDX_xAX    -- ^ The pair (DX:AX), (EDX:EAX) or (RDX:RAX). If 8-bit mode is supported, it is only AX
-   | T_xCX_xBX    -- ^ The pair (CX:BX), (ECX:EBX) or (RCX:RBX)
-   | T_xAX        -- ^ EAX or RAX
-   | T_xBX        -- ^ EBX or RBX
-   | T_xCX        -- ^ ECX or RCX
-   | T_xDX        -- ^ EDX or RDX
-   | T_rSI        -- ^ DS:rSI
-   | T_rDI        -- ^ ES:rDI
-   | T_rSP        -- ^ SP, ESP, RSP
-   | T_rBP        -- ^ BP, EBP, RBP
+   | T_Imm ImmType                  -- ^ Immediate value
+   | T_MOffs                        -- ^ Immediate offset: Moffs8, 16, 32, 64
+   | T_Mask                         -- ^ Mask for vectors
    deriving (Show)
 
+-- | Operand encoding
 data OperandEnc
    = RM         -- ^ Operand stored in ModRM.rm
    | Reg        -- ^ Operand stored in ModRM.reg
@@ -226,12 +224,14 @@ data OperandEnc
    | OpcodeLow3 -- ^ Operand stored in opcode 3 last bits
    deriving (Show,Eq)
 
+-- | Operand specification
 data OperandSpec = OperandSpec
    { opMode :: AccessMode
    , opType :: OperandType
    , opEnc  :: OperandEnc
    } deriving (Show)
 
+-- | Operand access mode
 data AccessMode
    = RO         -- ^ Read-only
    | RW         -- ^ Read-write
@@ -244,24 +244,13 @@ data AccessMode
 maybeOpTypeReg :: OperandType -> Bool
 maybeOpTypeReg = \case
    TME x y         -> maybeOpTypeReg x || maybeOpTypeReg y
-   T_Imm _         -> False
+   TLE x y         -> maybeOpTypeReg x || maybeOpTypeReg y
+   TWE x y         -> maybeOpTypeReg x || maybeOpTypeReg y
+   T_Pair x y      -> maybeOpTypeReg x || maybeOpTypeReg y
    T_Rel _         -> False
+   T_Mem _         -> False
    T_Reg _         -> True
-
+   T_SubReg _ _    -> True
+   T_Imm _         -> False
    T_Mask          -> False
-
    T_MOffs         -> False
-
-   T_Accu          -> False
-   T_AL_AX_EAX     -> False
-   T_AX_EAX_RAX    -> False
-   T_xDX_xAX       -> False
-   T_xCX_xBX       -> False
-   T_xAX           -> False
-   T_xBX           -> False
-   T_xCX           -> False
-   T_xDX           -> False
-   T_rSI           -> False
-   T_rDI           -> False
-   T_rSP           -> False
-   T_rBP           -> False

@@ -150,6 +150,10 @@ data EncodingProperties
    | Repeatable               -- ^ Allow repeat prefix
    | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
                               --   instruction in LongMode
+   | NoOperandSize64          -- ^ 64-bit operand size not supported
+
+   | DefaultAddressSize64     -- ^ Default address size is 64-bits for this
+                              --   instruction in LongMode
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
    | RequireRexW              -- ^ Require REX.W
@@ -438,8 +442,41 @@ mstate m = op m (T_Mem MemState) RM
 mdt :: AccessMode -> OperandSpec
 mdt m = op m (T_Mem MemDescTable) RM
 
+-- | Counter register
 regCounter :: AccessMode -> OperandSpec
 regCounter m = op m (T_Reg RegCounter) Implicit
+
+-- | Accumulator register
+regAccu :: AccessMode -> OperandSpec
+regAccu m = op m (T_Reg RegAccu) Implicit
+
+-- | Stack pointer register
+regStackPtr :: AccessMode -> OperandEnc -> OperandSpec
+regStackPtr m e = op m (T_Reg RegStackPtr) e
+
+-- | Base pointer register
+regBasePtr :: AccessMode -> OperandEnc -> OperandSpec
+regBasePtr m e = op m (T_Reg RegBasePtr) e
+
+-- | Register family
+regFam :: RegFamilies -> AccessMode -> OperandEnc -> OperandSpec
+regFam x m e = op m (T_Reg (RegFam x)) e
+
+-- | Memory at DS:rSI
+mDSrSI :: AccessMode -> OperandSpec
+mDSrSI m = op m (T_Mem MemDSrSI) Implicit
+
+-- | Memory at ES:rDI
+mESrDI :: AccessMode -> OperandSpec
+mESrDI m = op m (T_Mem MemESrDI) Implicit
+
+-- | Memory at DS:rDI (DS is overridable)
+mDSrDI :: AccessMode -> OperandSpec
+mDSrDI m = op m (T_Mem MemDSrDI) Implicit
+
+-- | Mask
+mask :: OperandEnc -> OperandSpec
+mask = op RO T_Mask
 
 -- We use a dummy encoding for 3DNow: because all the instructions use the same
 amd3DNowEncoding :: Encoding
@@ -977,7 +1014,7 @@ i_adc = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_Accu   Implicit
+                           , legacyParams          = [ regAccu RW
                                                      , immSE 
                                                      ]
                            }
@@ -1042,7 +1079,7 @@ i_add = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_Accu   Implicit
+                           , legacyParams          = [ regAccu RW
                                                      , immSE
                                                      ]
                            }
@@ -1597,7 +1634,7 @@ i_and = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_Accu   Implicit
+                           , legacyParams       = [ regAccu RW
                                                   , immSE
                                                   ]
                            }
@@ -1863,7 +1900,7 @@ i_vblendpd = insn
                            , vexParams          = [ vec128o256 WO Reg
                                                   , vec128o256 RO Vvvv
                                                   , mvec128o256 RO
-                                                  , op     RO    T_Mask         Imm8l
+                                                  , mask Imm8h
                                                   ]
                            }
                        ]
@@ -2374,7 +2411,7 @@ i_extend_signed = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_Accu         Implicit]
+                           , legacyParams       = [ regAccu RW ]
                            }
                        ]
    }
@@ -2789,7 +2826,7 @@ i_cmp = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_Accu   Implicit
+                           , legacyParams       = [ regAccu RO
                                                   , immSE
                                                   ]
                            }
@@ -2802,7 +2839,7 @@ i_cmp = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ mgpr RW
+                           , legacyParams       = [ mgpr RO
                                                   , gpr RO Reg
                                                   ]
                            }
@@ -2816,7 +2853,7 @@ i_cmp = insn
                                                      , LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ mgpr RW
+                           , legacyParams          = [ mgpr RO
                                                      , immSE
                                                      ]
                            }
@@ -2917,8 +2954,8 @@ i_cmps = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RO    T_rSI    Implicit
-                                                  , op    RO    T_rDI    Implicit
+                           , legacyParams       = [ mDSrSI RO
+                                                  , mESrDI RO
                                                   ]
                            }
                        ]
@@ -3023,7 +3060,7 @@ i_cmpxchg = insn
                                                   , Arch Intel486
                                                   ]
                            , legacyParams       = [ mgpr RW
-                                                  , op    RO    T_Accu   Implicit
+                                                  , regAccu RO
                                                   , gpr RO Reg
                                                   ]
                            }
@@ -3151,10 +3188,10 @@ i_cpuid = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_xAX     Implicit
-                                                  , op    RW    T_xCX     Implicit
-                                                  , op    WO    T_xBX     Implicit
-                                                  , op    WO    T_xDX     Implicit
+                           , legacyParams       = [ reg R_EAX RW Implicit
+                                                  , reg R_ECX RW Implicit
+                                                  , reg R_EBX WO Implicit
+                                                  , reg R_EDX WO Implicit
                                                   ]
                            }
                        ]
@@ -3919,8 +3956,8 @@ i_cwd = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    WO    T_xDX_xAX      Implicit
-                                                  , op    RO    T_AX_EAX_RAX   Implicit
+                           , legacyParams       = [ regFam RegFamDX WO Implicit
+                                                  , regFam RegFamAX RW Implicit
                                                   ]
                            }
                        ]
@@ -4000,7 +4037,7 @@ i_div = insn
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ op    RW    T_xDX_xAX   Implicit
+                           , legacyParams       = [ regFam RegFamDXAX RW Implicit
                                                   , mgpr RO
                                                   ]
                            }
@@ -5890,7 +5927,7 @@ i_idiv = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_xDX_xAX   Implicit
+                           , legacyParams          = [ regFam RegFamDXAX RW Implicit
                                                      , mgpr RO
                                                      ]
                            }
@@ -5912,7 +5949,8 @@ i_imul = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_xDX_xAX   Implicit
+                           , legacyParams          = [ regFam RegFamDXAX WO Implicit
+                                                     , regAccu RO
                                                      , mgpr RO
                                                      ]
                            }
@@ -5951,8 +5989,9 @@ i_in = insn
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , NoOperandSize64
                                                      ]
-                           , legacyParams          = [ op    WO    T_AL_AX_EAX   Implicit
+                           , legacyParams          = [ regAccu WO
                                                      , imm8
                                                      ]
                            }
@@ -5962,8 +6001,9 @@ i_in = insn
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , NoOperandSize64
                                                      ]
-                           , legacyParams          = [ op    WO    T_AL_AX_EAX   Implicit
+                           , legacyParams          = [ regAccu WO
                                                      , reg R_DX RO Implicit
                                                      ]
                            }
@@ -6008,10 +6048,11 @@ i_ins = insn
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
-                                                     , DefaultOperandSize64
+                                                     , DefaultAddressSize64
+                                                     , NoOperandSize64
                                                      , Repeatable
                                                      ]
-                           , legacyParams          = [ op    RW    T_rDI   Implicit
+                           , legacyParams          = [ mESrDI WO  
                                                      , reg R_DX RO Implicit
                                                      ]
                            }
@@ -6809,8 +6850,8 @@ i_leave = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op WO   T_rSP   Implicit
-                                                     , op RW   T_rBP   Implicit
+                           , legacyParams          = [ regStackPtr WO Implicit
+                                                     , regBasePtr  RW Implicit
                                                      ]
                            }
                        ]
@@ -6908,8 +6949,8 @@ i_lods = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op WO   T_Accu   Implicit
-                                                     , op RO   T_rSI    Implicit
+                           , legacyParams          = [ regAccu WO
+                                                     , mDSrSI RO
                                                      ]
                            }
                        ]
@@ -7023,7 +7064,7 @@ i_maskmovdqu = insn
                                                      ]
                            , legacyParams          = [ vec128 RW Reg
                                                      , vec128 RO RM
-                                                     , op    RO    T_rDI    Implicit
+                                                     , mDSrDI RO
                                                      ]
                            }
                        ]
@@ -7044,7 +7085,7 @@ i_vmaskmovdqu = insn
                                                      ]
                            , vexParams             = [ vec128 WO Reg
                                                      , vec128 RO RM
-                                                     , op   RO    T_rDI    Implicit
+                                                     , mDSrDI RO
                                                      ]
                            }
                        ]
@@ -7064,7 +7105,7 @@ i_maskmovq = insn
                                                      ]
                            , legacyParams          = [ vec64 RW Reg
                                                      , vec64 RO RM
-                                                     , op    RO    T_rDI    Implicit
+                                                     , mDSrDI RO
                                                      ]
                            }
                        ]
@@ -7414,9 +7455,9 @@ i_monitor = insn
                                                    , LongModeSupport
                                                    , Extension MONITOR
                                                    ]
-                           , legacyParams          = [ op    RO    T_xCX   Implicit
-                                                     , op    RO    T_xDX   Implicit
-                                                     , op    RO    T_xAX   Implicit
+                           , legacyParams          = [ reg R_ECX RO Implicit
+                                                     , reg R_EDX RO Implicit
+                                                     , regFam RegFamDSrAX RO Implicit
                                                      ]
                            }
                        ]
@@ -7434,7 +7475,7 @@ i_mov = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ op    RW    T_Accu   Implicit
+                           , legacyParams          = [ regAccu RW
                                                      , op    RO    T_MOffs  Imm
                                                      ]
                            }
