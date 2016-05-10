@@ -58,7 +58,9 @@ data X86Extension
    | SSE             -- ^ SSE extension
    | SSE2            -- ^ SSE2 extension
    | SSE3            -- ^ SSE3 extension
+   | SSSE3           -- ^ SSSE3 extension
    | SSE4_1          -- ^ SSE4.1 extension
+   | SSE4_2          -- ^ SSE4.2 extension
    | AES             -- ^ AES extension
    | BMI1            -- ^ BMI1 extension
    | BMI2            -- ^ BMI2 extension
@@ -70,6 +72,7 @@ data X86Extension
    | INVPCID         -- ^ Invalid process-context identifier (INVPCID) extension
    | LAHF            -- ^ LAHF extension in 64-bit mode
    | MONITOR         -- ^ MONITOR/MWAIT
+   | PCLMULQDQ       -- ^ PCLMULQDQ instruction
    deriving (Show,Eq)
 
 
