@@ -73,6 +73,8 @@ data X86Extension
    | LAHF            -- ^ LAHF extension in 64-bit mode
    | MONITOR         -- ^ MONITOR/MWAIT
    | PCLMULQDQ       -- ^ PCLMULQDQ instruction
+   | PRFCHW          -- ^ PREFETCHW instruction
+   | PREFETCHWT1     -- ^ PREFETCHWT1 instruction
    deriving (Show,Eq)
 
 

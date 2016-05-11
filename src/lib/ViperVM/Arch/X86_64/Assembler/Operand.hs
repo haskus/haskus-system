@@ -181,14 +181,19 @@ data RegType
 -- | Register family
 data RegFamilies
    = RegFamAX          -- ^ AX, EAX, RAX (depending on operand-size)
+   | RegFamBX          -- ^ BX, EBX, RBX (depending on operand-size)
+   | RegFamCX          -- ^ CX, ECX, RCX (depending on operand-size)
    | RegFamDX          -- ^ DX, EDX, RDX (depending on operand-size)
+   | RegFamSI          -- ^ SI, ESI, RSI (depending on operand-size)
+   | RegFamDI          -- ^ DI, EDI, RDI (depending on operand-size)
    | RegFamDXAX        -- ^ AX, DX:AX, EDX:EAX, RDX:RAX
    | RegFamDSrAX       -- ^ DS:EAX, DS:RAX in 64-bit mode
    deriving (Show,Eq)
 
 -- | Sub register type
 data SubRegType
-   = SubLow32     -- ^ Low 32-bit of a register
+   = SubLow16     -- ^ Low 16-bit of a register
+   | SubLow32     -- ^ Low 32-bit of a register
    | SubLow64     -- ^ Low 64-bit of a register
    | SubHigh64    -- ^ High 64-bit of a register
    | SubEven64    -- ^ [63:0] and [191:128], etc.

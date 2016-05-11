@@ -288,6 +288,10 @@ mvec128low64 m = op m (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64)) RM
 mvec128low32 :: AccessMode -> OperandSpec
 mvec128low32 m = op m (TME (T_SubReg SubLow32 RegVec128) (T_Mem Mem32)) RM
 
+-- | low 16-bit of 128-bit vector or 16-bit memory
+mvec128low16 :: AccessMode -> OperandSpec
+mvec128low16 m = op m (TME (T_SubReg SubLow16 RegVec128) (T_Mem Mem16)) RM
+
 -- | 64-bit even positioned values in vector register or memory
 --    * low 64-bit of 128-bit vector
 --    * [63,0] and [191,128] of 256-bit vector
@@ -349,6 +353,10 @@ rm32o64 m = op m (TME
 -- | 16-bit general purpose register
 reg16 :: AccessMode -> OperandEnc -> OperandSpec
 reg16 m e = op m (T_Reg Reg16) e
+
+-- | 8-bit memory
+mem8 :: AccessMode -> OperandSpec
+mem8 m = op m (T_Mem Mem8) RM
 
 -- | 16-bit memory
 mem16 :: AccessMode -> OperandSpec
@@ -1109,6 +1117,53 @@ instructions =
    , i_pminub
    , i_pminud
    , i_pminuw
+   , i_pmovmskb
+   , i_pmovsxbw
+   , i_pmovsxbd
+   , i_pmovsxbq
+   , i_pmovsxwd
+   , i_pmovsxwq
+   , i_pmovsxdq
+   , i_pmovzxbw
+   , i_pmovzxbd
+   , i_pmovzxbq
+   , i_pmovzxwd
+   , i_pmovzxwq
+   , i_pmovzxdq
+   , i_pmuldq
+   , i_pmulhrsw
+   , i_pmulhuw
+   , i_pmulhw
+   , i_pmulld
+   , i_pmullw
+   , i_pmuludq
+   , i_pop
+   , i_popa
+   , i_popcnt
+   , i_popf
+   , i_por
+   , i_prefetcht0
+   , i_prefetcht1
+   , i_prefetcht2
+   , i_prefetchnta
+   , i_prefetchw
+   , i_prefetchwt1
+   , i_psadbw
+   , i_pshufb
+   , i_pshufd
+   , i_pshufhw
+   , i_pshuflw
+   , i_pshufw
+   , i_psignb
+   , i_psignw
+   , i_psignd
+   , i_pslldq
+   , i_psllw
+   , i_pslld
+   , i_psllq
+   , i_psraw
+   , i_psrad
+   , i_psrldq
    ]
 
 i_aaa :: X86Insn
@@ -9858,7 +9913,7 @@ i_packusdw = insn
                            }
                        , vex
                            { vexMandatoryPrefix    = Just 0x66
-                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x2B
                            , vexLW                 = L1_WIG
                            , vexProperties         = [ LegacyModeSupport
@@ -12900,4 +12955,2425 @@ i_pminuw = insn
                        ]
    }
 
+
+i_pmovmskb :: X86Insn
+i_pmovmskb = insn
+   { insnDesc        = "Move byte mask"
+   , insnMnemonic    = "PMOVMSKB"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xD7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ gpr WO Reg
+                                                     , vec64 RO RM
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xD7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ gpr WO Reg
+                                                     , vec128 RO RM
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xD7
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ gpr WO Reg
+                                                     , vec128 RO RM
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xD7
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ gpr WO Reg
+                                                     , vec256 RO RM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pmovsxbw :: X86Insn
+i_pmovsxbw = insn
+   { insnDesc        = "Packed move with sign extend"
+   , insnMnemonic    = "PMOVSXBW"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x20
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x20
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x20
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovsxbd :: X86Insn
+i_pmovsxbd = insn
+   { insnDesc        = "Packed move with sign extend"
+   , insnMnemonic    = "PMOVSXBD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x21
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x21
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x21
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovsxbq :: X86Insn
+i_pmovsxbq = insn
+   { insnDesc        = "Packed move with sign extend"
+   , insnMnemonic    = "PMOVSXBQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x22
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low16 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x22
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low16 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x22
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low16 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovsxwd :: X86Insn
+i_pmovsxwd = insn
+   { insnDesc        = "Packed move with sign extend"
+   , insnMnemonic    = "PMOVSXWD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x23
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x23
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x23
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovsxwq :: X86Insn
+i_pmovsxwq = insn
+   { insnDesc        = "Packed move with sign extend"
+   , insnMnemonic    = "PMOVSXWQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x24
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x24
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x24
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovsxdq :: X86Insn
+i_pmovsxdq = insn
+   { insnDesc        = "Packed move with sign extend"
+   , insnMnemonic    = "PMOVSXWQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x25
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x25
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x25
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovzxbw :: X86Insn
+i_pmovzxbw = insn
+   { insnDesc        = "Packed move with zero extend"
+   , insnMnemonic    = "PMOVZXBW"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x30
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x30
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x30
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovzxbd :: X86Insn
+i_pmovzxbd = insn
+   { insnDesc        = "Packed move with zero extend"
+   , insnMnemonic    = "PMOVZXBD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x31
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x31
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x31
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovzxbq :: X86Insn
+i_pmovzxbq = insn
+   { insnDesc        = "Packed move with zero extend"
+   , insnMnemonic    = "PMOVZXBQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x32
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low16 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x32
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low16 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x32
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low16 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovzxwd :: X86Insn
+i_pmovzxwd = insn
+   { insnDesc        = "Packed move with zero extend"
+   , insnMnemonic    = "PMOVZXWD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x33
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x33
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x33
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovzxwq :: X86Insn
+i_pmovzxwq = insn
+   { insnDesc        = "Packed move with zero extend"
+   , insnMnemonic    = "PMOVZXWQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x34
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x34
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x34
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmovzxdq :: X86Insn
+i_pmovzxdq = insn
+   { insnDesc        = "Packed move with zero extend"
+   , insnMnemonic    = "PMOVZXWQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x35
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x35
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x35
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmuldq :: X86Insn
+i_pmuldq = insn
+   { insnDesc        = "Multiply packed signed dword integers"
+   , insnMnemonic    = "PMULDQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x28
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x28
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x28
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+
+                       ]
+   }
+
+
+i_pmulhrsw :: X86Insn
+i_pmulhrsw = insn
+   { insnDesc        = "Packed multiply high with round and scale"
+   , insnMnemonic    = "PMULHRSW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x0B
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x0B
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x0B
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x0B
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+
+                       ]
+   }
+
+
+i_pmulhuw :: X86Insn
+i_pmulhuw = insn
+   { insnDesc        = "Multiply packed unsigned integers and store high result"
+   , insnMnemonic    = "PMULHUW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE4
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE4
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pmulhw :: X86Insn
+i_pmulhw = insn
+   { insnDesc        = "Multiply packed signed integers and store high result"
+   , insnMnemonic    = "PMULHW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE5
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE5
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pmulld :: X86Insn
+i_pmulld = insn
+   { insnDesc        = "Multiply packed signed dword integers and store low result"
+   , insnMnemonic    = "PMULLD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x40
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x40
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x40
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+
+                       ]
+   }
+
+i_pmullw :: X86Insn
+i_pmullw = insn
+   { insnDesc        = "Multiply packed signed integers and store low result"
+   , insnMnemonic    = "PMULLW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xD5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xD5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xD5
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xD5
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pmuludq :: X86Insn
+i_pmuludq = insn
+   { insnDesc        = "Multiply packed unsigned doubleword integers"
+   , insnMnemonic    = "PMULUDQ"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF4
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF4
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pop :: X86Insn
+i_pop = insn
+   { insnDesc        = "Pop a value from the stack"
+   , insnMnemonic    = "POP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x8F
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultOperandSize64
+                                                     , NoOperandSize64
+                                                     ]
+                           , legacyParams          = [ mgpr WO
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x58
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , DefaultOperandSize64
+                                                     , NoOperandSize64
+                                                     ]
+                           , legacyParams          = [ gpr WO OpcodeLow3
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x1F
+                           , legacyProperties      = [ LegacyModeSupport ]
+                           , legacyParams          = [ reg R_DS WO Implicit
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x07
+                           , legacyProperties      = [ LegacyModeSupport ]
+                           , legacyParams          = [ reg R_ES WO Implicit
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x17
+                           , legacyProperties      = [ LegacyModeSupport ]
+                           , legacyParams          = [ reg R_SS WO Implicit
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xA1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ reg R_FS WO Implicit
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xA9
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ reg R_GS WO Implicit
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_popa :: X86Insn
+i_popa = insn
+   { insnDesc        = "Pop all general-purpose registers"
+   , insnMnemonic    = "POPA"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x61
+                           , legacyProperties      = [ LegacyModeSupport ]
+                           , legacyParams          = [ regBasePtr WO Implicit
+                                                     , regFam RegFamDI WO Implicit
+                                                     , regFam RegFamSI WO Implicit
+                                                     , regFam RegFamAX WO Implicit
+                                                     , regFam RegFamBX WO Implicit
+                                                     , regFam RegFamCX WO Implicit
+                                                     , regFam RegFamDX WO Implicit
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_popcnt :: X86Insn
+i_popcnt = insn
+   { insnDesc        = "Return the count of number of bits set to 1"
+   , insnMnemonic    = "POPCNT"
+   , insnFlags       = [ Unset [OF,SF,AF,CF,PF]
+                       , Modified [ZF]
+                       ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xB8
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ gpr WO Reg
+                                                     , mgpr RO
+                                                     , regStackPtr RW Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_popf :: X86Insn
+i_popf = insn
+   { insnDesc        = "Pop stack into EFLAGS register"
+   , insnMnemonic    = "POPF"
+   , insnFlags       = [ Modified allFlags ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x9D
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ regStackPtr RW Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_por :: X86Insn
+i_por = insn
+   { insnDesc        = "Bitwise logical OR"
+   , insnMnemonic    = "POR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xEB
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xEB
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xEB
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xEB
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+i_prefetcht0 :: X86Insn
+i_prefetcht0 = insn
+   { insnDesc        = "Prefetch data into caches"
+   , insnMnemonic    = "PREFETCHT0"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x18
+                           , legacyOpcodeExt       = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mem8 NA ]
+                           }
+                       ]
+   }
+
+
+i_prefetcht1 :: X86Insn
+i_prefetcht1 = insn
+   { insnDesc        = "Prefetch data into caches"
+   , insnMnemonic    = "PREFETCHT1"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x18
+                           , legacyOpcodeExt       = Just 2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mem8 NA ]
+                           }
+                       ]
+   }
+
+
+i_prefetcht2 :: X86Insn
+i_prefetcht2 = insn
+   { insnDesc        = "Prefetch data into caches"
+   , insnMnemonic    = "PREFETCHT2"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x18
+                           , legacyOpcodeExt       = Just 3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mem8 NA ]
+                           }
+                       ]
+   }
+
+
+i_prefetchnta :: X86Insn
+i_prefetchnta = insn
+   { insnDesc        = "Prefetch data into caches"
+   , insnMnemonic    = "PREFETCHNTA"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x18
+                           , legacyOpcodeExt       = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mem8 NA ]
+                           }
+                       ]
+   }
+
+
+i_prefetchw :: X86Insn
+i_prefetchw = insn
+   { insnDesc        = "Prefetch data into caches in anticipation of a write"
+   , insnMnemonic    = "PREFETCHW"
+   , insnFlags       = [ Modified allFlags ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x0D
+                           , legacyOpcodeExt       = Just 1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension PRFCHW
+                                                     ]
+                           , legacyParams          = [ mem8 NA ]
+                           }
+                       ]
+   }
+
+
+i_prefetchwt1 :: X86Insn
+i_prefetchwt1 = insn
+   { insnDesc        = "Prefetch vecor data into caches with intent to write and T1 hint"
+   , insnMnemonic    = "PREFETCHWT1"
+   , insnFlags       = [ Modified allFlags ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x0D
+                           , legacyOpcodeExt       = Just 2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension PREFETCHWT1
+                                                     ]
+                           , legacyParams          = [ mem8 NA ]
+                           }
+                       ]
+   }
+
+i_psadbw :: X86Insn
+i_psadbw = insn
+   { insnDesc        = "Compute sum of absolute differences"
+   , insnMnemonic    = "PSADBW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF6
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF6
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+
+                       ]
+   }
+
+i_pshufb :: X86Insn
+i_pshufb = insn
+   { insnDesc        = "Packed shuffle bytes"
+   , insnMnemonic    = "PSHUFB"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x00
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x00
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x00
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x00
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pshufd :: X86Insn
+i_pshufd = insn
+   { insnDesc        = "Shuffle packed doublewords"
+   , insnMnemonic    = "PSHUFD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x70
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x70
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x70
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec256 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pshufhw :: X86Insn
+i_pshufhw = insn
+   { insnDesc        = "Shuffle packed high words"
+   , insnMnemonic    = "PSHUFHW"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x70
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0xF3
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x70
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0xF3
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x70
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec256 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pshuflw :: X86Insn
+i_pshuflw = insn
+   { insnDesc        = "Shuffle packed low words"
+   , insnMnemonic    = "PSHUFLW"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF2
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x70
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0xF2
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x70
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0xF2
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x70
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec256 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pshufw :: X86Insn
+i_pshufw = insn
+   { insnDesc        = "Shuffle packed words"
+   , insnMnemonic    = "PSHUFW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x70
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ vec64 WO Reg
+                                                     , mvec64 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+i_psignb :: X86Insn
+i_psignb = insn
+   { insnDesc        = "Packed sign"
+   , insnMnemonic    = "PSIGNB"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x08
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x08
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x08
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x08
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_psignw :: X86Insn
+i_psignw = insn
+   { insnDesc        = "Packed sign"
+   , insnMnemonic    = "PSIGNW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x09
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x09
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x09
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x09
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_psignd :: X86Insn
+i_psignd = insn
+   { insnDesc        = "Packed sign"
+   , insnMnemonic    = "PSIGND"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x0A
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcode          = 0x0A
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSSE3
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x0A
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x0A
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+i_pslldq :: X86Insn
+i_pslldq = insn
+   { insnDesc        = "Shift double quadword left logical"
+   , insnMnemonic    = "PSLLDQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x73
+                           , legacyOpcodeExt       = Just 7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x73
+                           , vexOpcodeExt          = Just 7
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x73
+                           , vexOpcodeExt          = Just 7
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , mvec256 RO
+                                                     , imm8
+                                                     ]
+                           }
+
+                       ]
+   }
+
+i_psllw :: X86Insn
+i_psllw = insn
+   { insnDesc        = "Shift packed data left logical"
+   , insnMnemonic    = "PSLLW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x71
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x71
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF1
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF1
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x71
+                           , vexOpcodeExt          = Just 6
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , vec128 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x71
+                           , vexOpcodeExt          = Just 6
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , vec256 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_pslld :: X86Insn
+i_pslld = insn
+   { insnDesc        = "Shift packed data left logical"
+   , insnMnemonic    = "PSLLD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x72
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x72
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF2
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF2
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x72
+                           , vexOpcodeExt          = Just 6
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , vec128 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x72
+                           , vexOpcodeExt          = Just 6
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , vec256 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_psllq :: X86Insn
+i_psllq = insn
+   { insnDesc        = "Shift packed data left logical"
+   , insnMnemonic    = "PSLLD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xF3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x73
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x73
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF3
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xF3
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x73
+                           , vexOpcodeExt          = Just 6
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , vec128 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x73
+                           , vexOpcodeExt          = Just 6
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , vec256 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+i_psraw :: X86Insn
+i_psraw = insn
+   { insnDesc        = "Shift packed data right arithmetic"
+   , insnMnemonic    = "PSRAW"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE1
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x71
+                           , legacyOpcodeExt       = Just 4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x71
+                           , legacyOpcodeExt       = Just 4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE1
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE1
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x71
+                           , vexOpcodeExt          = Just 4
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , vec128 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x71
+                           , vexOpcodeExt          = Just 4
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , vec256 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_psrad :: X86Insn
+i_psrad = insn
+   { insnDesc        = "Shift packed data right arithmetic"
+   , insnMnemonic    = "PSRAD"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , mvec64 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xE2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x72
+                           , legacyOpcodeExt       = Just 4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension MMX
+                                                     ]
+                           , legacyParams          = [ vec64 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x72
+                           , legacyOpcodeExt       = Just 4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE2
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , vec128 RO Vvvv
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0xE2
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , vec256 RO Vvvv
+                                                     , mvec256 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x72
+                           , vexOpcodeExt          = Just 4
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , vec128 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x72
+                           , vexOpcodeExt          = Just 4
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , vec256 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+i_psrldq :: X86Insn
+i_psrldq = insn
+   { insnDesc        = "Shift double quadword right logical"
+   , insnMnemonic    = "PSRLDQ"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x73
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x73
+                           , vexOpcodeExt          = Just 3
+                           , vexLW                 = L0_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128 WO Vvvv
+                                                     , vec128 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x73
+                           , vexOpcodeExt          = Just 3
+                           , vexLW                 = L1_WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec256 WO Vvvv
+                                                     , vec256 RO RM
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
 
