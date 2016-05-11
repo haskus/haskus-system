@@ -437,6 +437,10 @@ rDXrAX m = op m (TWE
    (T_Pair (T_Reg (RegFixed R_RDX)) (T_Reg (RegFixed R_RAX))))
    Implicit
 
+-- | EDX:EAX
+eDXeAX :: AccessMode -> OperandSpec
+eDXeAX m = op m (T_Pair (T_Reg (RegFixed R_EDX)) (T_Reg (RegFixed R_EAX))) Implicit
+
 -- | XMM0
 xmm0 :: AccessMode -> OperandSpec
 xmm0 m = op m (T_Reg (RegFixed (R_XMM 0))) Implicit
@@ -1188,6 +1192,35 @@ instructions =
    , i_pusha
    , i_pushf
    , i_pxor
+   , i_rcl
+   , i_rcr
+   , i_rol
+   , i_ror
+   , i_rcpps
+   , i_rcpss
+   , i_rdfsbase
+   , i_rdgsbase
+   , i_rdmsr
+   , i_rdpkru
+   , i_rdpmc
+   , i_rdrand
+   , i_rdseed
+   , i_rdtsc
+   , i_rdtscp
+   , i_ret
+   , i_retfar
+   , i_rorx
+   , i_roundpd
+   , i_roundps
+   , i_roundsd
+   , i_roundss
+   , i_rsm
+   , i_rsqrtps
+   , i_rsqrtss
+   , i_sahf
+   , i_sal
+   , i_sar
+   , i_shr
    ]
 
 i_aaa :: X86Insn
@@ -6923,7 +6956,7 @@ i_lahf = insn
                            , legacyOpcode          = 0x9F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
-                                                     , Extension LAHF
+                                                     , Extension LSAHF
                                                      ]
                            , legacyParams          = [ reg R_AH WO Implicit ]
                            }
@@ -16905,3 +16938,855 @@ i_pxor = insn
                        ]
    }
 
+i_rcl :: X86Insn
+i_rcl = insn
+   { insnDesc        = "Rotate left"
+   , insnMnemonic    = "RCL"
+   , insnFlags       = [Modified [OF,CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 2
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 2
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 2
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rcr :: X86Insn
+i_rcr = insn
+   { insnDesc        = "Rotate right"
+   , insnMnemonic    = "RCR"
+   , insnFlags       = [Modified [OF,CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 3
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 3
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 3
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rol :: X86Insn
+i_rol = insn
+   { insnDesc        = "Rotate right"
+   , insnMnemonic    = "RCR"
+   , insnFlags       = [Modified [OF,CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 0
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 0
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 0
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_ror :: X86Insn
+i_ror = insn
+   { insnDesc        = "Rotate right"
+   , insnMnemonic    = "ROR"
+   , insnFlags       = [Modified [OF,CF]]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 1
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 1
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 1
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+i_rcpps :: X86Insn
+i_rcpps = insn
+   { insnDesc        = "Compute reciprocals of packed single-precision FP values"
+   , insnMnemonic    = "RCPPS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x53
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec128  WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x53
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_rcpss :: X86Insn
+i_rcpss = insn
+   { insnDesc        = "Compute reciprocal of scalar single-precision FP values"
+   , insnMnemonic    = "RCPSS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x53
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec128  WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0xF3
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x53
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_rdfsbase :: X86Insn
+i_rdfsbase = insn
+   { insnDesc        = "Read FS segment base"
+   , insnMnemonic    = "RDFSBASE"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAE
+                           , legacyOpcodeExt       = Just 0
+                           , legacyProperties      = [ LongModeSupport
+                                                     , Extension FSGSBASE
+                                                     ]
+                           , legacyParams          = [ reg32o64  WO RM
+                                                     , reg R_FS RO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rdgsbase :: X86Insn
+i_rdgsbase = insn
+   { insnDesc        = "Read GS segment base"
+   , insnMnemonic    = "RDGSBASE"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAE
+                           , legacyOpcodeExt       = Just 1
+                           , legacyProperties      = [ LongModeSupport
+                                                     , Extension FSGSBASE
+                                                     ]
+                           , legacyParams          = [ reg32o64  WO RM
+                                                     , reg R_GS RO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rdmsr :: X86Insn
+i_rdmsr = insn
+   { insnDesc        = "Read from Model Specific Register (MSR)"
+   , insnMnemonic    = "RDMSR"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x32
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension FSGSBASE
+                                                     ]
+                           , legacyParams          = [ eDXeAX WO
+                                                     , reg R_ECX RO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rdpkru :: X86Insn
+i_rdpkru = insn
+   { insnDesc        = "Read protection key rights for user pages"
+   , insnMnemonic    = "RDPKRU"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x01
+                           , legacyOpcodeFullExt   = Just 0xEE
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension OSPKE
+                                                     ]
+                           , legacyParams          = [ rAX WO
+                                                     , rDX WO
+                                                     , reg R_ECX RO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rdpmc :: X86Insn
+i_rdpmc = insn
+   { insnDesc        = "Read performance-monitoring counters"
+   , insnMnemonic    = "RDPMC"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x33
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ eDXeAX WO
+                                                     , reg R_ECX RO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_rdrand :: X86Insn
+i_rdrand = insn
+   { insnDesc        = "Read random number"
+   , insnMnemonic    = "RDRAND"
+   , insnFlags       = [ Modified [CF]
+                       , Unset [OF,SF,ZF,AF,PF]
+                       ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xC7
+                           , legacyOpcodeExt       = Just 6
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ gpr WO RM ]
+                           }
+                       ]
+   }
+
+
+i_rdseed :: X86Insn
+i_rdseed = insn
+   { insnDesc        = "Read random SEED"
+   , insnMnemonic    = "RDSEED"
+   , insnFlags       = [ Modified [CF]
+                       , Unset [OF,SF,ZF,AF,PF]
+                       ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xC7
+                           , legacyOpcodeExt       = Just 7
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ gpr WO RM ]
+                           }
+                       ]
+   }
+
+
+i_rdtsc :: X86Insn
+i_rdtsc = insn
+   { insnDesc        = "Read time-stamp counter"
+   , insnMnemonic    = "RDTSC"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x31
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ eDXeAX WO ]
+                           }
+                       ]
+   }
+
+
+i_rdtscp :: X86Insn
+i_rdtscp = insn
+   { insnDesc        = "Read time-stamp counter and processor ID"
+   , insnMnemonic    = "RDTSCP"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x01
+                           , legacyOpcodeFullExt   = Just 0xF9
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ eDXeAX WO
+                                                     , reg R_ECX WO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_ret :: X86Insn
+i_ret = insn
+   { insnDesc        = "Return from procedure (near)"
+   , insnMnemonic    = "RET"
+   , insnEncodings   = [ leg
+                           { legacyOpcode          = 0xC3
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcode          = 0xC2
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ imm16
+                                                     , regStackPtr WO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_retfar :: X86Insn
+i_retfar = insn
+   { insnDesc        = "Return from procedure (far)"
+   , insnMnemonic    = "FARRET"
+   , insnEncodings   = [ leg
+                           { legacyOpcode          = 0xCB
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcode          = 0xCA
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ imm16
+                                                     , regStackPtr WO Implicit
+                                                     ]
+                           }
+                       ]
+   }
+
+i_rorx :: X86Insn
+i_rorx = insn
+   { insnDesc           = "Rotate right logical without affecting flags"
+   , insnMnemonic       = "RORX"
+   , insnEncodings      = [ vex
+                              { vexMandatoryPrefix = Just 0xF2
+                              , vexOpcodeMap       = MapVex 0x03
+                              , vexOpcode          = 0xF0
+                              , vexLW              = L0
+                              , vexProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension BMI2
+                                                     ]
+                              , vexParams          = [ reg32o64 WO Reg
+                                                     , reg32o64 RO RM
+                                                     , imm8
+                                                     ]
+                              }
+                          ]
+   }
+
+i_roundpd :: X86Insn
+i_roundpd = insn
+   { insnDesc        = "Round packed double precision floating-point values"
+   , insnMnemonic    = "ROUNDPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcode          = 0x09
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x09
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_roundps :: X86Insn
+i_roundps = insn
+   { insnDesc        = "Round packed single precision floating-point values"
+   , insnMnemonic    = "ROUNDPS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcode          = 0x08
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x08
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_roundsd :: X86Insn
+i_roundsd = insn
+   { insnDesc        = "Round scalar double precision floating-point values"
+   , insnMnemonic    = "ROUNDSD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcode          = 0x0B
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x0B
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128 WO Reg
+                                                  , mvec128 RO
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_roundss :: X86Insn
+i_roundss = insn
+   { insnDesc        = "Round scalar single precision floating-point values"
+   , insnMnemonic    = "ROUNDSS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcode          = 0x0A
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE4_1
+                                                     ]
+                           , legacyParams          = [ vec128 WO Reg
+                                                     , mvec128 RO
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x0A
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128 WO Reg
+                                                  , mvec128 RO
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+i_rsm :: X86Insn
+i_rsm = insn
+   { insnDesc        = "Resume from system management mode"
+   , insnMnemonic    = "RSL"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0xAA
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     ]
+                           }
+                       ]
+   }
+
+i_rsqrtps :: X86Insn
+i_rsqrtps = insn
+   { insnDesc        = "Compute reciprocals of square roots of packed single-precision FP values"
+   , insnMnemonic    = "RSQRTPS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x52
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec128  WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x52
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128o256 WO Reg
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_rsqrtss :: X86Insn
+i_rsqrtss = insn
+   { insnDesc        = "Compute reciprocal of square root of scalar single-precision FP values"
+   , insnMnemonic    = "RSQRTSS"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0xF3
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x52
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec128  WO Reg
+                                                     , mvec128low32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0xF3
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x52
+                           , vexLW              = WIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128 WO Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_sahf :: X86Insn
+i_sahf = insn
+   { insnDesc        = "Store AH into flags"
+   , insnMnemonic    = "SAHF"
+   , insnFlags       = [ Modified allFlags ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0x9E
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ reg R_AX RO Implicit ]
+                           }
+                       ]
+   }
+
+i_sal :: X86Insn
+i_sal = insn
+   { insnDesc        = "Shift left"
+   , insnMnemonic    = "SAL/SHL"
+   , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
+                       , Undefined [AF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 4
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 4
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 4
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_sar :: X86Insn
+i_sar = insn
+   { insnDesc        = "Arithmetic shift right"
+   , insnMnemonic    = "SAR"
+   , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
+                       , Undefined [AF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 7
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 7
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 7
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_shr :: X86Insn
+i_shr = insn
+   { insnDesc        = "Shift right"
+   , insnMnemonic    = "SHR"
+   , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
+                       , Undefined [AF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD0
+                           , legacyOpcodeExt       = Just 5
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , constImm 1
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xD2
+                           , legacyOpcodeExt       = Just 5
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , reg R_CL RO Implicit
+                                                     ]
+                           }
+                       , leg
+                           { legacyOpcodeMap       = MapPrimary
+                           , legacyOpcode          = 0xC0
+                           , legacyOpcodeExt       = Just 5
+                           , legacyNoForce8bit     = Just 0
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ mgpr RW
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }

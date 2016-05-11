@@ -70,11 +70,15 @@ data X86Extension
    | FPU             -- ^ x87 instructions
    | CMOV            -- ^ CMOVs instructions (and FCMOVcc if FPU is set too)
    | INVPCID         -- ^ Invalid process-context identifier (INVPCID) extension
-   | LAHF            -- ^ LAHF extension in 64-bit mode
    | MONITOR         -- ^ MONITOR/MWAIT
    | PCLMULQDQ       -- ^ PCLMULQDQ instruction
    | PRFCHW          -- ^ PREFETCHW instruction
    | PREFETCHWT1     -- ^ PREFETCHWT1 instruction
+   | FSGSBASE        -- ^ RDFSBASE instruction
+   | OSPKE           -- ^ RDPKRU instruction
+   | RDRAND          -- ^ RDRAND instruction
+   | RDSEDD          -- ^ RDSEED instruction
+   | LSAHF           -- ^ LAHF/SAHF instruction in 64-bit mode
    deriving (Show,Eq)
 
 
