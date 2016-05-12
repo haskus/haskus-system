@@ -13,6 +13,8 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    , MemType (..)
    , RelType (..)
    , RegFamilies (..)
+   , VSIBType (..)
+   , VSIBIndexReg (..)
    , maybeOpTypeReg
    )
 where
@@ -152,6 +154,19 @@ data MemType
    | MemDSrSI     -- ^ operand-size memory at DS:rSI (rSI depends on address-size, DS if fixed)
    | MemESrDI     -- ^ operand-size memory at ES:rDI (rDI depends on address-size, ES is fixed)
    | MemDSrDI     -- ^ operand-size memory at DS:rDI (rDI depends on address-size, DS is overridable with prefixes)
+   | MemVSIB32 VSIBType -- ^ VSIB: 32-bit memory referred to by the VSIB
+   | MemVSIB64 VSIBType -- ^ VSIB: 64-bit memory referred to by the VSIB
+   deriving (Show,Eq)
+
+-- | How to use the index register
+-- e.g., VSIBType 32 128 --> 32-bit indices in a 128-bits register (XMM)
+data VSIBType = VSIBType Size VSIBIndexReg
+   deriving (Show,Eq)
+
+-- | Register size for VSIB
+data VSIBIndexReg
+   = VSIB128
+   | VSIB256
    deriving (Show,Eq)
 
 -- | Register type

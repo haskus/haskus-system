@@ -66,6 +66,7 @@ import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Opcode
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Registers
+import ViperVM.Arch.X86_64.Assembler.Size
 
 -- | X86 instruction
 data X86Insn = X86Insn
@@ -545,6 +546,35 @@ mDSrDI m = op m (T_Mem MemDSrDI) Implicit
 -- | Mask
 mask :: OperandEnc -> OperandSpec
 mask = op RO T_Mask
+
+-- | VSIB: 32-bit memory. 32-bit indices in 128-bit vector
+m32vsib32x :: AccessMode -> OperandSpec
+m32vsib32x m = op m (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128))) RM
+
+-- | VSIB: 32-bit memory. 32-bit indices in 128-bit or 256-bit vector
+m32vsib32xy :: AccessMode -> OperandSpec
+m32vsib32xy m = op m (TLE
+   (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128)))
+   (T_Mem (MemVSIB32 (VSIBType Size32 VSIB256))))
+   RM
+
+-- | VSIB: 32-bit memory. 64-bit indices in 128-bit or 256-bit vector
+m32vsib64xy :: AccessMode -> OperandSpec
+m32vsib64xy m = op m (TLE
+   (T_Mem (MemVSIB32 (VSIBType Size64 VSIB128)))
+   (T_Mem (MemVSIB32 (VSIBType Size64 VSIB256))))
+   RM
+
+-- | VSIB: 64-bit memory. 32-bit indices in 128-bit vector
+m64vsib32x :: AccessMode -> OperandSpec
+m64vsib32x m = op m (T_Mem (MemVSIB64 (VSIBType Size32 VSIB128))) RM
+
+-- | VSIB: 64-bit memory. 64-bit indices in 128-bit or 256-bit vector
+m64vsib64xy :: AccessMode -> OperandSpec
+m64vsib64xy m = op m (TLE
+   (T_Mem (MemVSIB64 (VSIBType Size64 VSIB128)))
+   (T_Mem (MemVSIB64 (VSIBType Size64 VSIB256))))
+   RM
 
 -- We use a dummy encoding for 3DNow: because all the instructions use the same
 amd3DNowEncoding :: Encoding
@@ -1355,6 +1385,16 @@ instructions =
    , i_vfnmsub132ss
    , i_vfnmsub213ss
    , i_vfnmsub231ss
+   , i_vgatherdpd
+   , i_vgatherqpd
+   , i_vgatherdps
+   , i_vgatherqps
+   , i_vpgatherdd
+   , i_vpgatherqd
+   , i_vpgatherdq
+   , i_vpgatherqq
+   , i_vinsertf128
+   , i_vinserti128
    ]
 
 i_aaa :: X86Insn
@@ -20888,3 +20928,222 @@ i_vfnmsub231ss = insn
                            }
                        ]
    }
+
+
+i_vgatherdpd :: X86Insn
+i_vgatherdpd = insn
+   { insnDesc        = "Gather packed DP FP values using signed dword indices"
+   , insnMnemonic    = "VGATHERDPD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x92
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m64vsib32x RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vgatherqpd :: X86Insn
+i_vgatherqpd = insn
+   { insnDesc        = "Gather packed DP FP values using signed qword indices"
+   , insnMnemonic    = "VGATHERQPD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x93
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m64vsib64xy RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vgatherdps :: X86Insn
+i_vgatherdps = insn
+   { insnDesc        = "Gather packed SP FP values using signed dword indices"
+   , insnMnemonic    = "VGATHERDPS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x92
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m32vsib32xy RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vgatherqps :: X86Insn
+i_vgatherqps = insn
+   { insnDesc        = "Gather packed SP FP values using signed qword indices"
+   , insnMnemonic    = "VGATHERQPS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x93
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m32vsib64xy RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vpgatherdd :: X86Insn
+i_vpgatherdd = insn
+   { insnDesc        = "Gather packed dword values using signed dword indices"
+   , insnMnemonic    = "VPGATHERDD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x90
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m32vsib32xy RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vpgatherqd :: X86Insn
+i_vpgatherqd = insn
+   { insnDesc        = "Gather packed dword values using signed qword indices"
+   , insnMnemonic    = "VPGATHERQD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x91
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m32vsib64xy RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vpgatherdq :: X86Insn
+i_vpgatherdq = insn
+   { insnDesc        = "Gather packed qword values using signed dword indices"
+   , insnMnemonic    = "VGATHERDQ"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x90
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m32vsib32x RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vpgatherqq :: X86Insn
+i_vpgatherqq = insn
+   { insnDesc        = "Gather packed qword values using signed qword indices"
+   , insnMnemonic    = "VPGATHERQQ"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x91
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , m64vsib64xy RO
+                                                  , vec128o256 RW Vvvv
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vinsertf128 :: X86Insn
+i_vinsertf128 = insn
+   { insnDesc        = "Insert packed floating-point values"
+   , insnMnemonic    = "VINSERTF128"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x18
+                           , vexLW              = L1_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec256 WO Reg
+                                                  , vec256 RO Vvvv
+                                                  , mvec128 RO
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vinserti128 :: X86Insn
+i_vinserti128 = insn
+   { insnDesc        = "Insert packed integer values"
+   , insnMnemonic    = "VINSERTI128"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x38
+                           , vexLW              = L1_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec256 WO Reg
+                                                  , vec256 RO Vvvv
+                                                  , mvec128 RO
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
