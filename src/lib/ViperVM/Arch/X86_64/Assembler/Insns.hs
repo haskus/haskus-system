@@ -135,6 +135,8 @@ data VexLW
    | L0_W1  -- ^ Vex.L = 0, Vex.W = 1
    | L1_W0  -- ^ Vex.L = 1, Vex.W = 0 
    | L1_W1  -- ^ Vex.L = 1, Vex.W = 1
+   | LIG_W0 -- ^ Ignore Vex.L, Vex.W = 0 
+   | LIG_W1 -- ^ Ignore Vex.L, Vex.W = 1
    | L0     -- ^ Vex.L = 0
    | LIG    -- ^ Vex.L ignored
    | LWIG   -- ^ Ignore Vex.W and Vex.L
@@ -1293,6 +1295,66 @@ instructions =
    , i_verw
    , i_vextractf128
    , i_vextracti128
+   , i_vfmadd132pd
+   , i_vfmadd213pd
+   , i_vfmadd231pd
+   , i_vfmadd132ps
+   , i_vfmadd213ps
+   , i_vfmadd231ps
+   , i_vfmadd132sd
+   , i_vfmadd213sd
+   , i_vfmadd231sd
+   , i_vfmadd132ss
+   , i_vfmadd213ss
+   , i_vfmadd231ss
+   , i_vfmaddsub132pd
+   , i_vfmaddsub213pd
+   , i_vfmaddsub231pd
+   , i_vfmaddsub132ps
+   , i_vfmaddsub213ps
+   , i_vfmaddsub231ps
+   , i_vfmsubadd132pd
+   , i_vfmsubadd213pd
+   , i_vfmsubadd231pd
+   , i_vfmsubadd132ps
+   , i_vfmsubadd213ps
+   , i_vfmsubadd231ps
+   , i_vfmsub132pd
+   , i_vfmsub213pd
+   , i_vfmsub231pd
+   , i_vfmsub132ps
+   , i_vfmsub213ps
+   , i_vfmsub231ps
+   , i_vfmsub132sd
+   , i_vfmsub213sd
+   , i_vfmsub231sd
+   , i_vfmsub132ss
+   , i_vfmsub213ss
+   , i_vfmsub231ss
+   , i_vfnmadd132pd
+   , i_vfnmadd213pd
+   , i_vfnmadd231pd
+   , i_vfnmadd132ps
+   , i_vfnmadd213ps
+   , i_vfnmadd231ps
+   , i_vfnmadd132sd
+   , i_vfnmadd213sd
+   , i_vfnmadd231sd
+   , i_vfnmadd132ss
+   , i_vfnmadd213ss
+   , i_vfnmadd231ss
+   , i_vfnmsub132pd
+   , i_vfnmsub213pd
+   , i_vfnmsub231pd
+   , i_vfnmsub132ps
+   , i_vfnmsub213ps
+   , i_vfnmsub231ps
+   , i_vfnmsub132sd
+   , i_vfnmsub213sd
+   , i_vfnmsub231sd
+   , i_vfnmsub132ss
+   , i_vfnmsub213ss
+   , i_vfnmsub231ss
    ]
 
 i_aaa :: X86Insn
@@ -19505,6 +19567,1323 @@ i_vextracti128 = insn
                            , vexParams          = [ mvec128 WO
                                                   , vec256 RO Reg
                                                   , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vfmadd132pd :: X86Insn
+i_vfmadd132pd = insn
+   { insnDesc        = "Fused multiply-add of packed double-precision FP values"
+   , insnMnemonic    = "VFMADD132PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x98
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd213pd :: X86Insn
+i_vfmadd213pd = insn
+   { insnDesc        = "Fused multiply-add of packed double-precision FP values"
+   , insnMnemonic    = "VFMADD213PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA8
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd231pd :: X86Insn
+i_vfmadd231pd = insn
+   { insnDesc        = "Fused multiply-add of packed double-precision FP values"
+   , insnMnemonic    = "VFMADD231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB8
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd132ps :: X86Insn
+i_vfmadd132ps = insn
+   { insnDesc        = "Fused multiply-add of packed single-precision FP values"
+   , insnMnemonic    = "VFMADD132PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x98
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd213ps :: X86Insn
+i_vfmadd213ps = insn
+   { insnDesc        = "Fused multiply-add of packed single-precision FP values"
+   , insnMnemonic    = "VFMADD213PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA8
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd231ps :: X86Insn
+i_vfmadd231ps = insn
+   { insnDesc        = "Fused multiply-add of packed single-precision FP values"
+   , insnMnemonic    = "VFMADD231PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB8
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd132sd :: X86Insn
+i_vfmadd132sd = insn
+   { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
+   , insnMnemonic    = "VFMADD132SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x99
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd213sd :: X86Insn
+i_vfmadd213sd = insn
+   { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
+   , insnMnemonic    = "VFMADD213SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA9
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd231sd :: X86Insn
+i_vfmadd231sd = insn
+   { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
+   , insnMnemonic    = "VFMADD231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB9
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd132ss :: X86Insn
+i_vfmadd132ss = insn
+   { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
+   , insnMnemonic    = "VFMADD132SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x99
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd213ss :: X86Insn
+i_vfmadd213ss = insn
+   { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
+   , insnMnemonic    = "VFMADD213SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA9
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmadd231ss :: X86Insn
+i_vfmadd231ss = insn
+   { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
+   , insnMnemonic    = "VFMADD231SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB9
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmaddsub132pd :: X86Insn
+i_vfmaddsub132pd = insn
+   { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFMADDSUB132PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x96
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmaddsub213pd :: X86Insn
+i_vfmaddsub213pd = insn
+   { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFMADDSUB213PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA6
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmaddsub231pd :: X86Insn
+i_vfmaddsub231pd = insn
+   { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFMADDSUB231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB6
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmaddsub132ps :: X86Insn
+i_vfmaddsub132ps = insn
+   { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFMADDSUB132PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x96
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmaddsub213ps :: X86Insn
+i_vfmaddsub213ps = insn
+   { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFMADDSUB213PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA6
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmaddsub231ps :: X86Insn
+i_vfmaddsub231ps = insn
+   { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFMADDSUB231PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB6
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsubadd132pd :: X86Insn
+i_vfmsubadd132pd = insn
+   { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
+   , insnMnemonic    = "VFMSUBADD132PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x97
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsubadd213pd :: X86Insn
+i_vfmsubadd213pd = insn
+   { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
+   , insnMnemonic    = "VFMSUBADD213PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA7
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsubadd231pd :: X86Insn
+i_vfmsubadd231pd = insn
+   { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
+   , insnMnemonic    = "VFMSUBADD231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB7
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsubadd132ps :: X86Insn
+i_vfmsubadd132ps = insn
+   { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
+   , insnMnemonic    = "VFMSUBADD132PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x97
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsubadd213ps :: X86Insn
+i_vfmsubadd213ps = insn
+   { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
+   , insnMnemonic    = "VFMSUBADD213PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xA7
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsubadd231ps :: X86Insn
+i_vfmsubadd231ps = insn
+   { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
+   , insnMnemonic    = "VFMSUBADD231PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xB7
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub132pd :: X86Insn
+i_vfmsub132pd = insn
+   { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFMSUB132PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9A
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub213pd :: X86Insn
+i_vfmsub213pd = insn
+   { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFMSUB213PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAA
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub231pd :: X86Insn
+i_vfmsub231pd = insn
+   { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFMSUB231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBA
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub132ps :: X86Insn
+i_vfmsub132ps = insn
+   { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFMSUB132PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9A
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub213ps :: X86Insn
+i_vfmsub213ps = insn
+   { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFMSUB213PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAA
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub231ps :: X86Insn
+i_vfmsub231ps = insn
+   { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFMSUB231PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBA
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub132sd :: X86Insn
+i_vfmsub132sd = insn
+   { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
+   , insnMnemonic    = "VFMSUB132SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9A
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub213sd :: X86Insn
+i_vfmsub213sd = insn
+   { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
+   , insnMnemonic    = "VFMSUB213SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAA
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub231sd :: X86Insn
+i_vfmsub231sd = insn
+   { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
+   , insnMnemonic    = "VFMSUB231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBA
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub132ss :: X86Insn
+i_vfmsub132ss = insn
+   { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
+   , insnMnemonic    = "VFMSUB132SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9A
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub213ss :: X86Insn
+i_vfmsub213ss = insn
+   { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
+   , insnMnemonic    = "VFMSUB213SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAA
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfmsub231ss :: X86Insn
+i_vfmsub231ss = insn
+   { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
+   , insnMnemonic    = "VFMSUB231SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBA
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vfnmadd132pd :: X86Insn
+i_vfnmadd132pd = insn
+   { insnDesc        = "Fused negative multiply-add of packed double-precision FP values"
+   , insnMnemonic    = "VFNMADD132PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9C
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd213pd :: X86Insn
+i_vfnmadd213pd = insn
+   { insnDesc        = "Fused negative multiply-add of packed double-precision FP values"
+   , insnMnemonic    = "VFNMADD213PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAC
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd231pd :: X86Insn
+i_vfnmadd231pd = insn
+   { insnDesc        = "Fused inegative multiply-add of packed double-precision FP values"
+   , insnMnemonic    = "VFNMADD231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBC
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd132ps :: X86Insn
+i_vfnmadd132ps = insn
+   { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
+   , insnMnemonic    = "VFNMADD132PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9C
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd213ps :: X86Insn
+i_vfnmadd213ps = insn
+   { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
+   , insnMnemonic    = "VFNMADD213PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAC
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd231ps :: X86Insn
+i_vfnmadd231ps = insn
+   { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
+   , insnMnemonic    = "VFNMADD231PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBC
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd132sd :: X86Insn
+i_vfnmadd132sd = insn
+   { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
+   , insnMnemonic    = "VFNMADD132SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9D
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd213sd :: X86Insn
+i_vfnmadd213sd = insn
+   { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
+   , insnMnemonic    = "VFNMADD213SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAD
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd231sd :: X86Insn
+i_vfnmadd231sd = insn
+   { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
+   , insnMnemonic    = "VFNMADD231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBD
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd132ss :: X86Insn
+i_vfnmadd132ss = insn
+   { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
+   , insnMnemonic    = "VFNMADD132SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9D
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd213ss :: X86Insn
+i_vfnmadd213ss = insn
+   { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
+   , insnMnemonic    = "VFNMADD213SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAD
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmadd231ss :: X86Insn
+i_vfnmadd231ss = insn
+   { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
+   , insnMnemonic    = "VFNMADD231SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBD
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+i_vfnmsub132pd :: X86Insn
+i_vfnmsub132pd = insn
+   { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFNMSUB132PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9E
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub213pd :: X86Insn
+i_vfnmsub213pd = insn
+   { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFNMSUB213PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAE
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub231pd :: X86Insn
+i_vfnmsub231pd = insn
+   { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
+   , insnMnemonic    = "VFNMSUB231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBE
+                           , vexLW              = W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub132ps :: X86Insn
+i_vfnmsub132ps = insn
+   { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFNMSUB132PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9E
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub213ps :: X86Insn
+i_vfnmsub213ps = insn
+   { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFNMSUB213PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAE
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub231ps :: X86Insn
+i_vfnmsub231ps = insn
+   { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
+   , insnMnemonic    = "VFNMSUB231PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBE
+                           , vexLW              = W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128o256 RW Reg
+                                                  , vec128o256 RO Vvvv
+                                                  , mvec128o256 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub132sd :: X86Insn
+i_vfnmsub132sd = insn
+   { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
+   , insnMnemonic    = "VFNMSUB132SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9F
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub213sd :: X86Insn
+i_vfnmsub213sd = insn
+   { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
+   , insnMnemonic    = "VFNMSUB213SD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAF
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub231sd :: X86Insn
+i_vfnmsub231sd = insn
+   { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
+   , insnMnemonic    = "VFNMSUB231PD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBF
+                           , vexLW              = LIG_W1
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub132ss :: X86Insn
+i_vfnmsub132ss = insn
+   { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
+   , insnMnemonic    = "VFNMSUB132SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0x9F
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub213ss :: X86Insn
+i_vfnmsub213ss = insn
+   { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
+   , insnMnemonic    = "VFNMSUB213SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xAF
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vfnmsub231ss :: X86Insn
+i_vfnmsub231ss = insn
+   { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
+   , insnMnemonic    = "VFNMSUB231SS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x02
+                           , vexOpcode          = 0xBF
+                           , vexLW              = LIG_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension FMA
+                                                  ]
+                           , vexParams          = [ vec128 RW Reg
+                                                  , vec128 RO Vvvv
+                                                  , mvec128low32 RO
                                                   ]
                            }
                        ]

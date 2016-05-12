@@ -80,6 +80,7 @@ data X86Extension
    | RDSEDD          -- ^ RDSEED instruction
    | LSAHF           -- ^ LAHF/SAHF instruction in 64-bit mode
    | F16C            -- ^ VCVTPH2PS/VCVTPS2PH instructions
+   | FMA             -- ^ Fused multiply-add extension
    deriving (Show,Eq)
 
 
