@@ -7211,7 +7211,7 @@ i_lar = insn
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
                            { legacyOpcodeMap       = Map0F
-                           , legacyOpcode          = 0x0F
+                           , legacyOpcode          = 0x02
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
@@ -7545,8 +7545,8 @@ i_lsl = insn
    , insnMnemonic    = "LSL"
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
-                           , legacyOpcode          = 0xE0
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x03
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
