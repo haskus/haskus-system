@@ -81,6 +81,7 @@ data X86Extension
    | LSAHF           -- ^ LAHF/SAHF instruction in 64-bit mode
    | F16C            -- ^ VCVTPH2PS/VCVTPS2PH instructions
    | FMA             -- ^ Fused multiply-add extension
+   | RTM             -- ^ Transactional memory
    deriving (Show,Eq)
 
 

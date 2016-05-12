@@ -150,12 +150,13 @@ data MemType
    | MemInt64     -- ^ m64int (x87)
    | MemDec80     -- ^ Binary coded decimal (m80dec (x87))
    | MemEnv       -- ^ 14/28 bit FPU environment (x87)
-   | MemState     -- ^ 94/108 bit FPU state (x87)
+   | MemFPUState  -- ^ 94/108 bit FPU state (x87)
    | MemDSrSI     -- ^ operand-size memory at DS:rSI (rSI depends on address-size, DS if fixed)
    | MemESrDI     -- ^ operand-size memory at ES:rDI (rDI depends on address-size, ES is fixed)
    | MemDSrDI     -- ^ operand-size memory at DS:rDI (rDI depends on address-size, DS is overridable with prefixes)
    | MemVSIB32 VSIBType -- ^ VSIB: 32-bit memory referred to by the VSIB
    | MemVSIB64 VSIBType -- ^ VSIB: 64-bit memory referred to by the VSIB
+   | MemState     -- ^ Processor extended states (cf XSAVE/XRSTOR)
    deriving (Show,Eq)
 
 -- | How to use the index register
@@ -207,7 +208,8 @@ data RegFamilies
 
 -- | Sub register type
 data SubRegType
-   = SubLow16     -- ^ Low 16-bit of a register
+   = SubLow8      -- ^ Low  8-bit of a register
+   | SubLow16     -- ^ Low 16-bit of a register
    | SubLow32     -- ^ Low 32-bit of a register
    | SubLow64     -- ^ Low 64-bit of a register
    | SubHigh64    -- ^ High 64-bit of a register
