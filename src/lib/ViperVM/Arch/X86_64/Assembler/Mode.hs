@@ -79,6 +79,7 @@ data X86Extension
    | RDRAND          -- ^ RDRAND instruction
    | RDSEDD          -- ^ RDSEED instruction
    | LSAHF           -- ^ LAHF/SAHF instruction in 64-bit mode
+   | F16C            -- ^ VCVTPH2PS/VCVTPS2PH instructions
    deriving (Show,Eq)
 
 

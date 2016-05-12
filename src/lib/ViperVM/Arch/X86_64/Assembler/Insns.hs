@@ -757,9 +757,7 @@ instructions =
    , i_cmpxchg 
    , i_cmpxch8b 
    , i_comisd 
-   , i_vcomisd 
    , i_comiss 
-   , i_vcomiss 
    , i_cpuid 
    , i_crc32 
    , i_cvtdq2pd 
@@ -1279,6 +1277,22 @@ instructions =
    , i_sysret
    , i_test
    , i_tzcnt
+   , i_ucomisd 
+   , i_ucomiss 
+   , i_ud2
+   , i_unpckhpd
+   , i_unpckhps
+   , i_unpcklpd
+   , i_unpcklps
+   , i_vbroadcastss
+   , i_vbroadcastsd
+   , i_vbroadcastf128
+   , i_vcvtph2ps
+   , i_vcvtps2ph
+   , i_verr
+   , i_verw
+   , i_vextractf128
+   , i_vextracti128
    ]
 
 i_aaa :: X86Insn
@@ -3444,7 +3458,7 @@ i_cmpxch8b = insn
 i_comisd :: X86Insn
 i_comisd = insn
    { insnDesc        = "Compare scalar ordered double-precision floating-point values and set EFLAGS"
-   , insnMnemonic    = "COMISD"
+   , insnMnemonic    = "(V)COMISD"
    , insnFlags       = [ Modified [ZF,PF,CF]
                        , Unset    [OF,SF,AF]
                        ]
@@ -3460,17 +3474,7 @@ i_comisd = insn
                                                         , mvec128low64 RO
                                                         ]
                            }
-                       ]
-   }
-
-i_vcomisd :: X86Insn
-i_vcomisd = insn
-   { insnDesc        = "Compare scalar ordered double-precision floating-point values and set EFLAGS"
-   , insnMnemonic    = "VCOMISD"
-   , insnFlags       = [ Modified [ZF,PF,CF]
-                       , Unset    [OF,SF,AF]
-                       ]
-   , insnEncodings   = [ vex
+                       , vex
                            { vexMandatoryPrefix = Just 0x66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2F
@@ -3489,7 +3493,7 @@ i_vcomisd = insn
 i_comiss :: X86Insn
 i_comiss = insn
    { insnDesc        = "Compare scalar ordered single-precision floating-point values and set EFLAGS"
-   , insnMnemonic    = "COMISS"
+   , insnMnemonic    = "(V)COMISS"
    , insnFlags       = [ Modified [ZF,PF,CF]
                        , Unset    [OF,SF,AF]
                        ]
@@ -3504,17 +3508,7 @@ i_comiss = insn
                                                   , mvec128low32 RO
                                                   ]
                            }
-                       ]
-   }
-
-i_vcomiss :: X86Insn
-i_vcomiss = insn
-   { insnDesc        = "Compare scalar ordered single-precision floating-point values and set EFLAGS"
-   , insnMnemonic    = "VCOMISS"
-   , insnFlags       = [ Modified [ZF,PF,CF]
-                       , Unset    [OF,SF,AF]
-                       ]
-   , insnEncodings   = [ vex
+                       , vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x2F
                            , vexLW           = LWIG
@@ -19057,6 +19051,461 @@ i_tzcnt = insn
                            , legacyParams          = [ gpr WO Reg
                                                      , mgpr RO
                                                      ]
+                           }
+                       ]
+   }
+
+i_ucomisd :: X86Insn
+i_ucomisd = insn
+   { insnDesc        = "Compare scalar unordered double-precision floating-point values and set EFLAGS"
+   , insnMnemonic    = "(V)UCOMISD"
+   , insnFlags       = [ Modified [ZF,PF,CF]
+                       , Unset    [OF,SF,AF]
+                       ]
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix    = Just 0x66
+                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcode             = 0x2E
+                           , legacyProperties         = [ LegacyModeSupport
+                                                        , LongModeSupport
+                                                        , Extension SSE2
+                                                        ]
+                           , legacyParams             = [ vec128low64 RO Reg
+                                                        , mvec128low64 RO
+                                                        ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x01
+                           , vexOpcode          = 0x2E
+                           , vexLW              = LWIG
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ vec128low64 RO Reg
+                                                  , mvec128low64 RO
+                                                  ]
+                           }
+                       ]
+   }
+
+i_ucomiss :: X86Insn
+i_ucomiss = insn
+   { insnDesc        = "Compare scalar unordered single-precision floating-point values and set EFLAGS"
+   , insnMnemonic    = "(V)UCOMISS"
+   , insnFlags       = [ Modified [ZF,PF,CF]
+                       , Unset    [OF,SF,AF]
+                       ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap    = Map0F
+                           , legacyOpcode       = 0x2E
+                           , legacyProperties   = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension SSE
+                                                  ]
+                           , legacyParams       = [ vec128low32 RO Reg
+                                                  , mvec128low32 RO
+                                                  ]
+                           }
+                       , vex
+                           { vexOpcodeMap    = MapVex 0x01
+                           , vexOpcode       = 0x2E
+                           , vexLW           = LWIG
+                           , vexProperties   = [ LegacyModeSupport
+                                               , LongModeSupport
+                                               , Extension AVX
+                                               ]
+                           , vexParams       = [ vec128low32 RO Reg
+                                               , mvec128low32 RO
+                                               ]
+                           }
+                       ]
+   }
+
+
+i_ud2 :: X86Insn
+i_ud2 = insn
+   { insnDesc        = "Raise invalid opcode exception"
+   , insnMnemonic    = "UD2"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x0B
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           }
+                       ]
+   }
+
+i_unpckhpd :: X86Insn
+i_unpckhpd = insn
+   { insnDesc        = "Unpack and interleave high packed double-precision FP values"
+   , insnMnemonic    = "PUNPCKHPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x15
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x15
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_unpckhps :: X86Insn
+i_unpckhps = insn
+   { insnDesc        = "Unpack and interleave high packed single-precision FP values"
+   , insnMnemonic    = "PUNPCKHPS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x15
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x15
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_unpcklpd :: X86Insn
+i_unpcklpd = insn
+   { insnDesc        = "Unpack and interleave low packed double-precision FP values"
+   , insnMnemonic    = "PUNPCKLPD"
+   , insnEncodings   = [ leg
+                           { legacyMandatoryPrefix = Just 0x66
+                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x14
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE2
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x14
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_unpcklps :: X86Insn
+i_unpcklps = insn
+   { insnDesc        = "Unpack and interleave low packed single-precision FP values"
+   , insnMnemonic    = "PUNPCKLPS"
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x14
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension SSE
+                                                     ]
+                           , legacyParams          = [ vec128 RW Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexOpcodeMap          = MapVex 0x01
+                           , vexOpcode             = 0x14
+                           , vexLW                 = WIG
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128o256 RO Vvvv
+                                                     , mvec128o256 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_vbroadcastss :: X86Insn
+i_vbroadcastss = insn
+   { insnDesc        = "Broadcast floating-point data"
+   , insnMnemonic    = "VBROADCASTSS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x18
+                           , vexLW                 = W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , mem32 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x18
+                           , vexLW                 = W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128low32 RO RM
+                                                     ]
+                           }
+
+                       ]
+   }
+
+
+i_vbroadcastsd :: X86Insn
+i_vbroadcastsd = insn
+   { insnDesc        = "Broadcast floating-point data"
+   , insnMnemonic    = "VBROADCASTSD"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x19
+                           , vexLW                 = L1_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mem64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x19
+                           , vexLW                 = L1_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX2
+                                                     ]
+                           , vexParams             = [ vec128o256 WO Reg
+                                                     , vec128low64 RO RM
+                                                     ]
+                           }
+
+                       ]
+   }
+
+
+i_vbroadcastf128 :: X86Insn
+i_vbroadcastf128 = insn
+   { insnDesc        = "Broadcast floating-point data"
+   , insnMnemonic    = "VBROADCASTF128"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x1A
+                           , vexLW                 = L1_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension AVX
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mem128 RO
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_vcvtph2ps :: X86Insn
+i_vcvtph2ps = insn
+   { insnDesc        = "Convert 16-bit FP values to single-precision FP values"
+   , insnMnemonic    = "VCVTPH2PS"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x13
+                           , vexLW                 = L0_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension F16C
+                                                     ]
+                           , vexParams             = [ vec128 WO Reg
+                                                     , mvec128low64 RO
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x02
+                           , vexOpcode             = 0x13
+                           , vexLW                 = L1_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension F16C
+                                                     ]
+                           , vexParams             = [ vec256 WO Reg
+                                                     , mvec128 RO
+                                                     ]
+                           }
+
+                       ]
+   }
+
+
+i_vcvtps2ph :: X86Insn
+i_vcvtps2ph = insn
+   { insnDesc        = "Convert single-precision FP value to 16-bit FP value"
+   , insnMnemonic    = "VCVTPS2PH"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x03
+                           , vexOpcode             = 0x1D
+                           , vexLW                 = L0_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension F16C
+                                                     ]
+                           , vexParams             = [ mvec128low64 WO
+                                                     , vec128 RO Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       , vex
+                           { vexMandatoryPrefix    = Just 0x66
+                           , vexOpcodeMap          = MapVex 0x03
+                           , vexOpcode             = 0x1D
+                           , vexLW                 = L1_W0
+                           , vexProperties         = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension F16C
+                                                     ]
+                           , vexParams             = [ mvec128 WO
+                                                     , vec256 RO Reg
+                                                     , imm8
+                                                     ]
+                           }
+                       ]
+   }
+
+
+i_verr :: X86Insn
+i_verr = insn
+   { insnDesc        = "Verify a segment for reading"
+   , insnMnemonic    = "VERR"
+   , insnFlags       = [ Modified [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x00
+                           , legacyOpcodeExt       = Just 4
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ rm16 NA ]
+                           }
+                       ]
+   }
+
+
+i_verw :: X86Insn
+i_verw = insn
+   { insnDesc        = "Verify a segment for writing"
+   , insnMnemonic    = "VERW"
+   , insnFlags       = [ Modified [ZF] ]
+   , insnEncodings   = [ leg
+                           { legacyOpcodeMap       = Map0F
+                           , legacyOpcode          = 0x00
+                           , legacyOpcodeExt       = Just 5
+                           , legacyProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     ]
+                           , legacyParams          = [ rm16 NA ]
+                           }
+                       ]
+   }
+
+i_vextractf128 :: X86Insn
+i_vextractf128 = insn
+   { insnDesc        = "Extract packed floating-point values"
+   , insnMnemonic    = "VEXTRACTF128"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x19
+                           , vexLW              = L1_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX
+                                                  ]
+                           , vexParams          = [ mvec128 WO
+                                                  , vec256 RO Reg
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
+   }
+
+
+i_vextracti128 :: X86Insn
+i_vextracti128 = insn
+   { insnDesc        = "Extract packed integer values"
+   , insnMnemonic    = "VEXTRACTI128"
+   , insnEncodings   = [ vex
+                           { vexMandatoryPrefix = Just 0x66
+                           , vexOpcodeMap       = MapVex 0x03
+                           , vexOpcode          = 0x39
+                           , vexLW              = L1_W0
+                           , vexProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension AVX2
+                                                  ]
+                           , vexParams          = [ mvec128 WO
+                                                  , vec256 RO Reg
+                                                  , imm8
+                                                  ]
                            }
                        ]
    }
