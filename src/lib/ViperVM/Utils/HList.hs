@@ -48,6 +48,8 @@ module ViperVM.Utils.HList
    , hZipList
    , HFoldr
    , hFoldr
+   , HFoldl
+   , hFoldl
    )
 where
 

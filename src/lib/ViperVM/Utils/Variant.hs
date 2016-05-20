@@ -46,6 +46,7 @@ module ViperVM.Utils.Variant
    , liftEitherM
    , Member
    , Catchable
+   , MaybeCatchable
    , Liftable
    , Matchable
    , MatchableH
@@ -278,6 +279,13 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
 type Catchable a xs =
    ( IsMember a xs ~ 'True
    , HFoldr' RemoveType (Variant xs, Int, Maybe Found)
+         (Zip (Indexes xs) (MapTest a xs))
+         (Variant xs, Int, Maybe Found)
+   )
+
+-- | a may be catchable in xs
+type MaybeCatchable a xs =
+   ( HFoldr' RemoveType (Variant xs, Int, Maybe Found)
          (Zip (Indexes xs) (MapTest a xs))
          (Variant xs, Int, Maybe Found)
    )

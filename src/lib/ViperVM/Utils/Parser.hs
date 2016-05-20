@@ -14,11 +14,18 @@ module ViperVM.Utils.Parser
    , Choice (..)
    , choice
    , choice'
+   , manyBounded
+   , many
+   , many1
+   , manyTill
+   , manyTill'
    )
 where
 
+import Prelude hiding (min,max)
 import ViperVM.Utils.HList
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Variant
 import Data.Proxy
 
 
@@ -70,3 +77,81 @@ choice' :: forall m fs zs a.
    , HFoldl (Choice a) (Flow m '[a]) fs (Flow m zs)
    ) => Proxy a -> HList fs -> Flow m zs
 choice' _ = hFoldl (Choice :: Choice a) (flowRet' undefined :: Flow m '[a])
+
+-- | Apply the action zero or more times (until a LexicalError result is
+-- returned)
+many ::
+   ( zs ~ Filter LexicalError xs
+   , Monad m
+   , Catchable LexicalError xs
+   ) => Flow m xs -> Flow m '[[Variant zs]]
+many f = manyBounded Nothing Nothing f >%~#> \LexicalError -> flowRet' []
+
+-- | Apply the action one or more times (until a LexicalError result is
+-- returned)
+many1 ::
+   ( zs ~ Filter LexicalError xs
+   , Monad m
+   , Catchable LexicalError xs
+   ) => Flow m xs -> Flow m '[[Variant zs],LexicalError]
+many1 = manyBounded (Just 1) Nothing
+
+-- | Apply the first action zero or more times until the second succeeds.
+-- If the first action fails, the whole operation fails.
+--
+-- Return both the list of first values and the ending value
+manyTill ::
+   ( zs ~ Filter LexicalError xs
+   , zs' ~ Filter LexicalError ys
+   , Monad m
+   , MaybeCatchable LexicalError xs
+   , Catchable LexicalError ys
+   ) => Flow m xs -> Flow m ys -> Flow m '[([Variant zs],Variant zs'),LexicalError]
+manyTill f g = go []
+   where
+      go xs = do
+         v <- g
+         case removeType v of
+            Left LexicalError -> do
+               u <- f
+               case removeType u of
+                  Left LexicalError -> flowSet LexicalError
+                  Right x           -> go (x:xs)
+               
+            Right x           -> flowSet (reverse xs,x)
+
+-- | Apply the first action zero or more times until the second succeeds.
+-- If the first action fails, the whole operation fails.
+--
+-- Return only the list of first values
+manyTill' ::
+   ( zs ~ Filter LexicalError xs
+   , Monad m
+   , MaybeCatchable LexicalError xs
+   , Catchable LexicalError ys
+   ) => Flow m xs -> Flow m ys -> Flow m '[[Variant zs],LexicalError]
+manyTill' f g = manyTill f g >.-.> fst
+
+-- | Apply the given action at least 'min' times and at most 'max' time
+--
+-- On failure, fails.
+manyBounded :: forall zs xs m.
+   ( zs ~ Filter LexicalError xs
+   , Monad m
+   , MaybeCatchable LexicalError xs
+   ) => Maybe Word -> Maybe Word -> Flow m xs -> Flow m '[[Variant zs],LexicalError]
+manyBounded _ (Just 0) _   = flowSet ([] :: [Variant zs])
+manyBounded (Just 0) max f = manyBounded Nothing max f
+manyBounded min max f      = do
+   v <- f
+   case removeType v of
+      Left LexicalError -> case min of
+         Just n | n > 0 -> flowSet LexicalError
+         _              -> flowSet ([] :: [Variant zs])
+      Right x           -> do
+         let minus1 = fmap (\k -> k - 1)
+         xs <- manyBounded (minus1 min) (minus1 max) f
+         case toEither xs of
+            Left LexicalError -> flowSet LexicalError
+            Right xs'         -> flowSet (x : xs')
+
