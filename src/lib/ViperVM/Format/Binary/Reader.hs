@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,6 +12,8 @@
 module ViperVM.Format.Binary.Reader
    ( Reader (..)
    , ReaderM
+   , binReadWithT
+   , binReadWith
    , binReadT
    , binRead
    , binPeekT
@@ -35,6 +38,9 @@ where
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Utils.MultiState
 import ViperVM.Utils.HArray
+import ViperVM.Utils.Parser
+import ViperVM.Utils.Variant
+import ViperVM.Utils.Flow
 
 import Data.Proxy
 import Data.Word
@@ -193,3 +199,46 @@ binWith :: forall m s a b.
    , ReaderM () s
    , Storable a) => (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
 binWith = binWithT (Proxy :: Proxy ())
+
+
+-- | Try to read something
+--
+-- Fail if there isn't enough bytes or if ParseError is returned: don't
+-- consume bytes in these cases.
+binReadWithT :: forall r m s a xs.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   ) => Proxy r -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithT p f = do
+   -- get the reader
+   Reader buf <- mGet :: MStateT s m (Reader r)
+
+   -- check the size
+   sz <- binRemainingT p
+   if sz < fromIntegral (sizeOf (undefined :: a))
+      then flowSet EndOfInput
+      else do
+         let (buf',a) = bufferRead buf
+         -- update the state
+         mSet (Reader buf' :: Reader r)
+         -- execute the function
+         f a >%~=> \(_ :: ParseError) ->
+               -- backtrack
+               mSet (Reader buf :: Reader r)
+
+
+-- | Try to read something
+--
+-- Fail if there isn't enough bytes or if ParseError is returned: don't
+-- consume bytes in these cases.
+binReadWith :: forall m s a xs.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   ) => (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWith = binReadWithT (Proxy :: Proxy ())

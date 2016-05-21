@@ -1,5 +1,6 @@
 module ViperVM.Arch.X86_64.Assembler.Opcode
    ( LegacyPrefixes (..)
+   , LegacyPrefix (..)
    , Opcode (..)
    , OpcodeMap (..)
    , LegacyMap (..)
@@ -27,13 +28,28 @@ where
 import Data.Word
 import Data.Bits
 
+-- | Legacy prefixes
+data LegacyPrefix
+   = LegacyPrefix66
+   | LegacyPrefix67
+   | LegacyPrefix2E
+   | LegacyPrefix3E
+   | LegacyPrefix26
+   | LegacyPrefix64
+   | LegacyPrefix65
+   | LegacyPrefix36
+   | LegacyPrefixF0
+   | LegacyPrefixF3
+   | LegacyPrefixF2
+   deriving (Show,Eq)
+
 data Opcode
    = OpLegacy LegacyPrefixes (Maybe Rex) LegacyMap !Word8
    | OpVex    Vex  !Word8
    | OpXop    Vex  !Word8
    deriving (Show,Eq)
 
-newtype LegacyPrefixes = LegacyPrefixes [Word8] deriving (Show,Eq)
+newtype LegacyPrefixes = LegacyPrefixes [LegacyPrefix] deriving (Show,Eq)
 
 data OpcodeMap
    = MapLegacy LegacyMap

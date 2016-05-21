@@ -2,20 +2,23 @@
 
 -- | X86 (and X87) instructions
 --
--- TODO: add flag for control-flow instructions (branches, return, call, etc.)
+-- TODO: 
+--    - add flag for control-flow instructions (branches, return, call, etc.)
+--    - x87 instructions: FPU status flags (C0,C1,C2,C3) are not indicated yet
+--    - add potential exceptions
+--    - add required privilege 
+--    - add pseudo-code for each instruction
+--    - instruction sets
+--       - 3DNow!
+--       - XOP encoded instructions
+--       - AVX512
 --
 -- FIXME: X87 instructions don't encode precisely the stack popping (e.g., it is
 -- not enough to say that ST(1) is accessed in Read/Write mode, we need to
 -- encode that ST(n+1) becomes ST(n) for all n)
 --
--- TODO: X87 instructions: FPU status flags (C0,C1,C2,C3) are not indicated yet
---
 -- FIXME: MemAlign property needs to be checked (added only since vhaddpd)
 --
--- TODO: add potential exceptions
--- TODO: add required privilege 
---
--- TODO: add pseudo-code for each op
 module ViperVM.Arch.X86_64.Assembler.Insns
    ( X86Insn(..)
    , X86Arch(..)

@@ -82,6 +82,7 @@ data X86Extension
    | F16C            -- ^ VCVTPH2PS/VCVTPS2PH instructions
    | FMA             -- ^ Fused multiply-add extension
    | RTM             -- ^ Transactional memory
+   | AMD3DNow        -- ^ AMD 3DNow! instructions
    deriving (Show,Eq)
 
 

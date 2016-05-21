@@ -8,15 +8,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ViperVM.Utils.Parser
-   ( LexicalError (..)
-   , SemanticError (..)
-   , EndOfInputError (..)
+   ( ParseError (..)
    , Choice (..)
    , choice
    , choice'
    , manyBounded
+   , manyAtMost
    , many
-   , many1
+   , manyAtLeast
    , manyTill
    , manyTill'
    )
@@ -39,9 +38,10 @@ import Data.Proxy
 --
 
 
-data LexicalError    = LexicalError
-data SemanticError a = SemanticError a
-data EndOfInputError = EndOfInputError
+data ParseError
+   = SyntaxError
+   | EndOfInput
+   deriving (Show,Eq)
 
 -- We can define combinators between parsers
 
@@ -62,12 +62,12 @@ instance forall x y z xs ys zs m a.
 
 -- | Try to apply the actions in the list in order, until one of them succeeds.
 -- Returns the value of the succeeding action, or the value of the last one.
--- Failures are detected with values of type "LexicalError".
+-- Failures are detected with values of type "ParseError".
 choice :: forall m fs zs.
    ( Monad m
-   , HFoldl (Choice LexicalError) (Flow m '[LexicalError]) fs (Flow m zs)
+   , HFoldl (Choice ParseError) (Flow m '[ParseError]) fs (Flow m zs)
    ) => HList fs -> Flow m zs
-choice = choice' (Proxy :: Proxy LexicalError)
+choice = choice' (Proxy :: Proxy ParseError)
 
 -- | Try to apply the actions in the list in order, until one of them succeeds.
 -- Returns the value of the succeeding action, or the value of the last one.
@@ -78,46 +78,57 @@ choice' :: forall m fs zs a.
    ) => Proxy a -> HList fs -> Flow m zs
 choice' _ = hFoldl (Choice :: Choice a) (flowRet' undefined :: Flow m '[a])
 
--- | Apply the action zero or more times (until a LexicalError result is
+-- | Apply the action zero or more times (until a ParseError result is
 -- returned)
 many ::
-   ( zs ~ Filter LexicalError xs
+   ( zs ~ Filter ParseError xs
    , Monad m
-   , Catchable LexicalError xs
+   , Catchable ParseError xs
    ) => Flow m xs -> Flow m '[[Variant zs]]
-many f = manyBounded Nothing Nothing f >%~#> \LexicalError -> flowRet' []
+many f = manyBounded Nothing Nothing f
+            >%~#> \(_ :: ParseError) -> flowRet' []
 
--- | Apply the action one or more times (until a LexicalError result is
--- returned)
-many1 ::
-   ( zs ~ Filter LexicalError xs
+-- | Apply the action zero or more times (up to max) until a ParseError result
+-- is returned
+manyAtMost ::
+   ( zs ~ Filter ParseError xs
    , Monad m
-   , Catchable LexicalError xs
-   ) => Flow m xs -> Flow m '[[Variant zs],LexicalError]
-many1 = manyBounded (Just 1) Nothing
+   , Catchable ParseError xs
+   ) => Word -> Flow m xs -> Flow m '[[Variant zs]]
+manyAtMost max f = manyBounded Nothing (Just max) f
+                     >%~#> \(_ :: ParseError) -> flowRet' []
+
+-- | Apply the action at least n times or more times (until a ParseError
+-- result is returned)
+manyAtLeast ::
+   ( zs ~ Filter ParseError xs
+   , Monad m
+   , Catchable ParseError xs
+   ) => Word -> Flow m xs -> Flow m '[[Variant zs],ParseError]
+manyAtLeast min = manyBounded (Just min) Nothing
 
 -- | Apply the first action zero or more times until the second succeeds.
 -- If the first action fails, the whole operation fails.
 --
 -- Return both the list of first values and the ending value
 manyTill ::
-   ( zs ~ Filter LexicalError xs
-   , zs' ~ Filter LexicalError ys
+   ( zs ~ Filter ParseError xs
+   , zs' ~ Filter ParseError ys
    , Monad m
-   , MaybeCatchable LexicalError xs
-   , Catchable LexicalError ys
-   ) => Flow m xs -> Flow m ys -> Flow m '[([Variant zs],Variant zs'),LexicalError]
+   , MaybeCatchable ParseError xs
+   , Catchable ParseError ys
+   ) => Flow m xs -> Flow m ys -> Flow m '[([Variant zs],Variant zs'),ParseError]
 manyTill f g = go []
    where
       go xs = do
          v <- g
          case removeType v of
-            Left LexicalError -> do
+            Left EndOfInput   -> flowSet EndOfInput
+            Left SyntaxError -> do
                u <- f
                case removeType u of
-                  Left LexicalError -> flowSet LexicalError
-                  Right x           -> go (x:xs)
-               
+                  Left (e :: ParseError) -> flowSet e
+                  Right x                -> go (x:xs)
             Right x           -> flowSet (reverse xs,x)
 
 -- | Apply the first action zero or more times until the second succeeds.
@@ -125,33 +136,33 @@ manyTill f g = go []
 --
 -- Return only the list of first values
 manyTill' ::
-   ( zs ~ Filter LexicalError xs
+   ( zs ~ Filter ParseError xs
    , Monad m
-   , MaybeCatchable LexicalError xs
-   , Catchable LexicalError ys
-   ) => Flow m xs -> Flow m ys -> Flow m '[[Variant zs],LexicalError]
+   , MaybeCatchable ParseError xs
+   , Catchable ParseError ys
+   ) => Flow m xs -> Flow m ys -> Flow m '[[Variant zs],ParseError]
 manyTill' f g = manyTill f g >.-.> fst
 
 -- | Apply the given action at least 'min' times and at most 'max' time
 --
 -- On failure, fails.
 manyBounded :: forall zs xs m.
-   ( zs ~ Filter LexicalError xs
+   ( zs ~ Filter ParseError xs
    , Monad m
-   , MaybeCatchable LexicalError xs
-   ) => Maybe Word -> Maybe Word -> Flow m xs -> Flow m '[[Variant zs],LexicalError]
+   , MaybeCatchable ParseError xs
+   ) => Maybe Word -> Maybe Word -> Flow m xs -> Flow m '[[Variant zs],ParseError]
 manyBounded _ (Just 0) _   = flowSet ([] :: [Variant zs])
 manyBounded (Just 0) max f = manyBounded Nothing max f
 manyBounded min max f      = do
    v <- f
    case removeType v of
-      Left LexicalError -> case min of
-         Just n | n > 0 -> flowSet LexicalError
+      Left (e :: ParseError) -> case min of
+         Just n | n > 0 -> flowSet e
          _              -> flowSet ([] :: [Variant zs])
       Right x           -> do
          let minus1 = fmap (\k -> k - 1)
          xs <- manyBounded (minus1 min) (minus1 max) f
          case toEither xs of
-            Left LexicalError -> flowSet LexicalError
-            Right xs'         -> flowSet (x : xs')
+            Left (e :: ParseError) -> flowSet e
+            Right xs'              -> flowSet (x : xs')
 
