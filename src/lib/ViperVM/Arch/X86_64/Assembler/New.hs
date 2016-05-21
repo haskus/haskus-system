@@ -143,7 +143,7 @@ readLegacyPrefixes = do
          0xF2 -> flowSet LegacyPrefixF2
          (_ :: Word8) -> flowSet SyntaxError
 
-   ws <- fmap singleVariant . singleVariant <$> manyAtMost 5 readLegacyPrefix
+   ws <- manyAtMost'' 5 readLegacyPrefix
 
    -- check that legacy prefixes are valid (group-wise)
    if checkLegacyPrefixes ws

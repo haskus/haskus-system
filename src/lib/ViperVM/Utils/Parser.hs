@@ -14,6 +14,8 @@ module ViperVM.Utils.Parser
    , choice'
    , manyBounded
    , manyAtMost
+   , manyAtMost'
+   , manyAtMost''
    , many
    , manyAtLeast
    , manyTill
@@ -97,6 +99,24 @@ manyAtMost ::
    ) => Word -> Flow m xs -> Flow m '[[Variant zs]]
 manyAtMost max f = manyBounded Nothing (Just max) f
                      >%~#> \(_ :: ParseError) -> flowRet' []
+
+-- | Apply the action zero or more times (up to max) until a ParseError result
+-- is returned
+manyAtMost' ::
+   ( zs ~ Filter ParseError xs
+   , Monad m
+   , Catchable ParseError xs
+   ) => Word -> Flow m xs -> m [Variant zs]
+manyAtMost' max f = singleVariant <$> manyAtMost max f
+
+-- | Apply the action zero or more times (up to max) until a ParseError result
+-- is returned
+manyAtMost'' ::
+   ( '[x] ~ Filter ParseError xs
+   , Monad m
+   , Catchable ParseError xs
+   ) => Word -> Flow m xs -> m [x]
+manyAtMost'' max f = fmap singleVariant <$> manyAtMost' max f
 
 -- | Apply the action at least n times or more times (until a ParseError
 -- result is returned)
