@@ -20,6 +20,8 @@ module ViperVM.Utils.HList
    , Head
    , Snoc
    , ReplaceAt
+   , Replace
+   , Reverse
    , RemoveAt
    , Concat
    , Length
@@ -39,6 +41,7 @@ module ViperVM.Utils.HList
    , Fusion
    , Member
    , HFoldr' (..)
+   , HFoldl' (..)
    , HTuple' (..)
    , Single (..)
    --re-export
@@ -50,6 +53,7 @@ module ViperVM.Utils.HList
    , hFoldr
    , HFoldl
    , hFoldl
+   , HReverse (..)
    )
 where
 
@@ -106,6 +110,21 @@ type family Length xs where
 type family ReplaceAt (n :: Nat) l l2 where
    ReplaceAt 0 (x ': xs) ys = Concat ys xs
    ReplaceAt n (x ': xs) ys = x ': ReplaceAt (n-1) xs ys
+
+-- | replace a type by another in l
+type family Replace t1 t2 l where
+   Replace t1 t2 '[]        = '[]
+   Replace t1 t2 (t1 ': xs) = t2 ': (Replace t1 t2 xs)
+   Replace t1 t2 (x ': xs)  = x ': (Replace t1 t2 xs)
+
+-- | Reverse a list
+type family Reverse (l :: [*]) where
+   Reverse l = ReverseEx l '[]
+
+type family ReverseEx (l :: [*]) (l2 :: [*]) where
+   ReverseEx '[] l       = l
+   ReverseEx (x ': xs) l = ReverseEx xs (x ': l)
+
 
 -- | Remove a type at index
 type family RemoveAt (n :: Nat) l where
@@ -213,8 +232,8 @@ type Member x xs =
 
 -- | Like HFoldr but only use types, not values!
 --
--- It allows us to foldr over the list of types in the union and for each type
--- to retrieve the alignment and the size (from Storable).
+-- It allows us to foldr over a list of types, without any associated hlist of
+-- values.
 class HFoldr' f v (l :: [*]) r where
    hFoldr' :: f -> v -> HList l -> r
 
@@ -226,6 +245,19 @@ instance (ApplyAB f (e, r) r', HFoldr' f v l r) => HFoldr' f v (e ': l) r' where
    -- supposedly in the list (we don't have a real list associated to HList l)
    hFoldr' f v _ = applyAB f (undefined :: e, hFoldr' f v (undefined :: HList l) :: r)
 
+-- | Like HFoldl but only use types, not values!
+--
+-- It allows us to foldr over a list of types, without any associated hlist of
+-- values.
+class HFoldl' f (z :: *) xs (r :: *) where
+    hFoldl' :: f -> z -> HList xs -> r
+
+instance forall f z z' r x zx xs. (zx ~ (z,x), ApplyAB f zx z', HFoldl' f z' xs r)
+    => HFoldl' f z (x ': xs) r where
+    hFoldl' f z (_ `HCons` xs) = hFoldl' f (applyAB f (z,(undefined :: x)) :: z') xs
+
+instance (z ~ z') => HFoldl' f z '[] z' where
+    hFoldl' _ z _ = z
 
 --------------------------------------
 -- Tuple convertion

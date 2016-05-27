@@ -4,6 +4,8 @@
 --
 -- http://www.ietf.org/rfc/rfc1951.txt
 --
+-- TODO: use BufferBuilder instead of Seq Word8!
+--
 -- TODO: the function `putFixedCode` is currently exported to avoid a compiler
 -- warning. We should implement the whole compression algorithms and export a
 -- "compress" method instead.
@@ -22,15 +24,15 @@ import Data.Word
 import Data.Maybe (fromJust)
 import Data.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import Control.Monad (when,replicateM)
-import ViperVM.Format.Binary.BitGet
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitPut
-import qualified Data.ByteString as BS
 import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 import Data.Ord(comparing)
 
+import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.BitGet
+import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Compression.Algorithms.Huffman
 
 -- 
@@ -96,7 +98,7 @@ getRawBlock = do
       error "Invalid uncompressed block length"
    -- Read raw data
    bs <- withBitGetOrder BB $ getBitsBSM (fromIntegral len)
-   return (Seq.fromList (BS.unpack bs))
+   return (Seq.fromList (bufferUnpackByteList bs))
 
 -- | A block is a sequence of tokens
 data Token a

@@ -24,7 +24,7 @@ import ViperVM.Utils.HArray
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Variant
 import ViperVM.Utils.Parser
-import ViperVM.Format.Binary.Reader
+import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitField
 
@@ -49,12 +49,8 @@ data ExecMode = ExecMode
    }
 
 -- | Indicate if an extension is enabled
-hasExtension ::
-   ( HArrayIndexT ExecMode s
-   ) => X86Extension -> MState s Bool
-hasExtension ext = do
-   mode <- mGet
-   return (ext `elem` extensions mode)
+hasExtension :: ExecMode -> X86Extension -> Bool
+hasExtension mode ext = ext `elem` extensions mode
 
 
 -- ===========================================================================
@@ -69,8 +65,8 @@ hasExtension ext = do
 ---------------------------------------------------------------------------
 
 -- | Prepare a buffer for instruction reading
-prepareBuffer :: Buffer -> Buffer
-prepareBuffer = bufferTakeAtMost 15
+prepareBuffer :: Get a -> Get a
+prepareBuffer = consumeAtMost 15
 
 -- ===========================================================================
 -- Legacy encoding
@@ -123,32 +119,38 @@ prepareBuffer = bufferTakeAtMost 15
 
 
 -- | Read legacy prefixes (up to 5)
-readLegacyPrefixes :: forall s.
-   (ReaderM () s
-   ) => MState s (Variant '[LegacyPrefixes,InvalidLegacyPrefixes])
+readLegacyPrefixes :: Get [LegacyPrefix]
 readLegacyPrefixes = do
    let
-      readLegacyPrefix :: MState s (Variant '[LegacyPrefix,ParseError])
-      readLegacyPrefix = binReadWith $ \case
-         0x66 -> flowSet LegacyPrefix66
-         0x67 -> flowSet LegacyPrefix67
-         0x2E -> flowSet LegacyPrefix2E
-         0x3E -> flowSet LegacyPrefix3E
-         0x26 -> flowSet LegacyPrefix26
-         0x64 -> flowSet LegacyPrefix64
-         0x65 -> flowSet LegacyPrefix65
-         0x36 -> flowSet LegacyPrefix36
-         0xF0 -> flowSet LegacyPrefixF0
-         0xF3 -> flowSet LegacyPrefixF3
-         0xF2 -> flowSet LegacyPrefixF2
-         (_ :: Word8) -> flowSet SyntaxError
+      readLegacyPrefix :: Get (Maybe LegacyPrefix)
+      readLegacyPrefix = lookAheadM (isPrefix <$> getWord8)
 
-   ws <- manyAtMost'' 5 readLegacyPrefix
+      isPrefix = \case
+         0x66 -> Just LegacyPrefix66
+         0x67 -> Just LegacyPrefix67
+         0x2E -> Just LegacyPrefix2E
+         0x3E -> Just LegacyPrefix3E
+         0x26 -> Just LegacyPrefix26
+         0x64 -> Just LegacyPrefix64
+         0x65 -> Just LegacyPrefix65
+         0x36 -> Just LegacyPrefix36
+         0xF0 -> Just LegacyPrefixF0
+         0xF3 -> Just LegacyPrefixF3
+         0xF2 -> Just LegacyPrefixF2
+         _    -> Nothing
+
+      -- | Check that legacy prefixes belong to different groups
+      checkLegacyPrefixes :: [LegacyPrefix] -> Bool
+      checkLegacyPrefixes ps =
+         length ps == length (nub (map legacyPrefixGroup ps))
+
+   -- read at most 5 legacy prefixes
+   ws <- getManyAtMost 5 readLegacyPrefix
 
    -- check that legacy prefixes are valid (group-wise)
    if checkLegacyPrefixes ws
-      then flowSet (LegacyPrefixes ws)
-      else flowSet (InvalidLegacyPrefixes (LegacyPrefixes ws))
+      then return ws
+      else fail ("Invalid legacy prefixes: " ++ show ws)
    
 -- | Get the legacy prefix group
 legacyPrefixGroup :: LegacyPrefix -> Int
@@ -165,9 +167,6 @@ legacyPrefixGroup = \case
    LegacyPrefixF3  -> 5
    LegacyPrefixF2  -> 5
 
--- | Check that legacy prefixes belong to different groups
-checkLegacyPrefixes :: [LegacyPrefix] -> Bool
-checkLegacyPrefixes ps = length ps == length (nub (map legacyPrefixGroup ps))
 
 ---------------------------------------------------------------------------
 -- REX prefix
@@ -210,17 +209,16 @@ checkLegacyPrefixes ps = length ps == length (nub (map legacyPrefixGroup ps))
 ---------------------------------------------------------------------------
 
 -- | Read optional REX prefix
-readRexPrefix ::
-   ( ReaderM () s
-   , HArrayIndexT ExecMode s
-   ) => MState s (Maybe Rex)
-readRexPrefix = do
+readRexPrefix :: ExecMode -> Get (Maybe Rex)
+readRexPrefix mode =
    
-   mode <- mGet
-
    -- REX is only supported in 64-bit mode
    if is64bitMode (x86Mode mode)
-      then fmap Rex <$> binTryReadIf isRexPrefix
+      then lookAheadM $ do
+         x <- getWord8
+         return $ if isRexPrefix x
+            then Just (Rex x)
+            else Nothing
       else return Nothing
 
 ---------------------------------------------------------------------------
@@ -237,23 +235,20 @@ readRexPrefix = do
 ---------------------------------------------------------------------------
 
 -- | Read legacy opcode
-readLegacyOpcode ::
-   ( ReaderM () s
-   , HArrayIndexT ExecMode s
-   ) => LegacyPrefixes -> Maybe Rex -> MState s (Maybe Opcode)
-readLegacyOpcode ps rex = do
-   is3DNowAllowed <- hasExtension AMD3DNow
+readLegacyOpcode :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Get Opcode
+readLegacyOpcode mode ps rex = do
 
    let
-      ret m x = return (Just (OpLegacy ps rex m x))
+      is3DNowAllowed = mode `hasExtension` AMD3DNow
+      ret m x = return (OpLegacy ps rex m x)
 
-   binWith $ \case
-      0x0F -> binWith $ \case
+   getWord8 >>= \case
+      0x0F -> getWord8 >>= \case
          -- the real 3DNow! opcode is stored in the last byte and
          -- will be set later
          0x0F | is3DNowAllowed -> ret Map3DNow 0
-         0x3A                  -> binWith (ret Map0F3A)
-         0x38                  -> binWith (ret Map0F38)
+         0x3A                  -> ret Map0F3A =<< getWord8
+         0x38                  -> ret Map0F38 =<< getWord8
          w2                    -> ret Map0F w2
       w1   -> ret MapPrimary w1
 
@@ -273,17 +268,9 @@ readLegacyOpcode ps rex = do
 --
 ---------------------------------------------------------------------------
 
-data InvalidLegacyPrefixes = InvalidLegacyPrefixes LegacyPrefixes
-data InvalidRexPrefix = InvalidRexPrefix
-
 -- | Read VEX/XOP encoded opcode
-readVexXopOpcode ::
-   ( ReaderM () s
-   , HArrayIndexT ExecMode s
-   ) => LegacyPrefixes -> Maybe Rex -> MState s (Variant '[InvalidLegacyPrefixes,InvalidRexPrefix,Maybe Opcode])
-readVexXopOpcode (LegacyPrefixes ps) rex = do
-   mode <- mGet
-
+readVexXopOpcode :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Get (Maybe Opcode)
+readVexXopOpcode mode ps rex = do
    let
       -- TODO: use mode, arch or sets...
       isXOPAllowed = True
@@ -294,47 +281,39 @@ readVexXopOpcode (LegacyPrefixes ps) rex = do
       -- of what would be ModRM are invalid (11b) for LES/LDS
       testMod :: Word8 -> Bool
       testMod w    = w `unsafeShiftR` 6 == 0x03
-      isVexMode    = if is64bitMode (x86Mode mode)
-                        then return True
-                        else binTryPeek >>= \case
-                              Just w | testMod w -> return True
-                              _                  -> return False
 
-      -- Legacy prefixes in groups othe than 2 or 3 aren't supported with
-      -- VEX/XOP encoding.  REX prefix isn't supported either.
+      isVexMode act = do
+         c <- if is64bitMode (x86Mode mode)
+                  then return True
+                  else testMod <$> lookAhead getWord8
+         if c
+            then act
+            else return Nothing
+
+      -- Legacy prefixes in groups other than 2 or 3 aren't supported with
+      -- VEX/XOP encoding. REX prefix isn't supported either.
       -- This function checks this
-      checkPrefixes act = do
-         let ps' = filter (\x -> legacyPrefixGroup x /= 2 && legacyPrefixGroup x /= 3) ps
+      checkVexPrefixes act = do
+         let ps' = filter (\x -> legacyPrefixGroup x /= 2 
+                              && legacyPrefixGroup x /= 3) ps
          case ps' of
             [] -> case rex of
-               Nothing -> act
-               _       -> flowSet InvalidRexPrefix
-            _  -> flowSet (InvalidLegacyPrefixes (LegacyPrefixes ps'))
+               Nothing -> Just <$> act
+               _       -> fail "REX prefix found with VEX/XOP opcode"
+            _  -> fail ("Invalid legacy prefixes found with VEX/XOP opcode: "
+                           ++ show ps')
 
-   binWith $ \case
-      0x8F  |  isXOPAllowed -> checkPrefixes $ flowSet =<<
-                  binWith $ \a ->
-                     binWith $ \b ->
-                        binWith $ \c ->
-                           return (Just (OpXop (Vex3 a b) c))
+   lookAheadM $ getWord8 >>= \case
+      0x8F  |  isXOPAllowed -> checkVexPrefixes $
+                  OpXop <$> (Vex3 <$> getWord8 <*> getWord8) <*> getWord8
 
+      0xC4  |  isVEXAllowed -> isVexMode $ checkVexPrefixes $
+                  OpVex <$> (Vex3 <$> getWord8 <*> getWord8) <*> getWord8
 
-      0xC4  |  isVEXAllowed -> isVexMode >>= \case
-                  False -> flowSet Nothing
-                  True  -> checkPrefixes $ flowSet =<<
-                     binWith $ \a ->
-                        binWith $ \b ->
-                           binWith $ \c ->
-                              return (Just (OpVex (Vex3 a b) c))
+      0xC5  |  isVEXAllowed -> isVexMode $ checkVexPrefixes $
+                  OpVex <$> (Vex2 <$> getWord8) <*> getWord8
 
-      0xC5  |  isVEXAllowed -> isVexMode >>= \case
-                  False -> return Nothing
-                  True  -> checkPrefixes $ flowSet =<<
-                     binWith $ \a ->
-                        binWith $ \b ->
-                           return (Just (OpVex (Vex2 a) b))
-
-      (_ :: Word8) -> flowSet Nothing
+      _ -> return Nothing
 
       
 -- ===========================================================================
@@ -343,28 +322,14 @@ readVexXopOpcode (LegacyPrefixes ps) rex = do
 
 
 -- | Read the opcode encoding
-readOpcode ::
-   ( ReaderM () s
-   , HArrayIndexT ExecMode s
-   ) => MState s (Maybe Opcode)
-readOpcode = do
-      legacyPrefixes <- readLegacyPrefixes
-      rexPrefix      <- readRexPrefix
+readOpcode :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Get Opcode
+readOpcode mode ps rex = do
+   legacyPrefixes <- readLegacyPrefixes
+   rexPrefix      <- readRexPrefix mode
 
-      firstJust
-         -- check for overloaded prefixes/opcodes first!
-         [ readVexXopOpcode legacyPrefixes rexPrefix
-         , readLegacyOpcode legacyPrefixes rexPrefix
-         ]
-   where
-      -- return the first returned Just
-      firstJust :: [MState s (Maybe a)] -> MState s (Maybe a)
-      firstJust []     = return Nothing
-      firstJust (x:xs) = do
-         r <- x
-         case r of
-            Just _  -> return r
-            Nothing -> firstJust xs
+   readVexXopOpcode mode ps rex >>= \case
+      Just op -> return op
+      Nothing -> readLegacyOpcode mode ps rex
 
 
 -- ===========================================================================

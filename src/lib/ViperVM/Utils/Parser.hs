@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- | Tools to write parsers using Flows
 module ViperVM.Utils.Parser
    ( ParseError (..)
    , Choice (..)
@@ -30,16 +31,14 @@ import ViperVM.Utils.Variant
 import Data.Proxy
 
 
--- A parser is a function that can either:
---    - return a parsed value or operate on already parsed values
---    - fail: we distinguish several kinds of failures
+-- A parser is a Flow function that can either:
+--    - return a parsed value or a semantic error
+--    - fail with a ParseError:
 --       - not enough input
---       - lexical error: cannot read what it is supposed to from the input
---       - semantic error: what is read isn't coherent with what has been
---       previously read
+--       - syntax error
 --
 
-
+-- | Parser error
 data ParseError
    = SyntaxError
    | EndOfInput

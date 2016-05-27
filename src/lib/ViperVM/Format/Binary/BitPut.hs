@@ -3,9 +3,9 @@ module ViperVM.Format.Binary.BitPut
    ( BitPutState(..)
    , newBitPutState
    , putBits
-   , putBitsBS
-   , getBitPutBS
-   , getBitPutLBS
+   , putBitsBuffer
+   , getBitPutBuffer
+   , getBitPutBufferList
    -- * Monadic
    , BitPut
    , BitPutT
@@ -13,30 +13,27 @@ module ViperVM.Format.Binary.BitPut
    , runBitPutT
    , putBitsM
    , putBitBoolM
-   , putBitsBSM
+   , putBitsBufferM
    , changeBitPutOrder
    , withBitPutOrder
    )
 where
 
-import Data.ByteString.Builder (Builder)
-import qualified Data.ByteString.Builder as B
 import Control.Monad.State
 import Control.Monad.Identity
-
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitOps
-
-import Data.ByteString as BS
-import Data.ByteString.Lazy as LBS
-import Data.ByteString.Unsafe as BS
-
 import Data.Bits
 import Data.Word
 
+import ViperVM.Format.Binary.BufferBuilder as B
+import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.BufferList (BufferList)
+import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.BitOps
+
+
 -- | BitPut state
 data BitPutState = BitPutState
-   { bitPutStateBuilder          :: !Builder       -- ^ Builder
+   { bitPutStateBuilder          :: !BufferBuilder -- ^ Builder
    , bitPutStateCurrent          :: !Word8         -- ^ Current byte
    , bitPutStateOffset           :: !Word          -- ^ Current offset
    , bitPutStateBitOrder         :: !BitOrder      -- ^ Bit order
@@ -88,45 +85,45 @@ putBits n w s@(BitPutState builder b o bo) = s'
 
       -- flush the current byte if it is full
       flush s2@(BitPutState b2 w2 o2 bo2)
-        | o2 == 8   = BitPutState (b2 `mappend` B.word8 w2) 0 0 bo2
+        | o2 == 8   = BitPutState (b2 `mappend` B.fromWord8 w2) 0 0 bo2
         | otherwise = s2
 
 
--- | Put a 'ByteString'.
+-- | Put a Buffer
 --
 -- Examples: 3 bits are already written in the current byte
 --    BB: ABCDEFGH IJKLMNOP -> xxxABCDE FGHIJKLM NOPxxxxx
 --    LL: ABCDEFGH IJKLMNOP -> LMNOPxxx DEFGHIJK xxxxxABC
 --    BL: ABCDEFGH IJKLMNOP -> xxxPONML KJIHGFED CBAxxxxx
 --    LB: ABCDEFGH IJKLMNOP -> EDCBAxxx MLKJIHGF xxxxxPON
-putBitsBS :: BS.ByteString -> BitPutState -> BitPutState
-putBitsBS bs s
-   | BS.null bs = s
+putBitsBuffer :: Buffer -> BitPutState -> BitPutState
+putBitsBuffer bs s
+   | isBufferEmpty bs = s
    | otherwise  = case s of
-      (BitPutState builder b 0 BB) -> BitPutState (builder `mappend` B.byteString bs) b 0 BB
-      (BitPutState builder b 0 LL) -> BitPutState (builder `mappend` B.byteString (BS.reverse bs)) b 0 LL
-      (BitPutState builder b 0 LB) -> BitPutState (builder `mappend` B.byteString (rev bs)) b 0 LB
-      (BitPutState builder b 0 BL) -> BitPutState (builder `mappend` B.byteString (rev (BS.reverse bs))) b 0 BL
-      (BitPutState _ _ _ BB)       -> putBitsBS (BS.unsafeTail bs) (putBits 8 (BS.unsafeHead bs) s)
-      (BitPutState _ _ _ LL)       -> putBitsBS (BS.unsafeInit bs) (putBits 8 (BS.unsafeLast bs) s)
-      (BitPutState _ _ _ BL)       -> putBitsBS (BS.unsafeInit bs) (putBits 8 (BS.unsafeLast bs) s)
-      (BitPutState _ _ _ LB)       -> putBitsBS (BS.unsafeTail bs) (putBits 8 (BS.unsafeHead bs) s)
+      (BitPutState builder b 0 BB) -> BitPutState (builder `mappend` B.fromBuffer bs) b 0 BB
+      (BitPutState builder b 0 LL) -> BitPutState (builder `mappend` B.fromBuffer (bufferReverse bs)) b 0 LL
+      (BitPutState builder b 0 LB) -> BitPutState (builder `mappend` B.fromBuffer (rev bs)) b 0 LB
+      (BitPutState builder b 0 BL) -> BitPutState (builder `mappend` B.fromBuffer (rev (bufferReverse bs))) b 0 BL
+      (BitPutState _ _ _ BB)       -> putBitsBuffer (bufferUnsafeTail bs) (putBits 8 (bufferUnsafeHead bs) s)
+      (BitPutState _ _ _ LL)       -> putBitsBuffer (bufferUnsafeInit bs) (putBits 8 (bufferUnsafeLast bs) s)
+      (BitPutState _ _ _ BL)       -> putBitsBuffer (bufferUnsafeInit bs) (putBits 8 (bufferUnsafeLast bs) s)
+      (BitPutState _ _ _ LB)       -> putBitsBuffer (bufferUnsafeTail bs) (putBits 8 (bufferUnsafeHead bs) s)
    where
-      rev    = BS.map reverseBits
+      rev    = bufferMap reverseBits
 
 -- | Flush the current byte
 flushIncomplete :: BitPutState -> BitPutState
 flushIncomplete s@(BitPutState b w o bo)
   | o == 0    = s
-  | otherwise = BitPutState (b `mappend` B.word8 w) 0 0 bo
+  | otherwise = BitPutState (b `mappend` B.fromWord8 w) 0 0 bo
 
 -- | Get a lazy byte string
-getBitPutLBS :: BitPutState -> LBS.ByteString
-getBitPutLBS = B.toLazyByteString . bitPutStateBuilder . flushIncomplete 
+getBitPutBufferList :: BitPutState -> BufferList
+getBitPutBufferList = toBufferList . bitPutStateBuilder . flushIncomplete 
 
--- | Get a byte string
-getBitPutBS :: BitPutState -> BS.ByteString
-getBitPutBS = LBS.toStrict . getBitPutLBS
+-- | Get a Buffer
+getBitPutBuffer :: BitPutState -> Buffer
+getBitPutBuffer =  toBuffer . bitPutStateBuilder . flushIncomplete
 
 -- | BitPut monad transformer
 type BitPutT m a = StateT BitPutState m a
@@ -135,11 +132,11 @@ type BitPutT m a = StateT BitPutState m a
 type BitPut a    = BitPutT Identity a
 
 -- | Evaluate a BitPut monad
-runBitPutT :: Monad m => BitOrder -> BitPutT m a -> m BS.ByteString
-runBitPutT bo m = getBitPutBS <$> execStateT m (newBitPutState bo)
+runBitPutT :: Monad m => BitOrder -> BitPutT m a -> m Buffer
+runBitPutT bo m = getBitPutBuffer <$> execStateT m (newBitPutState bo)
 
 -- | Evaluate a BitPut monad
-runBitPut :: BitOrder -> BitPut a -> BS.ByteString
+runBitPut :: BitOrder -> BitPut a -> Buffer
 runBitPut bo m = runIdentity (runBitPutT bo m)
 
 -- | Put bits (monadic)
@@ -150,9 +147,9 @@ putBitsM n w = modify (putBits n w)
 putBitBoolM :: (Monad m) => Bool -> BitPutT m ()
 putBitBoolM b = putBitsM 1 (if b then 1 else  0 :: Word)
 
--- | Put a byte string (monadic)
-putBitsBSM :: Monad m => BS.ByteString -> BitPutT m ()
-putBitsBSM bs = modify (putBitsBS bs)
+-- | Put a Buffer (monadic)
+putBitsBufferM :: Monad m => Buffer -> BitPutT m ()
+putBitsBufferM bs = modify (putBitsBuffer bs)
 
 -- | Change the current bit ordering
 --

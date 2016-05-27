@@ -1,24 +1,26 @@
-import qualified Data.ByteString as BS
-import qualified ViperVM.Format.Compression.GZip as GZip
 import Data.Foldable (forM_)
 import Control.Monad (when)
 import Options.Applicative
 import qualified Data.List as List
 import System.FilePath (replaceExtension)
 
+import qualified ViperVM.Format.Compression.GZip as GZip
+import ViperVM.Format.Binary.Buffer
+import qualified ViperVM.Format.Text as Text
+
 main :: IO ()
 main = do
    opts <- getOptions
 
-   bs <- BS.readFile (optpath opts)
+   bs <- bufferReadFile (optpath opts)
    let ms = GZip.decompress bs
    forM_ ms $ \m -> do
-      let fname = case (GZip.memberName m, optpath opts) of
+      let fname = case (Text.unpack (GZip.memberName m), optpath opts) of
                      ("",p) | ".tgz" `List.isSuffixOf` p -> replaceExtension p ".tar"
                      (s,_)                          -> s
       putStrLn $ "File: " ++ fname
       when (fname /= "") $ do
-         BS.writeFile fname (GZip.memberContent m)
+         bufferWriteFile fname (GZip.memberContent m)
          
 
 

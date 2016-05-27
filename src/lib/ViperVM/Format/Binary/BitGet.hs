@@ -9,7 +9,7 @@ module ViperVM.Format.Binary.BitGet
    , skipBitsToAlignOnWord8
    , getBits
    , getBitsChecked
-   , getBitsBS
+   , getBitsBuffer
    -- * Monadic
    , BitGet
    , BitGetT
@@ -32,9 +32,6 @@ module ViperVM.Format.Binary.BitGet
 where
 
 import Data.Bits
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Unsafe as BS
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr (plusPtr)
 import Foreign.Storable (poke)
@@ -42,27 +39,28 @@ import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.State
 import Control.Monad.Identity
 
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
 
 -- | BitGet state
 data BitGetState = BitGetState
-   { bitGetStateInput      :: {-# UNPACK #-} !ByteString -- ^ Input
+   { bitGetStateInput      :: {-# UNPACK #-} !Buffer     -- ^ Input
    , bitGetStateBitOffset  :: {-# UNPACK #-} !Word       -- ^ Bit offset (0-7)
    , bitGetStateBitOrder   ::                !BitOrder   -- ^ Bit order
    } deriving (Show)
 
 -- | Create a new BitGetState
-newBitGetState :: BitOrder -> ByteString -> BitGetState
+newBitGetState :: BitOrder -> Buffer -> BitGetState
 newBitGetState bo bs = BitGetState bs 0 bo
 
 -- | Indicate that the source is empty
 isEmpty :: BitGetState -> Bool
-isEmpty (BitGetState bs o _) = o == 0 && BS.null bs
+isEmpty (BitGetState bs o _) = o == 0 && isBufferEmpty bs
 
 -- | Skip the given number of bits from the input
 skipBits :: Word -> BitGetState -> BitGetState
-skipBits o (BitGetState bs n bo) = BitGetState (BS.unsafeDrop d bs) n' bo
+skipBits o (BitGetState bs n bo) = BitGetState (bufferUnsafeDrop d bs) n' bo
    where
       !o' = n+o
       !d  = fromIntegral $ byteOffset o'
@@ -84,10 +82,10 @@ getBits nbits (BitGetState bs off bo) = rec zeroBits 0 bs off nbits
       -- o   = bit offset in input bytestring
       -- r   = number of remaining bits to read
       rec w _ _ _ 0 = w
-      rec w n i o r = rec nw (n+nb) (BS.tail i) o' (r-nb)
+      rec w n i o r = rec nw (n+nb) (bufferTail i) o' (r-nb)
          where 
             -- current Word8
-            c  = BS.head i
+            c  = bufferHead i
             -- number of bits to take from the current Word8
             nb = min (8-o) r
             -- bits taken from the current Word8 and put in correct order in least-significant bits
@@ -110,42 +108,42 @@ getBitsChecked m n s
    | otherwise = getBits n s
 {-# INLINE getBitsChecked #-}
 
--- | Read the given number of Word8 and return them in a ByteString
+-- | Read the given number of Word8 and return them in a Buffer
 --
 -- Examples:
 --    BB: xxxABCDE FGHIJKLM NOPxxxxx -> ABCDEFGH IJKLMNOP
 --    LL: LMNOPxxx DEFGHIJK xxxxxABC -> ABCDEFGH IJKLMNOP
 --    BL: xxxPONML KJIHGFED CBAxxxxx -> ABCDEFGH IJKLMNOP
 --    LB: EDCBAxxx MLKJIHGF xxxxxPON -> ABCDEFGH IJKLMNOP
-getBitsBS :: Word -> BitGetState -> ByteString
-getBitsBS n (BitGetState bs o bo) =
+getBitsBuffer :: Word -> BitGetState -> Buffer
+getBitsBuffer n (BitGetState bs o bo) =
    if n == 0
-      then BS.empty
+      then emptyBuffer
       else
          let 
-            bs'  = BS.unsafeTake (fromIntegral n+1) bs
-            bs'' = BS.unsafeTake (fromIntegral n) bs
-            rev  = BS.map reverseBits
+            bs'  = bufferUnsafeTake (n+1) bs
+            bs'' = bufferUnsafeTake n     bs
+            rev  = bufferMap reverseBits
          in case (o,bo) of
-            (0,BB) ->                  bs''
-            (0,LL) ->       BS.reverse bs''
-            (0,LB) -> rev              bs''
-            (0,BL) -> rev $ BS.reverse bs''
-            (_,LL) ->                    getBitsBS n (BitGetState (BS.reverse bs') (8-o)  BB)
-            (_,BL) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     BB)
-            (_,LB) -> rev . BS.reverse $ getBitsBS n (BitGetState bs'               o     LL)
+            (0,BB) ->                     bs''
+            (0,LL) ->       bufferReverse bs''
+            (0,LB) -> rev                 bs''
+            (0,BL) -> rev $ bufferReverse bs''
+            (_,LL) ->                     getBitsBuffer n (BitGetState (bufferReverse bs') (8-o)  BB)
+            (_,BL) -> rev . bufferReverse $ getBitsBuffer n (BitGetState bs'               o     BB)
+            (_,LB) -> rev . bufferReverse $ getBitsBuffer n (BitGetState bs'               o     LL)
             (_,BB) -> unsafePerformIO $ do
-               let len = fromIntegral n+1
-               ptr <- mallocBytes len
+               let len = n+1
+               ptr <- mallocBytes (fromIntegral len)
                let f r i = do
                      let
-                        w  = BS.unsafeIndex bs (len-i)
+                        w  = bufferUnsafeIndex bs (len-i)
                         w' = (w `shiftL` fromIntegral o) .|. r
                         r' = w `shiftR` (8-fromIntegral o)
-                     poke (ptr `plusPtr` (len-i)) w'
+                     poke (ptr `plusPtr` fromIntegral (len-i)) w'
                      return r'
                foldM_ f 0 [1..len]
-               BS.unsafeInit <$> BS.unsafePackMallocCStringLen (ptr,len)
+               bufferUnsafeInit <$> bufferPackPtr len ptr
 
 
 
@@ -156,19 +154,19 @@ type BitGetT m a = StateT BitGetState m a
 type BitGet a    = BitGetT Identity a
 
 -- | Evaluate a BitGet monad
-runBitGetT :: Monad m => BitOrder -> BitGetT m a -> BS.ByteString -> m a
+runBitGetT :: Monad m => BitOrder -> BitGetT m a -> Buffer -> m a
 runBitGetT bo m bs = evalStateT m (newBitGetState bo bs)
 
 -- | Evaluate a BitGet monad
-runBitGet :: BitOrder -> BitGet a -> BS.ByteString -> a
+runBitGet :: BitOrder -> BitGet a -> Buffer -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
 
 -- | Evaluate a BitGet monad, return the remaining state
-runBitGetPartialT :: Monad m => BitOrder -> BitGetT m a -> BS.ByteString -> m (a, BitGetState)
+runBitGetPartialT :: Monad m => BitOrder -> BitGetT m a -> Buffer -> m (a, BitGetState)
 runBitGetPartialT bo m bs = runStateT m (newBitGetState bo bs)
 
 -- | Evaluate a BitGet monad, return the remaining state
-runBitGetPartial :: BitOrder -> BitGet a -> BS.ByteString -> (a, BitGetState)
+runBitGetPartial :: BitOrder -> BitGet a -> Buffer -> (a, BitGetState)
 runBitGetPartial bo m bs = runIdentity (runBitGetPartialT bo m bs)
 
 -- | Resume a BitGet evaluation
@@ -213,9 +211,9 @@ getBitBoolM = do
    return ((v :: Word) == 1)
 
 -- | Get the given number of Word8
-getBitsBSM :: (Monad m) => Word -> BitGetT m BS.ByteString
+getBitsBSM :: (Monad m) => Word -> BitGetT m Buffer
 getBitsBSM n = do
-   bs <- gets (getBitsBS n)
+   bs <- gets (getBitsBuffer n)
    skipBitsM (8*n)
    return bs
 

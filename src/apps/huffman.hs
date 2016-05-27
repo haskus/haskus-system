@@ -1,7 +1,7 @@
-import qualified Data.ByteString as BS
-import ViperVM.Format.Compression.Algorithms.Huffman
-
 import Text.Printf
+
+import ViperVM.Format.Compression.Algorithms.Huffman
+import ViperVM.Format.Binary.Buffer
 
 main :: IO ()
 main = do
@@ -12,15 +12,15 @@ main = do
       tree     = computeHuffmanTreeFromFoldable xs
       binTable = buildCodingTable binaryEncoder tree
    putStrLn "Coding:"
-   putStrLn (show binTable)
+   print binTable
 
    let 
       wbs = toBinary binTable xs
-      r   = fromIntegral (length xs) / fromIntegral (BS.length wbs) :: Float
+      r   = fromIntegral (length xs) / fromIntegral (bufferSize wbs) :: Float
 
    putStrLn $ printf "Writing file (compression ratio: %.2f%%)" r
-   BS.writeFile "out.huff" wbs
+   bufferWriteFile "out.huff" wbs
 
    putStrLn "Reading back:"
-   bs <- BS.readFile "out.huff"
+   bs <- bufferReadFile "out.huff"
    putStrLn (fromBinaryLen True tree (length xs) bs)

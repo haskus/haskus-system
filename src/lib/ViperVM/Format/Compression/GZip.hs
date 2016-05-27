@@ -11,18 +11,19 @@ module ViperVM.Format.Compression.GZip
    )
 where
 
-import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
-
 import Data.Foldable (toList)
 import Data.Word
+import Control.Monad (when)
+import Text.Printf
+
+import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 import ViperVM.Format.Binary.Get as Get
 import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import Control.Monad (when)
-import Data.ByteString.Char8 (unpack)
-import Data.ByteString (pack,ByteString)
-import Text.Printf
+import qualified ViperVM.Format.Text as Text
+import ViperVM.Format.Text (Text)
 
 -- | Member file
 data Member = Member 
@@ -30,9 +31,9 @@ data Member = Member
    , memberTime         :: Word32
    , memberExtraFlags   :: Word8
    , memberOS           :: Word8
-   , memberName         :: String
-   , memberComment      :: String
-   , memberContent      :: ByteString
+   , memberName         :: Text
+   , memberComment      :: Text
+   , memberContent      :: Buffer
    , memberCRC          :: Word16
    , memberCRC32        :: Word32
    , memberSize         :: Word32   -- ^ uncompressed input size (module 1^32)
@@ -41,7 +42,7 @@ data Member = Member
 
 
 -- | Decompress the members of the archive
-decompress :: ByteString -> [Member]
+decompress :: Buffer -> [Member]
 decompress = runGetOrFail decompressGet
 
 -- | Decompress the members of the archive
@@ -77,12 +78,12 @@ getMember = do
       skip (fromIntegral xlen)
 
    name <- if BitSet.member flags FlagName
-      then unpack <$> getByteStringNul
-      else return ""
+      then getTextUtf8Nul
+      else return Text.empty
 
    comment <- if BitSet.member flags FlagComment
-      then unpack <$> getByteStringNul
-      else return ""
+      then getTextUtf8Nul
+      else return Text.empty
 
    crc <- if BitSet.member flags FlagCRC
       then getWord16le
@@ -93,7 +94,8 @@ getMember = do
       crc32 <- getWord32le
       isize <- getWord32le
          
-      return $ Member flags mtime xfl os name comment (pack (toList content)) crc crc32 isize
+      return $ Member flags mtime xfl os name comment
+                  (bufferPackByteList (toList content)) crc crc32 isize
       
 
 -- | Information flag

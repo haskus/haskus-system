@@ -17,20 +17,22 @@ module ViperVM.Format.CPIO
 where
 
 import Data.Word
-import ViperVM.Format.Binary.Put
-import ViperVM.Format.Binary.Get
-import Data.ByteString (ByteString)
 import Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
 import qualified Data.Text.Encoding as Text
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
-import Control.Monad (when,replicateM_)
+import Control.Monad (when)
 import Data.Foldable (forM_)
 import Numeric (showHex)
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics
+
+import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.Get
 
 
 {- We only consider the "new" CPIO format because the old ones are deprecated.
@@ -132,34 +134,28 @@ putNumber x = putByteString bs
 
 -- | Read a number stored as a 8-bytes hexadecimal string
 getNumber :: Get Word64
-getNumber = readHex' . Text.decodeUtf8 <$> getByteString 8
+getNumber = readHex' <$> getTextUtf8 8
    where
       readHex' n = case Text.hexadecimal n of
          Right (num,_)-> num
          Left err     -> error $ "Invalid hexadecimal number: " ++ show n ++ "(" ++ err ++ ")"
 
 
--- | Return the number of padding bytes to pad to 4
-pad4 :: Word64 -> Int
-pad4 n = case n `mod` 4 of
-   0 -> 0
-   x -> 4 - fromIntegral x
-
 -- | Put null bytes to pad to 4
 putPad4 :: Integral a => a -> Put
-putPad4 n = replicateM_ (pad4 $ fromIntegral n) (putWord8 0x00)
+putPad4 n = putPaddingAlign (fromIntegral n) 4
 
 -- | Skip padding bytes for padding to 4
 skipPad4 :: Word64 -> Get ()
-skipPad4 n = skip (pad4 n)
+skipPad4 n = uncheckedSkipAlign (fromIntegral n) 4
 
 -- | Put a file in the archive
 --
 -- * path is the path in the archive
-putFile :: FileDesc -> Text -> ByteString -> Put
+putFile :: FileDesc -> Text -> Buffer -> Put
 putFile FileDesc {..} path content = do
    -- Write magic number
-   putByteString (B8.pack "070701")
+   putTextUtf8 (Text.pack "070701")
    -- Put file description
    putNumber fileInode
    putNumber fileMode
@@ -167,7 +163,7 @@ putFile FileDesc {..} path content = do
    putNumber fileGID
    putNumber fileNLink
    putNumber fileModifTime
-   putNumber (fromIntegral $ BS.length content)
+   putNumber (fromIntegral $ bufferSize content)
    putNumber fileDevMajor
    putNumber fileDevMinor
    putNumber fileRDevMajor
@@ -181,26 +177,26 @@ putFile FileDesc {..} path content = do
    putWord8 0x00 -- ending NUL byte
    putPad4 (110 + BS.length bspath + 1)
    -- Put file contents
-   putByteString content
-   putPad4 (BS.length content)
+   putBuffer content
+   putPad4 (bufferSize content)
 
 -- | Put trailer file
 putTrailer :: Put
-putTrailer = putFile desc "TRAILER!!!" BS.empty
+putTrailer = putFile desc "TRAILER!!!" emptyBuffer
    where
       desc = FileDesc 0 0 0 0 0 0 0 0 0 0
 
 -- | Put files in archive (with archive ending marker)
-putFiles :: [(FileDesc,Text,ByteString)] -> Put
+putFiles :: [(FileDesc,Text,Buffer)] -> Put
 putFiles files = do
    forM_ files $ \(desc,name,bs) -> putFile desc name bs
    putTrailer
 
 -- | Get a file from the archive
-getFile :: Get (FileDesc,Text,ByteString)
+getFile :: Get (FileDesc,Text,Buffer)
 getFile = do
    -- Read magic number
-   magic <- Text.decodeUtf8 <$> getByteString 6
+   magic <- getTextUtf8 6
    when (magic /= "070701") $
       error ("File format not supported (invalid magic number: " ++ show magic ++ ")")
    -- Read file description
@@ -218,18 +214,18 @@ getFile = do
    nameLength <- getNumber -- includes NUL byte
    _ <- getNumber -- read checksum
    -- Read file name
-   fileName <- Text.decodeUtf8 <$> getByteString (fromIntegral nameLength - 1)
+   fileName <- getTextUtf8 (fromIntegral nameLength - 1)
    skip 1 -- skip \0 byte
    skipPad4 (110 + nameLength)
    -- Read content
-   content <- getByteString (fromIntegral size)
+   content <- getBuffer (fromIntegral size)
    skipPad4 size
 
    let fd = FileDesc ino mode uid gid nlnk mtim mad mid mard mird
    return (fd, fileName, content)
 
 -- | Get all the files from the archive
-getFiles :: Get [(FileDesc,Text,ByteString)]
+getFiles :: Get [(FileDesc,Text,Buffer)]
 getFiles = rec []
    where 
       rec xs = do

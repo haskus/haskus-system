@@ -17,13 +17,13 @@ module ViperVM.Format.Elf.Section
    )
 where
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
+
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
+import ViperVM.Format.Binary.Buffer
 
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
@@ -49,19 +49,19 @@ data Section = Section
    } deriving (Show)
 
 -- | Getter for a section table
-getSectionTable :: ByteString -> Header -> PreHeader -> Vector Section
+getSectionTable :: Buffer -> Header -> PreHeader -> Vector Section
 getSectionTable bs h pre = fmap f offs
    where
-      f o  = runGetOrFail (getSection pre) (BS.drop o bs')
+      f o  = runGetOrFail (getSection pre) (bufferDrop o bs')
       off  = fromIntegral $ headerSectionTableOffset h
-      bs'  = BS.drop off bs
+      bs'  = bufferDrop off bs
       sz   = fromIntegral $ headerSectionEntrySize h
       cnt  = fromIntegral $ headerSectionEntryCount h
       offs = Vector.fromList [ 0, sz .. (cnt-1) * sz]
 
 -- | Return the first section that can contain special values for segments
-getFirstSection :: ByteString -> Header -> PreHeader -> Section
-getFirstSection bs hdr pre = runGetOrFail (getSection pre) (BS.drop off bs)
+getFirstSection :: Buffer -> Header -> PreHeader -> Section
+getFirstSection bs hdr pre = runGetOrFail (getSection pre) (bufferDrop off bs)
    where
       off  = fromIntegral $ headerSectionTableOffset hdr
 

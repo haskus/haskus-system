@@ -16,6 +16,9 @@ import ViperVM.Format.Elf.Dynamic
 
 import ViperVM.Format.Dwarf
 
+import ViperVM.Format.Binary.Buffer
+import qualified ViperVM.Format.Text as Text
+import ViperVM.Format.Text (Text)
 import ViperVM.Format.Binary.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
@@ -26,15 +29,12 @@ import Lucid
 import Data.FileEmbed
 import Data.Word
 import Data.Tree (drawTree)
-import Data.Text (Text)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
-import qualified Data.Text.Lazy as Text
-import qualified Data.Text.Encoding as Text
-import qualified Data.Text.Lazy.IO as Text
+import qualified Data.Text.Lazy as LText
+import qualified Data.Text.Lazy.IO as LText
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString as BS
 
 main :: IO ()
 main = do
@@ -44,7 +44,7 @@ main = do
 
 server :: FilePath -> Elf -> Conf -> IO ()
 server pth elf conf = do
-   Text.putStrLn (format "Starting Web server at localhost: {}" (Only $ port conf))
+   LText.putStrLn (format "Starting Web server at localhost: {}" (Only $ port conf))
 
    let ok' = ok . toResponse . renderBS . appTemplate
 
@@ -66,10 +66,11 @@ server pth elf conf = do
                let filename = format "section{}.bin" (Only (secnum :: Int))
                    disp     = format "attachment; filename=\"{}\"" (Only filename)
                ok 
-                  $ addHeader "Content-Disposition" (Text.unpack disp)
+                  $ addHeader "Content-Disposition" (LText.unpack disp)
                   $ toResponseBS (C.pack "application/octet-stream")
                   $ LBS.fromStrict
-                  $ getSectionContentBS elf sec
+                  $ bufferUnpackByteString
+                  $ getSectionContentBuffer elf sec
             ]
 
       -- Segment specific
@@ -83,7 +84,7 @@ lookupMaybe :: MonadPlus m => Maybe a -> m a
 lookupMaybe = maybe mzero return
 
 hexStr :: Integral a => a -> Text.Text
-hexStr a = format "0x{}" (Only $ hex a)
+hexStr a = LText.toStrict (format "0x{}" (Only $ hex a))
 
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
@@ -274,7 +275,7 @@ showSection elf secnum secname s = do
          BasicSectionType SectionTypePROGBITS
             | getSectionName elf s == Just ".interp" -> tr_ $ do
                th_ "Interpreter path"
-               let c = getSectionContentBS elf s
+               let c = getSectionContentBuffer elf s
                td_ . toHtml $ Text.decodeUtf8 c
 
          -- Show relocation entries
@@ -330,7 +331,7 @@ showSection elf secnum secname s = do
 
 
 
-   let contentPath = Text.toStrict $ format "/section/{}/content/" (Only secnum)
+   let contentPath = LText.toStrict $ format "/section/{}/content/" (Only secnum)
    br_ []
    div_ $ do
       "Download: "
@@ -411,7 +412,7 @@ showZCATable t =
                td_ $ toHtml $ zcaName e
                td_ $ do
                   "["
-                  toHtml . Text.concat . List.intersperse "," . fmap hexStr . BS.unpack $ zcaValue e
+                  toHtml . Text.concat . List.intersperse "," . fmap hexStr . bufferUnpackByteList $ zcaValue e
                   "]"
          
 
@@ -529,7 +530,7 @@ showNoteEntries es = do
       forM_ es $ \e -> tr_ $ do
          td_ . toHtml $ noteName e
          td_ . toHtml $ show (noteType e)
-         td_ . toHtml $ show (BS.unpack $ noteDescriptor e)
+         td_ . toHtml $ show (bufferUnpackByteList $ noteDescriptor e)
 
 showDebugAbbrev :: [DebugAbbrevEntry] -> Html ()
 showDebugAbbrev es = do

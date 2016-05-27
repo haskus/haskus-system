@@ -1,10 +1,15 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | A binary reader monad
 --
@@ -14,6 +19,23 @@ module ViperVM.Format.Binary.Reader
    , ReaderM
    , binReadWithT
    , binReadWith
+   , binReadWithT'
+   , binReadWith'
+   , binReadWithIfT
+   , binReadWithIf
+   , binReadIfT
+   , binReadIf
+   , binReadIfT'
+   , binReadIf'
+   , binReadWithIfT'
+   , binReadWithIf'
+   , binLookAheadT
+   , binLookAhead
+   , binLookAheadTestT
+   , binLookAheadTest
+   , binReadTupleT
+   , binReadTuple
+   -- * TODO: cleanup
    , binReadT
    , binRead
    , binPeekT
@@ -38,12 +60,14 @@ where
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Utils.MultiState
 import ViperVM.Utils.HArray
+import ViperVM.Utils.HList
 import ViperVM.Utils.Parser
 import ViperVM.Utils.Variant
 import ViperVM.Utils.Flow
 
 import Data.Proxy
 import Data.Word
+import Data.Maybe (isJust)
 import Foreign.Storable
 
 -- | The phantom type `a` is used to distinguish between several readers
@@ -203,8 +227,7 @@ binWith = binWithT (Proxy :: Proxy ())
 
 -- | Try to read something
 --
--- Fail if there isn't enough bytes or if ParseError is returned: don't
--- consume bytes in these cases.
+-- Backtrack on ParseError
 binReadWithT :: forall r m s a xs.
    ( Monad m
    , ReaderM r s
@@ -232,8 +255,7 @@ binReadWithT p f = do
 
 -- | Try to read something
 --
--- Fail if there isn't enough bytes or if ParseError is returned: don't
--- consume bytes in these cases.
+-- Backtrack on ParseError
 binReadWith :: forall m s a xs.
    ( Monad m
    , ReaderM () s
@@ -242,3 +264,236 @@ binReadWith :: forall m s a xs.
    , Member ParseError xs
    ) => (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
 binReadWith = binReadWithT (Proxy :: Proxy ())
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadWithT' :: forall r m s a xs.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , xs ~ '[a,ParseError]
+   ) => Proxy r -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithT' = binReadWithT
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadWith' :: forall m s a xs.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , xs ~ '[a,ParseError]
+   ) => (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWith' = binReadWith
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadWithIfT :: forall r m s a xs.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   ) => Proxy r -> (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithIfT p c f =
+   binReadWithT p $ \a -> if c a
+      then f a
+      else flowSet SyntaxError
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadWithIf :: forall m s a xs.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   ) => (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithIf = binReadWithIfT (Proxy :: Proxy ())
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadWithIfT' :: forall r m s a xs.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , xs ~ '[a,ParseError]
+   ) => Proxy r -> (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithIfT' p c f =
+   binReadWithT p $ \a -> if c a
+      then f a
+      else flowSet SyntaxError
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadWithIf' :: forall m s a xs.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , xs ~ '[a,ParseError]
+   ) => (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithIf' = binReadWithIfT (Proxy :: Proxy ())
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadIfT :: forall r m s a xs.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , Member (Maybe a) xs
+   ) => Proxy r -> (a -> Bool) -> MStateT s m (Variant xs)
+binReadIfT p c =
+   binReadWithT p $ \a -> if c a
+      then flowSet (Just a)
+      else flowSet (Nothing :: Maybe a)
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadIf :: forall m s a xs.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , Member (Maybe a) xs
+   ) => (a -> Bool) -> MStateT s m (Variant xs)
+binReadIf = binReadIfT (Proxy :: Proxy ())
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadIfT' :: forall r m s a xs.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , Member (Maybe a) xs
+   , xs ~ '[Maybe a, ParseError]
+   ) => Proxy r -> (a -> Bool) -> MStateT s m (Variant '[Maybe a, ParseError])
+binReadIfT' p c =
+   binReadWithT p $ \a -> if c a
+      then flowSet (Just a)
+      else flowSet (Nothing :: Maybe a)
+
+
+-- | Try to read something
+--
+-- Backtrack on ParseError
+binReadIf' :: forall m s a xs.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   , Catchable ParseError xs
+   , Member ParseError xs
+   , Member (Maybe a) xs
+   , xs ~ '[Maybe a, ParseError]
+   ) => (a -> Bool) -> MStateT s m (Variant '[Maybe a, ParseError])
+binReadIf' = binReadIfT (Proxy :: Proxy ())
+
+-- | Look-ahead. Only backtrack the reader, not the other parts of the state
+binLookAheadT :: forall r m s xs.
+   ( Monad m
+   , ReaderM r s
+   ) => Proxy r -> MStateT s m (Variant xs) -> MStateT s m (Variant xs)
+binLookAheadT _ f = do
+   -- get the reader
+   Reader buf <- mGet :: MStateT s m (Reader r)
+
+   -- execute the function
+   r <- f
+
+   -- backtrack
+   mSet (Reader buf :: Reader r)
+
+   return r
+
+-- | Look-ahead. Only backtrack the reader, not the other parts of the state
+binLookAhead :: forall m s xs.
+   ( Monad m
+   , ReaderM () s
+   ) => MStateT s m (Variant xs) -> MStateT s m (Variant xs)
+binLookAhead = binLookAheadT (Proxy :: Proxy ())
+
+
+-- | Look-ahead test. Only backtrack the reader, not the other parts of the state
+binLookAheadTestT :: forall r m s a.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   ) => Proxy r -> (a -> Bool) -> MStateT s m Bool
+binLookAheadTestT p c = singleVariant <$> f
+   where
+      f = binLookAheadT p (binReadIfT' p c) 
+            >.-.> isJust
+            >%~#> \(_ :: ParseError) -> flowRet False
+
+-- | Look-ahead. Only backtrack the reader, not the other parts of the state
+binLookAheadTest :: forall m s a.
+   ( Monad m
+   , ReaderM () s
+   , Storable a
+   ) => (a -> Bool) -> MStateT s m Bool
+binLookAheadTest = binLookAheadTestT (Proxy :: Proxy ())
+
+data ReadTuple r = ReadTuple
+
+instance forall z x z' m s r.
+   ( z' ~ MStateT s m (Variant '[HList (x ': z),ParseError])
+   , ReaderM r s
+   , Monad m
+   , Storable x
+   ) => ApplyAB (ReadTuple r) (HList z,x) z' where
+      applyAB _ (z,_) = binReadWithT (Proxy :: Proxy r) $ \(x :: x) ->
+         flowRet (x `HCons` z) :: z'
+
+-- | Read a tuple
+binReadTupleT :: forall v (v2 :: [*]) t r s m z.
+   ( HTuple' v t
+   , HFoldl' (ReadTuple r) (HList '[]) v z
+   , z ~  MStateT s m (Variant '[HList v2,ParseError])
+   , Monad m
+   , HReverse v2 v
+   , ReaderM r s
+   ) => Proxy r -> MStateT s m (Variant '[t,ParseError])
+binReadTupleT _ = do
+   let v = hFromTuple' (undefined :: t) :: HList v
+   (hFoldl' (ReadTuple :: ReadTuple r) (HNil :: HList '[]) v :: z)
+      >.-.> \(v' :: HList v2) -> hToTuple' (hReverse v' :: HList v)
+
+
+-- | Read a tuple
+binReadTuple :: forall v v2 t s m z.
+   ( HTuple' v t
+   , HFoldl' (ReadTuple ()) (HList '[]) v z
+   , z ~  MStateT s m (Variant '[HList v2,ParseError])
+   , Monad m
+   , HReverse v2 v
+   , ReaderM () s
+   ) => MStateT s m (Variant '[t,ParseError])
+binReadTuple = binReadTupleT (Proxy :: Proxy ())

@@ -33,12 +33,12 @@ where
 import Data.Word
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
-import ViperVM.Format.Binary.Get
 import Control.Monad (when, forM)
-import qualified Data.ByteString as BS
+
+import qualified ViperVM.Format.Text as Text
+import ViperVM.Format.Text (Text)
+import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Get
 
 
 -- | ZCA table
@@ -69,7 +69,7 @@ zcaMagic = Text.pack ".itt_notify_tab"
 -- | Getter for a ZcA table header
 getZCATableHeader :: Get ZCATableHeader
 getZCATableHeader = do
-   magic <- Text.decodeUtf8 <$> getByteString (Text.length zcaMagic)
+   magic <- getTextUtf8 (fromIntegral (Text.length zcaMagic))
    when (magic /= zcaMagic) $
       error "Not a ZCA table (invalid magic number)"
    -- skip magic NUL terminal byte
@@ -96,7 +96,7 @@ data ZCATableEntry = ZCATableEntry
    , zcaNameIndex       :: Word32         -- ^ Offset in bytes into strings table
    , zcaName            :: Text           -- ^ Entry string
    , zcaValueIndex      :: Word32         -- ^ Offset in bytes into expression table
-   , zcaValue           :: BS.ByteString  -- ^ Values
+   , zcaValue           :: Buffer         -- ^ Values
    }
    deriving (Show)
 
@@ -109,15 +109,15 @@ getZCATableEntry strs = do
 
    let name = strs Map.! fromIntegral nidx
 
-   return (ZCATableEntry off nidx name eoff BS.empty)
+   return (ZCATableEntry off nidx name eoff emptyBuffer)
 
 -- | Getter for table entries
-getZCATableEntries :: ZCATableHeader -> BS.ByteString -> [ZCATableEntry]
+getZCATableEntries :: ZCATableHeader -> Buffer -> [ZCATableEntry]
 getZCATableEntries hdr bs = es
    where
       -- extract raw table
-      raw =   BS.take (fromIntegral $ zcaEntryCount hdr * 16)
-            $ BS.drop (fromIntegral $ zcaEntryOffset hdr) bs
+      raw =   bufferTake (fromIntegral $ zcaEntryCount hdr * 16)
+            $ bufferDrop (fromIntegral $ zcaEntryOffset hdr) bs
       -- get strings
       strs = getZCAStringTable hdr bs
       -- decode entries
@@ -125,37 +125,39 @@ getZCATableEntries hdr bs = es
       es = runGetOrFail getEntries raw
 
 -- | Get string table
-getZCAStringTable :: ZCATableHeader -> BS.ByteString -> Map Int Text
+getZCAStringTable :: ZCATableHeader -> Buffer -> Map Int Text
 getZCAStringTable hdr bs = Map.fromList (offs `zip` strs)
    where
       -- extract raw table
-      raw =   BS.take (fromIntegral $ zcaStringsSize hdr)
-            $ BS.drop (fromIntegral $ zcaStringsOffset hdr) bs
+      raw =   bufferTake (fromIntegral $ zcaStringsSize hdr)
+            $ bufferDrop (fromIntegral $ zcaStringsOffset hdr) bs
       -- decode strings
-      strs = fmap Text.decodeUtf8 . BS.split 0 . BS.init $ raw
+      strs = fmap Text.decodeUtf8 . bufferSplit 0 . bufferInit $ raw
       -- add offsets
       offs = scanl (+) 0 $ fmap (\s -> Text.length s + 1) strs
 
 -- | Get values
-getZCAValues :: ZCATableHeader -> BS.ByteString -> [ZCATableEntry] -> [ZCATableEntry]
+getZCAValues :: ZCATableHeader -> Buffer -> [ZCATableEntry] -> [ZCATableEntry]
 getZCAValues hdr bs es = values
    where
       -- raw table of values
-      raw    = BS.take (fromIntegral $ zcaExprsSize hdr)
-               $ BS.drop (fromIntegral $ zcaExprsOffset hdr) bs
+      raw    =   bufferTake (fromIntegral $ zcaExprsSize hdr)
+               $ bufferDrop (fromIntegral $ zcaExprsOffset hdr) bs
       -- offsets
       offs   = fmap (fromIntegral . zcaValueIndex) es
       -- sizes
       szs    = fmap (uncurry (-)) (offs' `zip` offs)
          where offs' = tail offs ++ [fromIntegral $ zcaExprsSize hdr]
       -- values: we drop the first byte of the value (value size)
-      update e sz = e { zcaValue = BS.drop 1 $ BS.take sz $ BS.drop off raw }
+      update e sz = e { zcaValue = bufferDrop 1
+                                 $ bufferTake sz
+                                 $ bufferDrop off raw }
          where off = fromIntegral $ zcaValueIndex e
 
       values = fmap (uncurry update) (es `zip` szs)
 
 -- | Get table
-getZCATable :: BS.ByteString -> ZCATable
+getZCATable :: Buffer -> ZCATable
 getZCATable bs = zca
    where
       -- ZCA table header

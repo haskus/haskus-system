@@ -178,6 +178,7 @@ library
     ViperVM.Utils.Tuples
 
     ViperVM.Format.CPIO
+    ViperVM.Format.Text
 
     ViperVM.Format.Elf
     ViperVM.Format.Elf.PreHeader
@@ -208,6 +209,8 @@ library
     ViperVM.Format.Binary.BitPut
     ViperVM.Format.Binary.BitField
     ViperVM.Format.Binary.Buffer
+    ViperVM.Format.Binary.BufferList
+    ViperVM.Format.Binary.BufferBuilder
     ViperVM.Format.Binary.Enum
     ViperVM.Format.Binary.Endianness
     ViperVM.Format.Binary.FixedPoint
@@ -216,7 +219,6 @@ library
     ViperVM.Format.Binary.VariableLength
     ViperVM.Format.Binary.Vector
     ViperVM.Format.Binary.Union
-    ViperVM.Format.Binary.Reader
     ViperVM.Format.Binary.Record
     ViperVM.Format.Binary.Storable
 

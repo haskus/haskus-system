@@ -13,17 +13,15 @@ module ViperVM.Format.Elf.Segment
    )
 where
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
+
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
-
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
-
 
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
@@ -156,7 +154,7 @@ putSegment hdr s = do
 -- | If the number of segment doesn't fit int 16 bits, then
 -- 'headerSegmentEntryCount' is set to 0xffff and the field 'sectionInfo' of
 -- section 0 contains the effective value.
-getSegmentCount :: ByteString -> Header -> PreHeader -> Word64
+getSegmentCount :: Buffer -> Header -> PreHeader -> Word64
 getSegmentCount bs hdr pre = 
    if (headerSegmentEntryCount hdr /= 0xffff)
       then fromIntegral (headerSegmentEntryCount hdr)
@@ -166,15 +164,15 @@ getSegmentCount bs hdr pre =
       sec = getFirstSection bs hdr pre
             
 -- | Return the table of segments
-getSegmentTable :: ByteString -> Header -> PreHeader -> Vector Segment
+getSegmentTable :: Buffer -> Header -> PreHeader -> Vector Segment
 getSegmentTable bs h pre = 
       if cnt == 0
          then Vector.empty
          else fmap f offs
    where
-      f o  = runGetOrFail (getSegment pre) (BS.drop o bs')
+      f o  = runGetOrFail (getSegment pre) (bufferDrop o bs')
       off  = fromIntegral $ headerSegmentTableOffset h
-      bs'  = BS.drop off bs
+      bs'  = bufferDrop off bs
       sz   = fromIntegral $ headerSegmentEntrySize h
       cnt  = fromIntegral $ getSegmentCount bs h pre
       offs = Vector.fromList [ 0, sz .. (cnt-1) * sz]

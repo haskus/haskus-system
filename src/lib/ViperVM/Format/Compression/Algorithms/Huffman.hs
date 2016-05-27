@@ -51,12 +51,13 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Tuple (swap)
 import Data.Bits
+import Control.Arrow (first)
+
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet as BitGet
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps (reverseLeastBits)
-import qualified Data.ByteString      as BS
-import Control.Arrow (first)
 
 -- | Priority (number of occurences)
 type Priority = Word64
@@ -181,7 +182,7 @@ binaryEncoder = Encoder (Code 1 0) (Code 1 1) codeAppend
 --
 -- You can specify which tree side (left or right) is 0
 makeBitGet :: Bool -> Tree a -> BitGet (Maybe a)
-makeBitGet leftIsZero tree = rec tree
+makeBitGet leftIsZero = rec
    where
       rec (Leaf x)   = return (Just x)
       rec Empty      = return Nothing
@@ -196,7 +197,7 @@ makeBitGet leftIsZero tree = rec tree
                   else rec r
 
 -- | Convert a binary sequence into a token sequence
-fromBinary :: Bool -> Tree a -> BS.ByteString -> [a]
+fromBinary :: Bool -> Tree a -> Buffer -> [a]
 fromBinary leftIsZero tree bs = rec (runBitGetPartial BB bg bs)
    where
       -- BitGet for a single element
@@ -206,7 +207,7 @@ fromBinary leftIsZero tree bs = rec (runBitGetPartial BB bg bs)
       rec (Just v,s)  = v : rec (resumeBitGetPartial bg s)
 
 -- | Convert a binary sequence into a delimited token sequence
-fromBinaryLen :: Bool -> Tree a -> Int -> BS.ByteString -> [a]
+fromBinaryLen :: Bool -> Tree a -> Int -> Buffer -> [a]
 fromBinaryLen leftIsZero tree n bs = rec n (runBitGetPartial BB bg bs)
    where
       -- BitGet for a single element
@@ -222,7 +223,7 @@ putCode :: Monad m => Code -> BitPutT m ()
 putCode (Code len w) = putBitsM len w
 
 -- | Convert a sequence into a compressed binary
-toBinary :: (Foldable m, Ord a) => Map a Code -> m a -> BS.ByteString
+toBinary :: (Foldable m, Ord a) => Map a Code -> m a -> Buffer
 toBinary table xs = runBitPut BB (mapM_ bp xs)
    where
       bp x   = putCode (table Map.! x)
