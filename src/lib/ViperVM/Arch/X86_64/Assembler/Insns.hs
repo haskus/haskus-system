@@ -35,6 +35,8 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , AccessMode(..)
    , EncodingVariant(..)
    , HLEAction (..)
+   , ValidMode (..)
+   , encValidModRMMode
    , instructions
    -- * Helper methods
    , hasImmediate
@@ -701,6 +703,30 @@ encRequireModRM e = hasOpExt || hasOps
          Implicit   -> False
          Vvvv       -> False
          OpcodeLow3 -> False
+
+data ValidMode
+   = ModeOnlyReg
+   | ModeOnlyMem
+   | ModeBoth
+   | ModeNone
+   deriving (Show,Eq)
+
+-- | ModRM.mod only supports the given value
+encValidModRMMode :: Encoding -> ValidMode
+encValidModRMMode e = case ots of
+      -- no parameter in ModRM.rm 
+      []        -> ModeNone
+      -- only memory
+      [T_Mem _] -> ModeOnlyMem
+      -- only register
+      [T_Reg _] -> ModeOnlyReg
+      -- both
+      [TME _ _] -> ModeBoth
+      -- impossible?
+      _         -> error "encValidModRMMode: invalid param type"
+   where
+      ots = opType <$> filter ((== RM) . opEnc) (encOperands e)
+
 
 -------------------------------------------------------------------
 -- Instructions

@@ -1,5 +1,8 @@
+{-# LANGUAGE LambdaCase #-}
+
 module ViperVM.Arch.X86_64.Assembler.Opcode
    ( LegacyPrefix (..)
+   , toLegacyPrefix
    , Opcode (..)
    , OpcodeMap (..)
    , LegacyMap (..)
@@ -21,6 +24,7 @@ module ViperVM.Arch.X86_64.Assembler.Opcode
    , vexMMMMM
    , vexMapSelect
    , vexPP
+   , vexPrefix
    )
 where
 
@@ -41,6 +45,21 @@ data LegacyPrefix
    | LegacyPrefixF3
    | LegacyPrefixF2
    deriving (Show,Eq)
+
+toLegacyPrefix :: Word8 -> Maybe LegacyPrefix
+toLegacyPrefix = \case
+   0x66 -> Just LegacyPrefix66
+   0x67 -> Just LegacyPrefix67
+   0x2E -> Just LegacyPrefix2E
+   0x3E -> Just LegacyPrefix3E
+   0x26 -> Just LegacyPrefix26
+   0x64 -> Just LegacyPrefix64
+   0x65 -> Just LegacyPrefix65
+   0x36 -> Just LegacyPrefix36
+   0xF0 -> Just LegacyPrefixF0
+   0xF3 -> Just LegacyPrefixF3
+   0xF2 -> Just LegacyPrefixF2
+   _    -> Nothing
 
 data Opcode
    = OpLegacy [LegacyPrefix] (Maybe Rex) LegacyMap !Word8
@@ -127,6 +146,14 @@ vexVVVV (Vex3 _ x) = (x `shiftR` 3) .&. 0x0F
 vexPP :: Vex -> Word8
 vexPP (Vex2 x) = x .&. 0x03
 vexPP (Vex3 _ x) = x .&. 0x03
+
+vexPrefix :: Vex -> Maybe LegacyPrefix
+vexPrefix v = case vexPP v of
+   0x00 -> Nothing
+   0x01 -> Just LegacyPrefix66
+   0x02 -> Just LegacyPrefixF3
+   0x03 -> Just LegacyPrefixF2
+   _    -> error "Invalid VEX.pp"
 
 vexMMMMM :: Vex -> Maybe Word8
 vexMMMMM (Vex2 _) = Nothing

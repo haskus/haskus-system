@@ -1,14 +1,10 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BinaryLiterals #-}
 
 module ViperVM.Arch.X86_64.Assembler.New
-   (
+   ( getInstruction
+   , ExecMode (..)
    )
 where
 
@@ -18,23 +14,20 @@ import ViperVM.Arch.X86_64.Assembler.ModRM
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Registers
 import ViperVM.Arch.X86_64.Assembler.Size
+import ViperVM.Arch.X86_64.Assembler.Tables
+import ViperVM.Arch.X86_64.Assembler.Insns
 
-import ViperVM.Utils.MultiState
-import ViperVM.Utils.HArray
-import ViperVM.Utils.Flow
-import ViperVM.Utils.Variant
-import ViperVM.Utils.Parser
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitField
 
+import qualified Data.Map as Map
 import Data.List (nub)
 import Data.Bits
 import Data.Word
 import Data.Maybe
 import qualified Data.Vector as V
 import Control.Monad
-import Control.Monad.Identity
 
 -- ===========================================================================
 -- X86 execution mode
@@ -57,16 +50,98 @@ hasExtension mode ext = ext `elem` extensions mode
 -- X86 Instruction
 -- ===========================================================================
 
----------------------------------------------------------------------------
--- Instruction length
--- ~~~~~~~~~~~~~~~~~~
--- 
--- An instruction is at most 15 bytes long.
----------------------------------------------------------------------------
+getInstruction :: ExecMode -> Get ()
+getInstruction mode = consumeAtMost 15 $ do
+   -- An instruction is at most 15 bytes long
 
--- | Prepare a buffer for instruction reading
-prepareBuffer :: Get a -> Get a
-prepareBuffer = consumeAtMost 15
+   ps  <- readLegacyPrefixes
+   rex <- readRexPrefix mode
+
+   -- read opcode
+   oc <- readVexXopOpcode mode ps rex >>= \case
+      Just op -> return op
+      Nothing -> readLegacyOpcode mode ps rex
+
+   -- handle 3DNow!
+   case getOpcodeMap oc of
+      MapLegacy Map3DNow -> fail "3DNow! not supported" -- TODO
+      ocmap              -> do
+         -- get candidate instructions for the opcode
+         cs <- case Map.lookup ocmap opcodeMaps of
+                  Nothing -> fail "No opcode map found"
+                  Just t  -> return (t V.! fromIntegral (getOpcode oc))
+
+         when (null cs) $ fail "No candidate instruction found (empty opcode map cell)"
+
+         -- check for mandatory prefixes
+         let
+            cs2 = filter hasMandatoryPrefix cs
+            hasMandatoryPrefix i = case toLegacyPrefix <$> encMandatoryPrefix (entryEncoding i) of
+               Nothing -> True
+               Just mp -> case oc of
+                  OpLegacy {} -> fromJust mp `elem` ps
+                  OpVex v _   -> mp == vexPrefix v
+                  OpXop v _   -> mp == vexPrefix v
+
+         when (null cs2) $ fail "No candidate instruction found (invalid mandatory prefixes)"
+
+         -- try to read ModRM
+         modrm <- lookAhead $ remaining >>= \case
+            x | x >= 1 -> Just <$> getWord8
+            _          -> return Nothing
+
+         -- filter out invalid extensions (extension in the whole second byte or in
+         -- ModRM.reg)
+         let
+            cs3 = filter hasModRMExtension cs2
+            hasModRMExtension i = case (modrm, encOpcodeFullExt e, encOpcodeExt e) of
+                  -- No extension
+                  (_, Nothing, Nothing) -> True
+                  -- invalid
+                  ( _, Just _, Just _)  -> error ("Invalid entry (both full and ModRM.reg extensions: " ++ show i)
+                  -- cannot read ModRM but require extension
+                  (Nothing, Just _, _)  -> False
+                  (Nothing, _, Just _)  -> False
+                  -- full extension
+                  (Just m, Just x, Nothing) -> m == x
+                  -- ModRM.reg extension
+                  (Just m, Nothing, Just x) -> regField (ModRM (BitFields m)) == x
+               where
+                  e = entryEncoding i
+
+         when (null cs3) $ fail "No candidate instruction found (ModRM extension filtering)"
+
+         -- filter out invalid ModRM.mod (e.g., only 11b)
+         let
+            cs4 = filter hasValidMod cs3
+            hasValidMod i = case (modrm, encValidModRMMode (entryEncoding i)) of
+               (Nothing, vm) -> vm == ModeNone
+               (Just m,  vm) -> case vm of
+                     ModeOnlyReg -> m' == 0b11
+                     ModeOnlyMem -> m' /= 0b11
+                     _           -> True
+                  where m' = m `shiftR` 6
+
+         when (null cs4) $ fail "No candidate instruction found (ModRM.mod filtering)"
+
+         -- Filter out invalid enabled extensions/architecture. Return sensible error
+         -- if no instruction left (e.g., in order to provide suggestion to enable an
+         -- extension).
+         -- Filter out invalid prefixes (LOCK, etc.)
+         -- TODO
+         let (errs,cs5) = (undefined,cs4)
+
+         when (null cs5) $ fail errs
+
+         -- If there are more than one instruction left, signal a bug
+         entry <- case cs5 of
+            [x] -> return x
+            xs  -> fail ("More than one instruction found (opcode table bug?): " ++ show xs)
+
+         -- Read params
+         ops <- readOperands mode ps rex oc (entryEncoding entry)
+
+         return ()
 
 -- ===========================================================================
 -- Legacy encoding
@@ -117,27 +192,12 @@ prepareBuffer = consumeAtMost 15
 -- groups G2 and G3.
 ---------------------------------------------------------------------------
 
-
 -- | Read legacy prefixes (up to 5)
 readLegacyPrefixes :: Get [LegacyPrefix]
 readLegacyPrefixes = do
    let
       readLegacyPrefix :: Get (Maybe LegacyPrefix)
-      readLegacyPrefix = lookAheadM (isPrefix <$> getWord8)
-
-      isPrefix = \case
-         0x66 -> Just LegacyPrefix66
-         0x67 -> Just LegacyPrefix67
-         0x2E -> Just LegacyPrefix2E
-         0x3E -> Just LegacyPrefix3E
-         0x26 -> Just LegacyPrefix26
-         0x64 -> Just LegacyPrefix64
-         0x65 -> Just LegacyPrefix65
-         0x36 -> Just LegacyPrefix36
-         0xF0 -> Just LegacyPrefixF0
-         0xF3 -> Just LegacyPrefixF3
-         0xF2 -> Just LegacyPrefixF2
-         _    -> Nothing
+      readLegacyPrefix = lookAheadM (toLegacyPrefix <$> getWord8)
 
       -- | Check that legacy prefixes belong to different groups
       checkLegacyPrefixes :: [LegacyPrefix] -> Bool
@@ -317,99 +377,21 @@ readVexXopOpcode mode ps rex = do
 
       
 -- ===========================================================================
--- Generic opcode reading
--- ===========================================================================
-
-
--- | Read the opcode encoding
-readOpcode :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Get Opcode
-readOpcode mode ps rex = do
-   legacyPrefixes <- readLegacyPrefixes
-   rexPrefix      <- readRexPrefix mode
-
-   readVexXopOpcode mode ps rex >>= \case
-      Just op -> return op
-      Nothing -> readLegacyOpcode mode ps rex
-
-
--- ===========================================================================
--- Identify the instruction
--- ===========================================================================
--- identifyInsn ::
---    ( ReaderM () s
---    , HArrayIndexT X86Mode s
---    ) => Opcode -> MState s (Maybe Insn)
--- identifyInsn oc = do
--- 
---    -- get the opcode table
---    table <- case getOpcodeMap oc of
---       MapLegacy
---       --TODO
---
---    -- handle 3DNow!
---    -- TODO
--- 
---    -- get the candidate instructions for the opcode
---    -- TODO
---    -- cs <-
--- 
---    -- if there is none, return an error
---    -- TODO
---
---    -- check for required prefixes
---    -- TODO
--- 
---    -- determine if we need to read the next byte
---    -- TODO
--- 
---    -- check that we can read the next byte
---    -- if we can read the next byte, do it
---    rem <- binRemaining
---    if rem == 0
---       then -- return an error
---       else -- 
--- 
---    m <- binPeek
--- 
---    -- filter out invalid full extension (extension in the whole second byte)
---    -- TODO
--- 
---    -- filter out invalid ModRM.reg extension
---    -- TODO
--- 
---    -- filter out invalid ModRM.mod (e.g., only 11b)
---    -- TODO
--- 
---    -- Filter out invalid enabled extensions/architecture. Return sensible error
---    -- if no instruction left (e.g., in order to provide suggestion to enable an
---    -- extension).
---    -- TODO
---    
---    -- If there are more than on instruction left, signal a bug
---    -- TODO
--- 
---    -- Return the instruction
---    -- TODO
-
-
--- ===========================================================================
 -- Operands
 -- ===========================================================================
 
-----------------------------------------
--- Read operands
-----------------------------------------
-
-
 -- | Read instruction operands
--- readOperands ::
---    ( ReaderM () s
---    , HArrayIndexT X86Mode s
---    , HArrayIndexT AddressSize s
---    ) => Opcode -> Encoding -> MState s [Operand]
--- readOperands oc enc = do
+readOperands :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Opcode -> Encoding -> Get [Operand]
+readOperands mode ps rex oc enc = do
+
+   -- read ModRM
+   m <- if encRequireModRM enc
+            then (Just . ModRM . BitFields) <$> getWord8
+            else return Nothing
+
+
+   undefined
 -- 
---    mode  <- mGet
 --    asize <- mGet
 --    
 --    let
@@ -517,35 +499,31 @@ readOpcode mode ps rex = do
 
 
 -- | Extended ModRM.reg (with REX.R, VEX.R, etc.)
-getExtReg ::
-   ( HArrayIndexT Opcode s
-   ) => ModRM -> MState s Word8
-getExtReg m = do
+getExtReg :: Opcode -> ModRM -> Word8
+getExtReg oc m = do
    let
       f x = x `unsafeShiftL` 3 .|. regField m
       g x = if x then f 1 else f 0
 
-   mGet >>= \case
-      OpVex v _                 -> return $ g (vexR v)
-      OpXop v _                 -> return $ g (vexR v)
-      OpLegacy _ (Just rex) _ _ -> return $ f (rexR rex)
-      OpLegacy _ Nothing    _ _ -> return $ regField m
+   case oc of
+      OpVex v _                 -> g (vexR v)
+      OpXop v _                 -> g (vexR v)
+      OpLegacy _ (Just rex) _ _ -> f (rexR rex)
+      OpLegacy _ Nothing    _ _ -> regField m
       
 -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
-getExtRM ::
-   ( HArrayIndexT Opcode s
-   ) => ModRM -> MState s Word8
-getExtRM m = do
+getExtRM :: Opcode -> ModRM -> Word8
+getExtRM oc m = do
    let
       f x = x `unsafeShiftL` 3 .|. rmField m
       g x = if x then f 1 else f 0
       h x = g (fromMaybe False x)
 
-   mGet >>= \case
-      OpVex v _                 -> return $ h (vexB v)
-      OpXop v _                 -> return $ h (vexB v)
-      OpLegacy _ (Just rex) _ _ -> return $ f (rexB rex)
-      OpLegacy _ Nothing    _ _ -> return $ rmField m
+   case oc of
+      OpVex v _                 -> h (vexB v)
+      OpXop v _                 -> h (vexB v)
+      OpLegacy _ (Just rex) _ _ -> f (rexB rex)
+      OpLegacy _ Nothing    _ _ -> rmField m
 
 
 data VectorLength
@@ -554,19 +532,15 @@ data VectorLength
    deriving (Show,Eq)
 
 -- | Get vector length (stored in VEX.L, XOP.L, etc.)
-getVectorLength ::
-   ( HArrayIndexT Opcode s
-   ) => MState s (Maybe VectorLength)
-getVectorLength = do
-   op <- mGet
-   case op of
-      OpVex v _ -> return . Just $ if vexL v
-         then VL256
-         else VL128
-      OpXop v _ -> return . Just $ if vexL v
-         then VL256
-         else VL128
-      _         -> return Nothing
+getVectorLength :: Opcode -> Maybe VectorLength
+getVectorLength = \case
+   OpVex v _ -> Just $ if vexL v
+      then VL256
+      else VL128
+   OpXop v _ -> Just $ if vexL v
+      then VL256
+      else VL128
+   _         -> Nothing
 
 -- | Get the opcode map
 getOpcodeMap :: Opcode -> OpcodeMap
@@ -575,7 +549,9 @@ getOpcodeMap = \case
    OpVex  v    _    -> vexMapSelect v
    OpXop  v    _    -> vexMapSelect v
 
-
-getAddr :: ModRM -> MState s Addr
-getAddr m = undefined
-
+-- | Get the opcode byte
+getOpcode :: Opcode -> Word8
+getOpcode = \case
+   OpLegacy _ _ _ x -> x
+   OpVex        _ x -> x
+   OpXop        _ x -> x

@@ -25,6 +25,7 @@ data MapEntry = MapEntry
    { entryInsn     :: X86Insn  -- ^ Instruction
    , entryEncoding :: Encoding -- ^ Encoding
    }
+   deriving (Show)
 
 -- | Some instructions store flags and values into the opcode byte. This method
 -- returns the list of potential opcodes for an encoding
