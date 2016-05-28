@@ -19,7 +19,7 @@ x86-64 architecture and Linux for now. From the bottom up:
    * Assembler (TODO)
    * CPUID wrapper (WIP)
 
-## Linux system calls
+## Linux
 
 * ViperVM.Arch.Linux: ViperVM provides direct access to Linux system calls
   (*syscalls*) on x86-64 architecture without going through the libc and
