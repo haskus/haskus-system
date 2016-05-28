@@ -6,9 +6,11 @@ module ViperVM.Arch.X86_64.Assembler.Size
    , addressSize
    , OperandSize(..)
    , operandSize
+   , getSize
    ) where
 
 import Data.Word
+import ViperVM.Format.Binary.Get
 
 -- | Size
 data Size
@@ -58,3 +60,11 @@ operandSize op = case op of
    OpSize16 -> Size16
    OpSize32 -> Size32
    OpSize64 -> Size64
+
+-- | Read a SizedValue
+getSize :: Size -> Get SizedValue
+getSize Size8  = SizedValue8  <$> getWord8
+getSize Size16 = SizedValue16 <$> getWord16le
+getSize Size32 = SizedValue32 <$> getWord32le
+getSize Size64 = SizedValue64 <$> getWord64le
+getSize s      = error ("getSize: unsupported size: " ++ show s)

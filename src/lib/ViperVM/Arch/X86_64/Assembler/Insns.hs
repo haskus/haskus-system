@@ -36,9 +36,10 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , EncodingVariant(..)
    , HLEAction (..)
    , ValidMode (..)
-   , encValidModRMMode
    , instructions
    -- * Helper methods
+   , encValidModRMMode
+   , encMayHaveMemoryOperand
    , hasImmediate
    , isImmediate
    , isLegacyEncoding
@@ -727,6 +728,13 @@ encValidModRMMode e = case ots of
    where
       ots = opType <$> filter ((== RM) . opEnc) (encOperands e)
 
+-- | Indicate if a memory operand may be encoded
+encMayHaveMemoryOperand :: Encoding -> Bool
+encMayHaveMemoryOperand e = case encValidModRMMode e of
+   ModeNone    -> False
+   ModeOnlyReg -> False
+   ModeOnlyMem -> True
+   ModeBoth    -> True
 
 -------------------------------------------------------------------
 -- Instructions

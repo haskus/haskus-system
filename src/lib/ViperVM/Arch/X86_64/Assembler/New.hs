@@ -385,10 +385,85 @@ readOperands :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Opcode -> Encoding ->
 readOperands mode ps rex oc enc = do
 
    -- read ModRM
-   m <- if encRequireModRM enc
+   modrm <- if encRequireModRM enc
             then (Just . ModRM . BitFields) <$> getWord8
             else return Nothing
 
+
+   let
+      -- we determine the effective address size. It depends on:
+      --    * the mode of execution
+      --    * the presence of the 0x67 legacy prefix
+      --    * the default address size of the instruction in 64-bit mode
+      hasAddressSizePrefix = LegacyPrefix67 `elem` ps
+      addrSize16o32 = case (defaultAddressSize mode, hasAddressSizePrefix) of
+         (AddrSize16, False) -> AddrSize16
+         (AddrSize32, False) -> AddrSize32
+         (AddrSize16, True)  -> AddrSize32
+         (AddrSize32, True)  -> AddrSize16
+         (a,_)               -> error ("Invalid default address size for the current mode: "
+                                       ++ show (x86Mode mode) ++ " and "
+                                       ++ show a)
+
+      -- some instructions have 64-bit address size by default
+      hasDefaultAddress64 = DefaultAddressSize64 `elem` encProperties enc
+      addrSize32o64 = case (hasDefaultAddress64, hasAddressSizePrefix) of
+         (True, False)  -> AddrSize64
+         (True, True)   -> AddrSize32
+         (False, False) -> AddrSize32
+         (False, True)  -> AddrSize64
+
+      addressSize = case x86Mode mode of
+         -- old modes defaulting to 16-bit
+         LegacyMode RealMode        -> AddrSize16
+         LegacyMode Virtual8086Mode -> AddrSize16
+         -- protected modes that can either be 16- or 32-bit
+         -- The default mode is indicated in the segment descriptor (D "default
+         -- size" flag)
+         LegacyMode ProtectedMode   -> addrSize16o32
+         LongMode CompatibilityMode -> addrSize16o32
+         -- long mode that can be either 32- or 64-bit
+         LongMode Long64bitMode     -> addrSize32o64
+
+   -- do we need to read a memory operand?
+   hasMemoryOperand <- case (encMayHaveMemoryOperand enc, modField <$> modrm) of
+      (False, _       ) -> return False
+      (True, Nothing  ) -> fail "Memory operand required but we cannot read ModRM"
+      (True, Just 0b11) -> return False -- ModRM.mod == 0b11 (register in ModRM.rm)
+      (True, Just _   ) -> return True  -- ModRM.mod /= 0b11 (memory in ModRM.rm)
+
+   let
+      -- do we need to read an SIB byte?
+      hasSIB = fromMaybe False (((== RMSIB) . rmMode addressSize) <$> modrm)
+
+      -- do we need to read a displacement?
+      dispSize = join (useDisplacement addressSize <$> modrm)
+
+
+   -- read SIB byte if necessary
+   sib <- if hasSIB
+      then (Just . SIB) <$> getWord8
+      else return Nothing
+
+   -- read displacement if necessary
+   disp <- forM dispSize getSize
+
+
+   let
+      -- we determine the effective operand size. It depends on:
+      --   * the mode of execution
+      --   * the presence of the 0x66 legacy prefix
+      --   * the default operand size of the instruction in 64-bit mode
+      --   * the value of the ForceNo8bit bit in the opcode (if applicable)
+      --   * the value of REX.W/VEX.W/XOP.W (if applicable)
+      operandSize = undefined
+
+      -- do we need to read an immediate?
+      immSize = undefined :: Maybe Size
+      -- TODO
+
+
+   imm <- forM immSize getSize
 
    undefined
 -- 
@@ -398,13 +473,6 @@ readOperands mode ps rex oc enc = do
 --       ps = encParams enc
 --       es = fmap opEnc ps
 -- 
---    -- read ModRM if necessary
---    m <- if encRequireModRM enc
---             then binTryRead
---             else return Nothing
--- 
---    let modrm = ModRM . BitFields <$> m
---    
 --    -- read a memory address if necessary
 -- 
 --    let 
