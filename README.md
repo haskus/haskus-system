@@ -12,6 +12,13 @@ x86-64 architecture and Linux for now. From the bottom up:
 * ViperVM.Format.Elf: ELF object format
 * ViperVM.Format.Dwarf: DWARF debugging information format
 
+## Architectures
+
+* Currently only X86-64 is supported (work-in-progress)
+   * Disassembler (WIP)
+   * Assembler (TODO)
+   * CPUID wrapper (WIP)
+
 ## Linux system calls
 
 * ViperVM.Arch.Linux: ViperVM provides direct access to Linux system calls
@@ -50,11 +57,11 @@ $ stack setup
 $ stack build
 ```
 
-# Tests, Benchmarks, Programs
+## Tests, Benchmarks, Programs
 
 ViperVM comes with several tests, benchmarks and programs.
 
-## Tests
+### Tests
 
 Use ``stack test`` to execute the tests.
 
@@ -72,7 +79,7 @@ $ ELFWeb -p 8020 ./mybinary &
 $ firefox http://localhost:8020
 ```
 
-## X86 Web
+### X86 Web
 
 Show info about the x86 instructions recognized by ViperVM.
 
@@ -81,7 +88,7 @@ $ X86Web -p 8020 &
 $ firefox http://localhost:8020
 ```
 
-## Platform Web
+### Platform Web
 
 PlatformWeb gives basic information about the platform (memories, processors,
 networks). It can also be used to perform basic operations (e.g. memory
@@ -92,7 +99,7 @@ $ PlatformWeb -p 8020
 $ firefox http://localhost:8020
 ```
 
-## GUnzip
+### GUnzip
 
 Simple decompressor for the GZip format.
 
@@ -102,7 +109,7 @@ $ gunzip test.tgz
 ```
 
 
-## udev
+### udev
 
 Dump kernel system events (i.e. changes into the system tree) on standard output.
 
