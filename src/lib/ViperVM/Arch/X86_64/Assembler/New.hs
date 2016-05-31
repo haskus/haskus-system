@@ -632,7 +632,8 @@ readOperands mode ps oc enc = do
                                                    then Just R_RIP
                                                    else Nothing
                               -- SIB: if mod is 0b00, don't use EBP as base.
-                              (0b00, 0b100) -> Nothing
+                              (0b00, 0b100)
+                                 | baseField sib' == 0b101 -> Nothing
                               (_,    0b100) -> Just (toR sibBase)
                               _             -> Just (toR modRMrm)
                   idx = if addressSize == AddrSize16
