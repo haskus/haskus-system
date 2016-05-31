@@ -7394,6 +7394,7 @@ i_lea = insn
                            , legacyOpcode          = 0x8D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , DefaultAddressSize64
                                                      ]
                            , legacyParams          = [ gpr WO Reg
                                                      , mvoid
