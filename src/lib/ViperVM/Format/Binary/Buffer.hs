@@ -54,6 +54,7 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Control.Monad
 import Data.Word
+import Data.Bits
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
@@ -61,7 +62,19 @@ import qualified Data.ByteString.Unsafe as BS
 import ViperVM.Utils.Memory (memCopy)
 
 -- | A buffer
-newtype Buffer = Buffer ByteString deriving (Show,Eq,Ord)
+newtype Buffer = Buffer ByteString deriving (Eq,Ord)
+
+instance Show Buffer where
+   show b = concatMap bToHex (bufferUnpackByteList b)
+      where
+         bToHex x = toHex (x `shiftR` 4) ++ toHex (x .&. 0x0F)
+         toHex 0xA = "A"
+         toHex 0xB = "B"
+         toHex 0xC = "C"
+         toHex 0xD = "D"
+         toHex 0xE = "E"
+         toHex 0xF = "F"
+         toHex x   = show x
 
 -- | Create a buffer
 makeBuffer :: ByteString -> Buffer

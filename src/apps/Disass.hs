@@ -1,28 +1,44 @@
+{-# LANGUAGE LambdaCase #-}
 
 import System.Environment
-import qualified Data.ByteString as BS
 import ViperVM.Format.Binary.Get as G
-import ViperVM.Arch.X86_64.Assembler.Decoder
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.OperandSize
 import ViperVM.Arch.X86_64.Assembler.Size
+import ViperVM.Arch.X86_64.Assembler.New
+import ViperVM.Arch.X86_64.Assembler.Insns
 
 main :: IO ()
 main = do
    [f] <- getArgs
-   bs <- BS.readFile f
+   bs  <- bufferReadFile f
 
    let 
-      g  = G.countBytes $ decode (LongMode Long64bitMode) [] AddrSize64 OpSize32
+      m = ExecMode
+            { x86Mode            = LongMode Long64bitMode
+            , defaultAddressSize = AddrSize64
+            , defaultOperandSize = OpSize32
+            , extensions         =
+               [
+               ]
+            }
+      g  = G.countBytes $ getInstruction m
 
-      go b = do
-         let (n,r) = G.runGetOrFail g b
-         case r of
-            Left x  -> putStrLn $ "Failed: " ++ show x
-            Right x -> putStrLn (show x) >> putStrLn ""
-         let b' = BS.drop n b
-         if BS.null b'
-            then return ()
-            else go b'
-
-   go bs
+      go offset b = do
+         case G.runGet g b of
+            Left str    -> putStrLn $ "Failed: " ++ show str
+            Right (n,(oc,ops,enc,insn)) -> do
+               let
+                  str = show offset
+                        ++ "\t"
+                        ++ show (bufferTake n b)
+                        ++ replicate (30 - 2*fromIntegral n) ' '
+                        ++ insnMnemonic insn
+                        ++ " " ++ show ops
+                        ++ " " ++ show n
+               putStrLn str
+               let b' = bufferDrop n b
+               if isBufferEmpty b'
+                  then return ()
+                  else go (offset + n) b'
+   go 0 bs

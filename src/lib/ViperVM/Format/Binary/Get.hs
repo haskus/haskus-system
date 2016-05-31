@@ -107,12 +107,13 @@ consumeExactly sz = BG.isolate (fromIntegral sz)
 -- otherwise
 consumeAtMost :: Word -> Get a -> Get a
 consumeAtMost sz f = do
-   (r,res) <- BG.lookAhead $ BG.isolate (fromIntegral sz) $ do
+   sz' <- remaining
+   (r,res) <- BG.lookAhead $ BG.isolate (fromIntegral (min sz sz')) $ do
       res <- f
       r <- remaining
       skip r -- skip remaining bytes, to make isolate happy
       return (r,res)
-   skip (sz-r)
+   skip (min sz' sz - r)
    return res
 
 -- | Pull n bytes from the input, as a Buffer

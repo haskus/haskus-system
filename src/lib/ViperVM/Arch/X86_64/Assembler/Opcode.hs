@@ -5,6 +5,10 @@ module ViperVM.Arch.X86_64.Assembler.Opcode
    , toLegacyPrefix
    , Opcode (..)
    , opcodeByte
+   , opcodeB
+   , opcodeR
+   , opcodeX
+   , opcodeW
    , OpcodeMap (..)
    , LegacyMap (..)
    -- * REX prefix
@@ -73,6 +77,38 @@ opcodeByte :: Opcode -> Word8
 opcodeByte (OpLegacy _ _ _ x) = x
 opcodeByte (OpVex _ x) = x
 opcodeByte (OpXop _ x) = x
+
+-- | Base extension
+opcodeB :: Opcode -> Word8
+opcodeB = \case
+   OpVex v _                 -> if vexB v then 1 else 0
+   OpXop v _                 -> if vexB v then 1 else 0
+   OpLegacy _ (Just rex) _ _ -> rexB rex
+   OpLegacy _ Nothing    _ _ -> 0
+
+-- | Reg extension
+opcodeR :: Opcode -> Word8
+opcodeR = \case
+   OpVex v _                 -> if vexR v then 1 else 0
+   OpXop v _                 -> if vexR v then 1 else 0
+   OpLegacy _ (Just rex) _ _ -> rexR rex
+   OpLegacy _ Nothing    _ _ -> 0
+
+-- | Index extension
+opcodeX :: Opcode -> Word8
+opcodeX = \case
+   OpVex v _                 -> if vexX v then 1 else 0
+   OpXop v _                 -> if vexX v then 1 else 0
+   OpLegacy _ (Just rex) _ _ -> rexX rex
+   OpLegacy _ Nothing    _ _ -> 0
+
+-- | W (64-bit operand size)
+opcodeW :: Opcode -> Bool
+opcodeW = \case
+   OpVex v _                 -> vexW v
+   OpXop v _                 -> vexW v
+   OpLegacy _ (Just rex) _ _ -> rexW rex
+   OpLegacy _ Nothing    _ _ -> False
 
 data OpcodeMap
    = MapLegacy LegacyMap

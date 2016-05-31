@@ -126,15 +126,15 @@ getModeInfo mode = case mode of
 -- | Indicate if it is 64 bit mode
 is64bitMode :: X86Mode -> Bool
 is64bitMode (LongMode Long64bitMode) = True
-is64bitMode _ = False
+is64bitMode _                        = False
 
 -- | Indicate if it is 32 bit mode
 is32bitMode :: X86Mode -> Bool
 is32bitMode (LongMode CompatibilityMode) = True
-is32bitMode (LegacyMode ProtectedMode) = True
-is32bitMode _ = False
+is32bitMode (LegacyMode ProtectedMode)   = True
+is32bitMode _                            = False
 
 -- | Indicate if it is Long mode
 isLongMode :: X86Mode -> Bool
 isLongMode (LongMode _) = True
-isLongMode _ = False
+isLongMode _            = False

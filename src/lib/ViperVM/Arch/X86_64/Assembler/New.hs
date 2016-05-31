@@ -18,7 +18,6 @@ import ViperVM.Arch.X86_64.Assembler.Tables
 import ViperVM.Arch.X86_64.Assembler.Insns
 
 import ViperVM.Format.Binary.Get
-import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitField
 
 import qualified Data.Map as Map
@@ -465,11 +464,7 @@ readOperands mode ps oc enc = do
 
       hasDefaultOp64 = DefaultOperandSize64 `elem` encProperties enc
 
-      hasRexW = case oc of
-         OpLegacy _ Nothing _ _  -> False
-         OpLegacy _ (Just r) _ _ -> rexW r
-         OpVex v _               -> vexW v
-         OpXop v _               -> vexW v
+      hasRexW = opcodeW oc
 
       -- in 64-bit mode, most 64-bit instructions default to 32-bit operand
       -- size, except those with the DefaultOperandSize64 property.
@@ -589,9 +584,7 @@ readOperands mode ps oc enc = do
    ----------------------------------------------------------------------------
 
    let
-      is64bitMode = case x86Mode mode of
-                        LongMode Long64bitMode -> True
-                        _                      -> False
+      is64bitMode' = is64bitMode (x86Mode mode)
 
       modrm' = case modrm of
          Just m  -> m
@@ -616,43 +609,72 @@ readOperands mode ps oc enc = do
                               else readParam (spec { opType = now })
          
          -- Memory address
-         -- FIXME: handle segment override prefixes
-         T_Mem mtype -> return $ OpMem mtype $ case addressSize of
-            AddrSize16 -> case (modField modrm', rmField modrm') of
-               (_,    0b000) -> Addr R_DS (Just R_BX) (Just R_SI) Nothing disp
-               (_,    0b001) -> Addr R_DS (Just R_BX) (Just R_DI) Nothing disp
-               (_,    0b010) -> Addr R_SS (Just R_BP) (Just R_SI) Nothing disp
-               (_,    0b011) -> Addr R_SS (Just R_BP) (Just R_DI) Nothing disp
-               (_,    0b100) -> Addr R_DS Nothing     (Just R_SI) Nothing disp
-               (_,    0b101) -> Addr R_DS Nothing     (Just R_DI) Nothing disp
-               (0b00, 0b110) -> Addr R_DS Nothing     Nothing     Nothing disp
-               (_,    0b110) -> Addr R_SS (Just R_BP) Nothing     Nothing disp
-               (_,    0b111) -> Addr R_DS (Just R_BX) Nothing     Nothing disp
-               _             -> error "Invalid 16-bit addressing"
-            AddrSize32 -> case (modField modrm', rmField modrm') of
-               (_,    0b000) -> Addr R_DS (Just R_EAX) Nothing Nothing disp
-               (_,    0b001) -> Addr R_DS (Just R_ECX) Nothing Nothing disp
-               (_,    0b010) -> Addr R_DS (Just R_EDX) Nothing Nothing disp
-               (_,    0b011) -> Addr R_DS (Just R_EBX) Nothing Nothing disp
-               (_,    0b101) -> Addr R_SS (Just R_EBP) Nothing Nothing disp
-               (_,    0b110) -> Addr R_DS (Just R_ESI) Nothing Nothing disp
-               (_,    0b111) -> Addr R_DS (Just R_EDI) Nothing Nothing disp
-               (_,    0b100) -> Addr seg' base idx scl disp -- SIB
-                  where
-                     sib' = fromJust sib
-                     base = if modField modrm' == 0b00
-                              then Nothing
-                              else Just (reg32 (baseField sib'))
-                     idx = if indexField sib' == 0b100
-                              then Nothing
-                              else Just (reg32 (indexField sib'))
-                     scl = Just (scaleField sib')
-                     seg' = case base of
-                        Just R_EBP -> R_SS
-                        Just R_ESP -> R_SS
-                        _          -> R_DS
+         T_Mem mtype -> return $ OpMem mtype $ Addr seg' base idx scl disp
+               where
+                  toR = case addressSize of
+                           AddrSize32 -> reg32
+                           AddrSize64 -> reg64
+                           AddrSize16 -> error "Trying to use AddrSize16"
+                  base = if addressSize == AddrSize16
+                           then case (modField modrm', rmField modrm') of
+                              (_,    0b000) -> Just R_BX
+                              (_,    0b001) -> Just R_BX
+                              (_,    0b010) -> Just R_BP
+                              (_,    0b011) -> Just R_BP
+                              (_,    0b100) -> Nothing    
+                              (_,    0b101) -> Nothing    
+                              (0b00, 0b110) -> Nothing    
+                              (_,    0b110) -> Just R_BP
+                              (_,    0b111) -> Just R_BX
+                              _             -> error "Invalid 16-bit addressing"
+                           else case (modField modrm', rmField modrm') of
+                              (0b00, 0b101) -> if is64bitMode'
+                                                   then Just R_RIP
+                                                   else Nothing
+                              -- SIB: if mod is 0b00, don't use EBP as base.
+                              (0b00, 0b100) -> Nothing
+                              (_,    0b100) -> Just (toR sibBase)
+                              _             -> Just (toR modRMrm)
+                  idx = if addressSize == AddrSize16
+                           then case rmField modrm' of
+                              0b000 -> Just R_SI
+                              0b001 -> Just R_DI
+                              0b010 -> Just R_SI
+                              0b011 -> Just R_DI
+                              0b100 -> Just R_SI
+                              0b101 -> Just R_DI
+                              0b110 -> Nothing
+                              0b111 -> Nothing
+                              _     -> error "Invalid 16-bit addressing"
+                        else case (rmField modrm', indexField sib') of
+                           -- SIB: if index is 0b100 (should be ESP), don't
+                           -- use any index
+                           (0b100, 0b100) -> Nothing
+                           (0b100, _    ) -> Just (toR sibIdx)
+                           _              -> Nothing -- no SIB
+                  scl = if addressSize /= AddrSize16 && rmField modrm' == 0b100
+                           then Just (scaleField sib')
+                           else Nothing
+                  defSeg = case base of
+                     Just R_BP  -> R_SS
+                     Just R_SP  -> R_SS
+                     Just R_EBP -> R_SS
+                     Just R_ESP -> R_SS
+                     Just R_RBP -> R_SS
+                     Just R_RSP -> R_SS
+                     _          -> R_DS
+
+                  -- segment override prefixes
+                  seg' = case filter ((== 3) . legacyPrefixGroup) ps of
+                     []               -> defSeg
+                     [LegacyPrefix2E] -> R_CS
+                     [LegacyPrefix3E] -> R_DS
+                     [LegacyPrefix26] -> R_ES
+                     [LegacyPrefix64] -> R_FS
+                     [LegacyPrefix65] -> R_GS
+                     [LegacyPrefix36] -> R_SS
+                     xs -> error ("More than one segment-override prefix: "++show xs)
                         
-               _     -> error "Invalid 32-bit addressing"
 
          -- Register
          T_Reg rtype -> return $ case rtype of
@@ -674,7 +696,7 @@ readOperands mode ps oc enc = do
                Reg16       -> OpReg $ reg16 regid
                Reg32       -> OpReg $ reg32 regid
                Reg64       -> OpReg $ reg64 regid
-               Reg32o64    -> OpReg $ if is64bitMode
+               Reg32o64    -> OpReg $ if is64bitMode'
                                  then reg64 regid
                                  else reg32 regid
                RegOpSize   -> OpReg $ case operandSize of
@@ -707,7 +729,7 @@ readOperands mode ps oc enc = do
                   RM         -> modRMrm
                   Reg        -> modRMreg
                   Vvvv       -> vvvv
-                  OpcodeLow3 -> opcodeByte oc .&. 0b111 --FIXME: REX.B extends this!
+                  OpcodeLow3 -> opcodeRegId
                   e          -> error ("Invalid register encoding: " ++ show e)
          
          -- Sub-part of a register
@@ -746,7 +768,7 @@ readOperands mode ps oc enc = do
          -- DS:EAX or DS:RAX (used by monitor)
          T_MemDSrAX -> return (OpMem MemVoid Addr
             { addrSeg   = R_DS
-            , addrBase  = Just $ if is64bitMode then R_RAX else R_EAX
+            , addrBase  = Just $ if is64bitMode' then R_RAX else R_EAX
             , addrIndex = Nothing
             , addrScale = Nothing
             , addrDisp  = disp
@@ -777,14 +799,14 @@ readOperands mode ps oc enc = do
             mseg LegacyPrefix36 = Just R_SS
             mseg _              = Nothing
 
-      rSP = if is64bitMode
+      rSP = if is64bitMode'
                then R_RSP
                else case addressSize of
                  AddrSize16 -> R_SP
                  AddrSize32 -> R_ESP
                  AddrSize64 -> R_RSP
       
-      rBP = if is64bitMode
+      rBP = if is64bitMode'
                then R_RBP  
                else case addressSize of
                  AddrSize16 -> R_BP
@@ -882,31 +904,22 @@ readOperands mode ps oc enc = do
             15             -> R_R15
             r              -> error ("Invalid reg64 id: " ++ show r)
 
-      bool2int True  = 1
-      bool2int False = 0
-
       -- extended ModRM.reg (with REX.R, VEX.R, etc.)
-      modRMreg = case modrm of
-            Nothing -> error "No ModRM"
-            Just m  -> case oc of
-                  OpVex v _                 -> f (bool2int (vexR v))
-                  OpXop v _                 -> f (bool2int (vexR v))
-                  OpLegacy _ (Just rex) _ _ -> f (rexR rex)
-                  OpLegacy _ Nothing    _ _ -> regField m
-               where
-                  f x = x `unsafeShiftL` 3 .|. regField m
-
+      modRMreg = opcodeR oc `unsafeShiftL` 3 .|. regField modrm'
             
       -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
-      modRMrm = case modrm of
-            Nothing -> error "No ModRM"
-            Just m  -> case oc of
-                  OpVex v _                 -> f (bool2int (vexB v))
-                  OpXop v _                 -> f (bool2int (vexB v))
-                  OpLegacy _ (Just rex) _ _ -> f (rexB rex)
-                  OpLegacy _ Nothing    _ _ -> rmField m
-               where
-                  f x = x `unsafeShiftL` 3 .|. rmField m
+      modRMrm = opcodeB oc `unsafeShiftL` 3 .|. rmField modrm'
+
+      sib' = fromJust sib
+
+      -- | Extended SIB index (with REX.X, VEX.X, etc.)
+      sibIdx = opcodeX oc `unsafeShiftL` 3 .|. indexField sib'
+            
+      -- | Extended SIB base (with REX.B, VEX.B, etc.)
+      sibBase = opcodeB oc `unsafeShiftL` 3 .|. baseField sib'
+
+      -- | Extended register id in opcode (with REX.B, VEX.B, etc.)
+      opcodeRegId =  opcodeB oc `unsafeShiftL` 3 .|. (opcodeByte oc .&. 0b111)
 
       -- VVVV field
       vvvv = case oc of
@@ -922,100 +935,17 @@ readOperands mode ps oc enc = do
          _ -> error ("useExtRegs: we shouldn't check for 8-bit registers with non-legacy opcode: " ++ show oc)
 
          
-   ops <- forM (encOperands enc) readParam
+   ops' <- forM (encOperands enc) readParam
 
-   -- TODO: reverse operands (FPU dest, reversable bit)
+   -- reverse operands (FPU dest, reversable bit)
+   let ops = case (encReversableBit enc, encFPUDestBit enc) of
+               (Just b, Nothing)
+                  | testBit (opcodeByte oc) b -> reverse ops'
+               (Nothing, Just b)
+                  | testBit (opcodeByte oc) b -> reverse ops'
+               _                              -> ops'
 
    return ops
-
---    let 
---        getAddr asize m = do
---           case asize of
---              -- if we are in 16-bit addressing mode, we don't care about the base
---              -- register extension
---              AddrSize16 -> case (modField m, rmField modrm) of
---                 (_,0) -> Addr (Just R_BX) (Just R_SI) disp Nothing
---                 (_,1) -> Addr (Just R_BX) (Just R_DI) disp Nothing
---                 (_,2) -> Addr (Just R_BP) (Just R_SI) disp Nothing
---                 (_,3) -> Addr (Just R_BP) (Just R_DI) disp Nothing
---                 (_,4) -> Addr (Just R_SI) Nothing     disp Nothing
---                 (_,5) -> Addr (Just R_DI) Nothing     disp Nothing
---                 (0,6) -> Addr Nothing     Nothing     disp Nothing
---                 (_,6) -> Addr (Just R_BP) Nothing     disp Nothing
---                 (_,7) -> Addr (Just R_BX) Nothing     disp Nothing
---                 _     -> error "Invalid 16-bit addressing"
---        
--- 
--- 
---    addr <- case modrm of
---       Just m' | not (rmRegMode m') -> Just <$> getAddr m'
---       _                            -> return Nothing
--- 
---    -- read an immediate if necessary
---    imm <- case filter isImmediate es of
---       []   -> return Nothing
---       [im] -> do
---          case (opEnc im, opType im) of
---             (E_Imm8_3_0, T_Mask)     -> Just . OpMask . SizedValue8 <$> nextWord8
---             (E_Imm8_7_4, T_V128_256) -> Just . OpRegId . (`shiftR` 4) <$> nextWord8
---             (E_Imm, T_Imm8)          -> Just . OpImmediate . SizedValue8 <$> nextWord8
---             (E_Imm, T_PTR_16_16)     -> Just <$> (OpPtr16_16 <$> nextWord16 <*> nextWord16)
---             (E_Imm, T_PTR_16_32)     -> Just <$> (OpPtr16_32 <$> nextWord16 <*> nextWord32)
---             (E_Imm, T_REL_16_32) -> case opSize of
---                OpSize8  -> error "Invalid operand size"
---                OpSize16 -> Just . OpRel . SizedValue16 <$> nextWord16
---                OpSize32 -> Just . OpRel . SizedValue32 <$> nextWord32
---                OpSize64 -> Just . OpRel . SizedValue32 <$> nextWord32
---             (E_Imm, T_Imm) -> case (opSize, encSignExtendImmBit enc) of
---                (OpSize8, _)
---                   -> Just . OpImmediate . SizedValue8 <$> nextWord8
---                (_, Just se) | testBit opcode se
---                   -> Just . OpSignExtendImmediate . SizedValue8 <$> nextWord8
---                (OpSize16,_)
---                   -> Just . OpImmediate . SizedValue16 <$> nextWord16
---                (OpSize32,_)
---                   -> Just . OpImmediate . SizedValue32 <$> nextWord32
---                (OpSize64,_)
---                   -> Just . OpSignExtendImmediate . SizedValue32 <$> nextWord32
--- 
---             _  -> error $ "Don't know how to read immediate operand: " ++ show im
---       _    -> error "Invalid encoding (more than one immediate operand)"
--- 
---    -- match what we have read with required parameters
---    ops <- forM (encOperands enc) $ \op -> do
---       let doImm = case imm of
---             Just (OpRegId rid) -> getOpFromRegId opSize (opType op) rid
---             Just o  -> return o
---             Nothing -> error "Immediate operand expected, but nothing found"
--- 
---       case opEnc op of
---          E_Imm      -> doImm
---          E_Imm8_3_0 -> doImm
---          E_Imm8_7_4 -> doImm
---          E_ModRM -> case (modrm, rmAddr) of
---             (_, Just addr) -> return (OpMem addr)
---             (Just m, _)    -> getRMOp opSize (opType op) m
---             (Nothing,_)    -> error "ModRM expected, but nothing found"
---          E_ModReg -> case modrm of
---             Just m  -> getRegOp opSize (opType op) m
---             Nothing -> error "ModRM expected, but nothing found"
---          E_Implicit -> getImplicitOp opSize (opType op)
---          E_VexV     -> gets decStateAdditionalOp >>= \case
---             Just vvvv -> getOpFromRegId opSize (opType op) vvvv
---             Nothing   -> error "Expecting additional operand (VEX.vvvv)"
---          E_OpReg    -> getOpFromRegId opSize (opType op) (opcode .&. 0x07)
--- 
---    -- reverse operands if reversable bit is set
---    let ops' = case encReversableBit enc of
---          Just b | testBit opcode b -> reverse ops
---          _                         -> ops
--- 
---    return ops'
--- 
---    -- reverse FPU operands if necessary (FPU dest bit set)
---    -- TODO
--- 
---    undefined
 
 
 data VectorLength
