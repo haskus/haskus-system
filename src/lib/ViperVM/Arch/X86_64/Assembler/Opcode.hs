@@ -4,6 +4,7 @@ module ViperVM.Arch.X86_64.Assembler.Opcode
    ( LegacyPrefix (..)
    , toLegacyPrefix
    , Opcode (..)
+   , opcodeByte
    , OpcodeMap (..)
    , LegacyMap (..)
    -- * REX prefix
@@ -62,10 +63,16 @@ toLegacyPrefix = \case
    _    -> Nothing
 
 data Opcode
-   = OpLegacy [LegacyPrefix] (Maybe Rex) LegacyMap !Word8
+   = OpLegacy [LegacyPrefix] (Maybe Rex) LegacyMap !Word8 --TODO: remove legacy prefixes?
    | OpVex    Vex  !Word8
    | OpXop    Vex  !Word8
    deriving (Show,Eq)
+
+-- | Opcode byte
+opcodeByte :: Opcode -> Word8
+opcodeByte (OpLegacy _ _ _ x) = x
+opcodeByte (OpVex _ x) = x
+opcodeByte (OpXop _ x) = x
 
 data OpcodeMap
    = MapLegacy LegacyMap
@@ -119,32 +126,32 @@ data Vex
    | Vex3 !Word8 !Word8    -- ^ Three-byte VEX prefix
    deriving (Show,Eq)
 
-vexW :: Vex -> Maybe Bool
-vexW (Vex2 _) = Nothing
-vexW (Vex3 _ x) = Just (testBit x 7)
+vexW :: Vex -> Bool
+vexW (Vex2 _)   = False
+vexW (Vex3 _ x) = testBit x 7
 
 vexR :: Vex -> Bool
-vexR (Vex2 x) = not $ testBit x 7
+vexR (Vex2 x)   = not $ testBit x 7
 vexR (Vex3 x _) = not $ testBit x 7
 
-vexX :: Vex -> Maybe Bool
-vexX (Vex2 _) = Nothing
-vexX (Vex3 x _) = Just (not $ testBit x 6)
+vexX :: Vex -> Bool
+vexX (Vex2 _)   = False
+vexX (Vex3 x _) = not $ testBit x 6
 
-vexB :: Vex -> Maybe Bool
-vexB (Vex2 _) = Nothing
-vexB (Vex3 x _) = Just (not $ testBit x 5)
+vexB :: Vex -> Bool
+vexB (Vex2 _)   = False
+vexB (Vex3 x _) = not $ testBit x 5
 
 vexL :: Vex -> Bool
-vexL (Vex2 x) = testBit x 2
+vexL (Vex2 x)   = testBit x 2
 vexL (Vex3 _ x) = testBit x 2
 
 vexVVVV :: Vex -> Word8
-vexVVVV (Vex2 x) = (x `shiftR` 3) .&. 0x0F
+vexVVVV (Vex2 x)   = (x `shiftR` 3) .&. 0x0F
 vexVVVV (Vex3 _ x) = (x `shiftR` 3) .&. 0x0F
 
 vexPP :: Vex -> Word8
-vexPP (Vex2 x) = x .&. 0x03
+vexPP (Vex2 x)   = x .&. 0x03
 vexPP (Vex3 _ x) = x .&. 0x03
 
 vexPrefix :: Vex -> Maybe LegacyPrefix
@@ -155,12 +162,9 @@ vexPrefix v = case vexPP v of
    0x03 -> Just LegacyPrefixF2
    _    -> error "Invalid VEX.pp"
 
-vexMMMMM :: Vex -> Maybe Word8
-vexMMMMM (Vex2 _) = Nothing
-vexMMMMM (Vex3 x _) = Just $ x .&. 0x1F
+vexMMMMM :: Vex -> Word8
+vexMMMMM (Vex2 _)   = 0x01
+vexMMMMM (Vex3 x _) = x .&. 0x1F
 
 vexMapSelect :: Vex -> OpcodeMap
-vexMapSelect v = case (v, vexMMMMM v) of
-   (Vex2 _, _)                   -> MapVex 1
-   (_, Just n) | n > 0 && n <= 3 -> MapVex n
-   _           -> error "Reserved map select in VEX/XOP prefix"
+vexMapSelect = MapVex . vexMMMMM

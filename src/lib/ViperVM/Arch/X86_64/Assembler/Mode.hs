@@ -51,7 +51,9 @@ data Flag
    deriving (Show,Enum,Eq)
 
 data X86Extension
-   = ADX             -- ^ ADX extension
+   = VEX             -- ^ VEX encoded instruction support
+   | XOP             -- ^ XOP encoded instruction support
+   | ADX             -- ^ ADX extension
    | MMX             -- ^ MMX
    | AVX             -- ^ AVX extension
    | AVX2            -- ^ AVX2 extension

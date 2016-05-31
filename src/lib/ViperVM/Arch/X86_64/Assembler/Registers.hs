@@ -45,8 +45,8 @@ data Register
    | R_RBP | R_RSP | R_RDI | R_RSI
    | R_R8  | R_R9  | R_R10 | R_R11
    | R_R12 | R_R13 | R_R14 | R_R15
-   | R_R8B | R_R9B | R_R10B| R_R11B
-   | R_R12B| R_R13B| R_R14B| R_R15B
+   | R_R8L | R_R9L | R_R10L| R_R11L
+   | R_R12L| R_R13L| R_R14L| R_R15L
    | R_R8W | R_R9W | R_R10W| R_R11W
    | R_R12W| R_R13W| R_R14W| R_R15W
    | R_R8D | R_R9D | R_R10D| R_R11D
@@ -88,14 +88,14 @@ regFromCode fm sz useExtRegs code = case fm of
       (Size8, 6, False) -> R_DH
       (Size8, 7, True)  -> R_DIL
       (Size8, 7, False) -> R_BH
-      (Size8, 8, True)  -> R_R8B
-      (Size8, 9, True)  -> R_R9B
-      (Size8,10, True)  -> R_R10B
-      (Size8,11, True)  -> R_R11B
-      (Size8,12, True)  -> R_R12B
-      (Size8,13, True)  -> R_R13B
-      (Size8,14, True)  -> R_R14B
-      (Size8,15, True)  -> R_R15B
+      (Size8, 8, True)  -> R_R8L
+      (Size8, 9, True)  -> R_R9L
+      (Size8,10, True)  -> R_R10L
+      (Size8,11, True)  -> R_R11L
+      (Size8,12, True)  -> R_R12L
+      (Size8,13, True)  -> R_R13L
+      (Size8,14, True)  -> R_R14L
+      (Size8,15, True)  -> R_R15L
 
       (Size16, 0, _)    -> R_AX
       (Size16, 1, _)    -> R_CX
@@ -242,14 +242,14 @@ regToCode r = case r of
    R_R13    -> 13
    R_R14    -> 14
    R_R15    -> 15
-   R_R8B    -> 8
-   R_R9B    -> 9
-   R_R10B   -> 10
-   R_R11B   -> 11
-   R_R12B   -> 12
-   R_R13B   -> 13
-   R_R14B   -> 14
-   R_R15B   -> 15
+   R_R8L    -> 8
+   R_R9L    -> 9
+   R_R10L   -> 10
+   R_R11L   -> 11
+   R_R12L   -> 12
+   R_R13L   -> 13
+   R_R14L   -> 14
+   R_R15L   -> 15
    R_R8W    -> 8
    R_R9W    -> 9
    R_R10W   -> 10

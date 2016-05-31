@@ -36,8 +36,8 @@ import Control.Monad
 -- | Execution mode
 data ExecMode = ExecMode
    { x86Mode            :: X86Mode        -- ^ x86 mode
-   , defaultAddressSize :: AddressSize    -- ^ Default address size
-   , defaultOperandSize :: Size           -- ^ Default operand size
+   , defaultAddressSize :: AddressSize    -- ^ Default address size (used in protected/compat mode)
+   , defaultOperandSize :: OperandSize    -- ^ Default operand size (used in protected/compat mode)
    , extensions         :: [X86Extension] -- ^ Enabled extensions
    }
 
@@ -50,7 +50,7 @@ hasExtension mode ext = ext `elem` extensions mode
 -- X86 Instruction
 -- ===========================================================================
 
-getInstruction :: ExecMode -> Get ()
+getInstruction :: ExecMode -> Get (Opcode,[Operand],Encoding,X86Insn)
 getInstruction mode = consumeAtMost 15 $ do
    -- An instruction is at most 15 bytes long
 
@@ -62,9 +62,22 @@ getInstruction mode = consumeAtMost 15 $ do
       Just op -> return op
       Nothing -> readLegacyOpcode mode ps rex
 
-   -- handle 3DNow!
    case getOpcodeMap oc of
-      MapLegacy Map3DNow -> fail "3DNow! not supported" -- TODO
+
+      -- Handle 3DNow! encoding: the opcode byte is the last byte of the
+      -- instruction and the operand encoding is predefined (not opcode
+      -- specific)
+      MapLegacy Map3DNow -> do
+         ops <- readOperands mode ps oc amd3DNowEncoding
+         -- read opcode byte
+         let OpLegacy ps' rex ocm _ = oc
+         oc' <- OpLegacy ps' rex ocm <$> getWord8
+         return ( oc'
+                , ops
+                , amd3DNowEncoding
+                , error "3DNow! instructions not supported" -- TODO
+                )
+
       ocmap              -> do
          -- get candidate instructions for the opcode
          cs <- case Map.lookup ocmap opcodeMaps of
@@ -128,7 +141,8 @@ getInstruction mode = consumeAtMost 15 $ do
          -- if no instruction left (e.g., in order to provide suggestion to enable an
          -- extension).
          -- Filter out invalid prefixes (LOCK, etc.)
-         -- TODO
+         -- Filter invalid VEX.L/VEX.W
+         -- FIXME
          let (errs,cs5) = (undefined,cs4)
 
          when (null cs5) $ fail errs
@@ -139,9 +153,9 @@ getInstruction mode = consumeAtMost 15 $ do
             xs  -> fail ("More than one instruction found (opcode table bug?): " ++ show xs)
 
          -- Read params
-         ops <- readOperands mode ps rex oc (entryEncoding entry)
+         ops <- readOperands mode ps oc (entryEncoding entry)
 
-         return ()
+         return (oc, ops, entryEncoding entry, entryInsn entry)
 
 -- ===========================================================================
 -- Legacy encoding
@@ -332,9 +346,8 @@ readLegacyOpcode mode ps rex = do
 readVexXopOpcode :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Get (Maybe Opcode)
 readVexXopOpcode mode ps rex = do
    let
-      -- TODO: use mode, arch or sets...
-      isXOPAllowed = True
-      isVEXAllowed = True
+      isXOPAllowed = mode `hasExtension` XOP
+      isVEXAllowed = mode `hasExtension` VEX
 
       -- VEX prefixes are supported in 32-bit and 16-bit modes
       -- They overload LES and LDS opcodes so that the first two bits
@@ -381,8 +394,8 @@ readVexXopOpcode mode ps rex = do
 -- ===========================================================================
 
 -- | Read instruction operands
-readOperands :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Opcode -> Encoding -> Get [Operand]
-readOperands mode ps rex oc enc = do
+readOperands :: ExecMode -> [LegacyPrefix] -> Opcode -> Encoding -> Get [Operand]
+readOperands mode ps oc enc = do
 
    -- read ModRM
    modrm <- if encRequireModRM enc
@@ -405,7 +418,8 @@ readOperands mode ps rex oc enc = do
                                        ++ show (x86Mode mode) ++ " and "
                                        ++ show a)
 
-      -- some instructions have 64-bit address size by default
+      -- some instructions have 64-bit address size by default, in this case the
+      -- prefix can switch back to 32-bit address size
       hasDefaultAddress64 = DefaultAddressSize64 `elem` encProperties enc
       addrSize32o64 = case (hasDefaultAddress64, hasAddressSizePrefix) of
          (True, False)  -> AddrSize64
@@ -433,11 +447,85 @@ readOperands mode ps rex oc enc = do
       (True, Just _   ) -> return True  -- ModRM.mod /= 0b11 (memory in ModRM.rm)
 
    let
-      -- do we need to read an SIB byte?
-      hasSIB = fromMaybe False (((== RMSIB) . rmMode addressSize) <$> modrm)
+      -- we determine the effective operand size. It depends on:
+      --   * the mode of execution
+      --   * the presence of the 0x66 legacy prefix
+      --   * the default operand size of the instruction in 64-bit mode
+      --   * the value of the ForceNo8bit bit in the opcode (if applicable)
+      --   * the value of REX.W/VEX.W/XOP.W (if applicable)
+      hasOperandSizePrefix = LegacyPrefix66 `elem` ps
+      opSize16o32 = case (defaultOperandSize mode, hasOperandSizePrefix) of
+         (OpSize16, False) -> OpSize16
+         (OpSize32, False) -> OpSize32
+         (OpSize16, True)  -> OpSize32
+         (OpSize32, True)  -> OpSize16
+         (a,_)               -> error ("Invalid default address size for the current mode: "
+                                       ++ show (x86Mode mode) ++ " and "
+                                       ++ show a)
 
-      -- do we need to read a displacement?
-      dispSize = join (useDisplacement addressSize <$> modrm)
+      hasDefaultOp64 = DefaultOperandSize64 `elem` encProperties enc
+
+      hasRexW = case oc of
+         OpLegacy _ Nothing _ _  -> False
+         OpLegacy _ (Just r) _ _ -> rexW r
+         OpVex v _               -> vexW v
+         OpXop v _               -> vexW v
+
+      -- in 64-bit mode, most 64-bit instructions default to 32-bit operand
+      -- size, except those with the DefaultOperandSize64 property.
+      -- REX.W/VEX.W/XOP.W can be used to set a 64-bit operand size (it has
+      -- precedence over the 0x66 legacy prefix)
+      opSize16o32o64 = case (hasDefaultOp64, hasRexW, hasOperandSizePrefix) of
+         (True,     _,      _) -> OpSize64
+         (False, True,      _) -> OpSize64
+         (False, False, False) -> OpSize32
+         (False, False, True ) -> OpSize16
+
+      defOperandSize = case x86Mode mode of
+         -- old modes defaulting to 16-bit
+         LegacyMode RealMode        -> OpSize16
+         LegacyMode Virtual8086Mode -> OpSize16
+         -- protected modes that can either be 16- or 32-bit
+         -- The default mode is indicated in the segment descriptor (D "default
+         -- size" flag)
+         LegacyMode ProtectedMode   -> opSize16o32
+         LongMode CompatibilityMode -> opSize16o32
+         -- 64-bit mode can be either 16-, 32- or 64-bit
+         LongMode Long64bitMode     -> opSize16o32o64
+
+      --finally we take into account the NoForce8bit bit in the opcode
+      operandSize = case encNoForce8Bit enc of
+         Just b
+            | testBit (opcodeByte oc) b -> defOperandSize
+            | otherwise                 -> OpSize8
+         _                              -> defOperandSize
+
+      -- do we need to read an SIB byte?
+      hasSIB = fromMaybe False (useSIB addressSize <$> modrm)
+
+      -- do we need to read a MemOffset displacement?
+      hasMemOffset = T_MemOffset `elem` fmap opType (encOperands enc)
+
+      -- do we need to read a Relative displacement?
+      hasRelOffset = filter isRel (fmap opType (encOperands enc))
+         where isRel (T_Rel _) = True
+               isRel _         = False
+
+      -- do we need to read a displacement? Which size?
+      dispSize = case (hasMemOffset, hasRelOffset) of
+         (False, []) -> join (useDisplacement addressSize <$> modrm)
+         (True,  []) -> case addressSize of
+                           AddrSize16 -> Just Size16
+                           AddrSize32 -> Just Size32
+                           AddrSize64 -> Just Size64
+         (False, [T_Rel rel]) -> case rel of
+            Rel8     -> Just Size8
+            Rel16o32 -> case operandSize of
+               OpSize64 -> Just Size32
+               OpSize32 -> Just Size32
+               OpSize16 -> Just Size16
+               OpSize8  -> error "Unsupported relative offset with 8-bit operand size"
+         (_, xs) -> error ("Unsupported relative offsets: " ++ show xs)
 
 
    -- read SIB byte if necessary
@@ -450,31 +538,396 @@ readOperands mode ps rex oc enc = do
 
 
    let
-      -- we determine the effective operand size. It depends on:
-      --   * the mode of execution
-      --   * the presence of the 0x66 legacy prefix
-      --   * the default operand size of the instruction in 64-bit mode
-      --   * the value of the ForceNo8bit bit in the opcode (if applicable)
-      --   * the value of REX.W/VEX.W/XOP.W (if applicable)
-      operandSize = undefined
+      -- do we need to read some immediates?
+      immTypeSize = \case
+         T_MemOffset     -> [] -- already read above as displacement
+         T_Rel _         -> [] -- already read above as displacement
+         T_Imm ImmSize8  -> [Size8]
+         T_Imm ImmSize16 -> [Size16]
+         T_Imm ImmSizeOp -> case operandSize of
+                              OpSize8  -> [Size8]
+                              OpSize16 -> [Size16]
+                              OpSize32 -> [Size32]
+                              OpSize64 -> [Size64]
+         T_Imm ImmSizeSE -> case encSignExtendImmBit enc of
+                              -- if the sign-extendable bit is set, we read an
+                              -- Imm8 that will be sign-extended to match the
+                              -- operand size
+                              Just t
+                                 | testBit (opcodeByte oc) t -> [Size8]
+                              _ -> case operandSize of
+                                 OpSize8  -> [Size8]
+                                 OpSize16 -> [Size16]
+                                 OpSize32 -> [Size32]
+                                 OpSize64 -> [Size32] -- sign-extended
+         T_Pair x y      -> [ head (immTypeSize x) -- immediate pointer: 16:16 or 16:32
+                            , head (immTypeSize y)]
+         it              -> error ("Unhandled immediate type: " ++ show it)
 
-      -- do we need to read an immediate?
-      immSize = undefined :: Maybe Size
-      -- TODO
+      immSize x = case opEnc x of
+         Imm8h -> [Size8]
+         Imm8l -> [Size8]
+         Imm   -> immTypeSize (opType x)
+         _     -> error ("unhandled immediate encoding: " ++ show x)
 
+      immSizes = case filter (isImmediate . opEnc) (encOperands enc) of
+         []    -> []
+         [x]   -> immSize x
+         [x,y] 
+            | opEnc x == Imm8h && opEnc y == Imm8l -> [Size8]
+            | opEnc x == Imm8l && opEnc y == Imm8h -> [Size8]
+            | otherwise -> error ("Found two incompatible immediate operands: "++show (x,y))
+         xs    -> error ("More than one immediate operand: "++ show xs)
 
-   imm <- forM immSize getSize
+   -- read immediates if necessary
+   imms <- forM immSizes getSize
 
-   undefined
--- 
---    asize <- mGet
---    
---    let
---       ps = encParams enc
---       es = fmap opEnc ps
--- 
---    -- read a memory address if necessary
--- 
+   ----------------------------------------------------------------------------
+   -- at this point we have read the whole instruction (except in the 3DNow!
+   -- case where there is a single byte left to read). Now we can determine the
+   -- operands.
+   ----------------------------------------------------------------------------
+
+   let
+      is64bitMode = case x86Mode mode of
+                        LongMode Long64bitMode -> True
+                        _                      -> False
+
+      modrm' = case modrm of
+         Just m  -> m
+         Nothing -> error "ModRM required"
+
+      readParam spec = case opType spec of
+         -- One of the two types (for ModRM.rm)
+         TME r m -> case modField <$> modrm of
+            Just 0b11 -> readParam (spec { opType = r })
+            Just _    -> readParam (spec { opType = m })
+            Nothing   -> fail "Cannot read ModRM.mod"
+         
+         -- One of the two types depending on Vex.L
+         TLE l128 l256 -> case getVectorLength oc of
+            Just VL128 -> readParam (spec { opType = l128 })
+            Just VL256 -> readParam (spec { opType = l256 })
+            Nothing    -> fail "Cannot read VEX.L/XOP.L"
+
+         -- One of the two types depending on Rex.W
+         TWE now w     -> if hasRexW
+                              then readParam (spec { opType = w })
+                              else readParam (spec { opType = now })
+         
+         -- Memory address
+         -- FIXME: handle segment override prefixes
+         T_Mem mtype -> return $ OpMem mtype $ case addressSize of
+            AddrSize16 -> case (modField modrm', rmField modrm') of
+               (_,    0b000) -> Addr R_DS (Just R_BX) (Just R_SI) Nothing disp
+               (_,    0b001) -> Addr R_DS (Just R_BX) (Just R_DI) Nothing disp
+               (_,    0b010) -> Addr R_SS (Just R_BP) (Just R_SI) Nothing disp
+               (_,    0b011) -> Addr R_SS (Just R_BP) (Just R_DI) Nothing disp
+               (_,    0b100) -> Addr R_DS Nothing     (Just R_SI) Nothing disp
+               (_,    0b101) -> Addr R_DS Nothing     (Just R_DI) Nothing disp
+               (0b00, 0b110) -> Addr R_DS Nothing     Nothing     Nothing disp
+               (_,    0b110) -> Addr R_SS (Just R_BP) Nothing     Nothing disp
+               (_,    0b111) -> Addr R_DS (Just R_BX) Nothing     Nothing disp
+               _             -> error "Invalid 16-bit addressing"
+            AddrSize32 -> case (modField modrm', rmField modrm') of
+               (_,    0b000) -> Addr R_DS (Just R_EAX) Nothing Nothing disp
+               (_,    0b001) -> Addr R_DS (Just R_ECX) Nothing Nothing disp
+               (_,    0b010) -> Addr R_DS (Just R_EDX) Nothing Nothing disp
+               (_,    0b011) -> Addr R_DS (Just R_EBX) Nothing Nothing disp
+               (_,    0b101) -> Addr R_SS (Just R_EBP) Nothing Nothing disp
+               (_,    0b110) -> Addr R_DS (Just R_ESI) Nothing Nothing disp
+               (_,    0b111) -> Addr R_DS (Just R_EDI) Nothing Nothing disp
+               (_,    0b100) -> Addr seg' base idx scl disp -- SIB
+                  where
+                     sib' = fromJust sib
+                     base = if modField modrm' == 0b00
+                              then Nothing
+                              else Just (reg32 (baseField sib'))
+                     idx = if indexField sib' == 0b100
+                              then Nothing
+                              else Just (reg32 (indexField sib'))
+                     scl = Just (scaleField sib')
+                     seg' = case base of
+                        Just R_EBP -> R_SS
+                        Just R_ESP -> R_SS
+                        _          -> R_DS
+                        
+               _     -> error "Invalid 32-bit addressing"
+
+         -- Register
+         T_Reg rtype -> return $ case rtype of
+               RegVec64    -> OpReg $ R_MMX regid
+               RegVec128   -> OpReg $ R_XMM regid
+               RegVec256   -> OpReg $ R_YMM regid
+               RegFixed r  -> OpReg $ r
+               RegSegment  -> OpReg $ case regid of
+                                0 -> R_ES
+                                1 -> R_CS
+                                2 -> R_SS
+                                3 -> R_DS
+                                4 -> R_FS
+                                5 -> R_GS
+                                _ -> error ("Invalid segment register id: " ++ show regid)
+               RegControl  -> OpReg $ R_CR regid
+               RegDebug    -> OpReg $ R_DR regid
+               Reg8        -> OpReg $ reg8 regid
+               Reg16       -> OpReg $ reg16 regid
+               Reg32       -> OpReg $ reg32 regid
+               Reg64       -> OpReg $ reg64 regid
+               Reg32o64    -> OpReg $ if is64bitMode
+                                 then reg64 regid
+                                 else reg32 regid
+               RegOpSize   -> OpReg $ case operandSize of
+                                OpSize8  -> reg8  regid
+                                OpSize16 -> reg16 regid
+                                OpSize32 -> reg32 regid
+                                OpSize64 -> reg64 regid
+               RegST       -> OpReg $ R_ST regid
+               RegCounter  -> OpReg $ case addressSize of
+                                AddrSize16 -> R_CX
+                                AddrSize32 -> R_ECX
+                                AddrSize64 -> R_RCX
+               RegAccu     -> OpReg $ gpr operandSize 0
+               RegStackPtr -> OpReg $ rSP
+               RegBasePtr  -> OpReg $ rBP
+               RegFam rf   -> case rf of
+                                 RegFamAX -> OpReg $ gpr operandSize 0
+                                 RegFamBX -> OpReg $ gpr operandSize 3
+                                 RegFamCX -> OpReg $ gpr operandSize 1
+                                 RegFamDX -> OpReg $ gpr operandSize 2
+                                 RegFamSI -> OpReg $ gpr operandSize 6
+                                 RegFamDI -> OpReg $ gpr operandSize 7
+                                 RegFamDXAX -> case operandSize of
+                                    OpSize8  -> OpReg R_AX
+                                    OpSize16 -> OpRegPair R_DX R_AX
+                                    OpSize32 -> OpRegPair R_EDX R_EAX
+                                    OpSize64 -> OpRegPair R_RDX R_RAX
+            where
+               regid = case opEnc spec of
+                  RM         -> modRMrm
+                  Reg        -> modRMreg
+                  Vvvv       -> vvvv
+                  OpcodeLow3 -> opcodeByte oc .&. 0b111 --FIXME: REX.B extends this!
+                  e          -> error ("Invalid register encoding: " ++ show e)
+         
+         -- Sub-part of a register
+         T_SubReg subrtype rtype -> readParam (spec {opType = T_Reg rtype})
+
+         -- Pair (AAA:BBB)
+         T_Pair o1 o2 -> undefined
+
+         -- Immediate
+         T_Imm (ImmConst n) ->
+            -- 8-bit is currently enough for known instructions
+            return (OpImmediate (SizedValue8 (fromIntegral n)))
+
+         T_Imm _            -> case imms of
+            [x] -> return (OpImmediate x)
+            xs  -> error ("Invalid immediate: " ++ show xs)
+
+         -- IP relative offset
+         T_Rel _ -> return (OpCodeAddr Addr
+            { addrSeg   = R_CS
+            , addrBase  = Just rIP
+            , addrIndex = Nothing
+            , addrScale = Nothing
+            , addrDisp  = disp
+            })
+         
+         -- Segment relative offset
+         T_MemOffset -> return (OpCodeAddr Addr
+            { addrSeg   = seg
+            , addrBase  = Nothing
+            , addrIndex = Nothing
+            , addrScale = Nothing
+            , addrDisp  = disp
+            })
+
+         -- DS:EAX or DS:RAX (used by monitor)
+         T_MemDSrAX -> return (OpMem MemVoid Addr
+            { addrSeg   = R_DS
+            , addrBase  = Just $ if is64bitMode then R_RAX else R_EAX
+            , addrIndex = Nothing
+            , addrScale = Nothing
+            , addrDisp  = disp
+            })
+
+      -- The default segment is DS except
+      --  * if rBP or rSP is used as base (in which case it is SS)
+      --  * for string instructions' source operand (in which case it is ES)
+      defaultSegment = case filter isD (encProperties enc) of
+            []                 -> R_DS
+            [DefaultSegment s] -> s
+            _                  -> error "More than one default segment"
+         where
+            isD (DefaultSegment _) = True
+            isD _                  = False
+
+      -- memory segment (when override is allowed)
+      seg = case mapMaybe mseg ps of
+            []  -> defaultSegment
+            [x] -> x
+            xs  -> error ("More than one segment-override prefix: " ++ show xs)
+         where
+            mseg LegacyPrefix2E = Just R_CS
+            mseg LegacyPrefix3E = Just R_DS
+            mseg LegacyPrefix26 = Just R_ES
+            mseg LegacyPrefix64 = Just R_FS
+            mseg LegacyPrefix65 = Just R_GS
+            mseg LegacyPrefix36 = Just R_SS
+            mseg _              = Nothing
+
+      rSP = if is64bitMode
+               then R_RSP
+               else case addressSize of
+                 AddrSize16 -> R_SP
+                 AddrSize32 -> R_ESP
+                 AddrSize64 -> R_RSP
+      
+      rBP = if is64bitMode
+               then R_RBP  
+               else case addressSize of
+                 AddrSize16 -> R_BP
+                 AddrSize32 -> R_EBP
+                 AddrSize64 -> R_RBP
+
+      rIP = case addressSize of
+               AddrSize16 -> R_IP
+               AddrSize32 -> R_EIP
+               AddrSize64 -> R_RIP
+
+      gpr osize r = case osize of
+         OpSize8  -> reg8  r
+         OpSize16 -> reg16 r
+         OpSize32 -> reg32 r
+         OpSize64 -> reg64 r
+
+      reg8 = \case
+            0              -> R_AL
+            1              -> R_CL
+            2              -> R_DL
+            3              -> R_BL
+            4 | useExtRegs -> R_SPL
+              | otherwise  -> R_AH
+            5 | useExtRegs -> R_BPL
+              | otherwise  -> R_CH
+            6 | useExtRegs -> R_SIL
+              | otherwise  -> R_DH
+            7 | useExtRegs -> R_DIL
+              | otherwise  -> R_BH
+            8              -> R_R8L
+            9              -> R_R9L
+            10             -> R_R10L
+            11             -> R_R11L
+            12             -> R_R12L
+            13             -> R_R13L
+            14             -> R_R14L
+            15             -> R_R15L
+            r              -> error ("Invalid reg8 id: " ++ show r)
+
+      reg16 = \case
+            0              -> R_AX
+            1              -> R_CX
+            2              -> R_DX
+            3              -> R_BX
+            4              -> R_SP
+            5              -> R_BP
+            6              -> R_SI
+            7              -> R_DI
+            8              -> R_R8W
+            9              -> R_R9W
+            10             -> R_R10W
+            11             -> R_R11W
+            12             -> R_R12W
+            13             -> R_R13W
+            14             -> R_R14W
+            15             -> R_R15W
+            r              -> error ("Invalid reg16 id: " ++ show r)
+
+      reg32 = \case
+            0              -> R_EAX
+            1              -> R_ECX
+            2              -> R_EDX
+            3              -> R_EBX
+            4              -> R_ESP
+            5              -> R_EBP
+            6              -> R_ESI
+            7              -> R_EDI
+            8              -> R_R8D
+            9              -> R_R9D
+            10             -> R_R10D
+            11             -> R_R11D
+            12             -> R_R12D
+            13             -> R_R13D
+            14             -> R_R14D
+            15             -> R_R15D
+            r              -> error ("Invalid reg32 id: " ++ show r)
+
+      reg64 = \case
+            0              -> R_RAX
+            1              -> R_RCX
+            2              -> R_RDX
+            3              -> R_RBX
+            4              -> R_RSP
+            5              -> R_RBP
+            6              -> R_RSI
+            7              -> R_RDI
+            8              -> R_R8
+            9              -> R_R9
+            10             -> R_R10
+            11             -> R_R11
+            12             -> R_R12
+            13             -> R_R13
+            14             -> R_R14
+            15             -> R_R15
+            r              -> error ("Invalid reg64 id: " ++ show r)
+
+      bool2int True  = 1
+      bool2int False = 0
+
+      -- extended ModRM.reg (with REX.R, VEX.R, etc.)
+      modRMreg = case modrm of
+            Nothing -> error "No ModRM"
+            Just m  -> case oc of
+                  OpVex v _                 -> f (bool2int (vexR v))
+                  OpXop v _                 -> f (bool2int (vexR v))
+                  OpLegacy _ (Just rex) _ _ -> f (rexR rex)
+                  OpLegacy _ Nothing    _ _ -> regField m
+               where
+                  f x = x `unsafeShiftL` 3 .|. regField m
+
+            
+      -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
+      modRMrm = case modrm of
+            Nothing -> error "No ModRM"
+            Just m  -> case oc of
+                  OpVex v _                 -> f (bool2int (vexB v))
+                  OpXop v _                 -> f (bool2int (vexB v))
+                  OpLegacy _ (Just rex) _ _ -> f (rexB rex)
+                  OpLegacy _ Nothing    _ _ -> rmField m
+               where
+                  f x = x `unsafeShiftL` 3 .|. rmField m
+
+      -- VVVV field
+      vvvv = case oc of
+         OpLegacy {} -> error "Trying to read Vvvv with legacy opcode"
+         OpVex v _   -> vexVVVV v
+         OpXop v _   -> vexVVVV v
+
+      
+      -- when a REX prefix is used, some 8-bit registers cannot be encoded
+      useExtRegs = case oc of
+         OpLegacy _ Nothing _ _  -> False
+         OpLegacy _ (Just _) _ _ -> True
+         _ -> error ("useExtRegs: we shouldn't check for 8-bit registers with non-legacy opcode: " ++ show oc)
+
+         
+   ops <- forM (encOperands enc) readParam
+
+   -- TODO: reverse operands (FPU dest, reversable bit)
+
+   return ops
+
 --    let 
 --        getAddr asize m = do
 --           case asize of
@@ -563,35 +1016,6 @@ readOperands mode ps rex oc enc = do
 --    -- TODO
 -- 
 --    undefined
-
-
-
--- | Extended ModRM.reg (with REX.R, VEX.R, etc.)
-getExtReg :: Opcode -> ModRM -> Word8
-getExtReg oc m = do
-   let
-      f x = x `unsafeShiftL` 3 .|. regField m
-      g x = if x then f 1 else f 0
-
-   case oc of
-      OpVex v _                 -> g (vexR v)
-      OpXop v _                 -> g (vexR v)
-      OpLegacy _ (Just rex) _ _ -> f (rexR rex)
-      OpLegacy _ Nothing    _ _ -> regField m
-      
--- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
-getExtRM :: Opcode -> ModRM -> Word8
-getExtRM oc m = do
-   let
-      f x = x `unsafeShiftL` 3 .|. rmField m
-      g x = if x then f 1 else f 0
-      h x = g (fromMaybe False x)
-
-   case oc of
-      OpVex v _                 -> h (vexB v)
-      OpXop v _                 -> h (vexB v)
-      OpLegacy _ (Just rex) _ _ -> f (rexB rex)
-      OpLegacy _ Nothing    _ _ -> rmField m
 
 
 data VectorLength

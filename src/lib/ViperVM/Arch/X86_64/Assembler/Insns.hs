@@ -12,6 +12,8 @@
 --       - 3DNow!
 --       - XOP encoded instructions
 --       - AVX512
+--    - granularity field in vectorial instructions (packed
+--    byte/word/dword/etc.)
 --
 -- FIXME: X87 instructions don't encode precisely the stack popping (e.g., it is
 -- not enough to say that ST(1) is accessed in Read/Write mode, we need to
@@ -566,10 +568,6 @@ mESrDI m = op m (T_Mem MemESrDI) Implicit
 -- | Memory at DS:rDI (DS is overridable)
 mDSrDI :: AccessMode -> OperandSpec
 mDSrDI m = op m (T_Mem MemDSrDI) Implicit
-
--- | Mask
-mask :: OperandEnc -> OperandSpec
-mask = op RO T_Mask
 
 -- | VSIB: 32-bit memory. 32-bit indices in 128-bit vector
 m32vsib32x :: AccessMode -> OperandSpec
@@ -2481,7 +2479,7 @@ i_vblendpd = insn
                            , vexParams          = [ vec128o256 WO Reg
                                                   , vec128o256 RO Vvvv
                                                   , mvec128o256 RO
-                                                  , mask Imm8h
+                                                  , imm8
                                                   ]
                            }
                        ]
@@ -8020,7 +8018,7 @@ i_monitor = insn
                                                    ]
                            , legacyParams          = [ reg R_ECX RO Implicit
                                                      , reg R_EDX RO Implicit
-                                                     , regFam RegFamDSrAX RO Implicit
+                                                     , op NA T_MemDSrAX Implicit
                                                      ]
                            }
                        ]
@@ -8038,8 +8036,8 @@ i_mov = insn
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           , legacyParams          = [ regAccu RW
-                                                     , op    RO    T_MOffs  Imm
+                           , legacyParams          = [ regAccu WO
+                                                     , op    RO    T_MemOffset  Imm
                                                      ]
                            }
                        , leg
@@ -14400,7 +14398,6 @@ i_popcnt = insn
                                                      ]
                            , legacyParams          = [ gpr WO Reg
                                                      , mgpr RO
-                                                     , regStackPtr RW Implicit
                                                      ]
                            }
                        ]

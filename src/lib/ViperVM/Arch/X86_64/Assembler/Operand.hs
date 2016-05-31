@@ -27,17 +27,14 @@ import Data.Word
 
 -- | An operand
 data Operand
-   = OpImmediate SizedValue               -- ^ Immediate value
-   | OpSignExtendImmediate SizedValue     -- ^ Sign-extended immediate value
-   | OpReg Register                       -- ^ Register
-   | OpRegPair Register Register          -- ^ REG:REG
-   | OpMem Addr                           -- ^ Memory address
-   | OpPtr16_16 !Word16 !Word16           -- ^ Immediate 16:16 ptr
-   | OpPtr16_32 !Word16 !Word32           -- ^ Immediate 16:32 ptr
-   | OpRel SizedValue                     -- ^ Immediate relative
-   | OpMask SizedValue                    -- ^ Mask for vector operations
-
-   | OpRegId !Word8                       -- ^ Register identifier (later to become a OpReg)
+   = OpImmediate SizedValue            -- ^ Immediate value
+   | OpReg Register                    -- ^ Register
+   | OpRegPair Register Register       -- ^ REG:REG
+   | OpMem MemType Addr                -- ^ Memory address
+   | OpCodeAddr Addr                   -- ^ Code address
+   | OpPtr16_16 !Word16 !Word16        -- ^ Immediate 16:16 ptr
+   | OpPtr16_32 !Word16 !Word32        -- ^ Immediate 16:32 ptr
+   | OpRegId !Word8                    -- ^ Register identifier (later to become a OpReg)
    deriving (Show,Eq)
 
 -- The X86 architecture supports different kinds of memory addressing. The
@@ -50,11 +47,13 @@ data Operand
 -- Base and index registers can be extended in 64-bit mode to access new registers.
 -- Offset size depends on the address size and on the execution mode.
 
+-- | A memory address
 data Addr = Addr
-   { addrBase  :: Maybe Register
-   , addrIndex :: Maybe Register
-   , addrDisp  :: Maybe SizedValue
-   , addrScale :: Maybe Scale
+   { addrSeg   :: Register             -- ^ Segment register
+   , addrBase  :: Maybe Register       -- ^ Base register
+   , addrIndex :: Maybe Register       -- ^ Index register
+   , addrScale :: Maybe Scale          -- ^ Scale
+   , addrDisp  :: Maybe SizedValue     -- ^ Displacement
    }
    deriving (Show,Eq)
 
@@ -191,7 +190,7 @@ data RegType
    | RegAccu            -- ^ AL, AX, EAX, RAX depending on the operand-size
    | RegStackPtr        -- ^ SP, ESP, RSP (default in 64-bit mode)
    | RegBasePtr         -- ^ BP, EBP, RBP (default in 64-bit mode)
-   | RegFam RegFamilies -- ^ DX, EDX, RDX (depending on operand-size)
+   | RegFam RegFamilies -- ^ Register family
    deriving (Show,Eq)
 
 -- | Register family
@@ -203,7 +202,6 @@ data RegFamilies
    | RegFamSI          -- ^ SI, ESI, RSI (depending on operand-size)
    | RegFamDI          -- ^ DI, EDI, RDI (depending on operand-size)
    | RegFamDXAX        -- ^ AX, DX:AX, EDX:EAX, RDX:RAX
-   | RegFamDSrAX       -- ^ DS:EAX, DS:RAX in 64-bit mode
    deriving (Show,Eq)
 
 -- | Sub register type
@@ -230,12 +228,12 @@ data OperandType
    | T_Mem MemType                  -- ^ Memory address
    | T_Reg RegType                  -- ^ Register
    | T_SubReg SubRegType RegType    -- ^ Sub-part of a register
-   | T_Rel RelType                  -- ^ Relative offset
    | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
    | T_Imm ImmType                  -- ^ Immediate value
-   | T_MOffs                        -- ^ Immediate offset: Moffs8, 16, 32, 64
-   | T_Mask                         -- ^ Mask for vectors
-   deriving (Show)
+   | T_Rel RelType                  -- ^ Memory offset relative to current IP
+   | T_MemOffset                    -- ^ Memory offset relative to the segment base: the offset is address-sized, the value is operand-sized
+   | T_MemDSrAX                     -- ^ Memory whose address is DS:EAX or DS:RAX (64-bit mode)
+   deriving (Show,Eq)
 
 -- | Operand encoding
 data OperandEnc
@@ -277,5 +275,5 @@ maybeOpTypeReg = \case
    T_Reg _         -> True
    T_SubReg _ _    -> True
    T_Imm _         -> False
-   T_Mask          -> False
-   T_MOffs         -> False
+   T_MemOffset     -> False
+   T_MemDSrAX      -> False
