@@ -423,8 +423,8 @@ readOperands mode ps oc enc = do
       addrSize32o64 = case (hasDefaultAddress64, hasAddressSizePrefix) of
          (True, False)  -> AddrSize64
          (True, True)   -> AddrSize32
-         (False, False) -> AddrSize32
-         (False, True)  -> AddrSize64
+         (False, False) -> AddrSize64
+         (False, True)  -> AddrSize32
 
       addressSize = case x86Mode mode of
          -- old modes defaulting to 16-bit
