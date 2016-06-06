@@ -36,7 +36,6 @@ main = do
                         ++ replicate (30 - 2*fromIntegral n) ' '
                         ++ insnMnemonic insn
                         ++ " " ++ show ops
-                        ++ " " ++ show n
                putStrLn str
                let b' = bufferDrop n b
                if isBufferEmpty b'
