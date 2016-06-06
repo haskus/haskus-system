@@ -296,9 +296,9 @@ mvec128 m = op m (TME (T_Reg RegVec128) (T_Mem Mem128)) RM
 
 -- | 128-bit or 256-bit vector or memory
 mvec128o256 :: AccessMode -> OperandSpec
-mvec128o256 m = op m (TLE
-   (TME (T_Reg RegVec128) (T_Mem Mem128))
-   (TME (T_Reg RegVec256) (T_Mem Mem256)))
+mvec128o256 m = op m (TME
+      (TLE (T_Reg RegVec128) (T_Reg RegVec256))
+      (TLE (T_Mem Mem128)    (T_Mem Mem256)))
    RM
 
 -- | low 64-bit of 128-bit vector or 64-bit memory
@@ -321,16 +321,16 @@ mvec128low8 m = op m (TME (T_SubReg SubLow8 RegVec128) (T_Mem Mem8)) RM
 --    * low 64-bit of 128-bit vector
 --    * [63,0] and [191,128] of 256-bit vector
 mvecEven64 :: AccessMode -> OperandSpec
-mvecEven64 m = op m (TLE
-   (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64))
-   (TME (T_SubReg SubEven64 RegVec256) (T_Mem Mem256))
+mvecEven64 m = op m (TME
+   (TLE (T_SubReg SubLow64 RegVec128) (T_SubReg SubEven64 RegVec256))
+   (TLE (T_Mem Mem64) (T_Mem Mem256))
    ) RM
 
 -- | low bytes of a vector or memory
 mveclow :: AccessMode -> OperandSpec
-mveclow m = op m (TLE 
-   (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64))
-   (TME (T_Reg RegVec128) (T_Mem Mem128))) RM
+mveclow m = op m (TME 
+   (TLE (T_SubReg SubLow64 RegVec128) (T_Reg RegVec128))
+   (TLE (T_Mem Mem64) (T_Mem Mem128))) RM
 
 -- | 128-bit or 256-bit memory depending on Vex.L
 m128o256 :: AccessMode -> OperandSpec
@@ -713,17 +713,18 @@ data ValidMode
 -- | ModRM.mod only supports the given value
 encValidModRMMode :: Encoding -> ValidMode
 encValidModRMMode e = case ots of
-      -- no parameter in ModRM.rm 
-      []        -> ModeNone
-      -- only memory
-      [T_Mem _] -> ModeOnlyMem
-      -- only register
-      [T_Reg _] -> ModeOnlyReg
-      -- both
-      [TME _ _] -> ModeBoth
-      -- impossible?
-      _         -> error "encValidModRMMode: invalid param type"
+      []  -> ModeNone
+      [x] -> toM x
+      _   -> error ("encValidModRMMode: more than one ModRM.rm param: " ++ show ots)
    where
+      toM = \case
+         T_Mem _ -> ModeOnlyMem
+         T_Reg _ -> ModeOnlyReg
+         TME _ _ -> ModeBoth
+         TLE x y -> if toM x == toM y
+                     then toM x
+                     else ModeBoth
+         x       -> error ("encValidModRMMode: invalid param type: " ++ show x)
       ots = opType <$> filter ((== RM) . opEnc) (encOperands e)
 
 -- | Indicate if a memory operand may be encoded

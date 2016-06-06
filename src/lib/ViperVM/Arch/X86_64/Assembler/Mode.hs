@@ -6,6 +6,7 @@ module ViperVM.Arch.X86_64.Assembler.Mode
    , LegacySubMode (..)
    , Flag (..)
    , X86Extension(..)
+   , allExtensions
    , ModeInfo (..)
    , getModeInfo
    , is64bitMode
@@ -85,8 +86,11 @@ data X86Extension
    | FMA             -- ^ Fused multiply-add extension
    | RTM             -- ^ Transactional memory
    | AMD3DNow        -- ^ AMD 3DNow! instructions
-   deriving (Show,Eq)
+   deriving (Show,Eq,Enum,Bounded)
 
+-- | All the X86 extensions
+allExtensions :: [X86Extension]
+allExtensions = [minBound .. maxBound]
 
 -- | IP-relative addressing support
 data RelativeAddressing

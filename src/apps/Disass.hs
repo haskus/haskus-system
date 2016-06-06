@@ -19,14 +19,15 @@ main = do
             , defaultAddressSize = AddrSize64
             , defaultOperandSize = OpSize32
             , extensions         =
-               [
-               ]
+               allExtensions
             }
       g  = G.countBytes $ getInstruction m
 
       go offset b = do
          case G.runGet g b of
-            Left str    -> putStrLn $ "Failed: " ++ show str
+            Left str    -> do
+               putStrLn $ "Failed: " ++ show str
+               putStrLn (show b)
             Right (n,(oc,ops,enc,insn)) -> do
                let
                   str = show offset

@@ -85,15 +85,28 @@ getInstruction mode = consumeAtMost 15 $ do
 
          when (null cs) $ fail "No candidate instruction found (empty opcode map cell)"
 
-         -- check for mandatory prefixes
+         -- check prefixes
          let
+            -- TODO: check all prefixes (mandatory, lock, hle, branch hint, etc.)
+            --isPrefixValid = \case
+            --   LegacyPrefix66 ->
+            --   LegacyPrefix67 ->
+            --   LegacyPrefix2E ->
+            --   LegacyPrefix3E ->
+            --   LegacyPrefix26 ->
+            --   LegacyPrefix64 ->
+            --   LegacyPrefix65 ->
+            --   LegacyPrefix36 ->
+            --   LegacyPrefixF0 ->
+            --   LegacyPrefixF3 ->
+            --   LegacyPrefixF2 ->
+
             cs2 = filter hasMandatoryPrefix cs
-            hasMandatoryPrefix i = case toLegacyPrefix <$> encMandatoryPrefix (entryEncoding i) of
-               Nothing -> True
-               Just mp -> case oc of
-                  OpLegacy {} -> fromJust mp `elem` ps
-                  OpVex v _   -> mp == vexPrefix v
-                  OpXop v _   -> mp == vexPrefix v
+            hasMandatoryPrefix i = case (toLegacyPrefix =<< encMandatoryPrefix (entryEncoding i), oc) of
+               (mp, OpVex v _)        -> mp == vexPrefix v
+               (mp, OpXop v _)        -> mp == vexPrefix v
+               (Just mp, OpLegacy {}) -> mp `elem` ps
+               (Nothing, _          ) -> True
 
          when (null cs2) $ fail "No candidate instruction found (invalid mandatory prefixes)"
 
