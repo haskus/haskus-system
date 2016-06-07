@@ -8,7 +8,7 @@ import ViperVM.Format.Binary.Buffer
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.New
+import ViperVM.Arch.X86_64.Assembler.Decoder
 import ViperVM.Arch.X86_64.Assembler.Insns
 
 main :: IO ()

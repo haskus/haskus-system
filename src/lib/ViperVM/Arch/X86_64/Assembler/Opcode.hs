@@ -210,8 +210,8 @@ vexL (Vex2 x)   = testBit x 2
 vexL (Vex3 _ x) = testBit x 2
 
 vexVVVV :: Vex -> Word8
-vexVVVV (Vex2 x)   = (complement (x `shiftR` 3)) .&. 0x0F
-vexVVVV (Vex3 _ x) = (complement (x `shiftR` 3)) .&. 0x0F
+vexVVVV (Vex2 x)   = complement (x `shiftR` 3) .&. 0x0F
+vexVVVV (Vex3 _ x) = complement (x `shiftR` 3) .&. 0x0F
 
 vexPP :: Vex -> Word8
 vexPP (Vex2 x)   = x .&. 0x03
