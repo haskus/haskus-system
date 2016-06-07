@@ -42,6 +42,7 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    -- * Helper methods
    , encValidModRMMode
    , encMayHaveMemoryOperand
+   , encHasHLE
    , hasImmediate
    , isImmediate
    , isLegacyEncoding
@@ -61,6 +62,8 @@ module ViperVM.Arch.X86_64.Assembler.Insns
    , encFPUDestBit
    , encFPUPopBit
    , encLockable
+   , encRepeatable
+   , encBranchHintable
    , encRequireModRM
    , amd3DNowEncoding
    )
@@ -165,6 +168,7 @@ data EncodingProperties
    | LegacyModeSupport        -- ^ Supported in legacy/compatibility mode
    | Lockable                 -- ^ Support LOCK prefix (only if a memory operand
                               --   is used)
+   | BranchHintable           -- ^ Support branch-hint prefixes
    | ImplicitLock             -- ^ Implicitly locked (lock prefix still supported)
    | Repeatable               -- ^ Allow repeat prefix
    | Commutable               -- ^ Operands can be commuted
@@ -685,6 +689,14 @@ encFPUPopBit _                   = Nothing
 encLockable :: Encoding -> Bool
 encLockable e = Lockable `elem` encProperties e
 
+-- | Indicate if branch hint prefixes are allowed
+encBranchHintable :: Encoding -> Bool
+encBranchHintable e = BranchHintable `elem` encProperties e
+
+-- | Indicate if REPEAT prefix is allowed
+encRepeatable :: Encoding -> Bool
+encRepeatable e = Repeatable `elem` encProperties e
+
 encRequireModRM :: Encoding -> Bool
 encRequireModRM e = hasOpExt || hasOps
    where
@@ -734,6 +746,17 @@ encMayHaveMemoryOperand e = case encValidModRMMode e of
    ModeOnlyReg -> False
    ModeOnlyMem -> True
    ModeBoth    -> True
+
+-- | Test if an encoding support the given Hardware-Lock Ellision prefix
+encHasHLE :: HLEAction -> Encoding -> Bool
+encHasHLE a e = case filter isHLE (encProperties e) of
+      []       -> False
+      [HLE a'] -> a' == XBoth || a == a'
+      xs       -> error ("Invalid HLE actions: "++show xs)
+   where
+      isHLE (HLE _) = True
+      isHLE _       = False
+
 
 -------------------------------------------------------------------
 -- Instructions
@@ -3539,6 +3562,7 @@ i_cmps = insn
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
+                                                  , Repeatable
                                                   ]
                            , legacyParams       = [ mDSrSI RO
                                                   , mESrDI RO
@@ -6786,6 +6810,7 @@ i_ja = insn
                            , legacyOpcode          = 0x77
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6794,6 +6819,7 @@ i_ja = insn
                            , legacyOpcode          = 0x87
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6810,6 +6836,7 @@ i_jae = insn
                            , legacyOpcode          = 0x73
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6818,6 +6845,7 @@ i_jae = insn
                            , legacyOpcode          = 0x83
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6834,6 +6862,7 @@ i_jb = insn
                            , legacyOpcode          = 0x72
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6842,6 +6871,7 @@ i_jb = insn
                            , legacyOpcode          = 0x82
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6858,6 +6888,7 @@ i_jbe = insn
                            , legacyOpcode          = 0x76
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6866,6 +6897,7 @@ i_jbe = insn
                            , legacyOpcode          = 0x86
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6882,6 +6914,7 @@ i_jcxz = insn
                            , legacyOpcode          = 0xE3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ regCounter RO
                                                      , rel8
@@ -6900,6 +6933,7 @@ i_je = insn
                            , legacyOpcode          = 0x74
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6908,6 +6942,7 @@ i_je = insn
                            , legacyOpcode          = 0x84
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6924,6 +6959,7 @@ i_jg = insn
                            , legacyOpcode          = 0x7F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6932,6 +6968,7 @@ i_jg = insn
                            , legacyOpcode          = 0x8F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6948,6 +6985,7 @@ i_jge = insn
                            , legacyOpcode          = 0x7D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6956,6 +6994,7 @@ i_jge = insn
                            , legacyOpcode          = 0x8D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6972,6 +7011,7 @@ i_jl = insn
                            , legacyOpcode          = 0x7C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -6980,6 +7020,7 @@ i_jl = insn
                            , legacyOpcode          = 0x8C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -6996,6 +7037,7 @@ i_jle = insn
                            , legacyOpcode          = 0x7E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7004,6 +7046,7 @@ i_jle = insn
                            , legacyOpcode          = 0x8E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7020,6 +7063,7 @@ i_jne = insn
                            , legacyOpcode          = 0x75
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7028,6 +7072,7 @@ i_jne = insn
                            , legacyOpcode          = 0x85
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7044,6 +7089,7 @@ i_jno = insn
                            , legacyOpcode          = 0x71
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7052,6 +7098,7 @@ i_jno = insn
                            , legacyOpcode          = 0x81
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7068,6 +7115,7 @@ i_jnp = insn
                            , legacyOpcode          = 0x7B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7076,6 +7124,7 @@ i_jnp = insn
                            , legacyOpcode          = 0x8B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7092,6 +7141,7 @@ i_jns = insn
                            , legacyOpcode          = 0x79
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7100,6 +7150,7 @@ i_jns = insn
                            , legacyOpcode          = 0x89
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7116,6 +7167,7 @@ i_jo = insn
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7124,6 +7176,7 @@ i_jo = insn
                            , legacyOpcode          = 0x80
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7140,6 +7193,7 @@ i_jp = insn
                            , legacyOpcode          = 0x7A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7148,6 +7202,7 @@ i_jp = insn
                            , legacyOpcode          = 0x8A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7164,6 +7219,7 @@ i_js = insn
                            , legacyOpcode          = 0x78
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel8 ]
                            }
@@ -7172,6 +7228,7 @@ i_js = insn
                            , legacyOpcode          = 0x88
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , BranchHintable
                                                      ]
                            , legacyParams          = [ rel16o32 ]
                            }
@@ -7512,6 +7569,7 @@ i_lods = insn
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , Repeatable
                                                      ]
                            , legacyParams          = [ regAccu WO
                                                      , mDSrSI RO
@@ -9049,6 +9107,7 @@ i_movs = insn
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
+                                                  , Repeatable
                                                   ]
                            , legacyParams       = [ mDSrSI RO
                                                   , mESrDI WO
@@ -18189,6 +18248,7 @@ i_scas = insn
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
+                                                  , Repeatable
                                                   ]
                            , legacyParams       = [ mESrDI RO
                                                   , regAccu RO
@@ -18913,6 +18973,7 @@ i_stos = insn
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
+                                                     , Repeatable
                                                      ]
                            , legacyParams          = [ regAccu RO
                                                      , mESrDI WO

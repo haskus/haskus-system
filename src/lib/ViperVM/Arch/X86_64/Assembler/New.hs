@@ -61,7 +61,7 @@ getInstruction mode = consumeAtMost 15 $ do
       Just op -> return op
       Nothing -> readLegacyOpcode mode ps rex
 
-   case getOpcodeMap oc of
+   case opcodeMap oc of
 
       -- Handle 3DNow! encoding: the opcode byte is the last byte of the
       -- instruction and the operand encoding is predefined (not opcode
@@ -69,8 +69,8 @@ getInstruction mode = consumeAtMost 15 $ do
       MapLegacy Map3DNow -> do
          ops <- readOperands mode ps oc amd3DNowEncoding
          -- read opcode byte
-         let OpLegacy ps' rex ocm _ = oc
-         oc' <- OpLegacy ps' rex ocm <$> getWord8
+         let OpLegacy ps' rx ocm _ = oc
+         oc' <- OpLegacy ps' rx ocm <$> getWord8
          return ( oc'
                 , ops
                 , amd3DNowEncoding
@@ -81,27 +81,44 @@ getInstruction mode = consumeAtMost 15 $ do
          -- get candidate instructions for the opcode
          cs <- case Map.lookup ocmap opcodeMaps of
                   Nothing -> fail "No opcode map found"
-                  Just t  -> return (t V.! fromIntegral (getOpcode oc))
+                  Just t  -> return (t V.! fromIntegral (opcodeByte oc))
 
          when (null cs) $ fail "No candidate instruction found (empty opcode map cell)"
 
          -- check prefixes
          let
-            -- TODO: check all prefixes (mandatory, lock, hle, branch hint, etc.)
-            --isPrefixValid = \case
-            --   LegacyPrefix66 ->
-            --   LegacyPrefix67 ->
-            --   LegacyPrefix2E ->
-            --   LegacyPrefix3E ->
-            --   LegacyPrefix26 ->
-            --   LegacyPrefix64 ->
-            --   LegacyPrefix65 ->
-            --   LegacyPrefix36 ->
-            --   LegacyPrefixF0 ->
-            --   LegacyPrefixF3 ->
-            --   LegacyPrefixF2 ->
+            isPrefixValid e x = Just x == (toLegacyPrefix =<< encMandatoryPrefix e)
+               || case x of
+                  -- operand-size prefix
+                  LegacyPrefix66 -> True
+                  -- address-size prefix
+                  LegacyPrefix67 -> encMayHaveMemoryOperand e
+                  -- CS segment override / Branch not taken hint
+                  LegacyPrefix2E -> encMayHaveMemoryOperand e
+                                    || encBranchHintable e
+                  -- DS segment override / Branch taken hint
+                  LegacyPrefix3E -> encMayHaveMemoryOperand e
+                                    || encBranchHintable e
+                  -- ES segment override
+                  LegacyPrefix26 -> encMayHaveMemoryOperand e 
+                  -- FS segment override
+                  LegacyPrefix64 -> encMayHaveMemoryOperand e 
+                  -- GS segment override
+                  LegacyPrefix65 -> encMayHaveMemoryOperand e 
+                  -- SS segment override
+                  LegacyPrefix36 -> encMayHaveMemoryOperand e 
+                  -- LOCK prefix
+                  LegacyPrefixF0 -> encLockable e
+                  -- REPZ / XRELEASE
+                  LegacyPrefixF3 -> encRepeatable e
+                                    || encHasHLE XRelease e
+                  -- REPNZ / XACQUIRE
+                  LegacyPrefixF2 -> encRepeatable e
+                                    || encHasHLE XAcquire e
 
-            cs2 = filter hasMandatoryPrefix cs
+            arePrefixesValid c = all (isPrefixValid (entryEncoding c)) ps
+
+            cs2 = filter (\c -> hasMandatoryPrefix c && arePrefixesValid c) cs
             hasMandatoryPrefix i = case (toLegacyPrefix =<< encMandatoryPrefix (entryEncoding i), oc) of
                (mp, OpVex v _)        -> mp == vexPrefix v
                (mp, OpXop v _)        -> mp == vexPrefix v
@@ -451,13 +468,6 @@ readOperands mode ps oc enc = do
          -- long mode that can be either 32- or 64-bit
          LongMode Long64bitMode     -> addrSize32o64
 
-   -- do we need to read a memory operand?
-   hasMemoryOperand <- case (encMayHaveMemoryOperand enc, modField <$> modrm) of
-      (False, _       ) -> return False
-      (True, Nothing  ) -> fail "Memory operand required but we cannot read ModRM"
-      (True, Just 0b11) -> return False -- ModRM.mod == 0b11 (register in ModRM.rm)
-      (True, Just _   ) -> return True  -- ModRM.mod /= 0b11 (memory in ModRM.rm)
-
    let
       -- we determine the effective operand size. It depends on:
       --   * the mode of execution
@@ -466,6 +476,9 @@ readOperands mode ps oc enc = do
       --   * the value of the ForceNo8bit bit in the opcode (if applicable)
       --   * the value of REX.W/VEX.W/XOP.W (if applicable)
       hasOperandSizePrefix = LegacyPrefix66 `elem` ps
+      hasDefaultOp64       = DefaultOperandSize64 `elem` encProperties enc
+      hasRexW              = opcodeW oc
+
       opSize16o32 = case (defaultOperandSize mode, hasOperandSizePrefix) of
          (OpSize16, False) -> OpSize16
          (OpSize32, False) -> OpSize32
@@ -474,10 +487,6 @@ readOperands mode ps oc enc = do
          (a,_)               -> error ("Invalid default address size for the current mode: "
                                        ++ show (x86Mode mode) ++ " and "
                                        ++ show a)
-
-      hasDefaultOp64 = DefaultOperandSize64 `elem` encProperties enc
-
-      hasRexW = opcodeW oc
 
       -- in 64-bit mode, most 64-bit instructions default to 32-bit operand
       -- size, except those with the DefaultOperandSize64 property.
@@ -599,9 +608,7 @@ readOperands mode ps oc enc = do
    let
       is64bitMode' = is64bitMode (x86Mode mode)
 
-      modrm' = case modrm of
-         Just m  -> m
-         Nothing -> error "ModRM required"
+      modrm' = fromMaybe (error "ModRM required") modrm
 
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)
@@ -695,7 +702,7 @@ readOperands mode ps oc enc = do
                RegVec64    -> OpReg $ R_MMX regid
                RegVec128   -> OpReg $ R_XMM regid
                RegVec256   -> OpReg $ R_YMM regid
-               RegFixed r  -> OpReg $ r
+               RegFixed r  -> OpReg r
                RegSegment  -> OpReg $ case regid of
                                 0 -> R_ES
                                 1 -> R_CS
@@ -724,8 +731,8 @@ readOperands mode ps oc enc = do
                                 AddrSize32 -> R_ECX
                                 AddrSize64 -> R_RCX
                RegAccu     -> OpReg $ gpr operandSize 0
-               RegStackPtr -> OpReg $ rSP
-               RegBasePtr  -> OpReg $ rBP
+               RegStackPtr -> OpReg rSP
+               RegBasePtr  -> OpReg rBP
                RegFam rf   -> case rf of
                                  RegFamAX -> OpReg $ gpr operandSize 0
                                  RegFamBX -> OpReg $ gpr operandSize 3
@@ -747,10 +754,17 @@ readOperands mode ps oc enc = do
                   e          -> error ("Invalid register encoding: " ++ show e)
          
          -- Sub-part of a register
-         T_SubReg subrtype rtype -> readParam (spec {opType = T_Reg rtype})
+         T_SubReg _ rtype -> readParam (spec {opType = T_Reg rtype})
 
          -- Pair (AAA:BBB)
-         T_Pair o1 o2 -> undefined
+         T_Pair (T_Reg (RegFixed r1)) (T_Reg (RegFixed r2)) -> return (OpRegPair r1 r2)
+
+         T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp) -> return $ case imms of
+            [SizedValue16 x, SizedValue16 y] -> OpPtr16_16 x y
+            [SizedValue16 x, SizedValue32 y] -> OpPtr16_32 x y
+            xs -> error ("Invalid immediate operands for ptr16x: " ++ show xs)
+
+         T_Pair x y -> error ("Unhandled operand pair: " ++ show (x,y))
 
          -- Immediate
          T_Imm (ImmConst n) ->
@@ -978,16 +992,3 @@ getVectorLength = \case
       else VL128
    _         -> Nothing
 
--- | Get the opcode map
-getOpcodeMap :: Opcode -> OpcodeMap
-getOpcodeMap = \case
-   OpLegacy _ _ t _ -> MapLegacy t
-   OpVex  v    _    -> vexMapSelect v
-   OpXop  v    _    -> vexMapSelect v
-
--- | Get the opcode byte
-getOpcode :: Opcode -> Word8
-getOpcode = \case
-   OpLegacy _ _ _ x -> x
-   OpVex        _ x -> x
-   OpXop        _ x -> x

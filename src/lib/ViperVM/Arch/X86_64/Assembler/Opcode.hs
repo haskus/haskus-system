@@ -5,6 +5,7 @@ module ViperVM.Arch.X86_64.Assembler.Opcode
    , toLegacyPrefix
    , Opcode (..)
    , opcodeByte
+   , opcodeMap
    , opcodeB
    , opcodeR
    , opcodeX
@@ -75,8 +76,15 @@ data Opcode
 -- | Opcode byte
 opcodeByte :: Opcode -> Word8
 opcodeByte (OpLegacy _ _ _ x) = x
-opcodeByte (OpVex _ x) = x
-opcodeByte (OpXop _ x) = x
+opcodeByte (OpVex _ x)        = x
+opcodeByte (OpXop _ x)        = x
+
+-- | Get the opcode map
+opcodeMap :: Opcode -> OpcodeMap
+opcodeMap = \case
+   OpLegacy _ _ t _ -> MapLegacy t
+   OpVex  v    _    -> vexMapSelect v
+   OpXop  v    _    -> vexMapSelect v
 
 -- | Base extension
 opcodeB :: Opcode -> Word8
