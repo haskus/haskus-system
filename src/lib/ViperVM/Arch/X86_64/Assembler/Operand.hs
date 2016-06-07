@@ -34,7 +34,6 @@ data Operand
    | OpCodeAddr Addr                   -- ^ Code address
    | OpPtr16_16 !Word16 !Word16        -- ^ Immediate 16:16 ptr
    | OpPtr16_32 !Word16 !Word32        -- ^ Immediate 16:32 ptr
-   | OpRegId !Word8                    -- ^ Register identifier (later to become a OpReg)
    deriving (Show,Eq)
 
 -- The X86 architecture supports different kinds of memory addressing. The

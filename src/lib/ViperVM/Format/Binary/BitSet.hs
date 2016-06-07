@@ -40,6 +40,7 @@ module ViperVM.Format.Binary.BitSet
    , CBitSet (..)
    , null
    , empty
+   , singleton
    , insert
    , delete
    , toBits
@@ -49,6 +50,7 @@ module ViperVM.Format.Binary.BitSet
    , elems
    , intersection
    , union
+   , unions
    , fromListToBits
    , toListFromBits
    , fromList
@@ -90,6 +92,11 @@ empty = BitSet zeroBits
 
 {-# INLINE empty #-}
 
+-- | Create a BitSet from a single element
+singleton :: (Bits b, CBitSet a) => a -> BitSet b a
+singleton e = BitSet $ setBit zeroBits (toBitOffset e)
+
+{-# INLINE singleton #-}
 
 -- | Insert an element in the set
 insert :: (Bits b, CBitSet a) => BitSet b a -> a -> BitSet b a
@@ -146,6 +153,12 @@ union :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
 union (BitSet b1) (BitSet b2) = BitSet (b1 .|. b2)
 
 {-# INLINE union #-}
+
+-- | Intersection of several sets
+unions :: FiniteBits b => [BitSet b a] -> BitSet b a
+unions = foldl' union empty
+
+{-# INLINE unions #-}
 
 -- | Bit set indexed with a
 class CBitSet a where

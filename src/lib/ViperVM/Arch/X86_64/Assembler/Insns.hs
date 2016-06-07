@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | X86 (and X87) instructions
 --
@@ -73,6 +74,7 @@ import Data.Word
 import Data.List ((\\))
 import Data.Maybe
 
+import ViperVM.Format.Binary.BitSet (CBitSet(..))
 import ViperVM.Arch.X86_64.MicroArch
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Opcode
@@ -193,10 +195,17 @@ data HLEAction
 
 -- | Instruction variant encoding
 data EncodingVariant
-   = Locked        -- ^ Locked memory access
-   | Reversed      -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
-   | ExplicitParam -- ^ A variant exists with an implicit parameter, but the explicit variant is used
-   deriving (Show,Eq)
+   = Locked                     -- ^ Locked memory access
+   | Reversed                   -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   | ExplicitParam              -- ^ A variant exists with an implicit parameter, but the explicit variant is used
+   | RepeatZero                 -- ^ REP(Z) prefix
+   | RepeatNonZero              -- ^ REPNZ prefix
+   | LockEllisionAcquire        -- ^ XACQUIRE prefix
+   | LockEllisionRelease        -- ^ XRELEASE prefix
+   | BranchHintTaken            -- ^ Branch hint (branch taken)
+   | BranchHintNotTaken         -- ^ Branch hint (not taken)
+   | SuperfluousSegmentOverride -- ^ Segment override equal to default segment
+   deriving (Show,Eq,Enum,CBitSet)
 
 
 -------------------------------------------------------------------
@@ -687,7 +696,8 @@ encFPUPopBit _                   = Nothing
 
 -- | Indicate if LOCK prefix is allowed
 encLockable :: Encoding -> Bool
-encLockable e = Lockable `elem` encProperties e
+encLockable e = Lockable     `elem` encProperties e
+             || ImplicitLock `elem` encProperties e
 
 -- | Indicate if branch hint prefixes are allowed
 encBranchHintable :: Encoding -> Bool

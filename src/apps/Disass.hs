@@ -1,8 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 
 import System.Environment
+import Control.Monad (unless)
+
 import ViperVM.Format.Binary.Get as G
 import ViperVM.Format.Binary.Buffer
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.X86_64.Assembler.Mode
 import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.New
@@ -18,27 +21,25 @@ main = do
             { x86Mode            = LongMode Long64bitMode
             , defaultAddressSize = AddrSize64
             , defaultOperandSize = OpSize32
-            , extensions         =
-               allExtensions
+            , extensions         = allExtensions
             }
       g  = G.countBytes $ getInstruction m
 
-      go offset b = do
-         case G.runGet g b of
+      go offset b = case G.runGet g b of
             Left str    -> do
                putStrLn $ "Failed: " ++ show str
-               putStrLn (show b)
-            Right (n,(oc,ops,enc,insn)) -> do
+               print b
+            Right (n,i) -> do
                let
                   str = show offset
                         ++ "\t"
                         ++ show (bufferTake n b)
                         ++ replicate (30 - 2*fromIntegral n) ' '
-                        ++ insnMnemonic insn
-                        ++ " " ++ show ops
+                        ++ insnMnemonic (insnSpec i)
+                        ++ " " ++ show (insnOperands i)
+                        ++ " " ++ show (BitSet.toList (insnVariant i))
                putStrLn str
                let b' = bufferDrop n b
-               if isBufferEmpty b'
-                  then return ()
-                  else go (offset + n) b'
+               unless (isBufferEmpty b') $
+                  go (offset + n) b'
    go 0 bs

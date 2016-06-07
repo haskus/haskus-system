@@ -4,6 +4,7 @@
 
 module ViperVM.Arch.X86_64.Assembler.New
    ( getInstruction
+   , Insn (..)
    , ExecMode (..)
    )
 where
@@ -19,6 +20,8 @@ import ViperVM.Arch.X86_64.Assembler.Insns
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.BitSet (BitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified Data.Map as Map
 import Data.List (nub)
@@ -49,7 +52,15 @@ hasExtension mode ext = ext `elem` extensions mode
 -- X86 Instruction
 -- ===========================================================================
 
-getInstruction :: ExecMode -> Get (Opcode,[Operand],Encoding,X86Insn)
+data Insn = Insn
+   { insnOpcode   :: Opcode
+   , insnOperands :: [Operand]
+   , insnEncoding :: Encoding
+   , insnSpec     :: X86Insn
+   , insnVariant  :: BitSet Word16 EncodingVariant
+   }
+
+getInstruction :: ExecMode -> Get Insn
 getInstruction mode = consumeAtMost 15 $ do
    -- An instruction is at most 15 bytes long
 
@@ -71,11 +82,11 @@ getInstruction mode = consumeAtMost 15 $ do
          -- read opcode byte
          let OpLegacy ps' rx ocm _ = oc
          oc' <- OpLegacy ps' rx ocm <$> getWord8
-         return ( oc'
-                , ops
-                , amd3DNowEncoding
-                , error "3DNow! instructions not supported" -- TODO
-                )
+         return $ Insn oc'
+                ops
+                amd3DNowEncoding
+                (error "3DNow! instructions not supported") -- TODO
+                BitSet.empty
 
       ocmap              -> do
          -- get candidate instructions for the opcode
@@ -177,14 +188,70 @@ getInstruction mode = consumeAtMost 15 $ do
          when (null cs5) $ fail errs
 
          -- If there are more than one instruction left, signal a bug
-         entry <- case cs5 of
+         MapEntry spec enc <- case cs5 of
             [x] -> return x
             xs  -> fail ("More than one instruction found (opcode table bug?): " ++ show xs)
 
          -- Read params
-         ops <- readOperands mode ps oc (entryEncoding entry)
+         ops <- readOperands mode ps oc enc
 
-         return (oc, ops, entryEncoding entry, entryInsn entry)
+         -- Variants
+         let
+            -- lock prefix
+            vlocked  = if encLockable enc && LegacyPrefixF0 `elem` ps
+                        then BitSet.singleton Locked
+                        else BitSet.empty
+
+            -- repeat prefixes
+            vrepeat  = if encRepeatable enc
+                        then if LegacyPrefixF3 `elem` ps
+                           then BitSet.singleton RepeatZero
+                           else if LegacyPrefixF2 `elem` ps
+                              then BitSet.singleton RepeatNonZero
+                              else BitSet.empty
+                        else BitSet.empty
+
+            -- branch hint prefixes
+            vbranchhint = if encBranchHintable enc
+                        then if LegacyPrefix3E `elem` ps
+                           then BitSet.singleton BranchHintTaken
+                           else if LegacyPrefix2E `elem` ps
+                              then BitSet.singleton BranchHintNotTaken
+                              else BitSet.empty
+                        else BitSet.empty
+
+            -- check if insn is reversable, if the reversable bit is set
+            -- and if there are only registers operands (because it is the only
+            -- case for which there are two different encodings for the same
+            -- instruction:
+            --    ModRM.reg = r1, ModRM.rm = r2, reversed = False
+            --    ModRM.reg = r2, ModRM.rm = r1, reversed = True
+            isRegOp (OpReg _) = True
+            isRegOp _         = False
+            onlyRegOps        = all isRegOp ops
+            reversed = case encReversableBit enc of
+               Just b  -> testBit (opcodeByte oc) b 
+               Nothing -> False
+
+            vreverse = if reversed && onlyRegOps
+               then BitSet.singleton Reversed
+               else BitSet.empty
+
+            -- TODO: superfluous segment override
+            -- TODO: explicit param variant
+
+            variants = BitSet.unions [ vlocked
+                                     , vreverse 
+                                     , vrepeat
+                                     , vbranchhint
+                                     ]
+
+            -- reverse operands if necessary
+            ops' = if reversed
+                     then reverse ops
+                     else ops
+
+         return $ Insn oc ops' enc spec variants
 
 -- ===========================================================================
 -- Legacy encoding
@@ -618,7 +685,7 @@ readOperands mode ps oc enc = do
             Nothing   -> fail "Cannot read ModRM.mod"
          
          -- One of the two types depending on Vex.L
-         TLE l128 l256 -> case getVectorLength oc of
+         TLE l128 l256 -> case opcodeL oc of
             Just VL128 -> readParam (spec { opType = l128 })
             Just VL256 -> readParam (spec { opType = l256 })
             Nothing    -> fail "Cannot read VEX.L/XOP.L"
@@ -676,25 +743,7 @@ readOperands mode ps oc enc = do
                   scl = if addressSize /= AddrSize16 && rmField modrm' == 0b100
                            then Just (scaleField sib')
                            else Nothing
-                  defSeg = case base of
-                     Just R_BP  -> R_SS
-                     Just R_SP  -> R_SS
-                     Just R_EBP -> R_SS
-                     Just R_ESP -> R_SS
-                     Just R_RBP -> R_SS
-                     Just R_RSP -> R_SS
-                     _          -> R_DS
-
-                  -- segment override prefixes
-                  seg' = case filter ((== 3) . legacyPrefixGroup) ps of
-                     []               -> defSeg
-                     [LegacyPrefix2E] -> R_CS
-                     [LegacyPrefix3E] -> R_DS
-                     [LegacyPrefix26] -> R_ES
-                     [LegacyPrefix64] -> R_FS
-                     [LegacyPrefix65] -> R_GS
-                     [LegacyPrefix36] -> R_SS
-                     xs -> error ("More than one segment-override prefix: "++show xs)
+                  seg' = fromMaybe (defaultSegment base) segOverride
                         
 
          -- Register
@@ -803,9 +852,10 @@ readOperands mode ps oc enc = do
             })
 
       -- The default segment is DS except
+      --  * for some instruction (cf DefaultSegment property)
       --  * if rBP or rSP is used as base (in which case it is SS)
       --  * for string instructions' source operand (in which case it is ES)
-      defaultSegment = case filter isD (encProperties enc) of
+      defSeg = case filter isD (encProperties enc) of
             []                 -> R_DS
             [DefaultSegment s] -> s
             _                  -> error "More than one default segment"
@@ -813,19 +863,19 @@ readOperands mode ps oc enc = do
             isD (DefaultSegment _) = True
             isD _                  = False
 
+      -- segment override prefixes
+      segOverride = case filter ((== 3) . legacyPrefixGroup) ps of
+         []               -> Nothing
+         [LegacyPrefix2E] -> Just R_CS
+         [LegacyPrefix3E] -> Just R_DS
+         [LegacyPrefix26] -> Just R_ES
+         [LegacyPrefix64] -> Just R_FS
+         [LegacyPrefix65] -> Just R_GS
+         [LegacyPrefix36] -> Just R_SS
+         xs -> error ("More than one segment-override prefix: "++show xs)
+
       -- memory segment (when override is allowed)
-      seg = case mapMaybe mseg ps of
-            []  -> defaultSegment
-            [x] -> x
-            xs  -> error ("More than one segment-override prefix: " ++ show xs)
-         where
-            mseg LegacyPrefix2E = Just R_CS
-            mseg LegacyPrefix3E = Just R_DS
-            mseg LegacyPrefix26 = Just R_ES
-            mseg LegacyPrefix64 = Just R_FS
-            mseg LegacyPrefix65 = Just R_GS
-            mseg LegacyPrefix36 = Just R_SS
-            mseg _              = Nothing
+      seg = fromMaybe defSeg segOverride
 
       rSP = if is64bitMode'
                then R_RSP
@@ -976,19 +1026,13 @@ readOperands mode ps oc enc = do
    return ops
 
 
-data VectorLength
-   = VL128
-   | VL256
-   deriving (Show,Eq)
-
--- | Get vector length (stored in VEX.L, XOP.L, etc.)
-getVectorLength :: Opcode -> Maybe VectorLength
-getVectorLength = \case
-   OpVex v _ -> Just $ if vexL v
-      then VL256
-      else VL128
-   OpXop v _ -> Just $ if vexL v
-      then VL256
-      else VL128
-   _         -> Nothing
-
+-- | Give the default segment for the given base register
+defaultSegment :: Maybe Register -> Register
+defaultSegment = \case
+   Just R_BP  -> R_SS
+   Just R_SP  -> R_SS
+   Just R_EBP -> R_SS
+   Just R_ESP -> R_SS
+   Just R_RBP -> R_SS
+   Just R_RSP -> R_SS
+   _          -> R_DS

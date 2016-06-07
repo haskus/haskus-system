@@ -10,8 +10,10 @@ module ViperVM.Arch.X86_64.Assembler.Opcode
    , opcodeR
    , opcodeX
    , opcodeW
+   , opcodeL
    , OpcodeMap (..)
    , LegacyMap (..)
+   , VectorLength (..)
    -- * REX prefix
    , Rex (..)
    , rexW
@@ -133,6 +135,23 @@ data LegacyMap
    | MapX87
    deriving (Show,Eq,Ord)
 
+data VectorLength
+   = VL128
+   | VL256
+   deriving (Show,Eq)
+
+-- | Get vector length (stored in VEX.L, XOP.L, etc.)
+opcodeL :: Opcode -> Maybe VectorLength
+opcodeL = \case
+   OpVex v _ -> Just $ if vexL v
+      then VL256
+      else VL128
+   OpXop v _ -> Just $ if vexL v
+      then VL256
+      else VL128
+   _         -> Nothing
+
+
 -------------------------------------------------------------------
 -- REX prefix
 -------------------------------------------------------------------
@@ -191,8 +210,8 @@ vexL (Vex2 x)   = testBit x 2
 vexL (Vex3 _ x) = testBit x 2
 
 vexVVVV :: Vex -> Word8
-vexVVVV (Vex2 x)   = (x `shiftR` 3) .&. 0x0F
-vexVVVV (Vex3 _ x) = (x `shiftR` 3) .&. 0x0F
+vexVVVV (Vex2 x)   = (complement (x `shiftR` 3)) .&. 0x0F
+vexVVVV (Vex3 _ x) = (complement (x `shiftR` 3)) .&. 0x0F
 
 vexPP :: Vex -> Word8
 vexPP (Vex2 x)   = x .&. 0x03
