@@ -2,22 +2,22 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BinaryLiterals #-}
 
-module ViperVM.Arch.X86_64.Assembler.Decoder
+module ViperVM.Arch.X86_64.ISA.Decoder
    ( getInstruction
    , Insn (..)
    , ExecMode (..)
    )
 where
 
-import ViperVM.Arch.X86_64.Assembler.Opcode
-import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.ModRM
-import ViperVM.Arch.X86_64.Assembler.Operand
-import ViperVM.Arch.X86_64.Assembler.Registers
-import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Tables
-import ViperVM.Arch.X86_64.Assembler.Insns
-import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.ISA.Opcode
+import ViperVM.Arch.X86_64.ISA.Mode
+import ViperVM.Arch.X86_64.ISA.ModRM
+import ViperVM.Arch.X86_64.ISA.Operand
+import ViperVM.Arch.X86_64.ISA.Registers
+import ViperVM.Arch.X86_64.ISA.Size
+import ViperVM.Arch.X86_64.ISA.Tables
+import ViperVM.Arch.X86_64.ISA.Insns
+import ViperVM.Arch.X86_64.ISA.Encoding
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField

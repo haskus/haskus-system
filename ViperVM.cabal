@@ -54,20 +54,20 @@ library
 
     ViperVM.Arch.X86_64.Linux.Syscall
     ViperVM.Arch.X86_64.Linux.Syscalls
-    ViperVM.Arch.X86_64.MicroArch
 
-    ViperVM.Arch.X86_64.Assembler.Opcode
-    ViperVM.Arch.X86_64.Assembler.ModRM
-    ViperVM.Arch.X86_64.Assembler.Mode
-    ViperVM.Arch.X86_64.Assembler.Registers
-    ViperVM.Arch.X86_64.Assembler.RegisterFile
-    ViperVM.Arch.X86_64.Assembler.Size
-    ViperVM.Arch.X86_64.Assembler.Tables
-    ViperVM.Arch.X86_64.Assembler.Decoder
-    ViperVM.Arch.X86_64.Assembler.Operand
-    ViperVM.Arch.X86_64.Assembler.Insns
-    ViperVM.Arch.X86_64.Assembler.Disassembler
-    ViperVM.Arch.X86_64.Assembler.Encoding
+    ViperVM.Arch.X86_64.ISA.MicroArch
+    ViperVM.Arch.X86_64.ISA.Opcode
+    ViperVM.Arch.X86_64.ISA.ModRM
+    ViperVM.Arch.X86_64.ISA.Mode
+    ViperVM.Arch.X86_64.ISA.Registers
+    ViperVM.Arch.X86_64.ISA.RegisterFile
+    ViperVM.Arch.X86_64.ISA.Size
+    ViperVM.Arch.X86_64.ISA.Tables
+    ViperVM.Arch.X86_64.ISA.Decoder
+    ViperVM.Arch.X86_64.ISA.Operand
+    ViperVM.Arch.X86_64.ISA.Insns
+    ViperVM.Arch.X86_64.ISA.Encoding
+    ViperVM.Arch.X86_64.Disassembler
 
     ViperVM.Arch.Linux.Internals.FileSystem
     ViperVM.Arch.Linux.Internals.Input

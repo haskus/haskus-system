@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module ViperVM.Arch.X86_64.Assembler.Operand
+module ViperVM.Arch.X86_64.ISA.Operand
    ( OperandType(..)
    , OperandEnc(..)
    , OperandSpec (..)
@@ -19,9 +19,9 @@ module ViperVM.Arch.X86_64.Assembler.Operand
    )
 where
 
-import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Registers
-import ViperVM.Arch.X86_64.Assembler.ModRM
+import ViperVM.Arch.X86_64.ISA.Size
+import ViperVM.Arch.X86_64.ISA.Registers
+import ViperVM.Arch.X86_64.ISA.ModRM
 
 import Data.Word
 

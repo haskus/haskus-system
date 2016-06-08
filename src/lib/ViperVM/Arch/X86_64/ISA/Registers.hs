@@ -1,5 +1,5 @@
 -- | x86 registers
-module ViperVM.Arch.X86_64.Assembler.Registers 
+module ViperVM.Arch.X86_64.ISA.Registers 
    ( Register(..)
    , RegFamily(..)
    , regSupportRex
@@ -13,10 +13,10 @@ import Data.Word
 import Data.Bits
 import Data.Maybe (fromJust)
 
-import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.RegisterFile (makeRegSequence,RegisterFile,mergeRegisterFiles,makeRegisterFile)
-import qualified ViperVM.Arch.X86_64.Assembler.RegisterFile as RF
+import ViperVM.Arch.X86_64.ISA.Mode
+import ViperVM.Arch.X86_64.ISA.Size
+import ViperVM.Arch.X86_64.ISA.RegisterFile (makeRegSequence,RegisterFile,mergeRegisterFiles,makeRegisterFile)
+import qualified ViperVM.Arch.X86_64.ISA.RegisterFile as RF
 
 -- | Register family
 data RegFamily

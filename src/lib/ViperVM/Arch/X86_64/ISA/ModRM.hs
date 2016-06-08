@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 
-module ViperVM.Arch.X86_64.Assembler.ModRM
+module ViperVM.Arch.X86_64.ISA.ModRM
    ( ModRM(..)
    , SIB(..)
    , Scale(..)
@@ -26,7 +26,7 @@ import Data.Word
 import Data.Bits
 import Data.Proxy
 
-import ViperVM.Arch.X86_64.Assembler.Size
+import ViperVM.Arch.X86_64.ISA.Size
 import ViperVM.Format.Binary.BitField
 
 -- | ModRM byte

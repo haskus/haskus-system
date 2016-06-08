@@ -2,7 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 
 -- | Opcode tables
-module ViperVM.Arch.X86_64.Assembler.Tables
+module ViperVM.Arch.X86_64.ISA.Tables
    ( opcodeMaps
    , buildOpcodeMaps
    , buildOpcodeMap
@@ -10,13 +10,10 @@ module ViperVM.Arch.X86_64.Assembler.Tables
    )
 where
 
-import ViperVM.Arch.X86_64.Assembler.Operand
-import ViperVM.Arch.X86_64.Assembler.Insns
-import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.ISA.Insns
+import ViperVM.Arch.X86_64.ISA.Encoding
 
-import Data.Bits
 import Data.Maybe
-import Data.Word
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Vector as V

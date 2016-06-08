@@ -5,11 +5,11 @@ import Control.Monad (forM_)
 
 import ViperVM.Format.Binary.Buffer
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Decoder
-import ViperVM.Arch.X86_64.Assembler.Disassembler
-import ViperVM.Arch.X86_64.Assembler.Insns
+import ViperVM.Arch.X86_64.ISA.Mode
+import ViperVM.Arch.X86_64.ISA.Size
+import ViperVM.Arch.X86_64.ISA.Decoder
+import ViperVM.Arch.X86_64.ISA.Insns
+import ViperVM.Arch.X86_64.Disassembler
 
 main :: IO ()
 main = do

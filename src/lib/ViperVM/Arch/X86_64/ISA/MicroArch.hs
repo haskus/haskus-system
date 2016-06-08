@@ -1,5 +1,5 @@
 -- | X86 Archtiectures and micro-architectures
-module ViperVM.Arch.X86_64.MicroArch
+module ViperVM.Arch.X86_64.ISA.MicroArch
    ( X86Arch(..)
    )
 where

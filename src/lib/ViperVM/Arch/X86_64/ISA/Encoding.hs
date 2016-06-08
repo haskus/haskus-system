@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
 -- | Instruction encoding
-module ViperVM.Arch.X86_64.Assembler.Encoding
+module ViperVM.Arch.X86_64.ISA.Encoding
    ( Encoding (..)
    , Properties(..)
    , FlagOp(..)
@@ -50,11 +50,11 @@ import Data.Maybe
 import Data.Bits
 
 import ViperVM.Format.Binary.BitSet (CBitSet(..))
-import ViperVM.Arch.X86_64.MicroArch
-import ViperVM.Arch.X86_64.Assembler.Operand
-import ViperVM.Arch.X86_64.Assembler.Opcode
-import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.Registers
+import ViperVM.Arch.X86_64.ISA.MicroArch
+import ViperVM.Arch.X86_64.ISA.Operand
+import ViperVM.Arch.X86_64.ISA.Opcode
+import ViperVM.Arch.X86_64.ISA.Mode
+import ViperVM.Arch.X86_64.ISA.Registers
 
 -- | Instruction encoding
 data Encoding

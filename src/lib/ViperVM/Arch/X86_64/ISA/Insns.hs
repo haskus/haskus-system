@@ -22,7 +22,7 @@
 --
 -- FIXME: MemAlign property needs to be checked (added only since vhaddpd)
 --
-module ViperVM.Arch.X86_64.Assembler.Insns
+module ViperVM.Arch.X86_64.ISA.Insns
    ( X86Insn(..)
    , instructions
    , amd3DNowEncoding
@@ -31,13 +31,13 @@ where
 
 import Data.List ((\\))
 
-import ViperVM.Arch.X86_64.MicroArch
-import ViperVM.Arch.X86_64.Assembler.Operand
-import ViperVM.Arch.X86_64.Assembler.Opcode
-import ViperVM.Arch.X86_64.Assembler.Mode
-import ViperVM.Arch.X86_64.Assembler.Registers
-import ViperVM.Arch.X86_64.Assembler.Size
-import ViperVM.Arch.X86_64.Assembler.Encoding
+import ViperVM.Arch.X86_64.ISA.MicroArch
+import ViperVM.Arch.X86_64.ISA.Operand
+import ViperVM.Arch.X86_64.ISA.Opcode
+import ViperVM.Arch.X86_64.ISA.Mode
+import ViperVM.Arch.X86_64.ISA.Registers
+import ViperVM.Arch.X86_64.ISA.Size
+import ViperVM.Arch.X86_64.ISA.Encoding
 
 -- | X86 instruction
 data X86Insn = X86Insn

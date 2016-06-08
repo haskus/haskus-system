@@ -1,15 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
 
-module ViperVM.Arch.X86_64.Assembler.Disassembler
+-- | X86 disassembler
+module ViperVM.Arch.X86_64.Disassembler
    ( linearDisass
    , Disass (..)
    )
    where
 
-
 import ViperVM.Format.Binary.Get as G
 import ViperVM.Format.Binary.Buffer
-import ViperVM.Arch.X86_64.Assembler.Decoder
+import ViperVM.Arch.X86_64.ISA.Decoder
 
 data Disass
    = Failure Word Buffer [String]

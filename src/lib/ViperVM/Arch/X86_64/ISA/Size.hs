@@ -1,5 +1,5 @@
 -- | Sizes
-module ViperVM.Arch.X86_64.Assembler.Size
+module ViperVM.Arch.X86_64.ISA.Size
    ( Size(..)
    , AddressSize(..)
    , SizedValue(..)

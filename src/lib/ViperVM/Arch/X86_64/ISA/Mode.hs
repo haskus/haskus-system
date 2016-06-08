@@ -1,6 +1,6 @@
 -- | X86 architectures support several operating modes.
 -- This module gives information for each mode
-module ViperVM.Arch.X86_64.Assembler.Mode 
+module ViperVM.Arch.X86_64.ISA.Mode 
    ( X86Mode (..)
    , LongSubMode (..)
    , LegacySubMode (..)
@@ -12,7 +12,8 @@ module ViperVM.Arch.X86_64.Assembler.Mode
    , is64bitMode
    , is32bitMode
    , isLongMode
-   ) where
+   )
+   where
 
 
 -- | X86 and X86-64 operating mode

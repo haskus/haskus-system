@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module ViperVM.Arch.X86_64.Assembler.Opcode
+module ViperVM.Arch.X86_64.ISA.Opcode
    ( LegacyPrefix (..)
    , toLegacyPrefix
    , Opcode (..)

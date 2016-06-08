@@ -1,5 +1,5 @@
 -- | Module handling registers
-module ViperVM.Arch.X86_64.Assembler.RegisterFile
+module ViperVM.Arch.X86_64.ISA.RegisterFile
    ( Register(..)
    , RegisterFile(..)
    , makeRegisterFile
