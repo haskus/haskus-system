@@ -5,8 +5,8 @@ x86-64 architecture and Linux for now. From the bottom up:
 
 ## Formats
 
-* ViperVM.Format.Binary: modules to manipulate binary data (bits, Word8, wordN,
-  ByteString, etc.)
+* ViperVM.Format.Binary: modules to manipulate binary data and to easily create
+  C bindings (see the [documentation](doc/manual/bindings.md))
 * ViperVM.Format.Compression: some compression algorithms and containers
 * ViperVM.Format.CPIO: CPIO archive format
 * ViperVM.Format.Elf: ELF object format
