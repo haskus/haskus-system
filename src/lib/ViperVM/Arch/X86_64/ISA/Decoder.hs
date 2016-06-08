@@ -141,12 +141,12 @@ getInstruction mode = consumeAtMost 15 $ do
                where
                   e = entryEncoding i
                   -- extension in the whole second byte
-                  fullext = case (modrm,encOpcodeExt e) of
+                  fullext = case (modrm,encOpcodeFullExt e) of
                      (_, Nothing)      -> True
                      (Just m, Just x)  -> m == x
                      (Nothing, Just _) -> False
                   -- extension in ModRM.Reg
-                  regext = case (modrm,encOpcodeFullExt e) of
+                  regext = case (modrm,encOpcodeExt e) of
                      (_, Nothing)      -> True
                      (Just m, Just x)  -> regField (ModRM (BitFields m)) == x
                      (Nothing, Just _) -> False
@@ -159,7 +159,7 @@ getInstruction mode = consumeAtMost 15 $ do
                      Nothing -> True
                      Just x  -> opcodeL oc == Just x
 
-         when (null cs3) $ fail "No candidate instruction found (ModRM extension filtering)"
+         when (null cs3) $ fail ("No candidate instruction found (opcode extension filtering): " ++ show oc)
 
          -- filter out invalid ModRM.mod (e.g., only 11b)
          let
