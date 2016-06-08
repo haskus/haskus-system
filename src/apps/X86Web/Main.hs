@@ -2,9 +2,10 @@
 
 import CmdLine (Options(..), getOptions)
 
-import qualified ViperVM.Arch.X86_64.ISA.Insns    as X86
-import qualified ViperVM.Arch.X86_64.ISA.Tables   as X86
-import qualified ViperVM.Arch.X86_64.ISA.Encoding as X86
+import qualified ViperVM.Arch.X86_64.ISA.Insn       as X86
+import qualified ViperVM.Arch.X86_64.ISA.Insns      as X86
+import qualified ViperVM.Arch.X86_64.ISA.OpcodeMaps as X86
+import qualified ViperVM.Arch.X86_64.ISA.Encoding   as X86
 
 import Paths_ViperVM
 import Data.FileEmbed
@@ -146,6 +147,10 @@ showEnc oc rv e = H.tr $ do
          Nothing    -> return ()
          Just True  -> toHtml " L1"
          Just False -> toHtml " L0"
+      case X86.encOpcodeWExt e of
+         Nothing    -> return ()
+         Just True  -> toHtml " W1"
+         Just False -> toHtml " W0"
 
    H.td (toHtml (show (X86.encProperties e)))
    let 

@@ -10,6 +10,7 @@ module ViperVM.Arch.X86_64.Disassembler
 import ViperVM.Format.Binary.Get as G
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.X86_64.ISA.Decoder
+import ViperVM.Arch.X86_64.ISA.Insn
 
 data Disass
    = Failure Word Buffer [String]

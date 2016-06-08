@@ -146,8 +146,8 @@ data EncodingProperties
    | LegacyModeSupport        -- ^ Supported in legacy/compatibility mode
    | Lockable                 -- ^ Support LOCK prefix (only if a memory operand
                               --   is used)
-   | BranchHintable           -- ^ Support branch-hint prefixes
    | ImplicitLock             -- ^ Implicitly locked (lock prefix still supported)
+   | BranchHintable           -- ^ Support branch-hint prefixes
    | Repeatable               -- ^ Allow repeat prefix
    | Commutable               -- ^ Operands can be commuted
    | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
@@ -158,9 +158,8 @@ data EncodingProperties
                               --   instruction in LongMode
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
-   | RequireRexW              -- ^ Require REX.W = 1
    | DefaultSegment Register  -- ^ Default register
-   | HLE HLEAction            -- ^ Hardware-lock elision (HLE)
+   | HLE HLEAction            -- ^ Hardware-lock elision (HLE) prefix support
    deriving (Show,Eq)
 
 data HLEAction

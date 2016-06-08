@@ -5,8 +5,6 @@
 
 module ViperVM.Arch.X86_64.ISA.Decoder
    ( getInstruction
-   , EncodingVariant(..)
-   , Insn (..)
    , ExecMode (..)
    )
 where
@@ -14,13 +12,13 @@ where
 import ViperVM.Arch.X86_64.ISA.Mode
 import ViperVM.Arch.X86_64.ISA.Registers
 import ViperVM.Arch.X86_64.ISA.Size
-import ViperVM.Arch.X86_64.ISA.Tables
+import ViperVM.Arch.X86_64.ISA.OpcodeMaps
 import ViperVM.Arch.X86_64.ISA.Insns
+import ViperVM.Arch.X86_64.ISA.Insn
 import ViperVM.Arch.X86_64.ISA.Encoding
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField
-import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified Data.Map as Map
@@ -51,29 +49,6 @@ hasExtension mode ext = ext `elem` extensions mode
 -- ===========================================================================
 -- X86 Instruction
 -- ===========================================================================
-
-data Insn = Insn
-   { insnOpcode   :: Opcode
-   , insnOperands :: [Operand]
-   , insnEncoding :: Encoding
-   , insnSpec     :: X86Insn
-   , insnVariant  :: BitSet Word16 EncodingVariant
-   }
-   deriving (Show)
-
--- | Instruction variant encoding
-data EncodingVariant
-   = Locked                     -- ^ Locked memory access
-   | Reversed                   -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
-   | ExplicitParam              -- ^ A variant exists with an implicit parameter, but the explicit variant is used
-   | RepeatZero                 -- ^ REP(Z) prefix
-   | RepeatNonZero              -- ^ REPNZ prefix
-   | LockEllisionAcquire        -- ^ XACQUIRE prefix
-   | LockEllisionRelease        -- ^ XRELEASE prefix
-   | BranchHintTaken            -- ^ Branch hint (branch taken)
-   | BranchHintNotTaken         -- ^ Branch hint (not taken)
-   | SuperfluousSegmentOverride -- ^ Segment override equal to default segment
-   deriving (Show,Eq,Enum,CBitSet)
 
 
 getInstruction :: ExecMode -> Get Insn

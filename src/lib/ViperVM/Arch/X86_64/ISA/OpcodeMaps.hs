@@ -2,7 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 
 -- | Opcode tables
-module ViperVM.Arch.X86_64.ISA.Tables
+module ViperVM.Arch.X86_64.ISA.OpcodeMaps
    ( opcodeMaps
    , buildOpcodeMaps
    , buildOpcodeMap
@@ -11,6 +11,7 @@ module ViperVM.Arch.X86_64.ISA.Tables
 where
 
 import ViperVM.Arch.X86_64.ISA.Insns
+import ViperVM.Arch.X86_64.ISA.Insn
 import ViperVM.Arch.X86_64.ISA.Encoding
 
 import Data.Maybe

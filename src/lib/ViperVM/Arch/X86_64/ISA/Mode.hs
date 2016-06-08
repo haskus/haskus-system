@@ -4,7 +4,6 @@ module ViperVM.Arch.X86_64.ISA.Mode
    ( X86Mode (..)
    , LongSubMode (..)
    , LegacySubMode (..)
-   , Flag (..)
    , X86Extension(..)
    , allExtensions
    , ModeInfo (..)
@@ -34,23 +33,6 @@ data LegacySubMode
    | Virtual8086Mode 
    | RealMode 
    deriving (Show,Eq)
-
--- | Status flag
-data Flag
-   -- Status flag
-   = CF     -- ^ Carry flag
-   | PF     -- ^ Parity flag
-   | AF     -- ^ Adjust flag
-   | ZF     -- ^ Zero flag
-   | SF     -- ^ Sign flag
-   | TF     -- ^ Trap flag
-   | OF     -- ^ Overflow flag
-
-   -- Control flags
-   | DF     -- ^ Direction flag
-   | IF     -- ^ Interrupt flag
-   | AC     -- ^ Alignment check
-   deriving (Show,Enum,Eq)
 
 data X86Extension
    = VEX             -- ^ VEX encoded instruction support
