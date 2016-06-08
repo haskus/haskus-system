@@ -87,7 +87,7 @@ allFlags = [CF,PF,AF,ZF,SF,TF,OF]
 leg :: Encoding
 leg = LegacyEncoding
    { legacyMandatoryPrefix = Nothing
-   , legacyOpcodeMap       = MapPrimary
+   , legacyOpcodeMap       = MapLegacy MapPrimary
    , legacyOpcode          = 0
    , legacyOpcodeExt       = Nothing
    , legacyOpcodeFullExt   = Nothing
@@ -97,6 +97,7 @@ leg = LegacyEncoding
    , legacyFPUDest         = Nothing
    , legacyFPUPop          = Nothing
    , legacyFPUSizable      = Nothing
+   , legacyWExt            = Nothing
    , legacyProperties      = []
    , legacyParams          = []
    }
@@ -109,7 +110,8 @@ vex = VexEncoding
    , vexOpcode          = 0
    , vexOpcodeExt       = Nothing
    , vexReversable      = Nothing
-   , vexLW              = LWIG
+   , vexLExt            = Nothing
+   , vexWExt            = Nothing
    , vexProperties      = []
    , vexParams          = []
    }
@@ -479,7 +481,7 @@ m64vsib64xy m = op m (TLE
 -- We use a dummy encoding for 3DNow! because all the instructions use the same
 amd3DNowEncoding :: Encoding
 amd3DNowEncoding = leg
-   { legacyOpcodeMap = Map3DNow
+   { legacyOpcodeMap = MapLegacy Map3DNow
    , legacyParams    = [ vec64 RW Reg
                        , mvec64 RO
                        ]
@@ -1259,7 +1261,7 @@ i_aaa = insn
                        , Undefined [OF,SF,ZF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x37
                            , legacyProperties      = [LegacyModeSupport]
                            , legacyParams          = [ reg R_AX RW Implicit ]
@@ -1275,7 +1277,7 @@ i_aad = insn
                        , Undefined [OF,AF,CF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD5
                            , legacyProperties      = [LegacyModeSupport]
                            , legacyParams          = [ reg R_AX RW Implicit
@@ -1294,7 +1296,7 @@ i_aam = insn
                        , Undefined [OF,AF,CF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD4
                            , legacyProperties      = [LegacyModeSupport]
                            , legacyParams          = [ reg R_AX RW Implicit
@@ -1313,7 +1315,7 @@ i_aas = insn
                        , Undefined [OF,SF,ZF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x3F
                            , legacyProperties      = [LegacyModeSupport]
                            , legacyParams          = [ reg R_AX RW Implicit ]
@@ -1329,7 +1331,7 @@ i_adc = insn
                        , Modified [OF,SF,ZF,AF,CF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x14
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -1340,7 +1342,7 @@ i_adc = insn
                                                      ]
                            }
                         , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x10
                            , legacyNoForce8bit     = Just 0
                            , legacyReversable      = Just 1
@@ -1354,7 +1356,7 @@ i_adc = insn
                                                      ]
                            }
                         , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 2
                            , legacyNoForce8bit     = Just 0
@@ -1380,7 +1382,7 @@ i_adcx = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [Extension ADX]
                            , legacyParams          = [ reg32o64 RW Reg
@@ -1396,7 +1398,7 @@ i_add = insn
    , insnMnemonic    = "ADD"
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x04
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -1407,7 +1409,7 @@ i_add = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x00
                            , legacyNoForce8bit     = Just 0
                            , legacyReversable      = Just 1
@@ -1421,7 +1423,7 @@ i_add = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -1444,7 +1446,7 @@ i_addpd = insn
    , insnMnemonic    = "ADDPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1465,7 +1467,6 @@ i_vaddpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x58
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -1483,7 +1484,7 @@ i_addps = insn
    { insnDesc        = "Add packed single-precision floating-point values"
    , insnMnemonic    = "ADDPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1503,7 +1504,6 @@ i_vaddps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x58
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -1522,7 +1522,7 @@ i_addsd = insn
    , insnMnemonic    = "ADDSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1543,7 +1543,6 @@ i_vaddsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x58
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -1562,7 +1561,7 @@ i_addss = insn
    , insnMnemonic    = "ADDSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1583,7 +1582,6 @@ i_vaddss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x58
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -1602,7 +1600,7 @@ i_addsubpd = insn
    , insnMnemonic    = "ADDSUBPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1623,7 +1621,6 @@ i_vaddsubpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xD0
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -1642,7 +1639,7 @@ i_addsubps = insn
    , insnMnemonic    = "ADDSUBPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1663,7 +1660,6 @@ i_vaddsubps = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD0
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -1685,7 +1681,7 @@ i_adox = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1704,7 +1700,7 @@ i_aesdec = insn
    , insnMnemonic    = "AESDEC"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xDE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1725,7 +1721,6 @@ i_vaesdec = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDE
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AES
@@ -1745,7 +1740,7 @@ i_aesdeclast = insn
    , insnMnemonic    = "AESDECLAST"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1766,7 +1761,6 @@ i_vaesdeclast = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDF
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AES
@@ -1786,7 +1780,7 @@ i_aesenc = insn
    , insnMnemonic    = "AESENC"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xDC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1807,7 +1801,6 @@ i_vaesenc = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDC
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AES
@@ -1827,7 +1820,7 @@ i_aesenclast = insn
    , insnMnemonic    = "AESENCLAST"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xDD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1848,7 +1841,6 @@ i_vaesenclast = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDD
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AES
@@ -1868,7 +1860,7 @@ i_aesimc = insn
    , insnMnemonic    = "AESIMC"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xDB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1889,7 +1881,6 @@ i_vaesimc = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDB
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AES
@@ -1908,7 +1899,7 @@ i_aeskeygenassist = insn
    , insnMnemonic    = "AESKEYGENASSIST"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -1930,7 +1921,6 @@ i_vaeskeygenassist = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0xDF
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AES
@@ -1953,7 +1943,7 @@ i_and = insn
                        , Undefined [AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x24
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -1964,7 +1954,7 @@ i_and = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x20
                            , legacyNoForce8bit  = Just 0
                            , legacyReversable   = Just 1
@@ -1978,7 +1968,7 @@ i_and = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 4
                            , legacyNoForce8bit     = Just 0
@@ -2006,7 +1996,7 @@ i_andn = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x02
                            , vexOpcode       = 0xF2
-                           , vexLW           = L0
+                           , vexLExt         = Just False
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension BMI1
@@ -2025,7 +2015,7 @@ i_andpd = insn
    , insnMnemonic    = "ANDPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x54
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -2046,7 +2036,6 @@ i_vandpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x54
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -2064,7 +2053,7 @@ i_andps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "ANDPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x54
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2084,7 +2073,6 @@ i_vandps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x54
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -2103,7 +2091,7 @@ i_andnpd = insn
    , insnMnemonic    = "ANDNPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x55
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -2124,7 +2112,6 @@ i_vandnpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x55
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -2142,7 +2129,7 @@ i_andnps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "ANDNPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x55
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2162,7 +2149,6 @@ i_vandnps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x55
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -2181,7 +2167,7 @@ i_arpl = insn
    , insnMnemonic    = "ARPL"
    , insnFlags       = [Modified [ZF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x63
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ rm16 RW
@@ -2197,7 +2183,7 @@ i_blendpd = insn
    , insnMnemonic    = "BLENDPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -2219,7 +2205,6 @@ i_vblendpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0D
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -2244,7 +2229,7 @@ i_bextr = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x02
                            , vexOpcode       = 0xF7
-                           , vexLW           = L0
+                           , vexLExt         = Just False
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension BMI1
@@ -2263,7 +2248,7 @@ i_blendps = insn
    , insnMnemonic    = "BLENDPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -2285,7 +2270,6 @@ i_vblendps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0C
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -2305,7 +2289,7 @@ i_blendvpd = insn
    , insnMnemonic    = "BLENDVPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x15
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -2327,7 +2311,7 @@ i_vblendvpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x4B
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -2347,7 +2331,7 @@ i_blendvps = insn
    , insnMnemonic    = "BLENDVPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -2369,7 +2353,7 @@ i_vblendvps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x4A
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -2395,7 +2379,7 @@ i_blsi = insn
                            { vexOpcodeMap    = MapVex 0x02
                            , vexOpcode       = 0xF3
                            , vexOpcodeExt    = Just 3
-                           , vexLW           = L0
+                           , vexLExt         = Just False
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension BMI1
@@ -2419,7 +2403,7 @@ i_blsmsk = insn
                            { vexOpcodeMap    = MapVex 0x02
                            , vexOpcode       = 0xF3
                            , vexOpcodeExt    = Just 2
-                           , vexLW           = L0
+                           , vexLExt         = Just False
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension BMI1
@@ -2443,7 +2427,7 @@ i_blsr = insn
                            { vexOpcodeMap    = MapVex 0x02
                            , vexOpcode       = 0xF3
                            , vexOpcodeExt    = Just 1
-                           , vexLW           = L0
+                           , vexLExt         = Just False
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension BMI1
@@ -2460,7 +2444,7 @@ i_bound = insn
    { insnDesc        = "Check array index against bounds"
    , insnMnemonic    = "BOUND"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x62
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ gpr RO Reg
@@ -2478,7 +2462,7 @@ i_bsf = insn
                        , Undefined [CF,OF,SF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBC
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2498,7 +2482,7 @@ i_bsr = insn
                        , Undefined [CF,OF,SF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBD
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2515,7 +2499,7 @@ i_bswap = insn
    { insnDesc        = "Byte swap"
    , insnMnemonic    = "BSWAP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC8
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2534,7 +2518,7 @@ i_bt = insn
                        , Undefined [OF,SF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xA3
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2544,7 +2528,7 @@ i_bt = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBA
                            , legacyOpcodeExt    = Just 4
                            , legacyProperties   = [ LegacyModeSupport
@@ -2565,7 +2549,7 @@ i_btc = insn
                        , Undefined [OF,SF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBB
                            , legacyProperties   = [ Lockable
                                                   , LegacyModeSupport
@@ -2577,7 +2561,7 @@ i_btc = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBA
                            , legacyOpcodeExt    = Just 7
                            , legacyProperties   = [ Lockable
@@ -2600,7 +2584,7 @@ i_btr = insn
                        , Undefined [OF,SF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xB3
                            , legacyProperties   = [ Lockable
                                                   , LegacyModeSupport
@@ -2612,7 +2596,7 @@ i_btr = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBA
                            , legacyOpcodeExt    = Just 6
                            , legacyProperties   = [ Lockable
@@ -2635,7 +2619,7 @@ i_bts = insn
                        , Undefined [OF,SF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xAB
                            , legacyProperties   = [ Lockable
                                                   , LegacyModeSupport
@@ -2647,7 +2631,7 @@ i_bts = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xBA
                            , legacyOpcodeExt    = Just 5
                            , legacyProperties   = [ Lockable
@@ -2673,7 +2657,7 @@ i_bzhi = insn
    , insnEncodings      = [ vex
                               { vexOpcodeMap    = MapVex 0x02
                               , vexOpcode       = 0xF5
-                              , vexLW           = L0
+                              , vexLExt         = Just False
                               , vexProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension BMI2
@@ -2692,7 +2676,7 @@ i_call = insn
    , insnMnemonic    = "CALL"
    , insnFlags       = [Undefined allFlags]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xE8
                            , legacyProperties   = [ DefaultOperandSize64
                                                   , LegacyModeSupport
@@ -2701,14 +2685,14 @@ i_call = insn
                            , legacyParams       = [ rel16o32 ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xFF
                            , legacyOpcodeExt    = Just 2
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ mgpr RO ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xFF
                            , legacyOpcodeExt    = Just 2
                            , legacyProperties   = [ LongModeSupport
@@ -2717,13 +2701,13 @@ i_call = insn
                            , legacyParams       = [ rm64 RO ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x9A
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ ptr16x ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xFF
                            , legacyOpcodeExt    = Just 3
                            , legacyProperties   = [ LegacyModeSupport
@@ -2739,7 +2723,7 @@ i_extend_signed = insn
    { insnDesc        = "Extend signed word"
    , insnMnemonic    = "CBW/CWDE/CDQE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x98
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2755,7 +2739,7 @@ i_clac = insn
    , insnMnemonic    = "CLAC"
    , insnFlags       = [Unset [AC]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0x01
                            , legacyOpcodeFullExt = Just 0xCA
                            , legacyProperties    = [ LegacyModeSupport
@@ -2772,7 +2756,7 @@ i_clc = insn
    , insnMnemonic    = "CLC"
    , insnFlags       = [Unset [CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF8
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2787,7 +2771,7 @@ i_cld = insn
    , insnMnemonic    = "CLD"
    , insnFlags       = [Unset [DF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xFC
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2801,7 +2785,7 @@ i_clflush = insn
    { insnDesc        = "Flush cache line"
    , insnMnemonic    = "CLFLUSH"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xAE
                            , legacyOpcodeExt    = Just 7
                            , legacyProperties   = [ LegacyModeSupport
@@ -2820,7 +2804,7 @@ i_cli = insn
    , insnMnemonic    = "CLI"
    , insnFlags       = [Unset [IF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xFA
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2834,7 +2818,7 @@ i_clts = insn
    { insnDesc        = "Clear task-switched flag in CR0"
    , insnMnemonic    = "CLTS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x06
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2849,7 +2833,7 @@ i_cmc = insn
    , insnMnemonic    = "CMC"
    , insnFlags       = [Modified [CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF5
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2864,7 +2848,7 @@ i_cmovo = insn
    , insnMnemonic    = "CMOVO"
    , insnFlags       = [Read [OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x40
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2882,7 +2866,7 @@ i_cmovno = insn
    , insnMnemonic    = "CMOVNO"
    , insnFlags       = [Read [OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x41
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2900,7 +2884,7 @@ i_cmovc = insn
    , insnMnemonic    = "CMOVC"
    , insnFlags       = [Read [CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x42
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2918,7 +2902,7 @@ i_cmovnc = insn
    , insnMnemonic    = "CMOVNC"
    , insnFlags       = [Read [CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x43
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2936,7 +2920,7 @@ i_cmovz = insn
    , insnMnemonic    = "CMOVZ"
    , insnFlags       = [Read [ZF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x44
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2954,7 +2938,7 @@ i_cmovnz = insn
    , insnMnemonic    = "CMOVNZ"
    , insnFlags       = [Read [ZF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x45
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2972,7 +2956,7 @@ i_cmovbe = insn
    , insnMnemonic    = "CMOVBE"
    , insnFlags       = [Read [ZF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x46
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -2990,7 +2974,7 @@ i_cmova = insn
    , insnMnemonic    = "CMOVA"
    , insnFlags       = [Read [ZF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x47
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3008,7 +2992,7 @@ i_cmovs = insn
    , insnMnemonic    = "CMOVS"
    , insnFlags       = [Read [SF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x48
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3026,7 +3010,7 @@ i_cmovns = insn
    , insnMnemonic    = "CMOVNS"
    , insnFlags       = [Read [SF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x49
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3044,7 +3028,7 @@ i_cmovp = insn
    , insnMnemonic    = "CMOVP"
    , insnFlags       = [Read [PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x4a
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3062,7 +3046,7 @@ i_cmovnp = insn
    , insnMnemonic    = "CMOVNP"
    , insnFlags       = [Read [PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x4b
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3080,7 +3064,7 @@ i_cmovl = insn
    , insnMnemonic    = "CMOVL"
    , insnFlags       = [Read [SF,OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x4c
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3098,7 +3082,7 @@ i_cmovge = insn
    , insnMnemonic    = "CMOVGE"
    , insnFlags       = [Read [SF,OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x4d
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3116,7 +3100,7 @@ i_cmovle = insn
    , insnMnemonic    = "CMOVLE"
    , insnFlags       = [Read [ZF,SF,OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x4e
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3134,7 +3118,7 @@ i_cmovg = insn
    , insnMnemonic    = "CMOVG"
    , insnFlags       = [Read [ZF,SF,OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x4f
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3153,7 +3137,7 @@ i_cmp = insn
    , insnMnemonic    = "CMP"
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x3C
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -3164,7 +3148,7 @@ i_cmp = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x38
                            , legacyNoForce8bit  = Just 0
                            , legacyReversable   = Just 1
@@ -3177,7 +3161,7 @@ i_cmp = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 7
                            , legacyNoForce8bit     = Just 0
@@ -3199,7 +3183,7 @@ i_cmppd = insn
    , insnMnemonic    = "CMPPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefix66
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xC2
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -3221,7 +3205,6 @@ i_vcmppd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC2
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -3240,7 +3223,7 @@ i_cmpps = insn
    { insnDesc        = "Compare packed single-precision floating-point values"
    , insnMnemonic    = "CMPPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC2
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3261,7 +3244,6 @@ i_vcmpps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0xC2
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -3281,7 +3263,7 @@ i_cmps = insn
    , insnMnemonic    = "CMPS"
    , insnFlags       = [Modified [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xA6
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -3301,7 +3283,7 @@ i_cmpsd = insn
    , insnMnemonic    = "CMPSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefixF2
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xC2
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -3323,7 +3305,6 @@ i_vcmpsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC2
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -3343,7 +3324,7 @@ i_cmpss = insn
    , insnMnemonic    = "CMPSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefixF3
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xC2
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -3365,7 +3346,6 @@ i_vcmpss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC2
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -3385,7 +3365,7 @@ i_cmpxchg = insn
    , insnMnemonic    = "CMPXCHG"
    , insnFlags       = [Modified [ZF,CF,PF,AF,SF,OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xB0
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ Lockable
@@ -3409,7 +3389,7 @@ i_cmpxch8b = insn
    , insnMnemonic    = "CMPXCHG8B/CMPXCHG16B"
    , insnFlags       = [Modified [ZF,CF,PF,AF,SF,OF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC7
                            , legacyProperties   = [ Lockable
                                                   , LegacyModeSupport
@@ -3436,7 +3416,7 @@ i_comisd = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefix66
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x2F
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -3450,7 +3430,6 @@ i_comisd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2F
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3470,7 +3449,7 @@ i_comiss = insn
                        , Unset    [OF,SF,AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x2F
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3483,7 +3462,6 @@ i_comiss = insn
                        , vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x2F
-                           , vexLW           = LWIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -3500,7 +3478,7 @@ i_cpuid = insn
    { insnDesc        = "CPU identification"
    , insnMnemonic    = "CPUID"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xA2
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3520,7 +3498,7 @@ i_crc32 = insn
    , insnMnemonic    = "CRC32"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xF0
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -3539,7 +3517,7 @@ i_cvtdq2pd = insn
    , insnMnemonic    = "CVTDQ2PD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3560,7 +3538,6 @@ i_vcvtdq2pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xE6
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3577,7 +3554,7 @@ i_cvtdq2ps = insn
    { insnDesc        = "Convert packed Int32 to packed single-precision floating-point values"
    , insnMnemonic    = "CVTDQ2PS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x5B
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3597,7 +3574,6 @@ i_vcvtdq2ps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x5B
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -3615,7 +3591,7 @@ i_cvtpd2dq = insn
    , insnMnemonic    = "CVTPD2DQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3636,7 +3612,6 @@ i_vcvtpd2dq = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xE6
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3654,7 +3629,7 @@ i_cvtpd2di = insn
    , insnMnemonic    = "CVTPD2DI"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3672,7 +3647,7 @@ i_cvtpd2ps = insn
    , insnMnemonic    = "CVTPD2PS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3693,7 +3668,6 @@ i_vcvtpd2ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5A
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3711,7 +3685,7 @@ i_cvtpi2pd = insn
    , insnMnemonic    = "CVTPI2PD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3728,7 +3702,7 @@ i_cvtpi2ps = insn
    { insnDesc        = "Convert packed Int32 to packed single-precision floating-point values"
    , insnMnemonic    = "CVTPI2PS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x2A
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3746,7 +3720,7 @@ i_cvtps2dq = insn
    , insnMnemonic    = "CVTPS2DQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3767,7 +3741,6 @@ i_vcvtps2dq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5B
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3784,7 +3757,7 @@ i_cvtps2pd = insn
    { insnDesc        = "Convert packed single-precision floating-point values to packed double-precision floating-point values"
    , insnMnemonic    = "CVTPS2PD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x5A
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3804,7 +3777,6 @@ i_vcvtps2pd = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x5A
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -3821,7 +3793,7 @@ i_cvtps2pi = insn
    { insnDesc        = "Convert packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTPS2PI"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x2D
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -3839,7 +3811,7 @@ i_cvtsd2si = insn
    , insnMnemonic    = "CVTSD2SI"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3860,7 +3832,6 @@ i_vcvtsd2si = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2D
-                           , vexLW              = LIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3878,7 +3849,7 @@ i_cvtsd2ss = insn
    , insnMnemonic    = "CVTSD2SS"
    , insnEncodings   = [leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3899,7 +3870,6 @@ i_vcvtsd2ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5A
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3918,7 +3888,7 @@ i_cvtsi2sd = insn
    , insnMnemonic    = "CVTSI2SD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3939,7 +3909,6 @@ i_vcvtsi2sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2A
-                           , vexLW              = LIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3959,7 +3928,7 @@ i_cvtsi2ss = insn
    , insnMnemonic    = "CVTSI2SS"
    , insnEncodings   = [leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -3980,7 +3949,6 @@ i_vcvtsi2ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2A
-                           , vexLW              = LIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -3999,7 +3967,7 @@ i_cvtss2sd = insn
    , insnMnemonic    = "CVTSS2SD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4020,7 +3988,6 @@ i_vcvtss2sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5A
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4039,7 +4006,7 @@ i_cvtss2si = insn
    , insnMnemonic    = "CVTSS2SI"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4060,7 +4027,6 @@ i_vcvtss2si = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2D
-                           , vexLW              = LIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4078,7 +4044,7 @@ i_cvttpd2dq = insn
    , insnMnemonic    = "CVTTPD2DQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4099,7 +4065,6 @@ i_vcvttpd2dq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xE6
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4117,7 +4082,7 @@ i_cvttpd2pi = insn
    , insnMnemonic    = "CVTTPD2PI"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4135,7 +4100,7 @@ i_cvttps2dq = insn
    , insnMnemonic    = "CVTTPS2DQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4156,7 +4121,6 @@ i_vcvttps2dq = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5B
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4173,7 +4137,7 @@ i_cvttps2pi = insn
    { insnDesc        = "Convert with truncation packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTTPS2PI"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x2C
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -4191,7 +4155,7 @@ i_cvttsd2si = insn
    , insnMnemonic    = "CVTTSD2SI"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4212,7 +4176,6 @@ i_vcvttsd2si = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2C
-                           , vexLW              = LIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4230,7 +4193,7 @@ i_cvttss2si = insn
    , insnMnemonic    = "CVTTSS2SI"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4251,7 +4214,6 @@ i_vcvttss2si = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2C
-                           , vexLW              = LIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4268,7 +4230,7 @@ i_cwd = insn
    { insnDesc        = "Convert between words (sign-extend)"
    , insnMnemonic    = "CWD/CDQ/CQO"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x99
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -4288,7 +4250,7 @@ i_daa = insn
                        , Undefined [OF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x27
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ reg R_AL RW Implicit ]
@@ -4304,7 +4266,7 @@ i_das = insn
                        , Undefined [OF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x2F
                            , legacyProperties   = [LegacyModeSupport]
                            , legacyParams       = [ reg R_AL RW Implicit ]
@@ -4319,7 +4281,7 @@ i_dec = insn
    , insnMnemonic    = "DEC"
    , insnFlags       = [Modified [OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xFE
                            , legacyOpcodeExt    = Just 1
                            , legacyNoForce8bit  = Just 0
@@ -4331,7 +4293,7 @@ i_dec = insn
                            , legacyParams       = [ mgpr RW ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x48
                            , legacyProperties   = [ LegacyModeSupport
                                                   , Lockable
@@ -4348,7 +4310,7 @@ i_div = insn
    , insnProperties  = [FailOnZero 0]
    , insnFlags       = [Undefined [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF6
                            , legacyOpcodeExt    = Just 6
                            , legacyNoForce8bit  = Just 0
@@ -4368,7 +4330,7 @@ i_divpd = insn
    , insnMnemonic    = "DIVPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4389,7 +4351,6 @@ i_vdivpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5E
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4407,7 +4368,7 @@ i_divps = insn
    { insnDesc        = "Divide packed float-precision floating-point values"
    , insnMnemonic    = "DIVPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x5E
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -4427,7 +4388,6 @@ i_vdivps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x5E
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -4446,7 +4406,7 @@ i_divsd = insn
    , insnMnemonic    = "DIVSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4467,7 +4427,6 @@ i_vdivsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5E
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4486,7 +4445,7 @@ i_divss = insn
    , insnMnemonic    = "DIVSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4507,7 +4466,6 @@ i_vdivss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5E
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4526,7 +4484,7 @@ i_dppd = insn
    , insnMnemonic    = "DPPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x41
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4548,7 +4506,6 @@ i_vdppd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x41
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4568,7 +4525,7 @@ i_dpps = insn
    , insnMnemonic    = "DPPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x40
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4590,7 +4547,6 @@ i_vdpps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x40
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4609,7 +4565,7 @@ i_emms = insn
    { insnDesc        = "Empty MMX technology state"
    , insnMnemonic    = "EMMS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x77
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -4623,7 +4579,7 @@ i_enter = insn
    { insnDesc        = "Make stack frame for procedure parameters"
    , insnMnemonic    = "ENTER"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xC8
                            , legacyProperties   = [ DefaultOperandSize64
                                                   , LegacyModeSupport
@@ -4641,7 +4597,7 @@ i_extractps = insn
    , insnMnemonic    = "EXTRACTPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x17
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -4663,7 +4619,6 @@ i_vextractps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x17
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -4682,7 +4637,7 @@ i_f2xm1 = insn
    { insnDesc        = "Compute 2^x - 1"
    , insnMnemonic    = "F2XM1"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF0
                            , legacyProperties    = [ Extension FPU ]
@@ -4696,7 +4651,7 @@ i_fabs = insn
    { insnDesc        = "Absolute value"
    , insnMnemonic    = "FABS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE1
                            , legacyProperties    = [ Extension FPU ]
@@ -4710,7 +4665,7 @@ i_fadd = insn
    { insnDesc        = "Add"
    , insnMnemonic    = "FADD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 0
                            , legacyFPUSizable    = Just 2
@@ -4729,7 +4684,7 @@ i_fiadd = insn
    { insnDesc        = "Add"
    , insnMnemonic    = "FIADD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 0
                            , legacyFPUSizable    = Just 2
@@ -4746,7 +4701,7 @@ i_fbld = insn
    { insnDesc        = "Load binary coded decimal"
    , insnMnemonic    = "FBLD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
@@ -4762,7 +4717,7 @@ i_fbstp = insn
    { insnDesc        = "Store BCD integer and pop"
    , insnMnemonic    = "FBSTP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
@@ -4778,7 +4733,7 @@ i_fchs = insn
    { insnDesc        = "Change sign"
    , insnMnemonic    = "FCHS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE0
                            , legacyProperties    = [ Extension FPU ]
@@ -4792,7 +4747,7 @@ i_fnclex = insn
    { insnDesc        = "Clear exceptions"
    , insnMnemonic    = "FNCLEX"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeFullExt = Just 0xE2
                            , legacyProperties    = [ Extension FPU ]
@@ -4806,7 +4761,7 @@ i_fcmovb = insn
    , insnMnemonic    = "FCMOVB"
    , insnFlags       = [ Read [CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
@@ -4823,7 +4778,7 @@ i_fcmove = insn
    , insnMnemonic    = "FCMOVE"
    , insnFlags       = [ Read [ZF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU
@@ -4842,7 +4797,7 @@ i_fcmovbe = insn
    , insnMnemonic    = "FCMOVBE"
    , insnFlags       = [ Read [ZF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 2
                            , legacyProperties    = [ Extension FPU
@@ -4861,7 +4816,7 @@ i_fcmovu = insn
    , insnMnemonic    = "FCMOVU"
    , insnFlags       = [ Read [PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 3
                            , legacyProperties    = [ Extension FPU
@@ -4880,7 +4835,7 @@ i_fcmovnb = insn
    , insnMnemonic    = "FCMOVNB"
    , insnFlags       = [ Read [CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU
@@ -4899,7 +4854,7 @@ i_fcmovne = insn
    , insnMnemonic    = "FCMOVNE"
    , insnFlags       = [ Read [ZF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU
@@ -4918,7 +4873,7 @@ i_fcmovnbe = insn
    , insnMnemonic    = "FCMOVNBE"
    , insnFlags       = [ Read [ZF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 2
                            , legacyProperties    = [ Extension FPU
@@ -4937,7 +4892,7 @@ i_fcmovnu = insn
    , insnMnemonic    = "FCMOVNU"
    , insnFlags       = [ Read [PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 3
                            , legacyProperties    = [ Extension FPU
@@ -4955,7 +4910,7 @@ i_fcom = insn
    { insnDesc        = "Compare floating point values"
    , insnMnemonic    = "FCOM"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
@@ -4972,7 +4927,7 @@ i_fcomp = insn
    { insnDesc        = "Compare floating point values and pop"
    , insnMnemonic    = "FCOMP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
@@ -4989,7 +4944,7 @@ i_fcompp = insn
    { insnDesc        = "Compare floating point values and pop twice"
    , insnMnemonic    = "FCOMPP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDE
                            , legacyOpcodeFullExt = Just 0xD9
                            , legacyProperties    = [ Extension FPU ]
@@ -5005,7 +4960,7 @@ i_fcomi = insn
    { insnDesc        = "Compare floating point values and set eflags"
    , insnMnemonic    = "FCOMI"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 6
                            , legacyFPUPop        = Just 2   -- FCOMIP
@@ -5022,7 +4977,7 @@ i_fucomi = insn
    { insnDesc        = "Compare floating point values and set eflags"
    , insnMnemonic    = "FUCOMI"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUPop        = Just 2   -- FUCOMIP
@@ -5039,7 +4994,7 @@ i_fcos = insn
    { insnDesc        = "Cosine"
    , insnMnemonic    = "FCOS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xff
                            , legacyProperties    = [ Extension FPU ]
@@ -5053,7 +5008,7 @@ i_fdecstp = insn
    { insnDesc        = "Decrement stack-top pointer"
    , insnMnemonic    = "FDECSTP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xf6
                            , legacyProperties    = [ Extension FPU ]
@@ -5066,7 +5021,7 @@ i_fdiv = insn
    { insnDesc        = "Divide ST(O)"
    , insnMnemonic    = "FDIV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 6
                            , legacyFPUSizable    = Just 2
@@ -5085,7 +5040,7 @@ i_fidiv = insn
    { insnDesc        = "Divide ST(0)"
    , insnMnemonic    = "FIDIV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 6
                            , legacyFPUSizable    = Just 2
@@ -5103,7 +5058,7 @@ i_fdivr = insn
    { insnDesc        = "Divide by ST(0)"
    , insnMnemonic    = "FDIVR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 7
                            , legacyFPUSizable    = Just 2
@@ -5122,7 +5077,7 @@ i_fidivr = insn
    { insnDesc        = "Divide by ST(0)"
    , insnMnemonic    = "FIDIVR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 7
                            , legacyFPUSizable    = Just 2
@@ -5139,7 +5094,7 @@ i_ffree = insn
    { insnDesc        = "Free floating-point register"
    , insnMnemonic    = "FFREE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
@@ -5153,7 +5108,7 @@ i_ficom = insn
    { insnDesc        = "Compare integer"
    , insnMnemonic    = "FICOM"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
@@ -5170,7 +5125,7 @@ i_ficomp = insn
    { insnDesc        = "Compare integer and pop"
    , insnMnemonic    = "FICOMP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
@@ -5187,7 +5142,7 @@ i_fild = insn
    { insnDesc        = "Load integer"
    , insnMnemonic    = "FILD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 0
                            , legacyFPUSizable    = Just 2
@@ -5195,7 +5150,7 @@ i_fild = insn
                            , legacyParams        = [ mint RO ]
                            }
                        , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
@@ -5209,7 +5164,7 @@ i_fincstp = insn
    { insnDesc        = "Increment stack-top pointer"
    , insnMnemonic    = "FINCSTP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xf7
                            , legacyProperties    = [ Extension FPU ]
@@ -5222,7 +5177,7 @@ i_finit = insn
    { insnDesc        = "Initialize floating-point unit"
    , insnMnemonic    = "FINIT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeFullExt = Just 0xE3
                            , legacyProperties    = [ Extension FPU ]
@@ -5235,7 +5190,7 @@ i_fist = insn
    { insnDesc        = "Store integer"
    , insnMnemonic    = "FIST"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
@@ -5252,7 +5207,7 @@ i_fistp = insn
    { insnDesc        = "Store integer and pop"
    , insnMnemonic    = "FISTP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
@@ -5262,7 +5217,7 @@ i_fistp = insn
                                                    ]
                            }
                        , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
@@ -5278,7 +5233,7 @@ i_fisttp = insn
    { insnDesc        = "Store integer with truncation and pop"
    , insnMnemonic    = "FISTTP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 1
                            , legacyFPUSizable    = Just 2
@@ -5288,7 +5243,7 @@ i_fisttp = insn
                                                    ]
                            }
                        , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
@@ -5304,7 +5259,7 @@ i_fld = insn
    { insnDesc        = "Load floating-point value"
    , insnMnemonic    = "FLD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 0
                            , legacyFPUSizable    = Just 2
@@ -5314,7 +5269,7 @@ i_fld = insn
                                                    ]
                            }
                        , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
@@ -5330,7 +5285,7 @@ i_fld1 = insn
    { insnDesc        = "Load constant +1.0"
    , insnMnemonic    = "FLD1"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE8
                            , legacyProperties    = [ Extension FPU ]
@@ -5344,7 +5299,7 @@ i_fldl2t = insn
    { insnDesc        = "Load constant log2(10)"
    , insnMnemonic    = "FLDL2T"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE9
                            , legacyProperties    = [ Extension FPU ]
@@ -5358,7 +5313,7 @@ i_fldl2e = insn
    { insnDesc        = "Load constant log2(e)"
    , insnMnemonic    = "FLDL2E"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEA
                            , legacyProperties    = [ Extension FPU ]
@@ -5372,7 +5327,7 @@ i_fldpi = insn
    { insnDesc        = "Load constant pi"
    , insnMnemonic    = "FLDPI"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEB
                            , legacyProperties    = [ Extension FPU ]
@@ -5386,7 +5341,7 @@ i_fldlg2 = insn
    { insnDesc        = "Load constant log10(2)"
    , insnMnemonic    = "FLDLG2"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEC
                            , legacyProperties    = [ Extension FPU ]
@@ -5401,7 +5356,7 @@ i_fldln2 = insn
    { insnDesc        = "Load constant log_e(2)"
    , insnMnemonic    = "FLDLN2"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xED
                            , legacyProperties    = [ Extension FPU ]
@@ -5416,7 +5371,7 @@ i_fldz = insn
    { insnDesc        = "Load constant +0.0"
    , insnMnemonic    = "FLDZ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xEE
                            , legacyProperties    = [ Extension FPU ]
@@ -5430,7 +5385,7 @@ i_fldcw = insn
    { insnDesc        = "Load x87 FPU control word"
    , insnMnemonic    = "FLDCW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 5
                            , legacyProperties    = [ Extension FPU ]
@@ -5445,7 +5400,7 @@ i_fldenv = insn
    { insnDesc        = "Load x87 FPU environment"
    , insnMnemonic    = "FLDENV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
@@ -5459,7 +5414,7 @@ i_fmul = insn
    { insnDesc        = "Multiply"
    , insnMnemonic    = "FMUL"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 1
                            , legacyFPUSizable    = Just 2
@@ -5478,7 +5433,7 @@ i_fimul = insn
    { insnDesc        = "Multiply"
    , insnMnemonic    = "FIMUL"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 1
                            , legacyFPUSizable    = Just 2
@@ -5496,7 +5451,7 @@ i_fnop = insn
    { insnDesc        = "No operation"
    , insnMnemonic    = "FNOP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xD0
                            , legacyProperties    = [ Extension FPU ]
@@ -5509,7 +5464,7 @@ i_fpatan = insn
    { insnDesc        = "Partial arctangent"
    , insnMnemonic    = "FPATAN"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF3
                            , legacyProperties    = [ Extension FPU ]
@@ -5525,7 +5480,7 @@ i_fprem = insn
    { insnDesc        = "Partial remainder"
    , insnMnemonic    = "FPREM"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF8
                            , legacyProperties    = [ Extension FPU ]
@@ -5541,7 +5496,7 @@ i_fprem1 = insn
    { insnDesc        = "Partial remainder"
    , insnMnemonic    = "FPREM1"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF5
                            , legacyProperties    = [ Extension FPU ]
@@ -5557,7 +5512,7 @@ i_fptan = insn
    { insnDesc        = "Partial tangent"
    , insnMnemonic    = "FPTAN"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF2
                            , legacyProperties    = [ Extension FPU ]
@@ -5573,7 +5528,7 @@ i_frndint = insn
    { insnDesc        = "Round to integer"
    , insnMnemonic    = "FRNDINT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xFC
                            , legacyProperties    = [ Extension FPU ]
@@ -5587,7 +5542,7 @@ i_frstor = insn
    { insnDesc        = "Restore x87 FPU state"
    , insnMnemonic    = "FRSTOR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 4
                            , legacyProperties    = [ Extension FPU ]
@@ -5601,7 +5556,7 @@ i_fnsave = insn
    { insnDesc        = "Store x87 FPU state"
    , insnMnemonic    = "FNSAVE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
@@ -5615,7 +5570,7 @@ i_fscale = insn
    { insnDesc        = "Scale"
    , insnMnemonic    = "FSCALE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xFD
                            , legacyProperties    = [ Extension FPU ]
@@ -5631,7 +5586,7 @@ i_fsin = insn
    { insnDesc        = "Sine"
    , insnMnemonic    = "FSIN"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xfe
                            , legacyProperties    = [ Extension FPU ]
@@ -5645,7 +5600,7 @@ i_fsincos = insn
    { insnDesc        = "Sine and cosine"
    , insnMnemonic    = "FSINCOS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xfb
                            , legacyProperties    = [ Extension FPU ]
@@ -5661,7 +5616,7 @@ i_fsqrt = insn
    { insnDesc        = "Square root"
    , insnMnemonic    = "FSQRT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xfa
                            , legacyProperties    = [ Extension FPU ]
@@ -5675,7 +5630,7 @@ i_fst = insn
    { insnDesc        = "Store floating-point value"
    , insnMnemonic    = "FST"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 2
                            , legacyFPUSizable    = Just 2
@@ -5692,7 +5647,7 @@ i_fstp = insn
    { insnDesc        = "Store floating-point value and pop"
    , insnMnemonic    = "FSTP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 3
                            , legacyFPUSizable    = Just 2
@@ -5702,7 +5657,7 @@ i_fstp = insn
                                                    ]
                            }
                        , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDB
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
@@ -5711,7 +5666,7 @@ i_fstp = insn
                                                    ]
                            }
                        , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 3
                            , legacyProperties    = [ Extension FPU ]
@@ -5727,7 +5682,7 @@ i_fnstcw = insn
    { insnDesc        = "Store x87 FPU control word"
    , insnMnemonic    = "FNSTCW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
@@ -5742,7 +5697,7 @@ i_fnstenv = insn
    { insnDesc        = "Store x87 FPU environment"
    , insnMnemonic    = "FNSTENV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 6
                            , legacyProperties    = [ Extension FPU ]
@@ -5757,14 +5712,14 @@ i_fnstsw = insn
    { insnDesc        = "Store x87 FPU status word"
    , insnMnemonic    = "FNSTSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 7
                            , legacyProperties    = [ Extension FPU ]
                            , legacyParams        = [ mem16 WO ]
                            }
                         , leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDF
                            , legacyOpcodeFullExt = Just 0xE0
                            , legacyProperties    = [ Extension FPU ]
@@ -5778,7 +5733,7 @@ i_fsub = insn
    { insnDesc        = "Subtract from ST(O)"
    , insnMnemonic    = "FSUB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 4
                            , legacyFPUSizable    = Just 2
@@ -5797,7 +5752,7 @@ i_fisub = insn
    { insnDesc        = "Subtract from ST(0)"
    , insnMnemonic    = "FISUB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 4
                            , legacyFPUSizable    = Just 2
@@ -5814,7 +5769,7 @@ i_fsubr = insn
    { insnDesc        = "Subtract ST(0)"
    , insnMnemonic    = "FSUBR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD8
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUSizable    = Just 2
@@ -5833,7 +5788,7 @@ i_fisubr = insn
    { insnDesc        = "Subtract ST(0)"
    , insnMnemonic    = "FISUBR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUSizable    = Just 2
@@ -5850,7 +5805,7 @@ i_ftst = insn
    { insnDesc        = "Test"
    , insnMnemonic    = "FTST"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE4
                            , legacyProperties    = [ Extension FPU ]
@@ -5864,7 +5819,7 @@ i_fucom = insn
    { insnDesc        = "Unordered compare floating point values"
    , insnMnemonic    = "FUCOM"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 4
                            , legacyFPUSizable    = Just 2
@@ -5881,7 +5836,7 @@ i_fucomp = insn
    { insnDesc        = "Unordered compare floating point values and pop"
    , insnMnemonic    = "FUCOMP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDD
                            , legacyOpcodeExt     = Just 5
                            , legacyFPUSizable    = Just 2
@@ -5898,7 +5853,7 @@ i_fucompp = insn
    { insnDesc        = "Unorderd compare floating point values and pop twice"
    , insnMnemonic    = "FUCOMPP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xDA
                            , legacyOpcodeFullExt = Just 0xE9
                            , legacyProperties    = [ Extension FPU ]
@@ -5915,7 +5870,7 @@ i_fxam = insn
    { insnDesc        = "Examine (classify)"
    , insnMnemonic    = "FXAM"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xE5
                            , legacyProperties    = [ Extension FPU ]
@@ -5930,7 +5885,7 @@ i_fxch = insn
    { insnDesc        = "Exchange register contents"
    , insnMnemonic    = "FXCH"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
@@ -5946,7 +5901,7 @@ i_fxrstor = insn
    { insnDesc        = "Restore x87 FPU, MMX, XMM, and MXCSR state"
    , insnMnemonic    = "FXRSTOR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0xAE
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU ]
@@ -5960,7 +5915,7 @@ i_fxrstor64 = insn
    { insnDesc        = "Restore x87 FPU, MMX, XMM, and MXCSR state"
    , insnMnemonic    = "FXRSTOR64"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0xAE
                            , legacyOpcodeExt     = Just 1
                            , legacyProperties    = [ Extension FPU
@@ -5976,7 +5931,7 @@ i_fxsave = insn
    { insnDesc        = "Save x87 FPU, MMX, XMM, and MXCSR state"
    , insnMnemonic    = "FXSAVE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0xAE
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU ]
@@ -5990,7 +5945,7 @@ i_fxsave64 = insn
    { insnDesc        = "Restore x87 FPU, MMX, XMM, and MXCSR state"
    , insnMnemonic    = "FXSAVE64"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0xAE
                            , legacyOpcodeExt     = Just 0
                            , legacyProperties    = [ Extension FPU
@@ -6007,7 +5962,7 @@ i_fxtract = insn
    { insnDesc        = "Extract exponent and significand"
    , insnMnemonic    = "FXTRACT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF4
                            , legacyProperties    = [ Extension FPU ]
@@ -6023,7 +5978,7 @@ i_fyl2x = insn
    { insnDesc        = "Compute y * log_2(x)"
    , insnMnemonic    = "FYL2X"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF1
                            , legacyProperties    = [ Extension FPU ]
@@ -6039,7 +5994,7 @@ i_fyl2xp1 = insn
    { insnDesc        = "Compute y * log_2(x+1)"
    , insnMnemonic    = "FYL2XP1"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = MapPrimary
+                           { legacyOpcodeMap     = MapLegacy MapPrimary
                            , legacyOpcode        = 0xD9
                            , legacyOpcodeFullExt = Just 0xF9
                            , legacyProperties    = [ Extension FPU ]
@@ -6056,7 +6011,7 @@ i_haddpd = insn
    , insnMnemonic    = "HADDPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x7C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6078,7 +6033,6 @@ i_vhaddpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7C
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -6098,7 +6052,7 @@ i_haddps = insn
    , insnMnemonic    = "HADDPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x7C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6120,7 +6074,6 @@ i_vhaddps = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7C
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -6138,7 +6091,7 @@ i_hlt = insn
    { insnDesc        = "Halt"
    , insnMnemonic    = "HLT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF4
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -6153,7 +6106,7 @@ i_hsubpd = insn
    , insnMnemonic    = "HSUBPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x7D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6175,7 +6128,6 @@ i_vhsubpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7D
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -6195,7 +6147,7 @@ i_hsubps = insn
    , insnMnemonic    = "HSUBPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x7D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6217,7 +6169,6 @@ i_vhsubps = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7D
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -6237,7 +6188,7 @@ i_idiv = insn
    , insnProperties  = [FailOnZero 0]
    , insnFlags       = [Undefined [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xF6
                            , legacyOpcodeExt       = Just 7
                            , legacyNoForce8bit     = Just 0
@@ -6259,7 +6210,7 @@ i_imul = insn
                        , Undefined [SF,ZF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xF6
                            , legacyOpcodeExt       = Just 5
                            , legacyNoForce8bit     = Just 0
@@ -6272,7 +6223,7 @@ i_imul = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6282,7 +6233,7 @@ i_imul = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x69
                            , legacySignExtendable  = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -6301,7 +6252,7 @@ i_in = insn
    { insnDesc        = "Input from port"
    , insnMnemonic    = "IN"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xE4
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -6313,7 +6264,7 @@ i_in = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xEC
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -6334,7 +6285,7 @@ i_inc = insn
    , insnMnemonic    = "INC"
    , insnFlags       = [ Modified [OF,SF,ZF,AF,PF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xFE
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -6346,7 +6297,7 @@ i_inc = insn
                            , legacyParams          = [ mgpr RW ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x40
                            , legacyProperties      = [ LegacyModeSupport
                                                      , Lockable
@@ -6361,7 +6312,7 @@ i_ins = insn
    { insnDesc        = "Input from port to string"
    , insnMnemonic    = "INS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x6C
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -6383,7 +6334,7 @@ i_insertps = insn
    , insnMnemonic    = "INSERTPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x21
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6405,7 +6356,6 @@ i_vinsertps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x21
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -6424,7 +6374,7 @@ i_int = insn
    { insnDesc        = "Call to interrupt procedure"
    , insnMnemonic    = "INT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xCC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6432,7 +6382,7 @@ i_int = insn
                            , legacyParams          = [ constImm 3 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xCD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6448,7 +6398,7 @@ i_into = insn
    , insnMnemonic    = "INTO"
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xCE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6463,7 +6413,7 @@ i_invd = insn
    { insnDesc        = "Invalid internal caches"
    , insnMnemonic    = "INVD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x08
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6478,7 +6428,7 @@ i_invlpg = insn
    { insnDesc        = "Invalid TLB entry"
    , insnMnemonic    = "INVLPG"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 7
                            , legacyProperties      = [ LegacyModeSupport
@@ -6496,7 +6446,7 @@ i_invpcid = insn
    , insnMnemonic    = "INVPCID"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x82
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6515,7 +6465,7 @@ i_iret = insn
    , insnMnemonic    = "IRET"
    , insnFlags       = [ Undefined allFlags ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xCF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6530,7 +6480,7 @@ i_ja = insn
    , insnMnemonic    = "JA/JNBE"
    , insnFlags       = [ Read [CF,ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x77
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6539,7 +6489,7 @@ i_ja = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x87
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6556,7 +6506,7 @@ i_jae = insn
    , insnMnemonic    = "JAE/JNB/JNC"
    , insnFlags       = [ Read [CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x73
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6565,7 +6515,7 @@ i_jae = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x83
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6582,7 +6532,7 @@ i_jb = insn
    , insnMnemonic    = "JB/JC/JNAE"
    , insnFlags       = [ Read [CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x72
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6591,7 +6541,7 @@ i_jb = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x82
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6608,7 +6558,7 @@ i_jbe = insn
    , insnMnemonic    = "JBE/JNA"
    , insnFlags       = [ Read [CF,ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x76
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6617,7 +6567,7 @@ i_jbe = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x86
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6634,7 +6584,7 @@ i_jcxz = insn
    { insnDesc        = "Jump if rCX is 0"
    , insnMnemonic    = "JCXZ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xE3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6653,7 +6603,7 @@ i_je = insn
    , insnMnemonic    = "JE/JZ"
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x74
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6662,7 +6612,7 @@ i_je = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x84
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6679,7 +6629,7 @@ i_jg = insn
    , insnMnemonic    = "JG/JNLE"
    , insnFlags       = [ Read [ZF,SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x7F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6688,7 +6638,7 @@ i_jg = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x8F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6705,7 +6655,7 @@ i_jge = insn
    , insnMnemonic    = "JGE/JNL"
    , insnFlags       = [ Read [SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x7D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6714,7 +6664,7 @@ i_jge = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x8D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6731,7 +6681,7 @@ i_jl = insn
    , insnMnemonic    = "JL/JNGE"
    , insnFlags       = [ Read [SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x7C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6740,7 +6690,7 @@ i_jl = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x8C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6757,7 +6707,7 @@ i_jle = insn
    , insnMnemonic    = "JLE/JNG"
    , insnFlags       = [ Read [ZF,SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x7E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6766,7 +6716,7 @@ i_jle = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x8E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6783,7 +6733,7 @@ i_jne = insn
    , insnMnemonic    = "JNE/JNZ"
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x75
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6792,7 +6742,7 @@ i_jne = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x85
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6809,7 +6759,7 @@ i_jno = insn
    , insnMnemonic    = "JNO"
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x71
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6818,7 +6768,7 @@ i_jno = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x81
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6835,7 +6785,7 @@ i_jnp = insn
    , insnMnemonic    = "JNP/JPO"
    , insnFlags       = [ Read [PF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x7B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6844,7 +6794,7 @@ i_jnp = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x8B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6861,7 +6811,7 @@ i_jns = insn
    , insnMnemonic    = "JNS"
    , insnFlags       = [ Read [SF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x79
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6870,7 +6820,7 @@ i_jns = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x89
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6887,7 +6837,7 @@ i_jo = insn
    , insnMnemonic    = "JO"
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6896,7 +6846,7 @@ i_jo = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x80
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6913,7 +6863,7 @@ i_jp = insn
    , insnMnemonic    = "JP/JPE"
    , insnFlags       = [ Read [PF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x7A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6922,7 +6872,7 @@ i_jp = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x8A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6939,7 +6889,7 @@ i_js = insn
    , insnMnemonic    = "JS"
    , insnFlags       = [ Read [SF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x78
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6948,7 +6898,7 @@ i_js = insn
                            , legacyParams          = [ rel8 ]
                            }
                         , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x88
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -6964,7 +6914,7 @@ i_jmp = insn
    { insnDesc        = "Jump"
    , insnMnemonic    = "JMP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xEB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7010,7 +6960,7 @@ i_lahf = insn
    , insnMnemonic    = "LAHF"
    , insnFlags       = [ Read [SF,ZF,AF,PF,CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x9F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7027,7 +6977,7 @@ i_lar = insn
    , insnMnemonic    = "LAR"
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x02
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7045,7 +6995,7 @@ i_lddqu = insn
    , insnMnemonic    = "LDDQU"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7066,7 +7016,6 @@ i_vlddqu = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xF0
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7083,7 +7032,7 @@ i_ldmxcsr = insn
    { insnDesc        = "Load MXCSR register"
    , insnMnemonic    = "LDMXCSR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -7096,7 +7045,7 @@ i_ldmxcsr = insn
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xAE
                            , vexOpcodeExt       = Just 2
-                           , vexLW              = L0_WIG
+                           , vexLExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7112,7 +7061,7 @@ i_ldfarptr = insn
    { insnDesc        = "Load far pointer"
    , insnMnemonic    = "LDS/LES/LFS/LGS/LSS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , DefaultSegment R_DS
@@ -7122,7 +7071,7 @@ i_ldfarptr = insn
                                                      ]
                            }
                        ,  leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , DefaultSegment R_ES
@@ -7132,7 +7081,7 @@ i_ldfarptr = insn
                                                      ]
                            }
                        ,  leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xB2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7143,7 +7092,7 @@ i_ldfarptr = insn
                                                      ]
                            }
                        ,  leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xB4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7154,7 +7103,7 @@ i_ldfarptr = insn
                                                      ]
                            }
                        ,  leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xB5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7172,7 +7121,7 @@ i_lea = insn
    { insnDesc        = "Load effective address"
    , insnMnemonic    = "LEA"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x8D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7190,7 +7139,7 @@ i_leave = insn
    { insnDesc        = "High level procedure exit"
    , insnMnemonic    = "LEAVE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7207,7 +7156,7 @@ i_lfence = insn
    { insnDesc        = "Load fence"
    , insnMnemonic    = "LFENCE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 5
                            , legacyProperties      = [ LegacyModeSupport
@@ -7222,7 +7171,7 @@ i_lgdt = insn
    { insnDesc        = "Load global descriptor table register"
    , insnMnemonic    = "LGDT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -7238,7 +7187,7 @@ i_lidt = insn
    { insnDesc        = "Load interrupt descriptor table register"
    , insnMnemonic    = "LIDT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 3
                            , legacyProperties      = [ LegacyModeSupport
@@ -7254,7 +7203,7 @@ i_lldt = insn
    { insnDesc        = "Load local descriptor table register"
    , insnMnemonic    = "LLDT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x00
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -7272,7 +7221,7 @@ i_lmsw = insn
    { insnDesc        = "Load machine status word"
    , insnMnemonic    = "LMSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -7288,7 +7237,7 @@ i_lods = insn
    { insnDesc        = "Load string"
    , insnMnemonic    = "LODS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xAC
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -7307,7 +7256,7 @@ i_loop = insn
    { insnDesc        = "Loop according to rCX counter"
    , insnMnemonic    = "LOOP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xE2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7326,7 +7275,7 @@ i_loope = insn
    , insnMnemonic    = "LOOPE"
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xE1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7345,7 +7294,7 @@ i_loopne = insn
    , insnMnemonic    = "LOOPNE"
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xE0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7364,7 +7313,7 @@ i_lsl = insn
    , insnMnemonic    = "LSL"
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x03
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7383,7 +7332,7 @@ i_ltr = insn
    , insnMnemonic    = "LTR"
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x00
                            , legacyOpcodeExt       = Just 3
                            , legacyProperties      = [ LegacyModeSupport
@@ -7402,7 +7351,7 @@ i_maskmovdqu = insn
    , insnMnemonic    = "MASKMOVDQU"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7424,7 +7373,6 @@ i_vmaskmovdqu = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF7
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -7443,7 +7391,7 @@ i_maskmovq = insn
    { insnDesc        = "Store selected bytes of quadword"
    , insnMnemonic    = "MASKMOVQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7463,7 +7411,7 @@ i_maxpd = insn
    , insnMnemonic    = "MAXPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7484,7 +7432,6 @@ i_vmaxpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x5F
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -7502,7 +7449,7 @@ i_maxps = insn
    { insnDesc        = "Return maximum packed single-precision floating-point values"
    , insnMnemonic    = "MAXPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7522,7 +7469,6 @@ i_vmaxps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5F
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7541,7 +7487,7 @@ i_maxsd = insn
    , insnMnemonic    = "MAXSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7562,7 +7508,6 @@ i_vmaxsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5F
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7581,7 +7526,7 @@ i_maxss = insn
    , insnMnemonic    = "MAXSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7602,7 +7547,6 @@ i_vmaxss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5F
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7620,7 +7564,7 @@ i_mfence = insn
    { insnDesc        = "Memory fence"
    , insnMnemonic    = "MFENCE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeFullExt   = Just 0xF0
                            , legacyProperties      = [ LegacyModeSupport
@@ -7636,7 +7580,7 @@ i_minpd = insn
    , insnMnemonic    = "MINPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7657,7 +7601,6 @@ i_vminpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x5D
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -7675,7 +7618,7 @@ i_minps = insn
    { insnDesc        = "Return minimum packed single-precision floating-point values"
    , insnMnemonic    = "MINPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7695,7 +7638,6 @@ i_vminps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5D
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7714,7 +7656,7 @@ i_minsd = insn
    , insnMnemonic    = "MINSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7735,7 +7677,6 @@ i_vminsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5D
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7754,7 +7695,7 @@ i_minss = insn
    , insnMnemonic    = "MINSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -7775,7 +7716,6 @@ i_vminss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5D
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -7793,7 +7733,7 @@ i_monitor = insn
    { insnDesc        = "Set up monitor address"
    , insnMnemonic    = "MONITOR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0x01
                            , legacyOpcodeFullExt = Just 0xC8
                            , legacyProperties    = [ LegacyModeSupport
@@ -7813,7 +7753,7 @@ i_mov = insn
    { insnDesc        = "Move"
    , insnMnemonic    = "MOV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xA0
                            , legacyNoForce8bit     = Just 0
                            , legacyReversable      = Just 1
@@ -7825,7 +7765,7 @@ i_mov = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x88
                            , legacyNoForce8bit     = Just 0
                            , legacyReversable      = Just 1
@@ -7838,7 +7778,7 @@ i_mov = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x8C
                            , legacyReversable      = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -7849,7 +7789,7 @@ i_mov = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xB0
                            , legacyNoForce8bit     = Just 3
                            , legacyProperties      = [ LegacyModeSupport
@@ -7860,7 +7800,7 @@ i_mov = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC6
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -7881,7 +7821,7 @@ i_movcr = insn
    , insnMnemonic    = "MOV"
    , insnFlags       = [ Undefined [OF,SF,ZF,AF,PF,CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x20
                            , legacyReversable      = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -7901,7 +7841,7 @@ i_movdr = insn
    , insnMnemonic    = "MOV"
    , insnFlags       = [ Undefined [OF,SF,ZF,AF,PF,CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x21
                            , legacyReversable      = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -7922,7 +7862,7 @@ i_movapd = insn
    , insnMnemonic    = "MOVAPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x28
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -7945,7 +7885,6 @@ i_vmovapd = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x28
                            , vexReversable         = Just 0
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -7962,7 +7901,7 @@ i_movaps = insn
    { insnDesc        = "Move aligned packed single-precision floating-point values"
    , insnMnemonic    = "MOVAPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x28
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -7983,7 +7922,6 @@ i_vmovaps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x28
-                           , vexLW              = WIG
                            , vexReversable      = Just 0
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -8001,7 +7939,7 @@ i_movbe = insn
    { insnDesc        = "Move data after swapping bytes"
    , insnMnemonic    = "MOVBE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0xF0
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -8019,7 +7957,7 @@ i_movdq = insn
    { insnDesc        = "Move doubleword/quadword"
    , insnMnemonic    = "MOVD/MOVQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6E
                            , legacyReversable      = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -8032,7 +7970,7 @@ i_movdq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6E
                            , legacyReversable      = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -8048,7 +7986,7 @@ i_movdq = insn
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x6E
                            , vexReversable         = Just 4
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8066,7 +8004,7 @@ i_movddup = insn
    , insnMnemonic    = "MOVDDUP"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x12
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8080,7 +8018,6 @@ i_movddup = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8098,7 +8035,7 @@ i_movdqa = insn
    , insnMnemonic    = "MOVDQA/VMOVDQA"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6F
                            , legacyReversable      = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -8114,7 +8051,6 @@ i_movdqa = insn
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x6F
                            , vexReversable         = Just 4
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8132,7 +8068,7 @@ i_movdqu = insn
    , insnMnemonic    = "MOVDQU/VMOVDQU"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6F
                            , legacyReversable      = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -8148,7 +8084,6 @@ i_movdqu = insn
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x6F
                            , vexReversable         = Just 4
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8166,7 +8101,7 @@ i_movdq2q = insn
    , insnMnemonic    = "MOVDQ2Q"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8184,7 +8119,7 @@ i_movhlps = insn
    { insnDesc        = "Move packed single-precision FP values high to low"
    , insnMnemonic    = "MOVHLPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x12
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8204,7 +8139,7 @@ i_vmovhlps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8225,7 +8160,7 @@ i_movhpd = insn
    , insnMnemonic    = "MOVHPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x16
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -8240,7 +8175,7 @@ i_movhpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x17
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8260,7 +8195,7 @@ i_vmovhpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x16
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8279,7 +8214,7 @@ i_movhps = insn
    { insnDesc        = "Move high packed single-precision FP values"
    , insnMnemonic    = "MOVHPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x16
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -8293,7 +8228,7 @@ i_movhps = insn
                        , vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x17
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8312,7 +8247,7 @@ i_vmovhps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x16
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8332,7 +8267,7 @@ i_movlpd = insn
    , insnMnemonic    = "MOVLPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x12
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -8347,7 +8282,7 @@ i_movlpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x13
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8367,7 +8302,7 @@ i_vmovlpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8386,7 +8321,7 @@ i_movlps = insn
    { insnDesc        = "Move low packed single-precision FP values"
    , insnMnemonic    = "MOVLPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x12
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -8400,7 +8335,7 @@ i_movlps = insn
                        , vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x13
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8419,7 +8354,7 @@ i_vmovlps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8437,7 +8372,7 @@ i_movlhps = insn
    { insnDesc        = "Move packed single-precision FP values low ti high"
    , insnMnemonic    = "MOVLHPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x16
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8457,7 +8392,7 @@ i_vmovlhps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x16
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8477,7 +8412,7 @@ i_movmskpd = insn
    , insnMnemonic    = "MOVMSKPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x50
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8499,7 +8434,6 @@ i_vmovmskpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x50
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8518,7 +8452,7 @@ i_movmskps = insn
    { insnDesc        = "Move packed single-precision FP sign mask"
    , insnMnemonic    = "MOVMSKPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x50
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8539,7 +8473,6 @@ i_vmovmskps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x50
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8559,7 +8492,7 @@ i_movntdqa = insn
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8573,7 +8506,7 @@ i_movntdqa = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 2
                            , vexOpcode             = 0x2A
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8586,7 +8519,7 @@ i_movntdqa = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 2
                            , vexOpcode             = 0x2A
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -8606,7 +8539,7 @@ i_movntdq = insn
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8620,7 +8553,6 @@ i_movntdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0xE7
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8638,7 +8570,7 @@ i_movnti = insn
    { insnDesc        = "Store doubleword non temporal"
    , insnMnemonic    = "MOVNTI"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8657,7 +8589,7 @@ i_movntpd = insn
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8671,7 +8603,6 @@ i_movntpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x2B
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8689,7 +8620,7 @@ i_movntps = insn
    , insnMnemonic    = "MOVNTPS"
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x2B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8702,7 +8633,6 @@ i_movntps = insn
                        , vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2B
-                           , vexLW              = WIG
                            , vexReversable      = Just 0
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -8720,7 +8650,7 @@ i_movntq = insn
    { insnDesc        = "Store quadword non temporal"
    , insnMnemonic    = "MOVNTQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8738,7 +8668,7 @@ i_movq = insn
    { insnDesc        = "Move quadword"
    , insnMnemonic    = "MOVQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6F
                            , legacyReversable      = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -8751,7 +8681,7 @@ i_movq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x7E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8763,7 +8693,7 @@ i_movq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8777,7 +8707,7 @@ i_movq = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7E
-                           , vexLW              = L0_WIG
+                           , vexLExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -8790,7 +8720,7 @@ i_movq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xD6
-                           , vexLW              = L0_WIG
+                           , vexLExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -8808,7 +8738,7 @@ i_movq2dq = insn
    , insnMnemonic    = "MOVQ2DQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8826,7 +8756,7 @@ i_movs = insn
    { insnDesc        = "Move string"
    , insnMnemonic    = "MOVS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xA4
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -8846,7 +8776,7 @@ i_movsd = insn
    , insnMnemonic    = "MOVSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefixF2
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x10
                            , legacyReversable         = Just 0
                            , legacyProperties         = [ LegacyModeSupport
@@ -8868,7 +8798,6 @@ i_vmovsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8882,7 +8811,6 @@ i_vmovsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x11
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8896,7 +8824,6 @@ i_vmovsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
-                           , vexLW                 = LWIG
                            , vexReversable         = Just 0
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8915,7 +8842,7 @@ i_movshdup = insn
    , insnMnemonic    = "MOVSHDUP"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x16
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8929,7 +8856,6 @@ i_movshdup = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x16
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8948,7 +8874,7 @@ i_movsldup = insn
    , insnMnemonic    = "MOVSLDUP"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x12
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -8962,7 +8888,6 @@ i_movsldup = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -8980,7 +8905,7 @@ i_movss = insn
    , insnMnemonic    = "MOVSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefixF3
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x10
                            , legacyReversable         = Just 0
                            , legacyProperties         = [ LegacyModeSupport
@@ -9002,7 +8927,6 @@ i_vmovss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9016,7 +8940,6 @@ i_vmovss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x11
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9030,7 +8953,6 @@ i_vmovss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
-                           , vexLW                 = LWIG
                            , vexReversable         = Just 0
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9048,7 +8970,7 @@ i_movsx = insn
    { insnDesc        = "Move with sign-extension"
    , insnMnemonic    = "MOVSX"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap          = Map0F
+                           { legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xBE
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -9058,7 +8980,7 @@ i_movsx = insn
                                                         ]
                            }
                        , leg
-                           { legacyOpcodeMap          = Map0F
+                           { legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xBF
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -9068,7 +8990,7 @@ i_movsx = insn
                                                         ]
                            }
                        , leg
-                           { legacyOpcodeMap          = Map0F
+                           { legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x63
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -9087,7 +9009,7 @@ i_movupd = insn
    , insnMnemonic    = "MOVUPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x10
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -9110,7 +9032,6 @@ i_vmovupd = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
                            , vexReversable         = Just 0
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9127,7 +9048,7 @@ i_movups = insn
    { insnDesc        = "Move unaligned packed single-precision floating-point values"
    , insnMnemonic    = "MOVUPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x10
                            , legacyReversable      = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -9148,7 +9069,6 @@ i_vmovups = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x10
-                           , vexLW              = WIG
                            , vexReversable      = Just 0
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -9166,7 +9086,7 @@ i_movzx = insn
    { insnDesc        = "Move with zerp-extend"
    , insnMnemonic    = "MOVZX"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap          = Map0F
+                           { legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xB6
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -9176,7 +9096,7 @@ i_movzx = insn
                                                         ]
                            }
                        , leg
-                           { legacyOpcodeMap          = Map0F
+                           { legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xB7
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -9194,7 +9114,7 @@ i_mpsadbw = insn
    , insnMnemonic    = "MPSADBW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x42
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9209,7 +9129,7 @@ i_mpsadbw = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x42
-                           , vexLW              = L0_WIG
+                           , vexLExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -9224,7 +9144,7 @@ i_mpsadbw = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x42
-                           , vexLW              = L1_WIG
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -9246,7 +9166,7 @@ i_mul = insn
                        , Undefined [SF,ZF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF6
                            , legacyOpcodeExt    = Just 4
                            , legacyNoForce8bit  = Just 0
@@ -9267,7 +9187,7 @@ i_mulpd = insn
    , insnMnemonic    = "MULPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9288,7 +9208,6 @@ i_vmulpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x59
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9306,7 +9225,7 @@ i_mulps = insn
    { insnDesc        = "Multiply packed single-precision floating-point values"
    , insnMnemonic    = "MULPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9326,7 +9245,6 @@ i_vmulps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x59
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -9345,7 +9263,7 @@ i_mulsd = insn
    , insnMnemonic    = "MULSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9366,7 +9284,6 @@ i_vmulsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x59
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -9385,7 +9302,7 @@ i_mulss = insn
    , insnMnemonic    = "MULSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9406,7 +9323,6 @@ i_vmulss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x59
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -9427,7 +9343,7 @@ i_mulx = insn
                               { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF6
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -9446,7 +9362,7 @@ i_mwait = insn
    { insnDesc        = "Monitor wait"
    , insnMnemonic    = "MWAIT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap     = Map0F
+                           { legacyOpcodeMap     = MapLegacy Map0F
                            , legacyOpcode        = 0x01
                            , legacyOpcodeFullExt = Just 0xC9
                            , legacyProperties    = [ LegacyModeSupport
@@ -9466,7 +9382,7 @@ i_neg = insn
    , insnMnemonic    = "NEG"
    , insnFlags       = [ Modified [CF,OF,SF,ZF,AF,PF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF6
                            , legacyOpcodeExt    = Just 3
                            , legacyNoForce8bit  = Just 0
@@ -9485,7 +9401,7 @@ i_nop = insn
    { insnDesc        = "No operation"
    , insnMnemonic    = "NOP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x90
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -9493,7 +9409,7 @@ i_nop = insn
                            , legacyParams       = [ ]
                            }
                        , leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x1F
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -9509,7 +9425,7 @@ i_not = insn
    { insnDesc        = "One's complement negation"
    , insnMnemonic    = "NOT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xF6
                            , legacyOpcodeExt    = Just 2
                            , legacyNoForce8bit  = Just 0
@@ -9533,7 +9449,7 @@ i_or = insn
                        , Undefined [AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x0C
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -9544,7 +9460,7 @@ i_or = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x08
                            , legacyNoForce8bit  = Just 0
                            , legacyReversable   = Just 1
@@ -9558,7 +9474,7 @@ i_or = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 1
                            , legacyNoForce8bit     = Just 0
@@ -9581,7 +9497,7 @@ i_orpd = insn
    , insnMnemonic    = "ORPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x56
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9602,7 +9518,6 @@ i_vorpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x56
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -9620,7 +9535,7 @@ i_orps = insn
    { insnDesc        = "Bitwise logical OR of packed float-precision floating-point values"
    , insnMnemonic    = "ORPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x56
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -9640,7 +9555,6 @@ i_vorps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x56
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -9658,7 +9572,7 @@ i_out = insn
    { insnDesc        = "Output to port"
    , insnMnemonic    = "OUT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xE6
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -9670,7 +9584,7 @@ i_out = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xEE
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -9690,7 +9604,7 @@ i_outs = insn
    { insnDesc        = "Output string to port"
    , insnMnemonic    = "OUTS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x6E
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -9711,7 +9625,7 @@ i_pabsb = insn
    { insnDesc        = "Packed absolute value of bytes"
    , insnMnemonic    = "PABSB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x1C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9723,7 +9637,7 @@ i_pabsb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x1C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9737,7 +9651,7 @@ i_pabsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1C
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9750,7 +9664,7 @@ i_pabsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1C
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -9769,7 +9683,7 @@ i_pabsw = insn
    { insnDesc        = "Packed absolute value of 16-bit integers"
    , insnMnemonic    = "PABSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x1D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9781,7 +9695,7 @@ i_pabsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x1D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9795,7 +9709,7 @@ i_pabsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1D
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9808,7 +9722,7 @@ i_pabsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1D
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -9827,7 +9741,7 @@ i_pabsd = insn
    { insnDesc        = "Packed absolute value of 32-bit integers"
    , insnMnemonic    = "PABSD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x1E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9839,7 +9753,7 @@ i_pabsd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x1E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9853,7 +9767,7 @@ i_pabsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1E
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9866,7 +9780,7 @@ i_pabsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1E
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -9884,7 +9798,7 @@ i_packsswb = insn
    { insnDesc        = "Pack with signed saturation"
    , insnMnemonic    = "PACKSSWB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x63
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9896,7 +9810,7 @@ i_packsswb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x63
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9910,7 +9824,7 @@ i_packsswb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x63
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9924,7 +9838,7 @@ i_packsswb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x63
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -9944,7 +9858,7 @@ i_packssdw = insn
    { insnDesc        = "Pack with signed saturation"
    , insnMnemonic    = "PACKSSDW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9956,7 +9870,7 @@ i_packssdw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -9970,7 +9884,7 @@ i_packssdw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6B
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -9984,7 +9898,7 @@ i_packssdw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6B
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10004,7 +9918,7 @@ i_packusdw = insn
    , insnMnemonic    = "PACKUSDW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x2B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10018,7 +9932,7 @@ i_packusdw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x2B
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10032,7 +9946,7 @@ i_packusdw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x2B
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10050,7 +9964,7 @@ i_packuswb = insn
    { insnDesc        = "Pack with unsigned saturation"
    , insnMnemonic    = "PACKUSWB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x67
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10062,7 +9976,7 @@ i_packuswb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x67
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10076,7 +9990,7 @@ i_packuswb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x67
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10090,7 +10004,7 @@ i_packuswb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x67
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10109,7 +10023,7 @@ i_paddb = insn
    { insnDesc        = "Add packed integers"
    , insnMnemonic    = "PADDB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10121,7 +10035,7 @@ i_paddb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10135,7 +10049,7 @@ i_paddb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFC
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10149,7 +10063,7 @@ i_paddb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFC
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10170,7 +10084,7 @@ i_paddw = insn
    { insnDesc        = "Add packed integers"
    , insnMnemonic    = "PADDW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10182,7 +10096,7 @@ i_paddw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10196,7 +10110,7 @@ i_paddw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFD
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10210,7 +10124,7 @@ i_paddw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFD
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10230,7 +10144,7 @@ i_paddd = insn
    { insnDesc        = "Add packed integers"
    , insnMnemonic    = "PADDD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10242,7 +10156,7 @@ i_paddd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10256,7 +10170,7 @@ i_paddd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFE
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10270,7 +10184,7 @@ i_paddd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFE
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10291,7 +10205,7 @@ i_paddq = insn
    { insnDesc        = "Add packed quadword integers"
    , insnMnemonic    = "PADDQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10303,7 +10217,7 @@ i_paddq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10317,7 +10231,7 @@ i_paddq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD4
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10331,7 +10245,7 @@ i_paddq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD4
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10352,7 +10266,7 @@ i_paddsb = insn
    { insnDesc        = "Add packed signed integers with signed saturation"
    , insnMnemonic    = "PADDSB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10364,7 +10278,7 @@ i_paddsb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10378,7 +10292,7 @@ i_paddsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEC
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10392,7 +10306,7 @@ i_paddsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEC
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10412,7 +10326,7 @@ i_paddsw = insn
    { insnDesc        = "Add packed signed integers with signed saturation"
    , insnMnemonic    = "PADDSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xED
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10424,7 +10338,7 @@ i_paddsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xED
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10438,7 +10352,7 @@ i_paddsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xED
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10452,7 +10366,7 @@ i_paddsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xED
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10472,7 +10386,7 @@ i_paddusb = insn
    { insnDesc        = "Add packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PADDUSB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10484,7 +10398,7 @@ i_paddusb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10498,7 +10412,7 @@ i_paddusb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDC
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10512,7 +10426,7 @@ i_paddusb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDC
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10532,7 +10446,7 @@ i_paddusw = insn
    { insnDesc        = "Add packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PADDUSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10544,7 +10458,7 @@ i_paddusw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10558,7 +10472,7 @@ i_paddusw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDD
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10572,7 +10486,7 @@ i_paddusw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDD
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10591,7 +10505,7 @@ i_palignr = insn
    { insnDesc        = "Packed align right"
    , insnMnemonic    = "PALIGNR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F3A
+                           { legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10604,7 +10518,7 @@ i_palignr = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10619,7 +10533,7 @@ i_palignr = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0F
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10634,7 +10548,7 @@ i_palignr = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0F
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10654,7 +10568,7 @@ i_pand = insn
    { insnDesc        = "Logical AND"
    , insnMnemonic    = "PAND"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10666,7 +10580,7 @@ i_pand = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10680,7 +10594,7 @@ i_pand = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDB
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10694,7 +10608,7 @@ i_pand = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDB
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10714,7 +10628,7 @@ i_pandn = insn
    { insnDesc        = "Logical AND NOT"
    , insnMnemonic    = "PANDN"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10726,7 +10640,7 @@ i_pandn = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10740,7 +10654,7 @@ i_pandn = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDF
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10754,7 +10668,7 @@ i_pandn = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDF
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10774,7 +10688,7 @@ i_pause = insn
    , insnMnemonic    = "PAUSE"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = MapPrimary
+                           , legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x90
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10788,7 +10702,7 @@ i_pavgb = insn
    { insnDesc        = "Average packed integers"
    , insnMnemonic    = "PAVGB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10800,7 +10714,7 @@ i_pavgb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10814,7 +10728,7 @@ i_pavgb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE0
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10828,7 +10742,7 @@ i_pavgb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE0
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10849,7 +10763,7 @@ i_pavgw = insn
    { insnDesc        = "Average packed integers"
    , insnMnemonic    = "PAVGW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10861,7 +10775,7 @@ i_pavgw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10875,7 +10789,7 @@ i_pavgw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE3
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10889,7 +10803,7 @@ i_pavgw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE3
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10911,7 +10825,7 @@ i_pblendvb = insn
    , insnMnemonic    = "PBLENDVB"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x10
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10926,7 +10840,8 @@ i_pblendvb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x4C
-                           , vexLW                 = L0_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10941,7 +10856,8 @@ i_pblendvb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x4C
-                           , vexLW                 = L1_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -10963,7 +10879,7 @@ i_pblendw = insn
    , insnMnemonic    = "PBLENDW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -10978,7 +10894,7 @@ i_pblendw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0E
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -10993,7 +10909,7 @@ i_pblendw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0E
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11015,7 +10931,7 @@ i_pclmulqdq = insn
    , insnMnemonic    = "PCLMULQDQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x44
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11030,7 +10946,7 @@ i_pclmulqdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x44
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11051,7 +10967,7 @@ i_pcmpeqb = insn
    { insnDesc        = "Compare packed data for equality"
    , insnMnemonic    = "PCMPEQB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x74
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11063,7 +10979,7 @@ i_pcmpeqb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x74
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11077,7 +10993,7 @@ i_pcmpeqb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x74
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11091,7 +11007,7 @@ i_pcmpeqb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x74
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11110,7 +11026,7 @@ i_pcmpeqw = insn
    { insnDesc        = "Compare packed data for equality"
    , insnMnemonic    = "PCMPEQW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x75
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11122,7 +11038,7 @@ i_pcmpeqw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x75
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11136,7 +11052,7 @@ i_pcmpeqw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x75
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11150,7 +11066,7 @@ i_pcmpeqw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x75
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11169,7 +11085,7 @@ i_pcmpeqd = insn
    { insnDesc        = "Compare packed data for equality"
    , insnMnemonic    = "PCMPEQD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x76
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11181,7 +11097,7 @@ i_pcmpeqd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x76
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11195,7 +11111,7 @@ i_pcmpeqd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x76
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11209,7 +11125,7 @@ i_pcmpeqd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x76
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11229,7 +11145,7 @@ i_pcmpeqq = insn
    , insnMnemonic    = "PCMPEQQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x29
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11243,7 +11159,7 @@ i_pcmpeqq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x29
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11257,7 +11173,7 @@ i_pcmpeqq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x29
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11280,7 +11196,7 @@ i_pcmpestri = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x61
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11298,7 +11214,7 @@ i_pcmpestri = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x61
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11324,7 +11240,7 @@ i_pcmpestrm = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x60
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11342,7 +11258,7 @@ i_pcmpestrm = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x60
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11363,7 +11279,7 @@ i_pcmpgtb = insn
    { insnDesc        = "Compare packed data for greater than"
    , insnMnemonic    = "PCMPGTB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x64
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11375,7 +11291,7 @@ i_pcmpgtb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x64
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11389,7 +11305,7 @@ i_pcmpgtb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x64
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11403,7 +11319,7 @@ i_pcmpgtb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x64
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11422,7 +11338,7 @@ i_pcmpgtw = insn
    { insnDesc        = "Compare packed data for greater than"
    , insnMnemonic    = "PCMPGTW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x65
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11434,7 +11350,7 @@ i_pcmpgtw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x65
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11448,7 +11364,7 @@ i_pcmpgtw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x65
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11462,7 +11378,7 @@ i_pcmpgtw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x65
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11481,7 +11397,7 @@ i_pcmpgtd = insn
    { insnDesc        = "Compare packed data for greater than"
    , insnMnemonic    = "PCMPGTD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x66
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11493,7 +11409,7 @@ i_pcmpgtd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x66
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11507,7 +11423,7 @@ i_pcmpgtd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x66
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11521,7 +11437,7 @@ i_pcmpgtd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x66
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11541,7 +11457,7 @@ i_pcmpgtq = insn
    , insnMnemonic    = "PCMPGTQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x37
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11555,7 +11471,7 @@ i_pcmpgtq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x37
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11569,7 +11485,7 @@ i_pcmpgtq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x37
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11591,7 +11507,7 @@ i_pcmpistri = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x63
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11607,7 +11523,7 @@ i_pcmpistri = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x63
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11631,7 +11547,7 @@ i_pcmpistrm = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x62
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11647,7 +11563,7 @@ i_pcmpistrm = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x62
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11669,7 +11585,7 @@ i_pdep = insn
                               { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF5
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -11690,7 +11606,7 @@ i_pext = insn
                               { vexMandatoryPrefix = Just LegacyPrefixF3
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF5
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -11710,7 +11626,7 @@ i_pextrb = insn
    , insnMnemonic    = "PEXTRB"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11725,7 +11641,7 @@ i_pextrb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x14
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11745,7 +11661,7 @@ i_pextrd = insn
    , insnMnemonic    = "PEXTRD/PEXTRQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x16
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11760,7 +11676,7 @@ i_pextrd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x16
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11778,7 +11694,7 @@ i_pextrw = insn
    { insnDesc        = "Extract word"
    , insnMnemonic    = "PEXTRW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11791,7 +11707,7 @@ i_pextrw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11806,7 +11722,8 @@ i_pextrw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC5
-                           , vexLW                 = L0_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11820,7 +11737,8 @@ i_pextrw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x15
-                           , vexLW                 = L0_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11839,7 +11757,7 @@ i_phaddw = insn
    { insnDesc        = "Packed horizontal add"
    , insnMnemonic    = "PHADDW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x01
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11851,7 +11769,7 @@ i_phaddw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x01
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11865,7 +11783,7 @@ i_phaddw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x01
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11879,7 +11797,7 @@ i_phaddw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x01
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11898,7 +11816,7 @@ i_phaddd = insn
    { insnDesc        = "Packed horizontal add"
    , insnMnemonic    = "PHADDD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x02
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11910,7 +11828,7 @@ i_phaddd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x02
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11924,7 +11842,7 @@ i_phaddd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x02
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11938,7 +11856,7 @@ i_phaddd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x02
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -11957,7 +11875,7 @@ i_phaddsw = insn
    { insnDesc        = "Packed horizontal add and saturate"
    , insnMnemonic    = "PHADDSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x03
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11969,7 +11887,7 @@ i_phaddsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x03
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -11983,7 +11901,7 @@ i_phaddsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x03
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -11997,7 +11915,7 @@ i_phaddsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x03
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12016,7 +11934,7 @@ i_phminposuw = insn
    , insnMnemonic    = "PHMINPOSUW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x41
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12030,7 +11948,7 @@ i_phminposuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x41
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12047,7 +11965,7 @@ i_phsubw = insn
    { insnDesc        = "Packed horizontal subtract"
    , insnMnemonic    = "PHSUBW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x05
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12059,7 +11977,7 @@ i_phsubw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x05
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12073,7 +11991,7 @@ i_phsubw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x05
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12087,7 +12005,7 @@ i_phsubw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x05
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12106,7 +12024,7 @@ i_phsubd = insn
    { insnDesc        = "Packed horizontal subtract"
    , insnMnemonic    = "PHSUBD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x06
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12118,7 +12036,7 @@ i_phsubd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x06
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12132,7 +12050,7 @@ i_phsubd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x06
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12146,7 +12064,7 @@ i_phsubd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x06
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12165,7 +12083,7 @@ i_phsubsw = insn
    { insnDesc        = "Packed horizontal subtract and saturate"
    , insnMnemonic    = "PHSUBSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x07
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12177,7 +12095,7 @@ i_phsubsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x07
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12191,7 +12109,7 @@ i_phsubsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x07
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12205,7 +12123,7 @@ i_phsubsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x07
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12224,7 +12142,7 @@ i_pinsrb = insn
    , insnMnemonic    = "PINSRB"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x20
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12239,7 +12157,7 @@ i_pinsrb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x20
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12260,7 +12178,7 @@ i_pinsrd = insn
    , insnMnemonic    = "PINSRD/PINSRQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x22
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12275,7 +12193,7 @@ i_pinsrd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x22
-                           , vexLW                 = L0
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12294,7 +12212,7 @@ i_pinsrw = insn
    { insnDesc        = "Insert word"
    , insnMnemonic    = "PINSRW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12307,7 +12225,7 @@ i_pinsrw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12322,7 +12240,8 @@ i_pinsrw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC4
-                           , vexLW                 = L0_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12341,7 +12260,7 @@ i_pmaddubsw = insn
    { insnDesc        = "Multiply and add packed signed and unsigned bytes"
    , insnMnemonic    = "PMADDUBSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x04
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12353,7 +12272,7 @@ i_pmaddubsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x04
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12367,7 +12286,7 @@ i_pmaddubsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x04
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12381,7 +12300,7 @@ i_pmaddubsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x04
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12399,7 +12318,7 @@ i_pmaddwd = insn
    { insnDesc        = "Multiply and add packed integers"
    , insnMnemonic    = "PMADDWD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12411,7 +12330,7 @@ i_pmaddwd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12425,7 +12344,7 @@ i_pmaddwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF5
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12439,7 +12358,7 @@ i_pmaddwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF5
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12459,7 +12378,7 @@ i_pmaxsb = insn
    , insnMnemonic    = "PMAXSB"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x3C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12473,7 +12392,7 @@ i_pmaxsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3C
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12487,7 +12406,7 @@ i_pmaxsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3C
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12507,7 +12426,7 @@ i_pmaxsd = insn
    , insnMnemonic    = "PMAXSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x3D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12521,7 +12440,7 @@ i_pmaxsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3D
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12535,7 +12454,7 @@ i_pmaxsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3D
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12553,7 +12472,7 @@ i_pmaxsw = insn
    { insnDesc        = "Maximum of packed signed word integers"
    , insnMnemonic    = "PMAXSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12565,7 +12484,7 @@ i_pmaxsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12579,7 +12498,7 @@ i_pmaxsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEE
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12593,7 +12512,7 @@ i_pmaxsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEE
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12612,7 +12531,7 @@ i_pmaxub = insn
    { insnDesc        = "Maximum of packed unsigned byte integers"
    , insnMnemonic    = "PMAXUB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12624,7 +12543,7 @@ i_pmaxub = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDE
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12638,7 +12557,7 @@ i_pmaxub = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDE
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12652,7 +12571,7 @@ i_pmaxub = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDE
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12671,7 +12590,7 @@ i_pmaxud = insn
    , insnMnemonic    = "PMAXUD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x3F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12685,7 +12604,7 @@ i_pmaxud = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3F
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12699,7 +12618,7 @@ i_pmaxud = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3F
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12720,7 +12639,7 @@ i_pmaxuw = insn
    , insnMnemonic    = "PMAXUW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x3E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12734,7 +12653,7 @@ i_pmaxuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3E
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12748,7 +12667,7 @@ i_pmaxuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3E
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12770,7 +12689,7 @@ i_pminsb = insn
    , insnMnemonic    = "PMINSB"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x38
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12784,7 +12703,7 @@ i_pminsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x38
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12798,7 +12717,7 @@ i_pminsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x38
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12818,7 +12737,7 @@ i_pminsd = insn
    , insnMnemonic    = "PMINSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x39
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12832,7 +12751,7 @@ i_pminsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x39
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12846,7 +12765,7 @@ i_pminsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x39
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12864,7 +12783,7 @@ i_pminsw = insn
    { insnDesc        = "Minimum of packed signed word integers"
    , insnMnemonic    = "PMINSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEA
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12876,7 +12795,7 @@ i_pminsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEA
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12890,7 +12809,7 @@ i_pminsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEA
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12904,7 +12823,7 @@ i_pminsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEA
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12923,7 +12842,7 @@ i_pminub = insn
    { insnDesc        = "Minimum of packed unsigned byte integers"
    , insnMnemonic    = "PMINUB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDA
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12935,7 +12854,7 @@ i_pminub = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xDA
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12949,7 +12868,7 @@ i_pminub = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDA
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -12963,7 +12882,7 @@ i_pminub = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDA
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -12982,7 +12901,7 @@ i_pminud = insn
    , insnMnemonic    = "PMINUD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x3B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -12996,7 +12915,7 @@ i_pminud = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3B
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13010,7 +12929,7 @@ i_pminud = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3B
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13031,7 +12950,7 @@ i_pminuw = insn
    , insnMnemonic    = "PMINUW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x3A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13045,7 +12964,7 @@ i_pminuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3A
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13059,7 +12978,7 @@ i_pminuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3A
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13078,7 +12997,7 @@ i_pmovmskb = insn
    { insnDesc        = "Move byte mask"
    , insnMnemonic    = "PMOVMSKB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13090,7 +13009,7 @@ i_pmovmskb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13104,7 +13023,7 @@ i_pmovmskb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD7
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13117,7 +13036,7 @@ i_pmovmskb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD7
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13135,7 +13054,7 @@ i_pmovsxbw = insn
    , insnMnemonic    = "PMOVSXBW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x20
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13149,7 +13068,7 @@ i_pmovsxbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x20
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13162,7 +13081,7 @@ i_pmovsxbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x20
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13181,7 +13100,7 @@ i_pmovsxbd = insn
    , insnMnemonic    = "PMOVSXBD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x21
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13195,7 +13114,7 @@ i_pmovsxbd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x21
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13208,7 +13127,7 @@ i_pmovsxbd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x21
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13227,7 +13146,7 @@ i_pmovsxbq = insn
    , insnMnemonic    = "PMOVSXBQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x22
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13241,7 +13160,7 @@ i_pmovsxbq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x22
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13254,7 +13173,7 @@ i_pmovsxbq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x22
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13273,7 +13192,7 @@ i_pmovsxwd = insn
    , insnMnemonic    = "PMOVSXWD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x23
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13287,7 +13206,7 @@ i_pmovsxwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x23
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13300,7 +13219,7 @@ i_pmovsxwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x23
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13319,7 +13238,7 @@ i_pmovsxwq = insn
    , insnMnemonic    = "PMOVSXWQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x24
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13333,7 +13252,7 @@ i_pmovsxwq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x24
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13346,7 +13265,7 @@ i_pmovsxwq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x24
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13365,7 +13284,7 @@ i_pmovsxdq = insn
    , insnMnemonic    = "PMOVSXWQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x25
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13379,7 +13298,7 @@ i_pmovsxdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x25
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13392,7 +13311,7 @@ i_pmovsxdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x25
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13411,7 +13330,7 @@ i_pmovzxbw = insn
    , insnMnemonic    = "PMOVZXBW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x30
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13425,7 +13344,7 @@ i_pmovzxbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x30
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13438,7 +13357,7 @@ i_pmovzxbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x30
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13457,7 +13376,7 @@ i_pmovzxbd = insn
    , insnMnemonic    = "PMOVZXBD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x31
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13471,7 +13390,7 @@ i_pmovzxbd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x31
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13484,7 +13403,7 @@ i_pmovzxbd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x31
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13503,7 +13422,7 @@ i_pmovzxbq = insn
    , insnMnemonic    = "PMOVZXBQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x32
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13517,7 +13436,7 @@ i_pmovzxbq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x32
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13530,7 +13449,7 @@ i_pmovzxbq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x32
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13549,7 +13468,7 @@ i_pmovzxwd = insn
    , insnMnemonic    = "PMOVZXWD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x33
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13563,7 +13482,7 @@ i_pmovzxwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x33
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13576,7 +13495,7 @@ i_pmovzxwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x33
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13595,7 +13514,7 @@ i_pmovzxwq = insn
    , insnMnemonic    = "PMOVZXWQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x34
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13609,7 +13528,7 @@ i_pmovzxwq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x34
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13622,7 +13541,7 @@ i_pmovzxwq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x34
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13641,7 +13560,7 @@ i_pmovzxdq = insn
    , insnMnemonic    = "PMOVZXWQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x35
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13655,7 +13574,7 @@ i_pmovzxdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x35
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13668,7 +13587,7 @@ i_pmovzxdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x35
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13687,7 +13606,7 @@ i_pmuldq = insn
    , insnMnemonic    = "PMULDQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x28
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13701,7 +13620,7 @@ i_pmuldq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x28
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13715,7 +13634,7 @@ i_pmuldq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x28
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13735,7 +13654,7 @@ i_pmulhrsw = insn
    { insnDesc        = "Packed multiply high with round and scale"
    , insnMnemonic    = "PMULHRSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x0B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13747,7 +13666,7 @@ i_pmulhrsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x0B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13761,7 +13680,7 @@ i_pmulhrsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0B
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13775,7 +13694,7 @@ i_pmulhrsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0B
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13795,7 +13714,7 @@ i_pmulhuw = insn
    { insnDesc        = "Multiply packed unsigned integers and store high result"
    , insnMnemonic    = "PMULHUW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13807,7 +13726,7 @@ i_pmulhuw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13821,7 +13740,7 @@ i_pmulhuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE4
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13835,7 +13754,7 @@ i_pmulhuw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE4
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13854,7 +13773,7 @@ i_pmulhw = insn
    { insnDesc        = "Multiply packed signed integers and store high result"
    , insnMnemonic    = "PMULHW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13866,7 +13785,7 @@ i_pmulhw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13880,7 +13799,7 @@ i_pmulhw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE5
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13894,7 +13813,7 @@ i_pmulhw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE5
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13913,7 +13832,7 @@ i_pmulld = insn
    , insnMnemonic    = "PMULLD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x40
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13927,7 +13846,7 @@ i_pmulld = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x40
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -13941,7 +13860,7 @@ i_pmulld = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x40
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -13960,7 +13879,7 @@ i_pmullw = insn
    { insnDesc        = "Multiply packed signed integers and store low result"
    , insnMnemonic    = "PMULLW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13972,7 +13891,7 @@ i_pmullw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -13986,7 +13905,7 @@ i_pmullw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD5
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14000,7 +13919,7 @@ i_pmullw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD5
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14018,7 +13937,7 @@ i_pmuludq = insn
    { insnDesc        = "Multiply packed unsigned doubleword integers"
    , insnMnemonic    = "PMULUDQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14030,7 +13949,7 @@ i_pmuludq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14044,7 +13963,7 @@ i_pmuludq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF4
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14058,7 +13977,7 @@ i_pmuludq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF4
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14076,7 +13995,7 @@ i_pop = insn
    { insnDesc        = "Pop a value from the stack"
    , insnMnemonic    = "POP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x8F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14088,7 +14007,7 @@ i_pop = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14100,7 +14019,7 @@ i_pop = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x1F
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_DS WO Implicit
@@ -14108,7 +14027,7 @@ i_pop = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x07
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_ES WO Implicit
@@ -14116,7 +14035,7 @@ i_pop = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x17
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_SS WO Implicit
@@ -14124,7 +14043,7 @@ i_pop = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xA1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14134,7 +14053,7 @@ i_pop = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xA9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14151,7 +14070,7 @@ i_popa = insn
    { insnDesc        = "Pop all general-purpose registers"
    , insnMnemonic    = "POPA"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x61
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ regBasePtr WO Implicit
@@ -14176,7 +14095,7 @@ i_popcnt = insn
                        , Modified [ZF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xB8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14195,7 +14114,7 @@ i_popf = insn
    , insnMnemonic    = "POPF"
    , insnFlags       = [ Modified allFlags ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x9D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14211,7 +14130,7 @@ i_por = insn
    { insnDesc        = "Bitwise logical OR"
    , insnMnemonic    = "POR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14223,7 +14142,7 @@ i_por = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14237,7 +14156,7 @@ i_por = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEB
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14251,7 +14170,7 @@ i_por = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEB
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14269,7 +14188,7 @@ i_prefetcht0 = insn
    { insnDesc        = "Prefetch data into caches"
    , insnMnemonic    = "PREFETCHT0"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x18
                            , legacyOpcodeExt       = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -14286,7 +14205,7 @@ i_prefetcht1 = insn
    { insnDesc        = "Prefetch data into caches"
    , insnMnemonic    = "PREFETCHT1"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x18
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -14303,7 +14222,7 @@ i_prefetcht2 = insn
    { insnDesc        = "Prefetch data into caches"
    , insnMnemonic    = "PREFETCHT2"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x18
                            , legacyOpcodeExt       = Just 3
                            , legacyProperties      = [ LegacyModeSupport
@@ -14320,7 +14239,7 @@ i_prefetchnta = insn
    { insnDesc        = "Prefetch data into caches"
    , insnMnemonic    = "PREFETCHNTA"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x18
                            , legacyOpcodeExt       = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -14338,7 +14257,7 @@ i_prefetchw = insn
    , insnMnemonic    = "PREFETCHW"
    , insnFlags       = [ Modified allFlags ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x0D
                            , legacyOpcodeExt       = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -14357,7 +14276,7 @@ i_prefetchwt1 = insn
    , insnMnemonic    = "PREFETCHWT1"
    , insnFlags       = [ Modified allFlags ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x0D
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -14374,7 +14293,7 @@ i_psadbw = insn
    { insnDesc        = "Compute sum of absolute differences"
    , insnMnemonic    = "PSADBW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14386,7 +14305,7 @@ i_psadbw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14400,7 +14319,7 @@ i_psadbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF6
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14414,7 +14333,7 @@ i_psadbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF6
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14433,7 +14352,7 @@ i_pshufb = insn
    { insnDesc        = "Packed shuffle bytes"
    , insnMnemonic    = "PSHUFB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x00
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14445,7 +14364,7 @@ i_pshufb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x00
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14459,7 +14378,7 @@ i_pshufb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x00
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14473,7 +14392,7 @@ i_pshufb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x00
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14492,7 +14411,7 @@ i_pshufd = insn
    , insnMnemonic    = "PSHUFD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14507,7 +14426,7 @@ i_pshufd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14521,7 +14440,7 @@ i_pshufd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14540,7 +14459,7 @@ i_pshufhw = insn
    , insnMnemonic    = "PSHUFHW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14555,7 +14474,7 @@ i_pshufhw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14569,7 +14488,7 @@ i_pshufhw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14589,7 +14508,7 @@ i_pshuflw = insn
    , insnMnemonic    = "PSHUFLW"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14604,7 +14523,7 @@ i_pshuflw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14618,7 +14537,7 @@ i_pshuflw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14636,7 +14555,7 @@ i_pshufw = insn
    { insnDesc        = "Shuffle packed words"
    , insnMnemonic    = "PSHUFW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14654,7 +14573,7 @@ i_psignb = insn
    { insnDesc        = "Packed sign"
    , insnMnemonic    = "PSIGNB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x08
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14666,7 +14585,7 @@ i_psignb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x08
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14680,7 +14599,7 @@ i_psignb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x08
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14694,7 +14613,7 @@ i_psignb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x08
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14713,7 +14632,7 @@ i_psignw = insn
    { insnDesc        = "Packed sign"
    , insnMnemonic    = "PSIGNW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x09
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14725,7 +14644,7 @@ i_psignw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x09
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14739,7 +14658,7 @@ i_psignw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x09
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14753,7 +14672,7 @@ i_psignw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x09
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14772,7 +14691,7 @@ i_psignd = insn
    { insnDesc        = "Packed sign"
    , insnMnemonic    = "PSIGND"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F38
+                           { legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x0A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14784,7 +14703,7 @@ i_psignd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x0A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14798,7 +14717,7 @@ i_psignd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0A
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14812,7 +14731,7 @@ i_psignd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0A
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14831,7 +14750,7 @@ i_pslldq = insn
    , insnMnemonic    = "PSLLDQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 7
                            , legacyProperties      = [ LegacyModeSupport
@@ -14847,7 +14766,7 @@ i_pslldq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 7
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14862,7 +14781,7 @@ i_pslldq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 7
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14881,7 +14800,7 @@ i_psllw = insn
    { insnDesc        = "Shift packed data left logical"
    , insnMnemonic    = "PSLLW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14893,7 +14812,7 @@ i_psllw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -14904,7 +14823,7 @@ i_psllw = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -14917,7 +14836,7 @@ i_psllw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -14932,7 +14851,7 @@ i_psllw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF1
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14946,7 +14865,7 @@ i_psllw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF1
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14961,7 +14880,7 @@ i_psllw = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 6
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -14976,7 +14895,7 @@ i_psllw = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 6
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -14995,7 +14914,7 @@ i_pslld = insn
    { insnDesc        = "Shift packed data left logical"
    , insnMnemonic    = "PSLLD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15007,7 +14926,7 @@ i_pslld = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15018,7 +14937,7 @@ i_pslld = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -15031,7 +14950,7 @@ i_pslld = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -15046,7 +14965,7 @@ i_pslld = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF2
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15060,7 +14979,7 @@ i_pslld = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF2
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15075,7 +14994,7 @@ i_pslld = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 6
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15090,7 +15009,7 @@ i_pslld = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 6
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15109,7 +15028,7 @@ i_psllq = insn
    { insnDesc        = "Shift packed data left logical"
    , insnMnemonic    = "PSLLD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15121,7 +15040,7 @@ i_psllq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15132,7 +15051,7 @@ i_psllq = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -15145,7 +15064,7 @@ i_psllq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -15160,7 +15079,7 @@ i_psllq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF3
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15174,7 +15093,7 @@ i_psllq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF3
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15189,7 +15108,7 @@ i_psllq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 6
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15204,7 +15123,7 @@ i_psllq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 6
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15222,7 +15141,7 @@ i_psraw = insn
    { insnDesc        = "Shift packed data right arithmetic"
    , insnMnemonic    = "PSRAW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15234,7 +15153,7 @@ i_psraw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15245,7 +15164,7 @@ i_psraw = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -15258,7 +15177,7 @@ i_psraw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -15273,7 +15192,7 @@ i_psraw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE1
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15287,7 +15206,7 @@ i_psraw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE1
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15302,7 +15221,7 @@ i_psraw = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 4
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15317,7 +15236,7 @@ i_psraw = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 4
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15336,7 +15255,7 @@ i_psrad = insn
    { insnDesc        = "Shift packed data right arithmetic"
    , insnMnemonic    = "PSRAD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15348,7 +15267,7 @@ i_psrad = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15359,7 +15278,7 @@ i_psrad = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -15372,7 +15291,7 @@ i_psrad = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -15387,7 +15306,7 @@ i_psrad = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE2
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15401,7 +15320,7 @@ i_psrad = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE2
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15416,7 +15335,7 @@ i_psrad = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 4
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15431,7 +15350,7 @@ i_psrad = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 4
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15450,7 +15369,7 @@ i_psrldq = insn
    , insnMnemonic    = "PSRLDQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x73
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15465,7 +15384,7 @@ i_psrldq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 3
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15480,7 +15399,7 @@ i_psrldq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 3
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15498,7 +15417,7 @@ i_psrlw = insn
    { insnDesc        = "Shift packed data right logical"
    , insnMnemonic    = "PSRLW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15510,7 +15429,7 @@ i_psrlw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD1
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15521,7 +15440,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15534,7 +15453,7 @@ i_psrlw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15549,7 +15468,7 @@ i_psrlw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD1
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15563,7 +15482,7 @@ i_psrlw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD1
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15578,7 +15497,7 @@ i_psrlw = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 2
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15593,7 +15512,7 @@ i_psrlw = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 2
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15611,7 +15530,7 @@ i_psrld = insn
    { insnDesc        = "Shift packed data right logical"
    , insnMnemonic    = "PSRLD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15623,7 +15542,7 @@ i_psrld = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD2
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15634,7 +15553,7 @@ i_psrld = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15647,7 +15566,7 @@ i_psrld = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15662,7 +15581,7 @@ i_psrld = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD2
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15676,7 +15595,7 @@ i_psrld = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD2
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15691,7 +15610,7 @@ i_psrld = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 2
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15706,7 +15625,7 @@ i_psrld = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 2
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15725,7 +15644,7 @@ i_psrlq = insn
    { insnDesc        = "Shift packed data right logical"
    , insnMnemonic    = "PSRLQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15737,7 +15656,7 @@ i_psrlq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD3
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15748,7 +15667,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15761,7 +15680,7 @@ i_psrlq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15776,7 +15695,7 @@ i_psrlq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD3
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15790,7 +15709,7 @@ i_psrlq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD3
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15805,7 +15724,7 @@ i_psrlq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 2
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15820,7 +15739,7 @@ i_psrlq = insn
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 2
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15838,7 +15757,7 @@ i_psubb = insn
    { insnDesc        = "Subtract packed integers"
    , insnMnemonic    = "PSUBB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15850,7 +15769,7 @@ i_psubb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15864,7 +15783,7 @@ i_psubb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF8
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15878,7 +15797,7 @@ i_psubb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF8
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15899,7 +15818,7 @@ i_psubw = insn
    { insnDesc        = "Subtract packed integers"
    , insnMnemonic    = "PSUBW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15911,7 +15830,7 @@ i_psubw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xF9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15925,7 +15844,7 @@ i_psubw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF9
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15939,7 +15858,7 @@ i_psubw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF9
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -15959,7 +15878,7 @@ i_psubd = insn
    { insnDesc        = "Subtract packed integers"
    , insnMnemonic    = "PSUBD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFA
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15971,7 +15890,7 @@ i_psubd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFA
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -15985,7 +15904,7 @@ i_psubd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFA
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -15999,7 +15918,7 @@ i_psubd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFA
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16020,7 +15939,7 @@ i_psubq = insn
    { insnDesc        = "Subtract packed quadword integers"
    , insnMnemonic    = "PSUBQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16032,7 +15951,7 @@ i_psubq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xFB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16046,7 +15965,7 @@ i_psubq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFB
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16060,7 +15979,7 @@ i_psubq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFB
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16081,7 +16000,7 @@ i_psubsb = insn
    { insnDesc        = "Subtract packed signed integers with signed saturation"
    , insnMnemonic    = "PSUBSB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16093,7 +16012,7 @@ i_psubsb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16107,7 +16026,7 @@ i_psubsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE8
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16121,7 +16040,7 @@ i_psubsb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE8
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16141,7 +16060,7 @@ i_psubsw = insn
    { insnDesc        = "Subtract packed signed integers with signed saturation"
    , insnMnemonic    = "PSUBSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16153,7 +16072,7 @@ i_psubsw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xE9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16167,7 +16086,7 @@ i_psubsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE9
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16181,7 +16100,7 @@ i_psubsw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE9
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16200,7 +16119,7 @@ i_psubusb = insn
    { insnDesc        = "Subtract packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PSUBUSB"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16212,7 +16131,7 @@ i_psubusb = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16226,7 +16145,7 @@ i_psubusb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD8
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16240,7 +16159,7 @@ i_psubusb = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD8
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16260,7 +16179,7 @@ i_psubusw = insn
    { insnDesc        = "Subtract packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PSUBUSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16272,7 +16191,7 @@ i_psubusw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xD9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16286,7 +16205,7 @@ i_psubusw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD9
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16300,7 +16219,7 @@ i_psubusw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD9
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16322,7 +16241,7 @@ i_ptest = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F38
+                           , legacyOpcodeMap       = MapLegacy Map0F38
                            , legacyOpcode          = 0x17
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16336,7 +16255,6 @@ i_ptest = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x17
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16353,7 +16271,7 @@ i_punpckhbw = insn
    { insnDesc        = "Unpack high data"
    , insnMnemonic    = "PUNPCKHBW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x68
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16365,7 +16283,7 @@ i_punpckhbw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x68
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16379,7 +16297,7 @@ i_punpckhbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x68
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16393,7 +16311,7 @@ i_punpckhbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x68
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16412,7 +16330,7 @@ i_punpckhwd = insn
    { insnDesc        = "Unpack high data"
    , insnMnemonic    = "PUNPCKHWD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x69
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16424,7 +16342,7 @@ i_punpckhwd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x69
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16438,7 +16356,7 @@ i_punpckhwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x69
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16452,7 +16370,7 @@ i_punpckhwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x69
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16471,7 +16389,7 @@ i_punpckhdq = insn
    { insnDesc        = "Unpack high data"
    , insnMnemonic    = "PUNPCKHDQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16483,7 +16401,7 @@ i_punpckhdq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16497,7 +16415,7 @@ i_punpckhdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6A
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16511,7 +16429,7 @@ i_punpckhdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6A
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16531,7 +16449,7 @@ i_punpckhqdq = insn
    , insnMnemonic    = "PUNPCKHQDQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16545,7 +16463,7 @@ i_punpckhqdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6D
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16559,7 +16477,7 @@ i_punpckhqdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6D
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16578,7 +16496,7 @@ i_punpcklbw = insn
    { insnDesc        = "Unpack low data"
    , insnMnemonic    = "PUNPCKLBW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x60
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16590,7 +16508,7 @@ i_punpcklbw = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x60
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16604,7 +16522,7 @@ i_punpcklbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x60
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16618,7 +16536,7 @@ i_punpcklbw = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x60
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16637,7 +16555,7 @@ i_punpcklwd = insn
    { insnDesc        = "Unpack low data"
    , insnMnemonic    = "PUNPCKLWD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x61
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16649,7 +16567,7 @@ i_punpcklwd = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x61
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16663,7 +16581,7 @@ i_punpcklwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x61
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16677,7 +16595,7 @@ i_punpcklwd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x61
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16696,7 +16614,7 @@ i_punpckldq = insn
    { insnDesc        = "Unpack low data"
    , insnMnemonic    = "PUNPCKLDQ"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x62
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16708,7 +16626,7 @@ i_punpckldq = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x62
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16722,7 +16640,7 @@ i_punpckldq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x62
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16736,7 +16654,7 @@ i_punpckldq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x62
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16756,7 +16674,7 @@ i_punpcklqdq = insn
    , insnMnemonic    = "PUNPCKLQDQ"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x6C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16770,7 +16688,7 @@ i_punpcklqdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6C
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16784,7 +16702,7 @@ i_punpcklqdq = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6C
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -16802,7 +16720,7 @@ i_push = insn
    { insnDesc        = "Push a value onto the stack"
    , insnMnemonic    = "PUSH"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xFF
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -16815,7 +16733,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x50
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16827,7 +16745,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x6A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16837,7 +16755,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x68
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16848,7 +16766,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x0E
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_CS RO Implicit
@@ -16856,7 +16774,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x1E
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_DS RO Implicit
@@ -16864,7 +16782,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x06
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_ES RO Implicit
@@ -16872,7 +16790,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x16
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ reg R_SS RO Implicit
@@ -16880,7 +16798,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xA0
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16890,7 +16808,7 @@ i_push = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xA8
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16907,7 +16825,7 @@ i_pusha = insn
    { insnDesc        = "Push all general-purpose registers"
    , insnMnemonic    = "PUSHA"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x60
                            , legacyProperties      = [ LegacyModeSupport ]
                            , legacyParams          = [ regBasePtr RO Implicit
@@ -16928,7 +16846,7 @@ i_pushf = insn
    { insnDesc        = "Push EFLAGS register onto the stack"
    , insnMnemonic    = "PUSHF"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x9C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16944,7 +16862,7 @@ i_pxor = insn
    { insnDesc        = "Logical exclusive OR"
    , insnMnemonic    = "PXOR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16956,7 +16874,7 @@ i_pxor = insn
                            }
                        , leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xEF
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -16970,7 +16888,7 @@ i_pxor = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEF
-                           , vexLW                 = L0_WIG
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -16984,7 +16902,7 @@ i_pxor = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEF
-                           , vexLW                 = L1_WIG
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -17003,7 +16921,7 @@ i_rcl = insn
    , insnMnemonic    = "RCL"
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 2
                            , legacyNoForce8bit     = Just 0
@@ -17015,7 +16933,7 @@ i_rcl = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 2
                            , legacyNoForce8bit     = Just 0
@@ -17027,7 +16945,7 @@ i_rcl = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 2
                            , legacyNoForce8bit     = Just 0
@@ -17048,7 +16966,7 @@ i_rcr = insn
    , insnMnemonic    = "RCR"
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 3
                            , legacyNoForce8bit     = Just 0
@@ -17060,7 +16978,7 @@ i_rcr = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 3
                            , legacyNoForce8bit     = Just 0
@@ -17072,7 +16990,7 @@ i_rcr = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 3
                            , legacyNoForce8bit     = Just 0
@@ -17093,7 +17011,7 @@ i_rol = insn
    , insnMnemonic    = "RCR"
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -17105,7 +17023,7 @@ i_rol = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -17117,7 +17035,7 @@ i_rol = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -17138,7 +17056,7 @@ i_ror = insn
    , insnMnemonic    = "ROR"
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 1
                            , legacyNoForce8bit     = Just 0
@@ -17150,7 +17068,7 @@ i_ror = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 1
                            , legacyNoForce8bit     = Just 0
@@ -17162,7 +17080,7 @@ i_ror = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 1
                            , legacyNoForce8bit     = Just 0
@@ -17181,7 +17099,7 @@ i_rcpps = insn
    { insnDesc        = "Compute reciprocals of packed single-precision FP values"
    , insnMnemonic    = "RCPPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x53
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17194,7 +17112,6 @@ i_rcpps = insn
                        , vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x53
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17213,7 +17130,7 @@ i_rcpss = insn
    , insnMnemonic    = "RCPSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x53
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17227,7 +17144,6 @@ i_rcpss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x53
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17247,7 +17163,7 @@ i_rdfsbase = insn
    , insnMnemonic    = "RDFSBASE"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 0
                            , legacyProperties      = [ LongModeSupport
@@ -17267,7 +17183,7 @@ i_rdgsbase = insn
    , insnMnemonic    = "RDGSBASE"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 1
                            , legacyProperties      = [ LongModeSupport
@@ -17286,7 +17202,7 @@ i_rdmsr = insn
    { insnDesc        = "Read from Model Specific Register (MSR)"
    , insnMnemonic    = "RDMSR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x32
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17304,7 +17220,7 @@ i_rdpkru = insn
    { insnDesc        = "Read protection key rights for user pages"
    , insnMnemonic    = "RDPKRU"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xEE
                            , legacyProperties      = [ LegacyModeSupport
@@ -17325,7 +17241,7 @@ i_rdpmc = insn
    { insnDesc        = "Read performance-monitoring counters"
    , insnMnemonic    = "RDPMC"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x33
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17346,7 +17262,7 @@ i_rdrand = insn
                        , Unset [OF,SF,ZF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC7
                            , legacyOpcodeExt       = Just 6
                            , legacyProperties      = [ LegacyModeSupport
@@ -17366,7 +17282,7 @@ i_rdseed = insn
                        , Unset [OF,SF,ZF,AF,PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC7
                            , legacyOpcodeExt       = Just 7
                            , legacyProperties      = [ LegacyModeSupport
@@ -17383,7 +17299,7 @@ i_rdtsc = insn
    { insnDesc        = "Read time-stamp counter"
    , insnMnemonic    = "RDTSC"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x31
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17399,7 +17315,7 @@ i_rdtscp = insn
    { insnDesc        = "Read time-stamp counter and processor ID"
    , insnMnemonic    = "RDTSCP"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xF9
                            , legacyProperties      = [ LegacyModeSupport
@@ -17466,7 +17382,7 @@ i_rorx = insn
                               { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x03
                               , vexOpcode          = 0xF0
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -17485,7 +17401,7 @@ i_roundpd = insn
    , insnMnemonic    = "ROUNDPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x09
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17500,7 +17416,6 @@ i_roundpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x09
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17520,7 +17435,7 @@ i_roundps = insn
    , insnMnemonic    = "ROUNDPS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x08
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17535,7 +17450,6 @@ i_roundps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x08
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17555,7 +17469,7 @@ i_roundsd = insn
    , insnMnemonic    = "ROUNDSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17570,7 +17484,6 @@ i_roundsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0B
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17590,7 +17503,7 @@ i_roundss = insn
    , insnMnemonic    = "ROUNDSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F3A
+                           , legacyOpcodeMap       = MapLegacy Map0F3A
                            , legacyOpcode          = 0x0A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17605,7 +17518,6 @@ i_roundss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0A
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17623,7 +17535,7 @@ i_rsm = insn
    { insnDesc        = "Resume from system management mode"
    , insnMnemonic    = "RSL"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAA
                            , legacyProperties      = [ LegacyModeSupport
                                                      ]
@@ -17636,7 +17548,7 @@ i_rsqrtps = insn
    { insnDesc        = "Compute reciprocals of square roots of packed single-precision FP values"
    , insnMnemonic    = "RSQRTPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x52
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17649,7 +17561,6 @@ i_rsqrtps = insn
                        , vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x52
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17668,7 +17579,7 @@ i_rsqrtss = insn
    , insnMnemonic    = "RSQRTSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x52
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17682,7 +17593,6 @@ i_rsqrtss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x52
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -17702,7 +17612,7 @@ i_sahf = insn
    , insnMnemonic    = "SAHF"
    , insnFlags       = [ Modified allFlags ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x9E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -17719,7 +17629,7 @@ i_shl = insn
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 4
                            , legacyNoForce8bit     = Just 0
@@ -17731,7 +17641,7 @@ i_shl = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 4
                            , legacyNoForce8bit     = Just 0
@@ -17743,7 +17653,7 @@ i_shl = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 4
                            , legacyNoForce8bit     = Just 0
@@ -17765,7 +17675,7 @@ i_sar = insn
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 7
                            , legacyNoForce8bit     = Just 0
@@ -17777,7 +17687,7 @@ i_sar = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 7
                            , legacyNoForce8bit     = Just 0
@@ -17789,7 +17699,7 @@ i_sar = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 7
                            , legacyNoForce8bit     = Just 0
@@ -17811,7 +17721,7 @@ i_shr = insn
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD0
                            , legacyOpcodeExt       = Just 5
                            , legacyNoForce8bit     = Just 0
@@ -17823,7 +17733,7 @@ i_shr = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD2
                            , legacyOpcodeExt       = Just 5
                            , legacyNoForce8bit     = Just 0
@@ -17835,7 +17745,7 @@ i_shr = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC0
                            , legacyOpcodeExt       = Just 5
                            , legacyNoForce8bit     = Just 0
@@ -17857,7 +17767,7 @@ i_sarx = insn
                               { vexMandatoryPrefix = Just LegacyPrefixF3
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF7
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -17878,7 +17788,7 @@ i_shlx = insn
                               { vexMandatoryPrefix = Just LegacyPrefix66
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF7
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -17900,7 +17810,7 @@ i_shrx = insn
                               { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF7
-                              , vexLW              = L0
+                              , vexLExt            = Just False
                               , vexProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension BMI2
@@ -17919,7 +17829,7 @@ i_sbb = insn
    , insnMnemonic    = "SBB"
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x1C
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -17930,7 +17840,7 @@ i_sbb = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x18
                            , legacyNoForce8bit     = Just 0
                            , legacyReversable      = Just 1
@@ -17944,7 +17854,7 @@ i_sbb = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 3
                            , legacyNoForce8bit     = Just 0
@@ -17967,7 +17877,7 @@ i_scas = insn
    , insnMnemonic    = "SCAS"
    , insnFlags       = [Modified [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xAE
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -17987,7 +17897,7 @@ i_seta = insn
    , insnMnemonic    = "SETA/SETNBE"
    , insnFlags       = [ Read [CF,ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x97
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18003,7 +17913,7 @@ i_setae = insn
    , insnMnemonic    = "SETAE/SETNB/SETNC"
    , insnFlags       = [ Read [CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x93
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18019,7 +17929,7 @@ i_setb = insn
    , insnMnemonic    = "SETB/SETC/SETNAE"
    , insnFlags       = [ Read [CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x92
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18035,7 +17945,7 @@ i_setbe = insn
    , insnMnemonic    = "SETBE/SETNA"
    , insnFlags       = [ Read [CF,ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x96
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18052,7 +17962,7 @@ i_sete = insn
    , insnMnemonic    = "SETE/SETZ"
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x94
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18068,7 +17978,7 @@ i_setg = insn
    , insnMnemonic    = "SETG/SETNLE"
    , insnFlags       = [ Read [ZF,SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x9F
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18084,7 +17994,7 @@ i_setge = insn
    , insnMnemonic    = "SETGE/SETNL"
    , insnFlags       = [ Read [SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x9D
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18100,7 +18010,7 @@ i_setl = insn
    , insnMnemonic    = "SETL/SETNGE"
    , insnFlags       = [ Read [SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x9C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18116,7 +18026,7 @@ i_setle = insn
    , insnMnemonic    = "SETLE/SETNG"
    , insnFlags       = [ Read [ZF,SF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x9E
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18132,7 +18042,7 @@ i_setne = insn
    , insnMnemonic    = "SETNE/SETNZ"
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x95
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18148,7 +18058,7 @@ i_setno = insn
    , insnMnemonic    = "SETNO"
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x91
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18164,7 +18074,7 @@ i_setnp = insn
    , insnMnemonic    = "SETNP/SETPO"
    , insnFlags       = [ Read [PF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x9B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18180,7 +18090,7 @@ i_setns = insn
    , insnMnemonic    = "SETNS"
    , insnFlags       = [ Read [SF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x99
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18196,7 +18106,7 @@ i_seto = insn
    , insnMnemonic    = "SETO"
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x90
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18212,7 +18122,7 @@ i_setp = insn
    , insnMnemonic    = "SETP/SETPE"
    , insnFlags       = [ Read [PF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x9A
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18228,7 +18138,7 @@ i_sets = insn
    , insnMnemonic    = "SETS"
    , insnFlags       = [ Read [SF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x98
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18243,7 +18153,7 @@ i_sfence = insn
    { insnDesc        = "Store fence"
    , insnMnemonic    = "SFENCE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeFullExt   = Just 0xF8
                            , legacyProperties      = [ LegacyModeSupport
@@ -18258,7 +18168,7 @@ i_sgdt = insn
    { insnDesc        = "Store global descriptor table register"
    , insnMnemonic    = "SGDT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -18276,7 +18186,7 @@ i_shld = insn
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xA4
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18287,7 +18197,7 @@ i_shld = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xA5
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18308,7 +18218,7 @@ i_shrd = insn
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18319,7 +18229,7 @@ i_shrd = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18338,7 +18248,7 @@ i_shufpd = insn
    , insnMnemonic    = "SHUFPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefix66
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0xC6
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -18360,7 +18270,6 @@ i_vshufpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC6
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -18379,7 +18288,7 @@ i_shufps = insn
    { insnDesc        = "Shuffle packed single-precision floating-point values"
    , insnMnemonic    = "SHUFPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC6
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -18400,7 +18309,6 @@ i_vshufps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0xC6
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -18419,7 +18327,7 @@ i_sidt = insn
    { insnDesc        = "Store interrupt descriptor table register"
    , insnMnemonic    = "SIDT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -18435,7 +18343,7 @@ i_sldt = insn
    { insnDesc        = "Store local descriptor table register"
    , insnMnemonic    = "SLDT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x00
                            , legacyOpcodeExt       = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -18453,7 +18361,7 @@ i_smsw = insn
    { insnDesc        = "Store machine status word"
    , insnMnemonic    = "SMSW"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeExt       = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -18470,7 +18378,7 @@ i_sqrtpd = insn
    , insnMnemonic    = "SQRTPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefix66
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -18484,7 +18392,6 @@ i_sqrtpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -18502,7 +18409,7 @@ i_sqrtps = insn
    { insnDesc        = "Compure square roots of packed single-precision floating-point values"
    , insnMnemonic    = "SQRTPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap          = Map0F
+                           { legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -18515,7 +18422,6 @@ i_sqrtps = insn
                        , vex
                            { vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -18534,7 +18440,7 @@ i_sqrtsd = insn
    , insnMnemonic    = "SQRTSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefixF2
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -18548,7 +18454,6 @@ i_sqrtsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -18568,7 +18473,7 @@ i_sqrtss = insn
    , insnMnemonic    = "SQRTSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefixF3
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -18582,7 +18487,6 @@ i_sqrtss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
-                           , vexLW                 = LWIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -18601,7 +18505,7 @@ i_stac = insn
    , insnMnemonic    = "STAC"
    , insnFlags       = [ St [AC] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xCB
                            , legacyProperties      = [ LegacyModeSupport
@@ -18618,7 +18522,7 @@ i_stc = insn
    , insnMnemonic    = "STC"
    , insnFlags       = [ St [CF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xF9
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18634,7 +18538,7 @@ i_std = insn
    , insnMnemonic    = "STD"
    , insnFlags       = [ St [DF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xFD
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18650,7 +18554,7 @@ i_sti = insn
    , insnMnemonic    = "STI"
    , insnFlags       = [ St [IF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xFB
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18664,7 +18568,7 @@ i_stmxcsr = insn
    { insnDesc        = "Store MXCSR register"
    , insnMnemonic    = "STMXCSR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 3
                            , legacyProperties      = [ LegacyModeSupport
@@ -18677,7 +18581,7 @@ i_stmxcsr = insn
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xAE
                            , vexOpcodeExt       = Just 3
-                           , vexLW              = L0_WIG
+                           , vexLExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -18692,7 +18596,7 @@ i_stos = insn
    { insnDesc        = "Store string"
    , insnMnemonic    = "STOS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xAA
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -18712,7 +18616,7 @@ i_str = insn
    { insnDesc        = "Store task register"
    , insnMnemonic    = "STR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x00
                            , legacyOpcodeExt       = Just 1
                            , legacyProperties      = [ LegacyModeSupport
@@ -18730,7 +18634,7 @@ i_sub = insn
    , insnMnemonic    = "SUB"
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x2C
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -18741,7 +18645,7 @@ i_sub = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x28
                            , legacyNoForce8bit     = Just 0
                            , legacyReversable      = Just 1
@@ -18755,7 +18659,7 @@ i_sub = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 5
                            , legacyNoForce8bit     = Just 0
@@ -18778,7 +18682,7 @@ i_subpd = insn
    , insnMnemonic    = "SUBPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18799,7 +18703,6 @@ i_vsubpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x5C
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -18817,7 +18720,7 @@ i_subps = insn
    { insnDesc        = "Subtract packed single-precision floating-point values"
    , insnMnemonic    = "SUBPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18837,7 +18740,6 @@ i_vsubps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5C
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -18856,7 +18758,7 @@ i_subsd = insn
    , insnMnemonic    = "SUBSD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF2
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18877,7 +18779,6 @@ i_vsubsd = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5C
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -18896,7 +18797,7 @@ i_subss = insn
    , insnMnemonic    = "SUBSS"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18917,7 +18818,6 @@ i_vsubss = insn
                            { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5C
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -18935,7 +18835,7 @@ i_swapgs = insn
    { insnDesc        = "Swap GS base register"
    , insnMnemonic    = "SWAPGS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xF8
                            , legacyProperties      = [ LongModeSupport
@@ -18952,7 +18852,7 @@ i_syscall = insn
    { insnDesc        = "Fast system call"
    , insnMnemonic    = "SYSCALL"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x05
                            , legacyProperties      = [ LongModeSupport
                                                      ]
@@ -18966,7 +18866,7 @@ i_sysenter = insn
    { insnDesc        = "Fast system call"
    , insnMnemonic    = "SYSENTER"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x34
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18981,7 +18881,7 @@ i_sysexit = insn
    { insnDesc        = "Fast return from fast system call"
    , insnMnemonic    = "SYSEXIT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x35
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -18996,7 +18896,7 @@ i_sysret = insn
    { insnDesc        = "Return from fast system call"
    , insnMnemonic    = "SYSRET"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x07
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19014,7 +18914,7 @@ i_test = insn
                        , Undefined [AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0xA8
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -19025,7 +18925,7 @@ i_test = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x84
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ Lockable
@@ -19037,7 +18937,7 @@ i_test = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xF6
                            , legacyOpcodeExt       = Just 0
                            , legacyNoForce8bit     = Just 0
@@ -19062,7 +18962,7 @@ i_tzcnt = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xBC
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19084,7 +18984,7 @@ i_ucomisd = insn
                        ]
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix    = Just LegacyPrefix66
-                           , legacyOpcodeMap          = Map0F
+                           , legacyOpcodeMap          = MapLegacy Map0F
                            , legacyOpcode             = 0x2E
                            , legacyProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
@@ -19098,7 +18998,6 @@ i_ucomisd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2E
-                           , vexLW              = LWIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -19118,7 +19017,7 @@ i_ucomiss = insn
                        , Unset    [OF,SF,AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x2E
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -19131,7 +19030,6 @@ i_ucomiss = insn
                        , vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x2E
-                           , vexLW           = LWIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -19149,7 +19047,7 @@ i_ud2 = insn
    { insnDesc        = "Raise invalid opcode exception"
    , insnMnemonic    = "UD2"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x0B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19164,7 +19062,7 @@ i_unpckhpd = insn
    , insnMnemonic    = "PUNPCKHPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x15
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19178,7 +19076,6 @@ i_unpckhpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x15
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19197,7 +19094,7 @@ i_unpckhps = insn
    { insnDesc        = "Unpack and interleave high packed single-precision FP values"
    , insnMnemonic    = "PUNPCKHPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x15
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19210,7 +19107,6 @@ i_unpckhps = insn
                        , vex
                            { vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x15
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19230,7 +19126,7 @@ i_unpcklpd = insn
    , insnMnemonic    = "PUNPCKLPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19244,7 +19140,6 @@ i_unpcklpd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x14
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19263,7 +19158,7 @@ i_unpcklps = insn
    { insnDesc        = "Unpack and interleave low packed single-precision FP values"
    , insnMnemonic    = "PUNPCKLPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -19276,7 +19171,6 @@ i_unpcklps = insn
                        , vex
                            { vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x14
-                           , vexLW                 = WIG
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19298,7 +19192,7 @@ i_vbroadcastss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x18
-                           , vexLW                 = W0
+                           , vexWExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19311,7 +19205,7 @@ i_vbroadcastss = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x18
-                           , vexLW                 = W0
+                           , vexWExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -19333,7 +19227,8 @@ i_vbroadcastsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x19
-                           , vexLW                 = L1_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19346,7 +19241,8 @@ i_vbroadcastsd = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x19
-                           , vexLW                 = L1_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
@@ -19368,7 +19264,8 @@ i_vbroadcastf128 = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1A
-                           , vexLW                 = L1_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
@@ -19389,7 +19286,8 @@ i_vcvtph2ps = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x13
-                           , vexLW                 = L0_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension F16C
@@ -19402,7 +19300,8 @@ i_vcvtph2ps = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x13
-                           , vexLW                 = L1_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension F16C
@@ -19424,7 +19323,8 @@ i_vcvtps2ph = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x1D
-                           , vexLW                 = L0_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just False
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension F16C
@@ -19438,7 +19338,8 @@ i_vcvtps2ph = insn
                            { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x1D
-                           , vexLW                 = L1_W0
+                           , vexWExt               = Just False
+                           , vexLExt               = Just True
                            , vexProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension F16C
@@ -19458,7 +19359,7 @@ i_verr = insn
    , insnMnemonic    = "VERR"
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x00
                            , legacyOpcodeExt       = Just 4
                            , legacyProperties      = [ LegacyModeSupport
@@ -19476,7 +19377,7 @@ i_verw = insn
    , insnMnemonic    = "VERW"
    , insnFlags       = [ Modified [ZF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x00
                            , legacyOpcodeExt       = Just 5
                            , legacyProperties      = [ LegacyModeSupport
@@ -19495,7 +19396,8 @@ i_vextractf128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x19
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -19517,7 +19419,8 @@ i_vextracti128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x39
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -19538,7 +19441,7 @@ i_vfmadd132pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x98
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19560,7 +19463,7 @@ i_vfmadd213pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA8
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19582,7 +19485,7 @@ i_vfmadd231pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB8
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19604,7 +19507,7 @@ i_vfmadd132ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x98
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19626,7 +19529,7 @@ i_vfmadd213ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA8
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19648,7 +19551,7 @@ i_vfmadd231ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB8
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19670,7 +19573,7 @@ i_vfmadd132sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x99
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19692,7 +19595,7 @@ i_vfmadd213sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA9
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19714,7 +19617,7 @@ i_vfmadd231sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB9
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19736,7 +19639,7 @@ i_vfmadd132ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x99
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19758,7 +19661,7 @@ i_vfmadd213ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA9
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19780,7 +19683,7 @@ i_vfmadd231ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB9
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19802,7 +19705,7 @@ i_vfmaddsub132pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x96
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19824,7 +19727,7 @@ i_vfmaddsub213pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA6
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19846,7 +19749,7 @@ i_vfmaddsub231pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB6
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19868,7 +19771,7 @@ i_vfmaddsub132ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x96
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19890,7 +19793,7 @@ i_vfmaddsub213ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA6
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19912,7 +19815,7 @@ i_vfmaddsub231ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB6
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19934,7 +19837,7 @@ i_vfmsubadd132pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x97
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19956,7 +19859,7 @@ i_vfmsubadd213pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA7
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -19978,7 +19881,7 @@ i_vfmsubadd231pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB7
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20000,7 +19903,7 @@ i_vfmsubadd132ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x97
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20022,7 +19925,7 @@ i_vfmsubadd213ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA7
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20044,7 +19947,7 @@ i_vfmsubadd231ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB7
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20066,7 +19969,7 @@ i_vfmsub132pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20088,7 +19991,7 @@ i_vfmsub213pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20110,7 +20013,7 @@ i_vfmsub231pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20132,7 +20035,7 @@ i_vfmsub132ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20154,7 +20057,7 @@ i_vfmsub213ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20176,7 +20079,7 @@ i_vfmsub231ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20198,7 +20101,7 @@ i_vfmsub132sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20220,7 +20123,7 @@ i_vfmsub213sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20242,7 +20145,7 @@ i_vfmsub231sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20264,7 +20167,7 @@ i_vfmsub132ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20286,7 +20189,7 @@ i_vfmsub213ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20308,7 +20211,7 @@ i_vfmsub231ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20329,7 +20232,7 @@ i_vfnmadd132pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9C
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20351,7 +20254,7 @@ i_vfnmadd213pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAC
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20373,7 +20276,7 @@ i_vfnmadd231pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBC
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20395,7 +20298,7 @@ i_vfnmadd132ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9C
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20417,7 +20320,7 @@ i_vfnmadd213ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAC
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20439,7 +20342,7 @@ i_vfnmadd231ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBC
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20461,7 +20364,7 @@ i_vfnmadd132sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9D
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20483,7 +20386,7 @@ i_vfnmadd213sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAD
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20505,7 +20408,7 @@ i_vfnmadd231sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBD
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20527,7 +20430,7 @@ i_vfnmadd132ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9D
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20549,7 +20452,7 @@ i_vfnmadd213ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAD
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20571,7 +20474,7 @@ i_vfnmadd231ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBD
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20592,7 +20495,7 @@ i_vfnmsub132pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9E
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20614,7 +20517,7 @@ i_vfnmsub213pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAE
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20636,7 +20539,7 @@ i_vfnmsub231pd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBE
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20658,7 +20561,7 @@ i_vfnmsub132ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9E
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20680,7 +20583,7 @@ i_vfnmsub213ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAE
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20702,7 +20605,7 @@ i_vfnmsub231ps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBE
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20724,7 +20627,7 @@ i_vfnmsub132sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9F
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20746,7 +20649,7 @@ i_vfnmsub213sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAF
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20768,7 +20671,7 @@ i_vfnmsub231sd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBF
-                           , vexLW              = LIG_W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20790,7 +20693,7 @@ i_vfnmsub132ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9F
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20812,7 +20715,7 @@ i_vfnmsub213ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAF
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20834,7 +20737,7 @@ i_vfnmsub231ss = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBF
-                           , vexLW              = LIG_W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension FMA
@@ -20856,7 +20759,7 @@ i_vgatherdpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x92
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -20878,7 +20781,7 @@ i_vgatherqpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x93
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -20899,7 +20802,7 @@ i_vgatherdps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x92
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -20920,7 +20823,7 @@ i_vgatherqps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x93
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -20942,7 +20845,7 @@ i_vpgatherdd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x90
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -20963,7 +20866,7 @@ i_vpgatherqd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x91
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -20985,7 +20888,7 @@ i_vpgatherdq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x90
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21006,7 +20909,7 @@ i_vpgatherqq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x91
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21028,7 +20931,8 @@ i_vinsertf128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x18
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21051,7 +20955,8 @@ i_vinserti128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x38
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21074,7 +20979,7 @@ i_vmaskmovps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2C
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21088,7 +20993,7 @@ i_vmaskmovps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2E
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21110,7 +21015,7 @@ i_vmaskmovpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2D
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21124,7 +21029,7 @@ i_vmaskmovpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2F
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21146,7 +21051,7 @@ i_vblendd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x02
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21169,7 +21074,7 @@ i_vpbroadcastb = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x78
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21190,7 +21095,7 @@ i_vpbroadcastw = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x79
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21211,7 +21116,7 @@ i_vpbroadcastd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x58
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21232,7 +21137,7 @@ i_vpbroadcastq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x59
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21253,7 +21158,7 @@ i_vpbroadcasti128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x5A
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21274,7 +21179,8 @@ i_vpermd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x36
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21296,7 +21202,8 @@ i_vpermpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x01
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21318,7 +21225,8 @@ i_vpermps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x01
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21339,7 +21247,8 @@ i_vpermq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x00
-                           , vexLW              = L1_W1
+                           , vexWExt            = Just True
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21361,7 +21270,8 @@ i_vperm2i128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x46
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21384,7 +21294,7 @@ i_vpermilpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0D
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21398,7 +21308,7 @@ i_vpermilpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x05
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21420,7 +21330,7 @@ i_vpermilps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0C
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21434,7 +21344,7 @@ i_vpermilps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x04
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21455,7 +21365,8 @@ i_vperm2f128 = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x06
-                           , vexLW              = L1_W0
+                           , vexWExt            = Just False
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21477,7 +21388,7 @@ i_vpmaskmovd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8C
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21491,7 +21402,7 @@ i_vpmaskmovd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8E
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21513,7 +21424,7 @@ i_vpmaskmovq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8C
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21527,7 +21438,7 @@ i_vpmaskmovq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8E
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21549,7 +21460,7 @@ i_vpsllvd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x47
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21571,7 +21482,7 @@ i_vpsllvq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x47
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21593,7 +21504,7 @@ i_vpsravd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x46
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21615,7 +21526,7 @@ i_vpsrlvd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x45
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21637,7 +21548,7 @@ i_vpsrlvq = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x45
-                           , vexLW              = W1
+                           , vexWExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX2
@@ -21662,7 +21573,7 @@ i_vtestpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0E
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21686,7 +21597,7 @@ i_vtestps = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0F
-                           , vexLW              = W0
+                           , vexWExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21706,7 +21617,7 @@ i_vzeroall = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x77
-                           , vexLW              = L1_WIG
+                           , vexLExt            = Just True
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21723,7 +21634,7 @@ i_vzeroupper = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x77
-                           , vexLW              = L0_WIG
+                           , vexLExt            = Just False
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -21738,7 +21649,7 @@ i_fwait = insn
    { insnDesc        = "Check pending unmasked FP exceptions"
    , insnMnemonic    = "FWAIT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x9B
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -21753,7 +21664,7 @@ i_wbinvd = insn
    { insnDesc        = "Write back and invalidate cache"
    , insnMnemonic    = "WBINVD"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x09
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -21768,7 +21679,7 @@ i_wrfsbase = insn
    , insnMnemonic    = "WRFSBASE"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 2
                            , legacyProperties      = [ LongModeSupport
@@ -21788,7 +21699,7 @@ i_wrgsbase = insn
    , insnMnemonic    = "WRGSBASE"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefixF3
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 3
                            , legacyProperties      = [ LongModeSupport
@@ -21806,7 +21717,7 @@ i_wrmsr = insn
    { insnDesc        = "Write to Model Specific Register (MSR)"
    , insnMnemonic    = "WRMSR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x30
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -21823,7 +21734,7 @@ i_wrpkru = insn
    { insnDesc        = "Write data to user page key register"
    , insnMnemonic    = "WRPKRU"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xEF
                            , legacyProperties      = [ LegacyModeSupport
@@ -21844,7 +21755,7 @@ i_xabort = insn
    { insnDesc        = "Transactional abort"
    , insnMnemonic    = "XABORT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC6
                            , legacyOpcodeFullExt   = Just 0xF8
                            , legacyProperties      = [ LegacyModeSupport
@@ -21865,7 +21776,7 @@ i_xadd = insn
    , insnMnemonic    = "XADD"
    , insnFlags       = [ Modified [CF,PF,AF,SF,ZF,OF] ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0xC0
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -21885,7 +21796,7 @@ i_xbegin = insn
    { insnDesc        = "Transactional begin"
    , insnMnemonic    = "XBEGIN"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xC7
                            , legacyOpcodeFullExt   = Just 0xF8
                            , legacyProperties      = [ LegacyModeSupport
@@ -21902,7 +21813,7 @@ i_xchg = insn
    { insnDesc        = "Exchange"
    , insnMnemonic    = "XCHG"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x90
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -21914,7 +21825,7 @@ i_xchg = insn
                                                      ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x86
                            , legacyNoForce8bit     = Just 0
                            , legacyProperties      = [ LegacyModeSupport
@@ -21934,7 +21845,7 @@ i_xend = insn
    { insnDesc        = "Transactional end"
    , insnMnemonic    = "XEND"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xD5
                            , legacyProperties      = [ LegacyModeSupport
@@ -21951,7 +21862,7 @@ i_xgetbv = insn
    { insnDesc        = "Get value of extended control register"
    , insnMnemonic    = "XGETBV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xD0
                            , legacyProperties      = [ LegacyModeSupport
@@ -21970,7 +21881,7 @@ i_xlat = insn
    { insnDesc        = "Table look-up translation"
    , insnMnemonic    = "XLAT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0xD7
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -21995,7 +21906,7 @@ i_xor = insn
                        , Undefined [AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x34
                            , legacyNoForce8bit  = Just 0
                            , legacyProperties   = [ LegacyModeSupport
@@ -22006,7 +21917,7 @@ i_xor = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap    = MapPrimary
+                           { legacyOpcodeMap    = MapLegacy MapPrimary
                            , legacyOpcode       = 0x30
                            , legacyNoForce8bit  = Just 0
                            , legacyReversable   = Just 1
@@ -22020,7 +21931,7 @@ i_xor = insn
                                                   ]
                            }
                        , leg
-                           { legacyOpcodeMap       = MapPrimary
+                           { legacyOpcodeMap       = MapLegacy MapPrimary
                            , legacyOpcode          = 0x80
                            , legacyOpcodeExt       = Just 6
                            , legacyNoForce8bit     = Just 0
@@ -22043,7 +21954,7 @@ i_xorpd = insn
    , insnMnemonic    = "XORPD"
    , insnEncodings   = [ leg
                            { legacyMandatoryPrefix = Just LegacyPrefix66
-                           , legacyOpcodeMap       = Map0F
+                           , legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x57
                            , legacyProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
@@ -22064,7 +21975,6 @@ i_vxorpd = insn
                            { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x57
-                           , vexLW              = WIG
                            , vexProperties      = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , Extension AVX
@@ -22082,7 +21992,7 @@ i_xorps = insn
    { insnDesc        = "Bitwise logical XOR of packed float-precision floating-point values"
    , insnMnemonic    = "XORPS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0x57
                            , legacyProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
@@ -22102,7 +22012,6 @@ i_vxorps = insn
    , insnEncodings   = [ vex
                            { vexOpcodeMap    = MapVex 0x01
                            , vexOpcode       = 0x57
-                           , vexLW           = WIG
                            , vexProperties   = [ LegacyModeSupport
                                                , LongModeSupport
                                                , Extension AVX
@@ -22121,7 +22030,7 @@ i_xrstor = insn
    { insnDesc        = "Restore processor extended states"
    , insnMnemonic    = "XRSTOR"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xAE
                            , legacyOpcodeExt    = Just 5
                            , legacyProperties   = [ LegacyModeSupport
@@ -22140,7 +22049,7 @@ i_xrstors = insn
    { insnDesc        = "Restore processor extended states supervisor"
    , insnMnemonic    = "XRSTORS"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC7
                            , legacyOpcodeExt    = Just 3
                            , legacyProperties   = [ LegacyModeSupport
@@ -22159,7 +22068,7 @@ i_xsave = insn
    { insnDesc        = "Save processor extended states"
    , insnMnemonic    = "XSAVE"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xAE
                            , legacyOpcodeExt    = Just 4
                            , legacyProperties   = [ LegacyModeSupport
@@ -22179,7 +22088,7 @@ i_xsavec = insn
    { insnDesc        = "Save processor extended states with compaction"
    , insnMnemonic    = "XSAVEC"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC7
                            , legacyOpcodeExt    = Just 4
                            , legacyProperties   = [ LegacyModeSupport
@@ -22198,7 +22107,7 @@ i_xsaveopt = insn
    { insnDesc        = "Save processor extended states optimized"
    , insnMnemonic    = "XSAVEOPT"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xAE
                            , legacyOpcodeExt    = Just 6
                            , legacyProperties   = [ LegacyModeSupport
@@ -22217,7 +22126,7 @@ i_xsaves = insn
    { insnDesc        = "Save processor extended states supervisor"
    , insnMnemonic    = "XSAVES"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap    = Map0F
+                           { legacyOpcodeMap    = MapLegacy Map0F
                            , legacyOpcode       = 0xC7
                            , legacyOpcodeExt    = Just 5
                            , legacyProperties   = [ LegacyModeSupport
@@ -22235,7 +22144,7 @@ i_xsetbv = insn
    { insnDesc        = "Set value of extended control register"
    , insnMnemonic    = "XSETBV"
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xD1
                            , legacyProperties      = [ LegacyModeSupport
@@ -22257,7 +22166,7 @@ i_xtest = insn
                        , Unset [CF,OF,SF,PF,AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyOpcodeMap       = Map0F
+                           { legacyOpcodeMap       = MapLegacy Map0F
                            , legacyOpcode          = 0x01
                            , legacyOpcodeFullExt   = Just 0xD6
                            , legacyProperties      = [ LegacyModeSupport

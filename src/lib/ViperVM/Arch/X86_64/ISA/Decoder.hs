@@ -159,24 +159,30 @@ getInstruction mode = consumeAtMost 15 $ do
             x | x >= 1 -> Just <$> getWord8
             _          -> return Nothing
 
-         -- filter out invalid extensions (extension in the whole second byte or in
-         -- ModRM.reg)
+         -- filter out invalid opcode extensions:
          let
-            cs3 = filter hasModRMExtension cs2
-            hasModRMExtension i = case (modrm, encOpcodeFullExt e, encOpcodeExt e) of
-                  -- No extension
-                  (_, Nothing, Nothing) -> True
-                  -- invalid
-                  ( _, Just _, Just _)  -> error ("Invalid entry (both full and ModRM.reg extensions: " ++ show i)
-                  -- cannot read ModRM but require extension
-                  (Nothing, Just _, _)  -> False
-                  (Nothing, _, Just _)  -> False
-                  -- full extension
-                  (Just m, Just x, Nothing) -> m == x
-                  -- ModRM.reg extension
-                  (Just m, Nothing, Just x) -> regField (ModRM (BitFields m)) == x
+            cs3 = filter hasOpcodeExtension cs2
+            hasOpcodeExtension i = fullext && regext && wext && lext
                where
                   e = entryEncoding i
+                  -- extension in the whole second byte
+                  fullext = case (modrm,encOpcodeExt e) of
+                     (_, Nothing)      -> True
+                     (Just m, Just x)  -> m == x
+                     (Nothing, Just _) -> False
+                  -- extension in ModRM.Reg
+                  regext = case (modrm,encOpcodeFullExt e) of
+                     (_, Nothing)      -> True
+                     (Just m, Just x)  -> regField (ModRM (BitFields m)) == x
+                     (Nothing, Just _) -> False
+                  -- extension in REX.W, VEX.W, etc.
+                  wext = case encOpcodeWExt e of
+                     Nothing -> True
+                     Just x  -> opcodeW oc == x
+                  -- extension in VEX.L, etc.
+                  lext = case encOpcodeLExt e of
+                     Nothing -> True
+                     Just x  -> opcodeL oc == Just x
 
          when (null cs3) $ fail "No candidate instruction found (ModRM extension filtering)"
 
@@ -694,8 +700,8 @@ readOperands mode ps oc enc = do
          
          -- One of the two types depending on Vex.L
          TLE l128 l256 -> case opcodeL oc of
-            Just VL128 -> readParam (spec { opType = l128 })
-            Just VL256 -> readParam (spec { opType = l256 })
+            Just False -> readParam (spec { opType = l128 })
+            Just True  -> readParam (spec { opType = l256 })
             Nothing    -> fail "Cannot read VEX.L/XOP.L"
 
          -- One of the two types depending on Rex.W

@@ -159,7 +159,7 @@ showEnc oc rv e = H.tr $ do
          Just p  -> toHtml (" /" ++ show p)
 
    when (X86.isVexEncoding e) $ 
-      H.td (toHtml (show (X86.vexLW e)))
+      H.td (toHtml (show (X86.encOpcodeLExt e)))
 
    H.td (toHtml (show (X86.encProperties e)))
    let 

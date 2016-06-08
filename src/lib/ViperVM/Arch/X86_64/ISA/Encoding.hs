@@ -6,10 +6,10 @@
 module ViperVM.Arch.X86_64.ISA.Encoding
    ( -- * Encoding
      Encoding (..)
+   , OpcodeEncoding (..)
    , EncodingProperties(..)
    , HLEAction (..)
    , ValidMode (..)
-   , VexLW (..)
    , hasImmediate
    , encSupportHLE
    , encValidModRMMode
@@ -18,6 +18,8 @@ module ViperVM.Arch.X86_64.ISA.Encoding
    , isVexEncoding
    , encOpcode
    , encOpcodeExt
+   , encOpcodeWExt
+   , encOpcodeLExt
    , encOpcodeFullExt
    , encOpcodeMap
    , encOperands
@@ -58,7 +60,6 @@ module ViperVM.Arch.X86_64.ISA.Encoding
    , isRexPrefix
    -- * VEX/XOP prefix
    , Vex (..)
-   , VectorLength (..)
    , vexW
    , vexR
    , vexX
@@ -123,7 +124,7 @@ import ViperVM.Arch.X86_64.ISA.Registers
 data Encoding
    = LegacyEncoding
       { legacyMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
-      , legacyOpcodeMap       :: LegacyMap            -- ^ Map
+      , legacyOpcodeMap       :: OpcodeMap            -- ^ Map
       , legacyOpcode          :: Word8                -- ^ Opcode
       , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
       , legacyOpcodeFullExt   :: Maybe Word8          -- ^ Opcode extension in full ModRM byte
@@ -142,6 +143,7 @@ data Encoding
       , legacyFPUPop          :: Maybe Int            -- ^ Opcode bit: pop the FPU register,
                                                       --   only if destination is (ST(i))
       , legacyFPUSizable      :: Maybe Int            -- ^ Opcode bit: change the FPU size (only if memory operand)
+      , legacyWExt            :: Maybe Bool           -- ^ Opcode extension in REX.W, VEX.W, etc.
       , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
       , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
       }
@@ -151,29 +153,17 @@ data Encoding
       , vexOpcode          :: Word8                -- ^ Opcode
       , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
       , vexReversable      :: Maybe Int            -- ^ Args are reversed if the given bit is
-                                                   --   set in the opcode.
-      , vexLW              :: VexLW
+      , vexWExt            :: Maybe Bool           -- ^ Opcode extension in REX.W, VEX.W, etc.
+      , vexLExt            :: Maybe Bool           -- ^ Opcode extension in VEX.L, etc.
       , vexProperties      :: [EncodingProperties] -- ^ Encoding properties
       , vexParams          :: [OperandSpec]        -- ^ Operand encoding
       }
    deriving (Show)
 
--- | VEX.(L/W) spec
-data VexLW
-   = W0     -- ^ Vex.W = 0
-   | W1     -- ^ Vex.W = 1
-   | WIG    -- ^ Vex.W ignored
-   | L0_WIG -- ^ Vex.L = 0, ignore Vex.W
-   | L1_WIG -- ^ Vex.L = 1, ignore Vex.W
-   | L0_W0  -- ^ Vex.L = 0, Vex.W = 0 
-   | L0_W1  -- ^ Vex.L = 0, Vex.W = 1
-   | L1_W0  -- ^ Vex.L = 1, Vex.W = 0 
-   | L1_W1  -- ^ Vex.L = 1, Vex.W = 1
-   | LIG_W0 -- ^ Ignore Vex.L, Vex.W = 0 
-   | LIG_W1 -- ^ Ignore Vex.L, Vex.W = 1
-   | L0     -- ^ Vex.L = 0
-   | LIG    -- ^ Vex.L ignored
-   | LWIG   -- ^ Ignore Vex.W and Vex.L
+-- | Opcode encoding
+data OpcodeEncoding
+   = EncLegacy -- ^ Legacy encoding
+   | EncVEX    -- ^ VEX encoding
    deriving (Show)
 
 -- | Encoding properties
@@ -224,12 +214,20 @@ encOpcodeExt :: Encoding -> Maybe Word8
 encOpcodeExt e@LegacyEncoding {} = legacyOpcodeExt e
 encOpcodeExt e@VexEncoding    {} = vexOpcodeExt e
 
+encOpcodeWExt :: Encoding -> Maybe Bool
+encOpcodeWExt e@LegacyEncoding {} = legacyWExt e
+encOpcodeWExt e@VexEncoding    {} = vexWExt e
+
+encOpcodeLExt :: Encoding -> Maybe Bool
+encOpcodeLExt   LegacyEncoding {} = Nothing
+encOpcodeLExt e@VexEncoding    {} = vexLExt e
+
 encOpcodeFullExt :: Encoding -> Maybe Word8
 encOpcodeFullExt e@LegacyEncoding {} = legacyOpcodeFullExt e
 encOpcodeFullExt VexEncoding    {}   = Nothing
 
 encOpcodeMap :: Encoding -> OpcodeMap
-encOpcodeMap e@LegacyEncoding {} = MapLegacy (legacyOpcodeMap e)
+encOpcodeMap e@LegacyEncoding {} = legacyOpcodeMap e
 encOpcodeMap e@VexEncoding    {} = vexOpcodeMap e
 
 encOperands :: Encoding -> [OperandSpec]
@@ -458,14 +456,10 @@ opcodeW = \case
    OpLegacy _ Nothing    _ _ -> False
 
 -- | Get vector length (stored in VEX.L, XOP.L, etc.)
-opcodeL :: Opcode -> Maybe VectorLength
+opcodeL :: Opcode -> Maybe Bool
 opcodeL = \case
-   OpVex v _ -> Just $ if vexL v
-      then VL256
-      else VL128
-   OpXop v _ -> Just $ if vexL v
-      then VL256
-      else VL128
+   OpVex v _ -> Just $ vexL v
+   OpXop v _ -> Just $ vexL v
    _         -> Nothing
 
 
@@ -539,12 +533,6 @@ isRexPrefix w = w .&. 0xF0 == 0x40
 data Vex
    = Vex2 !Word8           -- ^ Two-byte VEX prefix
    | Vex3 !Word8 !Word8    -- ^ Three-byte VEX prefix
-   deriving (Show,Eq)
-
--- | Vector length (VEX.L, XOP.L, etc.)
-data VectorLength
-   = VL128
-   | VL256
    deriving (Show,Eq)
 
 vexW :: Vex -> Bool
