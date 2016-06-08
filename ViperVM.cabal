@@ -56,15 +56,12 @@ library
     ViperVM.Arch.X86_64.Linux.Syscalls
 
     ViperVM.Arch.X86_64.ISA.MicroArch
-    ViperVM.Arch.X86_64.ISA.Opcode
-    ViperVM.Arch.X86_64.ISA.ModRM
     ViperVM.Arch.X86_64.ISA.Mode
     ViperVM.Arch.X86_64.ISA.Registers
     ViperVM.Arch.X86_64.ISA.RegisterFile
-    ViperVM.Arch.X86_64.ISA.Size
     ViperVM.Arch.X86_64.ISA.Tables
+    ViperVM.Arch.X86_64.ISA.Size
     ViperVM.Arch.X86_64.ISA.Decoder
-    ViperVM.Arch.X86_64.ISA.Operand
     ViperVM.Arch.X86_64.ISA.Insns
     ViperVM.Arch.X86_64.ISA.Encoding
     ViperVM.Arch.X86_64.Disassembler

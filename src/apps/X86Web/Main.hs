@@ -112,7 +112,7 @@ showInsn i = do
                H.th (toHtml "Opcode")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
+            forM_ (X86.encGenerateOpcodes e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
                showEnc x rev e
@@ -128,7 +128,7 @@ showInsn i = do
                H.th (toHtml "LW")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
-            forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
+            forM_ (X86.encGenerateOpcodes e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
                showEnc x rev e

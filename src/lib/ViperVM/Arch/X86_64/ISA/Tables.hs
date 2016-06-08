@@ -31,7 +31,7 @@ buildOpcodeMap entries = as
    where
       -- all pairs (opcode, MapEntry)
       es = [(oc,[e]) | e  <- entries
-                     , oc <- genEncodingOpcodeVariants (entryEncoding e)
+                     , oc <- encGenerateOpcodes (entryEncoding e)
                      ]
 
       -- Map opcode [MapEntry]

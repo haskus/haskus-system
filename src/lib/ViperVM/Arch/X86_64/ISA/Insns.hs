@@ -24,6 +24,8 @@
 --
 module ViperVM.Arch.X86_64.ISA.Insns
    ( X86Insn(..)
+   , Properties (..)
+   , FlagOp(..)
    , instructions
    , amd3DNowEncoding
    )
@@ -32,8 +34,6 @@ where
 import Data.List ((\\))
 
 import ViperVM.Arch.X86_64.ISA.MicroArch
-import ViperVM.Arch.X86_64.ISA.Operand
-import ViperVM.Arch.X86_64.ISA.Opcode
 import ViperVM.Arch.X86_64.ISA.Mode
 import ViperVM.Arch.X86_64.ISA.Registers
 import ViperVM.Arch.X86_64.ISA.Size
@@ -47,6 +47,22 @@ data X86Insn = X86Insn
    , insnFlags       :: [FlagOp Flag]
    , insnEncodings   :: [Encoding]
    } deriving (Show)
+
+-- | Instruction properties
+data Properties
+   = FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
+   | MemAlign Int             -- ^ Memory alignment constraint in bytes
+   | MemAlignDefault          -- ^ Memory alignment constraint
+   deriving (Show,Eq)
+
+-- | Flag state modification
+data FlagOp a
+   = St        [a]  -- ^ Set flag to 1
+   | Unset     [a]  -- ^ Set flag to 0
+   | Modified  [a]  -- ^ Set flag depending on the result
+   | Undefined [a]  -- ^ Flag is undefined after the operation
+   | Read      [a]  -- ^ Flag read by the instruction
+   deriving (Show,Eq)
 
 
 -------------------------------------------------------------------

@@ -1,18 +1,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BinaryLiterals #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ViperVM.Arch.X86_64.ISA.Decoder
    ( getInstruction
+   , EncodingVariant(..)
    , Insn (..)
    , ExecMode (..)
    )
 where
 
-import ViperVM.Arch.X86_64.ISA.Opcode
 import ViperVM.Arch.X86_64.ISA.Mode
-import ViperVM.Arch.X86_64.ISA.ModRM
-import ViperVM.Arch.X86_64.ISA.Operand
 import ViperVM.Arch.X86_64.ISA.Registers
 import ViperVM.Arch.X86_64.ISA.Size
 import ViperVM.Arch.X86_64.ISA.Tables
@@ -21,7 +20,7 @@ import ViperVM.Arch.X86_64.ISA.Encoding
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField
-import ViperVM.Format.Binary.BitSet (BitSet)
+import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified Data.Map as Map
@@ -61,6 +60,21 @@ data Insn = Insn
    , insnVariant  :: BitSet Word16 EncodingVariant
    }
    deriving (Show)
+
+-- | Instruction variant encoding
+data EncodingVariant
+   = Locked                     -- ^ Locked memory access
+   | Reversed                   -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   | ExplicitParam              -- ^ A variant exists with an implicit parameter, but the explicit variant is used
+   | RepeatZero                 -- ^ REP(Z) prefix
+   | RepeatNonZero              -- ^ REPNZ prefix
+   | LockEllisionAcquire        -- ^ XACQUIRE prefix
+   | LockEllisionRelease        -- ^ XRELEASE prefix
+   | BranchHintTaken            -- ^ Branch hint (branch taken)
+   | BranchHintNotTaken         -- ^ Branch hint (not taken)
+   | SuperfluousSegmentOverride -- ^ Segment override equal to default segment
+   deriving (Show,Eq,Enum,CBitSet)
+
 
 getInstruction :: ExecMode -> Get Insn
 getInstruction mode = consumeAtMost 15 $ do
@@ -124,10 +138,10 @@ getInstruction mode = consumeAtMost 15 $ do
                   LegacyPrefixF0 -> encLockable e
                   -- REPZ / XRELEASE
                   LegacyPrefixF3 -> encRepeatable e
-                                    || encHasHLE XRelease e
+                                    || encSupportHLE XRelease e
                   -- REPNZ / XACQUIRE
                   LegacyPrefixF2 -> encRepeatable e
-                                    || encHasHLE XAcquire e
+                                    || encSupportHLE XAcquire e
 
             arePrefixesValid c = all (isPrefixValid (entryEncoding c)) ps
 
