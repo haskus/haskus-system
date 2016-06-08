@@ -16,22 +16,6 @@ module ViperVM.Arch.X86_64.ISA.Encoding
    , encMayHaveMemoryOperand
    , isLegacyEncoding
    , isVexEncoding
-   , encOpcode
-   , encOpcodeExt
-   , encOpcodeWExt
-   , encOpcodeLExt
-   , encOpcodeFullExt
-   , encOpcodeMap
-   , encOperands
-   , encMandatoryPrefix
-   , encProperties
-   , encParams
-   , encNoForce8Bit
-   , encSignExtendImmBit
-   , encReversableBit
-   , encFPUSizableBit
-   , encFPUDestBit
-   , encFPUPopBit
    , encLockable
    , encRepeatable
    , encBranchHintable
@@ -121,50 +105,40 @@ import ViperVM.Arch.X86_64.ISA.Size
 import ViperVM.Arch.X86_64.ISA.Registers
 
 -- | Instruction encoding
-data Encoding
-   = LegacyEncoding
-      { legacyMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
-      , legacyOpcodeMap       :: OpcodeMap            -- ^ Map
-      , legacyOpcode          :: Word8                -- ^ Opcode
-      , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-      , legacyOpcodeFullExt   :: Maybe Word8          -- ^ Opcode extension in full ModRM byte
-      , legacyReversable      :: Maybe Int            -- ^ Args are reversed if the given bit is
-                                                      --   set in the opcode.
-      , legacyNoForce8bit     :: Maybe Int            -- ^ Operand size is 8 if the given bit is
-                                                      --   unset in the opcode. Otherwise, the
-                                                      --   size is defined by operand-size
-                                                      --   prefix and REX.W bit
-      , legacySignExtendable  :: Maybe Int            -- ^ Used in conjunction with a set
-                                                      --   Sizable bit.  Imm8 operand is used
-                                                      --   and sign-extended if the given bit is
-                                                      --   set
-      , legacyFPUDest         :: Maybe Int            -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
-                                                      --   only if both operands are registers!
-      , legacyFPUPop          :: Maybe Int            -- ^ Opcode bit: pop the FPU register,
-                                                      --   only if destination is (ST(i))
-      , legacyFPUSizable      :: Maybe Int            -- ^ Opcode bit: change the FPU size (only if memory operand)
-      , legacyWExt            :: Maybe Bool           -- ^ Opcode extension in REX.W, VEX.W, etc.
-      , legacyProperties      :: [EncodingProperties] -- ^ Encoding properties
-      , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
-      }
-   | VexEncoding
-      { vexMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
-      , vexOpcodeMap       :: OpcodeMap            -- ^ Map
-      , vexOpcode          :: Word8                -- ^ Opcode
-      , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-      , vexReversable      :: Maybe Int            -- ^ Args are reversed if the given bit is
-      , vexWExt            :: Maybe Bool           -- ^ Opcode extension in REX.W, VEX.W, etc.
-      , vexLExt            :: Maybe Bool           -- ^ Opcode extension in VEX.L, etc.
-      , vexProperties      :: [EncodingProperties] -- ^ Encoding properties
-      , vexParams          :: [OperandSpec]        -- ^ Operand encoding
-      }
+data Encoding = Encoding
+   { encOpcodeEncoding  :: OpcodeEncoding       -- ^ Opcode encoding
+   , encMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
+   , encOpcodeMap       :: OpcodeMap            -- ^ Map
+   , encOpcode          :: Word8                -- ^ Opcode
+   , encOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
+   , encOpcodeFullExt   :: Maybe Word8          -- ^ Opcode extension in full ModRM byte
+   , encOpcodeWExt      :: Maybe Bool           -- ^ Opcode extension in REX.W, VEX.W, etc.
+   , encOpcodeLExt      :: Maybe Bool           -- ^ Opcode extension in VEX.L, etc.
+   , encReversableBit   :: Maybe Int            -- ^ Args are reversed if the given bit is
+                                                --   set in the opcode.
+   , encNoForce8Bit     :: Maybe Int            -- ^ Operand size is 8 if the given bit is
+                                                --   unset in the opcode. Otherwise, the
+                                                --   size is defined by operand-size
+                                                --   prefix and REX.W bit
+   , encSignExtendImmBit:: Maybe Int            -- ^ Used in conjunction with a set
+                                                --   Sizable bit.  Imm8 operand is used
+                                                --   and sign-extended if the given bit is
+                                                --   set
+   , encFPUDestBit      :: Maybe Int            -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
+                                                --   only if both operands are registers!
+   , encFPUPopBit       :: Maybe Int            -- ^ Opcode bit: pop the FPU register,
+                                                --   only if destination is (ST(i))
+   , encFPUSizableBit   :: Maybe Int            -- ^ Opcode bit: change the FPU size (only if memory operand)
+   , encProperties      :: [EncodingProperties] -- ^ Encoding properties
+   , encOperands        :: [OperandSpec]        -- ^ Operand encoding
+   }
    deriving (Show)
 
 -- | Opcode encoding
 data OpcodeEncoding
    = EncLegacy -- ^ Legacy encoding
    | EncVEX    -- ^ VEX encoding
-   deriving (Show)
+   deriving (Show,Eq,Ord)
 
 -- | Encoding properties
 data EncodingProperties
@@ -199,76 +173,10 @@ hasImmediate :: Encoding -> Bool
 hasImmediate e = any (isImmediate . opEnc) (encOperands e)
 
 isLegacyEncoding :: Encoding -> Bool
-isLegacyEncoding LegacyEncoding {} = True
-isLegacyEncoding _                 = False
+isLegacyEncoding = (== EncLegacy) . encOpcodeEncoding
 
 isVexEncoding :: Encoding -> Bool
-isVexEncoding VexEncoding {} = True
-isVexEncoding _              = False
-
-encOpcode :: Encoding -> Word8
-encOpcode e@LegacyEncoding {} = legacyOpcode e
-encOpcode e@VexEncoding    {} = vexOpcode e
-
-encOpcodeExt :: Encoding -> Maybe Word8
-encOpcodeExt e@LegacyEncoding {} = legacyOpcodeExt e
-encOpcodeExt e@VexEncoding    {} = vexOpcodeExt e
-
-encOpcodeWExt :: Encoding -> Maybe Bool
-encOpcodeWExt e@LegacyEncoding {} = legacyWExt e
-encOpcodeWExt e@VexEncoding    {} = vexWExt e
-
-encOpcodeLExt :: Encoding -> Maybe Bool
-encOpcodeLExt   LegacyEncoding {} = Nothing
-encOpcodeLExt e@VexEncoding    {} = vexLExt e
-
-encOpcodeFullExt :: Encoding -> Maybe Word8
-encOpcodeFullExt e@LegacyEncoding {} = legacyOpcodeFullExt e
-encOpcodeFullExt VexEncoding    {}   = Nothing
-
-encOpcodeMap :: Encoding -> OpcodeMap
-encOpcodeMap e@LegacyEncoding {} = legacyOpcodeMap e
-encOpcodeMap e@VexEncoding    {} = vexOpcodeMap e
-
-encOperands :: Encoding -> [OperandSpec]
-encOperands e@LegacyEncoding {}  = legacyParams e
-encOperands e@VexEncoding    {}  = vexParams e
-
-encMandatoryPrefix :: Encoding -> Maybe LegacyPrefix
-encMandatoryPrefix e@LegacyEncoding {} = legacyMandatoryPrefix e
-encMandatoryPrefix e@VexEncoding    {} = vexMandatoryPrefix e
-
-encProperties :: Encoding -> [EncodingProperties]
-encProperties e@LegacyEncoding {} = legacyProperties e
-encProperties e@VexEncoding    {} = vexProperties e
-
-encParams :: Encoding -> [OperandSpec]
-encParams e@LegacyEncoding {} = legacyParams e
-encParams e@VexEncoding    {} = vexParams e
-
-encNoForce8Bit :: Encoding -> Maybe Int
-encNoForce8Bit e@LegacyEncoding {} = legacyNoForce8bit e
-encNoForce8Bit _                   = Nothing
-
-encSignExtendImmBit :: Encoding -> Maybe Int
-encSignExtendImmBit e@LegacyEncoding {} = legacySignExtendable e
-encSignExtendImmBit _                   = Nothing
-
-encReversableBit :: Encoding -> Maybe Int
-encReversableBit e@LegacyEncoding {} = legacyReversable e
-encReversableBit e@VexEncoding {}    = vexReversable e
-
-encFPUSizableBit :: Encoding -> Maybe Int
-encFPUSizableBit e@LegacyEncoding {} = legacyFPUSizable e
-encFPUSizableBit _                   = Nothing
-
-encFPUDestBit :: Encoding -> Maybe Int
-encFPUDestBit e@LegacyEncoding {} = legacyFPUDest e
-encFPUDestBit _                   = Nothing
-
-encFPUPopBit :: Encoding -> Maybe Int
-encFPUPopBit e@LegacyEncoding {} = legacyFPUPop e
-encFPUPopBit _                   = Nothing
+isVexEncoding = (== EncVEX) . encOpcodeEncoding
 
 -- | Indicate if LOCK prefix is allowed
 encLockable :: Encoding -> Bool
@@ -377,7 +285,7 @@ encGenerateOpcodes e = ocs
       ocs' = oc : catMaybes [roc,rsoc,szoc,seoc,fdoc,fpoc,fsoc]
 
       -- operand stored in the opcode
-      ocs = if OpcodeLow3 `elem` fmap opEnc (encParams e)
+      ocs = if OpcodeLow3 `elem` fmap opEnc (encOperands e)
                then [o + i | o <- ocs', i <- [0..7]]
                else ocs'
 

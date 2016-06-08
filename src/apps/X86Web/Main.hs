@@ -102,30 +102,15 @@ showInsn i = do
    H.h3 (toHtml "Flags")
    H.ul $ forM_ (X86.insnFlags i) $ \f -> H.li (toHtml (show f))
    H.h3 (toHtml "Encodings")
-   forM_ (X86.insnEncodings i) $ \case
-      e@X86.LegacyEncoding {} -> do
-         H.h4 (toHtml "Legacy encoding")
+   forM_ (X86.insnEncodings i) $ \e -> do
+         case X86.encOpcodeEncoding e of
+            X86.EncLegacy -> H.h4 (toHtml "Legacy encoding")
+            X86.EncVEX    -> H.h4 (toHtml "VEX encoding")
          H.table ( do
             H.tr $ do
                H.th (toHtml "Mandatory prefix")
                H.th (toHtml "Opcode map")
                H.th (toHtml "Opcode")
-               H.th (toHtml "Properties")
-               H.th (toHtml "Operands")
-            forM_ (X86.encGenerateOpcodes e) $ \x -> do
-               let
-                  rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
-               showEnc x rev e
-            ) ! A.class_ (toValue "insn_table")
-
-      e@X86.VexEncoding {} -> do
-         H.h4 (toHtml "VEX encoding")
-         H.table (do
-            H.tr $ do
-               H.th (toHtml "Mandatory prefix")
-               H.th (toHtml "Opcode map")
-               H.th (toHtml "Opcode")
-               H.th (toHtml "LW")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
             forM_ (X86.encGenerateOpcodes e) $ \x -> do
@@ -157,13 +142,14 @@ showEnc oc rv e = H.tr $ do
       case X86.encOpcodeExt e of
          Nothing -> return ()
          Just p  -> toHtml (" /" ++ show p)
-
-   when (X86.isVexEncoding e) $ 
-      H.td (toHtml (show (X86.encOpcodeLExt e)))
+      case X86.encOpcodeLExt e of
+         Nothing    -> return ()
+         Just True  -> toHtml " L1"
+         Just False -> toHtml " L0"
 
    H.td (toHtml (show (X86.encProperties e)))
    let 
-      ops = X86.encParams e
+      ops = X86.encOperands e
       rev = if rv then reverse else id
    H.td $ (H.table $ do
       H.tr $ do
