@@ -114,9 +114,7 @@ showInsn i = do
             forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
-                  sz  = fromMaybe False (testBit x <$> X86.encNoForce8Bit e)
-                  se  = fromMaybe False (testBit x <$> X86.encSignExtendImmBit e)
-               showEnc x rev sz se e
+               showEnc x rev e
             ) ! A.class_ (toValue "insn_table")
 
       e@X86.VexEncoding {} -> do
@@ -132,9 +130,7 @@ showInsn i = do
             forM_ (X86.genEncodingOpcodeVariants e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
-                  sz  = fromMaybe False (testBit x <$> X86.encNoForce8Bit e)
-                  se  = fromMaybe False (testBit x <$> X86.encSignExtendImmBit e)
-               showEnc x rev sz se e
+               showEnc x rev e
             ) ! A.class_ (toValue "insn_table")
    H.hr
 
@@ -146,8 +142,8 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
 
 
 
-showEnc :: Word8 -> Bool -> Bool -> Bool -> X86.Encoding -> Html
-showEnc oc rv sz se e = H.tr $ do
+showEnc :: Word8 -> Bool -> X86.Encoding -> Html
+showEnc oc rv e = H.tr $ do
    case X86.encMandatoryPrefix e of
       Nothing -> H.td (toHtml " ")
       Just p  -> H.td (toHtml (myShowHex True p))
@@ -180,10 +176,7 @@ showEnc oc rv sz se e = H.tr $ do
          forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opEnc o of
             X86.RM          -> "ModRM.rm"
             X86.Reg         -> "ModRM.reg"
-            X86.Imm         -> case (sz,se) of
-               (False,_)    -> "Imm8"
-               (True,False) -> "ImmN"
-               (True,True)  -> "Sign-extended Imm8"
+            X86.Imm         -> "Immediate"
             X86.Imm8h       -> "Imm8 [7:4]"
             X86.Imm8l       -> "Imm8 [3:0]"
             X86.Implicit    -> "Implicit"

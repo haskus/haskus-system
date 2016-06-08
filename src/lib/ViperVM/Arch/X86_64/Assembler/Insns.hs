@@ -3693,6 +3693,7 @@ i_cmpxchg = insn
                        ]
    }
 
+-- TODO: CMPXCHG16B require 16-byte alignment
 i_cmpxch8b :: X86Insn
 i_cmpxch8b = insn
    { insnDesc        = "Compare and exchange bytes"
