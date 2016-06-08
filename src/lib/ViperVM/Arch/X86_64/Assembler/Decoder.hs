@@ -59,6 +59,7 @@ data Insn = Insn
    , insnSpec     :: X86Insn
    , insnVariant  :: BitSet Word16 EncodingVariant
    }
+   deriving (Show)
 
 getInstruction :: ExecMode -> Get Insn
 getInstruction mode = consumeAtMost 15 $ do
@@ -246,12 +247,7 @@ getInstruction mode = consumeAtMost 15 $ do
                                      , vbranchhint
                                      ]
 
-            -- reverse operands if necessary
-            ops' = if reversed
-                     then reverse ops
-                     else ops
-
-         return $ Insn oc ops' enc spec variants
+         return $ Insn oc ops enc spec variants
 
 -- ===========================================================================
 -- Legacy encoding
@@ -660,8 +656,7 @@ readOperands mode ps oc enc = do
          [x,y] 
             | opEnc x == Imm8h && opEnc y == Imm8l -> [Size8]
             | opEnc x == Imm8l && opEnc y == Imm8h -> [Size8]
-            | otherwise -> error ("Found two incompatible immediate operands: "++show (x,y))
-         xs    -> error ("More than one immediate operand: "++ show xs)
+         xs    -> concatMap immSize xs
 
    -- read immediates if necessary
    imms <- forM immSizes getSize
@@ -674,8 +669,6 @@ readOperands mode ps oc enc = do
 
    let
       is64bitMode' = is64bitMode (x86Mode mode)
-
-      modrm' = fromMaybe (error "ModRM required") modrm
 
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)
@@ -696,7 +689,9 @@ readOperands mode ps oc enc = do
                               else readParam (spec { opType = now })
          
          -- Memory address
-         T_Mem mtype -> return $ OpMem mtype $ Addr seg' base idx scl disp
+         T_Mem mtype -> case modrm of
+            Nothing     -> fail "ModRM required"
+            Just modrm' -> return $ OpMem mtype $ Addr seg' base idx scl disp
                where
                   toR = case addressSize of
                            AddrSize32 -> reg32
@@ -747,42 +742,42 @@ readOperands mode ps oc enc = do
                         
 
          -- Register
-         T_Reg rtype -> return $ case rtype of
-               RegVec64    -> OpReg $ R_MMX regid
-               RegVec128   -> OpReg $ R_XMM regid
-               RegVec256   -> OpReg $ R_YMM regid
-               RegFixed r  -> OpReg r
-               RegSegment  -> OpReg $ case regid of
-                                0 -> R_ES
-                                1 -> R_CS
-                                2 -> R_SS
-                                3 -> R_DS
-                                4 -> R_FS
-                                5 -> R_GS
-                                _ -> error ("Invalid segment register id: " ++ show regid)
-               RegControl  -> OpReg $ R_CR regid
-               RegDebug    -> OpReg $ R_DR regid
-               Reg8        -> OpReg $ reg8 regid
-               Reg16       -> OpReg $ reg16 regid
-               Reg32       -> OpReg $ reg32 regid
-               Reg64       -> OpReg $ reg64 regid
-               Reg32o64    -> OpReg $ if is64bitMode'
+         T_Reg rtype -> case rtype of
+               RegVec64    -> return $ OpReg $ R_MMX regid
+               RegVec128   -> return $ OpReg $ R_XMM regid
+               RegVec256   -> return $ OpReg $ R_YMM regid
+               RegFixed r  -> return $ OpReg r
+               RegSegment  -> OpReg <$> case regid of
+                                0 -> return R_ES
+                                1 -> return R_CS
+                                2 -> return R_SS
+                                3 -> return R_DS
+                                4 -> return R_FS
+                                5 -> return R_GS
+                                _ -> fail ("Invalid segment register id: " ++ show regid)
+               RegControl  -> return $ OpReg $ R_CR regid
+               RegDebug    -> return $ OpReg $ R_DR regid
+               Reg8        -> return $ OpReg $ reg8 regid
+               Reg16       -> return $ OpReg $ reg16 regid
+               Reg32       -> return $ OpReg $ reg32 regid
+               Reg64       -> return $ OpReg $ reg64 regid
+               Reg32o64    -> return $ OpReg $ if is64bitMode'
                                  then reg64 regid
                                  else reg32 regid
-               RegOpSize   -> OpReg $ case operandSize of
+               RegOpSize   -> return $ OpReg $ case operandSize of
                                 OpSize8  -> reg8  regid
                                 OpSize16 -> reg16 regid
                                 OpSize32 -> reg32 regid
                                 OpSize64 -> reg64 regid
-               RegST       -> OpReg $ R_ST regid
-               RegCounter  -> OpReg $ case addressSize of
+               RegST       -> return $ OpReg $ R_ST regid
+               RegCounter  -> return $ OpReg $ case addressSize of
                                 AddrSize16 -> R_CX
                                 AddrSize32 -> R_ECX
                                 AddrSize64 -> R_RCX
-               RegAccu     -> OpReg $ gpr operandSize 0
-               RegStackPtr -> OpReg rSP
-               RegBasePtr  -> OpReg rBP
-               RegFam rf   -> case rf of
+               RegAccu     -> return $ OpReg $ gpr operandSize 0
+               RegStackPtr -> return $ OpReg rSP
+               RegBasePtr  -> return $ OpReg rBP
+               RegFam rf   -> return $ case rf of
                                  RegFamAX -> OpReg $ gpr operandSize 0
                                  RegFamBX -> OpReg $ gpr operandSize 3
                                  RegFamCX -> OpReg $ gpr operandSize 1
@@ -812,6 +807,10 @@ readOperands mode ps oc enc = do
             [SizedValue16 x, SizedValue16 y] -> OpPtr16_16 x y
             [SizedValue16 x, SizedValue32 y] -> OpPtr16_32 x y
             xs -> error ("Invalid immediate operands for ptr16x: " ++ show xs)
+
+         T_Pair (T_Imm ImmSize16) (T_Imm ImmSize8) -> return $ case imms of
+            [SizedValue16 x, SizedValue8 y] -> OpStackFrame x y
+            xs -> error ("Invalid immediate operands for ENTER: " ++ show xs)
 
          T_Pair x y -> error ("Unhandled operand pair: " ++ show (x,y))
 
@@ -982,11 +981,14 @@ readOperands mode ps oc enc = do
             15             -> R_R15
             r              -> error ("Invalid reg64 id: " ++ show r)
 
+
       -- extended ModRM.reg (with REX.R, VEX.R, etc.)
       modRMreg = opcodeR oc `unsafeShiftL` 3 .|. regField modrm'
+         where modrm' = fromMaybe (error "Cannot read ModRM") modrm
             
       -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
       modRMrm = opcodeB oc `unsafeShiftL` 3 .|. rmField modrm'
+         where modrm' = fromMaybe (error "Cannot read ModRM") modrm
 
       sib' = fromJust sib
 

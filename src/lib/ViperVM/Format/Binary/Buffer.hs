@@ -20,6 +20,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferDrop
    , bufferTail
    , bufferCons
+   , bufferSnoc
    , bufferInit
    , bufferSplit
    , bufferHead
@@ -133,6 +134,11 @@ bufferTail (Buffer bs) = Buffer $ BS.tail bs
 -- | Cons
 bufferCons :: Word8 -> Buffer -> Buffer
 bufferCons w (Buffer bs) = Buffer $ BS.cons w bs
+
+-- | Snoc
+bufferSnoc :: Buffer -> Word8 -> Buffer
+bufferSnoc (Buffer bs) w = Buffer $ BS.snoc bs w
+
 
 -- | Init
 bufferInit :: Buffer -> Buffer

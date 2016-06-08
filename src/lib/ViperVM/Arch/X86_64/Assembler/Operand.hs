@@ -34,6 +34,7 @@ data Operand
    | OpCodeAddr Addr                   -- ^ Code address
    | OpPtr16_16 !Word16 !Word16        -- ^ Immediate 16:16 ptr
    | OpPtr16_32 !Word16 !Word32        -- ^ Immediate 16:32 ptr
+   | OpStackFrame !Word16 !Word8       -- ^ Stack frame (cf ENTER)
    deriving (Show,Eq)
 
 -- The X86 architecture supports different kinds of memory addressing. The

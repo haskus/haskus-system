@@ -502,6 +502,10 @@ rel16o32 = op RO (T_Rel Rel16o32) Imm
 ptr16x :: OperandSpec
 ptr16x = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp)) Imm
 
+-- | Immediate couple for ENTER: 16:8
+stackFrame :: OperandSpec
+stackFrame = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSize8)) Imm
+
 -- | Implicit immediate constant
 constImm :: Int -> OperandSpec
 constImm x = op RO (T_Imm (ImmConst x)) Implicit
@@ -740,13 +744,14 @@ encValidModRMMode e = case ots of
       _   -> error ("encValidModRMMode: more than one ModRM.rm param: " ++ show ots)
    where
       toM = \case
-         T_Mem _ -> ModeOnlyMem
-         T_Reg _ -> ModeOnlyReg
-         TME _ _ -> ModeBoth
-         TLE x y -> if toM x == toM y
-                     then toM x
-                     else ModeBoth
-         x       -> error ("encValidModRMMode: invalid param type: " ++ show x)
+         T_Mem _     -> ModeOnlyMem
+         T_SubReg {} -> ModeOnlyReg
+         T_Reg _     -> ModeOnlyReg
+         TME _ _     -> ModeBoth
+         TLE x y     -> if toM x == toM y
+                           then toM x
+                           else ModeBoth
+         x           -> error ("encValidModRMMode: invalid param type: " ++ show x)
       ots = opType <$> filter ((== RM) . opEnc) (encOperands e)
 
 -- | Indicate if a memory operand may be encoded
@@ -4914,8 +4919,7 @@ i_enter = insn
                                                   , LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           , legacyParams       = [ imm16
-                                                  , imm8
+                           , legacyParams       = [ stackFrame
                                                   ]
                            }
                        ]
