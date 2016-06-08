@@ -147,7 +147,7 @@ showEnc :: Word8 -> Bool -> X86.Encoding -> Html
 showEnc oc rv e = H.tr $ do
    case X86.encMandatoryPrefix e of
       Nothing -> H.td (toHtml " ")
-      Just p  -> H.td (toHtml (myShowHex True p))
+      Just p  -> H.td (toHtml (show p))
    H.td (toHtml (show (X86.encOpcodeMap e)))
    H.td $ do
       toHtml (myShowHex True oc)

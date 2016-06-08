@@ -122,7 +122,7 @@ import ViperVM.Arch.X86_64.ISA.Registers
 -- | Instruction encoding
 data Encoding
    = LegacyEncoding
-      { legacyMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+      { legacyMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
       , legacyOpcodeMap       :: LegacyMap            -- ^ Map
       , legacyOpcode          :: Word8                -- ^ Opcode
       , legacyOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
@@ -146,7 +146,7 @@ data Encoding
       , legacyParams          :: [OperandSpec]        -- ^ Operand encoding
       }
    | VexEncoding
-      { vexMandatoryPrefix :: Maybe Word8          -- ^ Mandatory prefix
+      { vexMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
       , vexOpcodeMap       :: OpcodeMap            -- ^ Map
       , vexOpcode          :: Word8                -- ^ Opcode
       , vexOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
@@ -236,7 +236,7 @@ encOperands :: Encoding -> [OperandSpec]
 encOperands e@LegacyEncoding {}  = legacyParams e
 encOperands e@VexEncoding    {}  = vexParams e
 
-encMandatoryPrefix :: Encoding -> Maybe Word8
+encMandatoryPrefix :: Encoding -> Maybe LegacyPrefix
 encMandatoryPrefix e@LegacyEncoding {} = legacyMandatoryPrefix e
 encMandatoryPrefix e@VexEncoding    {} = vexMandatoryPrefix e
 

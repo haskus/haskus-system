@@ -1379,7 +1379,7 @@ i_adcx = insn
                        , Modified [CF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [Extension ADX]
@@ -1443,7 +1443,7 @@ i_addpd = insn
    { insnDesc        = "Add packed double-precision floating-point values"
    , insnMnemonic    = "ADDPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
@@ -1462,7 +1462,7 @@ i_vaddpd = insn
    { insnDesc        = "Add packed double-precision floating-point values"
    , insnMnemonic    = "VADDPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x58
                            , vexLW                 = WIG
@@ -1521,7 +1521,7 @@ i_addsd = insn
    { insnDesc        = "Add scalar double-precision floating-point values"
    , insnMnemonic    = "ADDSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
@@ -1540,7 +1540,7 @@ i_vaddsd = insn
    { insnDesc        = "Add scalar double-precision floating-point values"
    , insnMnemonic    = "VADDSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x58
                            , vexLW              = LWIG
@@ -1561,7 +1561,7 @@ i_addss = insn
    { insnDesc        = "Add scalar single-precision floating-point values"
    , insnMnemonic    = "ADDSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x58
                            , legacyProperties      = [ LegacyModeSupport
@@ -1580,7 +1580,7 @@ i_vaddss = insn
    { insnDesc        = "Add scalar single-precision floating-point values"
    , insnMnemonic    = "VADDSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x58
                            , vexLW              = LWIG
@@ -1601,7 +1601,7 @@ i_addsubpd = insn
    { insnDesc        = "Packed double-FP add/subtract"
    , insnMnemonic    = "ADDSUBPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD0
                            , legacyProperties      = [ LegacyModeSupport
@@ -1620,7 +1620,7 @@ i_vaddsubpd = insn
    { insnDesc        = "Packed double-FP add/subtract"
    , insnMnemonic    = "VADDSUBPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xD0
                            , vexLW              = WIG
@@ -1641,7 +1641,7 @@ i_addsubps = insn
    { insnDesc        = "Packed single-FP add/subtract"
    , insnMnemonic    = "ADDSUBPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD0
                            , legacyProperties      = [ LegacyModeSupport
@@ -1660,7 +1660,7 @@ i_vaddsubps = insn
    { insnDesc        = "Packed single-FP add/subtract"
    , insnMnemonic    = "VADDSUBPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD0
                            , vexLW                 = WIG
@@ -1684,7 +1684,7 @@ i_adox = insn
                        , Modified [OF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [ LegacyModeSupport
@@ -1703,7 +1703,7 @@ i_aesdec = insn
    { insnDesc        = "Perform one round of an AES decryption flow"
    , insnMnemonic    = "AESDEC"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xDE
                            , legacyProperties      = [ LegacyModeSupport
@@ -1722,7 +1722,7 @@ i_vaesdec = insn
    { insnDesc        = "Perform one round of an AES decryption flow"
    , insnMnemonic    = "VAESDEC"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDE
                            , vexLW              = WIG
@@ -1744,7 +1744,7 @@ i_aesdeclast = insn
    { insnDesc        = "Perform last round of an AES decryption flow"
    , insnMnemonic    = "AESDECLAST"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
@@ -1763,7 +1763,7 @@ i_vaesdeclast = insn
    { insnDesc        = "Perform last round of an AES decryption flow"
    , insnMnemonic    = "VAESDECLAST"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDF
                            , vexLW              = WIG
@@ -1785,7 +1785,7 @@ i_aesenc = insn
    { insnDesc        = "Perform one round of an AES encryption flow"
    , insnMnemonic    = "AESENC"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xDC
                            , legacyProperties      = [ LegacyModeSupport
@@ -1804,7 +1804,7 @@ i_vaesenc = insn
    { insnDesc        = "Perform one round of an AES encryption flow"
    , insnMnemonic    = "VAESENC"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDC
                            , vexLW              = WIG
@@ -1826,7 +1826,7 @@ i_aesenclast = insn
    { insnDesc        = "Perform last round of an AES encryption flow"
    , insnMnemonic    = "AESENCLAST"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xDD
                            , legacyProperties      = [ LegacyModeSupport
@@ -1845,7 +1845,7 @@ i_vaesenclast = insn
    { insnDesc        = "Perform last round of an AES encryption flow"
    , insnMnemonic    = "VAESENCLAST"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDD
                            , vexLW              = WIG
@@ -1867,7 +1867,7 @@ i_aesimc = insn
    { insnDesc        = "Perform the AES InvMixColumn transformation"
    , insnMnemonic    = "AESIMC"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xDB
                            , legacyProperties      = [ LegacyModeSupport
@@ -1886,7 +1886,7 @@ i_vaesimc = insn
    { insnDesc        = "Perform the AES InvMixColumn transformation"
    , insnMnemonic    = "VAESIMC"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xDB
                            , vexLW              = WIG
@@ -1907,7 +1907,7 @@ i_aeskeygenassist = insn
    { insnDesc        = "AES round key generation assist"
    , insnMnemonic    = "AESKEYGENASSIST"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
@@ -1927,7 +1927,7 @@ i_vaeskeygenassist = insn
    { insnDesc        = "AES round key generation assist"
    , insnMnemonic    = "VAESKEYGENASSIST"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0xDF
                            , vexLW              = WIG
@@ -2024,7 +2024,7 @@ i_andpd = insn
    { insnDesc        = "Bitwise logical AND of packed double-precision floating-point values"
    , insnMnemonic    = "ANDPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x54
                            , legacyProperties      = [ LegacyModeSupport
@@ -2043,7 +2043,7 @@ i_vandpd = insn
    { insnDesc        = "Bitwise logical AND of packed double-precision floating-point values"
    , insnMnemonic    = "VANDPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x54
                            , vexLW              = WIG
@@ -2102,7 +2102,7 @@ i_andnpd = insn
    { insnDesc        = "Bitwise logical AND NOT of packed double-precision floating-point values"
    , insnMnemonic    = "ANDNPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x55
                            , legacyProperties      = [ LegacyModeSupport
@@ -2121,7 +2121,7 @@ i_vandnpd = insn
    { insnDesc        = "Bitwise logical AND NOT of packed double-precision floating-point values"
    , insnMnemonic    = "VANDNPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x55
                            , vexLW              = WIG
@@ -2196,7 +2196,7 @@ i_blendpd = insn
    { insnDesc        = "Blend packed double-precision floating-point values"
    , insnMnemonic    = "BLENDPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x0D
                            , legacyProperties      = [ LegacyModeSupport
@@ -2216,7 +2216,7 @@ i_vblendpd = insn
    { insnDesc        = "Blend packed double-precision floating-point values"
    , insnMnemonic    = "VBLENDPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0D
                            , vexLW              = WIG
@@ -2262,7 +2262,7 @@ i_blendps = insn
    { insnDesc        = "Blend packed single-precision floating-point values"
    , insnMnemonic    = "BLENDPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x0C
                            , legacyProperties      = [ LegacyModeSupport
@@ -2282,7 +2282,7 @@ i_vblendps = insn
    { insnDesc        = "Blend packed single-precision floating-point values"
    , insnMnemonic    = "VBLENDPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0C
                            , vexLW              = WIG
@@ -2304,7 +2304,7 @@ i_blendvpd = insn
    { insnDesc        = "Variable blend packed double-precision floating-point values"
    , insnMnemonic    = "BLENDVPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x15
                            , legacyProperties      = [ LegacyModeSupport
@@ -2324,7 +2324,7 @@ i_vblendvpd = insn
    { insnDesc        = "Variable blend packed double-precision floating-point values"
    , insnMnemonic    = "VBLENDVPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x4B
                            , vexLW              = W0
@@ -2346,7 +2346,7 @@ i_blendvps = insn
    { insnDesc        = "Variable blend packed single-precision floating-point values"
    , insnMnemonic    = "BLENDVPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
@@ -2366,7 +2366,7 @@ i_vblendvps = insn
    { insnDesc        = "Variable blend packed single-precision floating-point values"
    , insnMnemonic    = "VBLENDVPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x4A
                            , vexLW              = W0
@@ -3198,7 +3198,7 @@ i_cmppd = insn
    { insnDesc        = "Compare packed double-precision floating-point values"
    , insnMnemonic    = "CMPPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0x66
+                           { legacyMandatoryPrefix    = Just LegacyPrefix66
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0xC2
                            , legacyProperties         = [ LegacyModeSupport
@@ -3218,7 +3218,7 @@ i_vcmppd = insn
    { insnDesc        = "Compare packed double-precision floating-point values"
    , insnMnemonic    = "VCMPPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC2
                            , vexLW                 = WIG
@@ -3300,7 +3300,7 @@ i_cmpsd = insn
    { insnDesc        = "Compare scalar double-precision floating-point values"
    , insnMnemonic    = "CMPSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0xF2
+                           { legacyMandatoryPrefix    = Just LegacyPrefixF2
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0xC2
                            , legacyProperties         = [ LegacyModeSupport
@@ -3320,7 +3320,7 @@ i_vcmpsd = insn
    { insnDesc        = "Compare scalar double-precision floating-point values"
    , insnMnemonic    = "VCMPSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC2
                            , vexLW                 = LWIG
@@ -3342,7 +3342,7 @@ i_cmpss = insn
    { insnDesc        = "Compare scalar single-precision floating-point values"
    , insnMnemonic    = "CMPSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0xF3
+                           { legacyMandatoryPrefix    = Just LegacyPrefixF3
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0xC2
                            , legacyProperties         = [ LegacyModeSupport
@@ -3362,7 +3362,7 @@ i_vcmpss = insn
    { insnDesc        = "Compare scalar single-precision floating-point values"
    , insnMnemonic    = "VCMPSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC2
                            , vexLW                 = LWIG
@@ -3435,7 +3435,7 @@ i_comisd = insn
                        , Unset    [OF,SF,AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0x66
+                           { legacyMandatoryPrefix    = Just LegacyPrefix66
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x2F
                            , legacyProperties         = [ LegacyModeSupport
@@ -3447,7 +3447,7 @@ i_comisd = insn
                                                         ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2F
                            , vexLW              = LWIG
@@ -3519,7 +3519,7 @@ i_crc32 = insn
    { insnDesc        = "Accumulate CRC32 value"
    , insnMnemonic    = "CRC32"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0xF0
                            , legacyNoForce8bit     = Just 0
@@ -3538,7 +3538,7 @@ i_cvtdq2pd = insn
    { insnDesc        = "Convert packed Int32 to packed double-precision floating-point values"
    , insnMnemonic    = "CVTDQ2PD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE6
                            , legacyProperties      = [ LegacyModeSupport
@@ -3557,7 +3557,7 @@ i_vcvtdq2pd = insn
    { insnDesc        = "Convert packed Int32 to packed double-precision floating-point values"
    , insnMnemonic    = "VCVTDQ2PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xE6
                            , vexLW              = WIG
@@ -3614,7 +3614,7 @@ i_cvtpd2dq = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTPD2DQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE6
                            , legacyProperties      = [ LegacyModeSupport
@@ -3633,7 +3633,7 @@ i_vcvtpd2dq = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTPD2DQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xE6
                            , vexLW              = WIG
@@ -3653,7 +3653,7 @@ i_cvtpd2di = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTPD2DI"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2D
                            , legacyProperties      = [ LegacyModeSupport
@@ -3671,7 +3671,7 @@ i_cvtpd2ps = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed single-precision floating-point values"
    , insnMnemonic    = "CVTPD2PS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5A
                            , legacyProperties      = [ LegacyModeSupport
@@ -3690,7 +3690,7 @@ i_vcvtpd2ps = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed single-precision floating-point values"
    , insnMnemonic    = "VCVTPD2PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5A
                            , vexLW              = WIG
@@ -3710,7 +3710,7 @@ i_cvtpi2pd = insn
    { insnDesc        = "Convert packed Int32 to packed double-precision floating-point values"
    , insnMnemonic    = "CVTPI2PD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
@@ -3745,7 +3745,7 @@ i_cvtps2dq = insn
    { insnDesc        = "Convert packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTPS2DQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5B
                            , legacyProperties      = [ LegacyModeSupport
@@ -3764,7 +3764,7 @@ i_vcvtps2dq = insn
    { insnDesc        = "Convert packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTPS2DQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5B
                            , vexLW              = WIG
@@ -3838,7 +3838,7 @@ i_cvtsd2si = insn
    { insnDesc        = "Convert scalar double-precision floating-point value to integer"
    , insnMnemonic    = "CVTSD2SI"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2D
                            , legacyProperties      = [ LegacyModeSupport
@@ -3857,7 +3857,7 @@ i_vcvtsd2si = insn
    { insnDesc        = "Convert scalar double-precision floating-point value to integer"
    , insnMnemonic    = "VCVTSD2SI"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2D
                            , vexLW              = LIG
@@ -3877,7 +3877,7 @@ i_cvtsd2ss = insn
    { insnDesc        = "Convert scalar double-precision floating-point value to scalar single-precision floating-point value"
    , insnMnemonic    = "CVTSD2SS"
    , insnEncodings   = [leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5A
                            , legacyProperties      = [ LegacyModeSupport
@@ -3896,7 +3896,7 @@ i_vcvtsd2ss = insn
    { insnDesc        = "Convert scalar double-precision floating-point value to scalar single-precision floating-point value"
    , insnMnemonic    = "VCVTSD2SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5A
                            , vexLW              = LWIG
@@ -3917,7 +3917,7 @@ i_cvtsi2sd = insn
    { insnDesc        = "Convert Int32 to scalar double-precision floating-point value"
    , insnMnemonic    = "CVTSI2SD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
@@ -3936,7 +3936,7 @@ i_vcvtsi2sd = insn
    { insnDesc        = "Convert Int32 to scalar double-precision floating-point value"
    , insnMnemonic    = "VCVTSI2SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2A
                            , vexLW              = LIG
@@ -3958,7 +3958,7 @@ i_cvtsi2ss = insn
    { insnDesc        = "Convert Int32 to scalar single-precision floating-point value"
    , insnMnemonic    = "CVTSI2SS"
    , insnEncodings   = [leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
@@ -3977,7 +3977,7 @@ i_vcvtsi2ss = insn
    { insnDesc        = "Convert Int32 to scalar single-precision floating-point value"
    , insnMnemonic    = "VCVTSI2SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2A
                            , vexLW              = LIG
@@ -3998,7 +3998,7 @@ i_cvtss2sd = insn
    { insnDesc        = "Convert scalar single-precision floating-point value to scalar double-precision floating-point value"
    , insnMnemonic    = "CVTSS2SD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5A
                            , legacyProperties      = [ LegacyModeSupport
@@ -4017,7 +4017,7 @@ i_vcvtss2sd = insn
    { insnDesc        = "Convert scalar single-precision floating-point value to scalar double-precision floating-point value"
    , insnMnemonic    = "VCVTSS2SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5A
                            , vexLW              = LWIG
@@ -4038,7 +4038,7 @@ i_cvtss2si = insn
    { insnDesc        = "Convert scalar single-precision floating-point value to Int32"
    , insnMnemonic    = "CVTSS2SI"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2D
                            , legacyProperties      = [ LegacyModeSupport
@@ -4057,7 +4057,7 @@ i_vcvtss2si = insn
    { insnDesc        = "Convert scalar single-precision floating-point value to Int32"
    , insnMnemonic    = "VCVTSS2SI"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2D
                            , vexLW              = LIG
@@ -4077,7 +4077,7 @@ i_cvttpd2dq = insn
    { insnDesc        = "Convert with truncation packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTTPD2DQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE6
                            , legacyProperties      = [ LegacyModeSupport
@@ -4096,7 +4096,7 @@ i_vcvttpd2dq = insn
    { insnDesc        = "Convert with truncation packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTTPD2DQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xE6
                            , vexLW              = WIG
@@ -4116,7 +4116,7 @@ i_cvttpd2pi = insn
    { insnDesc        = "Convert with truncation packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTTPD2PI"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2C
                            , legacyProperties      = [ LegacyModeSupport
@@ -4134,7 +4134,7 @@ i_cvttps2dq = insn
    { insnDesc        = "Convert with truncation packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "CVTTPS2DQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5B
                            , legacyProperties      = [ LegacyModeSupport
@@ -4153,7 +4153,7 @@ i_vcvttps2dq = insn
    { insnDesc        = "Convert with truncation packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTTPS2DQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5B
                            , vexLW              = WIG
@@ -4190,7 +4190,7 @@ i_cvttsd2si = insn
    { insnDesc        = "Convert with truncation scalar double-precision floating-point value to integer"
    , insnMnemonic    = "CVTTSD2SI"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2C
                            , legacyProperties      = [ LegacyModeSupport
@@ -4209,7 +4209,7 @@ i_vcvttsd2si = insn
    { insnDesc        = "Convert with truncation scalar double-precision floating-point value to integer"
    , insnMnemonic    = "VCVTTSD2SI"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2C
                            , vexLW              = LIG
@@ -4229,7 +4229,7 @@ i_cvttss2si = insn
    { insnDesc        = "Convert with truncation scalar single-precision floating-point value to Int32"
    , insnMnemonic    = "CVTTSS2SI"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2C
                            , legacyProperties      = [ LegacyModeSupport
@@ -4248,7 +4248,7 @@ i_vcvttss2si = insn
    { insnDesc        = "Convert with truncation scalar single-precision floating-point value to Int32"
    , insnMnemonic    = "VCVTTSS2SI"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2C
                            , vexLW              = LIG
@@ -4367,7 +4367,7 @@ i_divpd = insn
    { insnDesc        = "Divide packed double-precision floating-point values"
    , insnMnemonic    = "DIVPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5E
                            , legacyProperties      = [ LegacyModeSupport
@@ -4386,7 +4386,7 @@ i_vdivpd = insn
    { insnDesc        = "Divide packed double-precision floating-point values"
    , insnMnemonic    = "VDIVPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5E
                            , vexLW              = WIG
@@ -4445,7 +4445,7 @@ i_divsd = insn
    { insnDesc        = "Divide scalar double-precision floating-point values"
    , insnMnemonic    = "DIVSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5E
                            , legacyProperties      = [ LegacyModeSupport
@@ -4464,7 +4464,7 @@ i_vdivsd = insn
    { insnDesc        = "Divide scalar double-precision floating-point values"
    , insnMnemonic    = "VDIVSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5E
                            , vexLW              = LWIG
@@ -4485,7 +4485,7 @@ i_divss = insn
    { insnDesc        = "Divide scalar single-precision floating-point values"
    , insnMnemonic    = "DIVSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5E
                            , legacyProperties      = [ LegacyModeSupport
@@ -4504,7 +4504,7 @@ i_vdivss = insn
    { insnDesc        = "Divide scalar single-precision floating-point values"
    , insnMnemonic    = "VDIVSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5E
                            , vexLW              = LWIG
@@ -4525,7 +4525,7 @@ i_dppd = insn
    { insnDesc        = "Dot product of packed double precision floating-point values"
    , insnMnemonic    = "DPPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x41
                            , legacyProperties      = [ LegacyModeSupport
@@ -4545,7 +4545,7 @@ i_vdppd = insn
    { insnDesc        = "Dot product of packed double precision floating-point values"
    , insnMnemonic    = "VDPPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x41
                            , vexLW              = WIG
@@ -4567,7 +4567,7 @@ i_dpps = insn
    { insnDesc        = "Dot product of packed single precision floating-point values"
    , insnMnemonic    = "DPPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x40
                            , legacyProperties      = [ LegacyModeSupport
@@ -4587,7 +4587,7 @@ i_vdpps = insn
    { insnDesc        = "Dot product of packed single precision floating-point values"
    , insnMnemonic    = "VDPPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x40
                            , vexLW              = WIG
@@ -4640,7 +4640,7 @@ i_extractps = insn
    { insnDesc        = "Extract packed single precision floating-point value"
    , insnMnemonic    = "EXTRACTPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x17
                            , legacyProperties      = [ LegacyModeSupport
@@ -4660,7 +4660,7 @@ i_vextractps = insn
    { insnDesc        = "Extract packed single precision floating-point value"
    , insnMnemonic    = "VEXTRACTPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x17
                            , vexLW              = WIG
@@ -6055,7 +6055,7 @@ i_haddpd = insn
    { insnDesc        = "Packed double-FP horizontal add"
    , insnMnemonic    = "HADDPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x7C
                            , legacyProperties      = [ LegacyModeSupport
@@ -6075,7 +6075,7 @@ i_vhaddpd = insn
    , insnMnemonic    = "VHADDPD"
    , insnProperties  = [ MemAlign 16 ]
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7C
                            , vexLW              = WIG
@@ -6097,7 +6097,7 @@ i_haddps = insn
    { insnDesc        = "Packed single-FP horizontal add"
    , insnMnemonic    = "HADDPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x7C
                            , legacyProperties      = [ LegacyModeSupport
@@ -6117,7 +6117,7 @@ i_vhaddps = insn
    , insnMnemonic    = "VHADDPS"
    , insnProperties  = [ MemAlign 16 ]
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7C
                            , vexLW              = WIG
@@ -6152,7 +6152,7 @@ i_hsubpd = insn
    { insnDesc        = "Packed double-FP horizontal subtract"
    , insnMnemonic    = "HSUBPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x7D
                            , legacyProperties      = [ LegacyModeSupport
@@ -6172,7 +6172,7 @@ i_vhsubpd = insn
    , insnMnemonic    = "VHSUBPD"
    , insnProperties  = [ MemAlign 16 ]
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7D
                            , vexLW              = WIG
@@ -6194,7 +6194,7 @@ i_hsubps = insn
    { insnDesc        = "Packed single-FP horizontal subtract"
    , insnMnemonic    = "HSUBPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x7D
                            , legacyProperties      = [ LegacyModeSupport
@@ -6214,7 +6214,7 @@ i_vhsubps = insn
    , insnMnemonic    = "VHSUBPS"
    , insnProperties  = [ MemAlign 16 ]
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7D
                            , vexLW              = WIG
@@ -6382,7 +6382,7 @@ i_insertps = insn
    { insnDesc        = "Insert packed single precision floating-point value"
    , insnMnemonic    = "INSERTPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x21
                            , legacyProperties      = [ LegacyModeSupport
@@ -6402,7 +6402,7 @@ i_vinsertps = insn
    { insnDesc        = "Insert packed single precision floating-point value"
    , insnMnemonic    = "VINSERTPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x21
                            , vexLW              = WIG
@@ -6495,7 +6495,7 @@ i_invpcid = insn
    { insnDesc        = "Invalid process-context identifier"
    , insnMnemonic    = "INVPCID"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x82
                            , legacyProperties      = [ LegacyModeSupport
@@ -7044,7 +7044,7 @@ i_lddqu = insn
    { insnDesc        = "Load unaligned integer 128 bits"
    , insnMnemonic    = "LDDQU"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF0
                            , legacyProperties      = [ LegacyModeSupport
@@ -7063,7 +7063,7 @@ i_vlddqu = insn
    { insnDesc        = "Load unaligned integer 128 bits"
    , insnMnemonic    = "VLDDQU"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xF0
                            , vexLW              = WIG
@@ -7401,7 +7401,7 @@ i_maskmovdqu = insn
    { insnDesc        = "Store selected bytes of double quadword"
    , insnMnemonic    = "MASKMOVDQU"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF7
                            , legacyProperties      = [ LegacyModeSupport
@@ -7421,7 +7421,7 @@ i_vmaskmovdqu = insn
    { insnDesc        = "Store selected bytes of double quadword"
    , insnMnemonic    = "VMASKMOVDQU"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF7
                            , vexLW                 = WIG
@@ -7462,7 +7462,7 @@ i_maxpd = insn
    { insnDesc        = "Return maximum packed double-precision floating-point values"
    , insnMnemonic    = "MAXPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
@@ -7481,7 +7481,7 @@ i_vmaxpd = insn
    { insnDesc        = "Return maximum packed double-precision floating-point values"
    , insnMnemonic    = "VMAXPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x5F
                            , vexLW                 = WIG
@@ -7540,7 +7540,7 @@ i_maxsd = insn
    { insnDesc        = "Return maximum scalar double-precision floating-point values"
    , insnMnemonic    = "MAXSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
@@ -7559,7 +7559,7 @@ i_vmaxsd = insn
    { insnDesc        = "Return maximum scalar double-precision floating-point values"
    , insnMnemonic    = "VMAXSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5F
                            , vexLW              = LWIG
@@ -7580,7 +7580,7 @@ i_maxss = insn
    { insnDesc        = "Return maximum scalar single-precision floating-point values"
    , insnMnemonic    = "MAXSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5F
                            , legacyProperties      = [ LegacyModeSupport
@@ -7599,7 +7599,7 @@ i_vmaxss = insn
    { insnDesc        = "Return maximum scalar single-precision floating-point values"
    , insnMnemonic    = "VMAXSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5F
                            , vexLW              = LWIG
@@ -7635,7 +7635,7 @@ i_minpd = insn
    { insnDesc        = "Return minimum packed double-precision floating-point values"
    , insnMnemonic    = "MINPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
@@ -7654,7 +7654,7 @@ i_vminpd = insn
    { insnDesc        = "Return minimum packed double-precision floating-point values"
    , insnMnemonic    = "VMINPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x5D
                            , vexLW                 = WIG
@@ -7713,7 +7713,7 @@ i_minsd = insn
    { insnDesc        = "Return minimum scalar double-precision floating-point values"
    , insnMnemonic    = "MINSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
@@ -7732,7 +7732,7 @@ i_vminsd = insn
    { insnDesc        = "Return minimum scalar double-precision floating-point values"
    , insnMnemonic    = "VMINSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5D
                            , vexLW              = LWIG
@@ -7753,7 +7753,7 @@ i_minss = insn
    { insnDesc        = "Return minimum scalar single-precision floating-point values"
    , insnMnemonic    = "MINSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5D
                            , legacyProperties      = [ LegacyModeSupport
@@ -7772,7 +7772,7 @@ i_vminss = insn
    { insnDesc        = "Return minimum scalar single-precision floating-point values"
    , insnMnemonic    = "VMINSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5D
                            , vexLW              = LWIG
@@ -7921,7 +7921,7 @@ i_movapd = insn
    { insnDesc        = "Move aligned packed double-precision floating-point values"
    , insnMnemonic    = "MOVAPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x28
                            , legacyReversable      = Just 0
@@ -7941,7 +7941,7 @@ i_vmovapd = insn
    { insnDesc        = "Move aligned packed double-precision floating-point values"
    , insnMnemonic    = "VMOVAPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x28
                            , vexReversable         = Just 0
@@ -8031,7 +8031,7 @@ i_movdq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6E
                            , legacyReversable      = Just 4
@@ -8044,7 +8044,7 @@ i_movdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x6E
                            , vexReversable         = Just 4
@@ -8065,7 +8065,7 @@ i_movddup = insn
    { insnDesc        = "Move one double-FP and duplicate"
    , insnMnemonic    = "MOVDDUP"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x12
                            , legacyProperties      = [ LegacyModeSupport
@@ -8077,7 +8077,7 @@ i_movddup = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
                            , vexLW                 = WIG
@@ -8097,7 +8097,7 @@ i_movdqa = insn
    { insnDesc        = "Move aligned doubleword/quadword"
    , insnMnemonic    = "MOVDQA/VMOVDQA"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6F
                            , legacyReversable      = Just 4
@@ -8110,7 +8110,7 @@ i_movdqa = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x6F
                            , vexReversable         = Just 4
@@ -8131,7 +8131,7 @@ i_movdqu = insn
    { insnDesc        = "Move unaligned doubleword/quadword"
    , insnMnemonic    = "MOVDQU/VMOVDQU"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6F
                            , legacyReversable      = Just 4
@@ -8144,7 +8144,7 @@ i_movdqu = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x6F
                            , vexReversable         = Just 4
@@ -8165,7 +8165,7 @@ i_movdq2q = insn
    { insnDesc        = "Move quadword from XMM to MMX register"
    , insnMnemonic    = "MOVDQ2Q"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD6
                            , legacyProperties      = [ LegacyModeSupport
@@ -8224,7 +8224,7 @@ i_movhpd = insn
    { insnDesc        = "Move high packed double-precision FP value"
    , insnMnemonic    = "MOVHPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x16
                            , legacyReversable      = Just 0
@@ -8237,7 +8237,7 @@ i_movhpd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x17
                            , vexLW                 = L0
@@ -8257,7 +8257,7 @@ i_vmovhpd = insn
    { insnDesc        = "Move high packed double-precision FP value"
    , insnMnemonic    = "VMOVHPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x16
                            , vexLW                 = L0
@@ -8331,7 +8331,7 @@ i_movlpd = insn
    { insnDesc        = "Move low packed double-precision FP value"
    , insnMnemonic    = "MOVLPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x12
                            , legacyReversable      = Just 0
@@ -8344,7 +8344,7 @@ i_movlpd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x13
                            , vexLW                 = L0
@@ -8364,7 +8364,7 @@ i_vmovlpd = insn
    { insnDesc        = "Move low packed double-precision FP value"
    , insnMnemonic    = "VMOVLPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
                            , vexLW                 = L0
@@ -8476,7 +8476,7 @@ i_movmskpd = insn
    { insnDesc        = "Move packed double-precision FP sign mask"
    , insnMnemonic    = "MOVMSKPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x50
                            , legacyProperties      = [ LegacyModeSupport
@@ -8496,7 +8496,7 @@ i_vmovmskpd = insn
    { insnDesc        = "Move packed double-precision FP sign mask"
    , insnMnemonic    = "VMOVMSKPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x50
                            , vexLW                 = WIG
@@ -8558,7 +8558,7 @@ i_movntdqa = insn
    , insnMnemonic    = "MOVNTDQA/VMOVNTDQA"
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x2A
                            , legacyProperties      = [ LegacyModeSupport
@@ -8570,7 +8570,7 @@ i_movntdqa = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 2
                            , vexOpcode             = 0x2A
                            , vexLW                 = L0_WIG
@@ -8583,7 +8583,7 @@ i_movntdqa = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 2
                            , vexOpcode             = 0x2A
                            , vexLW                 = L1_WIG
@@ -8605,7 +8605,7 @@ i_movntdq = insn
    , insnMnemonic    = "MOVNTDQ/VMOVNTDQ"
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE7
                            , legacyProperties      = [ LegacyModeSupport
@@ -8617,7 +8617,7 @@ i_movntdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0xE7
                            , vexLW                 = WIG
@@ -8656,7 +8656,7 @@ i_movntpd = insn
    , insnMnemonic    = "(V)MOVNTPD"
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x2B
                            , legacyProperties      = [ LegacyModeSupport
@@ -8668,7 +8668,7 @@ i_movntpd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x2B
                            , vexLW                 = WIG
@@ -8750,7 +8750,7 @@ i_movq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x7E
                            , legacyProperties      = [ LegacyModeSupport
@@ -8762,7 +8762,7 @@ i_movq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD6
                            , legacyProperties      = [ LegacyModeSupport
@@ -8774,7 +8774,7 @@ i_movq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x7E
                            , vexLW              = L0_WIG
@@ -8787,7 +8787,7 @@ i_movq = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0xD6
                            , vexLW              = L0_WIG
@@ -8807,7 +8807,7 @@ i_movq2dq = insn
    { insnDesc        = "Move quadword from MMX to XMM register"
    , insnMnemonic    = "MOVQ2DQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD6
                            , legacyProperties      = [ LegacyModeSupport
@@ -8845,7 +8845,7 @@ i_movsd = insn
    { insnDesc        = "Move scalar double-precision floating-point values"
    , insnMnemonic    = "MOVSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0xF2
+                           { legacyMandatoryPrefix    = Just LegacyPrefixF2
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x10
                            , legacyReversable         = Just 0
@@ -8865,7 +8865,7 @@ i_vmovsd = insn
    { insnDesc        = "Move scalar double-precision floating-point values"
    , insnMnemonic    = "VMOVSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
                            , vexLW                 = LWIG
@@ -8879,7 +8879,7 @@ i_vmovsd = insn
                                                      ]
                            }
                        ,  vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x11
                            , vexLW                 = LWIG
@@ -8893,7 +8893,7 @@ i_vmovsd = insn
                                                      ]
                            }
                        ,  vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
                            , vexLW                 = LWIG
@@ -8914,7 +8914,7 @@ i_movshdup = insn
    { insnDesc        = "Move packed single-FP high and duplicate"
    , insnMnemonic    = "MOVSHDUP"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x16
                            , legacyProperties      = [ LegacyModeSupport
@@ -8926,7 +8926,7 @@ i_movshdup = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x16
                            , vexLW                 = WIG
@@ -8947,7 +8947,7 @@ i_movsldup = insn
    { insnDesc        = "Move packed single-FP low and duplicate"
    , insnMnemonic    = "MOVSLDUP"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x12
                            , legacyProperties      = [ LegacyModeSupport
@@ -8959,7 +8959,7 @@ i_movsldup = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 1
                            , vexOpcode             = 0x12
                            , vexLW                 = WIG
@@ -8979,7 +8979,7 @@ i_movss = insn
    { insnDesc        = "Move scalar single-precision floating-point values"
    , insnMnemonic    = "MOVSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0xF3
+                           { legacyMandatoryPrefix    = Just LegacyPrefixF3
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x10
                            , legacyReversable         = Just 0
@@ -8999,7 +8999,7 @@ i_vmovss = insn
    { insnDesc        = "Move scalar single-precision floating-point values"
    , insnMnemonic    = "VMOVSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
                            , vexLW                 = LWIG
@@ -9013,7 +9013,7 @@ i_vmovss = insn
                                                      ]
                            }
                        ,  vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x11
                            , vexLW                 = LWIG
@@ -9027,7 +9027,7 @@ i_vmovss = insn
                                                      ]
                            }
                        ,  vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
                            , vexLW                 = LWIG
@@ -9086,7 +9086,7 @@ i_movupd = insn
    { insnDesc        = "Move unaligned packed double-precision floating-point values"
    , insnMnemonic    = "MOVUPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x10
                            , legacyReversable      = Just 0
@@ -9106,7 +9106,7 @@ i_vmovupd = insn
    { insnDesc        = "Move unaligned packed double-precision floating-point values"
    , insnMnemonic    = "VMOVUPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x10
                            , vexReversable         = Just 0
@@ -9193,7 +9193,7 @@ i_mpsadbw = insn
    { insnDesc        = "Compute multiple packed sums of absolute difference"
    , insnMnemonic    = "MPSADBW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x42
                            , legacyProperties      = [ LegacyModeSupport
@@ -9206,7 +9206,7 @@ i_mpsadbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x42
                            , vexLW              = L0_WIG
@@ -9221,7 +9221,7 @@ i_mpsadbw = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x42
                            , vexLW              = L1_WIG
@@ -9266,7 +9266,7 @@ i_mulpd = insn
    { insnDesc        = "Multiply packed double-precision floating-point values"
    , insnMnemonic    = "MULPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
@@ -9285,7 +9285,7 @@ i_vmulpd = insn
    { insnDesc        = "Multiply packed double-precision floating-point values"
    , insnMnemonic    = "VMULPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x59
                            , vexLW                 = WIG
@@ -9344,7 +9344,7 @@ i_mulsd = insn
    { insnDesc        = "Multiply scalar double-precision floating-point values"
    , insnMnemonic    = "MULSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
@@ -9363,7 +9363,7 @@ i_vmulsd = insn
    { insnDesc        = "Multiply scalar double-precision floating-point values"
    , insnMnemonic    = "VMULSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x59
                            , vexLW              = LWIG
@@ -9384,7 +9384,7 @@ i_mulss = insn
    { insnDesc        = "Multiply scalar single-precision floating-point values"
    , insnMnemonic    = "MULSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x59
                            , legacyProperties      = [ LegacyModeSupport
@@ -9403,7 +9403,7 @@ i_vmulss = insn
    { insnDesc        = "Multiply scalar single-precision floating-point values"
    , insnMnemonic    = "VMULSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x59
                            , vexLW              = LWIG
@@ -9424,7 +9424,7 @@ i_mulx = insn
    { insnDesc           = "Unsigned multiply without affecting flags"
    , insnMnemonic       = "MULX"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0xF2
+                              { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF6
                               , vexLW              = L0
@@ -9580,7 +9580,7 @@ i_orpd = insn
    { insnDesc        = "Bitwise logical OR of packed double-precision floating-point values"
    , insnMnemonic    = "ORPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x56
                            , legacyProperties      = [ LegacyModeSupport
@@ -9599,7 +9599,7 @@ i_vorpd = insn
    { insnDesc        = "Bitwise logical OR of packed double-precision floating-point values"
    , insnMnemonic    = "VORPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x56
                            , vexLW              = WIG
@@ -9722,7 +9722,7 @@ i_pabsb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x1C
                            , legacyProperties      = [ LegacyModeSupport
@@ -9734,7 +9734,7 @@ i_pabsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1C
                            , vexLW                 = L0_WIG
@@ -9747,7 +9747,7 @@ i_pabsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1C
                            , vexLW                 = L1_WIG
@@ -9780,7 +9780,7 @@ i_pabsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x1D
                            , legacyProperties      = [ LegacyModeSupport
@@ -9792,7 +9792,7 @@ i_pabsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1D
                            , vexLW                 = L0_WIG
@@ -9805,7 +9805,7 @@ i_pabsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1D
                            , vexLW                 = L1_WIG
@@ -9838,7 +9838,7 @@ i_pabsd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x1E
                            , legacyProperties      = [ LegacyModeSupport
@@ -9850,7 +9850,7 @@ i_pabsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1E
                            , vexLW                 = L0_WIG
@@ -9863,7 +9863,7 @@ i_pabsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1E
                            , vexLW                 = L1_WIG
@@ -9895,7 +9895,7 @@ i_packsswb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x63
                            , legacyProperties      = [ LegacyModeSupport
@@ -9907,7 +9907,7 @@ i_packsswb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x63
                            , vexLW                 = L0_WIG
@@ -9921,7 +9921,7 @@ i_packsswb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x63
                            , vexLW                 = L1_WIG
@@ -9955,7 +9955,7 @@ i_packssdw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6B
                            , legacyProperties      = [ LegacyModeSupport
@@ -9967,7 +9967,7 @@ i_packssdw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6B
                            , vexLW                 = L0_WIG
@@ -9981,7 +9981,7 @@ i_packssdw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6B
                            , vexLW                 = L1_WIG
@@ -10003,7 +10003,7 @@ i_packusdw = insn
    { insnDesc        = "Pack with unsigned saturation"
    , insnMnemonic    = "PACKUSDW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x2B
                            , legacyProperties      = [ LegacyModeSupport
@@ -10015,7 +10015,7 @@ i_packusdw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x2B
                            , vexLW                 = L0_WIG
@@ -10029,7 +10029,7 @@ i_packusdw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x2B
                            , vexLW                 = L1_WIG
@@ -10061,7 +10061,7 @@ i_packuswb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x67
                            , legacyProperties      = [ LegacyModeSupport
@@ -10073,7 +10073,7 @@ i_packuswb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x67
                            , vexLW                 = L0_WIG
@@ -10087,7 +10087,7 @@ i_packuswb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x67
                            , vexLW                 = L1_WIG
@@ -10120,7 +10120,7 @@ i_paddb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xFC
                            , legacyProperties      = [ LegacyModeSupport
@@ -10132,7 +10132,7 @@ i_paddb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFC
                            , vexLW                 = L0_WIG
@@ -10146,7 +10146,7 @@ i_paddb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFC
                            , vexLW                 = L1_WIG
@@ -10181,7 +10181,7 @@ i_paddw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xFD
                            , legacyProperties      = [ LegacyModeSupport
@@ -10193,7 +10193,7 @@ i_paddw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFD
                            , vexLW                 = L0_WIG
@@ -10207,7 +10207,7 @@ i_paddw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFD
                            , vexLW                 = L1_WIG
@@ -10241,7 +10241,7 @@ i_paddd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xFE
                            , legacyProperties      = [ LegacyModeSupport
@@ -10253,7 +10253,7 @@ i_paddd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFE
                            , vexLW                 = L0_WIG
@@ -10267,7 +10267,7 @@ i_paddd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFE
                            , vexLW                 = L1_WIG
@@ -10302,7 +10302,7 @@ i_paddq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD4
                            , legacyProperties      = [ LegacyModeSupport
@@ -10314,7 +10314,7 @@ i_paddq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD4
                            , vexLW                 = L0_WIG
@@ -10328,7 +10328,7 @@ i_paddq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD4
                            , vexLW                 = L1_WIG
@@ -10363,7 +10363,7 @@ i_paddsb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xEC
                            , legacyProperties      = [ LegacyModeSupport
@@ -10375,7 +10375,7 @@ i_paddsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEC
                            , vexLW                 = L0_WIG
@@ -10389,7 +10389,7 @@ i_paddsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEC
                            , vexLW                 = L1_WIG
@@ -10423,7 +10423,7 @@ i_paddsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xED
                            , legacyProperties      = [ LegacyModeSupport
@@ -10435,7 +10435,7 @@ i_paddsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xED
                            , vexLW                 = L0_WIG
@@ -10449,7 +10449,7 @@ i_paddsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xED
                            , vexLW                 = L1_WIG
@@ -10483,7 +10483,7 @@ i_paddusb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xDC
                            , legacyProperties      = [ LegacyModeSupport
@@ -10495,7 +10495,7 @@ i_paddusb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDC
                            , vexLW                 = L0_WIG
@@ -10509,7 +10509,7 @@ i_paddusb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDC
                            , vexLW                 = L1_WIG
@@ -10543,7 +10543,7 @@ i_paddusw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xDD
                            , legacyProperties      = [ LegacyModeSupport
@@ -10555,7 +10555,7 @@ i_paddusw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDD
                            , vexLW                 = L0_WIG
@@ -10569,7 +10569,7 @@ i_paddusw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDD
                            , vexLW                 = L1_WIG
@@ -10603,7 +10603,7 @@ i_palignr = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x0F
                            , legacyProperties      = [ LegacyModeSupport
@@ -10616,7 +10616,7 @@ i_palignr = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0F
                            , vexLW                 = L0_WIG
@@ -10631,7 +10631,7 @@ i_palignr = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0F
                            , vexLW                 = L1_WIG
@@ -10665,7 +10665,7 @@ i_pand = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xDB
                            , legacyProperties      = [ LegacyModeSupport
@@ -10677,7 +10677,7 @@ i_pand = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDB
                            , vexLW                 = L0_WIG
@@ -10691,7 +10691,7 @@ i_pand = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDB
                            , vexLW                 = L1_WIG
@@ -10725,7 +10725,7 @@ i_pandn = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xDF
                            , legacyProperties      = [ LegacyModeSupport
@@ -10737,7 +10737,7 @@ i_pandn = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDF
                            , vexLW                 = L0_WIG
@@ -10751,7 +10751,7 @@ i_pandn = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDF
                            , vexLW                 = L1_WIG
@@ -10773,7 +10773,7 @@ i_pause = insn
    { insnDesc        = "Spin loop hint"
    , insnMnemonic    = "PAUSE"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = MapPrimary
                            , legacyOpcode          = 0x90
                            , legacyProperties      = [ LegacyModeSupport
@@ -10799,7 +10799,7 @@ i_pavgb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE0
                            , legacyProperties      = [ LegacyModeSupport
@@ -10811,7 +10811,7 @@ i_pavgb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE0
                            , vexLW                 = L0_WIG
@@ -10825,7 +10825,7 @@ i_pavgb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE0
                            , vexLW                 = L1_WIG
@@ -10860,7 +10860,7 @@ i_pavgw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE3
                            , legacyProperties      = [ LegacyModeSupport
@@ -10872,7 +10872,7 @@ i_pavgw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE3
                            , vexLW                 = L0_WIG
@@ -10886,7 +10886,7 @@ i_pavgw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE3
                            , vexLW                 = L1_WIG
@@ -10910,7 +10910,7 @@ i_pblendvb = insn
    { insnDesc        = "Variable blend packed bytes"
    , insnMnemonic    = "PBLENDVB"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x10
                            , legacyProperties      = [ LegacyModeSupport
@@ -10923,7 +10923,7 @@ i_pblendvb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x4C
                            , vexLW                 = L0_W0
@@ -10938,7 +10938,7 @@ i_pblendvb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x4C
                            , vexLW                 = L1_W0
@@ -10962,7 +10962,7 @@ i_pblendw = insn
    { insnDesc        = "Blend packed words"
    , insnMnemonic    = "PBLENDW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x0E
                            , legacyProperties      = [ LegacyModeSupport
@@ -10975,7 +10975,7 @@ i_pblendw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0E
                            , vexLW                 = L0_WIG
@@ -10990,7 +10990,7 @@ i_pblendw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x0E
                            , vexLW                 = L1_WIG
@@ -11014,7 +11014,7 @@ i_pclmulqdq = insn
    { insnDesc        = "Carry-less multiplication quadword"
    , insnMnemonic    = "PCLMULQDQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x44
                            , legacyProperties      = [ LegacyModeSupport
@@ -11027,7 +11027,7 @@ i_pclmulqdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x44
                            , vexLW                 = L0_WIG
@@ -11062,7 +11062,7 @@ i_pcmpeqb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x74
                            , legacyProperties      = [ LegacyModeSupport
@@ -11074,7 +11074,7 @@ i_pcmpeqb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x74
                            , vexLW                 = L0_WIG
@@ -11088,7 +11088,7 @@ i_pcmpeqb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x74
                            , vexLW                 = L1_WIG
@@ -11121,7 +11121,7 @@ i_pcmpeqw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x75
                            , legacyProperties      = [ LegacyModeSupport
@@ -11133,7 +11133,7 @@ i_pcmpeqw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x75
                            , vexLW                 = L0_WIG
@@ -11147,7 +11147,7 @@ i_pcmpeqw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x75
                            , vexLW                 = L1_WIG
@@ -11180,7 +11180,7 @@ i_pcmpeqd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x76
                            , legacyProperties      = [ LegacyModeSupport
@@ -11192,7 +11192,7 @@ i_pcmpeqd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x76
                            , vexLW                 = L0_WIG
@@ -11206,7 +11206,7 @@ i_pcmpeqd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x76
                            , vexLW                 = L1_WIG
@@ -11228,7 +11228,7 @@ i_pcmpeqq = insn
    { insnDesc        = "Compare packed quadword data for equality"
    , insnMnemonic    = "PCMPEQQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x29
                            , legacyProperties      = [ LegacyModeSupport
@@ -11240,7 +11240,7 @@ i_pcmpeqq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x29
                            , vexLW                 = L0_WIG
@@ -11254,7 +11254,7 @@ i_pcmpeqq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x29
                            , vexLW                 = L1_WIG
@@ -11279,7 +11279,7 @@ i_pcmpestri = insn
                        , Unset [AF, PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x61
                            , legacyProperties      = [ LegacyModeSupport
@@ -11295,7 +11295,7 @@ i_pcmpestri = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x61
                            , vexLW                 = L0_WIG
@@ -11323,7 +11323,7 @@ i_pcmpestrm = insn
                        , Unset [AF, PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x60
                            , legacyProperties      = [ LegacyModeSupport
@@ -11339,7 +11339,7 @@ i_pcmpestrm = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x60
                            , vexLW                 = L0_WIG
@@ -11374,7 +11374,7 @@ i_pcmpgtb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x64
                            , legacyProperties      = [ LegacyModeSupport
@@ -11386,7 +11386,7 @@ i_pcmpgtb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x64
                            , vexLW                 = L0_WIG
@@ -11400,7 +11400,7 @@ i_pcmpgtb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x64
                            , vexLW                 = L1_WIG
@@ -11433,7 +11433,7 @@ i_pcmpgtw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x65
                            , legacyProperties      = [ LegacyModeSupport
@@ -11445,7 +11445,7 @@ i_pcmpgtw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x65
                            , vexLW                 = L0_WIG
@@ -11459,7 +11459,7 @@ i_pcmpgtw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x65
                            , vexLW                 = L1_WIG
@@ -11492,7 +11492,7 @@ i_pcmpgtd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x66
                            , legacyProperties      = [ LegacyModeSupport
@@ -11504,7 +11504,7 @@ i_pcmpgtd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x66
                            , vexLW                 = L0_WIG
@@ -11518,7 +11518,7 @@ i_pcmpgtd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x66
                            , vexLW                 = L1_WIG
@@ -11540,7 +11540,7 @@ i_pcmpgtq = insn
    { insnDesc        = "Compare packed quadword data for greater than"
    , insnMnemonic    = "PCMPGTQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x37
                            , legacyProperties      = [ LegacyModeSupport
@@ -11552,7 +11552,7 @@ i_pcmpgtq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x37
                            , vexLW                 = L0_WIG
@@ -11566,7 +11566,7 @@ i_pcmpgtq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x37
                            , vexLW                 = L1_WIG
@@ -11590,7 +11590,7 @@ i_pcmpistri = insn
                        , Unset [AF, PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x63
                            , legacyProperties      = [ LegacyModeSupport
@@ -11604,7 +11604,7 @@ i_pcmpistri = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x63
                            , vexLW                 = L0_WIG
@@ -11630,7 +11630,7 @@ i_pcmpistrm = insn
                        , Unset [AF, PF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x62
                            , legacyProperties      = [ LegacyModeSupport
@@ -11644,7 +11644,7 @@ i_pcmpistrm = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x62
                            , vexLW                 = L0_WIG
@@ -11666,7 +11666,7 @@ i_pdep = insn
    { insnDesc           = "Parallel bits deposit"
    , insnMnemonic       = "PDEP"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0xF2
+                              { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF5
                               , vexLW              = L0
@@ -11687,7 +11687,7 @@ i_pext = insn
    { insnDesc           = "Parallel bits extract"
    , insnMnemonic       = "PEXT"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0xF3
+                              { vexMandatoryPrefix = Just LegacyPrefixF3
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF5
                               , vexLW              = L0
@@ -11709,7 +11709,7 @@ i_pextrb = insn
    { insnDesc        = "Extract byte"
    , insnMnemonic    = "PEXTRB"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
@@ -11722,7 +11722,7 @@ i_pextrb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x14
                            , vexLW                 = L0_WIG
@@ -11744,7 +11744,7 @@ i_pextrd = insn
    { insnDesc        = "Extract dword/qword"
    , insnMnemonic    = "PEXTRD/PEXTRQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x16
                            , legacyProperties      = [ LegacyModeSupport
@@ -11757,7 +11757,7 @@ i_pextrd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x16
                            , vexLW                 = L0
@@ -11790,7 +11790,7 @@ i_pextrw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xC5
                            , legacyProperties      = [ LegacyModeSupport
@@ -11803,7 +11803,7 @@ i_pextrw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC5
                            , vexLW                 = L0_W0
@@ -11817,7 +11817,7 @@ i_pextrw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x15
                            , vexLW                 = L0_W0
@@ -11850,7 +11850,7 @@ i_phaddw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x01
                            , legacyProperties      = [ LegacyModeSupport
@@ -11862,7 +11862,7 @@ i_phaddw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x01
                            , vexLW                 = L0_WIG
@@ -11876,7 +11876,7 @@ i_phaddw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x01
                            , vexLW                 = L1_WIG
@@ -11909,7 +11909,7 @@ i_phaddd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x02
                            , legacyProperties      = [ LegacyModeSupport
@@ -11921,7 +11921,7 @@ i_phaddd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x02
                            , vexLW                 = L0_WIG
@@ -11935,7 +11935,7 @@ i_phaddd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x02
                            , vexLW                 = L1_WIG
@@ -11968,7 +11968,7 @@ i_phaddsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x03
                            , legacyProperties      = [ LegacyModeSupport
@@ -11980,7 +11980,7 @@ i_phaddsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x03
                            , vexLW                 = L0_WIG
@@ -11994,7 +11994,7 @@ i_phaddsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x03
                            , vexLW                 = L1_WIG
@@ -12015,7 +12015,7 @@ i_phminposuw = insn
    { insnDesc        = "Packed horizontal word minimum"
    , insnMnemonic    = "PHMINPOSUW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x41
                            , legacyProperties      = [ LegacyModeSupport
@@ -12027,7 +12027,7 @@ i_phminposuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x41
                            , vexLW                 = L0_WIG
@@ -12058,7 +12058,7 @@ i_phsubw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x05
                            , legacyProperties      = [ LegacyModeSupport
@@ -12070,7 +12070,7 @@ i_phsubw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x05
                            , vexLW                 = L0_WIG
@@ -12084,7 +12084,7 @@ i_phsubw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x05
                            , vexLW                 = L1_WIG
@@ -12117,7 +12117,7 @@ i_phsubd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x06
                            , legacyProperties      = [ LegacyModeSupport
@@ -12129,7 +12129,7 @@ i_phsubd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x06
                            , vexLW                 = L0_WIG
@@ -12143,7 +12143,7 @@ i_phsubd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x06
                            , vexLW                 = L1_WIG
@@ -12176,7 +12176,7 @@ i_phsubsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x07
                            , legacyProperties      = [ LegacyModeSupport
@@ -12188,7 +12188,7 @@ i_phsubsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x07
                            , vexLW                 = L0_WIG
@@ -12202,7 +12202,7 @@ i_phsubsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x07
                            , vexLW                 = L1_WIG
@@ -12223,7 +12223,7 @@ i_pinsrb = insn
    { insnDesc        = "Insert byte"
    , insnMnemonic    = "PINSRB"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x20
                            , legacyProperties      = [ LegacyModeSupport
@@ -12236,7 +12236,7 @@ i_pinsrb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x20
                            , vexLW                 = L0_WIG
@@ -12259,7 +12259,7 @@ i_pinsrd = insn
    { insnDesc        = "Insert dword/qword"
    , insnMnemonic    = "PINSRD/PINSRQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x22
                            , legacyProperties      = [ LegacyModeSupport
@@ -12272,7 +12272,7 @@ i_pinsrd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x22
                            , vexLW                 = L0
@@ -12306,7 +12306,7 @@ i_pinsrw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xC4
                            , legacyProperties      = [ LegacyModeSupport
@@ -12319,7 +12319,7 @@ i_pinsrw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC4
                            , vexLW                 = L0_W0
@@ -12352,7 +12352,7 @@ i_pmaddubsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x04
                            , legacyProperties      = [ LegacyModeSupport
@@ -12364,7 +12364,7 @@ i_pmaddubsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x04
                            , vexLW                 = L0_WIG
@@ -12378,7 +12378,7 @@ i_pmaddubsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x04
                            , vexLW                 = L1_WIG
@@ -12410,7 +12410,7 @@ i_pmaddwd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF5
                            , legacyProperties      = [ LegacyModeSupport
@@ -12422,7 +12422,7 @@ i_pmaddwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF5
                            , vexLW                 = L0_WIG
@@ -12436,7 +12436,7 @@ i_pmaddwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF5
                            , vexLW                 = L1_WIG
@@ -12458,7 +12458,7 @@ i_pmaxsb = insn
    { insnDesc        = "Maximum of packed signed byte integers"
    , insnMnemonic    = "PMAXSB"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x3C
                            , legacyProperties      = [ LegacyModeSupport
@@ -12470,7 +12470,7 @@ i_pmaxsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3C
                            , vexLW                 = L0_WIG
@@ -12484,7 +12484,7 @@ i_pmaxsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3C
                            , vexLW                 = L1_WIG
@@ -12506,7 +12506,7 @@ i_pmaxsd = insn
    { insnDesc        = "Maximum of packed signed dword integers"
    , insnMnemonic    = "PMAXSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x3D
                            , legacyProperties      = [ LegacyModeSupport
@@ -12518,7 +12518,7 @@ i_pmaxsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3D
                            , vexLW                 = L0_WIG
@@ -12532,7 +12532,7 @@ i_pmaxsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3D
                            , vexLW                 = L1_WIG
@@ -12564,7 +12564,7 @@ i_pmaxsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xEE
                            , legacyProperties      = [ LegacyModeSupport
@@ -12576,7 +12576,7 @@ i_pmaxsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEE
                            , vexLW                 = L0_WIG
@@ -12590,7 +12590,7 @@ i_pmaxsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEE
                            , vexLW                 = L1_WIG
@@ -12623,7 +12623,7 @@ i_pmaxub = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xDE
                            , legacyProperties      = [ LegacyModeSupport
@@ -12635,7 +12635,7 @@ i_pmaxub = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDE
                            , vexLW                 = L0_WIG
@@ -12649,7 +12649,7 @@ i_pmaxub = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDE
                            , vexLW                 = L1_WIG
@@ -12670,7 +12670,7 @@ i_pmaxud = insn
    { insnDesc        = "Maximum of packed unsigned dword integers"
    , insnMnemonic    = "PMAXUD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x3F
                            , legacyProperties      = [ LegacyModeSupport
@@ -12682,7 +12682,7 @@ i_pmaxud = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3F
                            , vexLW                 = L0_WIG
@@ -12696,7 +12696,7 @@ i_pmaxud = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3F
                            , vexLW                 = L1_WIG
@@ -12719,7 +12719,7 @@ i_pmaxuw = insn
    { insnDesc        = "Maximum of packed unsigned word integers"
    , insnMnemonic    = "PMAXUW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x3E
                            , legacyProperties      = [ LegacyModeSupport
@@ -12731,7 +12731,7 @@ i_pmaxuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3E
                            , vexLW                 = L0_WIG
@@ -12745,7 +12745,7 @@ i_pmaxuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3E
                            , vexLW                 = L1_WIG
@@ -12769,7 +12769,7 @@ i_pminsb = insn
    { insnDesc        = "Minimum of packed signed byte integers"
    , insnMnemonic    = "PMINSB"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x38
                            , legacyProperties      = [ LegacyModeSupport
@@ -12781,7 +12781,7 @@ i_pminsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x38
                            , vexLW                 = L0_WIG
@@ -12795,7 +12795,7 @@ i_pminsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x38
                            , vexLW                 = L1_WIG
@@ -12817,7 +12817,7 @@ i_pminsd = insn
    { insnDesc        = "Minimum of packed signed dword integers"
    , insnMnemonic    = "PMINSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x39
                            , legacyProperties      = [ LegacyModeSupport
@@ -12829,7 +12829,7 @@ i_pminsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x39
                            , vexLW                 = L0_WIG
@@ -12843,7 +12843,7 @@ i_pminsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x39
                            , vexLW                 = L1_WIG
@@ -12875,7 +12875,7 @@ i_pminsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xEA
                            , legacyProperties      = [ LegacyModeSupport
@@ -12887,7 +12887,7 @@ i_pminsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEA
                            , vexLW                 = L0_WIG
@@ -12901,7 +12901,7 @@ i_pminsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEA
                            , vexLW                 = L1_WIG
@@ -12934,7 +12934,7 @@ i_pminub = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xDA
                            , legacyProperties      = [ LegacyModeSupport
@@ -12946,7 +12946,7 @@ i_pminub = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDA
                            , vexLW                 = L0_WIG
@@ -12960,7 +12960,7 @@ i_pminub = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xDA
                            , vexLW                 = L1_WIG
@@ -12981,7 +12981,7 @@ i_pminud = insn
    { insnDesc        = "Minimum of packed unsigned dword integers"
    , insnMnemonic    = "PMINUD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x3B
                            , legacyProperties      = [ LegacyModeSupport
@@ -12993,7 +12993,7 @@ i_pminud = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3B
                            , vexLW                 = L0_WIG
@@ -13007,7 +13007,7 @@ i_pminud = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3B
                            , vexLW                 = L1_WIG
@@ -13030,7 +13030,7 @@ i_pminuw = insn
    { insnDesc        = "Minimum of packed unsigned word integers"
    , insnMnemonic    = "PMINUW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x3A
                            , legacyProperties      = [ LegacyModeSupport
@@ -13042,7 +13042,7 @@ i_pminuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3A
                            , vexLW                 = L0_WIG
@@ -13056,7 +13056,7 @@ i_pminuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x3A
                            , vexLW                 = L1_WIG
@@ -13089,7 +13089,7 @@ i_pmovmskb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD7
                            , legacyProperties      = [ LegacyModeSupport
@@ -13101,7 +13101,7 @@ i_pmovmskb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD7
                            , vexLW                 = L0_WIG
@@ -13114,7 +13114,7 @@ i_pmovmskb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD7
                            , vexLW                 = L1_WIG
@@ -13134,7 +13134,7 @@ i_pmovsxbw = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXBW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x20
                            , legacyProperties      = [ LegacyModeSupport
@@ -13146,7 +13146,7 @@ i_pmovsxbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x20
                            , vexLW                 = L0_WIG
@@ -13159,7 +13159,7 @@ i_pmovsxbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x20
                            , vexLW                 = L1_WIG
@@ -13180,7 +13180,7 @@ i_pmovsxbd = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXBD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x21
                            , legacyProperties      = [ LegacyModeSupport
@@ -13192,7 +13192,7 @@ i_pmovsxbd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x21
                            , vexLW                 = L0_WIG
@@ -13205,7 +13205,7 @@ i_pmovsxbd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x21
                            , vexLW                 = L1_WIG
@@ -13226,7 +13226,7 @@ i_pmovsxbq = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXBQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x22
                            , legacyProperties      = [ LegacyModeSupport
@@ -13238,7 +13238,7 @@ i_pmovsxbq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x22
                            , vexLW                 = L0_WIG
@@ -13251,7 +13251,7 @@ i_pmovsxbq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x22
                            , vexLW                 = L1_WIG
@@ -13272,7 +13272,7 @@ i_pmovsxwd = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXWD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x23
                            , legacyProperties      = [ LegacyModeSupport
@@ -13284,7 +13284,7 @@ i_pmovsxwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x23
                            , vexLW                 = L0_WIG
@@ -13297,7 +13297,7 @@ i_pmovsxwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x23
                            , vexLW                 = L1_WIG
@@ -13318,7 +13318,7 @@ i_pmovsxwq = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXWQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x24
                            , legacyProperties      = [ LegacyModeSupport
@@ -13330,7 +13330,7 @@ i_pmovsxwq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x24
                            , vexLW                 = L0_WIG
@@ -13343,7 +13343,7 @@ i_pmovsxwq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x24
                            , vexLW                 = L1_WIG
@@ -13364,7 +13364,7 @@ i_pmovsxdq = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXWQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x25
                            , legacyProperties      = [ LegacyModeSupport
@@ -13376,7 +13376,7 @@ i_pmovsxdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x25
                            , vexLW                 = L0_WIG
@@ -13389,7 +13389,7 @@ i_pmovsxdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x25
                            , vexLW                 = L1_WIG
@@ -13410,7 +13410,7 @@ i_pmovzxbw = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXBW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x30
                            , legacyProperties      = [ LegacyModeSupport
@@ -13422,7 +13422,7 @@ i_pmovzxbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x30
                            , vexLW                 = L0_WIG
@@ -13435,7 +13435,7 @@ i_pmovzxbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x30
                            , vexLW                 = L1_WIG
@@ -13456,7 +13456,7 @@ i_pmovzxbd = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXBD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x31
                            , legacyProperties      = [ LegacyModeSupport
@@ -13468,7 +13468,7 @@ i_pmovzxbd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x31
                            , vexLW                 = L0_WIG
@@ -13481,7 +13481,7 @@ i_pmovzxbd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x31
                            , vexLW                 = L1_WIG
@@ -13502,7 +13502,7 @@ i_pmovzxbq = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXBQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x32
                            , legacyProperties      = [ LegacyModeSupport
@@ -13514,7 +13514,7 @@ i_pmovzxbq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x32
                            , vexLW                 = L0_WIG
@@ -13527,7 +13527,7 @@ i_pmovzxbq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x32
                            , vexLW                 = L1_WIG
@@ -13548,7 +13548,7 @@ i_pmovzxwd = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXWD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x33
                            , legacyProperties      = [ LegacyModeSupport
@@ -13560,7 +13560,7 @@ i_pmovzxwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x33
                            , vexLW                 = L0_WIG
@@ -13573,7 +13573,7 @@ i_pmovzxwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x33
                            , vexLW                 = L1_WIG
@@ -13594,7 +13594,7 @@ i_pmovzxwq = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXWQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x34
                            , legacyProperties      = [ LegacyModeSupport
@@ -13606,7 +13606,7 @@ i_pmovzxwq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x34
                            , vexLW                 = L0_WIG
@@ -13619,7 +13619,7 @@ i_pmovzxwq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x34
                            , vexLW                 = L1_WIG
@@ -13640,7 +13640,7 @@ i_pmovzxdq = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXWQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x35
                            , legacyProperties      = [ LegacyModeSupport
@@ -13652,7 +13652,7 @@ i_pmovzxdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x35
                            , vexLW                 = L0_WIG
@@ -13665,7 +13665,7 @@ i_pmovzxdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x35
                            , vexLW                 = L1_WIG
@@ -13686,7 +13686,7 @@ i_pmuldq = insn
    { insnDesc        = "Multiply packed signed dword integers"
    , insnMnemonic    = "PMULDQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x28
                            , legacyProperties      = [ LegacyModeSupport
@@ -13698,7 +13698,7 @@ i_pmuldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x28
                            , vexLW                 = L0_WIG
@@ -13712,7 +13712,7 @@ i_pmuldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x28
                            , vexLW                 = L1_WIG
@@ -13746,7 +13746,7 @@ i_pmulhrsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x0B
                            , legacyProperties      = [ LegacyModeSupport
@@ -13758,7 +13758,7 @@ i_pmulhrsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0B
                            , vexLW                 = L0_WIG
@@ -13772,7 +13772,7 @@ i_pmulhrsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0B
                            , vexLW                 = L1_WIG
@@ -13806,7 +13806,7 @@ i_pmulhuw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE4
                            , legacyProperties      = [ LegacyModeSupport
@@ -13818,7 +13818,7 @@ i_pmulhuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE4
                            , vexLW                 = L0_WIG
@@ -13832,7 +13832,7 @@ i_pmulhuw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE4
                            , vexLW                 = L1_WIG
@@ -13865,7 +13865,7 @@ i_pmulhw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE5
                            , legacyProperties      = [ LegacyModeSupport
@@ -13877,7 +13877,7 @@ i_pmulhw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE5
                            , vexLW                 = L0_WIG
@@ -13891,7 +13891,7 @@ i_pmulhw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE5
                            , vexLW                 = L1_WIG
@@ -13912,7 +13912,7 @@ i_pmulld = insn
    { insnDesc        = "Multiply packed signed dword integers and store low result"
    , insnMnemonic    = "PMULLD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x40
                            , legacyProperties      = [ LegacyModeSupport
@@ -13924,7 +13924,7 @@ i_pmulld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x40
                            , vexLW                 = L0_WIG
@@ -13938,7 +13938,7 @@ i_pmulld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x40
                            , vexLW                 = L1_WIG
@@ -13971,7 +13971,7 @@ i_pmullw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD5
                            , legacyProperties      = [ LegacyModeSupport
@@ -13983,7 +13983,7 @@ i_pmullw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD5
                            , vexLW                 = L0_WIG
@@ -13997,7 +13997,7 @@ i_pmullw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD5
                            , vexLW                 = L1_WIG
@@ -14029,7 +14029,7 @@ i_pmuludq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF4
                            , legacyProperties      = [ LegacyModeSupport
@@ -14041,7 +14041,7 @@ i_pmuludq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF4
                            , vexLW                 = L0_WIG
@@ -14055,7 +14055,7 @@ i_pmuludq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF4
                            , vexLW                 = L1_WIG
@@ -14222,7 +14222,7 @@ i_por = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xEB
                            , legacyProperties      = [ LegacyModeSupport
@@ -14234,7 +14234,7 @@ i_por = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEB
                            , vexLW                 = L0_WIG
@@ -14248,7 +14248,7 @@ i_por = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEB
                            , vexLW                 = L1_WIG
@@ -14385,7 +14385,7 @@ i_psadbw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF6
                            , legacyProperties      = [ LegacyModeSupport
@@ -14397,7 +14397,7 @@ i_psadbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF6
                            , vexLW                 = L0_WIG
@@ -14411,7 +14411,7 @@ i_psadbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF6
                            , vexLW                 = L1_WIG
@@ -14444,7 +14444,7 @@ i_pshufb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x00
                            , legacyProperties      = [ LegacyModeSupport
@@ -14456,7 +14456,7 @@ i_pshufb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x00
                            , vexLW                 = L0_WIG
@@ -14470,7 +14470,7 @@ i_pshufb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x00
                            , vexLW                 = L1_WIG
@@ -14491,7 +14491,7 @@ i_pshufd = insn
    { insnDesc        = "Shuffle packed doublewords"
    , insnMnemonic    = "PSHUFD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
@@ -14504,7 +14504,7 @@ i_pshufd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
                            , vexLW                 = L0_WIG
@@ -14518,7 +14518,7 @@ i_pshufd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
                            , vexLW                 = L1_WIG
@@ -14539,7 +14539,7 @@ i_pshufhw = insn
    { insnDesc        = "Shuffle packed high words"
    , insnMnemonic    = "PSHUFHW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
@@ -14552,7 +14552,7 @@ i_pshufhw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
                            , vexLW                 = L0_WIG
@@ -14566,7 +14566,7 @@ i_pshufhw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
                            , vexLW                 = L1_WIG
@@ -14588,7 +14588,7 @@ i_pshuflw = insn
    { insnDesc        = "Shuffle packed low words"
    , insnMnemonic    = "PSHUFLW"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x70
                            , legacyProperties      = [ LegacyModeSupport
@@ -14601,7 +14601,7 @@ i_pshuflw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
                            , vexLW                 = L0_WIG
@@ -14615,7 +14615,7 @@ i_pshuflw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x70
                            , vexLW                 = L1_WIG
@@ -14665,7 +14665,7 @@ i_psignb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x08
                            , legacyProperties      = [ LegacyModeSupport
@@ -14677,7 +14677,7 @@ i_psignb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x08
                            , vexLW                 = L0_WIG
@@ -14691,7 +14691,7 @@ i_psignb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x08
                            , vexLW                 = L1_WIG
@@ -14724,7 +14724,7 @@ i_psignw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x09
                            , legacyProperties      = [ LegacyModeSupport
@@ -14736,7 +14736,7 @@ i_psignw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x09
                            , vexLW                 = L0_WIG
@@ -14750,7 +14750,7 @@ i_psignw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x09
                            , vexLW                 = L1_WIG
@@ -14783,7 +14783,7 @@ i_psignd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x0A
                            , legacyProperties      = [ LegacyModeSupport
@@ -14795,7 +14795,7 @@ i_psignd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0A
                            , vexLW                 = L0_WIG
@@ -14809,7 +14809,7 @@ i_psignd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x0A
                            , vexLW                 = L1_WIG
@@ -14830,7 +14830,7 @@ i_pslldq = insn
    { insnDesc        = "Shift double quadword left logical"
    , insnMnemonic    = "PSLLDQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 7
@@ -14843,7 +14843,7 @@ i_pslldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 7
@@ -14858,7 +14858,7 @@ i_pslldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 7
@@ -14892,7 +14892,7 @@ i_psllw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF1
                            , legacyProperties      = [ LegacyModeSupport
@@ -14916,7 +14916,7 @@ i_psllw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 6
@@ -14929,7 +14929,7 @@ i_psllw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF1
                            , vexLW                 = L0_WIG
@@ -14943,7 +14943,7 @@ i_psllw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF1
                            , vexLW                 = L1_WIG
@@ -14957,7 +14957,7 @@ i_psllw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 6
@@ -14972,7 +14972,7 @@ i_psllw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 6
@@ -15006,7 +15006,7 @@ i_pslld = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15030,7 +15030,7 @@ i_pslld = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 6
@@ -15043,7 +15043,7 @@ i_pslld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF2
                            , vexLW                 = L0_WIG
@@ -15057,7 +15057,7 @@ i_pslld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF2
                            , vexLW                 = L1_WIG
@@ -15071,7 +15071,7 @@ i_pslld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 6
@@ -15086,7 +15086,7 @@ i_pslld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 6
@@ -15120,7 +15120,7 @@ i_psllq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF3
                            , legacyProperties      = [ LegacyModeSupport
@@ -15144,7 +15144,7 @@ i_psllq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 6
@@ -15157,7 +15157,7 @@ i_psllq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF3
                            , vexLW                 = L0_WIG
@@ -15171,7 +15171,7 @@ i_psllq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF3
                            , vexLW                 = L1_WIG
@@ -15185,7 +15185,7 @@ i_psllq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 6
@@ -15200,7 +15200,7 @@ i_psllq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 6
@@ -15233,7 +15233,7 @@ i_psraw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE1
                            , legacyProperties      = [ LegacyModeSupport
@@ -15257,7 +15257,7 @@ i_psraw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 4
@@ -15270,7 +15270,7 @@ i_psraw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE1
                            , vexLW                 = L0_WIG
@@ -15284,7 +15284,7 @@ i_psraw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE1
                            , vexLW                 = L1_WIG
@@ -15298,7 +15298,7 @@ i_psraw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 4
@@ -15313,7 +15313,7 @@ i_psraw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 4
@@ -15347,7 +15347,7 @@ i_psrad = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15371,7 +15371,7 @@ i_psrad = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 4
@@ -15384,7 +15384,7 @@ i_psrad = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE2
                            , vexLW                 = L0_WIG
@@ -15398,7 +15398,7 @@ i_psrad = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE2
                            , vexLW                 = L1_WIG
@@ -15412,7 +15412,7 @@ i_psrad = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 4
@@ -15427,7 +15427,7 @@ i_psrad = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 4
@@ -15449,7 +15449,7 @@ i_psrldq = insn
    { insnDesc        = "Shift double quadword right logical"
    , insnMnemonic    = "PSRLDQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x73
                            , legacyProperties      = [ LegacyModeSupport
@@ -15461,7 +15461,7 @@ i_psrldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 3
@@ -15476,7 +15476,7 @@ i_psrldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 3
@@ -15509,7 +15509,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD1
                            , legacyProperties      = [ LegacyModeSupport
@@ -15533,7 +15533,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x71
                            , legacyOpcodeExt       = Just 2
@@ -15546,7 +15546,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD1
                            , vexLW                 = L0_WIG
@@ -15560,7 +15560,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD1
                            , vexLW                 = L1_WIG
@@ -15574,7 +15574,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 2
@@ -15589,7 +15589,7 @@ i_psrlw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x71
                            , vexOpcodeExt          = Just 2
@@ -15622,7 +15622,7 @@ i_psrld = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD2
                            , legacyProperties      = [ LegacyModeSupport
@@ -15646,7 +15646,7 @@ i_psrld = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x72
                            , legacyOpcodeExt       = Just 2
@@ -15659,7 +15659,7 @@ i_psrld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD2
                            , vexLW                 = L0_WIG
@@ -15673,7 +15673,7 @@ i_psrld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD2
                            , vexLW                 = L1_WIG
@@ -15687,7 +15687,7 @@ i_psrld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 2
@@ -15702,7 +15702,7 @@ i_psrld = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x72
                            , vexOpcodeExt          = Just 2
@@ -15736,7 +15736,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD3
                            , legacyProperties      = [ LegacyModeSupport
@@ -15760,7 +15760,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x73
                            , legacyOpcodeExt       = Just 2
@@ -15773,7 +15773,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD3
                            , vexLW                 = L0_WIG
@@ -15787,7 +15787,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD3
                            , vexLW                 = L1_WIG
@@ -15801,7 +15801,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 2
@@ -15816,7 +15816,7 @@ i_psrlq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x73
                            , vexOpcodeExt          = Just 2
@@ -15849,7 +15849,7 @@ i_psubb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF8
                            , legacyProperties      = [ LegacyModeSupport
@@ -15861,7 +15861,7 @@ i_psubb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF8
                            , vexLW                 = L0_WIG
@@ -15875,7 +15875,7 @@ i_psubb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF8
                            , vexLW                 = L1_WIG
@@ -15910,7 +15910,7 @@ i_psubw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xF9
                            , legacyProperties      = [ LegacyModeSupport
@@ -15922,7 +15922,7 @@ i_psubw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF9
                            , vexLW                 = L0_WIG
@@ -15936,7 +15936,7 @@ i_psubw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xF9
                            , vexLW                 = L1_WIG
@@ -15970,7 +15970,7 @@ i_psubd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xFA
                            , legacyProperties      = [ LegacyModeSupport
@@ -15982,7 +15982,7 @@ i_psubd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFA
                            , vexLW                 = L0_WIG
@@ -15996,7 +15996,7 @@ i_psubd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFA
                            , vexLW                 = L1_WIG
@@ -16031,7 +16031,7 @@ i_psubq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xFB
                            , legacyProperties      = [ LegacyModeSupport
@@ -16043,7 +16043,7 @@ i_psubq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFB
                            , vexLW                 = L0_WIG
@@ -16057,7 +16057,7 @@ i_psubq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xFB
                            , vexLW                 = L1_WIG
@@ -16092,7 +16092,7 @@ i_psubsb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE8
                            , legacyProperties      = [ LegacyModeSupport
@@ -16104,7 +16104,7 @@ i_psubsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE8
                            , vexLW                 = L0_WIG
@@ -16118,7 +16118,7 @@ i_psubsb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE8
                            , vexLW                 = L1_WIG
@@ -16152,7 +16152,7 @@ i_psubsw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xE9
                            , legacyProperties      = [ LegacyModeSupport
@@ -16164,7 +16164,7 @@ i_psubsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE9
                            , vexLW                 = L0_WIG
@@ -16178,7 +16178,7 @@ i_psubsw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xE9
                            , vexLW                 = L1_WIG
@@ -16211,7 +16211,7 @@ i_psubusb = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD8
                            , legacyProperties      = [ LegacyModeSupport
@@ -16223,7 +16223,7 @@ i_psubusb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD8
                            , vexLW                 = L0_WIG
@@ -16237,7 +16237,7 @@ i_psubusb = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD8
                            , vexLW                 = L1_WIG
@@ -16271,7 +16271,7 @@ i_psubusw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xD9
                            , legacyProperties      = [ LegacyModeSupport
@@ -16283,7 +16283,7 @@ i_psubusw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD9
                            , vexLW                 = L0_WIG
@@ -16297,7 +16297,7 @@ i_psubusw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xD9
                            , vexLW                 = L1_WIG
@@ -16321,7 +16321,7 @@ i_ptest = insn
                        , Unset [OF,AF,PF,SF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F38
                            , legacyOpcode          = 0x17
                            , legacyProperties      = [ LegacyModeSupport
@@ -16333,7 +16333,7 @@ i_ptest = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x17
                            , vexLW                 = WIG
@@ -16364,7 +16364,7 @@ i_punpckhbw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x68
                            , legacyProperties      = [ LegacyModeSupport
@@ -16376,7 +16376,7 @@ i_punpckhbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x68
                            , vexLW                 = L0_WIG
@@ -16390,7 +16390,7 @@ i_punpckhbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x68
                            , vexLW                 = L1_WIG
@@ -16423,7 +16423,7 @@ i_punpckhwd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x69
                            , legacyProperties      = [ LegacyModeSupport
@@ -16435,7 +16435,7 @@ i_punpckhwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x69
                            , vexLW                 = L0_WIG
@@ -16449,7 +16449,7 @@ i_punpckhwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x69
                            , vexLW                 = L1_WIG
@@ -16482,7 +16482,7 @@ i_punpckhdq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6A
                            , legacyProperties      = [ LegacyModeSupport
@@ -16494,7 +16494,7 @@ i_punpckhdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6A
                            , vexLW                 = L0_WIG
@@ -16508,7 +16508,7 @@ i_punpckhdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6A
                            , vexLW                 = L1_WIG
@@ -16530,7 +16530,7 @@ i_punpckhqdq = insn
    { insnDesc        = "Unpack high data"
    , insnMnemonic    = "PUNPCKHQDQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6D
                            , legacyProperties      = [ LegacyModeSupport
@@ -16542,7 +16542,7 @@ i_punpckhqdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6D
                            , vexLW                 = L0_WIG
@@ -16556,7 +16556,7 @@ i_punpckhqdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6D
                            , vexLW                 = L1_WIG
@@ -16589,7 +16589,7 @@ i_punpcklbw = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x60
                            , legacyProperties      = [ LegacyModeSupport
@@ -16601,7 +16601,7 @@ i_punpcklbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x60
                            , vexLW                 = L0_WIG
@@ -16615,7 +16615,7 @@ i_punpcklbw = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x60
                            , vexLW                 = L1_WIG
@@ -16648,7 +16648,7 @@ i_punpcklwd = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x61
                            , legacyProperties      = [ LegacyModeSupport
@@ -16660,7 +16660,7 @@ i_punpcklwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x61
                            , vexLW                 = L0_WIG
@@ -16674,7 +16674,7 @@ i_punpcklwd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x61
                            , vexLW                 = L1_WIG
@@ -16707,7 +16707,7 @@ i_punpckldq = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x62
                            , legacyProperties      = [ LegacyModeSupport
@@ -16719,7 +16719,7 @@ i_punpckldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x62
                            , vexLW                 = L0_WIG
@@ -16733,7 +16733,7 @@ i_punpckldq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x62
                            , vexLW                 = L1_WIG
@@ -16755,7 +16755,7 @@ i_punpcklqdq = insn
    { insnDesc        = "Unpack low data"
    , insnMnemonic    = "PUNPCKLQDQ"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x6C
                            , legacyProperties      = [ LegacyModeSupport
@@ -16767,7 +16767,7 @@ i_punpcklqdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6C
                            , vexLW                 = L0_WIG
@@ -16781,7 +16781,7 @@ i_punpcklqdq = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x6C
                            , vexLW                 = L1_WIG
@@ -16955,7 +16955,7 @@ i_pxor = insn
                                                      ]
                            }
                        , leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xEF
                            , legacyProperties      = [ LegacyModeSupport
@@ -16967,7 +16967,7 @@ i_pxor = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEF
                            , vexLW                 = L0_WIG
@@ -16981,7 +16981,7 @@ i_pxor = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xEF
                            , vexLW                 = L1_WIG
@@ -17212,7 +17212,7 @@ i_rcpss = insn
    { insnDesc        = "Compute reciprocal of scalar single-precision FP values"
    , insnMnemonic    = "RCPSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x53
                            , legacyProperties      = [ LegacyModeSupport
@@ -17224,7 +17224,7 @@ i_rcpss = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x53
                            , vexLW              = WIG
@@ -17246,7 +17246,7 @@ i_rdfsbase = insn
    { insnDesc        = "Read FS segment base"
    , insnMnemonic    = "RDFSBASE"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 0
@@ -17266,7 +17266,7 @@ i_rdgsbase = insn
    { insnDesc        = "Read GS segment base"
    , insnMnemonic    = "RDGSBASE"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 1
@@ -17463,7 +17463,7 @@ i_rorx = insn
    { insnDesc           = "Rotate right logical without affecting flags"
    , insnMnemonic       = "RORX"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0xF2
+                              { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x03
                               , vexOpcode          = 0xF0
                               , vexLW              = L0
@@ -17484,7 +17484,7 @@ i_roundpd = insn
    { insnDesc        = "Round packed double precision floating-point values"
    , insnMnemonic    = "ROUNDPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x09
                            , legacyProperties      = [ LegacyModeSupport
@@ -17497,7 +17497,7 @@ i_roundpd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x09
                            , vexLW              = WIG
@@ -17519,7 +17519,7 @@ i_roundps = insn
    { insnDesc        = "Round packed single precision floating-point values"
    , insnMnemonic    = "ROUNDPS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x08
                            , legacyProperties      = [ LegacyModeSupport
@@ -17532,7 +17532,7 @@ i_roundps = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x08
                            , vexLW              = WIG
@@ -17554,7 +17554,7 @@ i_roundsd = insn
    { insnDesc        = "Round scalar double precision floating-point values"
    , insnMnemonic    = "ROUNDSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x0B
                            , legacyProperties      = [ LegacyModeSupport
@@ -17567,7 +17567,7 @@ i_roundsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0B
                            , vexLW              = LWIG
@@ -17589,7 +17589,7 @@ i_roundss = insn
    { insnDesc        = "Round scalar single precision floating-point values"
    , insnMnemonic    = "ROUNDSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F3A
                            , legacyOpcode          = 0x0A
                            , legacyProperties      = [ LegacyModeSupport
@@ -17602,7 +17602,7 @@ i_roundss = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x0A
                            , vexLW              = LWIG
@@ -17667,7 +17667,7 @@ i_rsqrtss = insn
    { insnDesc        = "Compute reciprocal of square root of scalar single-precision FP values"
    , insnMnemonic    = "RSQRTSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x52
                            , legacyProperties      = [ LegacyModeSupport
@@ -17679,7 +17679,7 @@ i_rsqrtss = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x52
                            , vexLW              = WIG
@@ -17854,7 +17854,7 @@ i_sarx = insn
    { insnDesc           = "Arithmetic shift right without affecting flags"
    , insnMnemonic       = "SARX"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0xF3
+                              { vexMandatoryPrefix = Just LegacyPrefixF3
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF7
                               , vexLW              = L0
@@ -17875,7 +17875,7 @@ i_shlx = insn
    { insnDesc           = "Shift left without affecting flags"
    , insnMnemonic       = "SHLX"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0x66
+                              { vexMandatoryPrefix = Just LegacyPrefix66
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF7
                               , vexLW              = L0
@@ -17897,7 +17897,7 @@ i_shrx = insn
    { insnDesc           = "Shift right without affecting flags"
    , insnMnemonic       = "SHRX"
    , insnEncodings      = [ vex
-                              { vexMandatoryPrefix = Just 0xF2
+                              { vexMandatoryPrefix = Just LegacyPrefixF2
                               , vexOpcodeMap       = MapVex 0x02
                               , vexOpcode          = 0xF7
                               , vexLW              = L0
@@ -18337,7 +18337,7 @@ i_shufpd = insn
    { insnDesc        = "Shuffle packed double-precision floating-point values"
    , insnMnemonic    = "SHUFPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0x66
+                           { legacyMandatoryPrefix    = Just LegacyPrefix66
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0xC6
                            , legacyProperties         = [ LegacyModeSupport
@@ -18357,7 +18357,7 @@ i_vshufpd = insn
    { insnDesc        = "Shuffle packed double-precision floating-point values"
    , insnMnemonic    = "VSHUFPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0xC6
                            , vexLW                 = WIG
@@ -18469,7 +18469,7 @@ i_sqrtpd = insn
    { insnDesc        = "Compure square roots of packed double-precision floating-point values"
    , insnMnemonic    = "SQRTPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0x66
+                           { legacyMandatoryPrefix    = Just LegacyPrefix66
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
@@ -18481,7 +18481,7 @@ i_sqrtpd = insn
                                                         ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
                            , vexLW                 = WIG
@@ -18533,7 +18533,7 @@ i_sqrtsd = insn
    { insnDesc        = "Compure square root of scalar double-precision floating-point value"
    , insnMnemonic    = "SQRTSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0xF2
+                           { legacyMandatoryPrefix    = Just LegacyPrefixF2
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
@@ -18545,7 +18545,7 @@ i_sqrtsd = insn
                                                         ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF2
+                           { vexMandatoryPrefix    = Just LegacyPrefixF2
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
                            , vexLW                 = LWIG
@@ -18567,7 +18567,7 @@ i_sqrtss = insn
    { insnDesc        = "Compure square root of scalar single-precision floating-point values"
    , insnMnemonic    = "SQRTSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0xF3
+                           { legacyMandatoryPrefix    = Just LegacyPrefixF3
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x51
                            , legacyProperties         = [ LegacyModeSupport
@@ -18579,7 +18579,7 @@ i_sqrtss = insn
                                                         ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0xF3
+                           { vexMandatoryPrefix    = Just LegacyPrefixF3
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x51
                            , vexLW                 = LWIG
@@ -18777,7 +18777,7 @@ i_subpd = insn
    { insnDesc        = "Subtract packed double-precision floating-point values"
    , insnMnemonic    = "SUBPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
@@ -18796,7 +18796,7 @@ i_vsubpd = insn
    { insnDesc        = "Subtract packed double-precision floating-point values"
    , insnMnemonic    = "VSUBPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x5C
                            , vexLW                 = WIG
@@ -18855,7 +18855,7 @@ i_subsd = insn
    { insnDesc        = "Subtract scalar double-precision floating-point values"
    , insnMnemonic    = "SUBSD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF2
+                           { legacyMandatoryPrefix = Just LegacyPrefixF2
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
@@ -18874,7 +18874,7 @@ i_vsubsd = insn
    { insnDesc        = "Subtract scalar double-precision floating-point values"
    , insnMnemonic    = "VSUBSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF2
+                           { vexMandatoryPrefix = Just LegacyPrefixF2
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5C
                            , vexLW              = LWIG
@@ -18895,7 +18895,7 @@ i_subss = insn
    { insnDesc        = "Subtract scalar single-precision floating-point values"
    , insnMnemonic    = "SUBSS"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x5C
                            , legacyProperties      = [ LegacyModeSupport
@@ -18914,7 +18914,7 @@ i_vsubss = insn
    { insnDesc        = "Subtract scalar single-precision floating-point values"
    , insnMnemonic    = "VSUBSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0xF3
+                           { vexMandatoryPrefix = Just LegacyPrefixF3
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x5C
                            , vexLW              = LWIG
@@ -19061,7 +19061,7 @@ i_tzcnt = insn
                        , Undefined [AF,PF,OF,SF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xBC
                            , legacyProperties      = [ LegacyModeSupport
@@ -19083,7 +19083,7 @@ i_ucomisd = insn
                        , Unset    [OF,SF,AF]
                        ]
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix    = Just 0x66
+                           { legacyMandatoryPrefix    = Just LegacyPrefix66
                            , legacyOpcodeMap          = Map0F
                            , legacyOpcode             = 0x2E
                            , legacyProperties         = [ LegacyModeSupport
@@ -19095,7 +19095,7 @@ i_ucomisd = insn
                                                         ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x2E
                            , vexLW              = LWIG
@@ -19163,7 +19163,7 @@ i_unpckhpd = insn
    { insnDesc        = "Unpack and interleave high packed double-precision FP values"
    , insnMnemonic    = "PUNPCKHPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x15
                            , legacyProperties      = [ LegacyModeSupport
@@ -19175,7 +19175,7 @@ i_unpckhpd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x15
                            , vexLW                 = WIG
@@ -19229,7 +19229,7 @@ i_unpcklpd = insn
    { insnDesc        = "Unpack and interleave low packed double-precision FP values"
    , insnMnemonic    = "PUNPCKLPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x14
                            , legacyProperties      = [ LegacyModeSupport
@@ -19241,7 +19241,7 @@ i_unpcklpd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x01
                            , vexOpcode             = 0x14
                            , vexLW                 = WIG
@@ -19295,7 +19295,7 @@ i_vbroadcastss = insn
    { insnDesc        = "Broadcast floating-point data"
    , insnMnemonic    = "VBROADCASTSS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x18
                            , vexLW                 = W0
@@ -19308,7 +19308,7 @@ i_vbroadcastss = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x18
                            , vexLW                 = W0
@@ -19330,7 +19330,7 @@ i_vbroadcastsd = insn
    { insnDesc        = "Broadcast floating-point data"
    , insnMnemonic    = "VBROADCASTSD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x19
                            , vexLW                 = L1_W0
@@ -19343,7 +19343,7 @@ i_vbroadcastsd = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x19
                            , vexLW                 = L1_W0
@@ -19365,7 +19365,7 @@ i_vbroadcastf128 = insn
    { insnDesc        = "Broadcast floating-point data"
    , insnMnemonic    = "VBROADCASTF128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x1A
                            , vexLW                 = L1_W0
@@ -19386,7 +19386,7 @@ i_vcvtph2ps = insn
    { insnDesc        = "Convert 16-bit FP values to single-precision FP values"
    , insnMnemonic    = "VCVTPH2PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x13
                            , vexLW                 = L0_W0
@@ -19399,7 +19399,7 @@ i_vcvtph2ps = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x02
                            , vexOpcode             = 0x13
                            , vexLW                 = L1_W0
@@ -19421,7 +19421,7 @@ i_vcvtps2ph = insn
    { insnDesc        = "Convert single-precision FP value to 16-bit FP value"
    , insnMnemonic    = "VCVTPS2PH"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x1D
                            , vexLW                 = L0_W0
@@ -19435,7 +19435,7 @@ i_vcvtps2ph = insn
                                                      ]
                            }
                        , vex
-                           { vexMandatoryPrefix    = Just 0x66
+                           { vexMandatoryPrefix    = Just LegacyPrefix66
                            , vexOpcodeMap          = MapVex 0x03
                            , vexOpcode             = 0x1D
                            , vexLW                 = L1_W0
@@ -19492,7 +19492,7 @@ i_vextractf128 = insn
    { insnDesc        = "Extract packed floating-point values"
    , insnMnemonic    = "VEXTRACTF128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x19
                            , vexLW              = L1_W0
@@ -19514,7 +19514,7 @@ i_vextracti128 = insn
    { insnDesc        = "Extract packed integer values"
    , insnMnemonic    = "VEXTRACTI128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x39
                            , vexLW              = L1_W0
@@ -19535,7 +19535,7 @@ i_vfmadd132pd = insn
    { insnDesc        = "Fused multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFMADD132PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x98
                            , vexLW              = W1
@@ -19557,7 +19557,7 @@ i_vfmadd213pd = insn
    { insnDesc        = "Fused multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFMADD213PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA8
                            , vexLW              = W1
@@ -19579,7 +19579,7 @@ i_vfmadd231pd = insn
    { insnDesc        = "Fused multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFMADD231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB8
                            , vexLW              = W1
@@ -19601,7 +19601,7 @@ i_vfmadd132ps = insn
    { insnDesc        = "Fused multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFMADD132PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x98
                            , vexLW              = W0
@@ -19623,7 +19623,7 @@ i_vfmadd213ps = insn
    { insnDesc        = "Fused multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFMADD213PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA8
                            , vexLW              = W0
@@ -19645,7 +19645,7 @@ i_vfmadd231ps = insn
    { insnDesc        = "Fused multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFMADD231PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB8
                            , vexLW              = W0
@@ -19667,7 +19667,7 @@ i_vfmadd132sd = insn
    { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFMADD132SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x99
                            , vexLW              = LIG_W1
@@ -19689,7 +19689,7 @@ i_vfmadd213sd = insn
    { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFMADD213SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA9
                            , vexLW              = LIG_W1
@@ -19711,7 +19711,7 @@ i_vfmadd231sd = insn
    { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFMADD231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB9
                            , vexLW              = LIG_W1
@@ -19733,7 +19733,7 @@ i_vfmadd132ss = insn
    { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFMADD132SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x99
                            , vexLW              = LIG_W0
@@ -19755,7 +19755,7 @@ i_vfmadd213ss = insn
    { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFMADD213SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA9
                            , vexLW              = LIG_W0
@@ -19777,7 +19777,7 @@ i_vfmadd231ss = insn
    { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFMADD231SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB9
                            , vexLW              = LIG_W0
@@ -19799,7 +19799,7 @@ i_vfmaddsub132pd = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMADDSUB132PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x96
                            , vexLW              = W1
@@ -19821,7 +19821,7 @@ i_vfmaddsub213pd = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMADDSUB213PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA6
                            , vexLW              = W1
@@ -19843,7 +19843,7 @@ i_vfmaddsub231pd = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMADDSUB231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB6
                            , vexLW              = W1
@@ -19865,7 +19865,7 @@ i_vfmaddsub132ps = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMADDSUB132PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x96
                            , vexLW              = W0
@@ -19887,7 +19887,7 @@ i_vfmaddsub213ps = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMADDSUB213PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA6
                            , vexLW              = W0
@@ -19909,7 +19909,7 @@ i_vfmaddsub231ps = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMADDSUB231PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB6
                            , vexLW              = W0
@@ -19931,7 +19931,7 @@ i_vfmsubadd132pd = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
    , insnMnemonic    = "VFMSUBADD132PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x97
                            , vexLW              = W1
@@ -19953,7 +19953,7 @@ i_vfmsubadd213pd = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
    , insnMnemonic    = "VFMSUBADD213PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA7
                            , vexLW              = W1
@@ -19975,7 +19975,7 @@ i_vfmsubadd231pd = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
    , insnMnemonic    = "VFMSUBADD231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB7
                            , vexLW              = W1
@@ -19997,7 +19997,7 @@ i_vfmsubadd132ps = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
    , insnMnemonic    = "VFMSUBADD132PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x97
                            , vexLW              = W0
@@ -20019,7 +20019,7 @@ i_vfmsubadd213ps = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
    , insnMnemonic    = "VFMSUBADD213PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xA7
                            , vexLW              = W0
@@ -20041,7 +20041,7 @@ i_vfmsubadd231ps = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
    , insnMnemonic    = "VFMSUBADD231PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xB7
                            , vexLW              = W0
@@ -20063,7 +20063,7 @@ i_vfmsub132pd = insn
    { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMSUB132PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
                            , vexLW              = W1
@@ -20085,7 +20085,7 @@ i_vfmsub213pd = insn
    { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMSUB213PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
                            , vexLW              = W1
@@ -20107,7 +20107,7 @@ i_vfmsub231pd = insn
    { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMSUB231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
                            , vexLW              = W1
@@ -20129,7 +20129,7 @@ i_vfmsub132ps = insn
    { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMSUB132PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
                            , vexLW              = W0
@@ -20151,7 +20151,7 @@ i_vfmsub213ps = insn
    { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMSUB213PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
                            , vexLW              = W0
@@ -20173,7 +20173,7 @@ i_vfmsub231ps = insn
    { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMSUB231PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
                            , vexLW              = W0
@@ -20195,7 +20195,7 @@ i_vfmsub132sd = insn
    { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFMSUB132SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
                            , vexLW              = LIG_W1
@@ -20217,7 +20217,7 @@ i_vfmsub213sd = insn
    { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFMSUB213SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
                            , vexLW              = LIG_W1
@@ -20239,7 +20239,7 @@ i_vfmsub231sd = insn
    { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFMSUB231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
                            , vexLW              = LIG_W1
@@ -20261,7 +20261,7 @@ i_vfmsub132ss = insn
    { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFMSUB132SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9A
                            , vexLW              = LIG_W0
@@ -20283,7 +20283,7 @@ i_vfmsub213ss = insn
    { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFMSUB213SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAA
                            , vexLW              = LIG_W0
@@ -20305,7 +20305,7 @@ i_vfmsub231ss = insn
    { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFMSUB231SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBA
                            , vexLW              = LIG_W0
@@ -20326,7 +20326,7 @@ i_vfnmadd132pd = insn
    { insnDesc        = "Fused negative multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFNMADD132PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9C
                            , vexLW              = W1
@@ -20348,7 +20348,7 @@ i_vfnmadd213pd = insn
    { insnDesc        = "Fused negative multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFNMADD213PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAC
                            , vexLW              = W1
@@ -20370,7 +20370,7 @@ i_vfnmadd231pd = insn
    { insnDesc        = "Fused inegative multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFNMADD231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBC
                            , vexLW              = W1
@@ -20392,7 +20392,7 @@ i_vfnmadd132ps = insn
    { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFNMADD132PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9C
                            , vexLW              = W0
@@ -20414,7 +20414,7 @@ i_vfnmadd213ps = insn
    { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFNMADD213PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAC
                            , vexLW              = W0
@@ -20436,7 +20436,7 @@ i_vfnmadd231ps = insn
    { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFNMADD231PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBC
                            , vexLW              = W0
@@ -20458,7 +20458,7 @@ i_vfnmadd132sd = insn
    { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFNMADD132SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9D
                            , vexLW              = LIG_W1
@@ -20480,7 +20480,7 @@ i_vfnmadd213sd = insn
    { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFNMADD213SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAD
                            , vexLW              = LIG_W1
@@ -20502,7 +20502,7 @@ i_vfnmadd231sd = insn
    { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFNMADD231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBD
                            , vexLW              = LIG_W1
@@ -20524,7 +20524,7 @@ i_vfnmadd132ss = insn
    { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFNMADD132SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9D
                            , vexLW              = LIG_W0
@@ -20546,7 +20546,7 @@ i_vfnmadd213ss = insn
    { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFNMADD213SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAD
                            , vexLW              = LIG_W0
@@ -20568,7 +20568,7 @@ i_vfnmadd231ss = insn
    { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFNMADD231SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBD
                            , vexLW              = LIG_W0
@@ -20589,7 +20589,7 @@ i_vfnmsub132pd = insn
    { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFNMSUB132PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9E
                            , vexLW              = W1
@@ -20611,7 +20611,7 @@ i_vfnmsub213pd = insn
    { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFNMSUB213PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAE
                            , vexLW              = W1
@@ -20633,7 +20633,7 @@ i_vfnmsub231pd = insn
    { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFNMSUB231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBE
                            , vexLW              = W1
@@ -20655,7 +20655,7 @@ i_vfnmsub132ps = insn
    { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFNMSUB132PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9E
                            , vexLW              = W0
@@ -20677,7 +20677,7 @@ i_vfnmsub213ps = insn
    { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFNMSUB213PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAE
                            , vexLW              = W0
@@ -20699,7 +20699,7 @@ i_vfnmsub231ps = insn
    { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFNMSUB231PS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBE
                            , vexLW              = W0
@@ -20721,7 +20721,7 @@ i_vfnmsub132sd = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFNMSUB132SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9F
                            , vexLW              = LIG_W1
@@ -20743,7 +20743,7 @@ i_vfnmsub213sd = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFNMSUB213SD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAF
                            , vexLW              = LIG_W1
@@ -20765,7 +20765,7 @@ i_vfnmsub231sd = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFNMSUB231PD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBF
                            , vexLW              = LIG_W1
@@ -20787,7 +20787,7 @@ i_vfnmsub132ss = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFNMSUB132SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x9F
                            , vexLW              = LIG_W0
@@ -20809,7 +20809,7 @@ i_vfnmsub213ss = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFNMSUB213SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xAF
                            , vexLW              = LIG_W0
@@ -20831,7 +20831,7 @@ i_vfnmsub231ss = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFNMSUB231SS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0xBF
                            , vexLW              = LIG_W0
@@ -20853,7 +20853,7 @@ i_vgatherdpd = insn
    { insnDesc        = "Gather packed DP FP values using signed dword indices"
    , insnMnemonic    = "VGATHERDPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x92
                            , vexLW              = W1
@@ -20875,7 +20875,7 @@ i_vgatherqpd = insn
    { insnDesc        = "Gather packed DP FP values using signed qword indices"
    , insnMnemonic    = "VGATHERQPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x93
                            , vexLW              = W1
@@ -20896,7 +20896,7 @@ i_vgatherdps = insn
    { insnDesc        = "Gather packed SP FP values using signed dword indices"
    , insnMnemonic    = "VGATHERDPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x92
                            , vexLW              = W0
@@ -20917,7 +20917,7 @@ i_vgatherqps = insn
    { insnDesc        = "Gather packed SP FP values using signed qword indices"
    , insnMnemonic    = "VGATHERQPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x93
                            , vexLW              = W0
@@ -20939,7 +20939,7 @@ i_vpgatherdd = insn
    { insnDesc        = "Gather packed dword values using signed dword indices"
    , insnMnemonic    = "VPGATHERDD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x90
                            , vexLW              = W0
@@ -20960,7 +20960,7 @@ i_vpgatherqd = insn
    { insnDesc        = "Gather packed dword values using signed qword indices"
    , insnMnemonic    = "VPGATHERQD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x91
                            , vexLW              = W0
@@ -20982,7 +20982,7 @@ i_vpgatherdq = insn
    { insnDesc        = "Gather packed qword values using signed dword indices"
    , insnMnemonic    = "VGATHERDQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x90
                            , vexLW              = W1
@@ -21003,7 +21003,7 @@ i_vpgatherqq = insn
    { insnDesc        = "Gather packed qword values using signed qword indices"
    , insnMnemonic    = "VPGATHERQQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x91
                            , vexLW              = W1
@@ -21025,7 +21025,7 @@ i_vinsertf128 = insn
    { insnDesc        = "Insert packed floating-point values"
    , insnMnemonic    = "VINSERTF128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x18
                            , vexLW              = L1_W0
@@ -21048,7 +21048,7 @@ i_vinserti128 = insn
    { insnDesc        = "Insert packed integer values"
    , insnMnemonic    = "VINSERTI128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x38
                            , vexLW              = L1_W0
@@ -21071,7 +21071,7 @@ i_vmaskmovps = insn
    { insnDesc        = "Conditional SIMD packed SP FP values loads and stores"
    , insnMnemonic    = "VMASKMOVPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2C
                            , vexLW              = W0
@@ -21085,7 +21085,7 @@ i_vmaskmovps = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2E
                            , vexLW              = W0
@@ -21107,7 +21107,7 @@ i_vmaskmovpd = insn
    { insnDesc        = "Conditional SIMD packed DP FP values loads and stores"
    , insnMnemonic    = "VMASKMOVPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2D
                            , vexLW              = W0
@@ -21121,7 +21121,7 @@ i_vmaskmovpd = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x2F
                            , vexLW              = W0
@@ -21143,7 +21143,7 @@ i_vblendd = insn
    { insnDesc        = "Blend packed dwords"
    , insnMnemonic    = "VBLENDD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x02
                            , vexLW              = W0
@@ -21166,7 +21166,7 @@ i_vpbroadcastb = insn
    { insnDesc        = "Broadcast a byte"
    , insnMnemonic    = "VPBROADCASTB"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x78
                            , vexLW              = W0
@@ -21187,7 +21187,7 @@ i_vpbroadcastw = insn
    { insnDesc        = "Broadcast a word"
    , insnMnemonic    = "VPBROADCASTW"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x79
                            , vexLW              = W0
@@ -21208,7 +21208,7 @@ i_vpbroadcastd = insn
    { insnDesc        = "Broadcast a dword"
    , insnMnemonic    = "VPBROADCASTD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x58
                            , vexLW              = W0
@@ -21229,7 +21229,7 @@ i_vpbroadcastq = insn
    { insnDesc        = "Broadcast a qword"
    , insnMnemonic    = "VPBROADCASTQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x59
                            , vexLW              = W0
@@ -21250,7 +21250,7 @@ i_vpbroadcasti128 = insn
    { insnDesc        = "Broadcast a 128-bit integer"
    , insnMnemonic    = "VPBROADCASTI128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x5A
                            , vexLW              = W0
@@ -21271,7 +21271,7 @@ i_vpermd = insn
    { insnDesc        = "Full doublewords element permutation"
    , insnMnemonic    = "VPERMD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x36
                            , vexLW              = L1_W0
@@ -21293,7 +21293,7 @@ i_vpermpd = insn
    { insnDesc        = "Full DP FP element permutation"
    , insnMnemonic    = "VPERMPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x01
                            , vexLW              = L1_W0
@@ -21315,7 +21315,7 @@ i_vpermps = insn
    { insnDesc        = "Full SP FP element permutation"
    , insnMnemonic    = "VPERMPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x01
                            , vexLW              = L1_W0
@@ -21336,7 +21336,7 @@ i_vpermq = insn
    { insnDesc        = "Full quadwords element permutation"
    , insnMnemonic    = "VPERMQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x00
                            , vexLW              = L1_W1
@@ -21358,7 +21358,7 @@ i_vperm2i128 = insn
    { insnDesc        = "Full 128-bit integer element permutation"
    , insnMnemonic    = "VPERMI128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x46
                            , vexLW              = L1_W0
@@ -21381,7 +21381,7 @@ i_vpermilpd = insn
    { insnDesc        = "Permute DP FP values"
    , insnMnemonic    = "VPERMILPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0D
                            , vexLW              = W0
@@ -21395,7 +21395,7 @@ i_vpermilpd = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x05
                            , vexLW              = W0
@@ -21417,7 +21417,7 @@ i_vpermilps = insn
    { insnDesc        = "Permute SP FP values"
    , insnMnemonic    = "VPERMILPS"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0C
                            , vexLW              = W0
@@ -21431,7 +21431,7 @@ i_vpermilps = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x04
                            , vexLW              = W0
@@ -21452,7 +21452,7 @@ i_vperm2f128 = insn
    { insnDesc        = "Permute FP values"
    , insnMnemonic    = "VPERM2F128"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x03
                            , vexOpcode          = 0x06
                            , vexLW              = L1_W0
@@ -21474,7 +21474,7 @@ i_vpmaskmovd = insn
    { insnDesc        = "Conditional SIMD integer packed loads and stores"
    , insnMnemonic    = "VPMASKMOVD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8C
                            , vexLW              = W0
@@ -21488,7 +21488,7 @@ i_vpmaskmovd = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8E
                            , vexLW              = W0
@@ -21510,7 +21510,7 @@ i_vpmaskmovq = insn
    { insnDesc        = "Conditional SIMD integer packed loads and stores"
    , insnMnemonic    = "VPMASKMOVQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8C
                            , vexLW              = W1
@@ -21524,7 +21524,7 @@ i_vpmaskmovq = insn
                                                   ]
                            }
                        , vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x8E
                            , vexLW              = W1
@@ -21546,7 +21546,7 @@ i_vpsllvd = insn
    { insnDesc        = "Variable bit shift left logical"
    , insnMnemonic    = "VPSLLVD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x47
                            , vexLW              = W0
@@ -21568,7 +21568,7 @@ i_vpsllvq = insn
    { insnDesc        = "Variable bit shift left logical"
    , insnMnemonic    = "VPSLLVQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x47
                            , vexLW              = W1
@@ -21590,7 +21590,7 @@ i_vpsravd = insn
    { insnDesc        = "Variable bit shift right logical"
    , insnMnemonic    = "VPSRAVD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x46
                            , vexLW              = W0
@@ -21612,7 +21612,7 @@ i_vpsrlvd = insn
    { insnDesc        = "Variable bit shift right logical"
    , insnMnemonic    = "VPSRLVD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x45
                            , vexLW              = W0
@@ -21634,7 +21634,7 @@ i_vpsrlvq = insn
    { insnDesc        = "Variable bit shift right logical"
    , insnMnemonic    = "VPSRLVQ"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x45
                            , vexLW              = W1
@@ -21659,7 +21659,7 @@ i_vtestpd = insn
                        , Unset [OF,AF,PF,SF]
                        ]
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0E
                            , vexLW              = W0
@@ -21683,7 +21683,7 @@ i_vtestps = insn
                        , Unset [OF,AF,PF,SF]
                        ]
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x02
                            , vexOpcode          = 0x0F
                            , vexLW              = W0
@@ -21767,7 +21767,7 @@ i_wrfsbase = insn
    { insnDesc        = "Write FS segment base"
    , insnMnemonic    = "WRFSBASE"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 2
@@ -21787,7 +21787,7 @@ i_wrgsbase = insn
    { insnDesc        = "Write GS segment base"
    , insnMnemonic    = "WRGSBASE"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0xF3
+                           { legacyMandatoryPrefix = Just LegacyPrefixF3
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0xAE
                            , legacyOpcodeExt       = Just 3
@@ -22042,7 +22042,7 @@ i_xorpd = insn
    { insnDesc        = "Bitwise logical XOR of packed double-precision floating-point values"
    , insnMnemonic    = "XORPD"
    , insnEncodings   = [ leg
-                           { legacyMandatoryPrefix = Just 0x66
+                           { legacyMandatoryPrefix = Just LegacyPrefix66
                            , legacyOpcodeMap       = Map0F
                            , legacyOpcode          = 0x57
                            , legacyProperties      = [ LegacyModeSupport
@@ -22061,7 +22061,7 @@ i_vxorpd = insn
    { insnDesc        = "Bitwise logical XOR of packed double-precision floating-point values"
    , insnMnemonic    = "VXORPD"
    , insnEncodings   = [ vex
-                           { vexMandatoryPrefix = Just 0x66
+                           { vexMandatoryPrefix = Just LegacyPrefix66
                            , vexOpcodeMap       = MapVex 0x01
                            , vexOpcode          = 0x57
                            , vexLW              = WIG

@@ -114,7 +114,7 @@ getInstruction mode = consumeAtMost 15 $ do
 
          -- check prefixes
          let
-            isPrefixValid e x = Just x == (toLegacyPrefix =<< encMandatoryPrefix e)
+            isPrefixValid e x = Just x == encMandatoryPrefix e
                || case x of
                   -- operand-size prefix
                   LegacyPrefix66 -> True
@@ -146,7 +146,7 @@ getInstruction mode = consumeAtMost 15 $ do
             arePrefixesValid c = all (isPrefixValid (entryEncoding c)) ps
 
             cs2 = filter (\c -> hasMandatoryPrefix c && arePrefixesValid c) cs
-            hasMandatoryPrefix i = case (toLegacyPrefix =<< encMandatoryPrefix (entryEncoding i), oc) of
+            hasMandatoryPrefix i = case (encMandatoryPrefix (entryEncoding i), oc) of
                (mp, OpVex v _)        -> mp == vexPrefix v
                (mp, OpXop v _)        -> mp == vexPrefix v
                (Just mp, OpLegacy {}) -> mp `elem` ps
