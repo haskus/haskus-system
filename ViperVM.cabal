@@ -67,6 +67,7 @@ library
     ViperVM.Arch.X86_64.Assembler.Operand
     ViperVM.Arch.X86_64.Assembler.Insns
     ViperVM.Arch.X86_64.Assembler.Disassembler
+    ViperVM.Arch.X86_64.Assembler.Encoding
 
     ViperVM.Arch.Linux.Internals.FileSystem
     ViperVM.Arch.Linux.Internals.Input

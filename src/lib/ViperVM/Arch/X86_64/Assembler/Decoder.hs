@@ -17,6 +17,7 @@ import ViperVM.Arch.X86_64.Assembler.Registers
 import ViperVM.Arch.X86_64.Assembler.Size
 import ViperVM.Arch.X86_64.Assembler.Tables
 import ViperVM.Arch.X86_64.Assembler.Insns
+import ViperVM.Arch.X86_64.Assembler.Encoding
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField

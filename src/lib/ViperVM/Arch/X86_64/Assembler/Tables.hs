@@ -6,13 +6,13 @@ module ViperVM.Arch.X86_64.Assembler.Tables
    ( opcodeMaps
    , buildOpcodeMaps
    , buildOpcodeMap
-   , genEncodingOpcodeVariants
    , MapEntry (..)
    )
 where
 
 import ViperVM.Arch.X86_64.Assembler.Operand
 import ViperVM.Arch.X86_64.Assembler.Insns
+import ViperVM.Arch.X86_64.Assembler.Encoding
 
 import Data.Bits
 import Data.Maybe
@@ -21,47 +21,12 @@ import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Vector as V
 
+-- | Entry in the opcode table
 data MapEntry = MapEntry
    { entryInsn     :: X86Insn  -- ^ Instruction
    , entryEncoding :: Encoding -- ^ Encoding
    }
    deriving (Show)
-
--- | Some instructions store flags and values into the opcode byte. This method
--- returns the list of potential opcodes for an encoding
-genEncodingOpcodeVariants :: Encoding -> [Word8]
-genEncodingOpcodeVariants e = ocs
-   where
-      -- the original opcode
-      oc = encOpcode e
-
-      -- reversed (check: can we have reversed + operand in opcode (or something
-      -- else)?)
-      (roc,rsoc) = case (encReversableBit e, encNoForce8Bit e) of
-               (Just i, Nothing) -> (Just (setBit oc i), Nothing)
-               (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
-               _                 -> (Nothing,Nothing)
-      -- sizable, sign-extended
-      (szoc,seoc) = case (encNoForce8Bit e, encSignExtendImmBit e) of
-               (Nothing,Nothing) -> (Nothing,Nothing)
-               (Just i, Nothing) -> (Just (setBit oc i),Nothing)
-               (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
-               (Nothing, Just i) ->  (Nothing,Just (setBit oc i))
-      -- FPU dest
-      fdoc = setBit oc <$> encFPUDestBit e
-      -- FPU pop
-      fpoc = setBit oc <$> encFPUPopBit e
-      -- FPU sizable
-      fsoc = setBit oc <$> encFPUSizableBit e
-
-      -- opcodes with differetnt flags
-      ocs' = oc : catMaybes [roc,rsoc,szoc,seoc,fdoc,fpoc,fsoc]
-
-      -- operand stored in the opcode
-      ocs = if OpcodeLow3 `elem` fmap opEnc (encParams e)
-               then [o + i | o <- ocs', i <- [0..7]]
-               else ocs'
-
 
 -- | Build an opcode map
 buildOpcodeMap :: [MapEntry] -> V.Vector [MapEntry]
