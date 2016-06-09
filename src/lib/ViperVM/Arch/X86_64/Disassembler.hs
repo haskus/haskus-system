@@ -13,8 +13,8 @@ import ViperVM.Arch.X86_64.ISA.Decoder
 import ViperVM.Arch.X86_64.ISA.Insn
 
 data Disass
-   = Failure Word Buffer [String]
-   | Success Word Buffer Insn
+   = RawBytes    Word Buffer [String]
+   | Instruction Word Buffer Insn
    deriving (Show)
 
 -- | Disassemble a whole buffer linearly
@@ -26,7 +26,7 @@ linearDisass m = go 0 emptyBuffer []
 
       go offset fb fbs b
          | isBufferEmpty b && isBufferEmpty fb = []
-         | isBufferEmpty b                     = [Failure (offset - bufferSize fb) fb fbs]
+         | isBufferEmpty b                     = [RawBytes (offset - bufferSize fb) fb fbs]
 
       go offset fb fbs b = case G.runGet g b of
             Left str    -> go (offset+1) (bufferSnoc fb (bufferHead b)) 
@@ -35,5 +35,5 @@ linearDisass m = go 0 emptyBuffer []
                            where 
                               x = if isBufferEmpty fb
                                     then [s]
-                                    else [Failure (offset - bufferSize fb - n) fb (reverse fbs), s]
-                              s = Success offset (bufferTake n b) i
+                                    else [RawBytes (offset - bufferSize fb - n) fb (reverse fbs), s]
+                              s = Instruction offset (bufferTake n b) i

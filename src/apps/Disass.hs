@@ -37,8 +37,8 @@ main = do
 
 
    forM_ (linearDisass m bs) $ \case
-      Failure offset buf errs -> showInsn offset buf ("; Failed: " ++ show errs)
-      Success offset buf ins  -> showInsn offset buf d
+      RawBytes    offset buf errs -> showInsn offset buf ("; Failed: " ++ show errs)
+      Instruction offset buf ins  -> showInsn offset buf d
          where
             d = insnMnemonic (insnSpec ins)
                  ++ " " ++ show (insnOperands ins)
