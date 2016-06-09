@@ -14,7 +14,8 @@ x86-64 architecture and Linux for now. From the bottom up:
 
 ## Architectures
 
-* Currently only X86-64 is supported (work-in-progress)
+* Currently only X86-64 is supported (work-in-progress):
+  [documentation](doc/manual/x86.md)
    * Disassembler (WIP)
    * Assembler (TODO)
    * CPUID wrapper (WIP)

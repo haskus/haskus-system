@@ -22,7 +22,7 @@ import ViperVM.Format.Binary.BitField
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified Data.Map as Map
-import Data.List (nub)
+import Data.List (nub, (\\))
 import Data.Bits
 import Data.Word
 import Data.Maybe
@@ -174,15 +174,22 @@ getInstruction mode = consumeAtMost 15 $ do
 
          when (null cs4) $ fail "No candidate instruction found (ModRM.mod filtering)"
 
-         -- Filter out invalid enabled extensions/architecture. Return sensible error
-         -- if no instruction left (e.g., in order to provide suggestion to enable an
-         -- extension).
-         -- Filter out invalid prefixes (LOCK, etc.)
-         -- Filter invalid VEX.L/VEX.W
-         -- FIXME
-         let (errs,cs5) = (undefined,cs4)
+         -- Filter out invalid enabled extensions
+         let
+            cs5 = filter hasValidExtension cs4
+               
+            hasValidExtension i = null
+               (mapMaybe extractExt (encProperties (entryEncoding i))
+                \\ extensions mode)
 
-         when (null cs5) $ fail errs
+            extractExt (Extension e) = Just e
+            extractExt _             = Nothing
+
+            -- disabled extensions that filter out some insn
+            es = nub (concatMap (mapMaybe extractExt . encProperties . entryEncoding) cs4) \\ extensions mode
+
+         when (null cs5) $ 
+            fail ("No candidate instruction found, try enabling one of: "++ show es)
 
          -- If there are more than one instruction left, signal a bug
          MapEntry spec enc <- case cs5 of
