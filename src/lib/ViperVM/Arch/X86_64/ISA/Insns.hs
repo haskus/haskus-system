@@ -46,6 +46,7 @@ insn :: X86Insn
 insn = X86Insn
    { insnDesc        = ""
    , insnMnemonic    = ""
+   , insnFamilies    = []
    , insnProperties  = []
    , insnFlags       = []
    , insnEncodings   = []
@@ -2655,6 +2656,7 @@ i_call :: X86Insn
 i_call = insn
    { insnDesc        = "Call procedure"
    , insnMnemonic    = "CALL"
+   , insnFamilies    = [Call]
    , insnFlags       = [Undefined allFlags]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -6354,6 +6356,7 @@ i_int :: X86Insn
 i_int = insn
    { insnDesc        = "Call to interrupt procedure"
    , insnMnemonic    = "INT"
+   , insnFamilies    = [Call]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xCC
@@ -6377,6 +6380,7 @@ i_into :: X86Insn
 i_into = insn
    { insnDesc        = "Call to interrupt procedure if overflow"
    , insnMnemonic    = "INTO"
+   , insnFamilies    = [Call]
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6459,6 +6463,7 @@ i_ja :: X86Insn
 i_ja = insn
    { insnDesc        = "Jump if above"
    , insnMnemonic    = "JA/JNBE"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [CF,ZF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6485,6 +6490,7 @@ i_jae :: X86Insn
 i_jae = insn
    { insnDesc        = "Jump if above or equal"
    , insnMnemonic    = "JAE/JNB/JNC"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [CF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6511,6 +6517,7 @@ i_jb :: X86Insn
 i_jb = insn
    { insnDesc        = "Jump if below"
    , insnMnemonic    = "JB/JC/JNAE"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [CF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6537,6 +6544,7 @@ i_jbe :: X86Insn
 i_jbe = insn
    { insnDesc        = "Jump if below or equal"
    , insnMnemonic    = "JBE/JNA"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [CF,ZF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6564,6 +6572,7 @@ i_jcxz :: X86Insn
 i_jcxz = insn
    { insnDesc        = "Jump if rCX is 0"
    , insnMnemonic    = "JCXZ"
+   , insnFamilies    = [ConditionalBranch]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xE3
@@ -6582,6 +6591,7 @@ i_je :: X86Insn
 i_je = insn
    { insnDesc        = "Jump if equal"
    , insnMnemonic    = "JE/JZ"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6608,6 +6618,7 @@ i_jg :: X86Insn
 i_jg = insn
    { insnDesc        = "Jump if greater"
    , insnMnemonic    = "JG/JNLE"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [ZF,SF,OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6634,6 +6645,7 @@ i_jge :: X86Insn
 i_jge = insn
    { insnDesc        = "Jump if greater or equal"
    , insnMnemonic    = "JGE/JNL"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [SF,OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6660,6 +6672,7 @@ i_jl :: X86Insn
 i_jl = insn
    { insnDesc        = "Jump if less"
    , insnMnemonic    = "JL/JNGE"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [SF,OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6686,6 +6699,7 @@ i_jle :: X86Insn
 i_jle = insn
    { insnDesc        = "Jump if less or equal"
    , insnMnemonic    = "JLE/JNG"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [ZF,SF,OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6712,6 +6726,7 @@ i_jne :: X86Insn
 i_jne = insn
    { insnDesc        = "Jump if not equal"
    , insnMnemonic    = "JNE/JNZ"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [ZF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6738,6 +6753,7 @@ i_jno :: X86Insn
 i_jno = insn
    { insnDesc        = "Jump if not overflow"
    , insnMnemonic    = "JNO"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6764,6 +6780,7 @@ i_jnp :: X86Insn
 i_jnp = insn
    { insnDesc        = "Jump if not parity"
    , insnMnemonic    = "JNP/JPO"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [PF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6790,6 +6807,7 @@ i_jns :: X86Insn
 i_jns = insn
    { insnDesc        = "Jump if not sign"
    , insnMnemonic    = "JNS"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [SF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6816,6 +6834,7 @@ i_jo :: X86Insn
 i_jo = insn
    { insnDesc        = "Jump if overflow"
    , insnMnemonic    = "JO"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6842,6 +6861,7 @@ i_jp :: X86Insn
 i_jp = insn
    { insnDesc        = "Jump if parity"
    , insnMnemonic    = "JP/JPE"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [PF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6868,6 +6888,7 @@ i_js :: X86Insn
 i_js = insn
    { insnDesc        = "Jump if sign"
    , insnMnemonic    = "JS"
+   , insnFamilies    = [ConditionalBranch]
    , insnFlags       = [ Read [SF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6894,6 +6915,7 @@ i_jmp :: X86Insn
 i_jmp = insn
    { insnDesc        = "Jump"
    , insnMnemonic    = "JMP"
+   , insnFamilies    = [Branch]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xEB

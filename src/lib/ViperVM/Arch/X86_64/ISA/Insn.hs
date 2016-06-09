@@ -7,6 +7,7 @@ module ViperVM.Arch.X86_64.ISA.Insn
    , Properties (..)
    , FlagOp(..)
    , Flag (..)
+   , InsnFamily (..)
    )
 where
 
@@ -44,6 +45,7 @@ data X86Insn = X86Insn
    { insnDesc        :: String
    , insnMnemonic    :: String
    , insnProperties  :: [Properties]
+   , insnFamilies    :: [InsnFamily]
    , insnFlags       :: [FlagOp Flag]
    , insnEncodings   :: [Encoding]
    } deriving (Show)
@@ -53,6 +55,13 @@ data Properties
    = FailOnZero Int           -- ^ Fail if the n-th parameter (indexed from 0) is 0
    | MemAlign Int             -- ^ Memory alignment constraint in bytes
    | MemAlignDefault          -- ^ Memory alignment constraint
+   deriving (Show,Eq)
+
+-- | Instruction taxonomy
+data InsnFamily
+   = Call              -- ^ Call-like instruction (branch then return to the next instruction)
+   | Branch            -- ^ Unconditional branch instruction
+   | ConditionalBranch -- ^ Conditional branch instruction
    deriving (Show,Eq)
 
 -- | Flag state modification
