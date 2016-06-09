@@ -60,6 +60,7 @@ data Properties
 -- | Instruction taxonomy
 data InsnFamily
    = Call              -- ^ Call-like instruction (branch then return to the next instruction)
+   | Return            -- ^ Return from a call, an interruption, etc.
    | Branch            -- ^ Unconditional branch instruction
    | ConditionalBranch -- ^ Conditional branch instruction
    deriving (Show,Eq)

@@ -6448,6 +6448,7 @@ i_iret :: X86Insn
 i_iret = insn
    { insnDesc        = "Interrupt return"
    , insnMnemonic    = "IRET"
+   , insnFamilies    = [Return]
    , insnFlags       = [ Undefined allFlags ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -17336,6 +17337,7 @@ i_ret :: X86Insn
 i_ret = insn
    { insnDesc        = "Return from procedure (near)"
    , insnMnemonic    = "RET"
+   , insnFamilies    = [Return]
    , insnEncodings   = [ leg
                            {    encOpcode          = 0xC3
                            ,    encProperties      = [ LegacyModeSupport

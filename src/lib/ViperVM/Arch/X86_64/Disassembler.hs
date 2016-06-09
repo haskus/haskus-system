@@ -2,8 +2,9 @@
 
 -- | X86 disassembler
 module ViperVM.Arch.X86_64.Disassembler
-   ( linearDisass
-   , Disass (..)
+   ( Disass (..)
+   , linearDisass
+   , findBlocks
    )
    where
 
@@ -11,6 +12,8 @@ import ViperVM.Format.Binary.Get as G
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.X86_64.ISA.Decoder
 import ViperVM.Arch.X86_64.ISA.Insn
+
+import Data.List (intersect)
 
 data Disass
    = RawBytes    Word Buffer [String]
@@ -37,3 +40,18 @@ linearDisass m = go 0 emptyBuffer []
                                     then [s]
                                     else [RawBytes (offset - bufferSize fb - n) fb (reverse fbs), s]
                               s = Instruction offset (bufferTake n b) i
+
+
+-- | Find basic blocks by looking at branching/calls
+-- Warning: we don't look at branch targets!
+findBlocks :: [Disass] -> [[Disass]]
+findBlocks = go []
+   where
+      go [] [] = []
+      go bs [] = [reverse bs]
+      go bs (d@RawBytes {}:ds) = go (d:bs) ds
+      go bs (d@(Instruction _ _ i):ds) =
+         if null (insnFamilies (insnSpec i)
+            `intersect` [Call,Branch,ConditionalBranch,Return])
+               then go (d:bs) ds
+               else reverse (d:bs) : go [] ds
