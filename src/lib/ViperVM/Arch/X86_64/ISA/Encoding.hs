@@ -162,6 +162,7 @@ data EncodingProperties
    | HLE HLEAction            -- ^ Hardware-lock elision (HLE) prefix support
    deriving (Show,Eq)
 
+-- | Hardware-lock ellision prefixes
 data HLEAction
    = XAcquire
    | XRelease
