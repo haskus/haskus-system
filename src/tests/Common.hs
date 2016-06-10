@@ -3,6 +3,8 @@ module Common
    , isEquivalent
    , ArbitraryByteString (..)
    , ArbitraryByteStringNoNul (..)
+   , ArbitraryBuffer (..)
+   , ArbitraryBufferNoNul (..)
    )
 where
 
@@ -10,6 +12,8 @@ import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen (listOf,resize,choose)
 
 import qualified Data.ByteString as BS
+
+import ViperVM.Format.Binary.Buffer
 
 -- | Ensure a function is bijective
 isBijective :: Eq a => (a -> a) -> a -> Bool
@@ -41,3 +45,29 @@ instance Arbitrary ArbitraryByteStringNoNul where
       | BS.null bs = []
       | otherwise  = [ArbitraryByteStringNoNul $ BS.take (BS.length bs `div` 2) bs]
 
+-- | Arbitrary Buffer (50 chars long max)
+newtype ArbitraryBuffer
+   = ArbitraryBuffer Buffer
+   deriving (Show)
+
+instance Arbitrary ArbitraryBuffer where
+   arbitrary = do
+         ArbitraryByteString bs <- arbitrary
+         return (ArbitraryBuffer (Buffer bs))
+
+   shrink (ArbitraryBuffer bs)
+      | isBufferEmpty bs = []
+      | otherwise        = [ArbitraryBuffer $ bufferTake (bufferSize bs `div` 2) bs]
+
+-- | Arbitrary Buffer (50 chars long max, no Nul)
+newtype ArbitraryBufferNoNul
+   = ArbitraryBufferNoNul Buffer
+   deriving (Show)
+
+instance Arbitrary ArbitraryBufferNoNul where
+   arbitrary = do
+      ArbitraryByteStringNoNul bs <- arbitrary
+      return (ArbitraryBufferNoNul (Buffer bs))
+   shrink (ArbitraryBufferNoNul bs)
+      | isBufferEmpty bs = []
+      | otherwise        = [ArbitraryBufferNoNul $ bufferTake (bufferSize bs `div` 2) bs]

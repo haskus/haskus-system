@@ -19,6 +19,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferRead
    , bufferDrop
    , bufferTail
+   , bufferAppend
    , bufferCons
    , bufferSnoc
    , bufferInit
@@ -130,6 +131,10 @@ bufferSplit n (Buffer bs) = fmap Buffer (BS.split (fromIntegral n) bs)
 -- | Tail
 bufferTail :: Buffer -> Buffer
 bufferTail (Buffer bs) = Buffer $ BS.tail bs
+
+-- | Append
+bufferAppend :: Buffer -> Buffer -> Buffer
+bufferAppend (Buffer a) (Buffer b) = Buffer $ BS.append a b
 
 -- | Cons
 bufferCons :: Word8 -> Buffer -> Buffer

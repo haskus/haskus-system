@@ -4,9 +4,9 @@ synopsis:            Set of tools for system programming
 license:             LGPL-3
 license-file:        LICENSE
 author:              Sylvain HENRY
-maintainer:          hsyl20@gmail.com
+maintainer:          sylvain@haskus.fr
 homepage:            http://www.vipervm.org
-copyright:           Sylvain HENRY 2015
+copyright:           Sylvain HENRY 2016
 category:            System
 build-type:          Simple
 cabal-version:       >=1.20

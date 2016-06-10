@@ -10,7 +10,6 @@ import Test.QuickCheck.Gen (elements,choose,vectorOf)
 
 import Data.Word
 import Data.Bits
-import qualified Data.ByteString as BS
 
 import Common
 
@@ -19,6 +18,7 @@ import ViperVM.Format.Binary.BitGet
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps
 import ViperVM.Format.Binary.BitOps.BitReverse
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.VariableLength
@@ -162,18 +162,18 @@ prop_bits_to_string x = bitsFromString (bitsToString x) == x
 prop_reverse_word :: (Integral a, FiniteBits a, BitReversable a) => Word -> a -> ArbitraryBitOrder -> Bool
 prop_reverse_word n w (ArbitraryBitOrder bo) = maskLeastBits n w == dec
    where
-      enc = getBitPutBS  $ putBits n w $ newBitPutState bo
+      enc = getBitPutBuffer  $ putBits n w $ newBitPutState bo
       dec = getBits n $ newBitGetState bo enc
 
 -- | Test that a ByteString can be written and read back with
 -- BitGet/BitPut. Test every bit ordering.
-prop_reverse_bs :: Word64 -> Size64 -> ArbitraryByteString -> ArbitraryBitOrder -> Bool
-prop_reverse_bs w s (ArbitraryByteString bs) (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut bo enc)
+prop_reverse_bs :: Word64 -> Size64 -> ArbitraryBuffer -> ArbitraryBitOrder -> Bool
+prop_reverse_bs w s (ArbitraryBuffer bs) (ArbitraryBitOrder bo) = runBitGet bo dec (runBitPut bo enc)
    where
-      len = BS.length bs
+      len = bufferSize bs
       enc = do
          putBitsM (fromSize s) w
-         putBitsBSM bs
+         putBitsBufferM bs
       dec = do
          w2  <- getBitsM (fromSize s)
          bs' <- getBitsBSM (fromIntegral len)
