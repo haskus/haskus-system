@@ -92,7 +92,7 @@ getInstruction mode = consumeAtMost 15 $ do
             isPrefixValid e x = Just x == encMandatoryPrefix e
                || case x of
                   -- operand-size prefix
-                  LegacyPrefix66 -> True
+                  LegacyPrefix66 -> encHasVariableSizedOperand e
                   -- address-size prefix
                   LegacyPrefix67 -> encMayHaveMemoryOperand e
                   -- CS segment override / Branch not taken hint

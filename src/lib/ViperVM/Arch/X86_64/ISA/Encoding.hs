@@ -14,6 +14,7 @@ module ViperVM.Arch.X86_64.ISA.Encoding
    , hasImmediate
    , encSupportHLE
    , encValidModRMMode
+   , encHasVariableSizedOperand
    , encMayHaveMemoryOperand
    , isLegacyEncoding
    , isVexEncoding
@@ -243,6 +244,40 @@ encMayHaveMemoryOperand e = case encValidModRMMode e of
    ModeOnlyReg -> False
    ModeOnlyMem -> True
    ModeBoth    -> True
+
+-- | Indicate if a variable-sized operand is encoded (hence the operand-size
+-- prefix can be used)
+encHasVariableSizedOperand :: Encoding -> Bool
+encHasVariableSizedOperand e = any (vsizeOp . opType) (encOperands e)
+   where
+      vsizeOp = \case
+         TME o1 o2     -> vsizeOp o1 || vsizeOp o2
+         TLE o1 o2     -> vsizeOp o1 || vsizeOp o2
+         TWE o1 o2     -> vsizeOp o1 || vsizeOp o2
+         T_Pair o1 o2  -> vsizeOp o1 || vsizeOp o2
+         T_SubReg _ rt -> vsizeOp (T_Reg rt)
+         T_Mem mt      -> case mt of
+                           MemPair16o32 -> True
+                           MemOpSize    -> True
+                           MemDSrSI     -> True
+                           MemESrDI     -> True
+                           MemDSrDI     -> True
+                           _            -> False
+         T_Reg rt      -> case rt of
+                           RegOpSize   -> True
+                           RegAccu     -> True
+                           RegStackPtr -> True
+                           RegBasePtr  -> True
+                           RegFam _    -> True
+                           _           -> False
+                           
+         T_Imm it      -> case it of
+                           ImmSizeOp -> True
+                           ImmSizeSE -> True
+                           _         -> False
+         T_Rel _       -> False
+         T_MemOffset   -> True
+         T_MemDSrAX    -> False
 
 -- | Test if an encoding support the given Hardware-Lock Ellision prefix
 encSupportHLE :: HLEAction -> Encoding -> Bool
