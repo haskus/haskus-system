@@ -9405,16 +9405,9 @@ i_nop = insn
    { insnDesc        = "No operation"
    , insnMnemonic    = "NOP"
    , insnEncodings   = [ leg
-                           {    encOpcodeMap    = MapLegacy MapPrimary
-                           ,    encOpcode       = 0x90
-                           ,    encProperties   = [ LegacyModeSupport
-                                                  , LongModeSupport
-                                                  ]
-                           ,    encOperands     = [ ]
-                           }
-                       , leg
                            {    encOpcodeMap    = MapLegacy Map0F
                            ,    encOpcode       = 0x1F
+                           ,    encOpcodeExt    = Just 0x00
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   , NoOperandSize64
