@@ -18958,7 +18958,6 @@ i_test = insn
                            ,    encOpcode          = 0xF6
                            ,    encOpcodeExt       = Just 0
                            ,    encNoForce8Bit     = Just 0
-                           ,    encSignExtendImmBit  = Just 1
                            ,    encProperties      = [ Lockable
                                                      , LegacyModeSupport
                                                      , LongModeSupport
