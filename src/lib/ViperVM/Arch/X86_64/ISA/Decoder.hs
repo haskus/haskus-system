@@ -693,7 +693,23 @@ readOperands mode ps oc enc = do
          
          -- Memory address
          T_Mem mtype -> case modrm of
-            Nothing     -> fail "ModRM required"
+            Nothing     -> case mtype of
+                  MemDSrSI -> return $ OpMem mtype $ Addr R_DS rSI Nothing Nothing Nothing
+                  MemDSrDI -> return $ OpMem mtype $ Addr seg' rDI Nothing Nothing Nothing
+                  MemESrDI -> return $ OpMem mtype $ Addr R_ES rDI Nothing Nothing Nothing
+                  _        -> fail "ModRM required"
+               where
+                  seg' = fromMaybe R_DS segOverride
+                  rSI  = case operandSize of
+                     OpSize8  -> Nothing -- shouldn't happen
+                     OpSize16 -> Just R_SI
+                     OpSize32 -> Just R_ESI
+                     OpSize64 -> Just R_RSI
+                  rDI  = case operandSize of
+                     OpSize8  -> Nothing -- shouldn't happen
+                     OpSize16 -> Just R_DI
+                     OpSize32 -> Just R_EDI
+                     OpSize64 -> Just R_RDI
             Just modrm' -> return $ OpMem mtype $ Addr seg' base idx scl disp
                where
                   toR = case addressSize of
