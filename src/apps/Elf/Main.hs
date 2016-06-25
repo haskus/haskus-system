@@ -16,10 +16,17 @@ import ViperVM.Format.Elf.Dynamic
 
 import ViperVM.Format.Dwarf
 
+import ViperVM.Arch.X86_64.ISA.Mode
+import ViperVM.Arch.X86_64.ISA.Size
+import ViperVM.Arch.X86_64.ISA.Decoder
+import ViperVM.Arch.X86_64.ISA.Insn
+import ViperVM.Arch.X86_64.Disassembler
+
 import ViperVM.Format.Binary.Buffer
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
-import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
+import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import Control.Monad (when, msum, mzero, MonadPlus)
 import Data.Foldable (forM_)
@@ -71,6 +78,10 @@ server pth elf conf = do
                   $ LBS.fromStrict
                   $ bufferUnpackByteString
                   $ getSectionContentBuffer elf sec
+
+            -- disassembled section
+            , dir "asm" $ ok' (sectionAsm pth elf secnum sec) 
+
             ]
 
       -- Segment specific
@@ -124,6 +135,22 @@ sectionPage pth elf i s = do
       name
       "\""
    showSection elf i secname s
+
+-- | Asssembly code for the section
+sectionAsm :: FilePath -> Elf -> Int -> Section -> Html ()
+sectionAsm pth elf i s = do
+   p_ . toHtml $ "Info about: " ++ pth
+   h2_ "Section"
+   let
+      secname = getSectionName elf s
+      name = case secname of
+         Just str -> toHtml str
+         Nothing  -> span_ [class_ "invalid"] "Invalid section name"
+   h3_ $ do
+      toHtml $ format "Section {} \"" (Only (i :: Int))
+      name
+      "\""
+   showSectionAsm elf s
 
 showPreHeader :: PreHeader -> Html ()
 showPreHeader ph = table_ $ do
@@ -332,10 +359,52 @@ showSection elf secnum secname s = do
 
 
    let contentPath = LText.toStrict $ format "/section/{}/content/" (Only secnum)
+   let asmPath     = LText.toStrict $ format "/section/{}/asm/" (Only secnum)
+
    br_ []
+
+   when (SectionFlagExecutable `BitSet.elem` sectionFlags s) $ do
+      div_ $ a_ [href_ asmPath] "Assembly code"
+
    div_ $ do
       "Download: "
       a_ [href_ contentPath] "raw"
+
+showSectionAsm :: Elf -> Section -> Html ()
+showSectionAsm elf s = do
+   -- TODO: check architecture (X86_64)
+   -- TODO: add configuration for default operand/address size in 32-bit case
+   let 
+      bs = getSectionContentBuffer elf s
+      m = ExecMode
+            { x86Mode            = LongMode Long64bitMode
+            , defaultAddressSize = AddrSize64
+            , defaultOperandSize = OpSize32
+            , extensions         = allExtensions
+            }
+
+   table_ $ do
+      tr_ $ do
+         th_ "Offset"
+         th_ "Binary"
+         th_ "Instruction"
+         th_ "Comment"
+      forM_ (linearDisass m bs) $ \d -> tr_ $ do
+         case d of
+            RawBytes    offset buf errs -> do
+               td_ (toHtml (show offset))
+               td_ (toHtml (show buf))
+               td_ ""
+               td_ (toHtml ("; Failed: " ++ show errs))
+            Instruction offset buf ins  -> do
+               td_ (toHtml (show offset))
+               td_ (toHtml (show buf))
+               td_ (toHtml i)
+               td_ ""
+               where
+                  i = insnMnemonic (insnSpec ins)
+                       ++ " " ++ show (insnOperands ins)
+                       ++ " " ++ show (BitSet.toList (insnVariant ins))
 
 showSegments :: Elf -> Html ()
 showSegments elf = do
