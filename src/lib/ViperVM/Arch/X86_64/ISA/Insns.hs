@@ -4624,7 +4624,10 @@ i_f2xm1 = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -4638,7 +4641,10 @@ i_fabs = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xE1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -4655,7 +4661,10 @@ i_fadd = insn
                            ,    encFPUSizableBit = Just 2
                            ,    encFPUDestBit    = Just 2
                            ,    encFPUPopBit     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mst RO
                                                    ]
@@ -4672,7 +4681,10 @@ i_fiadd = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 0
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mint RO
                                                    ]
@@ -4688,7 +4700,10 @@ i_fbld = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDF
                            ,    encOpcodeExt     = Just 4
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mdec80 RO
                                                    ]
@@ -4704,7 +4719,10 @@ i_fbstp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDF
                            ,    encOpcodeExt     = Just 6
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mdec80 RW
                                                    ]
@@ -4720,7 +4738,10 @@ i_fchs = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xE0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -4734,7 +4755,10 @@ i_fnclex = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeFullExt = Just 0xE2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            }
                        ]
    }
@@ -4748,7 +4772,10 @@ i_fcmovb = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
                                                    ]
@@ -4767,6 +4794,8 @@ i_fcmove = insn
                            ,    encOpcodeExt     = Just 1
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4786,6 +4815,8 @@ i_fcmovbe = insn
                            ,    encOpcodeExt     = Just 2
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4805,6 +4836,8 @@ i_fcmovu = insn
                            ,    encOpcodeExt     = Just 3
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4824,6 +4857,8 @@ i_fcmovnb = insn
                            ,    encOpcodeExt     = Just 0
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4843,6 +4878,8 @@ i_fcmovne = insn
                            ,    encOpcodeExt     = Just 1
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4862,6 +4899,8 @@ i_fcmovnbe = insn
                            ,    encOpcodeExt     = Just 2
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4881,6 +4920,8 @@ i_fcmovnu = insn
                            ,    encOpcodeExt     = Just 3
                            ,    encProperties    = [ Extension FPU
                                                    , Extension CMOV
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , st RO
@@ -4898,7 +4939,10 @@ i_fcom = insn
                            ,    encOpcode        = 0xD8
                            ,    encOpcodeExt     = Just 2
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mst RO
                                                    ]
@@ -4915,7 +4959,10 @@ i_fcomp = insn
                            ,    encOpcode        = 0xD8
                            ,    encOpcodeExt     = Just 3
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mst RO
                                                    ]
@@ -4931,7 +4978,10 @@ i_fcompp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDE
                            ,    encOpcodeFullExt = Just 0xD9
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -4948,7 +4998,10 @@ i_fcomi = insn
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 6
                            ,    encFPUPopBit     = Just 2   -- FCOMIP
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , st RO
                                                    ]
@@ -4965,7 +5018,10 @@ i_fucomi = insn
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 5
                            ,    encFPUPopBit     = Just 2   -- FUCOMIP
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , st RO
                                                    ]
@@ -4981,7 +5037,10 @@ i_fcos = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xff
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -4995,7 +5054,10 @@ i_fdecstp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xf6
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            }
                        ]
    }
@@ -5011,7 +5073,10 @@ i_fdiv = insn
                            ,    encFPUSizableBit = Just 2
                            ,    encFPUDestBit    = Just 2
                            ,    encFPUPopBit     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mst RO
                                                    ]
@@ -5028,7 +5093,10 @@ i_fidiv = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 6
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mint RO
                                                    ]
@@ -5048,7 +5116,10 @@ i_fdivr = insn
                            ,    encFPUSizableBit = Just 2
                            ,    encFPUDestBit    = Just 2
                            ,    encFPUPopBit     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mst RO
                                                    ]
@@ -5065,7 +5136,10 @@ i_fidivr = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 7
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mint RO
                                                    ]
@@ -5081,7 +5155,10 @@ i_ffree = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ st NA ]
                            }
                        ]
@@ -5096,7 +5173,10 @@ i_ficom = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 2
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint RO
                                                    ]
@@ -5113,7 +5193,10 @@ i_ficomp = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 3
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint RO
                                                    ]
@@ -5130,14 +5213,20 @@ i_fild = insn
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 0
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mint RO ]
                            }
                        , leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDF
                            ,    encOpcodeExt     = Just 5
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mint64 RO ]
                            }
                        ]
@@ -5151,7 +5240,10 @@ i_fincstp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xf7
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            }
                        ]
    }
@@ -5164,7 +5256,10 @@ i_finit = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeFullExt = Just 0xE3
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            }
                        ]
    }
@@ -5178,7 +5273,10 @@ i_fist = insn
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 2
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint WO
                                                    ]
@@ -5195,7 +5293,10 @@ i_fistp = insn
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 3
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint WO
                                                    ]
@@ -5204,7 +5305,10 @@ i_fistp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDF
                            ,    encOpcodeExt     = Just 7
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint64 WO
                                                    ]
@@ -5221,7 +5325,10 @@ i_fisttp = insn
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 1
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint WO
                                                    ]
@@ -5230,7 +5337,10 @@ i_fisttp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mint64 WO
                                                    ]
@@ -5247,7 +5357,10 @@ i_fld = insn
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 0
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , mst RO
                                                    ]
@@ -5256,7 +5369,10 @@ i_fld = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 5
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit
                                                    , mfp80 RO
                                                    ]
@@ -5272,7 +5388,10 @@ i_fld1 = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xE8
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5286,7 +5405,10 @@ i_fldl2t = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xE9
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5300,7 +5422,10 @@ i_fldl2e = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xEA
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5314,7 +5439,10 @@ i_fldpi = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xEB
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5328,7 +5456,10 @@ i_fldlg2 = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xEC
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5343,7 +5474,10 @@ i_fldln2 = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xED
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5358,7 +5492,10 @@ i_fldz = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xEE
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
                            }
                        ]
@@ -5372,7 +5509,10 @@ i_fldcw = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 5
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mem16 RO ]
                            }
                        ]
@@ -5387,7 +5527,10 @@ i_fldenv = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 4
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ menv RO ]
                            }
                        ]
@@ -5404,7 +5547,10 @@ i_fmul = insn
                            ,    encFPUSizableBit = Just 2
                            ,    encFPUDestBit    = Just 2
                            ,    encFPUPopBit     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mst RO
                                                    ]
@@ -5421,7 +5567,10 @@ i_fimul = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 1
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mint RO
                                                    ]
@@ -5438,7 +5587,10 @@ i_fnop = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xD0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            }
                        ]
    }
@@ -5451,7 +5603,10 @@ i_fpatan = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF3
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -5467,7 +5622,10 @@ i_fprem = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF8
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -5483,7 +5641,10 @@ i_fprem1 = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF5
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -5499,7 +5660,10 @@ i_fptan = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RW Implicit
                                                    ]
@@ -5515,7 +5679,10 @@ i_frndint = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xFC
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -5529,7 +5696,10 @@ i_frstor = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 4
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mFPUstate RO ]
                            }
                        ]
@@ -5543,7 +5713,10 @@ i_fnsave = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 6
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mFPUstate WO ]
                            }
                        ]
@@ -5557,7 +5730,10 @@ i_fscale = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xFD
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -5573,7 +5749,10 @@ i_fsin = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xfe
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -5587,7 +5766,10 @@ i_fsincos = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xfb
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) WO Implicit
                                                    ]
@@ -5603,7 +5785,10 @@ i_fsqrt = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xfa
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
                            }
                        ]
@@ -5618,7 +5803,10 @@ i_fst = insn
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 2
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mst WO
                                                    ]
@@ -5635,7 +5823,10 @@ i_fstp = insn
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 3
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mst WO
                                                    ]
@@ -5644,18 +5835,12 @@ i_fstp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDB
                            ,    encOpcodeExt     = Just 7
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , mfp80 WO
-                                                   ]
-                           }
-                       , leg
-                           {    encOpcodeMap     = MapLegacy MapPrimary
-                           ,    encOpcode        = 0xDD
-                           ,    encOpcodeExt     = Just 3
-                           ,    encProperties    = [ Extension FPU ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
-                                                   , st WO
                                                    ]
                            }
                        ]
@@ -5669,7 +5854,10 @@ i_fnstcw = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 7
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mem16 WO ]
                            }
                        ]
@@ -5684,7 +5872,10 @@ i_fnstenv = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 6
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ menv WO ]
                            }
                        ]
@@ -5699,14 +5890,20 @@ i_fnstsw = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 7
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mem16 WO ]
                            }
                         , leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDF
                            ,    encOpcodeFullExt = Just 0xE0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg R_AX RO Implicit ]
                            }
                        ]
@@ -5723,7 +5920,10 @@ i_fsub = insn
                            ,    encFPUSizableBit = Just 2
                            ,    encFPUDestBit    = Just 2
                            ,    encFPUPopBit     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mst RO
                                                    ]
@@ -5740,7 +5940,10 @@ i_fisub = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 4
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mint RO
                                                    ]
@@ -5759,7 +5962,10 @@ i_fsubr = insn
                            ,    encFPUSizableBit = Just 2
                            ,    encFPUDestBit    = Just 2
                            ,    encFPUPopBit     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mst RO
                                                    ]
@@ -5776,7 +5982,10 @@ i_fisubr = insn
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeExt     = Just 5
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , mint RO
                                                    ]
@@ -5792,7 +6001,10 @@ i_ftst = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xE4
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit ]
                            }
                        ]
@@ -5807,7 +6019,10 @@ i_fucom = insn
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 4
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , st RO
                                                    ]
@@ -5824,7 +6039,10 @@ i_fucomp = insn
                            ,    encOpcode        = 0xDD
                            ,    encOpcodeExt     = Just 5
                            ,    encFPUSizableBit = Just 2
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , st RO
                                                    ]
@@ -5840,7 +6058,10 @@ i_fucompp = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xDA
                            ,    encOpcodeFullExt = Just 0xE9
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -5857,7 +6078,10 @@ i_fxam = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xE5
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RO Implicit ]
                            }
                        ]
@@ -5872,7 +6096,10 @@ i_fxch = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeExt     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , st RW
                                                    ]
@@ -5888,7 +6115,10 @@ i_fxrstor = insn
                            {    encOpcodeMap     = MapLegacy Map0F
                            ,    encOpcode        = 0xAE
                            ,    encOpcodeExt     = Just 1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mem512 RO ]
                            }
                        ]
@@ -5904,6 +6134,8 @@ i_fxrstor64 = insn
                            ,    encOpcodeExt     = Just 1
                            ,    encOpcodeWExt    = Just True
                            ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ mem512 RO ]
                            }
@@ -5918,7 +6150,10 @@ i_fxsave = insn
                            {    encOpcodeMap     = MapLegacy Map0F
                            ,    encOpcode        = 0xAE
                            ,    encOpcodeExt     = Just 0
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ mem512 WO ]
                            }
                        ]
@@ -5934,6 +6169,8 @@ i_fxsave64 = insn
                            ,    encOpcodeExt     = Just 0
                            ,    encOpcodeWExt    = Just True
                            ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
                                                    ]
                            ,    encOperands      = [ mem512 WO ]
                            }
@@ -5949,7 +6186,10 @@ i_fxtract = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF4
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) WO Implicit
                                                    ]
@@ -5965,7 +6205,10 @@ i_fyl2x = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF1
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]
@@ -5981,7 +6224,10 @@ i_fyl2xp1 = insn
                            {    encOpcodeMap     = MapLegacy MapPrimary
                            ,    encOpcode        = 0xD9
                            ,    encOpcodeFullExt = Just 0xF9
-                           ,    encProperties    = [ Extension FPU ]
+                           ,    encProperties    = [ Extension FPU
+                                                   , LegacyModeSupport
+                                                   , LongModeSupport
+                                                   ]
                            ,    encOperands      = [ reg (R_ST 0) RW Implicit
                                                    , reg (R_ST 1) RO Implicit
                                                    ]

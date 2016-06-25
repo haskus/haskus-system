@@ -311,15 +311,17 @@ encGenerateOpcodes e = nub ocs
                (Just i, Nothing) -> (Just (setBit oc i),Nothing)
                (Just i, Just i2) -> (Just (setBit oc i), Just (setBit (setBit oc i2) i))
                (Nothing, Just i) ->  (Nothing,Just (setBit oc i))
-      -- FPU dest
-      fdoc = setBit oc <$> encFPUDestBit e
-      -- FPU pop
-      fpoc = setBit oc <$> encFPUPopBit e
-      -- FPU sizable
-      fsoc = setBit oc <$> encFPUSizableBit e
+
+      -- FPU flags
+      fps = [encFPUDestBit e, encFPUSizableBit e, encFPUPopBit e, Nothing]
+      mf (Just x , Just y ) = setBit (setBit oc y) x
+      mf (Nothing, Just y ) = setBit oc y
+      mf (Just x , Nothing) = setBit oc x
+      mf (Nothing, Nothing) = oc
+      fs = [ mf (x,y) | x <- fps, y <- fps]
 
       -- opcodes with differetnt flags
-      ocs' = oc : catMaybes [roc,rsoc,szoc,seoc,fdoc,fpoc,fsoc]
+      ocs' = oc : (fs ++ catMaybes [roc,rsoc,szoc,seoc])
 
       -- operand stored in the opcode
       ocs = if OpcodeLow3 `elem` fmap opEnc (encOperands e)
