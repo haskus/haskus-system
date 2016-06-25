@@ -38,7 +38,7 @@ linearDisass m = go 0 emptyBuffer []
                            where 
                               x = if isBufferEmpty fb
                                     then [s]
-                                    else [RawBytes (offset - bufferSize fb - n) fb (reverse fbs), s]
+                                    else [RawBytes (offset - bufferSize fb) fb (reverse fbs), s]
                               s = Instruction offset (bufferTake n b) i
 
 
