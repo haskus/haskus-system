@@ -46,6 +46,7 @@ module ViperVM.Format.Binary.BitSet
    , toBits
    , fromBits
    , member
+   , elem
    , notMember
    , elems
    , intersection
@@ -58,7 +59,7 @@ module ViperVM.Format.Binary.BitSet
    )
 where
 
-import Prelude hiding (null)
+import Prelude hiding (null,elem)
 
 import qualified GHC.Exts as Ext
 
@@ -126,6 +127,11 @@ member (BitSet b) e = testBit b (toBitOffset e)
 
 {-# INLINE member #-}
 
+-- | Test if an element is in the set
+elem :: (CBitSet a, FiniteBits b) => a -> BitSet b a -> Bool
+elem e (BitSet b) = testBit b (toBitOffset e)
+
+{-# INLINE elem #-}
 
 -- | Test if an element is not in the set
 notMember :: (CBitSet a, FiniteBits b) => BitSet b a -> a -> Bool
