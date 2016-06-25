@@ -1022,6 +1022,7 @@ instructions =
    , i_rdtsc
    , i_rdtscp
    , i_ret
+   , i_ret2
    , i_retfar
    , i_rorx
    , i_roundpd
@@ -17325,6 +17326,24 @@ i_rdtscp = insn
                        ]
    }
 
+-- | Under-documented 2-byte RET (see repzret.org)
+--
+-- Basically on older AMD architectures, "RET imm16" and "NOP; RET" were too
+-- slow to decode/predict/execute so this form has been introduced.
+i_ret2 :: X86Insn
+i_ret2 = insn
+   { insnDesc        = "2-byte RET"
+   , insnMnemonic    = "RET2"
+   , insnFamilies    = [Return]
+   , insnEncodings   = [ leg
+                           { encMandatoryPrefix = Just LegacyPrefixF3
+                           , encOpcode          = 0xC3
+                           , encProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  ]
+                           }
+                       ]
+   }
 
 i_ret :: X86Insn
 i_ret = insn
