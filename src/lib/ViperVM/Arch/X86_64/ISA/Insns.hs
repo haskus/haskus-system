@@ -8995,7 +8995,7 @@ i_movsx = insn
                                                         ]
                            }
                        , leg
-                           {    encOpcodeMap          = MapLegacy Map0F
+                           {    encOpcodeMap          = MapLegacy MapPrimary
                            ,    encOpcode             = 0x63
                            ,    encProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
