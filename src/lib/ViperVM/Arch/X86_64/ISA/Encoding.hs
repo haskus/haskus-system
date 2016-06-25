@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE BinaryLiterals #-}
 
 -- | Instruction encoding
 module ViperVM.Arch.X86_64.ISA.Encoding
@@ -571,18 +572,25 @@ rmRegMode :: ModRM -> Bool
 rmRegMode rm = modField rm == 3
 
 -- | Indicate if displacement bytes follow
-useDisplacement :: AddressSize -> ModRM -> Maybe Size
-useDisplacement sz modrm = case (sz,modField modrm,rmField modrm) of
-   (AddrSize16, 0, 6) -> Just Size16
-   (AddrSize16, 1, _) -> Just Size8
-   (AddrSize16, 2, _) -> Just Size16
-   (AddrSize16, _, _) -> Nothing
+useDisplacement :: AddressSize -> Maybe SIB -> ModRM -> Maybe Size
+useDisplacement sz sib modrm = case (sz,modField modrm,rmField modrm) of
+   -- 16-bit addressing
+   (AddrSize16, 0, 0b110) -> Just Size16
+   (AddrSize16, 1,     _) -> Just Size8
+   (AddrSize16, 2,     _) -> Just Size16
+   (AddrSize16, _,     _) -> Nothing
 
    -- 64 bit uses 32 bit addressing
-   (_, 0, 5)          -> Just Size32
-   (_, 1, _)          -> Just Size8
-   (_, 2, _)          -> Just Size32
-   _                  -> Nothing
+   (_, 0, 0b101)          -> Just Size32
+   (_, 1,     _)          -> Just Size8
+   (_, 2,     _)          -> Just Size32
+   (_, 0, 0b100)          -> case sib of
+      Nothing -> error "SIB required"
+      Just s  -> if baseField s == 0b101
+         then Just Size32
+         else Nothing
+
+   _                      -> Nothing
 
 -- | Indicate if a SIB byte follows
 useSIB :: AddressSize -> ModRM -> Bool
