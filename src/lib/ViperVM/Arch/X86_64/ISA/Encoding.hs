@@ -98,6 +98,7 @@ import Data.Word
 import Data.Maybe
 import Data.Bits
 import Data.Proxy
+import Data.List (nub)
 
 import ViperVM.Format.Binary.BitField
 import ViperVM.Arch.X86_64.ISA.MicroArch
@@ -258,7 +259,7 @@ encSupportHLE a e = case filter isHLE (encProperties e) of
 -- | Some instructions store flags and values into the opcode byte. This method
 -- returns the list of potential opcodes for an encoding
 encGenerateOpcodes :: Encoding -> [Word8]
-encGenerateOpcodes e = ocs
+encGenerateOpcodes e = nub ocs
    where
       -- the original opcode
       oc = encOpcode e
