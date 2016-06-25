@@ -175,13 +175,21 @@ getInstruction mode = consumeAtMost 15 $ do
          when (null cs4) $ fail "No candidate instruction found (ModRM.mod filtering)"
 
          -- Filter out invalid enabled extensions
+         -- and invalid execution mode
          let
-            cs5 = filter hasValidExtension cs4
+            cs5 = filter hasModeSupport (filter hasValidExtension cs4)
                
             hasValidExtension i = null
                (mapMaybe extractExt (encProperties (entryEncoding i))
                 \\ extensions mode)
 
+            hasModeSupport i = case x86Mode mode of
+               LongMode Long64bitMode     -> LongModeSupport `elem` props
+               LongMode CompatibilityMode -> LegacyModeSupport `elem` props
+               LegacyMode _               -> LegacyModeSupport `elem` props
+               where
+                  props = encProperties (entryEncoding i)
+               
             extractExt (Extension e) = Just e
             extractExt _             = Nothing
 
@@ -194,7 +202,7 @@ getInstruction mode = consumeAtMost 15 $ do
          -- If there are more than one instruction left, signal a bug
          MapEntry spec enc <- case cs5 of
             [x] -> return x
-            xs  -> fail ("More than one instruction found (opcode table bug?): " ++ show xs)
+            xs  -> fail ("More than one instruction found (opcode table bug?): " ++ show (fmap (insnMnemonic . entryInsn) xs))
 
          -- Read params
          ops <- readOperands mode ps oc enc
@@ -594,9 +602,15 @@ readOperands mode ps oc enc = do
          where isRel (T_Rel _) = True
                isRel _         = False
 
+   -- read SIB byte if necessary
+   sib <- if hasSIB
+      then (Just . SIB) <$> getWord8
+      else return Nothing
+
+   let
       -- do we need to read a displacement? Which size?
       dispSize = case (hasMemOffset, hasRelOffset) of
-         (False, []) -> join (useDisplacement addressSize <$> modrm)
+         (False, []) -> join (useDisplacement addressSize sib <$> modrm)
          (True,  []) -> case addressSize of
                            AddrSize16 -> Just Size16
                            AddrSize32 -> Just Size32
@@ -610,11 +624,6 @@ readOperands mode ps oc enc = do
                OpSize8  -> error "Unsupported relative offset with 8-bit operand size"
          (_, xs) -> error ("Unsupported relative offsets: " ++ show xs)
 
-
-   -- read SIB byte if necessary
-   sib <- if hasSIB
-      then (Just . SIB) <$> getWord8
-      else return Nothing
 
    -- read displacement if necessary
    disp <- forM dispSize getSize
