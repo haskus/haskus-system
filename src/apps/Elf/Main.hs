@@ -20,6 +20,8 @@ import ViperVM.Arch.X86_64.ISA.Mode
 import ViperVM.Arch.X86_64.ISA.Size
 import ViperVM.Arch.X86_64.ISA.Decoder
 import ViperVM.Arch.X86_64.ISA.Insn
+import ViperVM.Arch.X86_64.ISA.Encoding
+import ViperVM.Arch.X86_64.ISA.Registers
 import ViperVM.Arch.X86_64.Disassembler
 
 import ViperVM.Format.Binary.Buffer
@@ -28,13 +30,14 @@ import ViperVM.Format.Text (Text)
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
-import Control.Monad (when, msum, mzero, MonadPlus)
-import Data.Foldable (forM_)
+import Control.Monad
 import Data.Text.Format
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
 import Data.Word
+import Data.Maybe
+import Data.List (intersperse)
 import Data.Tree (drawTree)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
@@ -399,12 +402,56 @@ showSectionAsm elf s = do
             Instruction offset buf ins  -> do
                td_ (toHtml (show offset))
                td_ (toHtml (show buf))
-               td_ (toHtml i)
+               td_ $ do
+                  when (not (BitSet.null (insnVariant ins))) $ do
+                     toHtml (show (BitSet.toList (insnVariant ins)))
+                     " "
+                  toHtml (insnMnemonic (insnSpec ins))
+                  " "
+                  void (sequence os)
                td_ ""
                where
-                  i = insnMnemonic (insnSpec ins)
-                       ++ " " ++ show (insnOperands ins)
-                       ++ " " ++ show (BitSet.toList (insnVariant ins))
+                  os = intersperse ", " (fmap showAsmOperand (insnOperands ins))
+
+showAsmOperand :: Operand -> Html ()
+showAsmOperand op = case op of
+   OpImmediate v      -> showAsmImm v
+   OpReg reg          -> showAsmReg reg
+   OpRegPair r1 r2    -> showAsmReg r1 >> ":" >> showAsmReg r2
+   OpMem mt addr      -> showAsmAddr addr
+   OpCodeAddr addr    -> showAsmAddr addr
+   OpPtr16_16 w1 w2   -> toHtml (show w1 ++ ":" ++ show w2)
+   OpPtr16_32 w1 w2   -> toHtml (show w1 ++ ":" ++ show w2)
+   OpStackFrame w1 w2 ->  toHtml (show w1 ++ ":" ++ show w2)
+
+showAsmAddr :: Addr -> Html ()
+showAsmAddr a = do
+   showAsmReg (addrSeg a)
+   ":["
+   void (sequence xs)
+   "]"
+   where
+      xs = intersperse " + " (catMaybes [bs, is, ds])
+      bs = showAsmReg <$> addrBase a
+      is = case (addrIndex a, addrScale a) of
+         (Nothing, _)          -> Nothing
+         (Just i, Just Scale1) -> Just (showAsmReg i)
+         (Just i, Nothing)     -> Just (showAsmReg i)
+         (Just i, Just Scale2) -> Just (showAsmReg i >> "*2")
+         (Just i, Just Scale4) -> Just (showAsmReg i >> "*4")
+         (Just i, Just Scale8) -> Just (showAsmReg i >> "*8")
+      ds = showAsmImm <$> addrDisp a
+
+showAsmImm :: SizedValue -> Html ()
+showAsmImm = \case
+   SizedValue8  w -> toHtml (show w)
+   SizedValue16 w -> toHtml (show w)
+   SizedValue32 w -> toHtml (show w)
+   SizedValue64 w -> toHtml (show w)
+
+showAsmReg :: Register -> Html ()
+showAsmReg reg = do
+   toHtml (registerName reg)
 
 showSegments :: Elf -> Html ()
 showSegments elf = do
