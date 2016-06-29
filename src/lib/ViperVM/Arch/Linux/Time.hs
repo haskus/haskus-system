@@ -12,6 +12,8 @@ module ViperVM.Arch.Linux.Time
    , sysClockGetTime
    , sysClockSetTime
    , sysClockGetResolution
+   , sysGetTimeOfDay
+   , sysSetTimeOfDay
    , SleepResult(..)
    , sysNanoSleep
    , nanoSleep
@@ -24,7 +26,7 @@ import Data.Int
 import Data.Word
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr,nullPtr)
 
 import GHC.Generics (Generic)
 
@@ -50,17 +52,18 @@ data TimeVal = TimeVal
    , tvMicroSeconds  :: Word64
    } deriving (Show, Eq, Ord, Generic, CStorable)
 
+instance Storable TimeVal where
+   sizeOf      = cSizeOf
+   alignment   = cAlignment
+   poke        = cPoke
+   peek        = cPeek
+
 -- | Timeval difference in microseconds
 timeValDiff :: TimeVal -> TimeVal -> Word64
 timeValDiff (TimeVal s1 ms1) (TimeVal s2 ms2) = r
    where
       r = (s1-s2)*1000000 + ms1 - ms2
 
-instance Storable TimeVal where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
 
 -- | Clocks
 data Clock
@@ -121,6 +124,20 @@ sysClockGetResolution :: Clock -> SysRet TimeSpec
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
       onSuccessIO (syscall_clock_getres (fromEnum clk) t) (const $ peek t)
+
+-- | Retrieve time of day
+sysGetTimeOfDay :: SysRet TimeVal
+sysGetTimeOfDay =
+   alloca $ \(tv :: Ptr TimeVal) ->
+      -- timezone arg is deprecated (NULL passed instead)
+      onSuccessIO (syscall_gettimeofday tv nullPtr) (const $ peek tv)
+
+-- | Set time of day
+sysSetTimeOfDay :: TimeVal -> SysRet ()
+sysSetTimeOfDay tv =
+   with tv $ \ptv ->
+      -- timezone arg is deprecated (NULL passed instead)
+      onSuccessVoid (syscall_settimeofday ptv nullPtr)
 
 -- | Result of a sleep
 data SleepResult

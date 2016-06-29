@@ -95,9 +95,11 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    , syscall_stat
    , syscall_symlink
    , syscall_sync
+   , syscall_settimeofday
    , syscall_syncfs
    , syscall_truncate
    , syscall_umask
+   , syscall_gettimeofday
    , syscall_unlink
    , syscall_unlinkat
    , syscall_finit_module
@@ -448,6 +450,11 @@ syscall_umask :: Word -> IO Int64
 syscall_umask = syscall1 95
 {-# INLINE syscall_umask #-}
 
+-- | gettimeofday
+syscall_gettimeofday :: Ptr a -> Ptr () -> IO Int64
+syscall_gettimeofday = syscall2 96
+{-# INLINE syscall_gettimeofday #-}
+
 -- | ptrace
 syscall_ptrace :: Int -> Word32 -> Ptr () -> Ptr () -> IO Int64
 syscall_ptrace = syscall4 101
@@ -517,6 +524,11 @@ syscall_munlockall = syscall0 152
 syscall_sync :: IO Int64
 syscall_sync = syscall0 162
 {-# INLINE syscall_sync #-}
+
+-- | settimeofday
+syscall_settimeofday :: Ptr a -> Ptr () -> IO Int64
+syscall_settimeofday = syscall2 164
+{-# INLINE syscall_settimeofday #-}
 
 -- | mount
 syscall_mount :: CString -> CString -> CString -> Word64 -> Ptr a -> IO Int64
@@ -659,7 +671,6 @@ syscall_finit_module = syscall3 313
 71	common	msgctl			sys_msgctl
 78	common	getdents		sys_getdents
 89	common	readlink		sys_readlink
-96	common	gettimeofday		sys_gettimeofday
 97	common	getrlimit		sys_getrlimit
 98	common	getrusage		sys_getrusage
 99	common	sysinfo			sys_sysinfo
@@ -713,7 +724,6 @@ syscall_finit_module = syscall3 313
 160	common	setrlimit		sys_setrlimit
 161	common	chroot			sys_chroot
 163	common	acct			sys_acct
-164	common	settimeofday		sys_settimeofday
 167	common	swapon			sys_swapon
 168	common	swapoff			sys_swapoff
 170	common	sethostname		sys_sethostname
