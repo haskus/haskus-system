@@ -233,6 +233,7 @@ rm32o64 m = op m (TME
 reg16 :: AccessMode -> OperandEnc -> OperandSpec
 reg16 m e = op m (T_Reg Reg16) e
 
+
 -- | 8-bit memory
 mem8 :: AccessMode -> OperandSpec
 mem8 m = op m (T_Mem Mem8) RM
@@ -13247,7 +13248,7 @@ i_pmovmskb = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ reg32o64 WO Reg
                                                      , vec64 RO RM
                                                      ]
                            }
@@ -13258,8 +13259,9 @@ i_pmovmskb = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension SSE2
+                                                     , DefaultOperandSize64
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ reg32o64 WO Reg
                                                      , vec128 RO RM
                                                      ]
                            }
@@ -13271,8 +13273,9 @@ i_pmovmskb = insn
                            , encProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX
+                                                     , DefaultOperandSize64
                                                      ]
-                           , encOperands           = [ gpr WO Reg
+                           , encOperands           = [ reg32o64 WO Reg
                                                      , vec128 RO RM
                                                      ]
                            }
@@ -13284,8 +13287,9 @@ i_pmovmskb = insn
                            , encProperties         = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension AVX2
+                                                     , DefaultOperandSize64
                                                      ]
-                           , encOperands           = [ gpr WO Reg
+                           , encOperands           = [ reg32o64 WO Reg
                                                      , vec256 RO RM
                                                      ]
                            }
