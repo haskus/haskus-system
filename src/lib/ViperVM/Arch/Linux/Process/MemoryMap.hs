@@ -4,11 +4,14 @@ module ViperVM.Arch.Linux.Process.MemoryMap
    , readMemoryMap
    , parseMemoryMap
    , memoryMapToBytestring
+   , memoryMapToBuffer
    , memoryMapToLazyBytestring
    )
 where
 
 import Prelude hiding (takeWhile)
+
+import ViperVM.Format.Binary.Buffer
 
 import Text.Megaparsec
 import Text.Megaparsec.ByteString
@@ -91,10 +94,9 @@ parseMemoryMap = parseFile
 
 -- | Convert a memory-map entry into a ByteString
 --
--- Warning: The bytestring directly maps the entry
--- (i.e. there is no copy of the data). Hence the
--- referential transparency can be broken if the entry
--- is written into 
+-- Warning: The bytestring directly maps the entry (i.e. there is no copy of the
+-- data). Hence the referential transparency can be broken if the entry is
+-- written into 
 memoryMapToBytestring :: MemoryMapEntry -> IO ByteString
 memoryMapToBytestring e = unsafePackCStringLen (ptr,len)
    where
@@ -104,3 +106,14 @@ memoryMapToBytestring e = unsafePackCStringLen (ptr,len)
 -- | Convert a memory-map entry into a lazy ByteString
 memoryMapToLazyBytestring :: MemoryMapEntry -> IO LBS.ByteString
 memoryMapToLazyBytestring = fmap LBS.fromStrict . memoryMapToBytestring
+
+-- | Convert a memory-map entry into a Buffer
+--
+-- Warning: The buffer directly maps the entry (i.e. there is no copy of the
+-- data). Hence the referential transparency can be broken if the entry is
+-- written into 
+memoryMapToBuffer :: MemoryMapEntry -> IO Buffer
+memoryMapToBuffer e = bufferUnsafeMapMemory len ptr
+   where
+      ptr = wordPtrToPtr (fromIntegral (entryStartAddr e))
+      len = fromIntegral $ entryStopAddr e - entryStartAddr e

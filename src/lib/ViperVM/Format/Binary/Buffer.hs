@@ -43,6 +43,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferUnsafeLast
    , bufferUnsafeInit
    , bufferUnsafeIndex
+   , bufferUnsafeMapMemory
    -- * IO
    , bufferReadFile
    , bufferWriteFile
@@ -242,6 +243,12 @@ bufferUnsafeInit (Buffer bs) = Buffer (BS.unsafeInit bs)
 -- | Unsafe index (don't check the size)
 bufferUnsafeIndex :: Buffer -> Word -> Word8
 bufferUnsafeIndex (Buffer bs) n = BS.unsafeIndex bs (fromIntegral n)
+
+-- | Map memory
+bufferUnsafeMapMemory :: Word -> Ptr () -> IO Buffer
+bufferUnsafeMapMemory sz ptr =
+   Buffer <$> BS.unsafePackMallocCStringLen (castPtr ptr, fromIntegral sz)
+
 
 -- | Read file
 bufferReadFile :: FilePath -> IO Buffer
