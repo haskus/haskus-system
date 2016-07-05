@@ -30,15 +30,6 @@ import ViperVM.System.Graphics
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
--- We can use JuicyPixels to get image pixel components.
--- We can use Rasterific to draw shapes and convert them into JuicyPixels
--- images.
--- We can use Diagrams with the Rasterific backend for a high-level approach
---    We might use Diagrams queries to handle mouse clicks, etc.
-
--- http://projects.haskell.org/diagrams/blog/2015-04-30-GTK-coordinates.html
-
-
 -- | Blanding method
 data BlendOp
    = BlendCopy
@@ -120,7 +111,7 @@ blendImage gfb img op pos clp = do
       srcRect       = translate dstRect (-1 * px, -1 * py)
 
       (sx,sy,sw,sh) = srcRect
-      (dx,dy,_,_) = dstRect
+      (dx,dy,_,_)   = dstRect
 
       -- Convert betweeen RGBA8 and XRGB8 (endianness in DRM is misleading)
       myPackPixel (PixelRGBA8 r g b a) =

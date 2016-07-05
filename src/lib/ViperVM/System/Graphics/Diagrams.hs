@@ -1,12 +1,16 @@
 
 -- | Diagrams utilities
 module ViperVM.System.Graphics.Diagrams
-   ( renderDiagram
+   ( rasterizeDiagram
    , VDiagram
    , VDiagram'
    , module Diagrams
    )
 where
+
+-- TODO
+-- We might use Diagrams queries to handle mouse clicks, etc.
+-- http://projects.haskell.org/diagrams/blog/2015-04-30-GTK-coordinates.html
 
 import Diagrams
 import Diagrams.Backend.Rasterific
@@ -17,5 +21,6 @@ type VDiagram' n = QDiagram Rasterific V2 n Any
 type VDiagram    = QDiagram Rasterific V2 Float Any
 
 -- | Render a diagram into an image that can be displayed on a framebuffer
-renderDiagram :: (TypeableFloat n) => SizeSpec V2 n -> VDiagram' n -> Image PixelRGBA8
-renderDiagram spec = renderDia Rasterific (RasterificOptions spec)
+rasterizeDiagram :: (TypeableFloat n) => SizeSpec V2 n -> VDiagram' n -> Image PixelRGBA8
+rasterizeDiagram spec = renderDia Rasterific (RasterificOptions spec)
+

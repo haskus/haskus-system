@@ -149,6 +149,7 @@ library
     ViperVM.System.Graphics
     ViperVM.System.Graphics.Drawing
     ViperVM.System.Graphics.Diagrams
+    ViperVM.System.Graphics.Colour
     ViperVM.System.Input
     ViperVM.System.Terminal
     ViperVM.System.Process
@@ -292,6 +293,7 @@ library
       ,  JuicyPixels               >= 3.2
       ,  loop                      >= 0.3
       ,  Rasterific                >= 0.6
+      ,  colour                    >= 2.3
 
   build-tools: 
   ghc-options:          -Wall -threaded -O3
