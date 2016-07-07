@@ -21,13 +21,12 @@ import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Format.Binary.Vector as Vec
+import ViperVM.Format.Binary.Word
 
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
-import Data.Word
-import Data.Int
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 

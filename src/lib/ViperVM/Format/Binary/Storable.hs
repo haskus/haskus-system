@@ -10,8 +10,8 @@ where
 import GHC.TypeLits
 import Foreign.Ptr
 import qualified Foreign.Storable as FS
-import Data.Word
-import Data.Int
+
+import ViperVM.Format.Binary.Word
 
 -- | A storable data (in constant space)
 class Storable a where

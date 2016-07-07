@@ -22,7 +22,6 @@ where
 
 import Foreign.Marshal.Array
 import Foreign.Ptr
-import Data.Word
 
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
@@ -33,6 +32,7 @@ import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 import ViperVM.Utils.Flow
+import ViperVM.Format.Binary.Word
 
 -- | Video controller
 --

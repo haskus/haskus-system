@@ -15,11 +15,11 @@ import Foreign.C.Types
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics
-import Data.Int
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Vector
+import ViperVM.Format.Binary.Word
 
 -- | struct utsname
 data SystemInfo = SystemInfo

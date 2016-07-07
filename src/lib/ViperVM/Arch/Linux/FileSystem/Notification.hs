@@ -16,10 +16,9 @@ import Foreign.Marshal.Array (withArray, peekArray)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
 import Data.Maybe (mapMaybe)
-import Data.Word (Word64, Word16)
-import Data.Int (Int64,Int32)
 import GHC.Generics (Generic)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle

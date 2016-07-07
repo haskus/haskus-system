@@ -14,12 +14,12 @@ module ViperVM.Platform.Drivers.Host
 where
 
 import Foreign.Ptr (Ptr,castPtr)
-import Data.Word (Word64)
 import Data.Ord (comparing)
 import Text.Printf
 import qualified Data.Text as Text
 
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Common.Errors
 import qualified ViperVM.Arch.Posix.Malloc as Posix
 import qualified ViperVM.Arch.X86_64.Cpuid as C

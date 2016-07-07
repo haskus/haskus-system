@@ -7,12 +7,11 @@ module ViperVM.Arch.Linux.Internals.Fcntl
    )
 where
 
-import Data.Int
-
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Internals.Handle
 import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 -- =============================================================
 --    From linux/include/uapi/asm-generic/fcntl.h

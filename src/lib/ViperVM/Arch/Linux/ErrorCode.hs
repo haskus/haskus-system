@@ -17,7 +17,7 @@ module ViperVM.Arch.Linux.ErrorCode
    )
 where
 
-import Data.Int (Int64)
+import ViperVM.Format.Binary.Word (Int64)
 import ViperVM.Utils.Flow
 
 -- | Syscall return type

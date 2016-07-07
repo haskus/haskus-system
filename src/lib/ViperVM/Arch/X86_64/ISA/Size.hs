@@ -7,8 +7,8 @@ module ViperVM.Arch.X86_64.ISA.Size
    , getSize
    ) where
 
-import Data.Word
 import ViperVM.Format.Binary.Get
+import ViperVM.Format.Binary.Word
 
 -- | Size
 data Size

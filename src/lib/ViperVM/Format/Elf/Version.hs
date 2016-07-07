@@ -22,12 +22,10 @@ module ViperVM.Format.Elf.Version
    )
 where
 
-import Data.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
-
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet as BitSet
-
 import ViperVM.Format.Elf.PreHeader
 
 

@@ -10,8 +10,8 @@ where
 import Data.ByteString
 import Foreign.Storable
 import Foreign.Ptr
-import Data.Word
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.Internals.Graphics
 
 -- | Graphics events

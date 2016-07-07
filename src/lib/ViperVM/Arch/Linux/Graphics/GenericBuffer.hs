@@ -21,8 +21,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Utils.Flow
-
-import Data.Word
+import ViperVM.Format.Binary.Word
 
 type GenericBuffer = StructCreateDumb
 type GenericBufferMap = StructMapDumb

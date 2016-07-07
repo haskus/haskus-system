@@ -13,12 +13,12 @@ module ViperVM.Format.Binary.BitOps
    )
 where
 
-import Data.Word
 import Data.Bits
 import Data.List (foldl')
 
 import ViperVM.Format.Binary.BitOps.BitReverse
 import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.Word
 
 -- | makeMask 3 = 00000111
 makeMask :: (FiniteBits a) => Word -> a

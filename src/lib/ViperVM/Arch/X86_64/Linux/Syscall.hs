@@ -79,7 +79,7 @@ syscall0_ (I64# n) = IO $ \s ->
 -- Implementation using Haskell FFI
 --------------------------------------------------
 
-import Data.Int (Int64)
+import ViperVM.Format.Binary.Word (Int64)
 
 foreign import ccall "x86_64_linux_syscall6" syscall6_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
 foreign import ccall "x86_64_linux_syscall5" syscall5_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64

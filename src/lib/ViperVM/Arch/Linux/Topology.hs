@@ -24,13 +24,14 @@ import Data.Text.Encoding (decodeUtf8)
 import System.Directory
 import Data.List (isPrefixOf,stripPrefix)
 import Control.Monad (void,forM)
-import Data.Word
 import Data.ByteString.Char8 (pack)
 import Data.Bits
 import Data.Maybe (fromJust,mapMaybe)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
+
+import ViperVM.Format.Binary.Word
 
 -- | A CPUMap is a set of CPU identifiers
 --

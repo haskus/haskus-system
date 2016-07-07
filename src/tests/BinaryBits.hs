@@ -8,7 +8,6 @@ import Distribution.TestSuite.QuickCheck (testProperty)
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen (elements,choose,vectorOf)
 
-import Data.Word
 import Data.Bits
 
 import Common
@@ -22,6 +21,7 @@ import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.VariableLength
+import ViperVM.Format.Binary.Word
 
 binaryBitsTests :: Test
 binaryBitsTests = testGroup "Binary bits" $

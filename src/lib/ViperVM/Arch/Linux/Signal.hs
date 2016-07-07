@@ -20,14 +20,14 @@ where
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Process
+import ViperVM.Format.Binary.Vector (Vector)
+import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Flow
 
-import Data.Word
 import Foreign.Storable
 import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Alloc (alloca)
-import ViperVM.Format.Binary.Vector (Vector)
-import ViperVM.Utils.Flow
 
 -- | Signal set
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)

@@ -27,11 +27,11 @@ import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
 
 import Control.Monad (liftM2)
-import Data.Word
 import Foreign.Marshal.Array (peekArray, allocaArray)
 import Foreign.Ptr
 import Foreign.Storable

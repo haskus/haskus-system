@@ -7,8 +7,7 @@ module ViperVM.Arch.Linux.Graphics.Object
    )
 where
 
-import Data.Word
-
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Encoder

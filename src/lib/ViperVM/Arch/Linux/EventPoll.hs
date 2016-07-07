@@ -8,10 +8,10 @@ where
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Format.Binary.Word (Word64)
 
 import Data.Bits ((.|.))
 import Data.List (foldl')
-import Data.Word (Word64)
 
 -- | Polling flag
 data EventPollFlag

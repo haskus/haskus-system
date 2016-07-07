@@ -5,11 +5,11 @@ module ViperVM.Arch.Linux.Internals.Reboot
    )
 where
 
-import Data.Word (Word64)
 import ViperVM.Arch.Linux.ErrorCode
 import Foreign.C.String (withCString)
 import Foreign.Ptr (nullPtr)
 
+import ViperVM.Format.Binary.Word (Word64)
 import ViperVM.Arch.Linux.Syscalls
 
 -- =============================================================

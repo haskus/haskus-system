@@ -141,6 +141,7 @@ import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.FixedPoint
+import ViperVM.Format.Binary.Word
 
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
@@ -148,8 +149,6 @@ import Foreign.Storable
 import Foreign.CStorable
 import Foreign.C.Types
 import Foreign.C.String (castCharToCChar)
-import Data.Word
-import Data.Int
 import Data.Bits
 import GHC.Generics (Generic)
 

@@ -13,8 +13,8 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Utils.Flow
+import ViperVM.Format.Binary.Word
 
-import Data.Word
 import Data.Map as Map
 import Foreign.Marshal.Array
 import Foreign.Ptr

@@ -14,9 +14,8 @@ import Foreign.C.Types (CSize(..))
 import Foreign.Ptr (Ptr)
 import Foreign.C.String (CString)
 import Data.Maybe (fromJust)
-import Data.Word
-import Data.Int
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.OpenCL.Types
 
 -- | An OpenCL library

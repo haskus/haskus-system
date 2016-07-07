@@ -8,10 +8,9 @@ module ViperVM.Format.Binary.VariableLength
    )
 where
 
-import Data.Int
-import Data.Word
 import Data.Bits
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.BitPut

@@ -6,12 +6,10 @@ module ViperVM.Format.Elf.Relocation
    )
 where
 
-import Data.Word
-import Data.Int
 import Data.Bits
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
-
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header
 import ViperVM.Format.Elf.RelocationType

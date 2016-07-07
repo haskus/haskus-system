@@ -2,7 +2,7 @@
 import Criterion.Main
 import ViperVM.Format.Binary.BitOps.BitReverse
 import ViperVM.Format.Binary.BitOps
-import Data.Word
+import ViperVM.Format.Binary.Word
 
 main :: IO ()
 main = do

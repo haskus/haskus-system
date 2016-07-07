@@ -45,11 +45,11 @@ where
 
 import qualified Data.Serialize.Get as BG
 import Data.Serialize.Get (Get)
-import Data.Word
 import Data.Maybe
 
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitGet (BitGet, runBitGetPartial, skipBitsToAlignOnWord8M, bitGetStateInput)
 

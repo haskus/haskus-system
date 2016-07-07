@@ -217,6 +217,7 @@ library
     ViperVM.Format.Binary.Union
     ViperVM.Format.Binary.Record
     ViperVM.Format.Binary.Storable
+    ViperVM.Format.Binary.Word
 
     ViperVM.Format.FileSystem.ISO9660
 

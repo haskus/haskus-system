@@ -12,14 +12,13 @@ where
 import Prelude hiding (takeWhile)
 
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 
 import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
 
 import Control.Monad (void)
-import Data.Word (Word8,Word64)
-import Data.Int (Int64)
 import qualified Data.ByteString.Lazy as LBS
 import Data.ByteString.Unsafe
 import Data.ByteString (ByteString)

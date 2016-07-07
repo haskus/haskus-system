@@ -17,8 +17,8 @@ where
 
 import Foreign.C.String (withCString)
 import Foreign.Ptr (Ptr,nullPtr)
-import Data.Word
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode

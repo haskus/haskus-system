@@ -22,8 +22,8 @@ import ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
 
-import Data.Word
 import Control.Monad (void,when,forever)
 import Control.Concurrent
 import Control.Concurrent.STM

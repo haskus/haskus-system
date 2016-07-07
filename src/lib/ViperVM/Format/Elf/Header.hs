@@ -9,7 +9,7 @@ module ViperVM.Format.Elf.Header
    )
 where
 
-import Data.Word
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Elf.PreHeader

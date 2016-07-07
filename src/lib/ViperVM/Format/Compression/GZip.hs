@@ -12,7 +12,6 @@ module ViperVM.Format.Compression.GZip
 where
 
 import Data.Foldable (toList)
-import Data.Word
 import Control.Monad (when)
 import Text.Printf
 
@@ -20,6 +19,7 @@ import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 import ViperVM.Format.Binary.Get as Get
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import qualified ViperVM.Format.Text as Text

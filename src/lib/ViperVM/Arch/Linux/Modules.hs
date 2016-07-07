@@ -13,8 +13,8 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
 
-import Data.Word
 import Foreign.Ptr
 import Foreign.C.String (withCString)
 

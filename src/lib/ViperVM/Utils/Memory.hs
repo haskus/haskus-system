@@ -12,7 +12,8 @@ module ViperVM.Utils.Memory
    )
 where
 
-import Data.Word
+import ViperVM.Format.Binary.Word
+
 import Data.Foldable (traverse_)
 import Foreign.Ptr
 import Control.Monad (void)

@@ -22,14 +22,13 @@ where
 
 import Foreign.Storable
 import Foreign.CStorable
-import Data.Int
-import Data.Word
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr,nullPtr)
 
 import GHC.Generics (Generic)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Utils.Flow

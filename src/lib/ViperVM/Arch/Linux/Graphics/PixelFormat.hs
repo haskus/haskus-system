@@ -16,7 +16,7 @@ where
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.BitField
-import Data.Word
+import ViperVM.Format.Binary.Word
 import Data.Char (ord)
 import Data.Proxy
 import Data.Map (Map, (!), fromList)

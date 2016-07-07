@@ -12,9 +12,8 @@ module ViperVM.Arch.X86_64.ISA.Insn
 where
 
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.X86_64.ISA.Encoding
-
-import Data.Word
 
 data Insn = Insn
    { insnOpcode   :: Opcode

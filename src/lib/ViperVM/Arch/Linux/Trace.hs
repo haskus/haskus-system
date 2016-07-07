@@ -15,9 +15,8 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Process (ProcessID(..))
 import ViperVM.Format.Binary.BitSet
+import ViperVM.Format.Binary.Word
 
-import Data.Word
-import Data.Int
 import Foreign.Ptr
 
 -- | Tracing request

@@ -13,8 +13,8 @@ module ViperVM.Format.Binary.BufferBuilder
 where
 
 import qualified Data.ByteString.Builder as B
-import Data.Word
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import qualified ViperVM.Format.Binary.BufferList as BL
 

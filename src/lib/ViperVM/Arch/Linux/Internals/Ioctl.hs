@@ -12,12 +12,12 @@ module ViperVM.Arch.Linux.Internals.Ioctl
    )
 where
 
-import Data.Word
 import Data.Proxy
 import Foreign.Storable
 
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 
 -- =============================================================

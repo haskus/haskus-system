@@ -21,13 +21,13 @@ where
 
 import ViperVM.System.Sys
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Utils.Memory (allocaArrays,peekArrays)
 import ViperVM.Utils.Flow
 
-import Data.Word
 import Foreign.Ptr
 import Foreign.Storable
 

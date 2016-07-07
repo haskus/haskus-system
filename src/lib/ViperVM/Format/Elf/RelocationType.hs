@@ -10,7 +10,7 @@ module ViperVM.Format.Elf.RelocationType
 where
 
 import ViperVM.Format.Elf.Header
-import Data.Word
+import ViperVM.Format.Binary.Word
 
 -- | Create relocation type
 toRelocType :: Arch -> Word32 -> RelocationType

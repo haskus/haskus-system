@@ -12,10 +12,10 @@ module ViperVM.Arch.X86_64.ISA.Registers
    )
 where
 
-import Data.Word
 import Data.Bits
 import Data.Maybe (fromJust)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.X86_64.ISA.Mode
 import ViperVM.Arch.X86_64.ISA.Size
 import ViperVM.Arch.X86_64.ISA.RegisterFile (makeRegSequence,RegisterFile,mergeRegisterFiles,makeRegisterFile)

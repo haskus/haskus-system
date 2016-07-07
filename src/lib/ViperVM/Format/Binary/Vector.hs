@@ -28,7 +28,6 @@ where
 
 import GHC.TypeLits
 import Data.Proxy
-import Data.Word
 import Foreign.Storable
 import Foreign.CStorable
 import Prelude hiding (replicate, head, last,
@@ -44,6 +43,7 @@ import Foreign.C.Types (CChar)
 import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
 import qualified ViperVM.Format.Binary.Storable as S
+import ViperVM.Format.Binary.Word
 
 -- | Vector with type-checked size
 --

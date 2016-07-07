@@ -4,8 +4,7 @@ module ViperVM.Arch.Linux.Internals.Arg
    )
 where
 
-import Data.Int
-import Data.Word
+import ViperVM.Format.Binary.Word
 import Foreign.C.Types
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 

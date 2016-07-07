@@ -19,6 +19,7 @@ where
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitSet (CBitSet, BitSet)
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -32,8 +33,6 @@ import ViperVM.Arch.OpenCL.Device
 import Foreign.C.Types (CSize)
 import Control.Monad (void)
 import Data.Ord (comparing)
-import Data.Word
-import Data.Int
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,pokeArray)

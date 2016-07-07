@@ -1,16 +1,15 @@
-{-# LANGUAGE ForeignFunctionInterface,
-             GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | OpenCL basic types
 module ViperVM.Arch.OpenCL.Types where
 
 import Foreign.Storable (Storable(..))
-import Data.Word (Word32,Word64)
-import Data.Int (Int32)
 import Foreign.Ptr (Ptr,FunPtr,IntPtr)
 import Foreign.C.Types (CSize(..))
 import Foreign.C.String (CString)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.OpenCL.ImageFormat
 
 -- | OpenCL platform

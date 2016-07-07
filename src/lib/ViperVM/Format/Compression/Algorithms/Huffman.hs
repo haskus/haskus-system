@@ -46,13 +46,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.PQueue.Prio.Min (MinPQueue)
 import qualified Data.PQueue.Prio.Min as PQueue
-import Data.Word
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Tuple (swap)
 import Data.Bits
 import Control.Arrow (first)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitPut
 import ViperVM.Format.Binary.BitGet as BitGet

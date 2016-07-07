@@ -28,6 +28,7 @@ import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
@@ -38,8 +39,6 @@ import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)
 import Foreign.Storable (peek, sizeOf)
-import Data.Word
-import Data.Int
 import Data.List (elemIndex)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS

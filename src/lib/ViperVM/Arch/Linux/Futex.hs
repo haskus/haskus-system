@@ -10,8 +10,8 @@ module ViperVM.Arch.Linux.Futex
 where
 
 import Foreign.Ptr
-import Data.Int
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Time

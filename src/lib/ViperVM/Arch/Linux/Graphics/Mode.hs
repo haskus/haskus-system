@@ -17,7 +17,6 @@ where
 import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
-import Data.Word
 import Foreign.Ptr (castPtr)
 import Foreign.C.String 
    ( castCCharToChar
@@ -26,6 +25,7 @@ import Foreign.C.String
 import qualified ViperVM.Format.Binary.Vector as Vec
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 import ViperVM.Arch.Linux.Internals.Graphics
 

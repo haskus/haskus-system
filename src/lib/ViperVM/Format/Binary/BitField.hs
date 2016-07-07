@@ -72,8 +72,6 @@ module ViperVM.Format.Binary.BitField
    )
 where
 
-import Data.Word
-import Data.Int
 import Data.Bits
 import GHC.TypeLits
 import Data.Proxy
@@ -81,6 +79,7 @@ import Foreign.Storable
 import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 import ViperVM.Utils.HList
 
 -- | Bit fields on a base type b

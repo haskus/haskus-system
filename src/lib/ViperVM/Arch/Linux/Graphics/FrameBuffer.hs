@@ -15,7 +15,6 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
 where
 
 import Data.List (zip4)
-import Data.Word
 import Foreign.Marshal.Array
 import Foreign.Ptr
 
@@ -25,6 +24,7 @@ import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
+import ViperVM.Format.Binary.Word
 import ViperVM.Utils.Tuples
 import ViperVM.Utils.Flow
 

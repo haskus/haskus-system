@@ -19,8 +19,6 @@ module ViperVM.Arch.Linux.Graphics.Plane
    )
 where
 
-import Data.Word
-import Data.Int
 import Foreign.Marshal.Array
 import Foreign.Ptr
 
@@ -29,6 +27,7 @@ import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.FixedPoint
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error

@@ -18,9 +18,9 @@ import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable, peek)
 import Foreign.C.Types (CSize)
-import Data.Int
 
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 -- | OpenCL return type
 type CLRet a = IO (Either CLError a)

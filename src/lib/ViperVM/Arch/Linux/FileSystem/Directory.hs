@@ -19,13 +19,12 @@ where
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics (Generic)
-import Data.Word
-import Data.Int
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.C.String
 
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle

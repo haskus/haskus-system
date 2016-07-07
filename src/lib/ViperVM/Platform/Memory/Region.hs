@@ -33,7 +33,8 @@ module ViperVM.Platform.Memory.Region
    )
 where
 
-import Data.Word
+import ViperVM.Format.Binary.Word
+
 import Data.Maybe (isJust,mapMaybe)
 
 -- | Width in bytes

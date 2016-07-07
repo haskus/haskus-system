@@ -73,6 +73,7 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Vector (Vector)
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -82,8 +83,6 @@ import ViperVM.Utils.Flow
 import Foreign.C.String (peekCString)
 import qualified Data.ByteString as BS
 import GHC.Generics (Generic)
-import Data.Word
-import Data.Int
 import Data.Bits
 import Foreign.Storable
 import Foreign.CStorable

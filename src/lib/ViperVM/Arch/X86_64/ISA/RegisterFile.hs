@@ -10,7 +10,8 @@ module ViperVM.Arch.X86_64.ISA.RegisterFile
    )
 where
 
-import Data.Word (Word32)
+import ViperVM.Format.Binary.Word
+
 import Data.Maybe (mapMaybe)
 import Data.Map (Map)
 import qualified Data.Map as Map

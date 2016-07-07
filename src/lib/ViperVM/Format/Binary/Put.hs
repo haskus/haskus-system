@@ -24,9 +24,9 @@ import Data.Serialize.Put (Put)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as Text
 import Control.Monad (replicateM_)
-import Data.Word
 
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 
 -- | Execute Put
 runPut :: Put -> Buffer

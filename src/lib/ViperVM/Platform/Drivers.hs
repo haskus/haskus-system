@@ -11,8 +11,7 @@ module ViperVM.Platform.Drivers
    )
 where
 
-import Data.Word (Word64)
-
+import ViperVM.Format.Binary.Word (Word64)
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.TransferResult
 import ViperVM.Platform.Memory.Region

@@ -34,7 +34,7 @@ where
 import Control.Concurrent.STM
 import Data.Ord (comparing)
 import Data.Hashable
-import Data.Word (Word64)
+
 
 import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
@@ -45,6 +45,7 @@ import ViperVM.Utils.STM.TSet as TSet
 import ViperVM.Utils.STM.TMap
 import ViperVM.Utils.STM.TList
 
+import ViperVM.Format.Binary.Word (Word64)
 import ViperVM.Platform.Memory.Layout
 
 ---------------------------------------------------------------

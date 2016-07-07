@@ -13,10 +13,10 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 
-import Data.Word
 import Control.Monad (void)
 
 -- | Get a capability

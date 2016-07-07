@@ -23,8 +23,8 @@ where
 
 import Prelude hiding (log)
 import Text.Printf
-import Data.Int
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow

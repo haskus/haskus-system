@@ -17,14 +17,13 @@ module ViperVM.Format.Elf.Section
    )
 where
 
-import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Buffer
-
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
 

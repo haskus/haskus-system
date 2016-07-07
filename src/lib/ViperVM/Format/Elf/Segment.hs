@@ -13,7 +13,6 @@ module ViperVM.Format.Elf.Segment
    )
 where
 
-import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 
@@ -22,6 +21,7 @@ import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 import ViperVM.Format.Elf.PreHeader
 import ViperVM.Format.Elf.Header

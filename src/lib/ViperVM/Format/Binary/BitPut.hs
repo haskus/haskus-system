@@ -22,10 +22,10 @@ where
 import Control.Monad.State
 import Control.Monad.Identity
 import Data.Bits
-import Data.Word
 
 import ViperVM.Format.Binary.BufferBuilder as B
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BufferList (BufferList)
 import ViperVM.Format.Binary.BitOrder
 import ViperVM.Format.Binary.BitOps

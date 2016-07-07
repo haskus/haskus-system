@@ -13,7 +13,7 @@ import Control.Concurrent.STM
 
 import ViperVM.Platform.Memory.Layout
 import qualified ViperVM.Platform.Memory.Object as MD
-import Data.Word
+import ViperVM.Format.Binary.Word
 
 -- | Matrix
 type Matrix = MD.Object MatrixParameters MatrixRepresentation MatrixSource

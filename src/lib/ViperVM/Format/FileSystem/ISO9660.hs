@@ -33,10 +33,10 @@ where
 import ViperVM.Format.Binary.Vector
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Word
 
 import GHC.Generics
 import GHC.TypeLits
-import Data.Word
 import Foreign.Ptr
 import Foreign.Storable
 import Foreign.CStorable

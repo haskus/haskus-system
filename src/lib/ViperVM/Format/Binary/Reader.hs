@@ -58,6 +58,7 @@ module ViperVM.Format.Binary.Reader
 where
 
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 import ViperVM.Utils.MultiState
 import ViperVM.Utils.HArray
 import ViperVM.Utils.HList
@@ -66,7 +67,6 @@ import ViperVM.Utils.Variant
 import ViperVM.Utils.Flow
 
 import Data.Proxy
-import Data.Word
 import Data.Maybe (isJust)
 import Foreign.Storable
 

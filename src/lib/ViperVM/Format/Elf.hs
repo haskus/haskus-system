@@ -47,7 +47,6 @@ module ViperVM.Format.Elf
    )
 where
 
-import Data.Word
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Control.Monad (forM)
@@ -57,6 +56,7 @@ import Data.Maybe (fromJust)
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 

@@ -70,14 +70,13 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 import ViperVM.Utils.Flow
 
 import Foreign.Storable
 import Foreign.Marshal.Utils (toBool)
 import Foreign.CStorable
 import Foreign.C.Types
-import Data.Word
-import Data.Int
 import GHC.Generics (Generic)
 
 -- =============================================================

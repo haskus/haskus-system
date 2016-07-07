@@ -17,7 +17,7 @@ import Control.Monad (void)
 import ViperVM.Platform.Types(Data(..))
 import ViperVM.Platform.Memory.Layout
 import qualified ViperVM.Platform.Memory.Object as MD
-import Data.Word
+import ViperVM.Format.Binary.Word
 
 -- | Vector
 type Vector = MD.Object VectorParameters VectorRepresentation VectorSource

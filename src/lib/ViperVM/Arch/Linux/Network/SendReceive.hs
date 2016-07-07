@@ -10,7 +10,6 @@ where
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Unsafe
-import Data.Word
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 import Foreign.Ptr (Ptr, nullPtr, castPtr)
@@ -20,6 +19,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
 import ViperVM.Utils.Flow
 
 

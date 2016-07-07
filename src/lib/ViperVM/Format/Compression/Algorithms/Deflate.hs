@@ -20,7 +20,6 @@ where
 
 import Data.List (sortBy)
 import Data.Tuple (swap)
-import Data.Word
 import Data.Maybe (fromJust)
 import Data.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import Control.Monad (when,replicateM)
@@ -29,6 +28,7 @@ import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 import Data.Ord(comparing)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BitGet
 import ViperVM.Format.Binary.BitOrder

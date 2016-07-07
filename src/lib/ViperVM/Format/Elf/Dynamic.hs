@@ -16,12 +16,10 @@ module ViperVM.Format.Elf.Dynamic
    )
 where
 
-import Data.Word
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
-
 import ViperVM.Format.Binary.BitSet (CBitSet,BitSet)
-
 import ViperVM.Format.Elf.PreHeader
 
 data RawDynamicEntry = RawDynamicEntry

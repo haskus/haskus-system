@@ -95,12 +95,12 @@ module ViperVM.Arch.X86_64.ISA.Encoding
    )
 where
 
-import Data.Word
 import Data.Maybe
 import Data.Bits
 import Data.Proxy
 import Data.List (nub)
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitField
 import ViperVM.Arch.X86_64.ISA.MicroArch
 import ViperVM.Arch.X86_64.ISA.Mode

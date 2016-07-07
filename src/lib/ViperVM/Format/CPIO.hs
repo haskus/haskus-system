@@ -16,7 +16,6 @@ module ViperVM.Format.CPIO
    )
 where
 
-import Data.Word
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
@@ -30,6 +29,7 @@ import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Get

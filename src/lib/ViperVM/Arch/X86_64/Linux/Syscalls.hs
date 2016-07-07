@@ -108,11 +108,10 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.Linux.Internals.Arg
+import ViperVM.Format.Binary.Word
 
 import Foreign.C.String (CString)
 import Foreign.Ptr
-import Data.Word
-import Data.Int
 
 type FD = Word -- file descriptor alias
 type Mode = Word

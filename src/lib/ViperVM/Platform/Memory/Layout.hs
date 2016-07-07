@@ -14,10 +14,10 @@ module ViperVM.Platform.Memory.Layout
 where
 
 import Prelude hiding (sum)
-import Data.Word
 import Data.Foldable (sum)
 import qualified Data.Vector as V
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Word
 import ViperVM.Platform.Memory.Region
 
 -- | A deterministic hierarchic map of fields in memory

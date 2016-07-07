@@ -15,13 +15,12 @@ module ViperVM.Format.Elf.PreHeader
    )
 where
 
-import Data.Word
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
-import Control.Monad (when)
-
 import ViperVM.Format.Binary.Endianness
 
+import Control.Monad (when)
 import Text.Printf
 
 -- | Pre-header

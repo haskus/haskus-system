@@ -28,7 +28,6 @@ import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Array (peekArray,allocaArray)
 import Foreign.Storable
 import Foreign.CStorable
-import Data.Word
 import Data.List (foldl')
 import Data.Bits
 import GHC.Generics (Generic)
@@ -36,6 +35,7 @@ import GHC.Generics (Generic)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Format.Binary.Word
 
 data ShutFlag
    = ShutRead

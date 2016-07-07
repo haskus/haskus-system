@@ -6,6 +6,7 @@ import qualified ViperVM.Arch.X86_64.ISA.Insn       as X86
 import qualified ViperVM.Arch.X86_64.ISA.Insns      as X86
 import qualified ViperVM.Arch.X86_64.ISA.OpcodeMaps as X86
 import qualified ViperVM.Arch.X86_64.ISA.Encoding   as X86
+import ViperVM.Format.Binary.Word
 
 import Paths_ViperVM
 import Data.FileEmbed
@@ -16,7 +17,6 @@ import Network.Socket (withSocketsDo)
 import Network.HTTP.Base (urlEncode)
 import Numeric
 import Happstack.Server
-import Data.Word
 import Data.Bits
 import Data.Char (toUpper)
 import Data.Maybe

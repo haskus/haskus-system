@@ -7,12 +7,12 @@ module ViperVM.Platform.PlatformInfo
 where
 
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Word
 import ViperVM.Platform.Types (Memory(..), Proc(..), Network(..))
 import ViperVM.Platform.Drivers
 import qualified ViperVM.Platform.Drivers.Host as H
 import ViperVM.Platform.Memory (memoryEndianness, memorySize)
 
-import Data.Word (Word64)
 import Text.Printf
 
 -- | Return memory info string

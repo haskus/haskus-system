@@ -10,9 +10,9 @@ where
 
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble)
-import Data.Word (Word32)
 
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 
 -- | Image storage format
 data ImageFormat = ImageFormat

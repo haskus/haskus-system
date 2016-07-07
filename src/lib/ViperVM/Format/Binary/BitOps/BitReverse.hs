@@ -21,7 +21,8 @@ where
 
 import qualified Data.ByteString as BS
 import Data.Bits
-import Data.Word
+
+import ViperVM.Format.Binary.Word
 
 -- Algorithms and explanations adapted from:
 -- http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64Bits
