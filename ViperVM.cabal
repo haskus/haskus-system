@@ -218,6 +218,7 @@ library
     ViperVM.Format.Binary.Record
     ViperVM.Format.Binary.Storable
 
+    ViperVM.Format.FileSystem.ISO9660
 
     ViperVM.Platform.Drivers
     ViperVM.Platform.Drivers.OpenCL
