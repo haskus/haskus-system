@@ -212,8 +212,8 @@ defaultTerminal = do
    let flgs = BitSet.fromList [ HandleNonBlocking
                               , HandleCloseOnExec
                               ]
-   setHandleFlags stdin  flgs
-   setHandleFlags stdout flgs
+   _ <- setHandleFlags stdin  flgs
+   _ <- setHandleFlags stdout flgs
 
    -- TODO: set terminal buffering mode?
 
