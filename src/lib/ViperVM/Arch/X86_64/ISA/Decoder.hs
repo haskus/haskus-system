@@ -17,6 +17,7 @@ import ViperVM.Arch.X86_64.ISA.Insns
 import ViperVM.Arch.X86_64.ISA.Insn
 import ViperVM.Arch.X86_64.ISA.Encoding
 
+import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField
@@ -24,7 +25,6 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import qualified Data.Map as Map
 import Data.List (nub, (\\))
-import Data.Bits
 import Data.Maybe
 import qualified Data.Vector as V
 import Control.Monad

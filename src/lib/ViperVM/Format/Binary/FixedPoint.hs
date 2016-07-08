@@ -16,8 +16,8 @@ module ViperVM.Format.Binary.FixedPoint
 where
 
 import ViperVM.Format.Binary.BitField
+import ViperVM.Format.Binary.Bits
 
-import Data.Bits
 import Foreign.Storable
 import Foreign.CStorable
 import Data.Proxy

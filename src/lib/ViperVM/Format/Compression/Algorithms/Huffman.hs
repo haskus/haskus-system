@@ -49,15 +49,14 @@ import qualified Data.PQueue.Prio.Min as PQueue
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Tuple (swap)
-import Data.Bits
 import Control.Arrow (first)
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
-import ViperVM.Format.Binary.BitPut
-import ViperVM.Format.Binary.BitGet as BitGet
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitOps (reverseLeastBits)
+import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Bits.Put
+import ViperVM.Format.Binary.Bits.Get as BitGet
+import ViperVM.Format.Binary.Bits.Order
 
 -- | Priority (number of occurences)
 type Priority = Word64

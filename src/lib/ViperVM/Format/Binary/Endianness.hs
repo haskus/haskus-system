@@ -29,6 +29,7 @@ where
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Bits ((.|.), shiftL)
 import qualified ViperVM.Format.Binary.Storable as S
 
 import GHC.Word
@@ -38,7 +39,6 @@ import Foreign.CStorable
 import System.IO.Unsafe
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc (alloca)
-import Data.Bits ((.|.), shiftL)
 
 -- | Endianness
 data Endianness 

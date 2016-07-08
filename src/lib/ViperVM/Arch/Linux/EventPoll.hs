@@ -9,8 +9,8 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Format.Binary.Word (Word64)
+import ViperVM.Format.Binary.Bits ((.|.))
 
-import Data.Bits ((.|.))
 import Data.List (foldl')
 
 -- | Polling flag

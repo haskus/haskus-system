@@ -56,12 +56,12 @@ import Foreign.Marshal.Array
 import Foreign.Storable
 import System.IO.Unsafe
 import Control.Monad
-import Data.Bits
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Bits
 import ViperVM.Utils.Memory (memCopy)
 
 -- | A buffer

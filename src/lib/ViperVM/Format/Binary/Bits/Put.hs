@@ -1,5 +1,5 @@
 -- | Bit putter
-module ViperVM.Format.Binary.BitPut
+module ViperVM.Format.Binary.Bits.Put
    ( BitPutState(..)
    , newBitPutState
    , putBits
@@ -21,14 +21,13 @@ where
 
 import Control.Monad.State
 import Control.Monad.Identity
-import Data.Bits
 
 import ViperVM.Format.Binary.BufferBuilder as B
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BufferList (BufferList)
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitOps
+import ViperVM.Format.Binary.Bits.Order
+import ViperVM.Format.Binary.Bits
 
 
 -- | BitPut state

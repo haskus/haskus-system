@@ -1,5 +1,5 @@
 -- | Bit orderings
-module ViperVM.Format.Binary.BitOrder
+module ViperVM.Format.Binary.Bits.Order
    ( BitOrder(..)
    )
 where

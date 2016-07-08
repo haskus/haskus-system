@@ -197,12 +197,14 @@ library
     ViperVM.Format.Compression.Algorithms.Deflate
     ViperVM.Format.Compression.GZip
 
+    ViperVM.Format.Binary.Bits
+    ViperVM.Format.Binary.Bits.Basic
+    ViperVM.Format.Binary.Bits.Reverse
+    ViperVM.Format.Binary.Bits.Order
+    ViperVM.Format.Binary.Bits.Get
+    ViperVM.Format.Binary.Bits.Put
+
     ViperVM.Format.Binary.BitSet
-    ViperVM.Format.Binary.BitOps
-    ViperVM.Format.Binary.BitOps.BitReverse
-    ViperVM.Format.Binary.BitOrder
-    ViperVM.Format.Binary.BitGet
-    ViperVM.Format.Binary.BitPut
     ViperVM.Format.Binary.BitField
     ViperVM.Format.Binary.Buffer
     ViperVM.Format.Binary.BufferList

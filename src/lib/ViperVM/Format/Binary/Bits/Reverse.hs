@@ -3,13 +3,18 @@
 
 -- | Reverse bits
 --
--- There are several algorithms performing the same thing here. There are
--- benchmarks for them in ViperVM's "bench" directory. The fastest one for the
--- current architecture should be selected in ViperVM.Format.Binary.BitOps. If
--- you find that another algorithm is faster on your architecture, please
--- report it.
-module ViperVM.Format.Binary.BitOps.BitReverse
-   ( reverseBitsObvious
+-- There are several algorithms performing the same thing here (reversing bits
+-- into words of different sizes). There are benchmarks for them in ViperVM's
+-- "bench" directory. The fastest one for the current architecture should be
+-- selected below. If you find that another algorithm is faster on your
+-- architecture, please report it.
+module ViperVM.Format.Binary.Bits.Reverse
+   ( 
+   -- * Generic
+     BitReversable (..)
+   , reverseBitsGeneric
+   -- * Algorithms
+   , reverseBitsObvious
    , reverseBits3Ops
    , reverseBits4Ops
    , reverseBitsTable
@@ -20,9 +25,42 @@ module ViperVM.Format.Binary.BitOps.BitReverse
 where
 
 import qualified Data.ByteString as BS
-import Data.Bits
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Bits.Basic
+
+---------------------------------------------------
+-- Generic and specialized reverseBits
+---------------------------------------------------
+
+
+-- | Reverse bits in a Word
+reverseBitsGeneric :: (FiniteBits a, Integral a) => a -> a
+reverseBitsGeneric = liftReverseBits reverseBits4Ops
+
+-- | Data whose bits can be reversed
+class BitReversable w where
+   reverseBits :: w -> w
+
+instance BitReversable Word8 where
+   reverseBits = reverseBits4Ops
+
+instance BitReversable Word16 where
+   reverseBits = reverseBits5LgN
+
+instance BitReversable Word32 where
+   reverseBits = reverseBits5LgN
+
+instance BitReversable Word64 where
+   reverseBits = reverseBits5LgN
+
+instance BitReversable Word where
+   reverseBits = reverseBits5LgN
+
+
+---------------------------------------------------
+-- Bit reversal algorithms
+---------------------------------------------------
 
 -- Algorithms and explanations adapted from:
 -- http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64Bits
@@ -254,3 +292,4 @@ liftReverseBits f w = rec zeroBits 0
 {-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word16 -> Word16 #-}
 {-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word32 -> Word32 #-}
 {-# SPECIALIZE liftReverseBits :: (Word8 -> Word8) -> Word64 -> Word64 #-}
+

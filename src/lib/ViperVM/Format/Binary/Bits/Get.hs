@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 
 -- | Bit getter
-module ViperVM.Format.Binary.BitGet
+module ViperVM.Format.Binary.Bits.Get
    ( BitGetState(..)
    , newBitGetState
    , isEmpty
@@ -31,7 +31,6 @@ module ViperVM.Format.Binary.BitGet
    )
 where
 
-import Data.Bits
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr (plusPtr)
 import Foreign.Storable (poke)
@@ -40,8 +39,8 @@ import Control.Monad.State
 import Control.Monad.Identity
 
 import ViperVM.Format.Binary.Buffer
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitOps
+import ViperVM.Format.Binary.Bits.Order
+import ViperVM.Format.Binary.Bits
 
 -- | BitGet state
 data BitGetState = BitGetState

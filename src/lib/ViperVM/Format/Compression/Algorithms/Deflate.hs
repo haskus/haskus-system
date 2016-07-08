@@ -21,18 +21,18 @@ where
 import Data.List (sortBy)
 import Data.Tuple (swap)
 import Data.Maybe (fromJust)
-import Data.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import Control.Monad (when,replicateM)
 import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 import Data.Ord(comparing)
 
+import ViperVM.Format.Binary.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
-import ViperVM.Format.Binary.BitGet
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitPut
+import ViperVM.Format.Binary.Bits.Get
+import ViperVM.Format.Binary.Bits.Order
+import ViperVM.Format.Binary.Bits.Put
 import ViperVM.Format.Compression.Algorithms.Huffman
 
 -- 

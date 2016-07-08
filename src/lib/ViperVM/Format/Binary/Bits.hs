@@ -1,23 +1,31 @@
--- | Bit operations
-module ViperVM.Format.Binary.BitOps
-   ( makeMask
-   , maskLeastBits
-   , bitOffset
-   , byteOffset
+-- | Operations on bits
+module ViperVM.Format.Binary.Bits
+   (
+   -- * Basic
+     module ViperVM.Format.Binary.Bits.Basic
+   -- * Bit reversal
+   , BitReversable (..)
    , reverseBitsGeneric
    , reverseLeastBits
+   -- * Mask
+   , makeMask
+   , maskLeastBits
+   -- * String conversion
    , bitsToString
    , bitsFromString
-   , BitReversable (..)
+   -- * Shift
    , getBitRange
+   -- * Various
+   , bitOffset
+   , byteOffset
    )
 where
 
-import Data.Bits
 import Data.List (foldl')
 
-import ViperVM.Format.Binary.BitOps.BitReverse
-import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.Bits.Basic
+import ViperVM.Format.Binary.Bits.Reverse
+import ViperVM.Format.Binary.Bits.Order
 import ViperVM.Format.Binary.Word
 
 -- | makeMask 3 = 00000111
@@ -69,31 +77,6 @@ bitsFromString xs = foldl' b zeroBits (reverse xs `zip` [0..])
       b x ('0',i) = clearBit x i
       b x ('1',i) = setBit x i
       b _ (c,_)   = error $ "Invalid character in the string: " ++ [c]
-
-
--- | Reverse bits in a Word
-reverseBitsGeneric :: (FiniteBits a, Integral a) => a -> a
-reverseBitsGeneric = liftReverseBits reverseBits4Ops
-
--- | Data whose bits can be reversed
-class BitReversable w where
-   reverseBits :: w -> w
-
-instance BitReversable Word8 where
-   reverseBits = reverseBits4Ops
-
-instance BitReversable Word16 where
-   reverseBits = reverseBits5LgN
-
-instance BitReversable Word32 where
-   reverseBits = reverseBits5LgN
-
-instance BitReversable Word64 where
-   reverseBits = reverseBits5LgN
-
-instance BitReversable Word where
-   reverseBits = reverseBits5LgN
-
 
 
 -- | Take n bits at offset o and put them in the least-significant

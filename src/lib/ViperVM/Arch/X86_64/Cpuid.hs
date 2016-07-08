@@ -33,7 +33,6 @@ module ViperVM.Arch.X86_64.Cpuid
 
 import GHC.TypeLits
 import Data.Text (Text)
-import Data.Bits
 import qualified Data.Text as Text
 import Foreign.C.String (castCCharToChar)
 import Foreign.C.Types
@@ -42,6 +41,7 @@ import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Vector as V
+import ViperVM.Format.Binary.Bits
 import ViperVM.Utils.Tuples (fromTuple4)
 
 #ifdef __GLASGOW_HASKELL__

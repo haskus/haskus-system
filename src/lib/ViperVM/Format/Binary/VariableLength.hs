@@ -8,13 +8,12 @@ module ViperVM.Format.Binary.VariableLength
    )
 where
 
-import Data.Bits
-
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
-import ViperVM.Format.Binary.BitPut
-import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Bits.Put
+import ViperVM.Format.Binary.Bits.Order
 import ViperVM.Format.Binary.Buffer
 
 -- Unsigned Little Endian Base 128 (ULEB128)

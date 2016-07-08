@@ -8,15 +8,14 @@ import Distribution.TestSuite.QuickCheck (testProperty)
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen (elements,choose,vectorOf)
 
-import Data.Bits
-
 import Common
 
-import ViperVM.Format.Binary.BitPut
-import ViperVM.Format.Binary.BitGet
-import ViperVM.Format.Binary.BitOrder
-import ViperVM.Format.Binary.BitOps
-import ViperVM.Format.Binary.BitOps.BitReverse
+import ViperVM.Format.Binary.Bits.Put
+import ViperVM.Format.Binary.Bits.Get
+import ViperVM.Format.Binary.Bits.Order
+import ViperVM.Format.Binary.Bits.Reverse
+import ViperVM.Format.Binary.Bits
+
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put

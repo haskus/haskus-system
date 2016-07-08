@@ -63,10 +63,11 @@ import Prelude hiding (null,elem)
 
 import qualified GHC.Exts as Ext
 
-import Data.Bits
 import Data.Foldable (foldl')
 import Foreign.Storable
 import Foreign.CStorable
+
+import ViperVM.Format.Binary.Bits
 
 -- | A bit set: use bitwise operations (fast!) and minimal storage (sizeOf
 -- basetype)

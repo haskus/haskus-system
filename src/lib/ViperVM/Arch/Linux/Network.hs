@@ -29,13 +29,13 @@ import Foreign.Marshal.Array (peekArray,allocaArray)
 import Foreign.Storable
 import Foreign.CStorable
 import Data.List (foldl')
-import Data.Bits
 import GHC.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Bits
 
 data ShutFlag
    = ShutRead

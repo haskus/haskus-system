@@ -17,7 +17,7 @@ import Text.Printf
 
 import qualified ViperVM.Format.Compression.Algorithms.Deflate as D
 import ViperVM.Format.Binary.Get as Get
-import ViperVM.Format.Binary.BitOrder
+import ViperVM.Format.Binary.Bits.Order
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)

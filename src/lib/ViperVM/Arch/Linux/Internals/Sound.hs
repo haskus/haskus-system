@@ -172,7 +172,6 @@ module ViperVM.Arch.Linux.Internals.Sound
    )
 where
 
-import Data.Bits
 import Foreign.Ptr
 import Foreign.CStorable
 import Foreign.Storable
@@ -184,6 +183,7 @@ import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Bits
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle

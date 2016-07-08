@@ -27,11 +27,11 @@ import Data.Proxy
 import Foreign.Ptr (Ptr, nullPtr, intPtrToPtr)
 import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
-import Data.Bits ((.&.))
 
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Bits ((.&.))
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle

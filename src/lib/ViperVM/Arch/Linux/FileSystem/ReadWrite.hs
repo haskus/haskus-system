@@ -19,7 +19,6 @@ module ViperVM.Arch.Linux.FileSystem.ReadWrite
    )
 where
 
-import Data.Bits (shiftR)
 import Data.ByteString (ByteString)
 import Data.ByteString.Unsafe
 import Foreign.CStorable
@@ -31,6 +30,7 @@ import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Word (Word64, Word32)
+import ViperVM.Format.Binary.Bits (shiftR)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls

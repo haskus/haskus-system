@@ -1,7 +1,6 @@
 
 import Criterion.Main
-import ViperVM.Format.Binary.BitOps.BitReverse
-import ViperVM.Format.Binary.BitOps
+import ViperVM.Format.Binary.Bits.Reverse
 import ViperVM.Format.Binary.Word
 
 main :: IO ()
