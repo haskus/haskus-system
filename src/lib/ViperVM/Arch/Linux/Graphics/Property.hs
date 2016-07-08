@@ -21,14 +21,13 @@ import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.String 
 
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Unsafe as BS
 
 
 -- | Property meta-information
@@ -42,11 +41,11 @@ data PropertyMeta = PropertyMeta
 
 -- | The type of a property
 data PropertyType
-   = PropRange       [Word64]                   -- ^ A range
-   | PropSignedRange [Int64]                    -- ^ A signed range
-   | PropEnum        [(Word64,String)]          -- ^ Value-enum
-   | PropBitmask     [(Word64,String)]          -- ^ Bit-enum (bitmask)
-   | PropBlob        [(Word32,BS.ByteString)]   -- ^ Blob-enum
+   = PropRange       [Word64]          -- ^ A range
+   | PropSignedRange [Int64]           -- ^ A signed range
+   | PropEnum        [(Word64,String)] -- ^ Value-enum
+   | PropBitmask     [(Word64,String)] -- ^ Bit-enum (bitmask)
+   | PropBlob        [(Word32,Buffer)] -- ^ Blob-enum
    | PropObject
    deriving (Show,Eq)
 
@@ -103,7 +102,7 @@ getPropertyMeta fd pid = do
          e      -> unhdlErr "getBlobStruct" e
 
       -- | Get a blob
-      getBlob :: Word32 -> Flow Sys '[BS.ByteString,InvalidParam,InvalidProperty]
+      getBlob :: Word32 -> Flow Sys '[Buffer,InvalidParam,InvalidProperty]
       getBlob bid = do
          let gb = StructGetBlob
                      { gbBlobId = bid
@@ -117,7 +116,7 @@ getPropertyMeta fd pid = do
                -- free ptr on error
                >..~=> const (sysIO (free ptr))
                -- otherwise return a bytestring
-               >.~.> const (sysIO (BS.unsafePackMallocCStringLen (ptr, fromIntegral (gbLength gb'))))
+               >.~.> const (sysIO (bufferPackPtr (fromIntegral (gbLength gb')) ptr))
 
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow Sys '[c,InvalidParam,InvalidProperty]) -> Flow Sys '[c,InvalidParam,InvalidProperty]

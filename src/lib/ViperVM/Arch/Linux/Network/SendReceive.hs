@@ -4,12 +4,10 @@ module ViperVM.Arch.Linux.Network.SendReceive
    ( SendReceiveFlag(..)
    , SendReceiveFlags
    , sysReceive
-   , receiveByteString
+   , receiveBuffer
    )
 where
 
-import Data.ByteString (ByteString)
-import Data.ByteString.Unsafe
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 import Foreign.Ptr (Ptr, nullPtr, castPtr)
@@ -20,6 +18,7 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Utils.Flow
 
 
@@ -104,11 +103,11 @@ sysReceive (Handle fd) ptr size flags addr = do
       Just a  -> with a $ \a' -> 
          with (fromIntegral (sizeOf a)) $ \sptr -> call a' sptr
 
-receiveByteString :: Handle -> Int -> SendReceiveFlags -> SysRet ByteString
-receiveByteString fd size flags = do
+receiveBuffer :: Handle -> Int -> SendReceiveFlags -> SysRet Buffer
+receiveBuffer fd size flags = do
    b <- mallocBytes size
    sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
       -- free the buffer on error
       >..~=> const (free b)
       -- otherwise make a bytestring
-      >.~.> \sz -> unsafePackMallocCStringLen (castPtr b, fromIntegral sz)
+      >.~.> \sz -> bufferPackPtr (fromIntegral sz) (castPtr b)

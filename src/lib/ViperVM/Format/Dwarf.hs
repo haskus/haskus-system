@@ -1519,7 +1519,7 @@ getAttributeValue addressSize endian format strings att form = do
       RawAttrValueString x                -> return $ AttrValueString x             
       RawAttrValueStringPointer off    -> do
          -- read the string
-         let str = Text.decodeUtf8 . runGetOrFail getBufferNul . bufferDrop (fromIntegral off) <$> strings
+         let str = Text.bufferDecodeUtf8 . runGetOrFail getBufferNul . bufferDrop (fromIntegral off) <$> strings
          return (AttrValueString (fromJust str))
 
 
@@ -1552,7 +1552,7 @@ getValueFromForm addressSize endian format form = do
       FormRefUData      -> RawAttrValueRelativeReference <$> getULEB128
       FormRefAddress    -> RawAttrValueAbsoluteReference <$> gwN
       FormRefSig8       -> RawAttrValueTypeReference     <$> gw64
-      FormString        -> RawAttrValueString            <$> (Text.decodeUtf8 <$> getBufferNul)
+      FormString        -> RawAttrValueString            <$> (Text.bufferDecodeUtf8 <$> getBufferNul)
       FormStringPointer -> RawAttrValueStringPointer     <$> gwN
       FormIndirect      -> getValueFromForm addressSize endian format =<< (toForm <$> getULEB128)
 

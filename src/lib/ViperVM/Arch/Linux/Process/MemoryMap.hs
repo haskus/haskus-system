@@ -3,28 +3,24 @@ module ViperVM.Arch.Linux.Process.MemoryMap
    ( MemoryMapEntry (..)
    , readMemoryMap
    , parseMemoryMap
-   , memoryMapToBytestring
+   , memoryMapToBufferList
    , memoryMapToBuffer
-   , memoryMapToLazyBytestring
    )
 where
 
 import Prelude hiding (takeWhile)
 
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.BufferList
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Text as Text
 
 import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
 
 import Control.Monad (void)
-import qualified Data.ByteString.Lazy as LBS
-import Data.ByteString.Unsafe
-import Data.ByteString (ByteString)
 import Foreign.Ptr (wordPtrToPtr)
-import Data.Text (Text)
-import qualified Data.Text as Text
 
 -- | Memory map entry
 data MemoryMapEntry = MemoryMapEntry
@@ -91,20 +87,9 @@ parseMemoryMap = parseFile
          pth <- Text.pack <$> manyTill anyChar eol
          return $ MemoryMapEntry start stop perms sharing offset dev inode pth
 
--- | Convert a memory-map entry into a ByteString
---
--- Warning: The bytestring directly maps the entry (i.e. there is no copy of the
--- data). Hence the referential transparency can be broken if the entry is
--- written into 
-memoryMapToBytestring :: MemoryMapEntry -> IO ByteString
-memoryMapToBytestring e = unsafePackCStringLen (ptr,len)
-   where
-      ptr = wordPtrToPtr (fromIntegral (entryStartAddr e))
-      len = fromIntegral $ entryStopAddr e - entryStartAddr e
-
--- | Convert a memory-map entry into a lazy ByteString
-memoryMapToLazyBytestring :: MemoryMapEntry -> IO LBS.ByteString
-memoryMapToLazyBytestring = fmap LBS.fromStrict . memoryMapToBytestring
+-- | Convert a memory-map entry into a BufferList
+memoryMapToBufferList :: MemoryMapEntry -> IO BufferList
+memoryMapToBufferList = fmap toBufferList . memoryMapToBuffer
 
 -- | Convert a memory-map entry into a Buffer
 --

@@ -122,11 +122,11 @@ getBuffer sz = Buffer <$> BG.getBytes (fromIntegral sz)
 
 -- | Pull n bytes from the input, as a Buffer
 getTextUtf8 :: Word -> Get Text.Text
-getTextUtf8 sz = Text.decodeUtf8 <$> getBuffer sz
+getTextUtf8 sz = Text.bufferDecodeUtf8 <$> getBuffer sz
 
 -- | Pull \0 terminal text
 getTextUtf8Nul :: Get Text.Text
-getTextUtf8Nul = Text.decodeUtf8 <$> getBufferNul
+getTextUtf8Nul = Text.bufferDecodeUtf8 <$> getBufferNul
 
 -- | Get Word8
 getWord8 :: Get Word8

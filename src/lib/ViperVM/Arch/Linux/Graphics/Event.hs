@@ -7,17 +7,17 @@ module ViperVM.Arch.Linux.Graphics.Event
    )
 where
 
-import Data.ByteString
 import Foreign.Storable
 import Foreign.Ptr
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.Linux.Internals.Graphics
 
 -- | Graphics events
 data Event
    = VBlankEvent EventType StructEventVBlank   -- ^ VBlank event
-   | CustomEvent Word32 ByteString             -- ^ Custom event
+   | CustomEvent Word32 Buffer                 -- ^ Custom event
    deriving (Show)
 
 -- | Peek events
@@ -36,6 +36,6 @@ peekEvents = go
          v <- case toEventType (eventType e) of
             Just t  -> VBlankEvent t <$> peek (castPtr ptr)
             Nothing -> CustomEvent (eventType e) <$>
-               packCStringLen (castPtr ptr `plusPtr` 8,
-                               fromIntegral (eventLength e) - 8)
+               bufferPackPtr (fromIntegral (eventLength e) - 8) (castPtr ptr `plusPtr` 8)
+                               
          return (v,eventLength e)

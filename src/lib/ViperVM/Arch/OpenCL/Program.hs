@@ -29,6 +29,7 @@ import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.String
 
 import Control.Monad (void)
@@ -40,8 +41,6 @@ import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)
 import Foreign.Storable (peek, sizeOf)
 import Data.List (elemIndex)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Unsafe as BS
 
 -- | Program
 data Program = Program Library Program_ deriving (Eq)
@@ -165,7 +164,7 @@ getProgramBinarySizes' = fmap toException . getProgramBinarySizes
 
 
 -- | Get the binary associated to the device (if any)
-getProgramBinary :: Program -> Device -> CLRet (Maybe BS.ByteString)
+getProgramBinary :: Program -> Device -> CLRet (Maybe Buffer)
 getProgramBinary prog dev = runEitherT $ do
 
    devs <- EitherT $ getProgramDevices prog
@@ -196,12 +195,12 @@ getProgramBinary prog dev = runEitherT $ do
                      whenSuccess 
                         (rawClGetProgramInfo (cllib prog) (unwrap prog) 
                            (fromCEnum infoid) size (castPtr ptrs) nullPtr)
-                        (Just . BS.pack <$> peekArray binsize binPtr)
+                        (Just <$> bufferPackPtr (fromIntegral binsize) (castPtr binPtr))
    
 
 -- | Get the binary associated to the device (if any)
 -- throw an exception on failure
-getProgramBinary' :: Program -> Device -> IO (Maybe BS.ByteString)
+getProgramBinary' :: Program -> Device -> IO (Maybe Buffer)
 getProgramBinary' prog = fmap toException . getProgramBinary prog
 
 
@@ -217,19 +216,19 @@ createProgramFromSource ctx src =
 -- | Create a program from a binary
 --
 -- Each device has an associated binary and returns a specific status
-createProgramFromBinary :: Context -> [(Device, BS.ByteString)] -> CLRet (Program, [CLError])
+createProgramFromBinary :: Context -> [(Device, Buffer)] -> CLRet (Program, [CLError])
 createProgramFromBinary ctx binaries = do
    let 
       devs = map (unwrap . fst) binaries
       bins = map snd binaries
-      lens = map (fromIntegral . BS.length) bins :: [CSize]
+      lens = map (fromIntegral . bufferSize) bins :: [CSize]
       n    = length devs
 
    withArray devs $ \devs' ->
       withArray lens $ \lens' ->
-         -- Convert [ByteString] into [CString]
-         withMany BS.unsafeUseAsCString bins $ \bins' ->
-            -- Convert [CString] into [Ptr Word8] into Ptr CString
+         -- Convert [Buffer] into [Ptr ()]
+         withMany withBufferPtr bins $ \bins' ->
+            -- Convert [Ptr ()] into [Ptr Word8] into Ptr CString
             withArray (map castPtr bins') $ \bins'' ->
                allocaArray n $ \(status' :: Ptr Int32) -> do
                   p' <- wrapPError (rawClCreateProgramWithBinary (cllib ctx) (unwrap ctx) 

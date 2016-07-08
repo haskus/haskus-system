@@ -11,18 +11,17 @@ module ViperVM.Arch.Linux.KernelEvent
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Text (Text)
+import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.Network
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Network.SendReceive
 import ViperVM.Arch.Linux.Error
 import ViperVM.System.Sys
 
-import qualified Data.ByteString as BS
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
 
 -- | A kernel event
 data KernelEvent = KernelEvent
@@ -58,7 +57,7 @@ receiveKernelEvent :: Handle -> Sys KernelEvent
 receiveKernelEvent fd = go
    where
       go = do
-         msg <- sysCallAssertQuiet "Receive kernel event" $ receiveByteString fd 2048 BitSet.empty
+         msg <- sysCallAssertQuiet "Receive kernel event" $ receiveBuffer fd 2048 BitSet.empty
          case parseKernelEvent msg of
             Just m  -> return m
             Nothing -> sysError "Kernel event is not parsable"
@@ -73,10 +72,10 @@ receiveKernelEvent fd = go
 -- Note: when kernel event sockets are used with a classic Linux distribution
 -- using udev, libudev injects its own events with their own syntax. Hence we
 -- discard them (they all begin with "libudev" characters).
-parseKernelEvent :: BS.ByteString -> Maybe KernelEvent
+parseKernelEvent :: Buffer -> Maybe KernelEvent
 parseKernelEvent bs = r
    where
-      bss = fmap Text.decodeUtf8 (BS.split 0 bs)
+      bss = fmap Text.bufferDecodeUtf8 (bufferSplitOn 0 bs)
       r = case bss of
             -- filter out injected libudev events
             ("libudev":_) -> Nothing

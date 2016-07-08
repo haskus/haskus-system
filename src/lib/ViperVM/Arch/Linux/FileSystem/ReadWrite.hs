@@ -14,13 +14,11 @@ module ViperVM.Arch.Linux.FileSystem.ReadWrite
    , sysWriteWithOffset
    , sysWriteMany
    , sysWriteManyWithOffset
-   , readByteString
-   , writeByteString
+   , readBuffer
+   , writeBuffer
    )
 where
 
-import Data.ByteString (ByteString)
-import Data.ByteString.Unsafe
 import Foreign.CStorable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array (withArray)
@@ -31,6 +29,7 @@ import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Word (Word64, Word32)
 import ViperVM.Format.Binary.Bits (shiftR)
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
@@ -118,21 +117,21 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
    withArray (fmap toVec bufs) $ \bufs' ->
       onSuccess (syscall_pwritev fd bufs' count ol oh) fromIntegral
 
--- | Read n bytes in a bytestring
-readByteString :: Handle -> Int -> SysRet ByteString
-readByteString fd size = do
+-- | Read n bytes in a buffer
+readBuffer :: Handle -> Int -> SysRet Buffer
+readBuffer fd size = do
    b <- mallocBytes size
    sysRead fd b (fromIntegral size)
       -- free the pointer on error
       >..~=> const (free b)
       -- otherwise return the bytestring
-      >.~.> \sz -> unsafePackCStringLen (castPtr b, fromIntegral sz)
+      >.~.> \sz -> bufferPackPtr (fromIntegral sz) (castPtr b)
 
--- | Write a bytestring
-writeByteString :: Handle -> ByteString -> SysRet ()
-writeByteString fd bs = unsafeUseAsCStringLen bs go
+-- | Write a buffer
+writeBuffer :: Handle -> Buffer -> SysRet ()
+writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
-      go (_,0)     = flowRet ()
-      go (ptr,len) = sysWrite fd ptr (fromIntegral len)
-         >.~#> \c -> go ( ptr `plusPtr` fromIntegral c
-                        , len - fromIntegral c)
+      go _ 0     = flowRet ()
+      go ptr len = sysWrite fd ptr (fromIntegral len)
+         >.~#> \c -> go (ptr `plusPtr` fromIntegral c)
+                        (len - fromIntegral c)

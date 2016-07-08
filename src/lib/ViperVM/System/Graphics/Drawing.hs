@@ -20,12 +20,12 @@ import Graphics.Rasterific.Texture
 import Codec.Picture.Png
 import Codec.Picture.Types
 import Foreign.Storable
-import Data.ByteString( ByteString)
 
 import Control.Loop (forLoop)
 
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Buffer as B
 import ViperVM.System.Graphics
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -51,10 +51,10 @@ intersect (x1,y1,w1,h1) (x2,y2,w2,h2)
             y' = max y1 y2
 
 -- | Load a PNG
-loadPng :: ByteString -> Image PixelRGBA8
+loadPng :: B.Buffer -> Image PixelRGBA8
 loadPng bs = img
    where
-      Right (ImageRGBA8 img) = decodePng bs
+      Right (ImageRGBA8 img) = decodePng (bufferUnpackByteString bs)
 
 
 -- | check framebuffer pixel format

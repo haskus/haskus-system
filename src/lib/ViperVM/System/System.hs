@@ -15,6 +15,7 @@ module ViperVM.System.System
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Text (Text, bufferDecodeUtf8)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
@@ -34,7 +35,6 @@ import Prelude hiding (init,tail)
 import Control.Monad (void)
 import Control.Concurrent.STM
 import Data.Maybe (catMaybes)
-import Data.ByteString (ByteString)
 
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
@@ -141,7 +141,7 @@ listDevicesWithClass system cls = do
 
       -- parser for dev files
       -- content format is: MMM:mmm\n (where M is major and m is minor)
-      parseDevFile :: Parsec ByteString Device
+      parseDevFile :: Parsec Text Device
       parseDevFile = do
          major <- fromIntegral <$> decimal
          void (char ':')
@@ -153,8 +153,8 @@ listDevicesWithClass system cls = do
       readDevFile :: Handle -> Flow Sys '[Device,ErrorCode]
       readDevFile devfd = do
          -- 16 bytes should be enough
-         sysCallWarn "Read dev file" (readByteString devfd 16)
-         >.-.> \content -> case parseMaybe parseDevFile content of
+         sysCallWarn "Read dev file" (readBuffer devfd 16)
+         >.-.> \content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
             Nothing -> error "Invalid dev file format"
             Just x  -> x
 

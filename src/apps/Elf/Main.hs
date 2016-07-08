@@ -306,7 +306,7 @@ showSection elf secnum secname s = do
             | getSectionName elf s == Just ".interp" -> tr_ $ do
                th_ "Interpreter path"
                let c = getSectionContentBuffer elf s
-               td_ . toHtml $ Text.decodeUtf8 c
+               td_ . toHtml $ Text.bufferDecodeUtf8 c
 
          -- Show relocation entries
          typ@(SectionTypeRelocation {}) -> tr_ $ do

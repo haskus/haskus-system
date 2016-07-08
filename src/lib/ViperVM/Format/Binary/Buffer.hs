@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | A memory buffer
 --
@@ -8,7 +9,6 @@
 --   - some additional primitives
 module ViperVM.Format.Binary.Buffer
    ( Buffer (..)
-   , makeBuffer
    , withBufferPtr
    , bufferSize
    , isBufferEmpty
@@ -23,15 +23,17 @@ module ViperVM.Format.Binary.Buffer
    , bufferCons
    , bufferSnoc
    , bufferInit
-   , bufferSplit
+   , bufferSplitOn
    , bufferHead
+   , bufferIndex
    , bufferTake
    , bufferTakeWhile
    , bufferTakeAtMost
    -- * Packing/Unpacking
+   , bufferPackByteString
    , bufferPackByteList
-   , bufferPack
-   , bufferPackList
+   , bufferPackStorable
+   , bufferPackStorableList
    , bufferPackPtr
    , bufferUnpackByteList
    , bufferUnpackByteString
@@ -44,6 +46,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferUnsafeInit
    , bufferUnsafeIndex
    , bufferUnsafeMapMemory
+   , bufferUnsafeUsePtr
    -- * IO
    , bufferReadFile
    , bufferWriteFile
@@ -61,7 +64,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Bits.Basic
 import ViperVM.Utils.Memory (memCopy)
 
 -- | A buffer
@@ -78,10 +81,6 @@ instance Show Buffer where
          toHex 0xE = "E"
          toHex 0xF = "F"
          toHex x   = show x
-
--- | Create a buffer
-makeBuffer :: ByteString -> Buffer
-makeBuffer = Buffer
 
 -- | Unsafe: be careful if you modify the buffer contents or you may break
 -- referential transparency
@@ -125,9 +124,9 @@ bufferReverse (Buffer bs) = Buffer (BS.reverse bs)
 bufferDrop :: Word -> Buffer -> Buffer
 bufferDrop n (Buffer bs) = Buffer $ BS.drop (fromIntegral n) bs
 
--- | Split
-bufferSplit :: Word -> Buffer -> [Buffer]
-bufferSplit n (Buffer bs) = fmap Buffer (BS.split (fromIntegral n) bs)
+-- | Split on the given Byte values
+bufferSplitOn :: Word8 -> Buffer -> [Buffer]
+bufferSplitOn n (Buffer bs) = fmap Buffer (BS.split n bs)
 
 -- | Tail
 bufferTail :: Buffer -> Buffer
@@ -153,6 +152,10 @@ bufferInit (Buffer bs) = Buffer $ BS.init bs
 -- | Head
 bufferHead :: Buffer -> Word8
 bufferHead (Buffer bs) = BS.head bs
+
+-- | Index
+bufferIndex :: Buffer -> Word -> Word8
+bufferIndex (Buffer bs) n = BS.index bs (fromIntegral n)
 
 -- | Unpack
 bufferUnpackByteList :: Buffer -> [Word8]
@@ -186,21 +189,26 @@ bufferTakeAtMost n buf
    | bufferSize buf < n = buf
    | otherwise          = bufferTake n buf
 
+
+-- | Pack a ByteString
+bufferPackByteString :: BS.ByteString -> Buffer
+bufferPackByteString = Buffer
+
 -- | Pack a list of bytes
 bufferPackByteList :: [Word8] -> Buffer
 bufferPackByteList = Buffer . BS.pack
 
 -- | Pack a Storable
-bufferPack :: forall a. Storable a => a -> Buffer
-bufferPack x = Buffer $ unsafePerformIO $ do
+bufferPackStorable :: forall a. Storable a => a -> Buffer
+bufferPackStorable x = Buffer $ unsafePerformIO $ do
    let sza = sizeOf (undefined :: a)
    p <- malloc
    poke p x
    BS.unsafePackMallocCStringLen (castPtr p, sza)
 
 -- | Pack a list of Storable
-bufferPackList :: forall a. Storable a => [a] -> Buffer
-bufferPackList xs = Buffer $ unsafePerformIO $ do
+bufferPackStorableList :: forall a. Storable a => [a] -> Buffer
+bufferPackStorableList xs = Buffer $ unsafePerformIO $ do
    let 
       sza = sizeOf (undefined :: a)
       lxs = length xs
@@ -249,6 +257,9 @@ bufferUnsafeMapMemory :: Word -> Ptr () -> IO Buffer
 bufferUnsafeMapMemory sz ptr =
    Buffer <$> BS.unsafePackMallocCStringLen (castPtr ptr, fromIntegral sz)
 
+-- | Use buffer pointer
+bufferUnsafeUsePtr :: Buffer -> (Ptr () -> Word -> IO a) -> IO a
+bufferUnsafeUsePtr bu@(Buffer b) f = BS.unsafeUseAsCString b $ \p -> f (castPtr p) (bufferSize bu)
 
 -- | Read file
 bufferReadFile :: FilePath -> IO Buffer

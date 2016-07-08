@@ -28,8 +28,8 @@ module ViperVM.Arch.Linux.Ioctl
    , ioctlReadCmdRet
    , ioctlReadRet
    , ioctlReadBytes
-   , ioctlReadByteString
    , ioctlReadBuffer
+   , ioctlReadVariableBuffer
    -- * Write
    , ioctlWriteCmd
    , ioctlWrite
@@ -48,10 +48,10 @@ import Foreign.Storable
 import Foreign.Ptr
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
-import qualified Data.ByteString as BS
 
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -180,27 +180,27 @@ ioctlReadBytes typ nr n ptr fd = do
    ioctl cmd ptr fd
 
 -- | Build a Read ioctl that reads the given number of bytes and return them in
--- a ByteString
-ioctlReadByteString :: CommandType -> CommandNumber -> Int -> Handle -> SysRet (Int64, BS.ByteString)
-ioctlReadByteString typ nr n fd =
+-- a Buffer
+ioctlReadBuffer :: CommandType -> CommandNumber -> Int -> Handle -> SysRet (Int64, Buffer)
+ioctlReadBuffer typ nr n fd =
    allocaBytes n $ \ptr ->
       ioctlReadBytes typ nr n ptr fd >.~.> \v ->
-         (v,) <$> BS.packCStringLen (ptr, n)
+         (v,) <$> bufferPackPtr (fromIntegral n) ptr
 
 -- | Build a Read ioctl for variable sized buffers. We expect the ioctl to
 -- return the length of the data that can be read. We first try to read with a
 -- buffer of `defn` bytes. If there are data left, we retry with a buffer of the
 -- appropriate size.
-ioctlReadBuffer ::
+ioctlReadVariableBuffer ::
    ( Liftable '[ErrorCode] '[b,ErrorCode]
    ) => CommandType -> CommandNumber -> (Int -> Ptr a -> IO b) -> Int -> Handle -> SysRet b
-ioctlReadBuffer typ nr f n fd = allocaBytes n $ \ptr ->
+ioctlReadVariableBuffer typ nr f n fd = allocaBytes n $ \ptr ->
    ioctlReadBytes typ nr n ptr fd
       >.~#> \len ->
          if len <= fromIntegral n
             then flowRet =<< f n ptr
             -- try with the returned buffer size
-            else ioctlReadBuffer typ nr f (fromIntegral len) fd
+            else ioctlReadVariableBuffer typ nr f (fromIntegral len) fd
 
 
 

@@ -216,7 +216,7 @@ getStringsFromSection elf sec =
       -- getter for a bytestring ending with NUL and its offset
       getter = getEntriesAndOffsetWithAlignment 1 getBufferNul
       -- convert a bytestring into text
-      f = second Text.decodeUtf8
+      f = second Text.bufferDecodeUtf8
 
 
 
@@ -230,7 +230,7 @@ getStringFromSection elf sec idx = res
          _                           -> Nothing
 
       -- extract the string
-      extractStr s = Text.decodeUtf8
+      extractStr s = Text.bufferDecodeUtf8
          $ bufferTakeWhile (/=0)
          $ bufferDrop (fromIntegral idx)
          $ getSectionContentBuffer elf s
@@ -493,7 +493,7 @@ getNoteEntriesFromSection elf sec = runGetOrFail (getEntriesWithAlignment 4 gett
       -- getter
       getter = do
          raw  <- getRawNote (elfPreHeader elf)
-         name <- Text.decodeUtf8 . bufferInit 
+         name <- Text.bufferDecodeUtf8 . bufferInit 
                   <$> getBuffer (fromIntegral $ rawnoteNameLength raw)
          desc <- getBuffer (fromIntegral $ rawnoteDescriptorSize raw)
          return (Note name desc (rawnoteType raw))

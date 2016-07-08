@@ -132,7 +132,7 @@ getZCAStringTable hdr bs = Map.fromList (offs `zip` strs)
       raw =   bufferTake (fromIntegral $ zcaStringsSize hdr)
             $ bufferDrop (fromIntegral $ zcaStringsOffset hdr) bs
       -- decode strings
-      strs = fmap Text.decodeUtf8 . bufferSplit 0 . bufferInit $ raw
+      strs = fmap Text.bufferDecodeUtf8 . bufferSplitOn 0 . bufferInit $ raw
       -- add offsets
       offs = scanl (+) 0 $ fmap (\s -> Text.length s + 1) strs
 

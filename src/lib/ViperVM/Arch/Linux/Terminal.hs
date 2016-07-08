@@ -14,8 +14,9 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Utils.Flow
-
-import qualified Data.ByteString.Char8 as BS
+import ViperVM.Format.Text
+import ViperVM.Format.String
+import ViperVM.Format.Binary.Buffer
 
 -- | Standard input (by convention)
 stdin :: Handle
@@ -31,17 +32,17 @@ stderr = Handle 2
 
 -- | Write a String in the given file descriptor
 writeStr :: Handle -> String -> SysRet ()
-writeStr fd = writeByteString fd . BS.pack
+writeStr fd = writeBuffer fd . stringEncodeUtf8
 
 -- | Write a String with a newline character in the given
 -- file descriptor
 writeStrLn :: Handle -> String -> SysRet ()
-writeStrLn fd = writeByteString fd . BS.pack . (++ "\n")
+writeStrLn fd = writeBuffer fd . stringEncodeUtf8 . (++ "\n")
 
 -- | Read a single character
 --
 -- Warning: only the first byte of multi-byte characters (e.g. utf8) will be
 -- read
 readChar :: Handle -> SysRet Char
-readChar fd = readByteString fd 1
-   >.-.> (head . BS.unpack)
+readChar fd = readBuffer fd 1
+   >.-.> (castCCharToChar . bufferPeek)

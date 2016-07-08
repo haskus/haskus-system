@@ -24,8 +24,7 @@ module ViperVM.Format.Binary.Bits.Reverse
    )
 where
 
-import qualified Data.ByteString as BS
-
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits.Basic
 
@@ -188,13 +187,13 @@ reverseBits4Ops x = fromIntegral x'
 
 -- | Reverse bits using a lookup table
 reverseBitsTable :: Word8 -> Word8
-reverseBitsTable x = bitsTable `BS.index` (fromIntegral x)
+reverseBitsTable x = bitsTable `bufferIndex` (fromIntegral x)
 
 {-# INLINE reverseBitsTable #-}
 
 -- fill the table by using another method
-bitsTable :: BS.ByteString
-bitsTable = BS.pack $ fmap reverseBits4Ops [0..255]
+bitsTable :: Buffer
+bitsTable = bufferPackByteList $ fmap reverseBits4Ops [0..255]
 
 -- Reverse the bits in a byte with 7 operations (no 64-bit)
 -- ========================================================

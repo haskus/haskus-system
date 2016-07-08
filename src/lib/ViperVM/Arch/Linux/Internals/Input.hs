@@ -75,6 +75,7 @@ import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.String (peekCString)
 import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
@@ -82,7 +83,6 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Utils.Flow
 
-import qualified Data.ByteString as BS
 import GHC.Generics (Generic)
 import Foreign.Storable
 import Foreign.CStorable
@@ -717,25 +717,25 @@ setKeyCode = ioctlWrite 0x45 0x04
 --
 -- EVIOCGNAME
 getDeviceName :: Handle -> SysRet String
-getDeviceName = ioctlReadBuffer 0x45 0x06 (const peekCString) 256
+getDeviceName = ioctlReadVariableBuffer 0x45 0x06 (const peekCString) 256
 
 -- | Get physical location
 --
 -- EVIOCGPHYS
 getDevicePhysicalLocation :: Handle -> SysRet String
-getDevicePhysicalLocation = ioctlReadBuffer 0x45 0x07 (const peekCString) 256
+getDevicePhysicalLocation = ioctlReadVariableBuffer 0x45 0x07 (const peekCString) 256
 
 -- | Get unique identifier
 --
 -- EVIOCGUNIQ
 getDeviceUniqueID :: Handle -> SysRet String
-getDeviceUniqueID = ioctlReadBuffer 0x45 0x08 (const peekCString) 256
+getDeviceUniqueID = ioctlReadVariableBuffer 0x45 0x08 (const peekCString) 256
 
 -- | Get device properties
 --
 -- EVIOCGPROP
 getDeviceProperties :: Handle -> SysRet String
-getDeviceProperties = ioctlReadBuffer 0x45 0x09 (const peekCString) 256
+getDeviceProperties = ioctlReadVariableBuffer 0x45 0x09 (const peekCString) 256
 
 -- | Get multi-touch slots
 --
@@ -772,34 +772,34 @@ getDeviceMultiTouchSlots code nSlots fd = do
 -- | Get global key state (one bit per pressed key)
 --
 -- EVIOCGKEY
-getDeviceKeys :: Int -> Handle -> SysRet BS.ByteString
-getDeviceKeys n fd = ioctlReadByteString 0x45 0x18 ((n `div` 8) + 1) fd >.-.> snd
+getDeviceKeys :: Int -> Handle -> SysRet Buffer
+getDeviceKeys n fd = ioctlReadBuffer 0x45 0x18 ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get all leds (one bit per led)
 --
 -- EVIOCGLED
-getDeviceLEDs :: Int -> Handle -> SysRet BS.ByteString
-getDeviceLEDs n fd = ioctlReadByteString 0x45 0x19 ((n `div` 8) + 1) fd >.-.> snd
+getDeviceLEDs :: Int -> Handle -> SysRet Buffer
+getDeviceLEDs n fd = ioctlReadBuffer 0x45 0x19 ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get sound status (one bit per sound)
 --
 -- EVIOCGSND
-getDeviceSoundStatus :: Int -> Handle -> SysRet BS.ByteString
-getDeviceSoundStatus n fd = ioctlReadByteString 0x45 0x1a ((n `div` 8) + 1) fd >.-.> snd
+getDeviceSoundStatus :: Int -> Handle -> SysRet Buffer
+getDeviceSoundStatus n fd = ioctlReadBuffer 0x45 0x1a ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get switch status (one bit per switch)
 --
 -- EVIOCGSW
-getDeviceSwitchStatus :: Int -> Handle -> SysRet BS.ByteString
-getDeviceSwitchStatus n fd = ioctlReadByteString 0x45 0x1b ((n `div` 8) + 1) fd >.-.> snd
+getDeviceSwitchStatus :: Int -> Handle -> SysRet Buffer
+getDeviceSwitchStatus n fd = ioctlReadBuffer 0x45 0x1b ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get the number of bits that can be set by the given event type
 --
 -- EVIOCGBIT
-getDeviceBits :: EventType -> Int -> Handle -> SysRet BS.ByteString
+getDeviceBits :: EventType -> Int -> Handle -> SysRet Buffer
 getDeviceBits ev n fd = do
    let code = fromCEnum ev
-   ioctlReadByteString 0x45 (0x20 + code) ((n `div` 8) + 1) fd >.-.> snd
+   ioctlReadBuffer 0x45 (0x20 + code) ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get absolute info
 --

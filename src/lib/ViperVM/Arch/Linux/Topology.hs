@@ -18,13 +18,9 @@ import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
 
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Data.Text.Encoding (decodeUtf8)
 import System.Directory
 import Data.List (isPrefixOf,stripPrefix)
 import Control.Monad (void,forM)
-import Data.ByteString.Char8 (pack)
 import Data.Maybe (fromJust,mapMaybe)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -32,6 +28,8 @@ import qualified Data.Vector as V
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import qualified ViperVM.Format.Text as Text
+import ViperVM.Format.Text (Text)
 
 -- | A CPUMap is a set of CPU identifiers
 --
@@ -64,7 +62,7 @@ parseMemInfo = parseFile
          value <- fromIntegral <$> decimal
          kb <- (string " kB" *> return (*1024)) <|> return id
          void eol
-         return (decodeUtf8 (pack lbl), kb value)
+         return (Text.pack lbl, kb value)
 
 
 -- | Read cpumap files
