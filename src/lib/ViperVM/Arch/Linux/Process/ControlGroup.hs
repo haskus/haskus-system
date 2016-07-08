@@ -12,8 +12,8 @@ import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
 
-import Data.Text (Text)
-import qualified Data.Text as Text
+import ViperVM.Format.Text (Text)
+import qualified ViperVM.Format.Text as Text
 import Control.Monad (void)
 
 -- | Control group entry

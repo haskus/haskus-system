@@ -15,11 +15,10 @@ where
 
 import Foreign.Ptr (Ptr,castPtr)
 import Data.Ord (comparing)
-import Text.Printf
-import qualified Data.Text as Text
 
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
+import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Common.Errors
 import qualified ViperVM.Arch.Posix.Malloc as Posix
 import qualified ViperVM.Arch.X86_64.Cpuid as C
@@ -52,15 +51,15 @@ hostMemUID _ = "Host Memory"
 
 -- | Unique proc ID
 hostProcUID :: Proc -> String
-hostProcUID p = printf "Host Proc %d:%d" (hostProcNode p) (hostProcIndex p)
+hostProcUID p = Text.printf "Host Proc %d:%d" (hostProcNode p) (hostProcIndex p)
 
 -- | Processor model
 hostProcModel :: Proc -> String
-hostProcModel _ = printf "%s - %s" (Text.unpack C.procVendor) (Text.unpack C.procBrand)
+hostProcModel _ = Text.printf "%s - %s" (Text.unpack C.procVendor) (Text.unpack C.procBrand)
 
 -- | Unique buffer ID
 hostBufferUID :: Buffer -> String
-hostBufferUID buf = printf "Host Buffer %s" (show . hostBufferPtr $ buf)
+hostBufferUID buf = Text.printf "Host Buffer %s" (show . hostBufferPtr $ buf)
 
 -- | Allocate a buffer in host memory
 allocateBuffer :: Word64 -> Memory -> IO (Either AllocError Buffer)

@@ -21,12 +21,12 @@ where
 import qualified Data.ByteString as BS
 import qualified Data.Serialize.Put as BP
 import Data.Serialize.Put (Put)
-import Data.Text (Text)
-import qualified Data.Text.Encoding as Text
 import Control.Monad (replicateM_)
 
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Text (Text)
+import qualified ViperVM.Format.Text as Text
 
 -- | Execute Put
 runPut :: Put -> Buffer
@@ -42,7 +42,7 @@ putByteString = BP.putByteString
 
 -- | Put the given text
 putTextUtf8 :: Text -> Put
-putTextUtf8 = BP.putByteString . Text.encodeUtf8
+putTextUtf8 = putBuffer . Text.textEncodeUtf8
 
 -- | Put null bytes
 putPadding :: Word -> Put

@@ -27,15 +27,13 @@ module ViperVM.System.Sys
 where
 
 import Prelude hiding (log)
-import Data.Text.Lazy as Text
-import Data.Text.Lazy.IO as Text
 import Data.String (fromString)
-import qualified Data.Text.Format as Text
 import Control.Monad.State
 import Data.Foldable (traverse_)
-import Text.Printf
-import ViperVM.Utils.STM.Future
 import Control.Concurrent.STM
+
+import ViperVM.Utils.STM.Future
+import ViperVM.Format.Text as Text
 
 ------------------------------------------------
 -- Sys monad
@@ -210,7 +208,7 @@ sysLogPrint = do
                   Just st -> return $ Text.pack ("("++show st++")")
                   Nothing -> return $ Text.pack ""
 
-               Text.putStrLn $ Text.format (fromString "{}---- {}{}{}")
+               Text.putStrLn $ textFormat (fromString "{}---- {}{}{}")
                   ( Text.replicate i (Text.pack "  |")
                   , Text.pack $ case ty of
                      LogWarning  -> "Warning: "
@@ -223,7 +221,7 @@ sysLogPrint = do
                traverse_ (printLog i) =<< pollFutureIO n
 
             LogGroup t fl (LogNext _ n) -> do
-               Text.putStrLn $ Text.format (fromString "{}--+- {}")
+               Text.putStrLn $ textFormat (fromString "{}--+- {}")
                   ( Text.replicate i (Text.pack "  |")
                   , t
                   )
@@ -231,7 +229,7 @@ sysLogPrint = do
                traverse_ (printLog i)     =<< pollFutureIO fl
 
             LogFork t (LogNext _ n1) (LogNext _ n2) -> do
-               Text.putStrLn $ Text.format (fromString "{}--*- FORK: {}")
+               Text.putStrLn $ textFormat (fromString "{}--*- FORK: {}")
                   ( Text.replicate i (Text.pack "  |")
                   , t
                   )

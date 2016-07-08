@@ -16,12 +16,12 @@ module ViperVM.Format.CPIO
    )
 where
 
-import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.Read as Text
-import qualified Data.Text.Encoding as Text
+import ViperVM.Format.Text (Text)
+import qualified ViperVM.Format.Text as Text
+
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
+
 import Control.Monad (when)
 import Data.Foldable (forM_)
 import Numeric (showHex)
@@ -136,9 +136,9 @@ putNumber x = putByteString bs
 getNumber :: Get Word64
 getNumber = readHex' <$> getTextUtf8 8
    where
-      readHex' n = case Text.hexadecimal n of
-         Right (num,_)-> num
-         Left err     -> error $ "Invalid hexadecimal number: " ++ show n ++ "(" ++ err ++ ")"
+      readHex' n = case Text.textParseHexadecimal n of
+         Right num -> num
+         Left err  -> error $ "Invalid hexadecimal number: " ++ show n ++ "(" ++ err ++ ")"
 
 
 -- | Put null bytes to pad to 4
@@ -169,13 +169,13 @@ putFile FileDesc {..} path content = do
    putNumber fileRDevMajor
    putNumber fileRDevMinor
    -- put the length of the UTF8 encoded string, not the Haskell string
-   let bspath = Text.encodeUtf8 path
-   putNumber (fromIntegral $ BS.length bspath + 1)
+   let bspath = Text.textEncodeUtf8 path
+   putNumber (fromIntegral $ bufferSize bspath + 1)
    putNumber 0 -- checksum
    -- Put file name
-   putByteString bspath
+   putBuffer bspath
    putWord8 0x00 -- ending NUL byte
-   putPad4 (110 + BS.length bspath + 1)
+   putPad4 (110 + bufferSize bspath + 1)
    -- Put file contents
    putBuffer content
    putPad4 (bufferSize content)

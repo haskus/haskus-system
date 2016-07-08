@@ -46,8 +46,6 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.PQueue.Prio.Min (MinPQueue)
 import qualified Data.PQueue.Prio.Min as PQueue
-import Data.Text (Text)
-import qualified Data.Text as Text
 import Data.Tuple (swap)
 import Control.Arrow (first)
 
@@ -57,6 +55,8 @@ import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Bits.Put
 import ViperVM.Format.Binary.Bits.Get as BitGet
 import ViperVM.Format.Binary.Bits.Order
+import ViperVM.Format.Text (Text)
+import qualified ViperVM.Format.Text as Text
 
 -- | Priority (number of occurences)
 type Priority = Word64

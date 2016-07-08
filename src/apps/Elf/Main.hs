@@ -26,13 +26,12 @@ import ViperVM.Arch.X86_64.Disassembler
 
 import ViperVM.Format.Binary.Buffer
 import qualified ViperVM.Format.Text as Text
-import ViperVM.Format.Text (Text)
+import ViperVM.Format.Text (Text,textFormat,Only(..))
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 
 import Control.Monad
-import Data.Text.Format
 import Happstack.Server
 import Lucid
 import Data.FileEmbed
@@ -41,8 +40,6 @@ import Data.List (intersperse)
 import Data.Tree (drawTree)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
-import qualified Data.Text.Lazy as LText
-import qualified Data.Text.Lazy.IO as LText
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
 
@@ -54,7 +51,7 @@ main = do
 
 server :: FilePath -> Elf -> Conf -> IO ()
 server pth elf conf = do
-   LText.putStrLn (format "Starting Web server at localhost: {}" (Only $ port conf))
+   Text.putStrLn (textFormat "Starting Web server at localhost: {}" (Only $ port conf))
 
    let ok' = ok . toResponse . renderBS . appTemplate
 
@@ -73,10 +70,10 @@ server pth elf conf = do
             -- dump section content
             , dir "content" $ do
                -- select suggested output filename by the browser
-               let filename = format "section{}.bin" (Only (secnum :: Int))
-                   disp     = format "attachment; filename=\"{}\"" (Only filename)
+               let filename = textFormat "section{}.bin" (Only (secnum :: Int))
+                   disp     = textFormat "attachment; filename=\"{}\"" (Only filename)
                ok 
-                  $ addHeader "Content-Disposition" (LText.unpack disp)
+                  $ addHeader "Content-Disposition" (Text.unpack disp)
                   $ toResponseBS (C.pack "application/octet-stream")
                   $ LBS.fromStrict
                   $ bufferUnpackByteString
@@ -98,7 +95,7 @@ lookupMaybe :: MonadPlus m => Maybe a -> m a
 lookupMaybe = maybe mzero return
 
 hexStr :: Integral a => a -> Text.Text
-hexStr a = LText.toStrict (format "0x{}" (Only $ hex a))
+hexStr a = textFormat "0x{}" (Only $ Text.hex a)
 
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
@@ -134,7 +131,7 @@ sectionPage pth elf i s = do
          Just str -> toHtml str
          Nothing  -> span_ [class_ "invalid"] "Invalid section name"
    h3_ $ do
-      toHtml $ format "Section {} \"" (Only (i :: Int))
+      toHtml $ textFormat "Section {} \"" (Only (i :: Int))
       name
       "\""
    showSection elf i secname s
@@ -150,7 +147,7 @@ sectionAsm pth elf i s = do
          Just str -> toHtml str
          Nothing  -> span_ [class_ "invalid"] "Invalid section name"
    h3_ $ do
-      toHtml $ format "Section {} \"" (Only (i :: Int))
+      toHtml $ textFormat "Section {} \"" (Only (i :: Int))
       name
       "\""
    showSectionAsm elf s
@@ -231,7 +228,7 @@ showSections elf =
             Just str -> toHtml str
             Nothing  -> span_ [class_ "invalid"] "Invalid section name"
       h3_ $ do
-         toHtml $ format "Section {} \"" (Only (i :: Int))
+         toHtml $ textFormat "Section {} \"" (Only (i :: Int))
          name
          "\""
       showSection elf i secname s
@@ -361,8 +358,8 @@ showSection elf secnum secname s = do
 
 
 
-   let contentPath = LText.toStrict $ format "/section/{}/content/" (Only secnum)
-   let asmPath     = LText.toStrict $ format "/section/{}/asm/" (Only secnum)
+   let contentPath = textFormat "/section/{}/content/" (Only secnum)
+   let asmPath     = textFormat "/section/{}/asm/" (Only secnum)
 
    br_ []
 
@@ -555,16 +552,16 @@ showSymbols elf symSec ss = do
             let idx = symbolNameIndex s
             case getSymName idx of
                Nothing   -> do
-                  toHtml $ format "({}) " (Only idx)
+                  toHtml $ textFormat "({}) " (Only idx)
                   span_ [class_ "invalid"] "None"
                Just name -> do
-                  toHtml $ format "({}) {}" (idx, name)
+                  toHtml $ textFormat "({}) {}" (idx, name)
 
          td_ $ case symbolBinding s of
             SymbolBindingLocal      -> span_ [class_ "sym_local"]  "Local"
             SymbolBindingGlobal     -> span_ [class_ "sym_global"] "Global"
             SymbolBindingWeak       -> span_ [class_ "sym_weak"]   "Weak"
-            SymbolBindingUnknown v  -> toHtml $ format "Unknown ({})" (Only v)
+            SymbolBindingUnknown v  -> toHtml $ textFormat "Unknown ({})" (Only v)
 
          td_ $ case symbolType s of
             SymbolTypeNone          -> "None"
@@ -574,7 +571,7 @@ showSymbols elf symSec ss = do
             SymbolTypeFile          -> "File"
             SymbolTypeCommonData    -> "Data (common)"
             SymbolTypeTLSData       -> "Data (TLS)"
-            SymbolTypeUnknown v     -> toHtml $ format "Unknown ({})" (Only v)
+            SymbolTypeUnknown v     -> toHtml $ textFormat "Unknown ({})" (Only v)
 
          td_ $ case symbolVisibility s of
             SymbolVisibilityDefault    -> "Default"
@@ -589,8 +586,8 @@ showSymbols elf symSec ss = do
             SymbolInfoIndexInExtraTable   -> "In extra table"
             SymbolInfoSectionBeforeAll    -> "Before all others sections"
             SymbolInfoSectionAfterAll     -> "After all others sections"
-            SymbolInfoSectionIndex v      -> toHtml $ format "In section {}" (Only v)
-            SymbolInfoUnknown v           -> toHtml $ format "Unknown ({})" (Only v)
+            SymbolInfoSectionIndex v      -> toHtml $ textFormat "In section {}" (Only v)
+            SymbolInfoUnknown v           -> toHtml $ textFormat "Unknown ({})" (Only v)
 
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
@@ -752,13 +749,13 @@ showDynamicEntries es = do
                td_ . toHtml $ hexStr addr
             DynEntryStringTableSize sz -> do
                td_ "String table size"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
             DynEntrySymbolTableAddress addr -> do
                td_ "Symbol table address"
                td_ . toHtml $ hexStr addr
             DynEntrySymbolEntrySize sz -> do
                td_ "Symbol entry size"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
             DynEntryInitFunctionAddress addr -> do
                td_ "Init function address"
                td_ . toHtml $ hexStr addr
@@ -773,10 +770,10 @@ showDynamicEntries es = do
                td_ . toHtml $ hexStr addr
             DynEntryInitFunctionArraySize sz -> do
                td_ "Init function array size"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
             DynEntryFiniFunctionArraySize sz -> do
                td_ "Fini function array size"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
             DynEntrySymbolHashTableAddress addr -> do
                td_ "Symbol hash table address"
                td_ . toHtml $ hexStr addr
@@ -791,16 +788,16 @@ showDynamicEntries es = do
                td_ . toHtml $ hexStr addr
             DynEntryPLTRelocSize sz -> do
                td_ "Size of PLT relocations"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
             DynEntryRelocaAddress addr -> do
                td_ "Relocations with addend address"
                td_ . toHtml $ hexStr addr
             DynEntryRelocaSize sz -> do
                td_ "Size of relocations with addend"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
             DynEntryRelocaEntrySize sz -> do
                td_ "Size of a relocation with addend entry"
-               td_ . toHtml $ format "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat "{} bytes" (Only sz)
 
 
 appTemplate :: Html () -> Html ()
