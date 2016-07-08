@@ -7,9 +7,9 @@ All these modules are in [ViperVM.Format.Binary](../../src/lib/ViperVM/Format/Bi
 
 ## Word, Int
 
-The [Word module](../../src/lib/ViperVM/Format/Binary/Word.hs) contains unsigned
-words (Word8, Word16, Word32, etc.) and signed integers (Int8, Int16, Int32,
-etc.).
+The [Word module](../../src/lib/ViperVM/Format/Binary/Word.hs) contains data
+types representing unsigned words (Word8, Word16, Word32, etc.) and signed
+integers (Int8, Int16, Int32, etc.).
 
 ### Endianness
 
@@ -30,12 +30,16 @@ data Dummy = Dummy
    } deriving (Generic,Storable)
 ```
 
-You can also explicitly change the endianness with the following methods:
+We can also explicitly change the endianness with the following methods:
 * hostToBigEndian
 * hostToLittleEndian
 * bigEndianToHost
 * littleEndianToHost
 * reverseBytes
+
+Each of these methods is either equivalent to `id` or to `reverseBytes` (from
+[Bits.Reverse](../../src/lib/ViperVM/Format/Binary/Bits/Reverse.hs)), depending
+on the host endianness.
 
 ## Bits
 
