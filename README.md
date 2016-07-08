@@ -44,11 +44,6 @@ On top of that, it gives access to Linux subsystems. For now:
   computations and data transfers. The ultimate goal is to provide an execution
   model using parallel functional programming, but we are not there yet.
 
-* ViperVM.Library: these modules are supposed to handle a library of
-  computational kernel sources (OpenCL, C, etc.). Ultimately it should store
-  compiled kernels to avoid superfluous compilations, provide statistics about
-  their execution times, etc.
-
 # How to build
 
 Use stack commands to build ViperVM:

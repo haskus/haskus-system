@@ -249,10 +249,6 @@ library
 
     ViperVM.Platform.Processing.Kernel
 
-    ViperVM.Library.Library
-    ViperVM.Library.Kernel
-    ViperVM.Library.Maths.MatrixOps
-
   other-modules:
 
   c-sources: 
