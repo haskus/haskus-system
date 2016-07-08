@@ -58,7 +58,6 @@ module ViperVM.Arch.Linux.FileSystem
    )
 where
 
-import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
@@ -68,6 +67,7 @@ import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (Ptr, castPtr)
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.String (CString, withCString, peekCString)
 import qualified ViperVM.Format.Binary.BitSet as BitSet

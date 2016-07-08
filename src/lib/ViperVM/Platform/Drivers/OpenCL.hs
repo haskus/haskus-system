@@ -18,13 +18,13 @@ module ViperVM.Platform.Drivers.OpenCL
 where
 
 import Data.Ord (comparing)
-import Foreign.Ptr (Ptr,plusPtr)
 import Text.Printf
 import System.IO.Unsafe
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (Ptr,plusPtr)
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.TransferResult

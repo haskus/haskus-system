@@ -8,10 +8,10 @@ module ViperVM.Format.Binary.Storable
 where
 
 import GHC.TypeLits
-import Foreign.Ptr
 import qualified Foreign.Storable as FS
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 
 -- | A storable data (in constant space)
 class Storable a where

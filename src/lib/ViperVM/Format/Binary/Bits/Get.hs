@@ -32,12 +32,12 @@ module ViperVM.Format.Binary.Bits.Get
 where
 
 import Foreign.Marshal.Alloc (mallocBytes)
-import Foreign.Ptr (plusPtr)
 import Foreign.Storable (poke)
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.State
 import Control.Monad.Identity
 
+import ViperVM.Format.Binary.Ptr (plusPtr)
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Bits.Order
 import ViperVM.Format.Binary.Bits

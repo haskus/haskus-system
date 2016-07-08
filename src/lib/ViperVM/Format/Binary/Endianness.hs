@@ -29,11 +29,11 @@ where
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Bits ((.|.), shiftL)
 import qualified ViperVM.Format.Binary.Storable as S
 
 import GHC.Word
-import Foreign.Ptr
 import Foreign.Storable
 import Foreign.CStorable
 import System.IO.Unsafe

@@ -1,7 +1,7 @@
 -- | OpenCL entity module
 module ViperVM.Arch.OpenCL.Entity where
 
-import Foreign.Ptr (Ptr)
+import ViperVM.Format.Binary.Ptr (Ptr)
 import ViperVM.Arch.OpenCL.Library
 
 -- | Wrapped OpenCL entity

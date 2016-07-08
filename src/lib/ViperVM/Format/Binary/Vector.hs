@@ -34,13 +34,13 @@ import Prelude hiding (replicate, head, last,
 import qualified Data.List as List
 import Control.Monad(forM_)
 import Foreign.ForeignPtr
-import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
 
 import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
 import qualified ViperVM.Format.Binary.Storable as S
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 
 -- | Vector with type-checked size
 --

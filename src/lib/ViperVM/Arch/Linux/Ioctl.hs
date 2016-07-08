@@ -45,10 +45,10 @@ module ViperVM.Arch.Linux.Ioctl
 where
 
 import Foreign.Storable
-import Foreign.Ptr
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
 
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer

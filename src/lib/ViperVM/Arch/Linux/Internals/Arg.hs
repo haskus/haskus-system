@@ -5,8 +5,8 @@ module ViperVM.Arch.Linux.Internals.Arg
 where
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (Ptr, ptrToIntPtr)
 import Foreign.C.Types
-import Foreign.Ptr (Ptr, ptrToIntPtr)
 
 
 -- | Parameters that can be directly passed to system calls

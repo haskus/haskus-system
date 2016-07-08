@@ -24,10 +24,10 @@ module ViperVM.Arch.Linux.Memory
 where
 
 import Data.Proxy
-import Foreign.Ptr (Ptr, nullPtr, intPtrToPtr)
 import Foreign.Marshal.Array (allocaArray, peekArray)
 import Data.Maybe (fromMaybe)
 
+import ViperVM.Format.Binary.Ptr (Ptr, nullPtr, intPtrToPtr)
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word

@@ -21,11 +21,11 @@ import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.String 
 
 import Foreign.Storable
-import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 

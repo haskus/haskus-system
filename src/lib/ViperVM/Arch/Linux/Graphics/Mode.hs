@@ -17,10 +17,10 @@ where
 import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.Ptr (castPtr)
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (castPtr)
 import ViperVM.Format.String
 
 import ViperVM.Arch.Linux.Internals.Graphics

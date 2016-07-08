@@ -24,11 +24,11 @@ module ViperVM.Arch.Linux.Process
 where
 
 import Control.Monad (void)
-import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable
 import Foreign.CStorable
 
+import ViperVM.Format.Binary.Ptr (Ptr, nullPtr)
 import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode

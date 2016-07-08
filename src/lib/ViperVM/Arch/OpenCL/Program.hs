@@ -30,11 +30,11 @@ import ViperVM.Arch.OpenCL.Context
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
-import Foreign.Ptr
 import Foreign.C.Types (CSize)
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)

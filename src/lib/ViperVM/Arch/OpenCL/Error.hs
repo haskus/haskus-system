@@ -14,13 +14,13 @@ where
 
 import Control.Exception (Exception, throw)
 import Data.Typeable (Typeable)
-import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable, peek)
 import Foreign.C.Types (CSize)
 
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
 
 -- | OpenCL return type
 type CLRet a = IO (Either CLError a)

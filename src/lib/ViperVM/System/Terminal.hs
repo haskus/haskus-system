@@ -24,12 +24,12 @@ import ViperVM.Utils.Memory
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (withCStringLen)
+import ViperVM.Format.Binary.Ptr
 
 import Control.Monad (void,when,forever)
 import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
-import Foreign.Ptr
 import Foreign.Storable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils (with)

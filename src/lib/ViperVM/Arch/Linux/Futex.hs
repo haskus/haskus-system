@@ -9,8 +9,7 @@ module ViperVM.Arch.Linux.Futex
    )
 where
 
-import Foreign.Ptr
-
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls

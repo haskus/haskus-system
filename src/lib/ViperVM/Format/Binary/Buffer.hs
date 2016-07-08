@@ -53,7 +53,6 @@ module ViperVM.Format.Binary.Buffer
    )
 where
 
-import Foreign.Ptr
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Storable
@@ -63,6 +62,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits.Basic
 import ViperVM.Utils.Memory (memCopy)

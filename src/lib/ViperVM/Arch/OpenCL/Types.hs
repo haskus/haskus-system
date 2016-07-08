@@ -5,9 +5,9 @@
 module ViperVM.Arch.OpenCL.Types where
 
 import Foreign.Storable (Storable(..))
-import Foreign.Ptr (Ptr,FunPtr,IntPtr)
 import Foreign.C.Types (CSize(..))
 
+import ViperVM.Format.Binary.Ptr (Ptr,FunPtr,IntPtr)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (CString)
 import ViperVM.Arch.OpenCL.ImageFormat

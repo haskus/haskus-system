@@ -32,12 +32,13 @@ where
 import Data.Proxy
 import GHC.TypeLits
 import Foreign.ForeignPtr
-import Foreign.Ptr
+import System.IO.Unsafe
+
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.HList
 import ViperVM.Utils.Memory
 import ViperVM.Utils.Types
-import System.IO.Unsafe
 
 -- | Record
 newtype Record (fields :: [*]) = Record (ForeignPtr ())

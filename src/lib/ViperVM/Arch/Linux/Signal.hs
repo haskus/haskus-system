@@ -22,10 +22,10 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Process
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
 import ViperVM.Utils.Flow
 
 import Foreign.Storable
-import Foreign.Ptr (Ptr,nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Alloc (alloca)
 

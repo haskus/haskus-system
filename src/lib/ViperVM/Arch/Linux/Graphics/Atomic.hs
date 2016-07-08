@@ -14,10 +14,10 @@ import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 
 import Data.Map as Map
 import Foreign.Marshal.Array
-import Foreign.Ptr
 
 -- DRM now has a single entry-point for changing the configuration: the atomic
 -- ioctl. We can test and commit a whole configuration without going through

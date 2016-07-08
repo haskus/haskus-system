@@ -7,7 +7,7 @@ module ViperVM.Arch.Posix.Malloc
    )
 where
 
-import Foreign.Ptr (Ptr, nullPtr)
+import ViperVM.Format.Binary.Ptr (Ptr, nullPtr)
 import Foreign.C.Types (CSize(..))
 
 import ViperVM.Arch.Common.Errors

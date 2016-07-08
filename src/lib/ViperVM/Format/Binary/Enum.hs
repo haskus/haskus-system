@@ -12,9 +12,9 @@ module ViperVM.Format.Binary.Enum
 where
 
 import qualified ViperVM.Format.Binary.Storable as S
+import ViperVM.Format.Binary.Ptr
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.Ptr
 
 -----------------------------------------------------------------------------
 -- EnumField b a: directly store the value of enum "a" as a "b"

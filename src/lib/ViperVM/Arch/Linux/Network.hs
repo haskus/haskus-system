@@ -23,7 +23,6 @@ module ViperVM.Arch.Linux.Network
    )
 where
 
-import Foreign.Ptr (nullPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Array (peekArray,allocaArray)
 import Foreign.Storable
@@ -36,6 +35,7 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Ptr (nullPtr)
 
 data ShutFlag
    = ShutRead

@@ -12,9 +12,9 @@ import ViperVM.Arch.OpenCL.Platform
 import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
 
 import Control.Monad (void)
-import Foreign.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
 import Foreign.Marshal.Array (withArray)
 
 -- | A context is basically a group of devices sharing entities

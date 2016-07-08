@@ -22,11 +22,11 @@ where
 import Foreign.CStorable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array (withArray)
-import Foreign.Ptr (Ptr, castPtr, plusPtr)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 
 import GHC.Generics (Generic)
 
+import ViperVM.Format.Binary.Ptr (Ptr, castPtr, plusPtr)
 import ViperVM.Format.Binary.Word (Word64, Word32)
 import ViperVM.Format.Binary.Bits (shiftR)
 import ViperVM.Format.Binary.Buffer

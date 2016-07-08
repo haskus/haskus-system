@@ -16,7 +16,6 @@ where
 
 import Data.List (zip4)
 import Foreign.Marshal.Array
-import Foreign.Ptr
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -25,6 +24,7 @@ import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Tuples
 import ViperVM.Utils.Flow
 

@@ -20,10 +20,10 @@ import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics (Generic)
 import Foreign.Marshal.Array
-import Foreign.Ptr
 
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
 
 import ViperVM.Arch.Linux.ErrorCode

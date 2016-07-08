@@ -15,8 +15,7 @@ module ViperVM.Arch.Linux.FileSystem.Mount
    )
 where
 
-import Foreign.Ptr (Ptr,nullPtr)
-
+import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.String (withCString)

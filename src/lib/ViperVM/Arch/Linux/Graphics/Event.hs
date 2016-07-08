@@ -8,9 +8,9 @@ module ViperVM.Arch.Linux.Graphics.Event
 where
 
 import Foreign.Storable
-import Foreign.Ptr
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.Linux.Internals.Graphics
 

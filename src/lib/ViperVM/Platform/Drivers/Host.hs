@@ -13,9 +13,9 @@ module ViperVM.Platform.Drivers.Host
    )
 where
 
-import Foreign.Ptr (Ptr,castPtr)
 import Data.Ord (comparing)
 
+import ViperVM.Format.Binary.Ptr (Ptr,castPtr)
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
 import qualified ViperVM.Format.Text as Text

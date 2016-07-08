@@ -6,11 +6,10 @@ module ViperVM.Arch.Linux.Internals.Reboot
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Format.String (withCString)
-import Foreign.Ptr (nullPtr)
-
-import ViperVM.Format.Binary.Word (Word64)
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Format.String (withCString)
+import ViperVM.Format.Binary.Ptr (nullPtr)
+import ViperVM.Format.Binary.Word (Word64)
 
 -- =============================================================
 --    From linux/include/uapi/linux/reboot.h

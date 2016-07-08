@@ -11,10 +11,10 @@ import Data.List (stripPrefix)
 import System.Posix.DynamicLinker
 import System.Posix.DynamicLinker.Template
 import Foreign.C.Types (CSize(..))
-import Foreign.Ptr (Ptr)
 import Data.Maybe (fromJust)
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (Ptr)
 import ViperVM.Format.String (CString)
 import ViperVM.Arch.OpenCL.Types
 

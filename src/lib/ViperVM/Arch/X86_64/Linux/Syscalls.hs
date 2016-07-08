@@ -111,7 +111,7 @@ import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (CString)
 
-import Foreign.Ptr
+import ViperVM.Format.Binary.Ptr
 
 type FD = Word -- file descriptor alias
 type Mode = Word

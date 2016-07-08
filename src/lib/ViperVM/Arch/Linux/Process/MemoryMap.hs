@@ -13,6 +13,7 @@ import Prelude hiding (takeWhile)
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.BufferList
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr (wordPtrToPtr)
 import ViperVM.Format.Text as Text
 
 import Text.Megaparsec
@@ -20,7 +21,6 @@ import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
 
 import Control.Monad (void)
-import Foreign.Ptr (wordPtrToPtr)
 
 -- | Memory map entry
 data MemoryMapEntry = MemoryMapEntry

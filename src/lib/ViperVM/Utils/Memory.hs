@@ -13,9 +13,9 @@ module ViperVM.Utils.Memory
 where
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 
 import Data.Foldable (traverse_)
-import Foreign.Ptr
 import Control.Monad (void)
 import Foreign.Storable
 import Foreign.Marshal.Utils

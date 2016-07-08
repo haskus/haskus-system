@@ -50,13 +50,13 @@ where
 import ViperVM.Utils.Memory (memCopy, memSet)
 import ViperVM.Utils.HList
 import qualified ViperVM.Format.Binary.Storable as S
+import ViperVM.Format.Binary.Ptr
 
 import GHC.TypeLits
 import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr
-import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (when)
 

@@ -172,7 +172,6 @@ module ViperVM.Arch.Linux.Internals.Sound
    )
 where
 
-import Foreign.Ptr
 import Foreign.CStorable
 import Foreign.Storable
 import Foreign.C.Types (CSize)
@@ -181,6 +180,7 @@ import GHC.Generics (Generic)
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Bits

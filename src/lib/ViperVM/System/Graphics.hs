@@ -21,6 +21,7 @@ import ViperVM.System.Sys
 import ViperVM.System.System
 import ViperVM.System.Process
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.Handle
@@ -43,7 +44,6 @@ import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
 import Control.Monad (forM,forM_,forever)
-import Foreign.Ptr
 
 import Control.Concurrent.STM
 import Control.Concurrent

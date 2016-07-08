@@ -34,11 +34,11 @@ import ViperVM.Format.Binary.Vector
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
 
 import GHC.Generics
 import GHC.TypeLits
-import Foreign.Ptr
 import Foreign.Storable
 import Foreign.CStorable
 

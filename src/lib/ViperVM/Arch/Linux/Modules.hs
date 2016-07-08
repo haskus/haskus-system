@@ -14,9 +14,9 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String (withCString)
 
-import Foreign.Ptr
 
 -- | Load module flag
 data LoadModuleFlag
