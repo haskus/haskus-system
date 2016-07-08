@@ -35,7 +35,6 @@ import ViperVM.Format.String
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
-import Foreign.C.Types (CSize)
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)

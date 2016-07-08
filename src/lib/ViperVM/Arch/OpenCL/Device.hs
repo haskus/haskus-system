@@ -35,17 +35,15 @@ import ViperVM.Format.Binary.BitSet (BitSet, CBitSet)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (peekCString)
 import ViperVM.Format.Binary.Ptr (Ptr, castPtr, nullPtr)
+import ViperVM.Format.Binary.Endianness
+import ViperVM.Format.Binary.Enum
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
 
-import ViperVM.Format.Binary.Endianness
-import ViperVM.Format.Binary.Enum
-
 import Data.Ord (comparing)
-import Foreign.C.Types (CSize)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Storable (peek, sizeOf)
 

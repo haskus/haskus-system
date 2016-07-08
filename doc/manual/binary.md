@@ -9,7 +9,8 @@ All these modules are in [ViperVM.Format.Binary](../../src/lib/ViperVM/Format/Bi
 
 The [Word module](../../src/lib/ViperVM/Format/Binary/Word.hs) contains data
 types representing unsigned words (Word8, Word16, Word32, etc.) and signed
-integers (Int8, Int16, Int32, etc.).
+integers (Int8, Int16, Int32, etc.). It also contains some C types such as
+CSize, CShort, CUShort, CLong, CULong, etc.
 
 ### Endianness
 

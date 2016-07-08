@@ -76,7 +76,6 @@ import ViperVM.Utils.Flow
 import Foreign.Storable
 import Foreign.Marshal.Utils (toBool)
 import Foreign.CStorable
-import Foreign.C.Types
 import GHC.Generics (Generic)
 
 -- =============================================================

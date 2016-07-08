@@ -38,7 +38,6 @@ import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Device
 
 import Control.Monad.Trans.Either
-import Foreign.C.Types (CSize)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,peekArray)
 import Foreign.Storable (peek,sizeOf)

@@ -31,7 +31,6 @@ import ViperVM.Arch.OpenCL.CommandQueue
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
 
-import Foreign.C.Types (CSize)
 import Control.Monad (void)
 import Data.Ord (comparing)
 import Foreign.Marshal.Alloc (alloca)

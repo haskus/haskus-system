@@ -9,7 +9,6 @@ module ViperVM.Arch.OpenCL.ImageFormat
 where
 
 import Foreign.Storable (Storable(..))
-import Foreign.C.Types (CDouble)
 
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
@@ -21,7 +20,7 @@ data ImageFormat = ImageFormat
    } deriving (Show)
 
 instance Storable ImageFormat where
-   alignment _ = alignment (undefined :: CDouble)
+   alignment _ = alignment (undefined :: Double)
    sizeOf _ = 64
    peek p = do
       a <- fmap toCEnum (peekByteOff p 0 :: IO Word32)

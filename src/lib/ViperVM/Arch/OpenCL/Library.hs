@@ -10,7 +10,6 @@ where
 import Data.List (stripPrefix)
 import System.Posix.DynamicLinker
 import System.Posix.DynamicLinker.Template
-import Foreign.C.Types (CSize(..))
 import Data.Maybe (fromJust)
 
 import ViperVM.Format.Binary.Word

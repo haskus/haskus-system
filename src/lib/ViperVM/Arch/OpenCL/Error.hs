@@ -16,7 +16,6 @@ import Control.Exception (Exception, throw)
 import Data.Typeable (Typeable)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable, peek)
-import Foreign.C.Types (CSize)
 
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word

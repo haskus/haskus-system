@@ -174,7 +174,6 @@ where
 
 import Foreign.CStorable
 import Foreign.Storable
-import Foreign.C.Types (CSize)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Vector (Vector)

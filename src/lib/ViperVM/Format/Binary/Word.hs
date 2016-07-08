@@ -9,8 +9,17 @@ module ViperVM.Format.Binary.Word
    , Int16
    , Int32
    , Int64
+   -- * Some C types
+   , CSize(..)
+   , CUShort
+   , CShort
+   , CUInt
+   , CInt
+   , CULong
+   , CLong
    )
 where
 
 import Data.Word
 import Data.Int
+import Foreign.C.Types
