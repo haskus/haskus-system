@@ -11,23 +11,22 @@ where
 
 import Foreign.Ptr
 import Foreign.Marshal.Alloc
-import Foreign.C.Types
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Format.Binary.Vector
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String
 
 -- | struct utsname
 data SystemInfo = SystemInfo
-   { systemName     :: Vector 65 CChar
-   , systemNodeName :: Vector 65 CChar
-   , systemRelease  :: Vector 65 CChar
-   , systemVersion  :: Vector 65 CChar
-   , systemMachine  :: Vector 65 CChar
+   { systemName     :: CStringBuffer 65
+   , systemNodeName :: CStringBuffer 65
+   , systemRelease  :: CStringBuffer 65
+   , systemVersion  :: CStringBuffer 65
+   , systemMachine  :: CStringBuffer 65
    } deriving (Show,Generic,CStorable)
 
 instance Storable SystemInfo where

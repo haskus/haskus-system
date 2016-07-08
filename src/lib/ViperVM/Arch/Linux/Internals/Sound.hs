@@ -175,7 +175,7 @@ where
 import Foreign.Ptr
 import Foreign.CStorable
 import Foreign.Storable
-import Foreign.C.Types (CChar, CSize)
+import Foreign.C.Types (CSize)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Vector (Vector)
@@ -184,6 +184,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.String
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -264,12 +265,12 @@ data HwInterface
    deriving (Show,Eq)
 
 data HwInfo = HwInfo
-   { hwInfoDevice    :: Int             -- ^ WR: device number
-   , hwInfoCard      :: Int             -- ^ R: card number
-   , hwInfoId        :: Vector 64 CChar -- ^ ID (user selectable)
-   , hwInfoName      :: Vector 80 CChar -- ^ hwdep name
-   , hwInfoInterface :: Int             -- ^ hwdep interface
-   , hwInfoReserved  :: Vector 64 Word8 -- ^ reserved for future
+   { hwInfoDevice    :: Int              -- ^ WR: device number
+   , hwInfoCard      :: Int              -- ^ R: card number
+   , hwInfoId        :: CStringBuffer 64 -- ^ ID (user selectable)
+   , hwInfoName      :: CStringBuffer 80 -- ^ hwdep name
+   , hwInfoInterface :: Int              -- ^ hwdep interface
+   , hwInfoReserved  :: Vector 64 Word8  -- ^ reserved for future
    } deriving (Generic, Show, CStorable)
 
 instance Storable HwInfo where
@@ -280,12 +281,12 @@ instance Storable HwInfo where
 
 -- | Generic DSP loader
 data HwDspStatus = HwDspStatus
-   { hwDspVersion    :: Word            -- ^ R: driver-specific version
-   , hwDspId         :: Vector 32 CChar -- ^ R: driver-specific ID string
-   , hwDspNumDsps    :: Word            -- ^ R: number of DSP images to transfer
-   , hwDspLoadedDsps :: Word            -- ^ R: bit flags indicating the loaded DSPs
-   , hwDspChipReady  :: Word            -- ^ R: 1 = initialization finished
-   , hwDspReserved   :: Vector 16 Word8 -- ^ reserved for future use
+   { hwDspVersion    :: Word             -- ^ R: driver-specific version
+   , hwDspId         :: CStringBuffer 32 -- ^ R: driver-specific ID string
+   , hwDspNumDsps    :: Word             -- ^ R: number of DSP images to transfer
+   , hwDspLoadedDsps :: Word             -- ^ R: bit flags indicating the loaded DSPs
+   , hwDspChipReady  :: Word             -- ^ R: 1 = initialization finished
+   , hwDspReserved   :: Vector 16 Word8  -- ^ reserved for future use
    } deriving (Generic, Show, CStorable)
 
 instance Storable HwDspStatus where
@@ -295,11 +296,11 @@ instance Storable HwDspStatus where
    sizeOf    = cSizeOf
 
 data HwDspImage = HwDspImage
-   { hwDspImageIndex      :: Word            -- ^ W: DSP index
-   , hwDspImageName       :: Vector 64 CChar -- ^ W: ID (e.g. file name)
-   , hwDspImageBin        :: Ptr ()          -- ^ W: binary image
-   , hwDspImageLength     :: CSize           -- ^ W: size of image in bytes
-   , hwDspImageDriverData :: Word64          -- ^ W: driver-specific data
+   { hwDspImageIndex      :: Word             -- ^ W: DSP index
+   , hwDspImageName       :: CStringBuffer 64 -- ^ W: ID (e.g. file name)
+   , hwDspImageBin        :: Ptr ()           -- ^ W: binary image
+   , hwDspImageLength     :: CSize            -- ^ W: size of image in bytes
+   , hwDspImageDriverData :: Word64           -- ^ W: driver-specific data
    } deriving (Generic, Show, CStorable)
 
 instance Storable HwDspImage where
@@ -619,19 +620,19 @@ instance CEnum PcmMmapOffset where
       _          -> error "Unknown PCM map offset"
 
 data PcmInfo = PcmInfo
-   { pcmInfoDevice               :: Word            -- ^ RO/WR (control): device number
-   , pcmInfoSubDevice            :: Word            -- ^ RO/WR (control): subdevice number
-   , pcmInfoStream               :: Int             -- ^ RO/WR (control): stream direction
-   , pcmInfoCard                 :: Int             -- ^ R: card number
-   , pcmInfoID                   :: Vector 64 CChar -- ^ ID (user selectable)
-   , pcmInfoName                 :: Vector 80 CChar -- ^ name of this device
-   , pcmInfoSubName              :: Vector 32 CChar -- ^ subdevice name
-   , pcmInfoDevClass             :: Int             -- ^ SNDRV_PCM_CLASS_*
-   , pcmInfoDevSubClass          :: Int             -- ^ SNDRV_PCM_SUBCLASS_*
+   { pcmInfoDevice               :: Word             -- ^ RO/WR (control): device number
+   , pcmInfoSubDevice            :: Word             -- ^ RO/WR (control): subdevice number
+   , pcmInfoStream               :: Int              -- ^ RO/WR (control): stream direction
+   , pcmInfoCard                 :: Int              -- ^ R: card number
+   , pcmInfoID                   :: CStringBuffer 64 -- ^ ID (user selectable)
+   , pcmInfoName                 :: CStringBuffer 80 -- ^ name of this device
+   , pcmInfoSubName              :: CStringBuffer 32 -- ^ subdevice name
+   , pcmInfoDevClass             :: Int              -- ^ SNDRV_PCM_CLASS_*
+   , pcmInfoDevSubClass          :: Int              -- ^ SNDRV_PCM_SUBCLASS_*
    , pcmInfoSubDevicesCount      :: Word
    , pcmInfoSubDevicesAvailabled :: Word
-   , pcmInfoSync                 :: Vector 16 Word8 -- ^ hardware synchronization ID
-   , pcmInfoReserved             :: Vector 64 Word8 -- ^ reserved for future...
+   , pcmInfoSync                 :: Vector 16 Word8  -- ^ hardware synchronization ID
+   , pcmInfoReserved             :: Vector 64 Word8  -- ^ reserved for future...
    } deriving (Generic, Show, CStorable)
 
 instance Storable PcmInfo where
@@ -1087,17 +1088,17 @@ data MidiFlag
 type MidiFlags = BitSet Word MidiFlag
 
 data MidiInfo = MidiInfo
-   { midiInfoDevice         :: Word            -- ^ RO/WR (control): device number
-   , midiInfoSubDevice      :: Word            -- ^ RO/WR (control): subdevice number
-   , midiInfoStream         :: Int             -- ^ WR: stream
-   , midiInfoCard           :: Int             -- ^ R: card number
-   , midiInfoFlags          :: MidiFlags       -- ^ SNDRV_RAWMIDI_INFO_XXXX
-   , midiInfoId             :: Vector 64 CChar -- ^ ID (user selectable)
-   , midiInfoName           :: Vector 80 CChar -- ^ name of device
-   , midiInfoSubName        :: Vector 32 CChar -- ^ name of active or selected subdevice
+   { midiInfoDevice         :: Word             -- ^ RO/WR (control): device number
+   , midiInfoSubDevice      :: Word             -- ^ RO/WR (control): subdevice number
+   , midiInfoStream         :: Int              -- ^ WR: stream
+   , midiInfoCard           :: Int              -- ^ R: card number
+   , midiInfoFlags          :: MidiFlags        -- ^ SNDRV_RAWMIDI_INFO_XXXX
+   , midiInfoId             :: CStringBuffer 64 -- ^ ID (user selectable)
+   , midiInfoName           :: CStringBuffer 80 -- ^ name of device
+   , midiInfoSubName        :: CStringBuffer 32 -- ^ name of active or selected subdevice
    , midiInfoSubDeviceCount :: Word
    , midiInfoSubDeviceAvail :: Word
-   , midiInfoReserved       :: Vector 64 Word8 -- ^ reserved for future use
+   , midiInfoReserved       :: Vector 64 Word8  -- ^ reserved for future use
    } deriving (Show, Generic, CStorable)
 
 instance Storable MidiInfo where
@@ -1234,16 +1235,16 @@ instance Storable TimerId where
 
 
 data TimerGInfo = TimerGInfo
-   { timerGInfoTimerID       :: TimerId         -- ^ requested timer ID
-   , timerGInfoFlags         :: TimerFlags      -- ^ timer flags
-   , timerGInfoCard          :: Int             -- ^ card number
-   , timerGInfoId            :: Vector 64 CChar -- ^ timer identification
-   , timerGInfoName          :: Vector 80 CChar -- ^ timer name
-   , timerGInfoReserved      :: Word64          -- ^ reserved for future use
-   , timerGInfoResolution    :: Word64          -- ^ average period resolution in ns
-   , timerGInfoResolutionMin :: Word64          -- ^ minimal period resolution in ns
-   , timerGInfoResolutionMax :: Word64          -- ^ maximal period resolution in ns
-   , timerGInfoClients       :: Word            -- ^ active timer clients
+   { timerGInfoTimerID       :: TimerId          -- ^ requested timer ID
+   , timerGInfoFlags         :: TimerFlags       -- ^ timer flags
+   , timerGInfoCard          :: Int              -- ^ card number
+   , timerGInfoId            :: CStringBuffer 64 -- ^ timer identification
+   , timerGInfoName          :: CStringBuffer 80 -- ^ timer name
+   , timerGInfoReserved      :: Word64           -- ^ reserved for future use
+   , timerGInfoResolution    :: Word64           -- ^ average period resolution in ns
+   , timerGInfoResolutionMin :: Word64           -- ^ minimal period resolution in ns
+   , timerGInfoResolutionMax :: Word64           -- ^ maximal period resolution in ns
+   , timerGInfoClients       :: Word             -- ^ active timer clients
    , timerGInfoReserved2     :: Vector 32 Word8
    } deriving (Show,Generic,CStorable)
 
@@ -1294,13 +1295,13 @@ instance Storable TimerSelect where
 
 
 data TimerInfo = TimerInfo
-   { timerInfoFlags         :: TimerFlags      -- ^ timer flags
-   , timerInfoCard          :: Int             -- ^ card number
-   , timerInfoId            :: Vector 64 CChar -- ^ timer identification
-   , timerInfoName          :: Vector 80 CChar -- ^ timer name
-   , timerInfoReserved      :: Word64          -- ^ reserved for future use
-   , timerInfoResolution    :: Word64          -- ^ average period resolution in ns
-   , timerInfoReserved2     :: Vector 64 Word8
+   { timerInfoFlags      :: TimerFlags       -- ^ timer flags
+   , timerInfoCard       :: Int              -- ^ card number
+   , timerInfoId         :: CStringBuffer 64 -- ^ timer identification
+   , timerInfoName       :: CStringBuffer 80 -- ^ timer name
+   , timerInfoReserved   :: Word64           -- ^ reserved for future use
+   , timerInfoResolution :: Word64           -- ^ average period resolution in ns
+   , timerInfoReserved2  :: Vector 64 Word8
    } deriving (Show,Generic,CStorable)
 
 instance Storable TimerInfo where
@@ -1487,15 +1488,15 @@ controlVersion :: Word32
 controlVersion = 0x00020007
 
 data ControlCardInfo = ControlCardInfo
-   { controlCardInfoCard       :: Int              -- ^ card number
-   , controlCardInfoPad        :: Int              -- ^ reserved for future (was type)
-   , controlCardInfoId         :: Vector 16 CChar  -- ^ ID of card (user selectable)
-   , controlCardInfoDriver     :: Vector 16 CChar  -- ^ Driver name
-   , controlCardInfoName       :: Vector 32 CChar  -- ^ Short name of soundcard
-   , controlCardInfoLongName   :: Vector 80 CChar  -- ^ name + info text about soundcard
-   , controlCardInfoReserved   :: Vector 16 Word8  -- ^ reserved for future (was ID of mixer)
-   , controlCardInfoMixerName  :: Vector 80 CChar  -- ^ visual mixer identification
-   , controlCardInfoComponents :: Vector 128 CChar -- ^ card components / fine identification, delimited with one space (AC97 etc..)
+   { controlCardInfoCard       :: Int               -- ^ card number
+   , controlCardInfoPad        :: Int               -- ^ reserved for future (was type)
+   , controlCardInfoId         :: CStringBuffer 16  -- ^ ID of card (user selectable)
+   , controlCardInfoDriver     :: CStringBuffer 16  -- ^ Driver name
+   , controlCardInfoName       :: CStringBuffer 32  -- ^ Short name of soundcard
+   , controlCardInfoLongName   :: CStringBuffer 80  -- ^ name + info text about soundcard
+   , controlCardInfoReserved   :: Vector 16 Word8   -- ^ reserved for future (was ID of mixer)
+   , controlCardInfoMixerName  :: CStringBuffer 80  -- ^ visual mixer identification
+   , controlCardInfoComponents :: CStringBuffer 128 -- ^ card components / fine identification, delimited with one space (AC97 etc..)
    } deriving (Show,Generic,CStorable)
 
 instance Storable ControlCardInfo where
@@ -1584,12 +1585,12 @@ instance Enum ControlPower where
       _      -> error "Unknown control power"
 
 data ControlElementId = ControlElementId
-   { controlElemIdNumId     :: Int             -- ^ numeric identifier, zero = invalid
-   , controlElemIdInterface :: Int             -- ^ interface identifier
-   , controlElemIdDevice    :: Word            -- ^ device/client number
-   , controlElemIdSubDevice :: Word            -- ^ subdevice (substream) number
-   , controlElemIdName      :: Vector 44 CChar -- ^ ASCII name of item
-   , controlElemIdIndex     :: Word            -- ^ index of item
+   { controlElemIdNumId     :: Int              -- ^ numeric identifier, zero = invalid
+   , controlElemIdInterface :: Int              -- ^ interface identifier
+   , controlElemIdDevice    :: Word             -- ^ device/client number
+   , controlElemIdSubDevice :: Word             -- ^ subdevice (substream) number
+   , controlElemIdName      :: CStringBuffer 44 -- ^ ASCII name of item
+   , controlElemIdIndex     :: Word             -- ^ index of item
    } deriving (Show,Generic,CStorable)
 
 instance Storable ControlElementId where
@@ -1640,10 +1641,10 @@ instance Storable Integer64Value where
    sizeOf    = cSizeOf
 
 data EnumeratedValue = EnumeratedValue
-   { enumeratedCount       :: Word            -- ^ R: number of items
-   , enumeratedItem        :: Word            -- ^ W: item number
-   , enumeratedName        :: Vector 64 CChar -- ^ R: value name
-   , enumeratedNamesPtr    :: Word64          -- ^ W: names list (ELEM_ADD only)
+   { enumeratedCount    :: Word             -- ^ R: number of items
+   , enumeratedItem     :: Word             -- ^ W: item number
+   , enumeratedName     :: CStringBuffer 64 -- ^ R: value name
+   , enumeratedNamesPtr :: Word64           -- ^ W: names list (ELEM_ADD only)
    , enumeratedNamesLength :: Word
    } deriving (Show,Generic,CStorable)
 

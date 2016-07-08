@@ -20,8 +20,8 @@ import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Format.Binary.Vector as Vec
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String 
 
 import Foreign.Storable
 import Foreign.Ptr
@@ -30,7 +30,6 @@ import Foreign.Marshal.Alloc
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
-import Foreign.C.String 
 
 -- | Property meta-information
 data PropertyMeta = PropertyMeta
@@ -75,7 +74,7 @@ getPropertyMeta fd pid = do
             >.-.> PropertyMeta pid
                (isImmutable g)
                (isPending g)
-               (convertCString (gpsName g))
+               (fromCStringBuffer (gpsName g))
    where
       getProperty' :: StructGetProperty -> Flow Sys '[StructGetProperty,InvalidParam,InvalidProperty]
       getProperty' r = sysIO (ioctlGetProperty r fd) >%~#> \case
@@ -89,7 +88,7 @@ getPropertyMeta fd pid = do
             , gpsEnumBlobPtr = 0
             , gpsPropId      = pid
             , gpsFlags       = 0
-            , gpsName        = Vec.replicate (castCharToCChar '\0')
+            , gpsName        = emptyCStringBuffer
             , gpsCountValues = 0
             , gpsCountEnum   = 0
             }
@@ -130,7 +129,7 @@ getPropertyMeta fd pid = do
                            , gpsEnumBlobPtr = fromIntegral (ptrToWordPtr blobPtr)
                            , gpsPropId      = pid
                            , gpsFlags       = 0
-                           , gpsName        = Vec.replicate (castCharToCChar '\0')
+                           , gpsName        = emptyCStringBuffer
                            , gpsCountValues = valueCount
                            , gpsCountEnum   = blobCount
                            }
@@ -153,9 +152,9 @@ getPropertyMeta fd pid = do
          PropTypeRange       -> withValueBuffer nval (flowRet . PropRange)
          PropTypeSignedRange -> withValueBuffer nval (flowRet . PropSignedRange)
          PropTypeEnum        -> withBlobBuffer nblob $ \es ->
-            flowRet (PropEnum [(peValue e, convertCString $ peName e) | e <- es])
+            flowRet (PropEnum [(peValue e, fromCStringBuffer $ peName e) | e <- es])
          PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
-            flowRet (PropBitmask [(peValue e, convertCString $ peName e) | e <- es])
+            flowRet (PropBitmask [(peValue e, fromCStringBuffer $ peName e) | e <- es])
 
          PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
             flowTraverse getBlob bids

@@ -136,6 +136,8 @@ where
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Graphics.PixelFormat
+
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.BitField
@@ -143,13 +145,10 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.FixedPoint
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
-
-import ViperVM.Arch.Linux.Graphics.PixelFormat
+import ViperVM.Format.String
 
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.C.Types
-import Foreign.C.String (castCharToCChar)
 import GHC.Generics (Generic)
 
 -- =============================================================
@@ -263,7 +262,7 @@ data StructMode = StructMode
    , miVRefresh   :: Word32
    , miFlags      :: ModeFlagsStereo3D
    , miType       :: ModeTypes
-   , miName       :: Vector 32 CChar
+   , miName       :: CStringBuffer 32
    } deriving (Generic)
 
 instance CStorable StructMode
@@ -275,7 +274,7 @@ instance Storable StructMode where
    peek        = cPeek
 
 emptyStructMode :: StructMode
-emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 (BitFields 0) BitSet.empty (Vector.replicate (castCharToCChar '\0'))
+emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 (BitFields 0) BitSet.empty emptyCStringBuffer
 
 -----------------------------------------------------------------------------
 -- Resources
@@ -563,7 +562,7 @@ isAtomic x = testBit (gpsFlags x) 31
 -- | drm_mode_property_enum
 data StructPropertyEnum = StructPropertyEnum
    { peValue       :: Word64
-   , peName        :: Vector 32 CChar
+   , peName        :: CStringBuffer 32
    } deriving (Generic,CStorable)
 
 instance Storable StructPropertyEnum where
@@ -578,7 +577,7 @@ data StructGetProperty = StructGetProperty
    , gpsEnumBlobPtr    :: Word64 -- ^ Enum or blob id ptrs
    , gpsPropId         :: Word32
    , gpsFlags          :: Word32
-   , gpsName           :: Vector 32 CChar
+   , gpsName           :: CStringBuffer 32
    , gpsCountValues    :: Word32
    , gpsCountEnum      :: Word32
    } deriving (Generic,CStorable)

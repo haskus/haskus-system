@@ -32,16 +32,14 @@ module ViperVM.Arch.X86_64.Cpuid
    where
 
 import GHC.TypeLits
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Foreign.C.String (castCCharToChar)
-import Foreign.C.Types
 
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Vector as V
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.String
+import ViperVM.Format.Text as Text
 import ViperVM.Utils.Tuples (fromTuple4)
 
 #ifdef __GLASGOW_HASKELL__
@@ -114,12 +112,12 @@ valToText :: forall (n :: Nat)  (m :: Nat) .
    , KnownNat m
    )
    => Vector n Word32 -> Text
-valToText xs = Text.pack (fmap castCCharToChar (V.toList v))
+valToText xs = Text.pack (fromCStringBuffer v)
    where
-      u :: Union '[Vector n Word32 , Vector m CChar]
+      u :: Union '[Vector n Word32 , CStringBuffer m]
       u = toUnion xs
 
-      v :: Vector m CChar
+      v :: CStringBuffer m
       v = fromUnion u
 
 procVendor :: Text

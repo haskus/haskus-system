@@ -15,11 +15,11 @@ module ViperVM.Arch.Linux.FileSystem.Mount
    )
 where
 
-import Foreign.C.String (withCString)
 import Foreign.Ptr (Ptr,nullPtr)
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet
+import ViperVM.Format.String (withCString)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls

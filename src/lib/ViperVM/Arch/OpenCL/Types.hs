@@ -7,9 +7,9 @@ module ViperVM.Arch.OpenCL.Types where
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr,FunPtr,IntPtr)
 import Foreign.C.Types (CSize(..))
-import Foreign.C.String (CString)
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String (CString)
 import ViperVM.Arch.OpenCL.ImageFormat
 
 -- | OpenCL platform

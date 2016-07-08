@@ -34,16 +34,16 @@ import ViperVM.Format.Binary.Vector
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String
 
 import GHC.Generics
 import GHC.TypeLits
 import Foreign.Ptr
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.C.Types
 
 -- | String with characters: A-Z 0-9 _ * " % & ' ( ) * + , - . / : ; < = > ?
-newtype StringA (n :: Nat) = StringA (Vector n CChar) deriving (Show,Generic,CStorable)
+newtype StringA (n :: Nat) = StringA (CStringBuffer n) deriving (Show,Generic,CStorable)
 
 instance (KnownNat n) => Storable (StringA n) where
    sizeOf    = cSizeOf
@@ -52,7 +52,7 @@ instance (KnownNat n) => Storable (StringA n) where
    poke      = cPoke
 
 -- | String with characters: A-Z 0-9 _
-newtype StringD (n :: Nat) = StringD (Vector n CChar) deriving (Show,Generic,CStorable)
+newtype StringD (n :: Nat) = StringD (CStringBuffer n) deriving (Show,Generic,CStorable)
 
 instance (KnownNat n) => Storable (StringD n) where
    sizeOf    = cSizeOf

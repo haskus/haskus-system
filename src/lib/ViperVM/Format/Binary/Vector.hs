@@ -22,7 +22,6 @@ module ViperVM.Format.Binary.Vector
    , toList
    , replicate
    , concat
-   , convertCString
    )
 where
 
@@ -37,8 +36,6 @@ import Control.Monad(forM_)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
-import Foreign.C.String 
-import Foreign.C.Types (CChar)
 
 import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
@@ -272,8 +269,3 @@ concat vs = unsafePerformIO $ do
       hFoldr StoreVector (return (p `plusPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
 
    return (Vector fp 0)
-
-
--- | Convert a \0-terminal vector into a string
-convertCString :: (KnownNat n) => Vector n CChar -> String
-convertCString = takeWhile (/= '\0') . fmap castCCharToChar . toList

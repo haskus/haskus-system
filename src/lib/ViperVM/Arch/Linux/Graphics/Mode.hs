@@ -18,14 +18,10 @@ import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.Ptr (castPtr)
-import Foreign.C.String 
-   ( castCCharToChar
-   , castCharToCChar
-   )
-import qualified ViperVM.Format.Binary.Vector as Vec
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String
 
 import ViperVM.Arch.Linux.Internals.Graphics
 
@@ -62,7 +58,6 @@ instance Storable Mode where
 fromStructMode :: StructMode -> Mode
 fromStructMode StructMode {..} =
    let
-      extractName = takeWhile (/= '\0') . fmap castCCharToChar . Vec.toList
       flgs  = extractField (Proxy :: Proxy "flags") miFlags
       flg3d = fromEnumField $ extractField (Proxy :: Proxy "stereo3d") miFlags
    in Mode
@@ -81,14 +76,12 @@ fromStructMode StructMode {..} =
       , modeFlags               = flgs
       , modeStereo3D            = flg3d
       , modeType                = miType
-      , modeName                = extractName miName
+      , modeName                = fromCStringBuffer miName
       }
 
 toStructMode :: Mode -> StructMode
 toStructMode Mode {..} =
    let
-      modeName' = Vec.fromFilledListZ (castCharToCChar '\0')
-                     (fmap castCharToCChar modeName)
       flgs = updateField (Proxy :: Proxy "flags") modeFlags
            $ updateField (Proxy :: Proxy "stereo3d") (toEnumField modeStereo3D)
            $ BitFields 0
@@ -108,5 +101,5 @@ toStructMode Mode {..} =
       , miVRefresh   = modeVerticalRefresh
       , miFlags      = flgs
       , miType       = modeType
-      , miName       = modeName'
+      , miName       = toCStringBuffer modeName
       }

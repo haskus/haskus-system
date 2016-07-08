@@ -29,12 +29,12 @@ import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String
 
 import Control.Monad (void)
 import Control.Monad.Trans.Either
 import Foreign.Ptr
-import Foreign.C.String
-import Foreign.C.Types (CSize, CChar)
+import Foreign.C.Types (CSize)
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)

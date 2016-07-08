@@ -33,6 +33,7 @@ where
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitSet (BitSet, CBitSet)
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String (peekCString)
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -45,7 +46,6 @@ import ViperVM.Format.Binary.Enum
 import Data.Ord (comparing)
 import Foreign.Ptr (Ptr, castPtr, nullPtr)
 import Foreign.C.Types (CSize)
-import Foreign.C.String (peekCString)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Storable (peek, sizeOf)
 

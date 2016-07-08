@@ -37,9 +37,8 @@ We can also explicitly change the endianness with the following methods:
 * littleEndianToHost
 * reverseBytes
 
-Each of these methods is either equivalent to `id` or to `reverseBytes` (from
-[Bits.Reverse](../../src/lib/ViperVM/Format/Binary/Bits/Reverse.hs)), depending
-on the host endianness.
+Each of these methods is either equivalent to `id` or to `reverseBytes`
+depending on the host endianness.
 
 ## Bits
 

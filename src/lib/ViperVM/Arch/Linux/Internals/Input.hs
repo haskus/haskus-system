@@ -75,13 +75,13 @@ import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.String (peekCString)
 import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Utils.Flow
 
-import Foreign.C.String (peekCString)
 import qualified Data.ByteString as BS
 import GHC.Generics (Generic)
 import Foreign.Storable

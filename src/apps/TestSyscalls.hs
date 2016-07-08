@@ -17,11 +17,10 @@ import ViperVM.Arch.Linux.Time
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Internals.Input
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.String (withCString)
 import ViperVM.Utils.Variant
 import ViperVM.Utils.Flow
 
-
-import Foreign.C.String (withCString)
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
 --import Foreign.Marshal.Alloc

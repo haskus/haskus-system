@@ -6,7 +6,7 @@ module ViperVM.Arch.Linux.Internals.Reboot
 where
 
 import ViperVM.Arch.Linux.ErrorCode
-import Foreign.C.String (withCString)
+import ViperVM.Format.String (withCString)
 import Foreign.Ptr (nullPtr)
 
 import ViperVM.Format.Binary.Word (Word64)

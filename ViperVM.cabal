@@ -175,6 +175,7 @@ library
 
     ViperVM.Format.CPIO
     ViperVM.Format.Text
+    ViperVM.Format.String
 
     ViperVM.Format.Elf
     ViperVM.Format.Elf.PreHeader

@@ -109,8 +109,8 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String (CString)
 
-import Foreign.C.String (CString)
 import Foreign.Ptr
 
 type FD = Word -- file descriptor alias

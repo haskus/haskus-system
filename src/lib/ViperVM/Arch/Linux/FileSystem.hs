@@ -63,13 +63,13 @@ import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
-import Foreign.C.String (CString, withCString, peekCString)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet
+import ViperVM.Format.String (CString, withCString, peekCString)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Utils.Flow
 

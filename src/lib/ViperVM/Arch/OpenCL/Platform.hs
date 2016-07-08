@@ -28,6 +28,7 @@ where
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String (peekCString)
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -37,7 +38,6 @@ import ViperVM.Arch.OpenCL.Device
 
 import Control.Monad.Trans.Either
 import Foreign.C.Types (CSize)
-import Foreign.C.String (peekCString)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,peekArray)
 import Foreign.Storable (peek,sizeOf)

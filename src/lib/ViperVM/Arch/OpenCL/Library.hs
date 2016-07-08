@@ -12,10 +12,10 @@ import System.Posix.DynamicLinker
 import System.Posix.DynamicLinker.Template
 import Foreign.C.Types (CSize(..))
 import Foreign.Ptr (Ptr)
-import Foreign.C.String (CString)
 import Data.Maybe (fromJust)
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.String (CString)
 import ViperVM.Arch.OpenCL.Types
 
 -- | An OpenCL library
