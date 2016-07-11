@@ -17,9 +17,9 @@ import ViperVM.Platform.Types
    , bufferUID
    )
 import qualified ViperVM.Utils.STM.TSet as TSet
+import ViperVM.Utils.Embed
 
 import Paths_ViperVM
-import Data.FileEmbed
 import Data.Version
 
 import Control.Concurrent.STM

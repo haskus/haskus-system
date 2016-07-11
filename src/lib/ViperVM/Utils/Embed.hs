@@ -1,8 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 
--- | Embed a bytestring
-module ViperVM.Utils.EmbedByteString
+-- | Embed data into the executable binary
+module ViperVM.Utils.Embed
    ( embedBS
+   , module Data.FileEmbed
    )
 where
 
@@ -11,6 +12,8 @@ import qualified Data.ByteString.Char8 as B8
 import Data.ByteString.Unsafe (unsafePackAddressLen)
 import System.IO.Unsafe (unsafePerformIO)
 import Language.Haskell.TH
+
+import Data.FileEmbed
 
 -- | Embed a bytestring into a binary
 embedBS :: BS.ByteString -> Q Exp

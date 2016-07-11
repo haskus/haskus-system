@@ -163,7 +163,7 @@ library
     ViperVM.Utils.MultiState
     ViperVM.Utils.Hash
     ViperVM.Utils.HList
-    ViperVM.Utils.EmbedByteString
+    ViperVM.Utils.Embed
     ViperVM.Utils.Memory
     ViperVM.Utils.Types
     ViperVM.Utils.STM.TMap
@@ -296,6 +296,7 @@ library
       ,  loop                      >= 0.3
       ,  Rasterific                >= 0.6
       ,  colour                    >= 2.3
+      ,  file-embed                >= 0.0.10
 
   build-tools: 
   ghc-options:          -Wall -threaded -O3
@@ -366,7 +367,6 @@ executable PlatformWeb
       ,  blaze-markup         >= 0.7
       ,  transformers         >= 0.4
       ,  network              >= 2.6
-      ,  file-embed           >= 0.0.9
       ,  bytestring           >= 0.10
       ,  optparse-applicative >= 0.12
 
@@ -386,7 +386,6 @@ executable X86Web
       ,  blaze-markup         >= 0.7
       ,  transformers         >= 0.4
       ,  network              >= 2.6
-      ,  file-embed           >= 0.0.9
       ,  bytestring           >= 0.10
       ,  optparse-applicative >= 0.12
       ,  vector               >= 0.10
@@ -408,7 +407,6 @@ executable ElfWeb
       ,  bytestring           >= 0.10
       ,  lucid                >= 2.9
       ,  transformers         >= 0.4
-      ,  file-embed           >= 0.0.9
       ,  optparse-applicative >= 0.12
       ,  text                 >= 1.2
       ,  text-format          >= 0.3

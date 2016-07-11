@@ -30,11 +30,11 @@ import ViperVM.Format.Text (Text,textFormat,Only(..))
 import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Embed
 
 import Control.Monad
 import Happstack.Server
 import Lucid
-import Data.FileEmbed
 import Data.Maybe
 import Data.List (intersperse)
 import Data.Tree (drawTree)

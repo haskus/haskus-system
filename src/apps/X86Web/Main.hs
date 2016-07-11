@@ -8,9 +8,9 @@ import qualified ViperVM.Arch.X86_64.ISA.OpcodeMaps as X86
 import qualified ViperVM.Arch.X86_64.ISA.Encoding   as X86
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Utils.Embed
 
 import Paths_ViperVM
-import Data.FileEmbed
 import Data.Version
 import Control.Monad
 import Text.Printf
