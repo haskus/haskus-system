@@ -1,15 +1,13 @@
-module Tests where
+module ViperVM.Tests where
 
 import Distribution.TestSuite (Test)
 
-import BinaryBits
-import BinaryGetPut
-import UtilsHArray
+import ViperVM.Tests.Utils
+import ViperVM.Tests.Format
 
 tests :: IO [Test]
-tests = return
-   [ utilsHArrayTests
-   , binaryBitsTests
-   , binaryGetPutTests
+tests = return $ 
+   [ testsUtils
+   , testsFormat
    ]
 

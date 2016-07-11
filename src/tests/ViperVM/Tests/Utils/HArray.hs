@@ -2,8 +2,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module UtilsHArray
-   ( utilsHArrayTests
+module ViperVM.Tests.Utils.HArray
+   ( testsHArray
    )
 where
 
@@ -14,8 +14,8 @@ import Data.Proxy
 
 import ViperVM.Utils.HArray
 
-utilsHArrayTests :: Test
-utilsHArrayTests = testGroup "HArray" $
+testsHArray :: Test
+testsHArray = testGroup "HArray" $
    [ testGroup "Getters"
       [ testProperty "Get by index 0" (getHArrayN (Proxy :: Proxy 0) arr1 == 10)
       , testProperty "Get by index 1" (getHArrayN (Proxy :: Proxy 1) arr1 == "Hello")

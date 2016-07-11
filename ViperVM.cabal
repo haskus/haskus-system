@@ -304,15 +304,18 @@ library
 
 test-suite tests
    type:                detailed-0.9
-   test-module:         Tests
+   test-module:         ViperVM.Tests
    hs-source-dirs:      src/tests
    ghc-options:         -Wall -threaded -O3
    default-language:     Haskell2010
    other-modules:
-         Common
-      ,  BinaryBits
-      ,  BinaryGetPut
-      ,  UtilsHArray
+         ViperVM.Tests.Common
+      ,  ViperVM.Tests.Format
+      ,  ViperVM.Tests.Format.Binary
+      ,  ViperVM.Tests.Format.Binary.Bits
+      ,  ViperVM.Tests.Format.Binary.GetPut
+      ,  ViperVM.Tests.Utils.HArray
+      ,  ViperVM.Tests.Utils
 
    build-depends:    
          base

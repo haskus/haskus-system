@@ -1,5 +1,5 @@
-module BinaryBits 
-   ( binaryBitsTests
+module ViperVM.Tests.Format.Binary.Bits 
+   ( testsBits
    )
 where
 
@@ -8,7 +8,7 @@ import Distribution.TestSuite.QuickCheck (testProperty)
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen (elements,choose,vectorOf)
 
-import Common
+import ViperVM.Tests.Common
 
 import ViperVM.Format.Binary.Bits.Put
 import ViperVM.Format.Binary.Bits.Get
@@ -22,8 +22,8 @@ import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.VariableLength
 import ViperVM.Format.Binary.Word
 
-binaryBitsTests :: Test
-binaryBitsTests = testGroup "Binary bits" $
+testsBits :: Test
+testsBits = testGroup "Binary bits" $
    [ testGroup "Bits to/from string"
       [ testProperty "Bits from string \"01010011\" (Word8)" (bitsFromString "01010011" == (83 :: Word8))
       , testProperty "Bits from string reverse (Word64)" prop_bits_from_string

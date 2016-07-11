@@ -1,4 +1,4 @@
-module Common
+module ViperVM.Tests.Common
    ( isBijective
    , isEquivalent
    , ArbitraryByteString (..)

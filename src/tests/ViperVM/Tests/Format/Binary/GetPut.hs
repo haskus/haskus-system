@@ -1,18 +1,18 @@
-module BinaryGetPut
-   ( binaryGetPutTests
+module ViperVM.Tests.Format.Binary.GetPut
+   ( testsGetPut
    )
 where
 
 import Distribution.TestSuite (Test,testGroup)
 import Distribution.TestSuite.QuickCheck (testProperty)
 
-import Common
+import ViperVM.Tests.Common
 
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Buffer
 
-binaryGetPutTests :: Test
-binaryGetPutTests = testGroup "Binary Get/Put" $
+testsGetPut :: Test
+testsGetPut = testGroup "Get/Put" $
    [ testGroup "getBufferNul"
       [ testProperty "Read two successives strings" getBufferNul_basic
       ]
