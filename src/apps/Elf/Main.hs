@@ -415,7 +415,7 @@ showAsmOperand op = case op of
    OpImmediate v      -> showAsmImm v
    OpReg reg          -> showAsmReg reg
    OpRegPair r1 r2    -> showAsmReg r1 >> ":" >> showAsmReg r2
-   OpMem mt addr      -> showAsmAddr addr
+   OpMem _ addr       -> showAsmAddr addr -- TODO: show memory type
    OpCodeAddr addr    -> showAsmAddr addr
    OpPtr16_16 w1 w2   -> toHtml (show w1 ++ ":" ++ show w2)
    OpPtr16_32 w1 w2   -> toHtml (show w1 ++ ":" ++ show w2)
