@@ -45,4 +45,4 @@ writeStrLn fd = writeBuffer fd . stringEncodeUtf8 . (++ "\n")
 -- read
 readChar :: Handle -> SysRet Char
 readChar fd = readBuffer fd 1
-   >.-.> (castCCharToChar . bufferPeek)
+   >.-.> (castCCharToChar . bufferPeekStorable)

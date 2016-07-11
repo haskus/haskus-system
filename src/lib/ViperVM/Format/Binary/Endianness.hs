@@ -31,7 +31,7 @@ import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Bits ((.|.), shiftL)
-import qualified ViperVM.Format.Binary.Storable as S
+import ViperVM.Format.Binary.Storable
 
 import GHC.Word
 import Foreign.Storable
@@ -181,12 +181,12 @@ instance ByteReversable Word64 where
 newtype AsBigEndian a    = AsBigEndian a    deriving (Show,Eq,Ord,Enum,Num,Integral,Real)
 newtype AsLittleEndian a = AsLittleEndian a deriving (Show,Eq,Ord,Enum,Num,Integral,Real)
 
-instance (ByteReversable a, S.Storable a) => S.Storable (AsBigEndian a) where
-   type SizeOf (AsBigEndian a)    = S.SizeOf a
-   type Alignment (AsBigEndian a) = S.Alignment a
+instance (ByteReversable a, StaticStorable a) => StaticStorable (AsBigEndian a) where
+   type SizeOf (AsBigEndian a)    = SizeOf a
+   type Alignment (AsBigEndian a) = Alignment a
 
-   peek ptr                 = AsBigEndian . bigEndianToHost <$> S.peek (castPtr ptr)
-   poke ptr (AsBigEndian v) = S.poke (castPtr ptr) (hostToBigEndian v)
+   staticPeek ptr                 = AsBigEndian . bigEndianToHost <$> staticPeek (castPtr ptr)
+   staticPoke ptr (AsBigEndian v) = staticPoke (castPtr ptr) (hostToBigEndian v)
 
 
 instance (ByteReversable a, Storable a) => Storable (AsBigEndian a) where
@@ -204,12 +204,12 @@ instance (ByteReversable a, Storable a) => CStorable (AsBigEndian a) where
 
 
    
-instance (ByteReversable a, S.Storable a) => S.Storable (AsLittleEndian a) where
-   type SizeOf (AsLittleEndian a)    = S.SizeOf a
-   type Alignment (AsLittleEndian a) = S.Alignment a
+instance (ByteReversable a, StaticStorable a) => StaticStorable (AsLittleEndian a) where
+   type SizeOf (AsLittleEndian a)    = SizeOf a
+   type Alignment (AsLittleEndian a) = Alignment a
 
-   peek ptr                    = AsLittleEndian . bigEndianToHost <$> S.peek (castPtr ptr)
-   poke ptr (AsLittleEndian v) = S.poke (castPtr ptr) (hostToLittleEndian v)
+   staticPeek ptr                    = AsLittleEndian . bigEndianToHost <$> staticPeek (castPtr ptr)
+   staticPoke ptr (AsLittleEndian v) = staticPoke (castPtr ptr) (hostToLittleEndian v)
 
 instance (ByteReversable a, Storable a) => Storable (AsLittleEndian a) where
    sizeOf _    = sizeOf (undefined :: a)

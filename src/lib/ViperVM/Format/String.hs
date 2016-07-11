@@ -14,21 +14,24 @@ module ViperVM.Format.String
 where
 
 import Foreign.C.String
-import Foreign.C.Types (CChar)
+import Foreign.C.Types (CChar(..))
 import GHC.TypeLits
 
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Vector as Vec
 
 -- | Fixed-size buffer containing a CString
-type CStringBuffer (n :: Nat) = Vector n CChar
+type CStringBuffer (n :: Nat) = Vector n Int8
 
 -- | Convert a \0-terminal vector into a string
 fromCStringBuffer :: (KnownNat n) => CStringBuffer (n :: Nat) -> String
-fromCStringBuffer = fmap castCCharToChar . takeWhile (/= 0) . Vec.toList
+fromCStringBuffer = fmap (castCCharToChar . CChar) . takeWhile (/= 0) . Vec.toList
 
 -- | Convert from a String into a \0-terminal vector
 toCStringBuffer :: (KnownNat n) => String -> CStringBuffer (n :: Nat)
-toCStringBuffer = Vec.fromFilledListZ (castCharToCChar '\0') . fmap castCharToCChar
+toCStringBuffer = Vec.fromFilledListZ 0 . fmap (f . castCharToCChar)
+   where
+      f (CChar x) = x
 
 -- | Empty string
 emptyCStringBuffer :: (KnownNat n) => CStringBuffer (n :: Nat)

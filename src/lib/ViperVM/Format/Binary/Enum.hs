@@ -11,7 +11,7 @@ module ViperVM.Format.Binary.Enum
    )
 where
 
-import qualified ViperVM.Format.Binary.Storable as S
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 import Foreign.Storable
 import Foreign.CStorable
@@ -47,14 +47,14 @@ instance
 
 instance
       ( Integral b
-      , S.Storable b
+      , StaticStorable b
       , CEnum a
-      ) => S.Storable (EnumField b a)
+      ) => StaticStorable (EnumField b a)
    where
-      type SizeOf (EnumField b a)    = S.SizeOf b
-      type Alignment (EnumField b a) = S.Alignment b
-      peek p               = (EnumField . toCEnum) <$> S.peek (castPtr p :: Ptr b)
-      poke p (EnumField v) = S.poke (castPtr p :: Ptr b) (fromCEnum v)
+      type SizeOf (EnumField b a)    = SizeOf b
+      type Alignment (EnumField b a) = Alignment b
+      staticPeek p                   = (EnumField . toCEnum) <$> staticPeek (castPtr p :: Ptr b)
+      staticPoke p (EnumField v)     = staticPoke (castPtr p :: Ptr b) (fromCEnum v)
 
 -- | Read an enum field
 fromEnumField :: CEnum a => EnumField b a -> a

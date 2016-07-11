@@ -49,7 +49,7 @@ where
 
 import ViperVM.Utils.Memory (memCopy, memSet)
 import ViperVM.Utils.HList
-import qualified ViperVM.Format.Binary.Storable as S
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 
 import GHC.TypeLits
@@ -59,6 +59,14 @@ import Foreign.CStorable
 import Foreign.ForeignPtr
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (when)
+
+
+-- TODO: rewrite rules
+-- poke p (toUnion x) = poke (castPtr p) x
+--
+-- (fromUnion <$> peek p) :: IO a  = peek (castPtr p) :: IO a
+
+
 
 -- | An union 
 --
@@ -97,31 +105,31 @@ toUnion' zero v = unsafePerformIO $ do
 
 type family MapSizeOf fs where
    MapSizeOf '[]       = '[]
-   MapSizeOf (x ': xs) = S.SizeOf x ': MapSizeOf xs
+   MapSizeOf (x ': xs) = SizeOf x ': MapSizeOf xs
 
 type family MapAlignment fs where
    MapAlignment '[]       = '[]
-   MapAlignment (x ': xs) = S.Alignment x ': MapAlignment xs
+   MapAlignment (x ': xs) = Alignment x ': MapAlignment xs
 
 
 instance forall fs.
       ( KnownNat (Max (MapSizeOf fs))
       , KnownNat (Max (MapAlignment fs))
       )
-      => S.Storable (Union fs)
+      => StaticStorable (Union fs)
    where
       type SizeOf (Union fs)    = Max (MapSizeOf fs)
       type Alignment (Union fs) = Max (MapAlignment fs)
 
-      peek ptr = do
-         let sz = fromIntegral $ natVal (Proxy :: Proxy (S.SizeOf (Union fs)))
+      staticPeek ptr = do
+         let sz = fromIntegral $ natVal (Proxy :: Proxy (SizeOf (Union fs)))
          fp <- mallocForeignPtrBytes sz
          withForeignPtr fp $ \p -> 
             memCopy p (castPtr ptr) (fromIntegral sz)
          return (Union fp)
 
-      poke ptr (Union fp) = do
-         let sz = natVal (Proxy :: Proxy (S.SizeOf (Union fs)))
+      staticPoke ptr (Union fp) = do
+         let sz = natVal (Proxy :: Proxy (SizeOf (Union fs)))
          withForeignPtr fp $ \p ->
             memCopy (castPtr ptr) p (fromIntegral sz)
 
@@ -129,29 +137,32 @@ instance forall fs.
 -- We use HFoldr' to get the maximum size and alignment of the types in the union
 -------------------------------------------------------------------------------------
 
-data SizeOf    = SizeOf
-data Alignment = Alignment
+data FoldSizeOf    = FoldSizeOf
+data FoldAlignment = FoldAlignment
 
-instance (r ~ Int, Storable a) => ApplyAB SizeOf (a, Int) r where
+instance (r ~ Int, Storable a) => ApplyAB FoldSizeOf (a, Int) r where
    applyAB _ (_,r) = max r (sizeOf (undefined :: a))
 
-instance (r ~ Int, Storable a) => ApplyAB Alignment (a, Int) r where
+instance (r ~ Int, Storable a) => ApplyAB FoldAlignment (a, Int) r where
    applyAB _ (_,r) = max r (alignment (undefined :: a))
 
 -- | Get the union size (i.e. the maximum of the types in the union)
-unionSize :: forall l . HFoldr' SizeOf Int l Int => Union l -> Int
-unionSize _ = hFoldr' SizeOf (0 :: Int) (undefined :: HList l)
+unionSize :: forall l . HFoldr' FoldSizeOf Int l Int => Union l -> Int
+unionSize _ = hFoldr' FoldSizeOf (0 :: Int) (undefined :: HList l)
 
 -- | Get the union alignment (i.e. the maximum of the types in the union)
-unionAlignment :: forall l . HFoldr' Alignment Int l Int => Union l -> Int
-unionAlignment _ = hFoldr' Alignment (0 :: Int) (undefined :: HList l)
+unionAlignment :: forall l . HFoldr' FoldAlignment Int l Int => Union l -> Int
+unionAlignment _ = hFoldr' FoldAlignment (0 :: Int) (undefined :: HList l)
 
 
 -------------------------------------------------------------------------------------
 -- Finally we can write the Storable and CStorable instances
 -------------------------------------------------------------------------------------
 
-instance (HFoldr' SizeOf Int l Int, HFoldr' Alignment Int l Int) => Storable (Union l) where
+instance
+   ( HFoldr' FoldSizeOf Int l Int
+   , HFoldr' FoldAlignment Int l Int
+   ) => Storable (Union l) where
    sizeOf             = unionSize
    alignment          = unionAlignment
    peek ptr = do
@@ -171,9 +182,3 @@ instance (Storable (Union l)) => CStorable (Union l) where
    cPoke      = poke
    cAlignment = alignment
    cSizeOf    = sizeOf
-
-
--- TODO: rewrite rules
--- poke p (toUnion x) = poke (castPtr p) x
---
--- (fromUnion <$> peek p) :: IO a  = peek (castPtr p) :: IO a

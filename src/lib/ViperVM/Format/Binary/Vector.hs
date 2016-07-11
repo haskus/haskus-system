@@ -13,6 +13,7 @@
 -- | Vector with size in the type
 module ViperVM.Format.Binary.Vector
    ( Vector (..)
+   , vectorBuffer
    , take
    , drop
    , index
@@ -29,128 +30,114 @@ import GHC.TypeLits
 import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
+import Foreign.Marshal.Alloc
 import Prelude hiding (replicate, head, last,
                        tail, init, map, length, drop, take, concat)
 import qualified Data.List as List
-import Control.Monad(forM_)
-import Foreign.ForeignPtr
 import System.IO.Unsafe (unsafePerformIO)
 
-import ViperVM.Utils.Memory (memCopy)
 import ViperVM.Utils.HList
-import qualified ViperVM.Format.Binary.Storable as S
-import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Buffer
 
 -- | Vector with type-checked size
---
--- Use GHC type literals to avoid efficiency issues with Peano representation
--- (cf fixed-vector package).
-data Vector (n :: Nat) a = Vector
-   { vectorPtr    :: {-# UNPACK #-} !(ForeignPtr a)
-   , vectorOffset :: {-# UNPACK #-} !Word64         -- ^ Number of elements to skip
-   }
+data Vector (n :: Nat) a = Vector Buffer
 
 instance (Storable a, Show a, KnownNat n) => Show (Vector n a) where
    show v = "fromList " ++ show (toList v)
 
+-- | Return the buffer backing the vector
+vectorBuffer :: Vector n a -> Buffer
+vectorBuffer (Vector b) = b
+
+-- | Offset of the i-th element in a stored vector
+type family ElemOffset a n where
+   ElemOffset a n = n * (SizeOf a)
 
 instance forall a n s.
-   ( S.Storable a
-   , s ~ (n * S.SizeOf a)
+   ( StaticStorable a
+   , s ~ ElemOffset a n
    , KnownNat s
-   , KnownNat (S.SizeOf a)
-   )=> S.Storable (Vector n a) where
+   , KnownNat (SizeOf a)
+   ) => StaticStorable (Vector n a) where
 
-   type SizeOf (Vector n a)    = (n * S.SizeOf a)
-   type Alignment (Vector n a) = S.Alignment a
+   type SizeOf (Vector n a)    = ElemOffset a n
+   type Alignment (Vector n a) = Alignment a
 
-   peek ptr = do
-      let sz = fromIntegral (natVal (Proxy :: Proxy s))
-      fp <- mallocForeignPtrBytes sz
-      withForeignPtr fp $ \p ->
-         memCopy p ptr (fromIntegral sz)
-      return (Vector fp 0)
+   staticPeek ptr = do
+      let sz = natVal (Proxy :: Proxy s)
+      Vector <$> bufferPackPtr (fromIntegral sz) (castPtr ptr)
 
-   poke ptr (Vector fp o) = do
-      let
-         off = fromIntegral o * fromIntegral (natVal (Proxy :: Proxy (S.SizeOf a)))
-         sz = fromIntegral (natVal (Proxy :: Proxy s))
-      withForeignPtr fp $ \p ->
-         memCopy ptr (p `plusPtr` off) sz
+   staticPoke ptr (Vector b) = bufferPoke ptr b
 
--- | Offset the i-th element in a stored vector
--- Take into account the padding after each element
-elemOffset :: Storable a => a -> Int -> Int
-elemOffset a i = i * (sizeA + padding)
-   where
-     sizeA   = sizeOf a
-     alignA  = alignment a
-     padding = case sizeA `mod` alignA of
-        0 -> 0
-        x -> alignA - x
-
-instance (KnownNat n, Storable a) => Storable (Vector n a) where
-   sizeOf _    = elemOffset (undefined :: a)
-                     (fromIntegral (natVal (Proxy :: Proxy n)))
+instance forall a n.
+   ( KnownNat n
+   , Storable a
+   ) => Storable (Vector n a) where
+   sizeOf _    = fromIntegral (natVal (Proxy :: Proxy n)) * sizeOf (undefined :: a)
    alignment _ = alignment (undefined :: a)
    peek ptr    = do
-      let n = fromIntegral (natVal (Proxy :: Proxy n))
-      fp <- mallocForeignPtrArray n
-      withForeignPtr fp $ \p ->
-         memCopy p ptr
-            (fromIntegral (sizeOf (undefined :: Vector n a)))
-      return (Vector fp 0)
+      Vector <$> bufferPackPtr (fromIntegral (sizeOf (undefined :: Vector n a))) (castPtr ptr)
 
-   poke ptr v@(Vector fp o) = do
-      let
-         off = fromIntegral (elemOffset (undefined :: a) (fromIntegral o))
-      withForeignPtr fp $ \p ->
-         memCopy ptr (p `plusPtr` off)
-            (fromIntegral (sizeOf v))
+   poke ptr (Vector b) = bufferPoke ptr b
 
-instance (KnownNat n, Storable a) => CStorable (Vector n a) where
+instance forall n a.
+   ( KnownNat n
+   , Storable a
+   ) => CStorable (Vector n a) where
    cSizeOf      = sizeOf
    cAlignment   = alignment
    cPeek        = peek
    cPoke        = poke
 
--- | /O(1)/ Yield the first n elements. The resultant vector always contains
--- this many elements.
-take :: (KnownNat n, KnownNat m) => Proxy n -> Vector (m+n) a -> Vector n a
-take _ (Vector fp o) = Vector fp o -- the size only changes in the type
+-- | Yield the first n elements
+take :: forall n m a s.
+   ( KnownNat n
+   , KnownNat m
+   , KnownNat s
+   , s ~ ElemOffset a n
+   )
+   => Proxy n -> Vector (m+n) a -> Vector n a
+take _ (Vector b) = Vector (bufferTake sz b)
+   where
+      sz = fromIntegral (natVal (Proxy :: Proxy s))
 {-# INLINE take #-}
 
--- | /O(1)/ Yield all but the first n elements.
-drop :: (KnownNat n, KnownNat m) => Proxy n -> Vector (m+n) a -> Vector m a
-drop n (Vector fp o) = Vector fp (o + fromIntegral (natVal n))
+-- | Drop the first n elements
+drop :: forall n m a s.
+   ( KnownNat n
+   , KnownNat m
+   , KnownNat s
+   , s ~ ElemOffset a n
+   ) => Proxy n -> Vector (m+n) a -> Vector m a
+drop _ (Vector b) = Vector (bufferDrop sz b)
+   where
+      sz = fromIntegral $ natVal (Proxy :: Proxy s)
 {-# INLINE drop #-}
 
 -- | /O(1)/ Index safely into the vector using a type level index.
-index :: forall a (n :: Nat) (m :: Nat) .
+index :: forall a (n :: Nat) (m :: Nat) s.
    ( KnownNat n
    , KnownNat m
+   , KnownNat s
    , Storable a
    , CmpNat n m ~ 'LT
+   , s ~ ElemOffset a n
    ) => Proxy n -> Vector m a -> a
-index n (Vector fp o) = unsafePerformIO $ withForeignPtr fp $ \p ->
-   peekByteOff p (elemOffset (undefined :: a)
-      (fromIntegral o + fromIntegral (natVal n)))
+index _ (Vector b) = bufferPeekStorableAt b off
+   where
+      off = fromIntegral (natVal (Proxy :: Proxy s))
 {-# INLINE index #-}
 
--- | Convert a list into a vector
+-- | Convert a list into a vector if the number of elements matches
 fromList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => [a] -> Maybe (Vector n a)
 fromList v
    | n' /= n   = Nothing
-   | otherwise = Just $ unsafePerformIO $ do
-         fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))
-         withForeignPtr fp $ \p ->
-            forM_ (v `zip` [0..]) $ \(e,i) ->
-               pokeByteOff p (elemOffset e i) e
-         return (Vector fp 0)
+   | otherwise = Just $ Vector $ bufferPackStorableList v
    where
       n' = natVal (Proxy :: Proxy n)
       n  = fromIntegral (List.length v)
@@ -161,17 +148,10 @@ fromFilledList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => a -> [a] -> Vector n a
-fromFilledList z v = unsafePerformIO $ do
-   let 
+fromFilledList z v = Vector $ bufferPackStorableList v'
+   where
+      v' = List.take n' (v ++ repeat z)
       n' = fromIntegral (natVal (Proxy :: Proxy n))
-      n  = List.length v
-   fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))
-   withForeignPtr fp $ \p -> do
-      forM_ (v `zip` [0..min (n-1) (n'-1)]) $ \(e,i) ->
-         pokeByteOff p (elemOffset e i) e
-      forM_ [n..n'-1] $ \i ->
-         pokeByteOff p (elemOffset z i) z
-   return (Vector fp 0)
 {-# INLINE fromFilledList #-}
 
 -- | Take at most (n-1) element from the list, then use z
@@ -179,17 +159,10 @@ fromFilledListZ :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => a -> [a] -> Vector n a
-fromFilledListZ z v = unsafePerformIO $ do
-   let 
+fromFilledListZ z v = fromFilledList z v'
+   where
+      v' = List.take (n'-1) v
       n' = fromIntegral (natVal (Proxy :: Proxy n))
-      n  = List.length v
-   fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))
-   withForeignPtr fp $ \p -> do
-      forM_ (v `zip` [0.. min (n-1) (n'-2)]) $ \(e,i) ->
-         pokeByteOff p (elemOffset e i) e
-      forM_ [min n (n'-1)..n'-1] $ \i ->
-         pokeByteOff p (elemOffset z i) z
-   return (Vector fp 0)
 {-# INLINE fromFilledListZ #-}
 
 -- | Convert a vector into a list
@@ -197,13 +170,10 @@ toList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => Vector n a -> [a]
-toList (Vector fp o) = unsafePerformIO $ withForeignPtr fp $ \p ->
-      return (go (p `plusPtr` elemOffset (undefined :: a) (fromIntegral o)) n)
+toList (Vector b) = fmap (bufferPeekStorableAt b . (sza*)) [0..n-1]
    where
-      n      = natVal (Proxy :: Proxy n)
-      off    = elemOffset (undefined :: a) 1
-      go _ 0 = []
-      go p i = unsafePerformIO (peek p) : go (p `plusPtr` off) (i-1)
+      n   = fromIntegral (natVal (Proxy :: Proxy n))
+      sza = fromIntegral (sizeOf (undefined :: a))
 {-# INLINE toList #-}
 
 -- | Create a vector by replicating a value
@@ -211,29 +181,20 @@ replicate :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => a -> Vector n a
-replicate v = unsafePerformIO $ do
-   let n = fromIntegral (natVal (Proxy :: Proxy n))
-   fp <- mallocForeignPtrBytes (sizeOf (undefined :: Vector n a))
-   withForeignPtr fp $ \p ->
-      forM_ [0..n] $ \i ->
-         pokeByteOff p (elemOffset v i) v
-   return (Vector fp 0)
+replicate v = fromFilledList v []
 {-# INLINE replicate #-}
 
 
-data SizeVectors = SizeVectors -- Get the cumulated size of a list of vector
 data StoreVector = StoreVector -- Store a vector at the right offset
 
-instance forall v r .
-   ( r ~ Int
-   , Storable v
-   ) => ApplyAB SizeVectors (v, Int) r where
-      applyAB _ (_, sz) = sz + sizeOf (undefined :: v)
-
-instance forall (n :: Nat) v a r .
+instance forall (n :: Nat) v a r s.
    ( v ~ Vector n a
    , r ~ IO (Ptr a)
    , KnownNat n
+   , KnownNat (SizeOf a)
+   , s ~ ElemOffset a n
+   , KnownNat s
+   , StaticStorable a
    , Storable a
    ) => ApplyAB StoreVector (v, IO (Ptr a)) r where
       applyAB _ (v, getP) = do
@@ -248,24 +209,17 @@ type family WholeSize fs :: Nat where
    WholeSize '[]                 = 0
    WholeSize (Vector n s ': xs)  = n + WholeSize xs
 
-wholeSize :: forall l .
-   ( HFoldr' SizeVectors Int l Int
-   ) => HList l -> Int
-wholeSize = hFoldr' SizeVectors (0 :: Int)
-
 -- | Concat several vectors into a single one
 concat :: forall l (n :: Nat) a .
-   ( WholeSize l ~ n
+   ( n ~ WholeSize l
    , KnownNat n
    , Storable a
+   , StaticStorable a
    , HFoldr StoreVector (IO (Ptr a)) l (IO (Ptr a))
-   , HFoldr' SizeVectors Int l Int
    )
    => HList l -> Vector n a
 concat vs = unsafePerformIO $ do
-   let sz = wholeSize vs
-   fp <- mallocForeignPtrBytes sz :: IO (ForeignPtr a)
-   _  <- withForeignPtr fp $ \p ->
-      hFoldr StoreVector (return (p `plusPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
-
-   return (Vector fp 0)
+   let sz = sizeOf (undefined :: a) * fromIntegral (natVal (Proxy :: Proxy n))
+   p <- mallocBytes sz :: IO (Ptr ())
+   _ <- hFoldr StoreVector (return (p `plusPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
+   Vector <$> bufferUnsafePackPtr (fromIntegral sz) p

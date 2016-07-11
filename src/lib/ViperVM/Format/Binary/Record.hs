@@ -46,10 +46,6 @@ newtype Record (fields :: [*]) = Record (ForeignPtr ())
 -- | Field
 data Field (name :: Symbol) typ
 
-type family Padding modulo alignment where
-   Padding 0 a = 0
-   Padding m a = a - m
-
 -- | Get record size without the ending padding bytes
 type family RecordSize (fs :: [*]) (sz :: Nat) where
    RecordSize '[] sz                    = sz
@@ -57,7 +53,7 @@ type family RecordSize (fs :: [*]) (sz :: Nat) where
       RecordSize fs
          (sz
          -- padding bytes
-         + Padding (Modulo sz (Alignment typ)) (Alignment typ)
+         + Padding sz typ
          -- field size
          + SizeOf typ
          )
@@ -65,12 +61,11 @@ type family RecordSize (fs :: [*]) (sz :: Nat) where
 type family FieldOffset (name :: Symbol) (fs :: [*]) (sz :: Nat) where
    -- Found
    FieldOffset name (Field name typ ': fs) sz =
-      sz + Padding (Modulo sz (Alignment typ)) (Alignment typ)
+      sz + Padding sz typ
    -- Not found yet
    FieldOffset name (Field xx typ ': fs) sz =
       FieldOffset name fs
-         (sz + Padding (Modulo sz (Alignment typ)) (Alignment typ)
-             + SizeOf typ)
+         (sz + Padding sz typ + SizeOf typ)
 
 type family FieldType (name :: Symbol) (fs :: [*]) where
    FieldType name (Field name typ ': fs) = typ
@@ -80,7 +75,7 @@ type family FieldType (name :: Symbol) (fs :: [*]) where
 type family FullRecordSize fs where
    FullRecordSize fs =
       RecordSize fs 0
-      + Padding (Modulo (RecordSize fs 0) (RecordAlignment fs 1))
+      + PaddingEx (Modulo (RecordSize fs 0) (RecordAlignment fs 1))
          (RecordAlignment fs 1)
 
 -- | Record alignment
@@ -131,12 +126,12 @@ recordField :: forall name a fs o.
    ( o ~ FieldOffset name fs 0
    , a ~ FieldType name fs
    , KnownNat o
-   , Storable a
+   , StaticStorable a
    ) => Proxy (name :: Symbol) -> Record fs -> a
 recordField p r@(Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr ->do
       let ptr' = ptr `plusPtr` recordFieldOffset p r
-      peek (castPtr ptr')
+      staticPeek (castPtr ptr')
 
 data Path (fs :: [*])
 
@@ -154,33 +149,33 @@ recordFieldPath :: forall path a fs o.
    ( o ~ FieldPathOffset fs path 0
    , a ~ FieldPathType fs path
    , KnownNat o
-   , Storable a
+   , StaticStorable a
    ) => Path path -> Record fs -> a
 recordFieldPath _ (Record fp) = unsafePerformIO $
-   withForeignPtr fp $ \ptr ->do
+   withForeignPtr fp $ \ptr -> do
       let
          o    = fromIntegral (natVal (Proxy :: Proxy o))
          ptr' = ptr `plusPtr` o
-      peek (castPtr ptr')
+      staticPeek (castPtr ptr')
 
 
 instance forall fs s.
       ( s ~ FullRecordSize fs
       , KnownNat s
       )
-      => Storable (Record fs)
+      => StaticStorable (Record fs)
    where
       type SizeOf (Record fs)    = FullRecordSize fs
       type Alignment (Record fs) = RecordAlignment fs 1
 
-      peek ptr = do
+      staticPeek ptr = do
          let sz = recordSize (undefined :: Record fs)
          fp <- mallocForeignPtrBytes (fromIntegral sz)
          withForeignPtr fp $ \p ->
             memCopy p ptr (fromIntegral sz)
          return (Record fp)
 
-      poke ptr (Record fp) = do
+      staticPoke ptr (Record fp) = do
          let sz = recordSize (undefined :: Record fs)
          withForeignPtr fp $ \p ->
             memCopy ptr p (fromIntegral sz)
@@ -194,7 +189,7 @@ instance forall fs typ name rec b l2 i r.
    , i ~ (rec, HList l2)                    -- input type
    , typ ~ FieldType name fs
    , KnownNat (FieldOffset name fs 0)
-   , Storable typ
+   , StaticStorable typ
    , KnownSymbol name
    , r ~ (rec, HList ((String,typ) ': l2))  -- result type
    ) => ApplyAB Extract (b, i) r where

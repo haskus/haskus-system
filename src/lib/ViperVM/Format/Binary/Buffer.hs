@@ -13,10 +13,8 @@ module ViperVM.Format.Binary.Buffer
    , bufferSize
    , isBufferEmpty
    , emptyBuffer
-   , bufferPeek
    , bufferMap
    , bufferReverse
-   , bufferRead
    , bufferDrop
    , bufferTail
    , bufferAppend
@@ -29,7 +27,12 @@ module ViperVM.Format.Binary.Buffer
    , bufferTake
    , bufferTakeWhile
    , bufferTakeAtMost
-   -- * Packing/Unpacking
+   -- * Peek / Poke
+   , bufferPeekStorable
+   , bufferPeekStorableAt
+   , bufferPopStorable
+   , bufferPoke
+   -- * Packing / Unpacking
    , bufferPackByteString
    , bufferPackByteList
    , bufferPackStorable
@@ -47,6 +50,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferUnsafeIndex
    , bufferUnsafeMapMemory
    , bufferUnsafeUsePtr
+   , bufferUnsafePackPtr
    -- * IO
    , bufferReadFile
    , bufferWriteFile
@@ -105,12 +109,36 @@ bufferSize (Buffer bs) =
       s = BS.length bs
 
 -- | Peek a storable
-bufferPeek :: forall a. Storable a => Buffer -> a
-bufferPeek buf
-   | bufferSize buf < sza = error "bufferPeek: out of bounds"
-   | otherwise            = unsafePerformIO $ withBufferPtr buf peek
+bufferPeekStorable :: forall a. Storable a => Buffer -> a
+bufferPeekStorable = snd . bufferPopStorable
+
+-- | Peek a storable at the given offset
+bufferPeekStorableAt :: forall a.
+   ( Storable a
+   )
+   => Buffer -> Word -> a
+bufferPeekStorableAt b n
+   | n + sza > bufferSize b = error "Invalid buffer index"
+   | otherwise = unsafePerformIO $ withBufferPtr b $ \p ->
+      peekByteOff p (fromIntegral n)
+   where
+      sza = fromIntegral (sizeOf (undefined :: a))
+   
+
+-- | Pop a Storable and return the new buffer
+bufferPopStorable :: forall a. Storable a => Buffer -> (Buffer,a)
+bufferPopStorable buf
+   | bufferSize buf < sza = error "bufferRead: out of bounds"
+   | otherwise            = unsafePerformIO $ do
+         a <- withBufferPtr buf peek
+         return (bufferDrop sza buf, a)
    where
       sza = fromIntegral (sizeOf (undefined :: a)) 
+
+-- | Poke a buffer
+bufferPoke :: Ptr a -> Buffer -> IO ()
+bufferPoke dest b = bufferUnsafeUsePtr b $ \src sz ->
+   memCopy dest src (fromIntegral sz)
 
 -- | Map
 bufferMap :: (Word8 -> Word8) -> Buffer -> Buffer
@@ -165,16 +193,6 @@ bufferUnpackByteList (Buffer bs) = BS.unpack bs
 bufferUnpackByteString :: Buffer -> ByteString
 bufferUnpackByteString (Buffer bs) = bs
 
--- | Read a Storable and return the new buffer
-bufferRead :: forall a. Storable a => Buffer -> (Buffer,a)
-bufferRead buf
-   | bufferSize buf < sza = error "bufferRead: out of bounds"
-   | otherwise            = unsafePerformIO $ do
-         a <- withBufferPtr buf peek
-         return (bufferDrop sza buf, a)
-   where
-      sza = fromIntegral (sizeOf (undefined :: a)) 
-
 -- | Take some bytes O(1)
 bufferTake :: Word -> Buffer -> Buffer
 bufferTake n (Buffer bs) = Buffer $ BS.take (fromIntegral n) bs
@@ -222,6 +240,11 @@ bufferPackPtr :: Word -> Ptr () -> IO Buffer
 bufferPackPtr sz ptr = do
    p <- mallocBytes (fromIntegral sz)
    memCopy p ptr (fromIntegral sz)
+   Buffer <$> BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz)
+
+-- | Pack from a pointer
+bufferUnsafePackPtr :: Word -> Ptr () -> IO Buffer
+bufferUnsafePackPtr sz p =
    Buffer <$> BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz)
 
 -- | Unsafe drop (don't check the size)
