@@ -137,6 +137,7 @@ fromList :: forall a (n :: Nat) .
    ) => [a] -> Maybe (Vector n a)
 fromList v
    | n' /= n   = Nothing
+   | n' == 0   = Just $ Vector $ emptyBuffer
    | otherwise = Just $ Vector $ bufferPackStorableList v
    where
       n' = natVal (Proxy :: Proxy n)
@@ -170,7 +171,9 @@ toList :: forall a (n :: Nat) .
    ( KnownNat n
    , Storable a
    ) => Vector n a -> [a]
-toList (Vector b) = fmap (bufferPeekStorableAt b . (sza*)) [0..n-1]
+toList (Vector b)
+   | n == 0    = []
+   | otherwise = fmap (bufferPeekStorableAt b . (sza*)) [0..n-1]
    where
       n   = fromIntegral (natVal (Proxy :: Proxy n))
       sza = fromIntegral (sizeOf (undefined :: a))

@@ -8,6 +8,3 @@ testsFormat :: Test
 testsFormat = testGroup "Format"
    [ testsBinary
    ]
-
-
-
