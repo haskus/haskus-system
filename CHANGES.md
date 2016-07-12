@@ -1,4 +1,4 @@
-## Version 0.4
+## Version 0.4 (2016-06-10)
 
 * ViperVM.Format.Binary
     * Modules to write bindings and to manipulate binary data
@@ -24,18 +24,18 @@
     * Flow: generic function composition combinators based on Variants
 
 
-## Version 0.3
+## Version 0.3 (2014-11-18)
 
 * Platform
     * Support meta-data (data with instances in different memories)
 
-## Version 0.2
+## Version 0.2 (2014-09-10)
 
 * Platform
     * Support data allocation/release in memories
     * Support data transfers over links
 
-## Version 0.1
+## Version 0.1 (2014-02-27)
 
 * Platform
     * Report basic architecture information
