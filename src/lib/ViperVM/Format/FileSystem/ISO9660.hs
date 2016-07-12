@@ -5,6 +5,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | ISO 9660 / ECMA-119
 --
@@ -19,6 +20,9 @@ module ViperVM.Format.FileSystem.ISO9660
    , VolumeDescriptorType (..)
    , BootRecord (..)
    , PrimaryVolume (..)
+   , SupplementaryVolume (..)
+   , Partition (..)
+   , PathTableEntry (..)
    )
 where
 
@@ -166,4 +170,58 @@ data PrimaryVolume = PrimaryVolume
    }
 
 
+data SupplementaryVolume = SupplementaryVolume
+   { suppVolumeFlags                       :: Word8                 -- ^ Volume flags
+   , suppVolumeSystemIdentifier            :: StringA 32            -- ^ Name of the system that can act upon sectors 0x000-0x0F for the volume
+   , suppVolumeIdentifier                  :: StringD 32            -- ^ Identification of this volume
+   , suppVolumeUnused1                     :: Vector 8 Word8        -- ^ Always 0x00
+   , suppVolumeSpaceSize                   :: BothEndian Word32     -- ^ Number of logicel blocks in which the volume is recorded
+   , suppVolumeEscapeSequences             :: Vector 32 Word8       -- ^ All zeroes
+   , suppVolumeSetSize                     :: BothEndian Word16     -- ^ The size of the set in this logical volume (number of disks)
+   , suppVolumeSequenceNumber              :: BothEndian Word16     -- ^ The number of this disk in the Volume Set
+   , suppVolumeLogicalBlockSize            :: BothEndian Word16     -- ^ The size in bytes of a logical block
+   , suppVolumePathTableSize               :: BothEndian Word32     -- ^ The size in bytes of the path table
+   , suppVolumePathTableLocationLE         :: AsLittleEndian Word32 -- ^ LBA location of the path table containing only little-endian values
+   , suppVolumeOptPathTableLocationLE      :: AsLittleEndian Word32 -- ^ LBA location of the optional path table containing only little-endian values (0 if none)
+   , suppVolumePathTableLocationBE         :: AsBigEndian Word32    -- ^ LBA location of the path table containing only big-endian values
+   , suppVolumeOptPathTableLocationBE      :: AsBigEndian Word32    -- ^ LBA location of the optional path table containing only big-endian values (0 if none)
+   , suppVolumeRootDirectoryEntry          :: Vector 34 Word8       -- ^ actual Directory Record, which contains a single byte Directory Identifier (0x00)
+   , suppVolumeSetIdentifier               :: StringD 128           -- ^ Identifier of the volume set which this volume is a member
+   , suppVolumePublisherIdentifier         :: StringA 128           -- ^ The volume publisher. For extended publisher information, the first byte should be 0x5F, followed by the filename of a file in the root directory. If not specified, all bytes should be 0x20. The volume publisher. For extended publisher information, the first byte should be 0x5F, followed by the filename of a file in the root directory. If not specified, all bytes should be 0x20.
+   , suppVolumeDataPreparerIdentifier      :: StringA 128           -- ^ The identifier of the person(s) who prepared the data for this volume. For extended preparation information, the first byte should be 0x5F, followed by the filename of a file in the root directory. If not specified, all bytes should be 0x20.
+   , suppVolumeApplicationIdentifier       :: StringA 128           -- ^ Identifies how the data are recorded on this volume. For extended information, the first byte should be 0x5F, followed by the filename of a file in the root directory. If not specified, all bytes should be 0x20.
+   , suppVolumeCopyrightFileIdentifier     :: StringD 38            -- ^ Filename of a file in the root directory that contains copyright information for this volume set. If not specified, all bytes should be 0x20. Filename of a file in the root directory that contains copyright information for this volume set. If not specified, all bytes should be 0x20.
+   , suppVolumeAbstractFileIdentifier      :: StringD 36            -- ^ Filename of a file in the root directory that contains abstract information for this volume set. If not specified, all bytes should be 0x20.
+   , suppVolumeBibliographicFileIdentifier :: StringD 37            -- ^ Filename of a file in the root directory that contains bibliographic information for this volume set. If not specified, all bytes should be 0x20.
+   , suppVolumeCreationDate                :: DateTime              -- ^ the date and time of when the volume was created
+   , suppVolumeModificationDate            :: DateTime              -- ^ the date and time of when the volume was modified
+   , suppVolumeExpirationDate              :: DateTime              -- ^ The date and time after which this volume is considered to be obsolete. If not specified, then the volume is never considered to be obsolete
+   , suppVolumeEffectiveDate               :: DateTime              -- ^ The date and time after which the volume may be used. If not specified, the volume may be used immediately.
+   , suppVolumeFileStructureVersion        :: Word8                 -- ^ The directory records and path table version (always 0x01).
+   , suppVolumeUnused4                     :: Word8                 -- ^ Always 0x00
+   , suppVolumeCustomData                  :: Vector 512 Word8      -- ^ Contents not defined by ISO 9660
+   , suppVolumeReserved                    :: Vector 653 Word8      -- ^ Reserved
+   }
 
+data Partition = Partition
+   { partitionUnused1 :: Word8               -- ^ Always 0x00
+   , partitionSystemIdentifier :: StringA 32 -- ^ Identifier for the system that can act on the partition
+   , partitionIdentifier :: StringD 32       -- ^ Partition identifier
+   , partitionLocation :: BothEndian Word32  -- ^ Number of the first logical block allocated to the partition
+   , partitionSize :: BothEndian Word32      -- ^ Number of logical blocks
+   , partitionReserved :: Vector 1960 Word8  -- ^ Reserved
+   }
+
+type family PTEndian e x where
+   PTEndian 'LittleEndian x = AsLittleEndian x
+   PTEndian 'BigEndian x    = AsBigEndian x
+
+
+data PathTableEntry e = PathTableEntry
+   { pteIdentifierLength :: Word8
+   , pteExtendedAttributeRecordLength :: Word8
+   , ptrExtentLocation :: PTEndian e Word16
+   , ptrParentDirectory :: Word16
+--   , ptrIdentifier :: StringG pteIdentifierLength
+--   , ptrPadding :: 0x00 if pteIdentifierLength is odd, not present otherwise
+   }
