@@ -36,9 +36,7 @@ description:
    memories and processors of heterogeneous architectures to automatically
    handle computations and data transfers. The ultimate goal is to provide an
    execution model using parallel functional programming, but we are not there
-   yet. \Library\ modules are supposed to handle a library of computational
-   kernel sources (OpenCL, C, etc.). Compiled kernels are stored to avoid
-   superfluous compilations.
+   yet.
 
 source-repository head
   type: git
