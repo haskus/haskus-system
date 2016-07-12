@@ -265,7 +265,6 @@ library
       ,  stm-linkedlist            >= 0.1
       ,  hashable                  >= 1.2
       ,  cereal                    >= 0.4
-      ,  safecopy                  >= 0.8
       ,  bytestring                >= 0.10
       ,  system-fileio             >= 0.3
       ,  system-filepath           >= 0.4
