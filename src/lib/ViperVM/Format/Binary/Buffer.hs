@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
--- | A memory buffer
+-- | A memory buffer with a fixed address
 --
 -- A buffer is a strict ByteString but with:
 --   - a better interface: use Word instead of Int for sizes
@@ -290,4 +290,4 @@ bufferReadFile path = Buffer <$> BS.readFile path
 
 -- | Write file
 bufferWriteFile :: FilePath -> Buffer -> IO ()
-bufferWriteFile path (Buffer bs) =BS.writeFile path bs
+bufferWriteFile path (Buffer bs) = BS.writeFile path bs

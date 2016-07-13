@@ -223,5 +223,5 @@ data PathTableEntry e = PathTableEntry
    , ptrExtentLocation :: PTEndian e Word16
    , ptrParentDirectory :: Word16
 --   , ptrIdentifier :: StringG pteIdentifierLength
---   , ptrPadding :: 0x00 if pteIdentifierLength is odd, not present otherwise
+--   , ptrPadding :: Word8 -- ^ 0x00 if pteIdentifierLength is odd, not present otherwise
    }
