@@ -223,6 +223,8 @@ library
 
     ViperVM.Format.FileSystem.ISO9660
 
+    ViperVM.Apps.CPIO
+
     ViperVM.Platform.Drivers
     ViperVM.Platform.Drivers.OpenCL
     ViperVM.Platform.Drivers.Host

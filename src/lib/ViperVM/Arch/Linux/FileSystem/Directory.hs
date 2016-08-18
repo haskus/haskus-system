@@ -36,7 +36,7 @@ sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> Sys
 sysCreateDirectory fd path perm sticky = do
    let
       opt = if sticky then BitSet.fromList [FileOptSticky] else BitSet.empty
-      mode = makeMode perm opt
+      mode = makeMode FileTypeDirectory perm opt
 
    withCString path $ \path' ->
       case fd of

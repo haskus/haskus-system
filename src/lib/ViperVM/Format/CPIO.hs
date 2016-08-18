@@ -28,6 +28,7 @@ import Numeric (showHex)
 import Foreign.Storable
 import Foreign.CStorable
 import GHC.Generics
+import Data.Char (ord)
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
@@ -105,17 +106,29 @@ import ViperVM.Format.Binary.Get
  -}
 
 -- | File description
+--
+-- * fileDevMajor, fileDevMinor, fileDevInode: The device and inode numbers from
+-- the disk. These are used by programs that read cpio archives to determine
+-- when two entries refer to the same file. Programs that synthesize cpio
+-- archives should be careful to set these to distinct values for each entry. 
+--
+-- * fileRDevMajor, fileRDevMinor: For block special and character special
+-- entries, this field contains the associated device number.  For all other
+-- entry types, it should be set to zero by writers and ignored by readers.
+--
+-- * fileModifTime: Modification time of the file, indicated as the number of
+-- seconds since the start of the epoch, 00:00:00 UTC January 1, 1970.
 data FileDesc = FileDesc
-   { fileInode       :: Word64
-   , fileMode        :: Word64
-   , fileUID         :: Word64
-   , fileGID         :: Word64
-   , fileNLink       :: Word64
-   , fileModifTime   :: Word64
-   , fileDevMajor    :: Word64
-   , fileDevMinor    :: Word64
-   , fileRDevMajor   :: Word64
-   , fileRDevMinor   :: Word64
+   { fileInode       :: Word64   -- ^ File inode
+   , fileMode        :: Word64   -- ^ File mode
+   , fileUID         :: Word64   -- ^ Owner user ID
+   , fileGID         :: Word64   -- ^ Owner group ID
+   , fileNLink       :: Word64   -- ^ Number of links to the file
+   , fileModifTime   :: Word64   -- ^ Modification time
+   , fileDevMajor    :: Word64   -- ^ Disk device major number
+   , fileDevMinor    :: Word64   -- ^ Disk device minor number
+   , fileRDevMajor   :: Word64   -- ^ Special file major number
+   , fileRDevMinor   :: Word64   -- ^ Special file minor number
    } deriving (Show,Generic,CStorable)
 
 instance Storable FileDesc where
@@ -126,10 +139,13 @@ instance Storable FileDesc where
 
 -- | Put a number as a 8-char string padding left with zeros
 putNumber :: Word64 -> Put
-putNumber x = putByteString bs
+putNumber x = do
+      putByteString pad
+      putByteString bs
    where
-      bs = BS.replicate (8-len) 0 `BS.append` B8.pack s
-      s = showHex x ""
+      pad = BS.replicate (8-len) (fromIntegral (ord '0'))
+      bs  = B8.pack s
+      s   = showHex x ""
       len = length s
 
 -- | Read a number stored as a 8-bytes hexadecimal string

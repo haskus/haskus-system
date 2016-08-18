@@ -321,9 +321,11 @@ type FileOptions = BitSet Word64 FileOption
 modeFileOptions :: (Integral a, FiniteBits a) => a -> FileOptions
 modeFileOptions x = BitSet.fromBits ((fromIntegral x `shiftR` 9) .&. 0x07)
 
-makeMode :: FilePermissions -> FileOptions -> Word64
-makeMode perm opt = fromIntegral (BitSet.toBits perm) 
-                .|. (fromIntegral (BitSet.toBits opt)  `shiftL` 9)
+makeMode :: FileType -> FilePermissions -> FileOptions -> Word64
+makeMode typ perm opt =
+   fromIntegral (BitSet.toBits perm) 
+   .|. (fromIntegral (BitSet.toBits opt)  `shiftL` 9)
+   .|. fromFileType typ
 
 -- | Read file permission from Stat "mode" field 
 modeFilePermission :: (Integral a, FiniteBits a) => a -> FilePermissions
