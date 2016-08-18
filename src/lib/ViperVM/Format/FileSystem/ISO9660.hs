@@ -204,12 +204,12 @@ data SupplementaryVolume = SupplementaryVolume
    }
 
 data Partition = Partition
-   { partitionUnused1 :: Word8               -- ^ Always 0x00
-   , partitionSystemIdentifier :: StringA 32 -- ^ Identifier for the system that can act on the partition
-   , partitionIdentifier :: StringD 32       -- ^ Partition identifier
-   , partitionLocation :: BothEndian Word32  -- ^ Number of the first logical block allocated to the partition
-   , partitionSize :: BothEndian Word32      -- ^ Number of logical blocks
-   , partitionReserved :: Vector 1960 Word8  -- ^ Reserved
+   { partitionUnused1          :: Word8             -- ^ Always 0x00
+   , partitionSystemIdentifier :: StringA 32        -- ^ Identifier for the system that can act on the partition
+   , partitionIdentifier       :: StringD 32        -- ^ Partition identifier
+   , partitionLocation         :: BothEndian Word32 -- ^ Number of the first logical block allocated to the partition
+   , partitionSize             :: BothEndian Word32 -- ^ Number of logical blocks
+   , partitionReserved         :: Vector 1960 Word8 -- ^ Reserved
    }
 
 type family PTEndian e x where
@@ -218,10 +218,10 @@ type family PTEndian e x where
 
 
 data PathTableEntry e = PathTableEntry
-   { pteIdentifierLength :: Word8
+   { pteIdentifierLength              :: Word8
    , pteExtendedAttributeRecordLength :: Word8
-   , ptrExtentLocation :: PTEndian e Word16
-   , ptrParentDirectory :: Word16
---   , ptrIdentifier :: StringG pteIdentifierLength
---   , ptrPadding :: Word8 -- ^ 0x00 if pteIdentifierLength is odd, not present otherwise
+   , ptrExtentLocation                :: PTEndian e Word16
+   , ptrParentDirectory               :: Word16
+--   , ptrIdentifier                  :: StringG pteIdentifierLength
+--   , ptrPadding                     :: Word8 -- ^ 0x00 if pteIdentifierLength is odd, not present otherwise
    }
