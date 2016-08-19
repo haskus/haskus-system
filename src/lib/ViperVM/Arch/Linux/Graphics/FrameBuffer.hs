@@ -11,6 +11,7 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    , PageFlipFlag (..)
    , PageFlipFlags
    , DirtyAnnotation (..)
+   , Clip (..)
    )
 where
 

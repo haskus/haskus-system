@@ -79,10 +79,11 @@ fillFrame gfb color = do
    let
       [buf] = genericFrameBuffers gfb
       addr  = mappedBufferPointer buf
+      pitch = bufferPitch (mappedBufferInfo buf)
 
    forLoop 0 (< fromIntegral (fbHeight fb)) (+1) $ \y ->
       forLoop 0 (< fromIntegral (fbWidth fb)) (+1) $ \x -> do
-         let !off = (x + (y*fromIntegral (fbWidth fb))) * 4
+         let !off = x*4 + y*fromIntegral pitch
          pokeByteOff addr off (color :: Word32)
 
 
@@ -103,6 +104,7 @@ blendImage gfb img op pos clp = do
    -- compute drawing rect
    let
       (w,h)         = (fbWidth fb, fbHeight fb)
+      pitch         = bufferPitch (mappedBufferInfo buf)
       (cx,cy,cw,ch) = clp
       clip'         = (cx,cy, min (imageWidth img - cx) cw, min (imageHeight img - cy) ch)
       (px,py)       = pos
@@ -135,7 +137,7 @@ blendImage gfb img op pos clp = do
       f x y = case op of
                BlendAlpha -> do
                   -- dest offset
-                  let !doff = ((dx+x) + ((dy+y)*fromIntegral w)) * 4
+                  let !doff = (dx+x)*4 + (dy+y)*fromIntegral pitch
                   -- old value
                   !old <- myUnpackPixel <$> peekByteOff addr doff
                   let
@@ -151,7 +153,7 @@ blendImage gfb img op pos clp = do
 
                BlendCopy -> do
                   let
-                     !doff = ((dx+x) + ((dy+y)*fromIntegral w)) * 4
+                     !doff = (dx+x)*4 + (dy+y)*fromIntegral pitch
                      !new  = pixelAt img (sx+x) (y+sy)
                      !v = myPackPixel new
                   pokeByteOff addr doff (v :: Word32)
