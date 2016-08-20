@@ -278,7 +278,7 @@ bufferUnsafeIndex (Buffer bs) n = BS.unsafeIndex bs (fromIntegral n)
 -- | Map memory
 bufferUnsafeMapMemory :: Word -> Ptr () -> IO Buffer
 bufferUnsafeMapMemory sz ptr =
-   Buffer <$> BS.unsafePackMallocCStringLen (castPtr ptr, fromIntegral sz)
+   Buffer <$> BS.unsafePackCStringLen (castPtr ptr, fromIntegral sz)
 
 -- | Use buffer pointer
 bufferUnsafeUsePtr :: Buffer -> (Ptr () -> Word -> IO a) -> IO a
