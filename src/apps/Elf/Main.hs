@@ -531,12 +531,7 @@ showZCATable t =
 
 showSymbols :: Elf -> Section -> [SymbolEntry] -> Html ()
 showSymbols elf symSec ss = do
-   let 
-      symtab = getSectionByIndex elf (sectionLink symSec)
-      getSymName idx = case (idx,symtab) of
-         (0, _)        -> Nothing
-         (_, Just sec) -> getStringFromSection elf sec idx
-         (_, Nothing)  -> Nothing
+   let symNames = getSymbolNames elf symSec ss
          
    table_ $ do
       tr_ $ do
@@ -547,10 +542,10 @@ showSymbols elf symSec ss = do
          th_ "Info"
          th_ "Value"
          th_ "Size"
-      forM_ ss $ \s -> tr_ $ do
+      forM_ (ss `zip` symNames) $ \(s,sname) -> tr_ $ do
          td_ $ do
             let idx = symbolNameIndex s
-            case getSymName idx of
+            case sname of
                Nothing   -> do
                   toHtml $ textFormat "({}) " (Only idx)
                   span_ [class_ "invalid"] "None"

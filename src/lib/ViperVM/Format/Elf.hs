@@ -25,6 +25,7 @@ module ViperVM.Format.Elf
    , getSectionNames
      -- ** Symbols sections
    , getSymbolsFromSection
+   , getSymbolNames
      -- ** Relocation sections
    , getRelocationEntriesFromSection
      -- ** Dynamic sections
@@ -293,6 +294,17 @@ getSymbolsFromSection elf sec =
       getter = getSymbolEntry (elfPreHeader elf)
       -- get table of entries
       es = getEntryTableFromSection elf sec getter
+
+-- | Get symbol names from the associated symbol name table
+getSymbolNames :: Elf -> Section -> [SymbolEntry] -> [Maybe Text]
+getSymbolNames elf symSec = fmap getSymName
+   where 
+      symtab = getSectionByIndex elf (sectionLink symSec)
+      getSymName s = case (symbolNameIndex s,symtab) of
+         (0, _)          -> Nothing
+         (idx, Just sec) -> getStringFromSection elf sec idx
+         (_, Nothing)    -> Nothing
+
 
 --------------------------------------------------------------
 -- Relocations sections
