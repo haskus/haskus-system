@@ -24,8 +24,12 @@ module ViperVM.Format.Elf
    , getSectionName
    , getSectionNames
      -- ** Symbols sections
+   , isSymbolSection
    , getSymbolsFromSection
    , getSymbolNames
+   , getSymbols
+   , getAllSymbols
+   , getSymbolByName
      -- ** Relocation sections
    , getRelocationEntriesFromSection
      -- ** Dynamic sections
@@ -53,6 +57,7 @@ import qualified Data.Vector as Vector
 import Control.Monad (forM)
 import Control.Arrow (second)
 import Data.Maybe (fromJust)
+import Data.List (find)
 
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
@@ -282,13 +287,19 @@ findSectionByName elf name = Vector.find p (elfSections elf)
 -- Symbols sections
 --------------------------------------------------------------
 
+-- | Indicate if the section contains symbols
+isSymbolSection :: Section -> Bool
+isSymbolSection sec = case sectionType sec of
+   SectionTypeSYMTAB -> True
+   SectionTypeDYNSYM -> True
+   _                 -> False
+
 -- | Get symbols from a section
 getSymbolsFromSection :: Elf -> Section -> [SymbolEntry]
 getSymbolsFromSection elf sec =
-      case sectionType sec of
-         SectionTypeSYMTAB -> es
-         SectionTypeDYNSYM -> es
-         _                 -> error "Invalid section type"
+      if isSymbolSection sec
+         then es
+         else error "Invalid section type"
    where
       -- getter for a symbol entry
       getter = getSymbolEntry (elfPreHeader elf)
@@ -305,6 +316,27 @@ getSymbolNames elf symSec = fmap getSymName
          (idx, Just sec) -> getStringFromSection elf sec idx
          (_, Nothing)    -> Nothing
 
+-- | Get symbols with their names
+getSymbols :: Elf -> Section -> [(Maybe Text, SymbolEntry)]
+getSymbols elf symSec = names `zip` ss
+   where
+      ss    = getSymbolsFromSection elf symSec
+      names = getSymbolNames elf symSec ss
+
+-- | Get all the symbols in the ELF file
+getAllSymbols :: Elf -> [(Maybe Text, SymbolEntry)]
+getAllSymbols elf = syms
+   where
+      secs = filter isSymbolSection (Vector.toList (elfSections elf))
+      syms = concat $ fmap (getSymbols elf) secs
+
+-- | Find a symbol by its name
+getSymbolByName :: Elf -> Text -> Maybe SymbolEntry
+getSymbolByName elf name = snd <$> find f allSyms
+   where
+      f (Just x, _) = x == name
+      f _           = False
+      allSyms       = getAllSymbols elf
 
 --------------------------------------------------------------
 -- Relocations sections
