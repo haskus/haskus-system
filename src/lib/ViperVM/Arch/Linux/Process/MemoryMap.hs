@@ -16,6 +16,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (wordPtrToPtr)
 import ViperVM.Format.Text as Text
 
+import qualified Data.ByteString as BS
 import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
@@ -50,7 +51,7 @@ data Sharing
 -- | Read /proc/[pid]/maps files
 readMemoryMap :: FilePath -> IO [MemoryMapEntry]
 readMemoryMap p = do
-   r <- parseFromFile parseMemoryMap p
+   r <- runParser parseMemoryMap p <$> BS.readFile p
    case r of
       Right v  -> return v
       Left err -> error ("memory map parsing error: "++ show err)
