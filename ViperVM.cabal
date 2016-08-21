@@ -106,6 +106,7 @@ library
 
     ViperVM.Arch.Linux.Process.MemoryMap
     ViperVM.Arch.Linux.Process.ControlGroup
+    ViperVM.Arch.Linux.Process.Auxiliary
 
     ViperVM.Arch.Linux.Graphics.Atomic
     ViperVM.Arch.Linux.Graphics.Capability
