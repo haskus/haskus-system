@@ -178,8 +178,15 @@ instance ByteReversable Word64 where
 
 
 
-newtype AsBigEndian a    = AsBigEndian a    deriving (Show,Eq,Ord,Enum,Num,Integral,Real)
-newtype AsLittleEndian a = AsLittleEndian a deriving (Show,Eq,Ord,Enum,Num,Integral,Real)
+newtype AsBigEndian a    = AsBigEndian a    deriving (Eq,Ord,Enum,Num,Integral,Real)
+
+instance Show a => Show (AsBigEndian a) where
+   show (AsBigEndian a) = show a
+
+newtype AsLittleEndian a = AsLittleEndian a deriving (Eq,Ord,Enum,Num,Integral,Real)
+
+instance Show a => Show (AsLittleEndian a) where
+   show (AsLittleEndian a) = show a
 
 instance (ByteReversable a, StaticStorable a) => StaticStorable (AsBigEndian a) where
    type SizeOf (AsBigEndian a)    = SizeOf a
