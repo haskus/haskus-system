@@ -44,6 +44,7 @@ module ViperVM.Format.Binary.Union
    , fromUnion
    , toUnion
    , toUnionZero
+   , unionCast
    )
 where
 
@@ -102,6 +103,17 @@ toUnion' zero v = unsafePerformIO $ do
       poke (castPtr p) v
    return $ Union fp
 
+-- | Convert two storable values
+unionCast :: forall a b.
+   ( Storable a
+   , Storable b
+   , Member a '[a,b]
+   , Member b '[a,b]
+   ) => a -> b
+unionCast a = fromUnion u
+   where
+      u :: Union '[a,b]
+      u = toUnion a
 
 type family MapSizeOf fs where
    MapSizeOf '[]       = '[]
