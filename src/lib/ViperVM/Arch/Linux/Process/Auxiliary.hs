@@ -46,11 +46,11 @@ data AuxKey
    | AuxHardwareHints      -- ^ arch dependent hints at CPU capabilities
    | AuxClockTickFrequency -- ^ frequency at which times() increments
    | AuxIsSecure           -- ^ secure mode boolean
-   | AuxRealPlatform       -- ^ string identifying real platform, may * differ from AT_PLATFORM.
+   | AuxRealPlatform       -- ^ string identifying real platform, may differ from AuxPlatform
    | AuxRandomBytes        -- ^ address of 16 random bytes
    | AuxHardwareHints2     -- ^ extension of AT_HWCAP
    | AuxFilename           -- ^ filename of program
-   | AuxVDSOAddr           -- ^ Adress of the vDSO page
+   | AuxVDSOAddr           -- ^ address of the vDSO page
    deriving (Show,Eq,Enum)
 
 instance CEnum AuxKey where

@@ -21,7 +21,7 @@ import ViperVM.Format.Binary.Word (Int64)
 import ViperVM.Utils.Flow
 
 -- | Syscall return type
-type SysRet a = Flow IO '[a,ErrorCode]
+type SysRet a = IOV '[a,ErrorCode]
 
 -- | Convert an error code into ErrorCode type
 toErrorCode :: Int64 -> ErrorCode

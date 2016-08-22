@@ -235,14 +235,14 @@ bufferPackStorableList xs = Buffer $ unsafePerformIO $ do
       pokeElemOff p o x
    BS.unsafePackMallocCStringLen (castPtr p, sza * lxs)
 
--- | Pack from a pointer
+-- | Pack from a pointer (copy)
 bufferPackPtr :: Word -> Ptr () -> IO Buffer
 bufferPackPtr sz ptr = do
    p <- mallocBytes (fromIntegral sz)
    memCopy p ptr (fromIntegral sz)
-   Buffer <$> BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz)
+   bufferUnsafePackPtr sz p
 
--- | Pack from a pointer
+-- | Pack from a pointer (add finalizer)
 bufferUnsafePackPtr :: Word -> Ptr () -> IO Buffer
 bufferUnsafePackPtr sz p =
    Buffer <$> BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz)

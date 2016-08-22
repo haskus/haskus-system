@@ -9,6 +9,7 @@
 -- | First-class control-flow (based on Variant)
 module ViperVM.Utils.Flow
    ( Flow
+   , IOV
    -- * Flow utils
    , flowRes
    , flowRet
@@ -87,6 +88,8 @@ import GHC.TypeLits
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)
+
+type IOV l = Flow IO l
 
 ----------------------------------------------------------
 -- Flow utils

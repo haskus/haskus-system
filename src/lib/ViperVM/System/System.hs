@@ -11,6 +11,7 @@ module ViperVM.System.System
    , releaseDeviceHandle
    , openDeviceDir
    , listDevicesWithClass
+   , getProcessMemoryMap
    )
 where
 
@@ -23,10 +24,11 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
-import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.KernelEvent
+import ViperVM.Arch.Linux.Process.MemoryMap
 import ViperVM.System.Sys
 import ViperVM.System.Event
+import ViperVM.System.ReadWrite
 import ViperVM.Utils.Flow
 
 import System.FilePath
@@ -153,13 +155,13 @@ listDevicesWithClass system cls = do
       readDevFile :: Handle -> Flow Sys '[Device,ErrorCode]
       readDevFile devfd = do
          -- 16 bytes should be enough
-         sysCallWarn "Read dev file" (readBuffer devfd 16)
+         sysCallWarn "Read dev file" (handleReadBuffer devfd Nothing 16)
          >.-.> \content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
             Nothing -> error "Invalid dev file format"
             Just x  -> x
 
       -- read device directory
-      readDev :: Handle -> FilePath -> Flow Sys '[Maybe (FilePath,Device)]
+      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
       readDev fd dir =
          withOpenAt fd (dir </> "dev") BitSet.empty BitSet.empty readDevFile
             -- skip entries without "dev" file
@@ -167,7 +169,7 @@ listDevicesWithClass system cls = do
             >..~#> const (flowRet Nothing)
 
       -- read devices in a class
-      readDevs :: Handle -> Flow Sys '[[(FilePath,Device)]]
+      readDevs :: Handle -> SysV '[[(FilePath,Device)]]
       readDevs fd = do
          dirs <- sysCallAssert "List device directories" $ listDirectory fd
          let dirs'  = fmap entryName dirs
@@ -176,3 +178,10 @@ listDevicesWithClass system cls = do
    flowRes $ withOpenAt (systemSysFS system) clsdir BitSet.empty BitSet.empty readDevs
       -- in case of error, we don't return any dev
       >..~#> const (flowRet [])
+
+
+-- | Get process memory mappings
+getProcessMemoryMap :: System -> SysV '[[MemoryMapEntry],ErrorCode]
+getProcessMemoryMap sys =
+   handleAtomicReadBufferAt (systemProcFS sys) "/self/maps"
+   >.-.> parseMemoryMap

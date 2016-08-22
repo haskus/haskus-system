@@ -84,7 +84,6 @@ library
     ViperVM.Arch.Linux.FileSystem.Flush
     ViperVM.Arch.Linux.FileSystem.Mount
     ViperVM.Arch.Linux.FileSystem.Notification
-    ViperVM.Arch.Linux.FileSystem.OpenClose
     ViperVM.Arch.Linux.FileSystem.ReadWrite
     ViperVM.Arch.Linux.Futex
     ViperVM.Arch.Linux.Info
@@ -153,6 +152,7 @@ library
     ViperVM.System.Terminal
     ViperVM.System.Process
     ViperVM.System.Power
+    ViperVM.System.ReadWrite
     ViperVM.System.Event
 
     ViperVM.Utils.Variant

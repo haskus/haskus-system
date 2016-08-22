@@ -6,15 +6,18 @@
 -- | Read/write
 module ViperVM.Arch.Linux.FileSystem.ReadWrite
    ( IOVec(..)
+   -- * Read
    , sysRead
    , sysReadWithOffset
    , sysReadMany
    , sysReadManyWithOffset
+   , handleRead
+   , handleReadBuffer
+   -- * Write
    , sysWrite
    , sysWriteWithOffset
    , sysWriteMany
    , sysWriteManyWithOffset
-   , readBuffer
    , writeBuffer
    )
 where
@@ -50,14 +53,32 @@ instance Storable IOVec where
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
-sysRead :: Handle -> Ptr a -> Word64 -> SysRet Word64
-sysRead (Handle fd) buf count =
-   onSuccess (syscall_read fd buf count) fromIntegral
+sysRead :: Handle -> Ptr () -> Word64 -> SysRet Word64
+sysRead (Handle fd) ptr count =
+   onSuccess (syscall_read fd ptr count) fromIntegral
 
 -- | Read a file descriptor at a given position
 sysReadWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> SysRet Word64
-sysReadWithOffset (Handle fd) offset buf count =
-   onSuccess (syscall_pread64 fd buf count offset) fromIntegral
+sysReadWithOffset (Handle fd) offset ptr count =
+   onSuccess (syscall_pread64 fd ptr count offset) fromIntegral
+
+-- | Read "count" bytes from a handle (starting at optional "offset") and put
+-- them at "ptr" (allocated memory should be large enough).  Returns the number
+-- of bytes read or 0 if end of file
+handleRead :: Handle -> Maybe Word64 -> Ptr () -> Word64 -> SysRet Word64
+handleRead hdl Nothing       = sysRead hdl
+handleRead hdl (Just offset) = sysReadWithOffset hdl offset
+
+-- | Read n bytes in a buffer
+handleReadBuffer :: Handle -> Maybe Word64 -> Word64 -> SysRet Buffer
+handleReadBuffer hdl offset size = do
+   b <- mallocBytes (fromIntegral size)
+   handleRead hdl offset b (fromIntegral size)
+      -- free the pointer on error
+      >..~=> const (free b)
+      -- otherwise return the buffer
+      >.~.> \sz -> bufferUnsafePackPtr (fromIntegral sz) (castPtr b)
+
 
 -- | Like read but uses several buffers
 sysReadMany :: Handle -> [(Ptr a, Word64)] -> SysRet Word64
@@ -116,16 +137,6 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
    in
    withArray (fmap toVec bufs) $ \bufs' ->
       onSuccess (syscall_pwritev fd bufs' count ol oh) fromIntegral
-
--- | Read n bytes in a buffer
-readBuffer :: Handle -> Int -> SysRet Buffer
-readBuffer fd size = do
-   b <- mallocBytes size
-   sysRead fd b (fromIntegral size)
-      -- free the pointer on error
-      >..~=> const (free b)
-      -- otherwise return the bytestring
-      >.~.> \sz -> bufferPackPtr (fromIntegral sz) (castPtr b)
 
 -- | Write a buffer
 writeBuffer :: Handle -> Buffer -> SysRet ()

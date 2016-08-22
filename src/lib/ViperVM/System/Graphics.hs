@@ -20,10 +20,10 @@ where
 import ViperVM.System.Sys
 import ViperVM.System.System
 import ViperVM.System.Process
+import ViperVM.System.ReadWrite
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Flow
-import ViperVM.Arch.Linux.FileSystem.OpenClose
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite

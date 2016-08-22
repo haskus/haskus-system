@@ -23,6 +23,7 @@ import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
 import ViperVM.System.Process
+import ViperVM.Format.Binary.Ptr
 
 -- | Create a new thread reading events and putting them in a TChan
 newEventReader :: forall a. Storable a => Handle -> Sys (TChan a)
@@ -35,7 +36,7 @@ newEventReader fd@(Handle lowfd) = do
    ch <- sysIO newBroadcastTChanIO
    sysFork $ sysIO $ allocaArray nb $ \ptr -> forever $ do
       threadWaitRead rfd
-      sysRead fd ptr (fromIntegral sz * fromIntegral nb)
+      sysRead fd (castPtr ptr) (fromIntegral sz * fromIntegral nb)
       >.~!> \sz2 -> do
          -- FIXME: we should somehow signal that an error occured
          evs <- peekArray (fromIntegral sz2 `div` sz) ptr

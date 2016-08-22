@@ -1,8 +1,12 @@
 -- | Parser for /proc/*/maps
 module ViperVM.Arch.Linux.Process.MemoryMap
    ( MemoryMapEntry (..)
+   , MappingType (..)
+   , Perm (..)
+   , Sharing (..)
    , readMemoryMap
    , parseMemoryMap
+   , memoryMapParser
    , memoryMapToBufferList
    , memoryMapToBuffer
    )
@@ -16,7 +20,6 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (wordPtrToPtr)
 import ViperVM.Format.Text as Text
 
-import qualified Data.ByteString as BS
 import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
@@ -25,41 +28,53 @@ import Control.Monad (void)
 
 -- | Memory map entry
 data MemoryMapEntry = MemoryMapEntry
-   { entryStartAddr :: Word64
-   , entryStopAddr  :: Word64
-   , entryPerms     :: [Perm]
-   , entrySharing   :: Sharing
-   , entryOffset    :: Word64
-   , entryDevice    :: (Word8,Word8)
-   , entryInode     :: Int64
-   , entryPath      :: Text
+   { entryStartAddr :: Word64        -- ^ Starting address
+   , entryStopAddr  :: Word64        -- ^ End address
+   , entryPerms     :: [Perm]        -- ^ Permissions
+   , entrySharing   :: Sharing       -- ^ Shared or copy-on-write
+   , entryType      :: MappingType   -- ^ Type of mapping
    } deriving (Show)
+
+-- | Type of memory mapping
+data MappingType
+   = AnonymousMapping   -- ^ Anonymous mapping
+   | NamedMapping Text  -- ^ Mapping with a name
+   -- | File mapping
+   | FileMapping
+      { fileMappingDevice :: (Word8,Word8) -- ^ Device containing the inode
+      , fileMappingInode  :: Int64         -- ^ Inode
+      , fileMappingPath   :: Text          -- ^ File path
+      , fileMappingOffset :: Word64        -- ^ Offset in the file
+      }
+   deriving (Show,Eq)
 
 -- | Memory permission
 data Perm
-   = PermRead
-   | PermWrite
-   | PermExec
+   = PermRead  -- ^ Read allowed
+   | PermWrite -- ^ Write allowed
+   | PermExec  -- ^ Execute allowed
    deriving (Show)
 
 -- | Memory sharing
 data Sharing
-   = Shared 
-   | Private
+   = Shared    -- ^ Shared
+   | Private   -- ^ Private (copy-on-write)
    deriving (Show)
 
 -- | Read /proc/[pid]/maps files
 readMemoryMap :: FilePath -> IO [MemoryMapEntry]
-readMemoryMap p = do
-   r <- runParser parseMemoryMap p <$> BS.readFile p
-   case r of
-      Right v  -> return v
+readMemoryMap p = parseMemoryMap <$> bufferReadFile p
+
+-- | Parse a memory map in a buffer
+parseMemoryMap :: Buffer -> [MemoryMapEntry]
+parseMemoryMap b = 
+   case runParser memoryMapParser "" (bufferUnpackByteString b) of
+      Right v  -> v
       Left err -> error ("memory map parsing error: "++ show err)
 
-
 -- | Parse /proc/[pid]/maps files
-parseMemoryMap :: Parser [MemoryMapEntry]
-parseMemoryMap = parseFile
+memoryMapParser :: Parser [MemoryMapEntry]
+memoryMapParser = parseFile
    where
       parseFile = manyTill parseLine eof
       parseLine = do
@@ -86,7 +101,11 @@ parseMemoryMap = parseFile
          inode <- fromIntegral <$> decimal
          void (many (char ' '))
          pth <- Text.pack <$> manyTill anyChar eol
-         return $ MemoryMapEntry start stop perms sharing offset dev inode pth
+         let typ = case (inode, Text.null pth) of
+                     (0,True)  -> AnonymousMapping
+                     (0,False) -> NamedMapping pth
+                     _         -> FileMapping dev inode pth offset
+         return $ MemoryMapEntry start stop perms sharing typ
 
 -- | Convert a memory-map entry into a BufferList
 memoryMapToBufferList :: MemoryMapEntry -> IO BufferList
