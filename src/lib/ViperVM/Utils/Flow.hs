@@ -55,6 +55,8 @@ module ViperVM.Utils.Flow
    , (>..~=>)
    , (..~!>)
    , (>..~!>)
+   , (..~!!>)
+   , (>..~!!>)
    , (..%~!!>)
    , (>..%~!!>)
    , (..%~!>)
@@ -403,6 +405,21 @@ liftm op x a = do
    ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> m ()
 (>..~!>) = liftm (..~!>)
 
+-- | Extract the tail and perform an effect
+(..~!!>) ::
+   ( Monad m
+   ) => Variant (x ': xs) -> (Variant xs -> m ()) -> m x
+(..~!!>) v f = case headVariant v of
+   Right x -> return x
+   Left xs -> f xs >> error "..~!!> error"
+
+-- | Extract the tail and perform an effect
+(>..~!!>) ::
+   ( Monad m
+   ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> m x
+(>..~!!>) = liftm (..~!!>)
+
+
 -- | Match in the tail and perform an effect
 (..%~!!>) ::
    ( Monad m
@@ -587,7 +604,7 @@ liftm op x a = do
    , Catchable x xs
    ) => Variant xs -> (x -> m ()) -> Flow m (Filter x xs)
 (%~!!>) v f = case removeType v of
-   Left x  -> f x >> undefined
+   Left x  -> f x >> error "%~!!> error"
    Right u -> return u
 
 -- | Catch element and perform effect.
