@@ -7,11 +7,19 @@ module ViperVM.System.System
    ( System(..)
    , defaultSystemInit
    , systemInit
+   -- * Devices
    , getDeviceHandle
    , releaseDeviceHandle
    , openDeviceDir
    , listDevicesWithClass
+   -- * Memory map
    , getProcessMemoryMap
+   , memoryMapToBufferList
+   , memoryMapToBuffer
+   , MemoryMapEntry (..)
+   , MappingType (..)
+   , Perm (..)
+   , Sharing (..)
    )
 where
 
