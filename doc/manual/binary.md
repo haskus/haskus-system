@@ -42,7 +42,7 @@ data Dummy = Dummy
    { fieldX :: Word32                -- ^ 32-byte unsigned word (host endianness)
    , fieldY :: AsBigEndian Word32    -- ^ 32-byte unsigned word (big-endian)
    , fieldZ :: AsLittleEndian Word32 -- ^ 32-byte unsigned word (little-endian)
-   } deriving (Generic,Storable)
+   } deriving (Generic,CStorable)
 ```
 
 We can also explicitly change the endianness with the following methods:
@@ -90,7 +90,7 @@ instance Storable StructX where
 ```
 
 The CStorable instance handles the alignment of the field as a C non-packed
-structure would (i.e. there are 7 bytes between xField0 and xField1).
+structure would (i.e. there are 7 padding bytes between xField0 and xField1).
 
 The boilerplate Storable instance cannot be derived automatically for now. We
 use CStorable members to define it.
