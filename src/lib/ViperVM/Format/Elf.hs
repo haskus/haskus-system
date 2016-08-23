@@ -30,6 +30,7 @@ module ViperVM.Format.Elf
    , getSymbols
    , getAllSymbols
    , getSymbolByName
+   , getSymbolBuffer
      -- ** Relocation sections
    , getRelocationEntriesFromSection
      -- ** Dynamic sections
@@ -62,6 +63,7 @@ import Data.List (find)
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import qualified ViperVM.Format.Binary.BitSet as BitSet
@@ -337,6 +339,14 @@ getSymbolByName elf name = snd <$> find f allSyms
       f (Just x, _) = x == name
       f _           = False
       allSyms       = getAllSymbols elf
+
+-- | Get symbol buffer (duplicate)
+getSymbolBuffer :: SymbolEntry -> Word64 -> IO Buffer
+getSymbolBuffer sym initOffset = bufferPackPtr (fromIntegral symSz) symPtr
+   where
+      symAddr = symbolValue sym + initOffset
+      symPtr  = wordPtrToPtr (fromIntegral symAddr)
+      symSz   = symbolSize sym
 
 --------------------------------------------------------------
 -- Relocations sections
