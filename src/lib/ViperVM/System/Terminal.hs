@@ -8,6 +8,10 @@ module ViperVM.System.Terminal
    , readTerm
    , writeTermBytes
    , writeStrLn
+   , writeBuffer
+   , writeBufferLn
+   , writeText
+   , writeTextLn
    , waitForKey
    )
 where
@@ -23,8 +27,10 @@ import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.String (withCStringLen)
+import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Text
+import ViperVM.Format.String (withCStringLen)
 
 import Control.Monad (void,when,forever)
 import Control.Concurrent
@@ -47,7 +53,7 @@ data Terminal = Terminal
 --  * in the supplied requester buffer (zero-copy)
 --  * in a buffer if there are no request pending
 data InputState = InputState
-   { inputRequests :: TList (Buffer, FutureSource ())
+   { inputRequests :: TList (IOBuffer, FutureSource ())
    , inputBuffer   :: TMVar InputBuffer
    , inputHandle   :: Handle
    }
@@ -61,9 +67,9 @@ data InputBuffer = InputBuffer
    }
 
 -- | Buffer
-data Buffer = Buffer
-   { bufferSize :: Word64
-   , bufferPtr  :: Ptr ()
+data IOBuffer = IOBuffer
+   { iobufferSize :: Word64
+   , iobufferPtr  :: Ptr ()
    }
 
 inputThread :: InputState -> IO ()
@@ -82,8 +88,8 @@ inputThread s = forever $ do
             let
                buf         = fst (TList.value e')
                semsrc      = snd (TList.value e')
-               size        = bufferSize buf
-               ptr         = bufferPtr  buf
+               size        = iobufferSize buf
+               ptr         = iobufferPtr  buf
                after size' = do
                   TList.delete e'
                   if size' == size
@@ -91,7 +97,7 @@ inputThread s = forever $ do
                      then setFuture () semsrc
                      -- we update the remaining number of bytes to read
                      else do
-                        let buf' = Buffer (size-size') (ptr `plusPtr` fromIntegral size')
+                        let buf' = IOBuffer (size-size') (ptr `plusPtr` fromIntegral size')
                         TList.append_ (buf',semsrc) (inputRequests s)
             return (after,size,ptr)
 
@@ -154,7 +160,7 @@ readFromHandle s sz ptr = do
          then setFuture () semsrc
          else do
             -- if we haven't read everything, register
-            let b = Buffer (sz - bsz) (ptr `plusPtr` fromIntegral bsz)
+            let b = IOBuffer (sz - bsz) (ptr `plusPtr` fromIntegral bsz)
             TList.prepend_ (b,semsrc) (inputRequests s)
       return sem
 
@@ -170,7 +176,7 @@ newInputState size fd = do
       
 
 data OutputState = OutputState
-   { outputBuffers :: TList (Buffer, FutureSource ())
+   { outputBuffers :: TList (IOBuffer, FutureSource ())
    , outputHandle  :: Handle
    }
 
@@ -190,13 +196,13 @@ outputThread s = forever $ do
 
    -- try to write as much as possible
    n <- runSys $ sysCallAssertQuiet ("Write bytes to "++show hdl) $ 
-      sysWrite hdl (bufferPtr buf) (bufferSize buf)
+      sysWrite hdl (iobufferPtr buf) (iobufferSize buf)
 
-   atomically $ if n == bufferSize buf
+   atomically $ if n == iobufferSize buf
       then setFuture () semsrc
       else do
-         let buf' = Buffer (bufferSize buf - n)
-                           (bufferPtr buf `plusPtr` fromIntegral n)
+         let buf' = IOBuffer (iobufferSize buf - n)
+                             (iobufferPtr buf `plusPtr` fromIntegral n)
                            
          TList.append_ (buf',semsrc) (outputBuffers s)
    
@@ -230,7 +236,7 @@ defaultTerminal = do
 writeToHandle :: OutputState -> Word64 -> Ptr () -> IO (Future ())
 writeToHandle s sz ptr = atomically $ do
    (sem,semsrc) <- newFuture
-   TList.prepend_ (Buffer sz ptr, semsrc) (outputBuffers s)
+   TList.prepend_ (IOBuffer sz ptr, semsrc) (outputBuffers s)
    return sem
 
 -- | Write bytes
@@ -245,6 +251,30 @@ writeStrLn term s =
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
          atomically (waitFuture sem)
+
+-- | Write a buffer
+writeBuffer :: Terminal -> Buffer -> Sys ()
+writeBuffer term b =
+   sysIO $ bufferUnsafeUsePtr b $ \ptr len -> do
+      sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
+      atomically (waitFuture sem)
+
+-- | Write a buffer
+writeBufferLn :: Terminal -> Buffer -> Sys ()
+writeBufferLn term b =
+   sysIO $ bufferUnsafeUsePtr b $ \ptr len ->
+      with '\n' $ \ptr2 -> do
+         _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
+         sem <- writeTermBytes term 1 (castPtr ptr2)
+         atomically (waitFuture sem)
+
+-- | Write a text using UTF8 encoding
+writeText :: Terminal -> Text -> Sys ()
+writeText term = writeBuffer term . textEncodeUtf8
+
+-- | Write a text using UTF8 encoding
+writeTextLn :: Terminal -> Text -> Sys ()
+writeTextLn term = writeBufferLn term . textEncodeUtf8
 
 -- | Read bytes (asynchronous)
 readTermBytes :: Terminal -> Word64 -> Ptr a -> IO (Future ())
