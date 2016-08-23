@@ -22,15 +22,15 @@ import Data.Text.Lazy.Builder
 import qualified Data.Text.Lazy as LT
 import Data.Maybe
 import Data.List
+import Numeric (showHex)
 
 -- | Disassemble a buffer containing X86-64 assembly.
 -- Enable all the extensions
-disassX86_64 :: Buffer -> Text
-disassX86_64 buffer = LT.toStrict (toLazyText bld)
+disassX86_64 :: Maybe Word -> Buffer -> Text
+disassX86_64 initOffset buffer = LT.toStrict (toLazyText bld)
    where
       -- disassembled buffer
       ds = linearDisass m buffer
-
 
       -- arch mode
       m = ExecMode
@@ -47,11 +47,11 @@ disassX86_64 buffer = LT.toStrict (toLazyText bld)
       -- show an instruction
       showInsn o b cmt = Text.pack str
          where
-            o'     = show o
+            o'     = showHex (fromMaybe 0 initOffset + o) ""
             b'     = show b
             fill c = replicate c ' '
             str = o'
-                  ++ fill (10 - fromIntegral (length o'))
+                  ++ fill (17 - fromIntegral (length o'))
                   ++ b'
                   ++ fill (30 - fromIntegral (length b'))
                   ++ cmt
