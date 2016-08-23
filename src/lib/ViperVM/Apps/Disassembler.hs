@@ -59,4 +59,5 @@ disassX86_64 buffer = LT.toStrict (toLazyText bld)
                   ++ b'
                   ++ fill (30 - fromIntegral (length b'))
                   ++ cmt
+                  ++ "\n"
 
