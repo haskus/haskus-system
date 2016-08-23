@@ -1,3 +1,23 @@
+## Version 0.5 (2016-08-23)
+
+* X86-64 disassembler
+   * Add new instructions (e.g., RET2)
+   * Various fixes
+   * Support text output (ViperVM.Apps.Disassembler)
+   * Add disassembler for code sections in ELF viewer app
+* Linux
+   * (Graphics) Fix: correctly handle buffer pitch
+   * Add auxiliary vector support
+   * Enhance process memory mapping support
+   * (Syscalls) Added gettimeofday, settimeofday
+* Binary modules
+   * Added modules: Word, Bits, Ptr, etc.
+   * Vector now uses Buffer
+* CPIO
+   * Fix CPIO archive generation
+* ISO9660 format (ISO files)
+   * Work-in-progress
+
 ## Version 0.4 (2016-06-10)
 
 * ViperVM.Format.Binary
