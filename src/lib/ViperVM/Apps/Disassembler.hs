@@ -67,10 +67,11 @@ disassX86_64 initOffset buffer = LT.toStrict (toLazyText bld)
             )
             ++ insnMnemonic (insnSpec ins)
             ++ " "
-            ++ concat (intersperse ", " (fmap showAsmOperand (insnOperands ins)))
+            ++ concat (intersperse ", " (fmap (uncurry showAsmOperand)
+                  (insnOperands ins `zip` encOperands (insnEncoding ins))))
 
-showAsmOperand :: Operand -> String
-showAsmOperand op = case op of
+showAsmOperand :: Operand -> OperandSpec -> String
+showAsmOperand op enc = fimp $ case op of
    OpImmediate v      -> showAsmImm v
    OpReg reg          -> showAsmReg reg
    OpRegPair r1 r2    -> showAsmReg r1 ++ ":" ++ showAsmReg r2
@@ -79,6 +80,10 @@ showAsmOperand op = case op of
    OpPtr16_16 w1 w2   -> show w1 ++ ":" ++ show w2
    OpPtr16_32 w1 w2   -> show w1 ++ ":" ++ show w2
    OpStackFrame w1 w2 -> show w1 ++ ":" ++ show w2
+   where
+      fimp x
+         | opEnc enc == Implicit = "{" ++ x ++ "}"
+         | otherwise             = x
 
 showAsmAddr :: Addr -> String
 showAsmAddr a = showAsmReg (addrSeg a) ++ ":[" ++ xs ++ "]"
