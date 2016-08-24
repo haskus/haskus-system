@@ -24,6 +24,7 @@ module ViperVM.System.Sys
    , sysAssert
    , sysAssertQuiet
    , sysError
+   , sysErrorShow
    )
 where
 
@@ -262,3 +263,6 @@ sysError text = do
    sysLog LogError text
    sysOnError
 
+-- | Fail in Sys
+sysErrorShow :: Show a => String -> a -> Sys b
+sysErrorShow text a = sysError (text ++ ": " ++ show a)
