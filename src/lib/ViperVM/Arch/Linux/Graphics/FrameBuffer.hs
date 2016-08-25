@@ -3,7 +3,7 @@
 
 -- | Frame buffer management
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
-   ( Buffer(..)
+   ( Surface(..)
    , FrameBuffer(..)
    , addFrameBuffer
    , removeFrameBuffer
@@ -29,12 +29,12 @@ import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Tuples
 import ViperVM.Utils.Flow
 
--- | Buffer
-data Buffer = Buffer
-   { bufferHandle    :: Word32 -- ^ Handle of the buffer
-   , bufferPitch     :: Word32 -- ^ Pitch of the buffer
-   , bufferOffset    :: Word32 -- ^ Offset of the buffer
-   , bufferModifiers :: Word64 -- ^ Modifiers for the buffer
+-- | Surface
+data Surface = Surface
+   { surfaceHandle    :: Word32 -- ^ Handle of the surface
+   , surfacePitch     :: Word32 -- ^ Pitch of the surface
+   , surfaceOffset    :: Word32 -- ^ Offset of the surface
+   , surfaceModifiers :: Word64 -- ^ Modifiers for the surface
    } deriving (Show)
 
 -- | Frame buffer
@@ -44,23 +44,23 @@ data FrameBuffer = FrameBuffer
    , fbHeight      :: Word32           -- ^ Frame buffer height
    , fbPixelFormat :: PixelFormat      -- ^ Pixel format
    , fbFlags       :: FrameBufferFlags -- ^ Flags
-   , fbBuffers     :: [Buffer]         -- ^ Data sources (up to four)
+   , fbSurfaces    :: [Surface]        -- ^ Data sources (up to four)
    } deriving (Show)
 
 fromFrameBuffer :: FrameBuffer -> StructFrameBufferCommand
 fromFrameBuffer FrameBuffer{..} = s
    where
       FrameBufferID fbid = fbID
-      g f  = Vector.fromFilledList 0 (fmap f fbBuffers)
+      g f  = Vector.fromFilledList 0 (fmap f fbSurfaces)
       s = StructFrameBufferCommand fbid
             fbWidth fbHeight fbPixelFormat fbFlags
-            (g bufferHandle) (g bufferPitch)
-            (g bufferOffset) (g bufferModifiers)
+            (g surfaceHandle) (g surfacePitch)
+            (g surfaceOffset) (g surfaceModifiers)
 
 toFrameBuffer :: StructFrameBufferCommand -> FrameBuffer
 toFrameBuffer StructFrameBufferCommand{..} = s
    where
-      bufs = uncurry4 Buffer <$> zip4
+      bufs = uncurry4 Surface <$> zip4
                (Vector.toList fc2Handles)
                (Vector.toList fc2Pitches)
                (Vector.toList fc2Offsets)
@@ -70,7 +70,7 @@ toFrameBuffer StructFrameBufferCommand{..} = s
 
 
 -- | Create a framebuffer
-addFrameBuffer :: Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Buffer] -> SysRet FrameBuffer
+addFrameBuffer :: Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Surface] -> SysRet FrameBuffer
 addFrameBuffer hdl width height fmt flags buffers = do
    
    let s = FrameBuffer (FrameBufferID 0) width height

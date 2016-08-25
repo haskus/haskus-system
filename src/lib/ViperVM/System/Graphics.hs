@@ -6,7 +6,7 @@
 module ViperVM.System.Graphics
    ( GraphicCard (..)
    , loadGraphicCards
-   , MappedBuffer (..)
+   , MappedSurface (..)
    , GenericFrame (..)
    , initGenericFrameBuffer
    , freeGenericFrameBuffer
@@ -105,16 +105,16 @@ newEventWaiterThread fd@(Handle lowfd) = do
    return ch
 
 
-data MappedBuffer = MappedBuffer
-   { mappedBufferBuffer  :: GenericBuffer
-   , mappedBufferMapping :: GenericBufferMap
-   , mappedBufferPointer :: Ptr ()
-   , mappedBufferInfo    :: Buffer
+data MappedSurface = MappedSurface
+   { mappedSurfaceBuffer  :: GenericBuffer
+   , mappedSurfaceMapping :: GenericBufferMap
+   , mappedSurfacePointer :: Ptr ()
+   , mappedSurfaceInfo    :: Surface
    }
 
 data GenericFrame = GenericFrame
    { genericFrameBuffer  :: FrameBuffer
-   , genericFrameBuffers :: [MappedBuffer]
+   , genericFrameBuffers :: [MappedSurface]
    }
 
 -- | Allocate and map fullscreen planes for the given format and mode
@@ -143,11 +143,11 @@ initGenericFrameBuffer card mode pixfmt = do
             Nothing
             (Just (hdl, mdOffset bufKerMap))
 
-      let plane = Buffer (cdHandle buf) (cdPitch buf) 0 0
+      let plane = Surface (cdHandle buf) (cdPitch buf) 0 0
 
-      return (MappedBuffer buf bufKerMap addr plane)
+      return (MappedSurface buf bufKerMap addr plane)
    
-   let planes = fmap mappedBufferInfo mappedPlanes
+   let planes = fmap mappedSurfaceInfo mappedPlanes
 
    fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer hdl width height pixfmt BitSet.empty planes
 
@@ -159,7 +159,7 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
    let hdl = graphicCardHandle card
 
-   forM_ mappedBufs $ \(MappedBuffer buf _ addr _) -> do
+   forM_ mappedBufs $ \(MappedSurface buf _ addr _) -> do
       -- unmap generic buffer from user-space
       sysCallAssert "Unmap generic buffer from user space" $ 
          sysMemUnmap addr (cdSize buf)

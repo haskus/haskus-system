@@ -78,8 +78,8 @@ fillFrame gfb color = do
       
    let
       [buf] = genericFrameBuffers gfb
-      addr  = mappedBufferPointer buf
-      pitch = bufferPitch (mappedBufferInfo buf)
+      addr  = mappedSurfacePointer buf
+      pitch = surfacePitch (mappedSurfaceInfo buf)
 
    forLoop 0 (< fromIntegral (fbHeight fb)) (+1) $ \y ->
       forLoop 0 (< fromIntegral (fbWidth fb)) (+1) $ \x -> do
@@ -98,13 +98,13 @@ blendImage gfb img op pos clp = do
 
    let
       [buf] = genericFrameBuffers gfb
-      addr  = mappedBufferPointer buf
+      addr  = mappedSurfacePointer buf
 
 
    -- compute drawing rect
    let
       (w,h)         = (fbWidth fb, fbHeight fb)
-      pitch         = bufferPitch (mappedBufferInfo buf)
+      pitch         = surfacePitch (mappedSurfaceInfo buf)
       (cx,cy,cw,ch) = clp
       clip'         = (cx,cy, min (imageWidth img - cx) cw, min (imageHeight img - cy) ch)
       (px,py)       = pos
