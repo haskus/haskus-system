@@ -1,27 +1,37 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | Object
 module ViperVM.Arch.Linux.Graphics.Object
    ( Object(..)
    , ObjectType(..)
    , getObjectPropertyCount
+   , getObjectProperties
    )
 where
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
 
 import ViperVM.Format.Binary.Enum
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
+
+import Foreign.Marshal.Array
 
 data ObjectType
    = ObjectController
@@ -95,3 +105,58 @@ getObjectPropertyCount hdl o = do
       s = StructGetObjectProperties 0 0 0
             (getObjectID o)
             (fromCEnum (getObjectType o))
+
+data InvalidCount = InvalidCount Int
+data ObjectNotFound = ObjectNotFound deriving (Show,Eq)
+
+-- | Return object properties
+getObjectProperties :: Object o => Handle -> o -> Flow Sys '[[RawProperty],ObjectNotFound,InvalidParam]
+getObjectProperties hdl o =
+       -- we assume 20 entries is usually enough and we adapt if it isn't. By
+       -- using an initial value we avoid a syscall in most cases.
+      fixCount go 20
+   where
+      fixCount f n = f n >%~#> \(InvalidCount n') -> fixCount f n'
+
+      allocaArray' 0 f = f nullPtr
+      allocaArray' n f = allocaArray (fromIntegral n) f
+
+      go :: Int -> Flow Sys '[[RawProperty],InvalidCount,InvalidParam,ObjectNotFound]
+      go n =
+         sysWith (allocaArray' n) $ \(propsPtr :: Ptr Word32) ->
+         sysWith (allocaArray' n) $ \(valsPtr :: Ptr Word64) -> do
+            let
+               s = StructGetObjectProperties 
+                     (fromIntegral (ptrToWordPtr propsPtr))
+                     (fromIntegral (ptrToWordPtr valsPtr))
+                     (fromIntegral n)
+                     (getObjectID o)
+                     (fromCEnum (getObjectType o))
+            getObjectProperties' s
+               >.~:> checkCount n
+               >.~.> extractProperties
+
+      getObjectProperties' :: StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidParam,ObjectNotFound]
+      getObjectProperties' s = sysIO (ioctlGetObjectProperties s hdl) >%~#> \case
+         EINVAL -> flowSet InvalidParam
+         ENOENT -> flowSet ObjectNotFound
+         e      -> unhdlErr "getObjectProperties" e
+
+      extractProperties :: StructGetObjectProperties -> Sys [RawProperty]
+      extractProperties s = do
+         let n        = fromIntegral (gopCountProps s)
+             propsPtr :: Ptr Word32
+             propsPtr = wordPtrToPtr (fromIntegral (gopPropsPtr s))
+             valsPtr :: Ptr Word64
+             valsPtr  = wordPtrToPtr (fromIntegral (gopValuesPtr s))
+         ps <- sysIO (peekArray n propsPtr)
+         vs <- sysIO (peekArray n valsPtr)
+         return (zipWith RawProperty ps vs)
+
+      -- check that we have allocated enough entries to store the properties
+      checkCount :: Int -> StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidCount]
+      checkCount n s = do
+         let n' = fromIntegral (gopCountProps s)
+         if n' > n
+            then flowSet (InvalidCount n)
+            else flowSet s
