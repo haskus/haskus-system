@@ -19,6 +19,7 @@ import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
+import ViperVM.Arch.Linux.Graphics.Plane
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Property
@@ -94,6 +95,11 @@ instance Object FrameBuffer where
    getObjectType _ = ObjectFrameBuffer
    getObjectID x   = y
       where FrameBufferID y = fbID x
+
+instance Object Plane where
+   getObjectType _ = ObjectPlane
+   getObjectID x   = y
+      where PlaneID y = planeID x
 
 
 -- | Get object's number of properties

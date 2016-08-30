@@ -6,7 +6,7 @@
 -- | Planes
 module ViperVM.Arch.Linux.Graphics.Plane
    ( getPlaneResources
-   , PlaneID
+   , PlaneID (..)
    , InvalidPlane (..)
    , Plane (..)
    , getPlane
@@ -68,7 +68,7 @@ getPlaneResources hdl = getCount >.~#> getIDs
 
 -- | A plane
 data Plane = Plane
-   { planeId                  :: PlaneID              -- ^ Plane identifier
+   { planeID                  :: PlaneID              -- ^ Plane identifier
    , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
    , planeFrameBufferId       :: Maybe FrameBufferID  -- ^ Connected framebuffer
    , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
@@ -111,7 +111,7 @@ getPlane hdl pid = getCount >.~#> getInfo
                -- somewhere to avoid getResources
                fmts <- fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p)
                flowRet Plane
-                  { planeId                  = pid
+                  { planeID                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
                   , planeFrameBufferId       = toMaybe FrameBufferID gpFbId
                   , planePossibleControllers = pickControllers res gpPossibleCrtcs
