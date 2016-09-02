@@ -176,6 +176,7 @@ initDeviceManager sysfs devfs = do
          let
             flags = BitSet.fromList [ HandleDirectory
                                     , HandleNonBlocking
+                                    , HandleDontFollowSymLinks
                                     ]
 
          -- recursively build the tree (depth-first traversal, parent nodes stay
