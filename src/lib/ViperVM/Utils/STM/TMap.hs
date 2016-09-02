@@ -11,6 +11,7 @@ module ViperVM.Utils.STM.TMap
    , empty
    , singleton
    , insert
+   , fromList
    , delete
    , elems
    , keys
@@ -23,6 +24,7 @@ import Prelude hiding (lookup,null)
 import Control.Concurrent.STM
 import qualified STMContainers.Map as SMAP
 import STMContainers.Map (Key)
+import Data.Foldable (traverse_)
 import ListT (fold)
 import qualified ListT
 
@@ -67,6 +69,13 @@ singleton k v = do
 -- | Insert an element in the map
 insert :: Key k => k -> v -> TMap k v -> STM ()
 insert k v = SMAP.insert v k
+
+-- | Create a new TMap from a list
+fromList :: Key k => [(k,v)] -> STM (TMap k v)
+fromList vs = do
+   m <- empty
+   traverse_ (\(k,v) -> insert k v m) vs
+   return m
 
 -- | Delete an element from the map
 delete :: Key k => k -> TMap k v -> STM ()

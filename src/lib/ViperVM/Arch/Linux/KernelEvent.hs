@@ -60,7 +60,7 @@ receiveKernelEvent fd = go
          msg <- sysCallAssertQuiet "Receive kernel event" $ receiveBuffer fd 2048 BitSet.empty
          case parseKernelEvent msg of
             Just m  -> return m
-            Nothing -> sysError "Kernel event is not parsable"
+            Nothing -> go -- invalid event received
 
 
 -- | Parse a kernel event
@@ -70,8 +70,10 @@ receiveKernelEvent fd = go
 -- lines. The following lines have the "key=value" format.
 --
 -- Note: when kernel event sockets are used with a classic Linux distribution
--- using udev, libudev injects its own events with their own syntax. Hence we
--- discard them (they all begin with "libudev" characters).
+-- using udev, libudev injects its own events with their own syntax to perform
+-- netlink communication between processes (expected to be replaced with kdbus
+-- at some point). Hence we discard these events (they all begin with "libudev"
+-- characters) and return Nothing.
 parseKernelEvent :: Buffer -> Maybe KernelEvent
 parseKernelEvent bs = r
    where

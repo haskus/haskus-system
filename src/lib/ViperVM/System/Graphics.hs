@@ -19,6 +19,7 @@ where
 
 import ViperVM.System.Sys
 import ViperVM.System.System
+import ViperVM.System.Devices
 import ViperVM.System.Process
 import ViperVM.System.ReadWrite
 import qualified ViperVM.Format.Binary.BitSet as BitSet

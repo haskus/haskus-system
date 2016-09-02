@@ -8,6 +8,7 @@ where
 import ViperVM.System.Sys
 import ViperVM.System.System
 import ViperVM.System.Event
+import ViperVM.System.Devices
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.Error

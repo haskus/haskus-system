@@ -41,6 +41,10 @@ module ViperVM.Utils.Flow
    , (.~!>)
    , (>.~!>)
    -- * Tail operations
+   , (..~.>)
+   , (>..~.>)
+   , (..-.>)
+   , (>..-.>)
    , (..~..>)
    , (>..~..>)
    , (..~^^>)
@@ -296,6 +300,34 @@ liftm op x a = do
 ----------------------------------------------------------
 -- Tail operations
 ----------------------------------------------------------
+
+-- | Extract the tail, set the first value
+(..~.>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> (Variant l -> Flow m '[a]) -> Flow m '[a]
+(..~.>) v f = case headVariant v of
+   Right u -> flowRet u
+   Left  l -> f l
+
+-- | Extract the tail, set the first value
+(>..~.>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> (Variant l -> Flow m '[a]) -> Flow m '[a]
+(>..~.>) = liftm (..~.>)
+
+-- | Extract the tail, set the first value (pure function)
+(..-.>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> (Variant l -> a) -> Flow m '[a]
+(..-.>) v f = case headVariant v of
+   Right u -> flowRet u
+   Left  l -> flowRet (f l)
+
+-- | Extract the tail, set the first value (pure function)
+(>..-.>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> (Variant l -> a) -> Flow m '[a]
+(>..-.>) = liftm (..-.>)
 
 -- | Extract the tail, set the tail
 (..~..>) ::

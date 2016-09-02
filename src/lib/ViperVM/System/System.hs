@@ -7,11 +7,6 @@ module ViperVM.System.System
    ( System(..)
    , defaultSystemInit
    , systemInit
-   -- * Devices
-   , getDeviceHandle
-   , releaseDeviceHandle
-   , openDeviceDir
-   , listDevicesWithClass
    -- * Memory map
    , getProcessMemoryMap
    , memoryMapToBufferList
@@ -24,14 +19,13 @@ module ViperVM.System.System
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Text (Text, bufferDecodeUtf8)
+import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
-import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.Arch.Linux.Process.MemoryMap
 import ViperVM.System.Sys
@@ -42,16 +36,11 @@ import ViperVM.Utils.Flow
 import System.FilePath
 
 import Prelude hiding (init,tail)
-import Control.Monad (void)
 import Control.Concurrent.STM
-import Data.Maybe (catMaybes)
-
-import Text.Megaparsec
-import Text.Megaparsec.Lexer hiding (space)
-
 
 data System = System
    { systemDevFS       :: Handle            -- ^ root of the tmpfs used to create device nodes
+   , systemDevNum      :: TVar Word64       -- ^ counter used to create device node
    , systemSysFS       :: Handle            -- ^ SysFS
    , systemProcFS      :: Handle            -- ^ procfs
    , systemNetlinkChan :: TChan KernelEvent -- ^ Netlink events
@@ -100,93 +89,10 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    -- create netlink reader
    netlink <- newKernelEventReader
 
-   return (System devfd sysfd procfd netlink)
+   -- device node counter
+   devNum <- sysIO (newTVarIO 0)
 
--- | Get a handle on a device
---
--- Linux doesn't provide an API to open a device directly from its major and
--- minor numbers. Instead we must create a special device file with mknod in
--- the VFS and open it. This is what this function does. Additionally, we
--- remove the file once it is opened.
-getDeviceHandle :: System -> DeviceType -> Device -> Sys Handle
-getDeviceHandle system typ dev = do
-
-   let 
-      devname = "./dummy"
-      devfd   = systemDevFS system
-
-   sysLogSequence "Open device" $ do
-      sysCallAssert "Create device special file" $
-         createDeviceFile devfd devname typ BitSet.empty dev
-      fd  <- sysCallAssert "Open device special file" $
-         sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty
-      sysCallAssert "Remove device special file" $
-         sysUnlinkAt devfd devname False
-      return fd
-
--- | Release a device handle
-releaseDeviceHandle :: Handle -> Sys ()
-releaseDeviceHandle fd = do
-   sysCallAssertQuiet "Close device" $ sysClose fd
-
--- | Find device path by number (major, minor)
-openDeviceDir :: System -> DeviceType -> Device -> SysRet Handle
-openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path (BitSet.fromList [HandleDirectory]) BitSet.empty
-   where
-      path = "./dev/" ++ typ' ++ "/" ++ ids
-      typ' = case typ of
-         CharDevice  -> "char"
-         BlockDevice -> "block"
-      ids  = show (deviceMajor dev) ++ ":" ++ show (deviceMinor dev)
-
-
--- | List devices with the given class
---
--- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: System -> String -> Sys [(FilePath,Device)]
-listDevicesWithClass system cls = do
-   -- open class directory in SysFS
-   let 
-      clsdir = "class" </> cls
-
-      -- parser for dev files
-      -- content format is: MMM:mmm\n (where M is major and m is minor)
-      parseDevFile :: Parsec Text Device
-      parseDevFile = do
-         major <- fromIntegral <$> decimal
-         void (char ':')
-         minor <- fromIntegral <$> decimal
-         void eol
-         return (Device major minor)
-
-      -- read device major and minor in "dev" file
-      readDevFile :: Handle -> Flow Sys '[Device,ErrorCode]
-      readDevFile devfd = do
-         -- 16 bytes should be enough
-         sysCallWarn "Read dev file" (handleReadBuffer devfd Nothing 16)
-         >.-.> \content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
-            Nothing -> error "Invalid dev file format"
-            Just x  -> x
-
-      -- read device directory
-      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
-      readDev fd dir =
-         withOpenAt fd (dir </> "dev") BitSet.empty BitSet.empty readDevFile
-            -- skip entries without "dev" file
-            >.-.>  (Just . (clsdir </> dir,))
-            >..~#> const (flowRet Nothing)
-
-      -- read devices in a class
-      readDevs :: Handle -> SysV '[[(FilePath,Device)]]
-      readDevs fd = do
-         dirs <- sysCallAssert "List device directories" $ listDirectory fd
-         let dirs'  = fmap entryName dirs
-         flowTraverse (readDev fd) dirs' >.-.> catMaybes
-
-   flowRes $ withOpenAt (systemSysFS system) clsdir BitSet.empty BitSet.empty readDevs
-      -- in case of error, we don't return any dev
-      >..~#> const (flowRet [])
-
+   return (System devfd devNum sysfd procfd netlink)
 
 -- | Get process memory mappings
 getProcessMemoryMap :: System -> SysV '[[MemoryMapEntry],ErrorCode]
