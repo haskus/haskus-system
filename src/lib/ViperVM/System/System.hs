@@ -19,31 +19,26 @@ module ViperVM.System.System
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Binary.Word
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.Mount
-import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.Arch.Linux.Process.MemoryMap
+
 import ViperVM.System.Sys
-import ViperVM.System.Event
 import ViperVM.System.ReadWrite
+import ViperVM.System.Devices
 import ViperVM.Utils.Flow
 
 import System.FilePath
 
 import Prelude hiding (init,tail)
-import Control.Concurrent.STM
 
 data System = System
-   { systemDevFS       :: Handle            -- ^ root of the tmpfs used to create device nodes
-   , systemDevNum      :: TVar Word64       -- ^ counter used to create device node
-   , systemSysFS       :: Handle            -- ^ SysFS
-   , systemProcFS      :: Handle            -- ^ procfs
-   , systemNetlinkChan :: TChan KernelEvent -- ^ Netlink events
+   { systemProcFS        :: Handle            -- ^ procfs
+   , systemDeviceManager :: DeviceManager     -- ^ Device manager
    }
 
 -- | Initialize the system
@@ -86,13 +81,13 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount devicePath
    devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath BitSet.empty BitSet.empty
 
-   -- create netlink reader
-   netlink <- newKernelEventReader
+   -- init device manager
+   dm <- initDeviceManager sysfd devfd
 
-   -- device node counter
-   devNum <- sysIO (newTVarIO 0)
-
-   return (System devfd devNum sysfd procfd netlink)
+   return $ System
+      { systemProcFS        = procfd
+      , systemDeviceManager = dm
+      }
 
 -- | Get process memory mappings
 getProcessMemoryMap :: System -> SysV '[[MemoryMapEntry],ErrorCode]

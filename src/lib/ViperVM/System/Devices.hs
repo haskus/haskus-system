@@ -16,6 +16,7 @@ module ViperVM.System.Devices
 where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
 import ViperVM.Format.Text (Text, bufferDecodeUtf8)
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.ErrorCode
@@ -26,7 +27,6 @@ import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
-import ViperVM.System.System
 import ViperVM.System.Event
 import ViperVM.System.ReadWrite
 import ViperVM.System.Process
@@ -126,15 +126,18 @@ data KernelObject = KernelObject
 
 -- | Device manager
 data DeviceManager = DeviceManager
-   { dmDevices :: KernelObject         -- ^ Device hierarchy
-   , dmEvents  :: TChan KernelEvent    -- ^ Netlink kobject events
+   { dmDevices :: KernelObject      -- ^ Device hierarchy
+   , dmEvents  :: TChan KernelEvent -- ^ Netlink kobject events
+   , dmSysFS   :: Handle            -- ^ Handle to sysfs
+   , dmDevFS   :: Handle            -- ^ root of the tmpfs used to create device nodes
+   , dmDevNum  :: TVar Word64       -- ^ counter used to create device node
    }
 
 -- | Init a device manager
-initDeviceManager :: Handle -> Sys DeviceManager
-initDeviceManager sysfs = do
+initDeviceManager :: Handle -> Handle -> Sys DeviceManager
+initDeviceManager sysfs devfs = do
    
-   -- enable kernel events
+   -- open Netlink socket
    bch <- newKernelEventReader
 
    -- we block the event handler thread until we have totally read sysfs
@@ -209,7 +212,16 @@ initDeviceManager sysfs = do
    -- unblock the event thread
    sysIO $ atomically $ writeTVar blocked False
    
-   return $ DeviceManager rootko bch
+   -- device node counter
+   devNum <- sysIO (newTVarIO 0)
+
+   return $ DeviceManager
+      { dmDevices = rootko
+      , dmEvents  = bch
+      , dmSysFS   = sysfs
+      , dmDevFS   = devfs
+      , dmDevNum  = devNum
+      }
 
 -- | Get a handle on a device
 --
@@ -217,18 +229,18 @@ initDeviceManager sysfs = do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: System -> DeviceType -> Device -> Sys Handle
-getDeviceHandle system typ dev = do
+getDeviceHandle :: DeviceManager -> DeviceType -> Device -> Sys Handle
+getDeviceHandle dm typ dev = do
 
    -- get a fresh device number
    num <- sysIO $ atomically $ do
-            n <- readTVar (systemDevNum system)
-            writeTVar (systemDevNum system) (n+1)
+            n <- readTVar (dmDevNum dm)
+            writeTVar (dmDevNum dm) (n+1)
             return n
 
    let 
       devname = "./dummy" ++ show num
-      devfd   = systemDevFS system
+      devfd   = dmDevFS dm
 
    sysLogSequence "Open device" $ do
       sysCallAssert "Create device special file" $
@@ -245,8 +257,8 @@ releaseDeviceHandle fd = do
    sysCallAssertQuiet "Close device" $ sysClose fd
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: System -> DeviceType -> Device -> SysRet Handle
-openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path (BitSet.fromList [HandleDirectory]) BitSet.empty
+openDeviceDir :: DeviceManager -> DeviceType -> Device -> SysRet Handle
+openDeviceDir dm typ dev = sysOpenAt (dmDevFS dm) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids
       typ' = case typ of
@@ -256,17 +268,17 @@ openDeviceDir system typ dev = sysOpenAt (systemDevFS system) path (BitSet.fromL
 
 
 -- | List devices classes
-listDeviceClasses :: System -> Flow Sys '[[String],ErrorCode]
-listDeviceClasses sys = do
-   withOpenAt (systemSysFS sys) "class" BitSet.empty BitSet.empty $ \fd -> do
+listDeviceClasses :: DeviceManager -> Flow Sys '[[String],ErrorCode]
+listDeviceClasses dm = do
+   withOpenAt (dmSysFS dm) "class" BitSet.empty BitSet.empty $ \fd -> do
       sysIO (listDirectory fd)
          >.-.> fmap entryName
 
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: System -> String -> Sys [(FilePath,Device)]
-listDevicesWithClass system cls = do
+listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,Device)]
+listDevicesWithClass dm cls = do
    -- open class directory in SysFS
    let 
       clsdir = "class" </> cls
@@ -305,7 +317,7 @@ listDevicesWithClass system cls = do
          let dirs'  = fmap entryName dirs
          flowTraverse (readDev fd) dirs' >.-.> catMaybes
 
-   flowRes $ withOpenAt (systemSysFS system) clsdir BitSet.empty BitSet.empty readDevs
+   flowRes $ withOpenAt (dmSysFS dm) clsdir BitSet.empty BitSet.empty readDevs
       -- in case of error, we don't return any dev
       >..~#> const (flowRet [])
 

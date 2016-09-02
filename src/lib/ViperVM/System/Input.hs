@@ -6,7 +6,6 @@ module ViperVM.System.Input
 where
 
 import ViperVM.System.Sys
-import ViperVM.System.System
 import ViperVM.System.Event
 import ViperVM.System.Devices
 import ViperVM.Arch.Linux.Handle
@@ -33,14 +32,14 @@ data InputDevice = InputDevice
 
 
 -- | List and load devices with the "input" class
-loadInputDevices :: System -> Sys [InputDevice]
-loadInputDevices system = sysLogSequence "Load input devices" $ do
-   devs <- listDevicesWithClass system "input"
+loadInputDevices :: DeviceManager -> Sys [InputDevice]
+loadInputDevices dm = sysLogSequence "Load input devices" $ do
+   devs <- listDevicesWithClass dm "input"
    let
       isEvent (p,_) = "event" `isPrefixOf` takeBaseName p
       devs' = filter isEvent devs
    forM devs' $ \(devpath,dev) -> do
-      fd   <- getDeviceHandle system CharDevice dev
+      fd   <- getDeviceHandle dm CharDevice dev
       void $ sysCallWarn "Grab device" $ grabDevice fd
       InputDevice devpath dev fd
          <$> sysCallAssert "Get device name"

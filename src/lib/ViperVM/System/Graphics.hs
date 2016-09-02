@@ -18,7 +18,6 @@ module ViperVM.System.Graphics
 where
 
 import ViperVM.System.Sys
-import ViperVM.System.System
 import ViperVM.System.Devices
 import ViperVM.System.Process
 import ViperVM.System.ReadWrite
@@ -69,15 +68,15 @@ data GraphicCard = GraphicCard
 -- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
 -- identifier. The this directory, the dev file contains device major/minor to
 -- create appropriate device node.
-loadGraphicCards :: System -> Sys [GraphicCard]
-loadGraphicCards system = sysLogSequence "Load graphic cards" $ do
+loadGraphicCards :: DeviceManager -> Sys [GraphicCard]
+loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
 
-   devs <- listDevicesWithClass system "drm"
+   devs <- listDevicesWithClass dm "drm"
    let
       isCard (p,_) = "card" `isPrefixOf` takeBaseName p
       devs' = filter isCard devs
    forM devs' $ \(devpath,dev) -> do
-      hdl   <- getDeviceHandle system CharDevice dev
+      hdl   <- getDeviceHandle dm CharDevice dev
       -- We support these capabilities
       setClientCapability hdl ClientCapStereo3D        True
       setClientCapability hdl ClientCapUniversalPlanes True
