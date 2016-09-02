@@ -4,7 +4,6 @@
 module ViperVM.System.Event
    ( newEventReader
    , onEvent
-   , newKernelEventReader
    )
 where
 
@@ -17,7 +16,6 @@ import Foreign.Storable
 import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
 
-import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Utils.Flow
@@ -50,20 +48,3 @@ onEvent bch f = do
 
    ch <- sysIO $ atomically $ dupTChan bch
    sysFork $ sysIO $ forever (atomically (readTChan ch) >>= runSys' . f)
-
--- | Create a new thread reading kernel events and putting them in a TChan
-newKernelEventReader :: Sys (TChan KernelEvent)
-newKernelEventReader = do
-   fd <- createKernelEventSocket
-   ch <- sysIO newBroadcastTChanIO
-   let
-      Handle lowfd = fd
-      rfd = Fd (fromIntegral lowfd)
-      go  = sysIO $ forever $ do
-               threadWaitRead rfd
-               ev <- runSys $ receiveKernelEvent fd
-               atomically $ writeTChan ch ev
-
-   sysFork go
-   return ch
-

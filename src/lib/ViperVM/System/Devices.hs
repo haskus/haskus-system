@@ -27,17 +27,16 @@ import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
-import ViperVM.System.Event
 import ViperVM.System.ReadWrite
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
 import ViperVM.Utils.STM.TMap as TMap
 
 import System.FilePath
-
-import Prelude hiding (init,tail)
+import System.Posix.Types (Fd(..))
 import Control.Monad (void,forever)
 import Data.Foldable (forM_)
+import Control.Concurrent
 import Control.Concurrent.STM
 import Data.Maybe (catMaybes)
 
@@ -222,6 +221,23 @@ initDeviceManager sysfs devfs = do
       , dmDevFS   = devfs
       , dmDevNum  = devNum
       }
+
+-- | Create a new thread reading kernel events and putting them in a TChan
+newKernelEventReader :: Sys (TChan KernelEvent)
+newKernelEventReader = do
+   fd <- createKernelEventSocket
+   ch <- sysIO newBroadcastTChanIO
+   let
+      Handle lowfd = fd
+      rfd = Fd (fromIntegral lowfd)
+      go  = sysIO $ forever $ do
+               threadWaitRead rfd
+               ev <- runSys $ receiveKernelEvent fd
+               atomically $ writeTChan ch ev
+
+   sysFork go
+   return ch
+
 
 -- | Get a handle on a device
 --
