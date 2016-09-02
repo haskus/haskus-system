@@ -10,6 +10,7 @@ module ViperVM.Arch.Linux.Error
    , sysCallAssert'
    , sysCallAssertQuiet
    , sysCallWarn
+   , sysCallWarnQuiet
    , sysLogPrint
    -- * Errors
    , NotAllowed (..)
@@ -97,7 +98,7 @@ sysCallAssertQuiet text act = do
          sysError msg
       Right v  -> return v
 
--- | Log a warning if the given action fails
+-- | Log a warning if the given action fails, otherwise log success
 sysCallWarn :: String -> SysRet a -> Flow Sys '[a,ErrorCode]
 sysCallWarn text act = do
    r <- sysIO act
@@ -109,3 +110,14 @@ sysCallWarn text act = do
          let msg = printf "%s (failed with %s)" text (show err)
          sysLog LogWarning msg
    return r
+
+-- | Log a warning only if the given action fails
+sysCallWarnQuiet :: String -> SysRet a -> Flow Sys '[a,ErrorCode]
+sysCallWarnQuiet text act = do
+   r <- sysIO act
+   case toEither r of
+      Right v -> flowRet v
+      Left err -> do
+         let msg = printf "%s (failed with %s)" text (show err)
+         sysLog LogWarning msg
+         flowRet1 err

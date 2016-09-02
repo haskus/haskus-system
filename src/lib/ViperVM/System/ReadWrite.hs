@@ -32,10 +32,10 @@ withOpenAt ::
    , zs ~ Fusion xs '[ErrorCode]
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> SysV zs
 withOpenAt fd path flags perm act =
-   sysCallWarn ("Open file \""++ path ++ "\"") (sysOpenAt fd path flags perm)
+   sysCallWarnQuiet ("Open file \""++ path ++ "\"") (sysOpenAt fd path flags perm)
       >.~&> \fd1 -> do
          res <- act fd1
-         sysCallAssert "Close file" $ sysClose fd1
+         sysCallAssertQuiet "Close file" $ sysClose fd1
          return res
 
 -- | Read a file with a single "read"
@@ -48,7 +48,7 @@ handleAtomicReadBufferAt hdl path = withOpenAt hdl path BitSet.empty BitSet.empt
    where
       go :: Word64 -> Handle -> SysV '[Buffer,ErrorCode]
       go sz fd =
-         sysCallWarn "atomic read file"
+         sysCallWarnQuiet "atomic read file"
             -- use 0 offset to read from the beginning
             (handleReadBuffer fd (Just 0) sz)
          >.~#> \buf ->
