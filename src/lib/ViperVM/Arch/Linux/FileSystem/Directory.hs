@@ -12,6 +12,7 @@ module ViperVM.Arch.Linux.FileSystem.Directory
    , sysRemoveDirectory
    , DirectoryEntry(..)
    , DirectoryEntryHeader(..)
+   , DirectoryEntryType (..)
    , listDirectory
    )
 where
@@ -23,6 +24,7 @@ import Foreign.Marshal.Array
 
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
 
@@ -64,9 +66,47 @@ instance Storable DirectoryEntryHeader where
 
 data DirectoryEntry = DirectoryEntry
    { entryInode :: Word64
-   , entryType  :: Word8
+   , entryType  :: DirectoryEntryType
    , entryName  :: FilePath
    } deriving (Show)
+
+-- | Entry type
+--
+-- From dirent.h (d_type)
+data DirectoryEntryType
+   = TypeUnknown
+   | TypeFIFO
+   | TypeCharDevice
+   | TypeDirectory
+   | TypeBlockDevice
+   | TypeRegularFile
+   | TypeSymbolicLink
+   | TypeSocket
+   | TypeWhiteOut
+   deriving (Show,Eq,Enum)
+
+instance CEnum DirectoryEntryType where
+   fromCEnum = \case
+      TypeUnknown      -> 0
+      TypeFIFO         -> 1
+      TypeCharDevice   -> 2
+      TypeDirectory    -> 4
+      TypeBlockDevice  -> 6
+      TypeRegularFile  -> 8
+      TypeSymbolicLink -> 10
+      TypeSocket       -> 12
+      TypeWhiteOut     -> 14
+   toCEnum = \case
+      0  -> TypeUnknown
+      1  -> TypeFIFO
+      2  -> TypeCharDevice
+      4  -> TypeDirectory
+      6  -> TypeBlockDevice
+      8  -> TypeRegularFile
+      10 -> TypeSymbolicLink
+      12 -> TypeSocket
+      14 -> TypeWhiteOut
+      e  -> error ("Invalid DirectoryEntryType: " ++ show (fromIntegral e :: Word8))
 
 -- | getdents64 syscall
 --
@@ -91,7 +131,7 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                   nextpos = p `plusPtr` len
                   nextlen = n - len
                name <- peekCString (castPtr namepos)
-               let x = DirectoryEntry (dirInod hdr) (dirFileTyp hdr) name
+               let x = DirectoryEntry (dirInod hdr) (toCEnum (dirFileTyp hdr)) name
                xs <- readEntries nextpos nextlen
                -- filter deleted files
                if dirInod hdr /= 0

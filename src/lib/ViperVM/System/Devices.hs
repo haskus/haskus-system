@@ -34,7 +34,7 @@ import ViperVM.Utils.STM.TMap as TMap
 
 import System.FilePath
 import System.Posix.Types (Fd(..))
-import Control.Monad (void,forever)
+import Control.Monad (void,forever,when)
 import Data.Foldable (forM_)
 import Control.Concurrent
 import Control.Concurrent.STM
@@ -185,23 +185,26 @@ initDeviceManager sysfs devfs = do
             let 
                dir  = entryName entry
                dir' = Text.pack dir
-            path <- do
-               p' <- sysIO (readTVarIO (kobjPath parent))
-               return (Text.concat [p',dir'])
 
-            void $ withOpenAt root dir flags BitSet.empty $ \fd -> do
-               ko <- KernelObject
-                        <$> sysIO (newTVarIO path)
-                        <*> sysIO (newTVarIO (Just parent))
-                        <*> sysIO (atomically TMap.empty)
+            -- check that the entry is a directory
+            when (entryType entry == TypeDirectory) $ do
+               path <- do
+                  p' <- sysIO (readTVarIO (kobjPath parent))
+                  return (Text.concat [p',dir'])
 
-               -- insert into parent
-               sysIO $ atomically $ TMap.insert dir' ko (kobjChildren parent)
+               void $ withOpenAt root dir flags BitSet.empty $ \fd -> do
+                  ko <- KernelObject
+                           <$> sysIO (newTVarIO path)
+                           <*> sysIO (newTVarIO (Just parent))
+                           <*> sysIO (atomically TMap.empty)
 
-               -- lookup children
-               listDevs ko fd
+                  -- insert into parent
+                  sysIO $ atomically $ TMap.insert dir' ko (kobjChildren parent)
 
-               flowRet' ()
+                  -- lookup children
+                  listDevs ko fd
+
+                  flowRet' ()
 
    rootko <- KernelObject
                <$> sysIO (newTVarIO (Text.pack "/devices"))
