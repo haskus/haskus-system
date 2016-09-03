@@ -55,17 +55,17 @@ $ stack setup
 $ stack build
 ```
 
-## Tests, Benchmarks, Programs
+Tests:
+```bash
+$ stack test
+```
 
-ViperVM comes with several tests, benchmarks and programs.
+Benchmarks:
+```bash
+$ stack bench
+```
 
-#### Tests
-
-Use ``stack test`` to execute the tests.
-
-#### Benchmarks
-
-Use ``stack bench`` to execute the benchmarks.
+## Programs
 
 #### ELF Web
 

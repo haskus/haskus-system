@@ -65,6 +65,20 @@ import Text.Megaparsec.Lexer hiding (space)
 --
 -- User-space can set some attributes by writing into the attribute files.
 --
+-- sysfs documentation is very sparse and overly bad. I had to read sources
+-- (udev, systemd's sd-device, linux), articles, kernel docs, MLs, etc. See here
+-- for a tentative to document the whole thing by Rob Landley in 2007 and the
+-- bad reactions from sysfs/udev devs:
+--    "Documentation for sysfs, hotplug, and firmware loading." thread on LKML
+--    http://lkml.iu.edu/hypermail/linux/kernel/0707.2/index.html#1085
+--
+-- Most of his critics are still valid:
+--    * current documentation is bad (says what not to do, but not what to do)
+--    * there is no unified /sys/subsystem directory
+--    * we still have to check the subsystem to see if devices are block or char
+--    * contradictions between anti-guidelines in sysfs-rules.txt and available
+--    approaches
+--
 -- REFERENCES
 --    * "The sysfs Filesystem", Patrick Mochel, 2005
 --       https://www.kernel.org/pub/linux/kernel/people/mochel/doc/papers/ols-2005/mochel.pdf
@@ -114,6 +128,19 @@ import Text.Megaparsec.Lexer hiding (space)
 --
 -- We musn't assume a specific device hierarchy as it can change between kernel
 -- versions.
+--
+--
+-- Note [HotPlug and ColdPlug]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--
+-- HotPlug devices are signaled through a Netlink socket.
+--
+-- ColdPlug devices are already in the sysfs tree before we have a chance to
+-- listen to the Netlink socket. We may:
+--    1) write "add" in their "uevent" attribute to get them resent through the
+--    Netlink socket with Add action (remove, change, move, etc. commands seem
+--    to work too with the uevent attribute).
+--    2) just parse their "uevent" attribute
 
 
 -- | Kernel object
