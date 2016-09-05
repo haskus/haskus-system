@@ -5,7 +5,7 @@
 -- | Devices management
 module ViperVM.System.Devices
    ( DeviceManager (..)
-   , KernelObject (..)
+   , Dev (..)
    , initDeviceManager
    , getDeviceHandle
    , releaseDeviceHandle
@@ -30,7 +30,8 @@ import ViperVM.System.Sys
 import ViperVM.System.ReadWrite
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
-import ViperVM.Utils.STM.TMap as TMap
+import qualified ViperVM.Utils.STM.TTree as TTree
+import ViperVM.Utils.STM.TTree (TTree)
 
 import System.FilePath
 import System.Posix.Types (Fd(..))
@@ -43,11 +44,11 @@ import Data.Maybe (catMaybes)
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
 
--- Note [SysFS]
+-- Note [sysfs]
 -- ~~~~~~~~~~~~
 --
--- Linux uses "sysfs" to export kernel objects, their attributes and their
--- relationships to user-space. The mapping is as follow:
+-- Linux uses "sysfs" virtual file system to export kernel objects, their
+-- attributes and their relationships to user-space. The mapping is as follow:
 --
 --       |    Kernel     | User-space     |
 --       |--------------------------------|
@@ -55,13 +56,13 @@ import Text.Megaparsec.Lexer hiding (space)
 --       | Attributes    | Files          |
 --       | Relationships | Symbolic links |
 --
--- Initially attributes were ASCII files at most page-size large. Now there are
--- "binary attributes" (non-ASCII files) that can be larger than a page.
+-- Initially attributes were ASCII files at most one page-size large. Now there
+-- are "binary attributes" (non-ASCII files) that can be larger than a page.
 --
--- The SysFS tree is mutable: devices can be (un)plugged, renamed, etc.
---    * Object changes in SysFS are notified to userspace via Netlink's kernel events.
+-- The sysfs tree is mutable: devices can be (un)plugged, renamed, etc.
+--    * Object changes in sysfs are notified to userspace via Netlink's kernel events.
 --    * Attribute changes are not. But we should be able to watch some of them with
---    inotify or epoll.
+--    inotify
 --
 -- User-space can set some attributes by writing into the attribute files.
 --
@@ -78,30 +79,6 @@ import Text.Megaparsec.Lexer hiding (space)
 --    * we still have to check the subsystem to see if devices are block or char
 --    * contradictions between anti-guidelines in sysfs-rules.txt and available
 --    approaches
---
--- REFERENCES
---    * "The sysfs Filesystem", Patrick Mochel, 2005
---       https://www.kernel.org/pub/linux/kernel/people/mochel/doc/papers/ols-2005/mochel.pdf
-
--- Note [Kernel Object and Subsystems]
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
---
--- Kernel object (or kobject) is a kernel structure used as a top-class for
--- several kinds of objects. It provides/supports:
---    * reference counting
---    * an object name
---    * a hierarchy of kobject's
---       * via a "parent" field (pointer to another kobject)
---       * via "ksets" (subsystems)
---    * sysfs mapping and notifications
---
--- A subsystem (or a "kset") is basically a kobject which references a
--- linked-list of kobjects of the same type. Each kobject can only be in a
--- single subsystem (via its "kset" field).
---
---
--- Note [Devices]
--- ~~~~~~~~~~~~~~
 --
 -- According to Documation/sysfs-rules.txt in the kernel tree:
 --    * there is a single tree containing all the devices: in /devices
@@ -129,9 +106,29 @@ import Text.Megaparsec.Lexer hiding (space)
 -- We musn't assume a specific device hierarchy as it can change between kernel
 -- versions.
 --
+-- REFERENCES
+--    * "The sysfs Filesystem", Patrick Mochel, 2005
+--       https://www.kernel.org/pub/linux/kernel/people/mochel/doc/papers/ols-2005/mochel.pdf
+
+-- Kernel Object and Subsystems
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --
--- Note [HotPlug and ColdPlug]
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Kernel object (or kobject) is a kernel structure used as a top-class for
+-- several kinds of objects. It provides/supports:
+--    * reference counting
+--    * an object name
+--    * a hierarchy of kobject's
+--       * via a "parent" field (pointer to another kobject)
+--       * via "ksets" (subsystems)
+--    * sysfs mapping and notifications
+--
+-- A subsystem (or a "kset") is basically a kobject which references a
+-- linked-list of kobjects of the same type. Each kobject can only be in a
+-- single subsystem (via its "kset" field).
+--
+--
+-- HotPlug and ColdPlug
+-- ~~~~~~~~~~~~~~~~~~~~
 --
 -- HotPlug devices are signaled through a Netlink socket.
 --
@@ -141,22 +138,46 @@ import Text.Megaparsec.Lexer hiding (space)
 --    Netlink socket with Add action (remove, change, move, etc. commands seem
 --    to work too with the uevent attribute).
 --    2) just parse their "uevent" attribute
+--
+--
+-- SUMMARY
+-- ~~~~~~~
+--
+-- The kernel wants to export a mutable tree to user-space:
+--    * non-leaf nodes can be added, removed, moved (renamed)
+--    * leaf nodes can be added, removed or have their value changed
+--    * some leaf nodes can be written by user-space
+--
+-- sysfs offers a *non-atomic* interface on the current state of the tree because
+-- of the nature of the VFS:
+--    * nodes can be added/removed/moved between directory listing and actual
+--    exploration of the listing
+--    * an opened file may not be readable/writable anymore
+--
+-- netlink socket signals some of the changes:
+--    * non-leaf node addition/removal/renaming
+--    * generic "change" action for attributes
+--
+-- Specific attributes can be watched with inotify, especially if they don't
+-- trigger "change" netlink notification when their value changes.
+--
+--
 
-
--- | Kernel object
-data KernelObject = KernelObject
-   { kobjPath       :: TVar Text                 -- ^ Path in sysfs
-   , kobjParent     :: TVar (Maybe KernelObject) -- ^ Parent object
-   , kobjChildren   :: TMap Text KernelObject    -- ^ Children objects (subdirs in sysfs)
+-- | Device
+data Dev = Dev
+   { deviceKernelName :: TVar Text -- ^ Device directory name in sysfs (i.e., kernel object name)
    }
+
+-- | Device tree (key is deviceKernelName)
+type DeviceTree = TTree (TVar Text) Dev
 
 -- | Device manager
 data DeviceManager = DeviceManager
-   { dmDevices :: KernelObject      -- ^ Device hierarchy
-   , dmEvents  :: TChan KernelEvent -- ^ Netlink kobject events
+   { dmEvents  :: TChan KernelEvent -- ^ Netlink kobject events
    , dmSysFS   :: Handle            -- ^ Handle to sysfs
    , dmDevFS   :: Handle            -- ^ root of the tmpfs used to create device nodes
    , dmDevNum  :: TVar Word64       -- ^ counter used to create device node
+   , dmDevices :: DeviceTree        -- ^ Device hierarchy
    }
 
 -- | Init a device manager
@@ -193,7 +214,12 @@ initDeviceManager sysfs devfs = do
          
    -- enumerate devices from sysfs
    let
-      listDevs :: KernelObject -> Handle -> Sys ()
+      createDeviceTree :: Text -> STM DeviceTree
+      createDeviceTree name = do
+         d <- Dev <$> newTVar name
+         TTree.singleton (deviceKernelName d) d
+
+      listDevs :: DeviceTree -> Handle -> Sys ()
       listDevs parent root = do
          dirs <- flowRes $
                      sysIO (listDirectory root)
@@ -209,35 +235,27 @@ initDeviceManager sysfs devfs = do
          -- recursively build the tree (depth-first traversal, parent nodes stay
          -- opened)
          forM_ dirs $ \entry -> do
-            let 
-               dir  = entryName entry
-               dir' = Text.pack dir
-
             -- check that the entry is a directory
             when (entryType entry == TypeDirectory) $ do
-               path <- do
-                  p' <- sysIO (readTVarIO (kobjPath parent))
-                  return (Text.concat [p',dir'])
+               let 
+                  dir  = entryName entry
+                  dir' = Text.pack dir
 
                void $ withOpenAt root dir flags BitSet.empty $ \fd -> do
-                  ko <- KernelObject
-                           <$> sysIO (newTVarIO path)
-                           <*> sysIO (newTVarIO (Just parent))
-                           <*> sysIO (atomically TMap.empty)
-
-                  -- insert into parent
-                  sysIO $ atomically $ TMap.insert dir' ko (kobjChildren parent)
+                  tree <- sysIO $ atomically $ do
+                     -- create device node
+                     t <- createDeviceTree dir'
+                     -- insert into parent
+                     parent `TTree.attachChild` t 
+                     return t
 
                   -- lookup children
-                  listDevs ko fd
+                  listDevs tree fd
 
                   flowRet' ()
 
-   rootko <- KernelObject
-               <$> sysIO (newTVarIO (Text.pack "/devices"))
-               <*> sysIO (newTVarIO Nothing)
-               <*> sysIO (atomically TMap.empty)
-   listDevs rootko sysfs
+   root <- sysIO $ atomically $ createDeviceTree (Text.pack "devices")
+   listDevs root sysfs
 
    -- unblock the event thread
    sysIO $ atomically $ writeTVar blocked False
@@ -246,7 +264,7 @@ initDeviceManager sysfs devfs = do
    devNum <- sysIO (newTVarIO 0)
 
    return $ DeviceManager
-      { dmDevices = rootko
+      { dmDevices = root
       , dmEvents  = bch
       , dmSysFS   = sysfs
       , dmDevFS   = devfs
