@@ -219,18 +219,17 @@ initDeviceManager sysfs devfs = do
          d <- Dev <$> newTVar name
          TTree.singleton (deviceKernelName d) d
 
+      flags = BitSet.fromList [ HandleDirectory
+                              , HandleNonBlocking
+                              , HandleDontFollowSymLinks
+                              ]
+
       listDevs :: DeviceTree -> Handle -> Sys ()
       listDevs parent root = do
          dirs <- flowRes $
                      sysIO (listDirectory root)
                         -- empty directoy list on error
                         >..-.> const []
-
-         let
-            flags = BitSet.fromList [ HandleDirectory
-                                    , HandleNonBlocking
-                                    , HandleDontFollowSymLinks
-                                    ]
 
          -- recursively build the tree (depth-first traversal, parent nodes stay
          -- opened)
@@ -254,8 +253,13 @@ initDeviceManager sysfs devfs = do
 
                   flowRet' ()
 
+   -- create root node
    root <- sysIO $ atomically $ createDeviceTree (Text.pack "devices")
-   listDevs root sysfs
+
+   -- list devices in /devices
+   void $ withOpenAt sysfs "devices" flags BitSet.empty $ \fd -> do
+      listDevs root fd
+      flowRet' ()
 
    -- unblock the event thread
    sysIO $ atomically $ writeTVar blocked False
