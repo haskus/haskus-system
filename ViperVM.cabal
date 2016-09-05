@@ -166,9 +166,11 @@ library
     ViperVM.Utils.Embed
     ViperVM.Utils.Memory
     ViperVM.Utils.Types
+    ViperVM.Utils.STM.TEq
     ViperVM.Utils.STM.TMap
     ViperVM.Utils.STM.TSet
     ViperVM.Utils.STM.TList
+    ViperVM.Utils.STM.TTree
     ViperVM.Utils.STM.Future
     ViperVM.Utils.STM.TGraph
     ViperVM.Utils.Tuples

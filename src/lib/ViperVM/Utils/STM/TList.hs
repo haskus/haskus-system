@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | Transactional list
 module ViperVM.Utils.STM.TList
    ( TList
@@ -12,6 +14,8 @@ module ViperVM.Utils.STM.TList
    , next
    , value
    , delete
+   , filter
+   , find
    , append
    , append_
    , prepend
@@ -23,11 +27,11 @@ module ViperVM.Utils.STM.TList
    )
 where
 
-import Prelude hiding (null,length,last)
+import Prelude hiding (null,length,last,filter)
 
 import Control.Concurrent.STM
-import Data.Foldable (forM_)
-import Control.Monad (void)
+import Data.Foldable (forM_,traverse_)
+import Control.Monad (void,when,join)
 
 import qualified Data.STM.LinkedList as LL
 
@@ -79,6 +83,30 @@ next = LL.next
 -- | Delete a element of the list
 delete :: TNode a -> STM ()
 delete = LL.delete
+
+-- | Only keep element matching the criterium
+filter :: (e -> STM Bool) -> TList e -> STM ()
+filter f l = traverse_ go =<< first l
+   where
+      go current = do
+         n <- next current
+         match <- f (value current)
+         when (not match) (delete current)
+         traverse_ go n
+         
+-- | Find the first element matching the predicate (if any)
+find :: forall e. (e -> STM Bool) -> TList e -> STM (Maybe e)
+find f l = do
+      mn <- join <$> (traverse go =<< first l)
+      return (fmap value mn)
+   where
+      go :: TNode e -> STM (Maybe (TNode e))
+      go current = do
+         n <- next current
+         match <- f (value current)
+         if match
+            then return (Just current)
+            else join <$> traverse go n
 
 -- | Append an element to the list
 append :: a -> TList a -> STM (TNode a)
