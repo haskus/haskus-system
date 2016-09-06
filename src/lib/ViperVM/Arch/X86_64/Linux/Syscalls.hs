@@ -93,15 +93,18 @@ module ViperVM.Arch.X86_64.Linux.Syscalls
    , syscall_openat
    , syscall_rename
    , syscall_stat
+   , syscall_unlink
    , syscall_symlink
+   , syscall_readlink
    , syscall_sync
    , syscall_settimeofday
    , syscall_syncfs
    , syscall_truncate
    , syscall_umask
    , syscall_gettimeofday
-   , syscall_unlink
    , syscall_unlinkat
+   , syscall_symlinkat
+   , syscall_readlinkat
    , syscall_finit_module
    )
    where
@@ -419,6 +422,11 @@ syscall_symlink :: CString -> CString -> IO Int64
 syscall_symlink = syscall2 88
 {-# INLINE syscall_symlink #-}
 
+-- | readlink
+syscall_readlink :: CString -> CString -> Word64 -> IO Int64
+syscall_readlink = syscall3 89
+{-# INLINE syscall_readlink #-}
+
 -- | chmod
 syscall_chmod :: CString -> Mode -> IO Int64
 syscall_chmod = syscall2 90
@@ -599,6 +607,16 @@ syscall_unlinkat :: FD -> CString -> Word -> IO Int64
 syscall_unlinkat = syscall3 263
 {-# INLINE syscall_unlinkat #-}
 
+-- | symlinkat
+syscall_symlinkat :: CString -> FD -> CString -> IO Int64
+syscall_symlinkat = syscall3 266
+{-# INLINE syscall_symlinkat #-}
+
+-- | readlinkat
+syscall_readlinkat :: FD -> CString -> CString -> Word64 -> IO Int64
+syscall_readlinkat = syscall4 267
+{-# INLINE syscall_readlinkat #-}
+
 -- | accept4
 syscall_accept4 :: FD -> Ptr a -> Int -> Word64 -> IO Int64
 syscall_accept4 = syscall4 288
@@ -669,7 +687,6 @@ syscall_finit_module = syscall3 313
 70	common	msgrcv			sys_msgrcv
 71	common	msgctl			sys_msgctl
 78	common	getdents		sys_getdents
-89	common	readlink		sys_readlink
 97	common	getrlimit		sys_getrlimit
 98	common	getrusage		sys_getrusage
 99	common	sysinfo			sys_sysinfo
@@ -809,8 +826,6 @@ syscall_finit_module = syscall3 313
 262	common	newfstatat		sys_newfstatat
 264	common	renameat		sys_renameat
 265	common	linkat			sys_linkat
-266	common	symlinkat		sys_symlinkat
-267	common	readlinkat		sys_readlinkat
 268	common	fchmodat		sys_fchmodat
 269	common	faccessat		sys_faccessat
 270	common	pselect6		sys_pselect6
