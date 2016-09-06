@@ -31,15 +31,16 @@ import ViperVM.System.ReadWrite
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
 import qualified ViperVM.Utils.STM.TTree as TTree
-import ViperVM.Utils.STM.TTree (TTree)
+import ViperVM.Utils.STM.TTree (TTree,TTreePath(..))
+import ViperVM.Utils.Maybe
 
 import System.FilePath
 import System.Posix.Types (Fd(..))
 import Control.Monad (void,forever,when)
 import Data.Foldable (forM_)
+import qualified Data.Map as Map
 import Control.Concurrent
 import Control.Concurrent.STM
-import Data.Maybe (catMaybes)
 
 import Text.Megaparsec
 import Text.Megaparsec.Lexer hiding (space)
@@ -106,10 +107,7 @@ import Text.Megaparsec.Lexer hiding (space)
 -- We musn't assume a specific device hierarchy as it can change between kernel
 -- versions.
 --
--- REFERENCES
---    * "The sysfs Filesystem", Patrick Mochel, 2005
---       https://www.kernel.org/pub/linux/kernel/people/mochel/doc/papers/ols-2005/mochel.pdf
-
+--
 -- Kernel Object and Subsystems
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --
@@ -161,6 +159,11 @@ import Text.Megaparsec.Lexer hiding (space)
 -- Specific attributes can be watched with inotify, especially if they don't
 -- trigger "change" netlink notification when their value changes.
 --
+-- REFERENCES
+--    * "The sysfs Filesystem", Patrick Mochel, 2005
+--       https://www.kernel.org/pub/linux/kernel/people/mochel/doc/papers/ols-2005/mochel.pdf
+--    * Documentation/sysfs-rules in the kernel tree (what not to do)
+--    * lib/kobject.c in the kernel tree (e.g., function kobject_rename)
 --
 
 -- | Device
@@ -187,31 +190,10 @@ initDeviceManager sysfs devfs = do
    -- open Netlink socket
    bch <- newKernelEventReader
 
-   -- we block the event handler thread until we have totally read sysfs
-   -- entries. Then we can proceed with events that have occured during this
-   -- initialization phase.
-   blocked <- sysIO (newTVarIO True)
-
-   -- duplicate the channel
+   -- duplicate the kernel event channel: events accumulate until we launch the
+   -- handling thread
    ch <- sysIO $ atomically $ dupTChan bch
 
-   sysFork $ do
-      -- wait until we are unblocked
-      sysIO $ atomically $ do
-         b <- readTVar blocked
-         if b then retry else return ()
-
-      forever $ do
-         -- read kernel event
-         ev <- sysIO $ atomically (readTChan ch)
-
-         -- update the device tree
-         -- TODO
-
-         -- trigger rules
-         -- TODO
-         return ()
-         
    -- enumerate devices from sysfs
    let
       createDeviceTree :: Text -> STM DeviceTree
@@ -261,19 +243,79 @@ initDeviceManager sysfs devfs = do
       listDevs root fd
       flowRet' ()
 
-   -- unblock the event thread
-   sysIO $ atomically $ writeTVar blocked False
-   
    -- device node counter
    devNum <- sysIO (newTVarIO 0)
 
-   return $ DeviceManager
-      { dmDevices = root
-      , dmEvents  = bch
-      , dmSysFS   = sysfs
-      , dmDevFS   = devfs
-      , dmDevNum  = devNum
-      }
+   let dm = DeviceManager
+               { dmDevices = root
+               , dmEvents  = bch
+               , dmSysFS   = sysfs
+               , dmDevFS   = devfs
+               , dmDevNum  = devNum
+               }
+
+   -- launch handling thread
+   sysFork $ eventThread ch dm
+
+   return dm
+
+-- | Thread handling incoming kernel events
+eventThread :: TChan KernelEvent -> DeviceManager -> Sys ()
+eventThread ch dm = do
+   forever $ do
+      -- read kernel event
+      ev <- sysIO $ atomically (readTChan ch)
+
+      let makeTreePath s = fmap TTreePath
+                           $ traverse (sysIO . newTVarIO)
+                           $ tail  -- drop "" (blank before first "/")
+                           $ Text.split (== '/') s
+
+      devTreePath <- makeTreePath (kernelEventDevPath ev)
+
+      -- update the device tree and trigger rules
+      case kernelEventAction ev of
+         ActionAdd        -> return () -- TODO
+         ActionRemove     -> return () -- TODO
+         ActionChange     -> return () -- TODO
+         ActionOnline     -> return () -- TODO
+         ActionOffline    -> return () -- TODO
+         ActionOther _    -> return () -- TODO
+
+         -- A device can be moved/renamed in the device tree (see kobject_rename
+         -- in lib/kobject.c in the kernel sources)
+         ActionMove       -> do
+            -- get old device path
+            let old = Map.lookup (Text.pack "DEVPATH_OLD") (kernelEventDetails ev)
+            oldPath <- traverse makeTreePath old
+                           `onNothingM` sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
+
+            err <- sysIO $ atomically $ do
+               let 
+                  TTreePath dtp = devTreePath
+                  newParentPath = TTreePath (init dtp)
+                  newName       = last dtp
+
+               TTree.treeFollowPath (dmDevices dm) oldPath >>= \case
+                  Nothing -> return (sysError ("Cannot find device to move: " ++ show old))
+                  Just n  -> TTree.treeFollowPath (dmDevices dm) newParentPath >>= \case
+                     Nothing -> return (sysError "Device moved to a on-existing parent device")
+                     Just newParent -> do
+                        -- move node in the tree
+                        n `TTree.attachChild` newParent
+
+                        -- rename node
+                        readTVar newName >>= writeTVar (deviceKernelName (TTree.treeValue n))
+
+                        -- signal move
+                        -- TODO
+
+                        -- return "no error"
+                        return (return ())
+
+            -- signal errors
+            err
+
 
 -- | Create a new thread reading kernel events and putting them in a TChan
 newKernelEventReader :: Sys (TChan KernelEvent)

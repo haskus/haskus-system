@@ -1,6 +1,7 @@
 -- | STM mutable tree
 module ViperVM.Utils.STM.TTree
    ( TTree (..)
+   , TTreePath (..)
    , singleton
    , addChild
    , detachChild
