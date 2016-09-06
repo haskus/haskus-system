@@ -41,6 +41,7 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSymlink
    , sysUnlink
    , sysUnlinkAt
+   , sysReadlinkAt
    , sysChangePermission
    , sysChangePermissionPath
    , sysChangeOwnership
@@ -62,16 +63,16 @@ import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
-import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr, castPtr)
 import ViperVM.Format.Binary.BitSet
-import ViperVM.Format.String (CString, withCString, peekCString)
+import ViperVM.Format.String (CString, withCString, peekCString, peekCStringLen)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Maybe
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -232,6 +233,21 @@ sysUnlink path = withCString path $ \path' ->
 sysUnlinkAt :: Handle -> FilePath -> Bool -> SysRet ()
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
    onSuccess (syscall_unlinkat fd path' (if rmdir then 0x200 else 0)) (const ())
+
+sysReadlinkAt :: Handle -> FilePath -> SysRet String
+sysReadlinkAt (Handle fd) path = go' 2048
+   where
+      go' size = go size >.~#> \case
+                  Nothing -> go' (2*size)
+                  Just s  -> flowRet s
+
+      go size =
+         allocaBytes size $ \ptr ->
+            withCString path $ \path' ->
+               onSuccessIO (syscall_readlinkat fd path' ptr (fromIntegral size)) $ \n ->
+                  if fromIntegral n == size
+                     then return Nothing
+                     else Just <$> peekCStringLen (ptr, fromIntegral n)
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
