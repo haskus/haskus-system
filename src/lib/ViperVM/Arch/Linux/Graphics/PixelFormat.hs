@@ -38,6 +38,7 @@ instance Show PixelFormat where
    show fmt = show (formatFormat fmt) ++ " ("
                ++ show (formatEndianness fmt) ++ ")"
 
+-- | Create a pixel format
 makePixelFormat :: Format -> Endianness -> PixelFormat
 makePixelFormat fmt end = PixelFormat
    $ updateField (Proxy :: Proxy "endianness") (toEnumField end)

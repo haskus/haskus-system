@@ -390,9 +390,17 @@ listDeviceClasses dm = do
 -- TODO: support dynamic asynchronous device adding/removal
 listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,Device)]
 listDevicesWithClass dm cls = do
-   -- open class directory in SysFS
-   let 
-      clsdir = "class" </> cls
+   -- open /class/CLASS directory
+   flowRes $ withOpenAt (dmSysFS dm) ("class" </> cls) BitSet.empty BitSet.empty
+      (\clsHdl -> do
+         -- list devices in a class
+         dirs <- sysCallAssert "List devices in a class directory" $ listDirectory clsHdl
+         let dirs'  = fmap entryName dirs
+         flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
+      )
+      -- in case of error, we don't return any dev
+      >..~#> const (flowRet [])
+   where 
 
       -- parser for dev files
       -- content format is: MMM:mmm\n (where M is major and m is minor)
@@ -426,14 +434,4 @@ listDevicesWithClass dm cls = do
             -- on error (e.g., if there is no "dev" file), skip the device directory
             >..~#> const (flowRet Nothing)
 
-   -- open /class/CLASS directory
-   flowRes $ withOpenAt (dmSysFS dm) clsdir BitSet.empty BitSet.empty
-      (\clsHdl -> do
-         -- list devices in a class
-         dirs <- sysCallAssert "List devices in a class directory" $ listDirectory clsHdl
-         let dirs'  = fmap entryName dirs
-         flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
-      )
-      -- in case of error, we don't return any dev
-      >..~#> const (flowRet [])
 

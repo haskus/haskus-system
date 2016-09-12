@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+-- | IOCTL
 module ViperVM.Arch.Linux.Internals.Ioctl
    ( Command (..)
    , Direction(..)

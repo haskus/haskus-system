@@ -27,11 +27,11 @@ module ViperVM.Format.FileSystem.ISO9660
 where
 
 -- TODO
--- * ISO9660
--- * RockRidge
--- * Joliet
--- * El-Torito
--- * Boot Information Table (not standardized)
+-- - ISO9660
+-- - RockRidge
+-- - Joliet
+-- - El-Torito
+-- - Boot Information Table (not standardized)
 --
 
 import ViperVM.Format.Binary.Vector

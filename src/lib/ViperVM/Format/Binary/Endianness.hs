@@ -178,11 +178,13 @@ instance ByteReversable Word64 where
 
 
 
+-- | Force a data to be read/stored as big-endian
 newtype AsBigEndian a    = AsBigEndian a    deriving (Eq,Ord,Enum,Num,Integral,Real)
 
 instance Show a => Show (AsBigEndian a) where
    show (AsBigEndian a) = show a
 
+-- | Force a data to be read/stored as little-endian
 newtype AsLittleEndian a = AsLittleEndian a deriving (Eq,Ord,Enum,Num,Integral,Real)
 
 instance Show a => Show (AsLittleEndian a) where

@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- | Fixed-point numbers
 module ViperVM.Format.Binary.FixedPoint
    ( FixedPoint
    , toFixedPoint
@@ -25,11 +26,11 @@ import GHC.TypeLits
 
 -- | Fixed-point number
 -- `w` is the backing type
--- `n` is the number of bits for the numerator
--- `d` is the number of bits for the denominator
-newtype FixedPoint w (n :: Nat) (d :: Nat) = FixedPoint (BitFields w
-   '[ BitField n "numerator"   w
-    , BitField d "denominator" w
+-- `i` is the number of bits for the integer part (before the readix point)
+-- `f` is the number of bits for the fractional part (after the radix point)
+newtype FixedPoint w (i :: Nat) (f :: Nat) = FixedPoint (BitFields w
+   '[ BitField i "integer"    w
+    , BitField f "fractional" w
     ])
    deriving (Storable,CStorable)
 
