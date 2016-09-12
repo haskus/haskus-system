@@ -4,9 +4,10 @@
 -- | A memory buffer with a fixed address
 --
 -- A buffer is a strict ByteString but with:
---   - a better interface: use Word instead of Int for sizes
---   - a better name: "string" is misleading
---   - some additional primitives
+--
+--   * a better interface: use Word instead of Int for sizes
+--   * a better name: "string" is misleading
+--   * some additional primitives
 module ViperVM.Format.Binary.Buffer
    ( Buffer (..)
    , withBufferPtr
