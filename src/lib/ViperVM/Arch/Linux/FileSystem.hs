@@ -41,7 +41,7 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSymlink
    , sysUnlink
    , sysUnlinkAt
-   , sysReadlinkAt
+   , sysReadLinkAt
    , sysChangePermission
    , sysChangePermissionPath
    , sysChangeOwnership
@@ -234,8 +234,8 @@ sysUnlinkAt :: Handle -> FilePath -> Bool -> SysRet ()
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
    onSuccess (syscall_unlinkat fd path' (if rmdir then 0x200 else 0)) (const ())
 
-sysReadlinkAt :: Handle -> FilePath -> SysRet String
-sysReadlinkAt (Handle fd) path = go' 2048
+sysReadLinkAt :: Handle -> FilePath -> SysRet String
+sysReadLinkAt (Handle fd) path = go' 2048
    where
       go' size = go size >.~#> \case
                   Nothing -> go' (2*size)

@@ -415,20 +415,25 @@ listDevicesWithClass dm cls = do
 
       -- read device directory
       readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
-      readDev fd dir =
-         withOpenAt fd (dir </> "dev") BitSet.empty BitSet.empty readDevFile
-            -- skip entries without "dev" file
-            >.-.>  (Just . (clsdir </> dir,))
+      readDev fd dir = do
+         -- read symlink pointing into /devices (we shall not directly use/return paths in /class)
+         sysCallWarn "read link" (sysReadLinkAt fd dir)
+            >.~#> (\path -> 
+               -- the link is relative to the current dir (i.e., /class/CLASS)
+               withOpenAt fd (path </> "dev") BitSet.empty BitSet.empty readDevFile
+                  -- return an absolute path of the form "/devices/*"
+                  >.-.>  (Just . (concat ("/" : drop 2 (splitPath path)),)))
+            -- on error (e.g., if there is no "dev" file), skip the device directory
             >..~#> const (flowRet Nothing)
 
-      -- read devices in a class
-      readDevs :: Handle -> SysV '[[(FilePath,Device)]]
-      readDevs fd = do
-         dirs <- sysCallAssert "List device directories" $ listDirectory fd
+   -- open /class/CLASS directory
+   flowRes $ withOpenAt (dmSysFS dm) clsdir BitSet.empty BitSet.empty
+      (\clsHdl -> do
+         -- list devices in a class
+         dirs <- sysCallAssert "List devices in a class directory" $ listDirectory clsHdl
          let dirs'  = fmap entryName dirs
-         flowTraverse (readDev fd) dirs' >.-.> catMaybes
-
-   flowRes $ withOpenAt (dmSysFS dm) clsdir BitSet.empty BitSet.empty readDevs
+         flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
+      )
       -- in case of error, we don't return any dev
       >..~#> const (flowRet [])
 
