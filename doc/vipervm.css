@@ -21,6 +21,11 @@ body {
   padding:0;
 }
 
+p {
+  margin: 0.8em 0;
+}
+
+
 ul, ol {
   margin: 0.8em 0 0.8em 2em;
 }
@@ -49,14 +54,14 @@ a[href]:hover { text-decoration:underline; }
    For reasons, see:
       http://yui.yahooapis.com/3.1.1/build/cssfonts/fonts.css
  */
- 
+
 body {
 	font:13px/1.4 sans-serif;
 	*font-size:small; /* for IE */
 	*font:x-small; /* for IE in quirks mode */
 }
 
-h1 { font-size: 146.5%; /* 19pt */ } 
+h1 { font-size: 146.5%; /* 19pt */ }
 h2 { font-size: 131%;   /* 17pt */ }
 h3 { font-size: 116%;   /* 15pt */ }
 h4 { font-size: 100%;   /* 13pt */ }
@@ -98,7 +103,7 @@ pre, code, kbd, samp, tt, .src {
 
 /* @group Common */
 
-.caption, h1, h2, h3, h4, h5, h6 { 
+.caption, h1, h2, h3, h4, h5, h6 {
   font-weight: bold;
   color: rgb(78,98,114);
   margin: 0.8em 0 0.4em;
@@ -122,7 +127,7 @@ ul.links {
 
 ul.links li {
   display: inline;
-  border-left: 1px solid #d5d5d5; 
+  border-left: 1px solid #d5d5d5;
   white-space: nowrap;
   padding: 0;
 }
@@ -213,8 +218,6 @@ pre {
   color: rgb(78,98,114);
   font-weight: bold;
   border-bottom: 1px solid #ddd;
-  margin-left: 1em;
-  margin-right: 1em;
 }
 
 table.info {
@@ -315,10 +318,6 @@ div#style-menu-holder {
   display: none;
 }
 
-#description h1 {
-   text-align:center;
-}
-
 #synopsis {
   display: none;
 }
@@ -330,6 +329,7 @@ div#style-menu-holder {
   height: 80%;
   top: 10%;
   padding: 0;
+  max-width: 75%;
 }
 
 #synopsis .caption {
@@ -369,32 +369,11 @@ div#style-menu-holder {
   margin-left: 0;
 }
 
-#synopsis .src {
-   background-image: none;
-}
-
 /* @end */
 
 /* @group Main Content */
 
-#interface {
-   clear:both;
-}
-
-#interface div.top { 
-   margin: 2em 0;
-   border-bottom: solid 1px lightgray;
-   padding-bottom: 0.6em;
-}
-
-#interface h1 {
-   border-top: 1px dashed lightgray;
-   /* background: rgb(177,202,225);
-   color:white;
-   text-shadow: 1px 1px gray;
-   padding-left: 1em;*/
-}
-
+#interface div.top { margin: 2em 0; }
 #interface h1 + div.top,
 #interface h2 + div.top,
 #interface h3 + div.top,
@@ -406,31 +385,41 @@ div#style-menu-holder {
   float: right;
   color: #919191;
   border-left: 1px solid #919191;
+  background: #f0f0f0;
   padding: 0 0.5em 0.2em;
   margin: 0 -0.5em 0 0.5em;
 }
 
-#interface table {
-   border-spacing: 2px;
-   border-collapse: collapse;
-   empty-cells: hide;
+#interface td.src .link {
+  float: right;
+  color: #919191;
+  border-left: 1px solid #919191;
+  background: #f0f0f0;
+  padding: 0 0.5em 0.2em;
+  margin: 0 -0.5em 0 0.5em;
 }
 
+#interface span.fixity {
+  color: #919191;
+  border-left: 1px solid #919191;
+  padding: 0.2em 0.5em 0.2em 0.5em;
+  margin: 0 -1em 0 1em;
+}
+
+#interface span.rightedge {
+  border-left: 1px solid #919191;
+  padding: 0.2em 0 0.2em 0;
+  margin: 0 0 0 1em;
+}
+
+#interface table { border-spacing: 2px; }
 #interface td {
   vertical-align: top;
   padding-left: 0.5em;
 }
-
 #interface td.src {
   white-space: nowrap;
-  background-color: #FFFFFF;
-  background-image: none;
 }
-
-#interface .constructors td.src {
-  border: solid 1px lightgray;
-}
-
 #interface td.doc p {
   margin: 0;
 }
@@ -438,25 +427,16 @@ div#style-menu-holder {
   margin-top: 0.8em;
 }
 
-.subs .src {
-   background-image: none;
-}
-
-.instances .src {
-   border: 0px;
+.clearfix:after {
+  clear: both;
+  content: " ";
+  display: block;
+  height: 0;
+  visibility: hidden;
 }
 
 .subs dl {
   margin: 0;
-}
-
-#interface .subs .src {
-   background-color: #FFFFFF;
-}
-
-div.doc p {
-   margin-top: 0.5em;
-   margin-bottom: 0.5em;
 }
 
 .subs dt {
@@ -480,6 +460,27 @@ div.doc p {
 
 .subs dd p {
   margin: 0;
+}
+
+/* Render short-style data instances */
+.inst ul {
+  height: 100%;
+  padding: 0.5em;
+  margin: 0;
+}
+
+.inst, .inst li {
+  list-style: none;
+  margin-left: 1em;
+}
+
+/* Workaround for bug in Firefox (issue #384) */
+.inst-left {
+  float: left;
+}
+
+.top p.src {
+  border-top: 1px solid #ccc;
 }
 
 .subs, .doc {
@@ -515,13 +516,19 @@ div.doc p {
 
 /* @group Auxillary Pages */
 
+
+.extension-list {
+    list-style-type: none;
+    margin-left: 0;
+}
+
 #mini {
   margin: 0 auto;
   padding: 0 1em 1em;
 }
 
 #mini > * {
-  font-size: 93%; /* 12pt */  
+  font-size: 93%; /* 12pt */
 }
 
 #mini #module-list .caption,
