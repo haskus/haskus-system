@@ -81,7 +81,7 @@ import Text.Megaparsec.Lexer hiding (space)
 --    * contradictions between anti-guidelines in sysfs-rules.txt and available
 --    approaches
 --
--- According to Documation/sysfs-rules.txt in the kernel tree:
+-- According to Documentation/sysfs-rules.txt in the kernel tree:
 --    * there is a single tree containing all the devices: in /devices
 --    * devices have the following properties:
 --       * a devpath (e.g., /devices/pci0000:00/0000:00:1d.1/usb2/2-2/2-2:1.0)
@@ -98,8 +98,11 @@ import Text.Megaparsec.Lexer hiding (space)
 -- /subsystem directory, we can find devices by subsystems by looking into
 -- /class/SUB and /bus/SUB/devices.
 --
--- "device" link shouldn't be used at all. The device hierarchy in /devices can
--- be used instead.
+-- If the subsystem is "block", device special files have to be of type "block",
+-- otherwise they have to be of type "character".
+--
+-- "device" link shouldn't be used at all to find the parent device. The device
+-- hierarchy in /devices can be used instead.
 --
 -- "subsystem" link shouldn't be used at all (except for getting the subsystem
 -- name I guess).
@@ -135,7 +138,8 @@ import Text.Megaparsec.Lexer hiding (space)
 --    1) write "add" in their "uevent" attribute to get them resent through the
 --    Netlink socket with Add action (remove, change, move, etc. commands seem
 --    to work too with the uevent attribute).
---    2) just parse their "uevent" attribute
+--    2) read their "uevent" attribute and fake an "Add" event
+--    3) just parse their attributes if necessary
 --
 --
 -- SUMMARY
@@ -297,9 +301,13 @@ eventThread ch dm = do
                   newName       = last dtp
 
                TTree.treeFollowPath (dmDevices dm) oldPath >>= \case
+                  -- FIXME: a "move" event can be sent during the first
+                  -- traversal of sysfs. We shouldn't fail here if we don't find
+                  -- the move source and we should check that we have added the
+                  -- move target and its parents (and add them otherwise)
                   Nothing -> return (sysError ("Cannot find device to move: " ++ show old))
                   Just n  -> TTree.treeFollowPath (dmDevices dm) newParentPath >>= \case
-                     Nothing -> return (sysError "Device moved to a on-existing parent device")
+                     Nothing -> return (sysError "Device moved to a non-existing parent device")
                      Just newParent -> do
                         -- move node in the tree
                         n `TTree.attachChild` newParent
@@ -390,17 +398,21 @@ listDeviceClasses dm = do
 -- TODO: support dynamic asynchronous device adding/removal
 listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,Device)]
 listDevicesWithClass dm cls = do
-   -- open /class/CLASS directory
-   flowRes $ withOpenAt (dmSysFS dm) ("class" </> cls) BitSet.empty BitSet.empty
-      (\clsHdl -> do
-         -- list devices in a class
-         dirs <- sysCallAssert "List devices in a class directory" $ listDirectory clsHdl
-         let dirs'  = fmap entryName dirs
-         flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
-      )
+   flowRes $
+      -- try to open /class/CLASS directory
+      readDevs ("class" </> cls)
+      -- in case of error, try to open /bus/CLASS/devices
+      >..~#> const (readDevs ("bus" </> cls </> "devices"))
       -- in case of error, we don't return any dev
       >..~#> const (flowRet [])
    where 
+
+      readDevs path = withOpenAt (dmSysFS dm) path BitSet.empty BitSet.empty $ \clsHdl -> do
+         -- list devices in a class
+         dirs <- sysCallAssert ("List devices in "++ path ++" directory") $ listDirectory clsHdl
+         let dirs'  = fmap entryName dirs
+         flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
+
 
       -- parser for dev files
       -- content format is: MMM:mmm\n (where M is major and m is minor)
@@ -427,10 +439,11 @@ listDevicesWithClass dm cls = do
          -- read symlink pointing into /devices (we shall not directly use/return paths in /class)
          sysCallWarn "read link" (sysReadLinkAt fd dir)
             >.~#> (\path -> 
-               -- the link is relative to the current dir (i.e., /class/CLASS)
+               -- the link is relative to the current dir (i.e., /class/CLASS or
+               -- /bus/CLASS/devices)
                withOpenAt fd (path </> "dev") BitSet.empty BitSet.empty readDevFile
                   -- return an absolute path of the form "/devices/*"
-                  >.-.>  (Just . (concat ("/" : drop 2 (splitPath path)),)))
+                  >.-.>  (Just . (concat ("/" : dropWhile (/= "devices/") (splitPath path)),)))
             -- on error (e.g., if there is no "dev" file), skip the device directory
             >..~#> const (flowRet Nothing)
 
