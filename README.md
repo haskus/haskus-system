@@ -51,16 +51,18 @@ ViperVM provides support for some file formats (e.g., ELF, DWARF, CPIO) and some
 
 ViperVM provides architecture specific modules (currently only for x86-64), in particular the thin architecture specific layer to call Linux system calls. Additionally, ViperVM has a dictionnary of x86 instructions; it is currently used to implement a disassembler and could be used to implement assemblers, analyzers, emulators, etc. A wrapper for the x86's cpuid instruction is also provided.
 
-* Currently only X86-64 is supported (work-in-progress):
-  [documentation](doc/manual/x86.md)
-   * Disassembler
-   * Assembler (TODO)
-   * CPUID wrapper (WIP)
+* ViperVM.Arch.X86_64: Currently only X86-64 is supported [documentation](doc/manual/x86.md)
+   * ViperVM.Arch.X86_64.ISA: instruction set architecture
+   * ViperVM.Arch.X86_64.Disassembler
+   * ViperVM.Arch.X86_64.Linux: arch-specific Linux interface (syscalls)
+   * ViperVM.Arch.X86_64.Cpuid: CPUID wrapper
 
 
 ## System interface
 
 ViperVM provides modules to interact with the system: input devices, display devices, etc. These modules are used to easily build a custom system without dealing directly with the low-level Linux interface. It also provide a custom monad with common features for system programming (logging, etc.).
+
+* ViperVM.System
 
 ## Runtime system
 
