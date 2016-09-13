@@ -24,6 +24,7 @@ module ViperVM.System.Sys
    , sysAssert
    , sysAssertQuiet
    , sysError
+   , sysWarning
    , sysErrorShow
    )
 where
@@ -262,6 +263,11 @@ sysError :: String -> Sys a
 sysError text = do
    sysLog LogError text
    sysOnError
+
+-- | Warning in Sys
+sysWarning :: String -> Sys ()
+sysWarning text = do
+   sysLog LogWarning text
 
 -- | Fail in Sys
 sysErrorShow :: Show a => String -> a -> Sys b

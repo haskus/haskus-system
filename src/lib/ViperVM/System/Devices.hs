@@ -187,8 +187,6 @@ data DeviceTree = DeviceNode
    , deviceNodeOnOnline      :: TChan KernelEvent   -- ^ On "online" event
    , deviceNodeOnOffline     :: TChan KernelEvent   -- ^ On "offline" event
    , deviceNodeOnOther       :: TChan KernelEvent   -- ^ On other events
-   , deviceNodeOnChildAdd    :: TChan KernelEvent   -- ^ Events on child addition
-   , deviceNodeOnChildRemove :: TChan KernelEvent   -- ^ Events on child removal
    }
 
 -- | Device manager
@@ -270,8 +268,6 @@ initDeviceManager sysfs devfs = do
                               <*> sysIO newBroadcastTChanIO
                               <*> sysIO newBroadcastTChanIO
                               <*> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
                      return (Just (name,node)))
             -- on error, skip the device directory
             >..-.> const Nothing
@@ -315,77 +311,126 @@ eventThread ch dm = do
       -- read kernel event
       ev <- sysIO $ atomically (readTChan ch)
 
-      let makeTreePath s = Text.split (== '/') s  
-                           |> tail               -- drop "" (blank before first "/")
+      let 
+         -- convert a path into a list of directory names
+         -- (drop "", the blank before the first "/")
+         makeTreePath s = Text.split (== '/') s |> tail
                             
+         -- path into the tree for the event
+         devTreePath = makeTreePath (kernelEventDevPath ev)
 
-          devTreePath = makeTreePath (kernelEventDevPath ev)
+         -- move a node from (x:xs) to (y:ys) in the root tree
+         move :: [Text] -> [Text] -> DeviceTree -> (DeviceTree, DeviceTree)
+         move (x:xs) (y:ys) root
+            -- we only modify the subtree concerned by the move
+            | x == y    = (root { deviceNodeChildren = Map.insert x (x') cs }, n)
+                  where
+                     -- FIXME: a "move" event can be sent during the first
+                     -- traversal of sysfs. We shouldn't fail here if we don't find
+                     -- the move source and we should check that we have added the
+                     -- move target and its parents (and add them otherwise)
+                     (x',n) = move xs ys (cs Map.! x) -- the parent node should exist
+                     cs     = deviceNodeChildren root
+         move xs ys root = (insert ys n (remove xs root), n)
+            where
+               n = lookup xs root
 
-      -- update the device tree and trigger rules
-      case kernelEventAction ev of
+         -- lookup for a node
+         lookup path root = case path of
+            []     -> error "lookup: empty path"
+            [x]    -> deviceNodeChildren root Map.! x
+            (x:xs) -> lookup xs (deviceNodeChildren root Map.! x)
+
+         -- remove a node in the tree
+         remove path root = root { deviceNodeChildren = cs' }
+            where
+               cs = deviceNodeChildren root
+               cs' = case path of
+                        []     -> error "remove: empty path"
+                        [x]    -> Map.delete x cs
+                        (x:xs) -> Map.update (Just . remove xs) x cs
+
+         -- insert a node in the tree
+         insert path node root = root { deviceNodeChildren = cs' }
+            where
+               cs = deviceNodeChildren root
+               cs' = case path of
+                        []     -> error "insert: empty path"
+                        [x]    -> Map.insert x node cs
+                        (x:xs) -> Map.update (Just . insert xs node) x cs
+
+         signalEvent f = sysIO $ atomically $ do
+            tree <- readTVar (dmDevices dm)
+            let node = lookup devTreePath tree
+            writeTChan (f node) ev
+
+
+      case Text.unpack (head devTreePath) of
          -- TODO: handle module ADD/REMOVE (/module/* path)
-         ActionAdd        -> return () -- TODO
-         ActionRemove     -> return () -- TODO
-         ActionChange     -> return () -- TODO
-         ActionOnline     -> return () -- TODO
-         ActionOffline    -> return () -- TODO
-         ActionOther _    -> return () -- TODO
+         "module" -> sysWarning "sysfs event in /module ignored"
+         
+         -- event in the device tree: update the device tree and trigger rules
+         "devices" -> case kernelEventAction ev of
 
-         -- A device can be moved/renamed in the device tree (see kobject_rename
-         -- in lib/kobject.c in the kernel sources)
-         ActionMove       -> do
-            -- get old device path
-            let oldPath' = Map.lookup (Text.pack "DEVPATH_OLD") (kernelEventDetails ev)
-            oldPath <- case oldPath' of
-               Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
-               Just x  -> return x
-            let
-               oldTreePath = makeTreePath oldPath
-               newTreePath = devTreePath
+            ActionAdd        -> do
+               -- read the subsystem link
+               let subpath = Text.unpack (kernelEventDevPath ev) </> "subsystem"
+               sysCallWarn "read link" (sysReadLinkAt (dmSysFS dm) subpath)
+                  -- on error, we don't add the node (it may ahave already been
+                  -- removed) but we trigger a warning
+                  >..~=> const (sysWarning ("sysfs \"add\" event ignored: cannot read subsystem link at "++ subpath))
+                  -- on success, add the node in the tree and signal it
+                  >.~!> (\link -> do
+                              let subsystem = Text.pack (takeBaseName link)
+                              -- create the node (without any child, there will
+                              -- be events for them too)
+                              node <- DeviceNode subsystem Map.empty
+                                       <$> sysIO newBroadcastTChanIO
+                                       <*> sysIO newBroadcastTChanIO
+                                       <*> sysIO newBroadcastTChanIO
+                                       <*> sysIO newBroadcastTChanIO
+                                       <*> sysIO newBroadcastTChanIO
+                                       <*> sysIO newBroadcastTChanIO
+                              sysIO $ atomically $ do
+                                 modifyTVar (dmDevices dm) (insert devTreePath node)
+                                 -- TODO: signal it to its parent and to
+                                 -- indexes per-subsystem
+                        )
 
-            let
-               -- we only modify the subtree concerned by the move
-               go (x:xs) (y:ys) node
-                  | x == y    = node { deviceNodeChildren = Map.insert x (x') cs }
-                        where
-                           -- FIXME: a "move" event can be sent during the first
-                           -- traversal of sysfs. We shouldn't fail here if we don't find
-                           -- the move source and we should check that we have added the
-                           -- move target and its parents (and add them otherwise)
-                           x' = go xs ys (cs Map.! x) -- the parent node should exist
-                           cs = deviceNodeChildren node
-               go xs ys node = insert ys (lookup xs node) (remove xs node)
 
-               lookup path node = case path of
-                  []     -> error "lookup: empty path"
-                  [x]    -> deviceNodeChildren node Map.! x
-                  (x:xs) -> lookup xs (deviceNodeChildren node Map.! x)
-
-               remove path node = node { deviceNodeChildren = cs' }
-                  where
-                     cs = deviceNodeChildren node
-                     cs' = case path of
-                              []     -> error "remove: empty path"
-                              [x]    -> Map.delete x cs
-                              (x:xs) -> Map.update (Just . remove xs) x cs
-
-               insert path val node = node { deviceNodeChildren = cs' }
-                  where
-                     cs = deviceNodeChildren node
-                     cs' = case path of
-                              []     -> error "insert: empty path"
-                              [x]    -> Map.insert x val cs
-                              (x:xs) -> Map.update (Just . insert xs val) x cs
-
-            sysIO $ atomically $ do
-               -- read the tree
+            ActionRemove     -> sysIO $ atomically $ do
                tree <- readTVar (dmDevices dm)
-               -- modify it
-               let tree' = go oldTreePath newTreePath tree
-               -- store it
-               writeTVar (dmDevices dm) tree'
-               -- signal the event
-               -- TODO
+               let node = lookup devTreePath tree
+               writeTVar (dmDevices dm) (remove devTreePath tree)
+               writeTChan (deviceNodeOnRemove node) ev
+               
+            ActionChange     -> signalEvent deviceNodeOnChange
+            ActionOnline     -> signalEvent deviceNodeOnOnline
+            ActionOffline    -> signalEvent deviceNodeOnOffline
+            ActionOther _    -> signalEvent deviceNodeOnOther
+
+            -- A device can be moved/renamed in the device tree (see kobject_rename
+            -- in lib/kobject.c in the kernel sources)
+            ActionMove       -> do
+               -- get old device path
+               let oldPath' = Map.lookup (Text.pack "DEVPATH_OLD") (kernelEventDetails ev)
+               oldPath <- case oldPath' of
+                  Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
+                  Just x  -> return x
+               let
+                  oldTreePath = makeTreePath oldPath
+                  newTreePath = devTreePath
+
+               sysIO $ atomically $ do
+                  -- move the device in the tree
+                  tree <- readTVar (dmDevices dm)
+                  let (tree',node) = move oldTreePath newTreePath tree
+                  writeTVar (dmDevices dm) tree'
+                  -- signal the event
+                  writeTChan (deviceNodeOnMove node) ev
+
+         -- warn on unrecognized event
+         str -> sysWarning ("sysfs event in /" ++ str ++ " ignored")
 
 
 -- | Create a new thread reading kernel events and putting them in a TChan
