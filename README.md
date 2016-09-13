@@ -2,6 +2,8 @@
 
 ViperVM is a framework *written in Haskell* that can be used for system programming. The long-term aim is to provide a full Haskell user-space environment on top of the Linux kernel.
 
+Website: http://www.vipervm.org
+
 # How to build
 
 Use stack commands to build ViperVM:
@@ -60,7 +62,7 @@ ViperVM provides architecture specific modules (currently only for x86-64), in p
 
 ## System interface
 
-ViperVM provides modules to interact with the system: input devices, display devices, etc. These modules are used to easily build a custom system without dealing directly with the low-level Linux interface. It also provide a custom monad with common features for system programming (logging, etc.).
+ViperVM provides modules to interact with the system: input devices, display devices, etc. These modules are used to easily build a custom system without dealing directly with the low-level Linux interface. It also provides a custom monad with common features for system programming (logging, etc.).
 
 * ViperVM.System
 
@@ -85,11 +87,11 @@ Several programs are bundled with ViperVM:
 
 #### ELF Web
 
-ELFWeb program can be used to navigate into a ELF binary file. Use your Web
+ElfWeb program can be used to navigate into a ELF binary file. Use your Web
 browser to see the result.
 
 ```bash
-$ ELFWeb -p 8020 ./mybinary &
+$ stack exec -- ElfWeb -p 8020 ./mybinary &
 $ firefox http://localhost:8020
 ```
 
@@ -98,18 +100,7 @@ $ firefox http://localhost:8020
 Show info about the x86 instructions recognized by ViperVM.
 
 ```bash
-$ X86Web -p 8020 &
-$ firefox http://localhost:8020
-```
-
-#### Platform Web
-
-PlatformWeb gives basic information about the platform (memories, processors,
-networks). It can also be used to perform basic operations (e.g. memory
-allocation/release) for test purpose.
-
-```bash
-$ PlatformWeb -p 8020
+$ stack exec -- X86Web -p 8020 &
 $ firefox http://localhost:8020
 ```
 
@@ -119,15 +110,26 @@ Simple decompressor for the GZip format.
 
 ```bash
 $ tar czf test.tgz # some files...
-$ gunzip test.tgz
+$ stack exec -- gunzip test.tgz
 ```
-
 
 #### udev
 
 Dump kernel system events (i.e. changes into the system tree) on standard output.
 
 ```bash
-$ udev
+$ stack exec udev
 $ # try plugging or unplugging a device (USB stick, etc.)
 ```
+
+#### Platform Web
+
+PlatformWeb gives basic information about the platform (memories, processors,
+networks). It can also be used to perform basic operations (e.g. memory
+allocation/release) for test purpose.
+
+```bash
+$ stack exec -- PlatformWeb -p 8020 &
+$ firefox http://localhost:8020
+```
+
