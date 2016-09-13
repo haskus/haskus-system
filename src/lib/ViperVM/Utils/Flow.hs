@@ -21,11 +21,16 @@ module ViperVM.Utils.Flow
    , flowFor
    , Liftable
    , Catchable
+   -- * Non-variant single operations
+   , (|>)
+   , (<|)
    -- * First element operations
    , (.~.>)
    , (>.~.>)
    , (.-.>)
    , (>.-.>)
+   , (<.-.)
+   , (<.-.<)
    , (.~:>)
    , (>.~:>)
    , (.~^^>)
@@ -154,6 +159,22 @@ liftm op x a = do
 
 
 ----------------------------------------------------------
+-- Single element not wrapped into a variant
+----------------------------------------------------------
+
+-- | Apply a function
+(|>) :: a -> (a -> b) -> b
+x |> f = f x
+
+infixl 0 |>
+
+-- | Apply a function
+(<|) :: (a -> b) -> a -> b
+f <| x = f x
+
+infixr 0 <|
+
+----------------------------------------------------------
 -- First element operations
 ----------------------------------------------------------
 
@@ -163,6 +184,7 @@ liftm op x a = do
    => Variant (a ': l) -> (a -> m x) -> Flow m (x ': l)
 (.~.>) v f = updateVariantM (Proxy :: Proxy 0) f v
 
+infixl 0 .~.>
 
 -- | Extract the first value, set the first value
 (>.~.>) :: forall m l x a.
@@ -170,11 +192,15 @@ liftm op x a = do
    => Flow m (a ': l) -> (a -> m x) -> Flow m (x ': l)
 (>.~.>) = liftm (.~.>)
 
+infixl 0 >.~.>
+
 -- | Extract the first value, set the first value
 (.-.>) :: forall m l x a.
    ( Monad m )
    => Variant (a ': l) -> (a -> x) -> Flow m (x ': l)
 (.-.>) v f = return (updateVariant (Proxy :: Proxy 0) f v)
+
+infixl 0 .-.>
 
 -- | Extract the first value, set the first value
 (>.-.>) :: forall m l x a.
@@ -182,6 +208,23 @@ liftm op x a = do
    => Flow m (a ': l) -> (a -> x) -> Flow m (x ': l)
 (>.-.>) = liftm (.-.>)
 
+infixl 0 >.-.>
+
+-- | Extract the first value, set the first value
+(<.-.) :: forall m l x a.
+   ( Monad m )
+   => (a -> x) -> Variant (a ': l) -> Flow m (x ': l)
+(<.-.) = flip (.-.>)
+
+infixr 0 <.-.
+
+-- | Extract the first value, set the first value
+(<.-.<) :: forall m l x a.
+   ( Monad m )
+   => (a -> x) -> Flow m (a ': l) -> Flow m (x ': l)
+(<.-.<) = flip (>.-.>)
+
+infixr 0 <.-.<
 
 -- | Extract the first value, concat the result
 (.~:>) :: forall (k :: Nat) m l l2 a.
@@ -192,6 +235,8 @@ liftm op x a = do
    => Variant (a ': l) -> (a -> Flow m l2) -> Flow m (Concat l2 l)
 (.~:>) v f= updateVariantFoldM (Proxy :: Proxy 0) f v
 
+infixl 0 .~:>
+
 -- | Extract the first value, concat the results
 (>.~:>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
@@ -200,6 +245,7 @@ liftm op x a = do
    => Flow m (a ': l) -> (a -> Flow m l2) -> Flow m (Concat l2 l)
 (>.~:>) = liftm (.~:>)
 
+infixl 0 >.~:>
 
 -- | Extract the first value, lift the result
 (.~^^>) :: forall m a xs ys zs.
@@ -211,6 +257,9 @@ liftm op x a = do
    Right a -> liftVariant <$> f a
    Left ys -> return (liftVariant ys)
 
+infixl 0 .~^^>
+
+
 -- | Extract the first value, lift the result
 (>.~^^>) :: forall m a xs ys zs.
    ( Monad m
@@ -218,6 +267,8 @@ liftm op x a = do
    , Liftable ys zs
    ) => Flow m (a ': ys) -> (a -> Flow m xs) -> Flow m zs
 (>.~^^>) = liftm (.~^^>)
+
+infixl 0 >.~^^>
 
 -- | Extract the first value, connect to the expected output
 (.~#>) :: forall m a ys zs.
@@ -228,12 +279,16 @@ liftm op x a = do
    Right a -> f a
    Left ys -> return (liftVariant ys)
 
+infixl 0 .~#>
+
 -- | Extract the first value, connect to the expected output
 (>.~#>) :: forall m a ys zs.
    ( Monad m
    , Liftable ys zs
    ) => Flow m (a ': ys) -> (a -> Flow m zs) -> Flow m zs
 (>.~#>) = liftm (.~#>)
+
+infixl 0 >.~#>
 
 -- | Extract the first value, use the same output type
 (.~->) :: forall m x xs.
@@ -243,11 +298,15 @@ liftm op x a = do
    Right a -> f a
    Left _  -> return v
 
+infixl 0 .~->
+
 -- | Extract the first value, use the same output type
 (>.~->) :: forall m x xs.
    ( Monad m
    ) => Flow m (x ': xs) -> (x -> Flow m (x ': xs)) -> Flow m (x ': xs)
 (>.~->) = liftm (.~->)
+
+infixl 0 >.~->
 
 -- | Take the first output, fusion the result
 (.~&>) ::
@@ -260,6 +319,8 @@ liftm op x a = do
    Right a -> liftVariant <$> f a
    Left ys -> return (liftVariant ys)
 
+infixl 0 .~&>
+
 -- | Take the first output, fusion the result
 (>.~&>) ::
    ( Liftable xs zs
@@ -269,6 +330,8 @@ liftm op x a = do
    ) => Flow m (a ': ys) -> (a -> Flow m xs) -> Flow m zs
 (>.~&>) = liftm (.~&>)
 
+infixl 0 >.~&>
+
 -- | Extract the first value and perform effect. Passthrough the input value
 (.~=>) ::
    ( Monad m
@@ -277,11 +340,15 @@ liftm op x a = do
    Right u -> f u >> return v
    Left  _ -> return v
 
+infixl 0 .~=>
+
 -- | Extract the first value and perform effect. Passthrough the input value
 (>.~=>) ::
    ( Monad m
    ) => Flow m (a ': l) -> (a -> m ()) -> Flow m (a ': l)
 (>.~=>) = liftm (.~=>)
+
+infixl 0 >.~=>
 
 -- | Extract the first value and perform effect.
 (.~!>) ::
@@ -291,11 +358,15 @@ liftm op x a = do
    Right u -> f u
    Left  _ -> return ()
 
+infixl 0 .~!>
+
 -- | Extract the first value and perform effect.
 (>.~!>) ::
    ( Monad m
    ) => Flow m (a ': l) -> (a -> m ()) -> m ()
 (>.~!>) = liftm (.~!>)
+
+infixl 0 >.~!>
 
 ----------------------------------------------------------
 -- Tail operations
@@ -309,11 +380,15 @@ liftm op x a = do
    Right u -> flowRet u
    Left  l -> f l
 
+infixl 0 ..~.>
+
 -- | Extract the tail, set the first value
 (>..~.>) ::
    ( Monad m
    ) => Flow m (a ': l) -> (Variant l -> Flow m '[a]) -> Flow m '[a]
 (>..~.>) = liftm (..~.>)
+
+infixl 0 >..~.>
 
 -- | Extract the tail, set the first value (pure function)
 (..-.>) ::
@@ -323,11 +398,15 @@ liftm op x a = do
    Right u -> flowRet u
    Left  l -> flowRet (f l)
 
+infixl 0 ..-.>
+
 -- | Extract the tail, set the first value (pure function)
 (>..-.>) ::
    ( Monad m
    ) => Flow m (a ': l) -> (Variant l -> a) -> Flow m '[a]
 (>..-.>) = liftm (..-.>)
+
+infixl 0 >..-.>
 
 -- | Extract the tail, set the tail
 (..~..>) ::
@@ -337,11 +416,15 @@ liftm op x a = do
    Right u -> flowRet u
    Left  l -> prependVariant (Proxy :: Proxy '[a]) <$> f l
 
+infixl 0 ..~..>
+
 -- | Extract the tail, set the tail
 (>..~..>) ::
    ( Monad m
    ) => Flow m (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': xs)
 (>..~..>) = liftm (..~..>)
+
+infixl 0 >..~..>
 
 -- | Extract the tail, lift the result
 (..~^^>) ::
@@ -352,12 +435,16 @@ liftm op x a = do
    Right u -> flowRet u
    Left  l -> liftVariant <$> f l
 
+infixl 0 ..~^^>
+
 -- | Extract the tail, lift the result
 (>..~^^>) ::
    ( Monad m
    , Liftable xs (a ': zs)
    ) => Flow m  (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': zs)
 (>..~^^>) = liftm (..~^^>)
+
+infixl 0 >..~^^>
 
 -- | Extract the tail, connect the result
 (..~#>) ::
@@ -368,12 +455,16 @@ liftm op x a = do
    Right u -> flowSet u
    Left  l -> f l
 
+infixl 0 ..~#>
+
 -- | Extract the tail, connect the result
 (>..~#>) ::
    ( Monad m
    , Member a zs
    ) => Flow m (a ': l) -> (Variant l -> Flow m zs) -> Flow m zs
 (>..~#>) = liftm (..~#>)
+
+infixl 0 >..~#>
 
 -- | Match in the tail, connect to the expected result
 (..%~#>) ::
@@ -383,6 +474,8 @@ liftm op x a = do
    ) => Variant (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': ys)
 (..%~#>) v f = v ..~..> (\v' -> v' %~#> f)
 
+infixl 0 ..%~#>
+
 -- | Match in the tail, connect to the expected result
 (>..%~#>) ::
    ( Monad m
@@ -390,6 +483,8 @@ liftm op x a = do
    , Liftable (Filter a xs) ys
    ) => Flow m (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': ys)
 (>..%~#>) = liftm (..%~#>)
+
+infixl 0 >..%~#>
 
 -- | Match in the tail, lift to the expected result
 (..%~^^>) ::
@@ -400,6 +495,8 @@ liftm op x a = do
    ) => Variant (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': zs)
 (..%~^^>) v f = v ..~..> (\v' -> v' %~^^> f)
 
+infixl 0 ..%~^^>
+
 -- | Match in the tail, lift to the expected result
 (>..%~^^>) ::
    ( Monad m
@@ -409,6 +506,8 @@ liftm op x a = do
    ) => Flow m (x ': xs) -> (a -> Flow m ys) -> Flow m (x ': zs)
 (>..%~^^>) = liftm (..%~^^>)
 
+infixl 0 >..%~^^>
+
 -- | Extract the tail and perform an effect. Passthrough the input value
 (..~=>) ::
    ( Monad m
@@ -417,11 +516,15 @@ liftm op x a = do
    Right _ -> return v
    Left  l -> f l >> return v
 
+infixl 0 ..~=>
+
 -- | Extract the tail and perform an effect. Passthrough the input value
 (>..~=>) ::
    ( Monad m
    ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> Flow m (x ': xs)
 (>..~=>) = liftm (..~=>)
+
+infixl 0 >..~=>
 
 -- | Extract the tail and perform an effect
 (..~!>) ::
@@ -431,11 +534,15 @@ liftm op x a = do
    Right _ -> return ()
    Left  l -> f l
 
+infixl 0 ..~!>
+
 -- | Extract the tail and perform an effect
 (>..~!>) ::
    ( Monad m
    ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> m ()
 (>..~!>) = liftm (..~!>)
+
+infixl 0 >..~!>
 
 -- | Extract the tail and perform an effect
 (..~!!>) ::
@@ -445,12 +552,15 @@ liftm op x a = do
    Right x -> return x
    Left xs -> f xs >> error "..~!!> error"
 
+infixl 0 ..~!!>
+
 -- | Extract the tail and perform an effect
 (>..~!!>) ::
    ( Monad m
    ) => Flow m (x ': xs) -> (Variant xs -> m ()) -> m x
 (>..~!!>) = liftm (..~!!>)
 
+infixl 0 >..~!!>
 
 -- | Match in the tail and perform an effect
 (..%~!!>) ::
@@ -459,12 +569,16 @@ liftm op x a = do
    ) => Variant (x ': xs) -> (y -> m ()) -> Flow m (x ': Filter y xs)
 (..%~!!>) v f = v ..~..> (\xs -> xs %~!!> f)
 
+infixl 0 ..%~!!>
+
 -- | Match in the tail and perform an effect
 (>..%~!!>) ::
    ( Monad m
    , Catchable y xs
    ) => Flow m (x ': xs) -> (y -> m ()) -> Flow m (x ': Filter y xs)
 (>..%~!!>) = liftm (..%~!!>)
+
+infixl 0 >..%~!!>
 
 -- | Match in the tail and perform an effect
 (..%~!>) ::
@@ -475,12 +589,16 @@ liftm op x a = do
    Right _ -> return ()
    Left xs -> xs %~!> f
 
+infixl 0 ..%~!>
+
 -- | Match in the tail and perform an effect
 (>..%~!>) ::
    ( Monad m
    , Catchable y xs
    ) => Flow m (x ': xs) -> (y -> m ()) -> m ()
 (>..%~!>) = liftm (..%~!>)
+
+infixl 0 >..%~!>
 
 ----------------------------------------------------------
 -- Caught element operations
@@ -496,6 +614,8 @@ liftm op x a = do
    Left x   -> flowRet =<< f x
    Right ys -> prependVariant (Proxy :: Proxy '[y]) <$> return ys
 
+infixl 0 %~.>
+
 -- | Catch element, set the first value
 (>%~.>) ::
    ( ys ~ Filter x xs
@@ -503,6 +623,8 @@ liftm op x a = do
    , Catchable x xs
    ) => Flow m xs -> (x -> m y) -> Flow m (y ': ys)
 (>%~.>) = liftm (%~.>)
+
+infixl 0 >%~.>
 
 -- | Catch element, concat the result
 (%~:>) :: forall x xs ys m.
@@ -514,6 +636,8 @@ liftm op x a = do
    Left x   -> appendVariant  (Proxy :: Proxy (Filter x xs)) <$> f x
    Right ys -> prependVariant (Proxy :: Proxy ys)            <$> return ys
 
+infixl 0 %~:>
+
 -- | Catch element, concat the result
 (>%~:>) :: forall x xs ys m.
    ( Monad m
@@ -521,6 +645,8 @@ liftm op x a = do
    , KnownNat (Length ys)
    ) => Flow m xs -> (x -> Flow m ys) -> Flow m (Concat ys (Filter x xs))
 (>%~:>) = liftm (%~:>)
+
+infixl 0 >%~:>
 
 -- | Catch element, lift the result
 (%~^^>) :: forall x xs ys zs m.
@@ -533,6 +659,8 @@ liftm op x a = do
    Left x   -> liftVariant <$> f x
    Right ys -> liftVariant <$> return ys
 
+infixl 0 %~^^>
+
 -- | Catch element, lift the result
 (>%~^^>) :: forall x xs ys zs m.
    ( Monad m
@@ -541,6 +669,8 @@ liftm op x a = do
    , Liftable ys zs
    ) => Flow m xs -> (x -> Flow m ys) -> Flow m zs
 (>%~^^>) = liftm (%~^^>)
+
+infixl 0 >%~^^>
 
 -- | Catch element, connect to the expected output
 (%~#>) :: forall x xs zs m.
@@ -552,6 +682,8 @@ liftm op x a = do
    Left x   -> f x
    Right ys -> return (liftVariant ys)
 
+infixl 0 %~#>
+
 -- | Catch element, connect to the expected output
 (>%~#>) :: forall x xs zs m.
    ( Monad m
@@ -559,6 +691,8 @@ liftm op x a = do
    , Liftable (Filter x xs) zs
    ) => Flow m xs -> (x -> Flow m zs) -> Flow m zs
 (>%~#>) = liftm (%~#>)
+
+infixl 0 >%~#>
 
 -- | Catch element, use the same output type
 (%~->) :: forall x xs m.
@@ -569,12 +703,16 @@ liftm op x a = do
    Left x  -> f x
    Right _ -> return v
 
+infixl 0 %~->
+
 -- | Catch element, use the same output type
 (>%~->) :: forall x xs m.
    ( Monad m
    , Catchable x xs
    ) => Flow m xs -> (x -> Flow m xs) -> Flow m xs
 (>%~->) = liftm (%~->)
+
+infixl 0 >%~->
 
 -- | Catch element, fusion the result
 (%~&>) :: forall x xs ys zs m.
@@ -588,6 +726,8 @@ liftm op x a = do
    Left x   -> liftVariant <$> f x
    Right ys -> return (liftVariant ys)
 
+infixl 0 %~&>
+
 -- | Catch element, fusion the result
 (>%~&>) :: forall x xs ys zs m.
    ( Monad m
@@ -598,6 +738,8 @@ liftm op x a = do
    ) => Flow m xs -> (x -> Flow m ys) -> Flow m zs
 (>%~&>) = liftm (%~&>)
 
+infixl 0 >%~&>
+
 -- | Catch element and perform effect. Passthrough the input value.
 (%~=>) :: forall x xs m.
    ( Monad m
@@ -607,12 +749,16 @@ liftm op x a = do
    Left x  -> f x >> return v
    Right _ -> return v
 
+infixl 0 %~=>
+
 -- | Catch element and perform effect. Passthrough the input value.
 (>%~=>) :: forall x xs m.
    ( Monad m
    , Catchable x xs
    ) => Flow m xs -> (x -> m ()) -> Flow m xs
 (>%~=>) = liftm (%~=>)
+
+infixl 0 >%~=>
 
 -- | Catch element and perform effect.
 (%~!>) :: forall x xs m.
@@ -623,12 +769,16 @@ liftm op x a = do
    Left x  -> f x
    Right _ -> return ()
 
+infixl 0 %~!>
+
 -- | Catch element and perform effect.
 (>%~!>) :: forall x xs m.
    ( Monad m
    , Catchable x xs
    ) => Flow m xs -> (x -> m ()) -> m ()
 (>%~!>) = liftm (%~!>)
+
+infixl 0 >%~!>
 
 -- | Catch element and perform effect.
 (%~!!>) :: forall x xs m.
@@ -639,9 +789,13 @@ liftm op x a = do
    Left x  -> f x >> error "%~!!> error"
    Right u -> return u
 
+infixl 0 %~!!>
+
 -- | Catch element and perform effect.
 (>%~!!>) :: forall x xs m.
    ( Monad m
    , Catchable x xs
    ) => Flow m xs -> (x -> m ()) -> Flow m (Filter x xs)
 (>%~!!>) = liftm (%~!!>)
+
+infixl 0 >%~!!>

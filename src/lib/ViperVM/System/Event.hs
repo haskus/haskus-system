@@ -35,10 +35,10 @@ newEventReader fd@(Handle lowfd) = do
    sysFork $ sysIO $ allocaArray nb $ \ptr -> forever $ do
       threadWaitRead rfd
       sysRead fd (castPtr ptr) (fromIntegral sz * fromIntegral nb)
-      >.~!> \sz2 -> do
-         -- FIXME: we should somehow signal that an error occured
-         evs <- peekArray (fromIntegral sz2 `div` sz) ptr
-         atomically $ traverse_ (writeTChan ch) evs
+         >.~!> \sz2 -> do
+            -- FIXME: we should somehow signal that an error occured
+            evs <- peekArray (fromIntegral sz2 `div` sz) ptr
+            atomically (traverse_ (writeTChan ch) evs)
    return ch
 
 -- | Read events in the given channel forever

@@ -118,9 +118,9 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 -- | Internal function to retreive card entities from their identifiers
 getEntities :: (Resources -> [a]) -> (Handle -> a -> Sys (Either x b)) -> Handle -> Sys [b]
 getEntities getIDs getEntityFromID hdl = do
-   res <- flowRes $
-      getResources hdl
-         >..%~!!> \(InvalidHandle _) -> error "getEntities: invalid handle"
+   res <- getResources hdl
+          >..%~!!> (\(InvalidHandle _) -> error "getEntities: invalid handle")
+          |> flowRes
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs

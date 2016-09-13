@@ -186,10 +186,14 @@ graphicCardEncoders = getEncoders . graphicCardHandle
 
 -- | Retrieve graphic card planes
 graphicCardPlanes :: GraphicCard -> Sys [Plane]
-graphicCardPlanes card = flowRes $ do
+graphicCardPlanes card = do
    let hdl = graphicCardHandle card
-   getPlaneResources hdl >.~#> flowTraverse (getPlane hdl)
-   -- shouldn't happen, except if we unplug the graphic card
-   >..%~!!> (\(InvalidHandle _) -> error "Invalid handle")
-   -- shouldn't happen, planes are invariant
-   >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )
+   getPlaneResources hdl
+      >.~#> flowTraverse (getPlane hdl)
+      -- shouldn't happen, except if we unplug the graphic card or unload the
+      -- driver
+      >..%~!!> (\(InvalidHandle _) -> error "Invalid handle")
+      -- shouldn't happen, planes are invariant
+      >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )
+      -- return the result
+      |> flowRes
