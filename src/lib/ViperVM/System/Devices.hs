@@ -179,7 +179,7 @@ import Text.Megaparsec.Lexer hiding (space)
 -- is an immutable data structure. It is much easier to perform tree traversal
 -- with a single global lock thereafter.
 data DeviceTree = DeviceNode
-   { deviceNodeSubsystem     :: Text                -- ^ Subsystem
+   { deviceNodeSubsystem     :: Maybe Text          -- ^ Subsystem
    , deviceNodeChildren      :: Map Text DeviceTree -- ^ Children devices
    , deviceNodeOnRemove      :: TChan KernelEvent   -- ^ On "remove" event
    , deviceNodeOnChange      :: TChan KernelEvent   -- ^ On "change" event
@@ -196,7 +196,7 @@ data DeviceManager = DeviceManager
    , dmDevFS      :: Handle                         -- ^ root of the tmpfs used to create device nodes
    , dmDevNum     :: TVar Word64                    -- ^ counter used to create device node
    , dmDevices    :: TVar DeviceTree                -- ^ Device hierarchy
-   , dmSubsystems :: TVar (Map Text SubsystemIndex) -- ^ Per-subsystem events
+   , dmSubsystems :: TVar (Map Text SubsystemIndex) -- ^ Per-subsystem index
    }
 
 -- | Per-subsystem events
@@ -229,7 +229,7 @@ initDeviceManager sysfs devfs = do
       -- recursively from it. The current directory is already opened and the
       -- handle is passed (alongside the name and fullname).
       -- Return Nothing if it fails for any reason.
-      readSysfsDir :: Text -> Text -> Handle -> SysV '[Maybe (Text,DeviceTree)]
+      readSysfsDir :: Text -> Text -> Handle -> SysV '[(Text,DeviceTree)]
       readSysfsDir name fullname hdl = do
          
          -- list directories (sub-devices) that are *not* symlinks
@@ -252,13 +252,17 @@ initDeviceManager sysfs devfs = do
                            fullname' = Text.concat [fullname, Text.pack "/", name']
 
                         withOpenAt hdl dir flags BitSet.empty (readSysfsDir name' fullname')
+                           -- wrap into Just on success
+                           >.-.> Just
                            -- return Nothing on error
                            >..-.> const Nothing
 
          -- read the subsystem link
          sysCallWarn "read link" (sysReadLinkAt hdl "subsystem")
             -- on success, only keep the basename as it is the subsystem name
-            >.-.> (Text.pack . takeBaseName)
+            >.-.> (Just . Text.pack . takeBaseName)
+            -- on error, use Nothing for the subsystem
+            >..-.> const Nothing
             -- then create the node
             >.~.> (\subsystem -> do
                      node <- DeviceNode subsystem (Map.fromList children)
@@ -268,9 +272,7 @@ initDeviceManager sysfs devfs = do
                               <*> sysIO newBroadcastTChanIO
                               <*> sysIO newBroadcastTChanIO
                               <*> sysIO newBroadcastTChanIO
-                     return (Just (name,node)))
-            -- on error, skip the device directory
-            >..-.> const Nothing
+                     return (name,node))
 
       flags = BitSet.fromList [ HandleDirectory
                               , HandleNonBlocking
@@ -281,22 +283,29 @@ initDeviceManager sysfs devfs = do
    tree <- withOpenAt sysfs "devices" flags BitSet.empty 
                         (readSysfsDir (Text.pack "devices") (Text.pack "/devices"))
            >..%~!!> (\err -> sysError ("Cannot read /devices in sysfs: " ++ show (err :: ErrorCode)))
-           >.~.> \case
-               Just (_,x)  -> sysIO (newTVarIO x)
-               Nothing     -> sysError "Cannot read /devices in sysfs"
+           >.-.> snd
            |> flowRes
 
+
+   -- build subsystem index
+   -- TODO
+   let
+      --makeIndex path node
+      subIndex = undefined
 
    -- device node counter
    devNum <- sysIO (newTVarIO 0)
 
+   -- create device manager
+   subIndex' <- sysIO (newTVarIO subIndex)
+   tree'     <- sysIO (newTVarIO tree)
    let dm = DeviceManager
-               { dmDevices = tree
-               , dmSubsystems = undefined -- TODO: build index
-               , dmEvents  = bch
-               , dmSysFS   = sysfs
-               , dmDevFS   = devfs
-               , dmDevNum  = devNum
+               { dmDevices    = tree'
+               , dmSubsystems = subIndex'
+               , dmEvents     = bch
+               , dmSysFS      = sysfs
+               , dmDevFS      = devfs
+               , dmDevNum     = devNum
                }
 
    -- launch handling thread
@@ -376,12 +385,10 @@ eventThread ch dm = do
                -- read the subsystem link
                let subpath = Text.unpack (kernelEventDevPath ev) </> "subsystem"
                sysCallWarn "read link" (sysReadLinkAt (dmSysFS dm) subpath)
-                  -- on error, we don't add the node (it may ahave already been
-                  -- removed) but we trigger a warning
-                  >..~=> const (sysWarning ("sysfs \"add\" event ignored: cannot read subsystem link at "++ subpath))
+                  >.-.> Just . Text.pack . takeBaseName
+                  >..-.> const Nothing
                   -- on success, add the node in the tree and signal it
-                  >.~!> (\link -> do
-                              let subsystem = Text.pack (takeBaseName link)
+                  >.~!> (\subsystem -> do
                               -- create the node (without any child, there will
                               -- be events for them too)
                               node <- DeviceNode subsystem Map.empty
@@ -393,8 +400,10 @@ eventThread ch dm = do
                                        <*> sysIO newBroadcastTChanIO
                               sysIO $ atomically $ do
                                  modifyTVar (dmDevices dm) (insert devTreePath node)
-                                 -- TODO: signal it to its parent and to
-                                 -- indexes per-subsystem
+                                 -- Add device into subsystem index
+                                 -- TODO
+                                 -- Signal the addition
+                                 -- TODO
                         )
 
 
@@ -403,6 +412,8 @@ eventThread ch dm = do
                let node = lookup devTreePath tree
                writeTVar (dmDevices dm) (remove devTreePath tree)
                writeTChan (deviceNodeOnRemove node) ev
+               -- Remove from index
+               -- TODO
                
             ActionChange     -> signalEvent deviceNodeOnChange
             ActionOnline     -> signalEvent deviceNodeOnOnline
