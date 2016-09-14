@@ -114,6 +114,8 @@ showInsn i = do
                H.th (toHtml "Opcode")
                H.th (toHtml "Properties")
                H.th (toHtml "Operands")
+               forM_ [1.. length(X86.encOperands e)] $ \x ->
+                  H.th (toHtml (show x))
             forM_ (X86.encGenerateOpcodes e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
@@ -131,11 +133,12 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
 
 showEnc :: Word8 -> Bool -> X86.Encoding -> Html
 showEnc oc rv e = H.tr $ do
-   case X86.encMandatoryPrefix e of
+   let rowsp3 x = x ! A.rowspan (toValue (3 :: Int))
+   rowsp3 $ case X86.encMandatoryPrefix e of
       Nothing -> H.td (toHtml " ")
       Just p  -> H.td (toHtml (show p))
-   H.td (toHtml (show (X86.encOpcodeMap e)))
-   H.td $ do
+   rowsp3 $ H.td (toHtml (show (X86.encOpcodeMap e)))
+   rowsp3 $ H.td $ do
       toHtml (myShowHex True oc)
       case X86.encOpcodeFullExt e of
          Nothing -> return ()
@@ -152,29 +155,27 @@ showEnc oc rv e = H.tr $ do
          Just True  -> toHtml " W1"
          Just False -> toHtml " W0"
 
-   H.td (toHtml (show (X86.encProperties e)))
+   rowsp3 $ H.td (H.ul $ forM_ (X86.encProperties e) $ \p -> H.li (toHtml (show p)))
+      ! A.style (toValue "text-align:left; padding-right:1em;")
    let 
       ops = X86.encOperands e
       rev = if rv then reverse else id
-   H.td $ (H.table $ do
-      H.tr $ do
-         H.th (toHtml "Mode")
-         forM_ ops $ \o -> H.td (toHtml (show (X86.opMode o)))
-      H.tr $ do
-         H.th (toHtml "Type")
-         forM_ (rev ops) $ \o -> H.td (toHtml (show (X86.opType o)))
-      H.tr $ do
-         H.th (toHtml "Encoding")
-         forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opEnc o of
-            X86.RM          -> "ModRM.rm"
-            X86.Reg         -> "ModRM.reg"
-            X86.Imm         -> "Immediate"
-            X86.Imm8h       -> "Imm8 [7:4]"
-            X86.Imm8l       -> "Imm8 [3:0]"
-            X86.Implicit    -> "Implicit"
-            X86.Vvvv        -> "VEX.vvvv"
-            X86.OpcodeLow3  -> "Opcode [2:0]"
-      ) ! A.class_ (toValue "insn_table")
+   H.th (toHtml "Mode")
+   forM_ ops $ \o -> H.td (toHtml (show (X86.opMode o)))
+   H.tr $ do
+      H.th (toHtml "Type")
+      forM_ (rev ops) $ \o -> H.td (toHtml (show (X86.opType o)))
+   H.tr $ do
+      H.th (toHtml "Encoding")
+      forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opEnc o of
+         X86.RM          -> "ModRM.rm"
+         X86.Reg         -> "ModRM.reg"
+         X86.Imm         -> "Immediate"
+         X86.Imm8h       -> "Imm8 [7:4]"
+         X86.Imm8l       -> "Imm8 [3:0]"
+         X86.Implicit    -> "Implicit"
+         X86.Vvvv        -> "VEX.vvvv"
+         X86.OpcodeLow3  -> "Opcode [2:0]"
 
 
 showMaps :: Html
