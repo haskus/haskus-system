@@ -446,8 +446,10 @@ sornFromElems = foldl sornInsert sornEmpty
 
 
 class SornAdd u where
+   -- | Add two Unums
    sornAddU :: U u -> U u -> SORN u
 
+   -- | Add two SORNs
    sornAdd ::
       ( KnownNat (SORNSize u)
       , Bits (SORNBackingWord u)
@@ -458,6 +460,19 @@ class SornAdd u where
                                 | x <- sornElems a
                                 , y <- sornElems b
                                 ]
+
+   -- | Add a SORN with itself
+   sornAddDep ::
+      ( KnownNat (SORNSize u)
+      , Bits (SORNBackingWord u)
+      , Num (BackingWord u)
+      ) => SORN u -> SORN u
+   sornAddDep a =
+      foldl sornUnion sornEmpty [ sornAddU x x
+                                | x <- sornElems a
+                                ]
+
+   -- | Subtract two Unums
    sornSubU :: 
       ( FiniteBits (BackingWord u)
       , Num (BackingWord u)
@@ -465,6 +480,7 @@ class SornAdd u where
       ) => U u -> U u -> SORN u
    sornSubU a b = sornAddU a (unumNegate b)
 
+   -- | Subtract two SORNS
    sornSub ::
       ( KnownNat (SORNSize u)
       , Bits (SORNBackingWord u)
@@ -476,4 +492,17 @@ class SornAdd u where
       foldl sornUnion sornEmpty [ sornSubU x y
                                 | x <- sornElems a
                                 , y <- sornElems b
+                                ]
+
+   -- | Subtract a SORN with itself
+   sornSubDep ::
+      ( KnownNat (SORNSize u)
+      , Bits (SORNBackingWord u)
+      , FiniteBits (BackingWord u)
+      , Num (BackingWord u)
+      , KnownNat (UnumSize u)
+      ) => SORN u -> SORN u
+   sornSubDep a =
+      foldl sornUnion sornEmpty [ sornSubU x x
+                                | x <- sornElems a
                                 ]
