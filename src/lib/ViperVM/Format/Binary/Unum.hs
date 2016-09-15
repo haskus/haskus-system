@@ -21,6 +21,7 @@ module ViperVM.Format.Binary.Unum
    , UBit (..)
    , unumSize
    , unumZero
+   , unumInfinite
    , encode
    , unumNegate
    , unumReciprocate
@@ -29,6 +30,7 @@ module ViperVM.Format.Binary.Unum
    -- * SORN
    , SORN
    , SORNBackingWord
+   , sornSize
    , sornEmpty
    , sornFull
    , sornNonInfinite
@@ -39,6 +41,7 @@ module ViperVM.Format.Binary.Unum
    , sornRemove
    , sornUnion
    , sornIntersect
+   , sornComplement
    , sornNegate
    , sornElems
    , sornFromElems
@@ -118,6 +121,14 @@ unumZero :: forall u.
    ) => U u
 unumZero = encode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) Number
 
+-- | Infinite
+unumInfinite :: forall u.
+   ( Num (BackingWord u)
+   , Bits (BackingWord u)
+   , Encodable Infinite u
+   ) => U u
+unumInfinite = encode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
+
 type family Div2 n where
   Div2 0 = 0
   Div2 1 = 0
@@ -193,11 +204,14 @@ encode _ _ b = case b of
 {-# INLINE encode #-}
 
 -- | Negate a number
-unumNegate ::
+unumNegate :: forall u.
    ( FiniteBits (BackingWord u)
    , Num (BackingWord u)
+   , KnownNat (UnumSize u)
    ) => U u -> U u
-unumNegate (U w) = U (complement w + 1)
+unumNegate (U w) = U (maskLeastBits s (complement w + 1))
+   where
+      s = unumSize (Proxy :: Proxy u)
 
 {-# INLINE unumNegate #-}
 
@@ -244,13 +258,25 @@ instance
    ) => Show (SORN u) where
    show (SORN w) = "SORN: " ++ drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
 
+-- | Size of a SORN in bits
+sornSize :: forall u s.
+   ( s ~ SORNSize u
+   , KnownNat s
+   ) => Proxy u -> Word
+sornSize _ = fromIntegral (natVal (Proxy :: Proxy s))
+
 -- | Empty SORN
 sornEmpty :: (Bits (SORNBackingWord u)) => SORN u
 sornEmpty = SORN zeroBits
 
 -- | Full SORN
-sornFull :: (Bits (SORNBackingWord u)) => SORN u
-sornFull = SORN (complement zeroBits)
+sornFull :: forall u.
+   ( FiniteBits (SORNBackingWord u)
+   , KnownNat (SORNSize u)
+   ) => SORN u
+sornFull = SORN (maskLeastBits s (complement zeroBits))
+   where
+      s = sornSize (Proxy :: Proxy u)
 
 -- | Full SORN without infinite
 sornNonInfinite ::
@@ -312,20 +338,21 @@ sornIntersect :: forall u.
    ) => SORN u -> SORN u -> SORN u
 sornIntersect (SORN w) (SORN v) = SORN (w .&. v)
 
+-- | Complement the SORN
+sornComplement ::
+   ( Bits (SORNBackingWord u)
+   ) => SORN u -> SORN u
+sornComplement (SORN x) = SORN (complement x)
+
 -- | Negate a SORN
 sornNegate :: forall u.
-   ( Bits (SORNBackingWord u)
-   , Bits (BackingWord u)
-   , Num (BackingWord u)
+   ( FiniteBits (SORNBackingWord u)
+   , FiniteBits (BackingWord u)
    , Integral (BackingWord u)
-   , Encodable (I 0) u
+   , KnownNat (SORNSize u)
+   , KnownNat (UnumSize u)
    ) => SORN u -> SORN u
-sornNegate s@(SORN x) = w
-   where
-      w = if sornMember s unumZero
-               then sornInsert x' unumZero
-               else x'
-      x' = SORN (complement x)
+sornNegate = sornFromElems . fmap unumNegate . sornElems
 
 -- | Elements in the SORN
 sornElems :: forall u s.
