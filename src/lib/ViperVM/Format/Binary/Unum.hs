@@ -5,24 +5,46 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module ViperVM.Format.Binary.Unum
    ( Unum
    , I
+   , U (..)
    , Neg
    , Rcp
    , Infinite
    , Log2
    , UnumNumbers
    , UnumSize
+   , BackingWord
+   , UBit (..)
    , unumSize
+   , unumZero
    , encode
-   , negate
-   , reciprocate
+   , unumNegate
+   , unumReciprocate
+   , Sign (..)
+   , sign
+   -- * SORN
+   , SORN
+   , SORNBackingWord
+   , sornEmpty
+   , sornFull
+   , sornNonInfinite
+   , sornNonZero
+   , sornSingle
+   , sornInsert
+   , sornMember
+   , sornRemove
+   , sornUnion
+   , sornIntersect
+   , sornNegate
+   , sornElems
+   , sornFromElems
+   , SornAdd (..)
    )
 where
-
-import Prelude hiding (negate)
 
 import GHC.TypeLits
 import Data.Proxy
@@ -82,10 +104,19 @@ type family UnumIndexables x where
 type family UnumSize x where
    UnumSize x = 1 + Log2 (Length (UnumNumbers x)) -- add 1 for ubit
 
+-- | Size of an unum in bits
 unumSize :: forall u.
    ( KnownNat (UnumSize u)
    ) => Proxy u -> Word
 unumSize _ = fromIntegral (natVal (Proxy :: Proxy (UnumSize u)))
+
+-- | Zero
+unumZero :: forall u.
+   ( Num (BackingWord u)
+   , Bits (BackingWord u)
+   , Encodable (I 0) u
+   ) => U u
+unumZero = encode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) Number
 
 type family Div2 n where
   Div2 0 = 0
@@ -126,12 +157,25 @@ type family AddNeg xs where
 
 newtype U u = U (BackingWord u)
 
+instance Eq (BackingWord u) => Eq (U u) where
+   U x == U y = x == y
+
 instance
-   ( Show (BackingWord u)
-   , FiniteBits (BackingWord u)
+   ( FiniteBits (BackingWord u)
    , KnownNat (UnumSize u)
    ) => Show (U u) where
    show (U w) = "Unum: " ++ drop (finiteBitSize w - fromIntegral (unumSize (Proxy :: Proxy u))) (bitsToString w)
+
+
+type Encodable x u =
+   ( KnownNat (IndexOf (Simplify x) (UnumIndexables u)))
+
+
+-- | Uncertainty bit
+data UBit
+   = Number -- ^ Precise number
+   | Range  -- ^ Range above the number
+   deriving (Show,Eq)
 
 -- | Encode a number
 encode :: forall i x u.
@@ -139,31 +183,182 @@ encode :: forall i x u.
    , KnownNat i
    , Num (BackingWord u)
    , Bits (BackingWord u)
-   ) => Proxy u -> Proxy x -> Bool -> U u
-encode _ _ b = if b then U w else U (setBit w 0)
+   ) => Proxy u -> Proxy x -> UBit -> U u
+encode _ _ b = case b of
+      Number -> U w
+      Range  -> U (setBit w 0)
    where
       w = fromIntegral (natVal (Proxy :: Proxy i)) `shiftL` 1
 
 {-# INLINE encode #-}
 
 -- | Negate a number
-negate ::
+unumNegate ::
    ( FiniteBits (BackingWord u)
    , Num (BackingWord u)
    ) => U u -> U u
-negate (U w) = U (complement w + 1)
+unumNegate (U w) = U (complement w + 1)
 
-{-# INLINE negate #-}
+{-# INLINE unumNegate #-}
 
 -- | Reciprocate a number
-reciprocate :: forall u.
+unumReciprocate :: forall u.
    ( FiniteBits (BackingWord u)
    , Num (BackingWord u)
    , KnownNat (UnumSize u)
    ) => U u -> U u
-reciprocate (U w) = U (w `xor` m + 1)
+unumReciprocate (U w) = U (w `xor` m + 1)
    where
       s = unumSize (Proxy :: Proxy u)
       m = makeMask (s-1)
 
-{-# INLINE reciprocate #-}
+{-# INLINE unumReciprocate #-}
+
+data Sign
+   = Positive
+   | Negative
+   deriving (Show,Eq)
+
+-- | Get unum sign
+sign :: forall u.
+   ( Bits (BackingWord u)
+   , KnownNat (UnumSize u)
+   ) => U u -> Sign
+sign (U w) = if testBit w n then Negative else Positive
+   where
+      n = fromIntegral (unumSize (Proxy :: Proxy u) - 1)
+
+type family SORNSize u where
+   SORNSize u = 2 * Length (UnumNumbers u)
+
+type family SORNBackingWord u where
+   SORNBackingWord u = BackingWord' (SORNSize u)
+
+newtype SORN u = SORN (SORNBackingWord u)
+
+instance
+   ( FiniteBits (SORNBackingWord u)
+   , KnownNat (UnumSize u)
+   , s ~ SORNSize u
+   , KnownNat s
+   ) => Show (SORN u) where
+   show (SORN w) = "SORN: " ++ drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
+
+-- | Empty SORN
+sornEmpty :: (Bits (SORNBackingWord u)) => SORN u
+sornEmpty = SORN zeroBits
+
+-- | Full SORN
+sornFull :: (Bits (SORNBackingWord u)) => SORN u
+sornFull = SORN (complement zeroBits)
+
+-- | Full SORN without infinite
+sornNonInfinite ::
+   ( Bits (SORNBackingWord u)
+   , Integral (BackingWord u)
+   , Bits (BackingWord u)
+   , Encodable Infinite u
+   ) => SORN u
+sornNonInfinite = sornRemove (SORN (complement zeroBits)) inf
+   where
+      inf = encode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
+
+-- | Full SORN without infinite
+sornNonZero ::
+   ( Bits (SORNBackingWord u)
+   , Integral (BackingWord u)
+   , Bits (BackingWord u)
+   , Encodable (I 0) u
+   ) => SORN u
+sornNonZero = sornRemove (SORN (complement zeroBits)) unumZero
+
+-- | SORN singleton
+sornSingle ::
+   ( Integral (BackingWord u)
+   , Bits (SORNBackingWord u)
+   ) => U u -> SORN u
+sornSingle = sornInsert sornEmpty
+
+-- | Insert in a SORN
+sornInsert :: forall u.
+   ( Bits (SORNBackingWord u)
+   , Integral (BackingWord u)
+   ) => SORN u -> U u -> SORN u
+sornInsert (SORN w) (U v) = SORN (setBit w (fromIntegral v))
+
+-- | Remove in a SORN
+sornRemove :: forall u.
+   ( Bits (SORNBackingWord u)
+   , Integral (BackingWord u)
+   ) => SORN u -> U u -> SORN u
+sornRemove (SORN w) (U v) = SORN (clearBit w (fromIntegral v))
+
+-- | Test membership in a SORN
+sornMember :: forall u.
+   ( Bits (SORNBackingWord u)
+   , Integral (BackingWord u)
+   ) => SORN u -> U u -> Bool
+sornMember (SORN w) (U x) = testBit w (fromIntegral x)
+
+-- | Union of two SORNs
+sornUnion :: forall u.
+   ( Bits (SORNBackingWord u)
+   ) => SORN u -> SORN u -> SORN u
+sornUnion (SORN w) (SORN v) = SORN (w .|. v)
+
+-- | Intersection of two SORNs
+sornIntersect :: forall u.
+   ( Bits (SORNBackingWord u)
+   ) => SORN u -> SORN u -> SORN u
+sornIntersect (SORN w) (SORN v) = SORN (w .&. v)
+
+-- | Negate a SORN
+sornNegate :: forall u.
+   ( Bits (SORNBackingWord u)
+   , Bits (BackingWord u)
+   , Num (BackingWord u)
+   , Integral (BackingWord u)
+   , Encodable (I 0) u
+   ) => SORN u -> SORN u
+sornNegate s@(SORN x) = w
+   where
+      w = if sornMember s unumZero
+               then sornInsert x' unumZero
+               else x'
+      x' = SORN (complement x)
+
+-- | Elements in the SORN
+sornElems :: forall u s.
+   ( s ~ SORNSize u
+   , KnownNat s
+   , Bits (SORNBackingWord u)
+   , Num (BackingWord u)
+   ) => SORN u -> [U u]
+sornElems (SORN x) = foldl b [] [s-1, s-2 .. 0]
+   where
+      s      = fromIntegral (natVal (Proxy :: Proxy s))
+      b us i = if testBit x i
+                  then U (fromIntegral i) : us
+                  else us
+
+-- | Create a SORN from its elements
+sornFromElems ::
+   ( Integral (BackingWord u)
+   , Bits (SORNBackingWord u)
+   ) => [U u] -> SORN u
+sornFromElems = foldl sornInsert sornEmpty
+
+
+class SornAdd u where
+   sornAddU :: U u -> U u -> SORN u
+
+   sornAdd ::
+      ( KnownNat (SORNSize u)
+      , Bits (SORNBackingWord u)
+      , Num (BackingWord u)
+      ) => SORN u -> SORN u -> SORN u
+   sornAdd a b =
+      foldl sornUnion sornEmpty [ sornAddU x y
+                                | x <- sornElems a
+                                , y <- sornElems b
+                                ]
