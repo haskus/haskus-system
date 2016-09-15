@@ -285,6 +285,7 @@ unumReciprocate (U w) = U (w `xor` m + 1)
 data Sign
    = Positive
    | Negative
+   | NoSign
    deriving (Show,Eq)
 
 -- | Get unum sign
@@ -292,7 +293,12 @@ unumSign :: forall u.
    ( Bits (BackingWord u)
    , KnownNat (UnumSize u)
    ) => U u -> Sign
-unumSign (U w) = if testBit w n then Negative else Positive
+unumSign (U w) =
+      if clearBit w n == zeroBits -- infinity or zero
+         then NoSign
+         else if testBit w n 
+            then Negative 
+            else Positive
    where
       n = fromIntegral (unumSize (Proxy :: Proxy u) - 1)
 
