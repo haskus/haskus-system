@@ -101,24 +101,24 @@ instance SornAdd U2 where
       | unumSign x == Negative
         && unumSign y == Negative = sornNegate (sornAddU (unumNegate x) (unumNegate y))
       -- 0..
-      | x == u0' && y == r0'   = sornFromElems [r0',n2,n2']
+      | x == u0' && y == r0'   = sornFromTo r0' n2'
       | x == u0' && y == n2    = sornSingle n2'
-      | x == u0' && y == n2'   = sornFromElems [n2', n1, n1']
+      | x == u0' && y == n2'   = sornFromTo n2' n1'
       | x == u0' && y == n1    = sornSingle n1'
-      | x == u0' && y == n1'   = sornFromElems [n1',nr2,nr2']
+      | x == u0' && y == n1'   = sornFromTo n1' nr2'
       | x == u0' && y == nr2   = sornSingle nr2'
-      | x == u0' && y == nr2'  = sornFromElems [nr2',u0,u0']
-      | x == u0' && y == u0'   = sornFromElems [u0',r2,r2']
+      | x == u0' && y == nr2'  = sornFromTo nr2' u0'
+      | x == u0' && y == u0'   = sornFromTo u0' r2'
       | x == u0' && y == r2    = sornSingle r2'
-      | x == u0' && y == r2'   = sornFromElems [r2',u1,u1'] 
+      | x == u0' && y == r2'   = sornFromTo r2' u1'
       | x == u0' && y == u1    = sornSingle u1'
-      | x == u0' && y == u1'   = sornFromElems [u1', u2, u2']
+      | x == u0' && y == u1'   = sornFromTo u1' u2'
       | x == u0' && y == u2    = sornSingle u2'
       | x == u0' && y == u2'   = sornSingle u2'
       -- /2
-      | x == r2 && y == r0'   = sornFromElems [r0',n2,n2']
+      | x == r2 && y == r0'   = sornFromTo r0' n2'
       | x == r2 && y == n2    = sornSingle n2'
-      | x == r2 && y == n2'   = sornFromElems [n2', n1, n1']
+      | x == r2 && y == n2'   = sornFromTo n2' n1'
       | x == r2 && y == n1    = sornSingle nr2
       | x == r2 && y == n1'   = sornSingle nr2'
       | x == r2 && y == nr2   = sornSingle u0
@@ -127,28 +127,28 @@ instance SornAdd U2 where
       | x == r2 && y == r2    = sornSingle u1
       | x == r2 && y == r2'   = sornSingle u1'
       | x == r2 && y == u1    = sornSingle u1'
-      | x == r2 && y == u1'   = sornFromElems [u1', u2, u2']
+      | x == r2 && y == u1'   = sornFromTo u1' u2'
       | x == r2 && y == u2    = sornSingle u2'
       | x == r2 && y == u2'   = sornSingle u2'
       -- /2..
-      | x == r2' && y == r0'   = sornFromElems [r0',n2,n2']
+      | x == r2' && y == r0'   = sornFromTo r0' n2'
       | x == r2' && y == n2    = sornSingle n2'
-      | x == r2' && y == n2'   = sornFromElems [n2', n1, n1', nr2, nr2']
+      | x == r2' && y == n2'   = sornFromTo n2' nr2'
       | x == r2' && y == n1    = sornSingle nr2'
-      | x == r2' && y == n1'   = sornFromElems [nr2', u0, u0']
+      | x == r2' && y == n1'   = sornFromTo nr2' u0'
       | x == r2' && y == nr2   = sornSingle u0'
-      | x == r2' && y == nr2'  = sornFromElems [u0', r2, r2']
-      | x == r2' && y == u0'   = sornFromElems [r2', u1, u1']
+      | x == r2' && y == nr2'  = sornFromTo u0' r2'
+      | x == r2' && y == u0'   = sornFromTo r2' u1'
       | x == r2' && y == r2    = sornSingle u1'
       | x == r2' && y == r2'   = sornSingle u1'
       | x == r2' && y == u1    = sornSingle u1'
-      | x == r2' && y == u1'   = sornFromElems [u1', u2, u2']
+      | x == r2' && y == u1'   = sornFromTo u1' u2'
       | x == r2' && y == u2    = sornSingle u2'
       | x == r2' && y == u2'   = sornSingle u2'
       -- 1
-      | x == u1 && y == r0'   = sornFromElems [r0',n2,n2']
+      | x == u1 && y == r0'   = sornFromTo r0' n2'
       | x == u1 && y == n2    = sornSingle n1
-      | x == u1 && y == n2'   = sornFromElems [n1',nr2,nr2']
+      | x == u1 && y == n2'   = sornFromTo n1' nr2'
       | x == u1 && y == n1    = sornSingle u0
       | x == u1 && y == n1'   = sornSingle u0'
       | x == u1 && y == nr2   = sornSingle r2
@@ -161,24 +161,24 @@ instance SornAdd U2 where
       | x == u1 && y == u2    = sornSingle u2'
       | x == u1 && y == u2'   = sornSingle u2'
       -- 1..
-      | x == u1' && y == r0'   = sornFromElems [r0',n2,n2',n1,n1']
-      | x == u1' && y == n2    = sornFromElems [n1',nr2,nr2']
-      | x == u1' && y == n2'   = sornFromElems [n1',nr2,nr2',u0,r2,r2']
-      | x == u1' && y == n1    = sornFromElems [u0',r2,r2']
-      | x == u1' && y == n1'   = sornFromElems [u0',r2,r2',u1,u1']
-      | x == u1' && y == nr2   = sornFromElems [r2',u1,u1']
-      | x == u1' && y == nr2'  = sornFromElems [r2',u1,u1'] 
-      | x == u1' && y == u0'   = sornFromElems [u1',u2,u2']
-      | x == u1' && y == r2    = sornFromElems [u1',u2,u2'] 
-      | x == u1' && y == r2'   = sornFromElems [u1',u2,u2']
+      | x == u1' && y == r0'   = sornFromTo r0' n1'
+      | x == u1' && y == n2    = sornFromTo n1' nr2'
+      | x == u1' && y == n2'   = sornFromTo n1' r2'
+      | x == u1' && y == n1    = sornFromTo u0' r2'
+      | x == u1' && y == n1'   = sornFromTo u0' u1'
+      | x == u1' && y == nr2   = sornFromTo r2' u1'
+      | x == u1' && y == nr2'  = sornFromTo r2' u1'
+      | x == u1' && y == u0'   = sornFromTo u1' u2'
+      | x == u1' && y == r2    = sornFromTo u1' u2'
+      | x == u1' && y == r2'   = sornFromTo u1' u2'
       | x == u1' && y == u1    = sornSingle u2'
       | x == u1' && y == u1'   = sornSingle u2'
       | x == u1' && y == u2    = sornSingle u2'
       | x == u1' && y == u2'   = sornSingle u2'
       -- 2
-      | x == u2 && y == r0'   = sornFromElems [r0',n2,n2',n1,n1',nr2,nr2']
+      | x == u2 && y == r0'   = sornFromTo r0' nr2'
       | x == u2 && y == n2    = sornSingle u0
-      | x == u2 && y == n2'   = sornFromElems [u0',r2,r2']
+      | x == u2 && y == n2'   = sornFromTo u0' r2'
       | x == u2 && y == n1    = sornSingle u1
       | x == u2 && y == n1'   = sornSingle u1'
       | x == u2 && y == nr2   = sornSingle u1'
@@ -192,12 +192,12 @@ instance SornAdd U2 where
       | x == u2 && y == u2'   = sornSingle u2'
       -- 2..
       | x == u2' && y == r0'   = sornNonInfinite
-      | x == u2' && y == n2    = sornFromElems [u0',r2,r2',u1,u1',u2,u2']
-      | x == u2' && y == n2'   = sornFromElems [u0',r2,r2',u1,u1',u2,u2']
-      | x == u2' && y == n1    = sornFromElems [u1',u2,u2']
-      | x == u2' && y == n1'   = sornFromElems [u1',u2,u2']
-      | x == u2' && y == nr2   = sornFromElems [u1',u2,u2']
-      | x == u2' && y == nr2'  = sornFromElems [u1',u2,u2']
+      | x == u2' && y == n2    = sornFromTo u0' u2'
+      | x == u2' && y == n2'   = sornFromTo u0' u2'
+      | x == u2' && y == n1    = sornFromTo u1' u2'
+      | x == u2' && y == n1'   = sornFromTo u1' u2'
+      | x == u2' && y == nr2   = sornFromTo u1' u2'
+      | x == u2' && y == nr2'  = sornFromTo u1' u2'
       | x == u2' && y == u0'   = sornSingle u2'
       | x == u2' && y == r2    = sornSingle u2'
       | x == u2' && y == r2'   = sornSingle u2'
