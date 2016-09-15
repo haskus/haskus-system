@@ -51,6 +51,7 @@ module ViperVM.Format.Binary.Unum
    , sornNegate
    , sornElems
    , sornFromElems
+   , sornFromTo
    , SornAdd (..)
    )
 where
@@ -167,7 +168,7 @@ unumZero :: forall u.
    , Bits (BackingWord u)
    , Encodable (I 0) u
    ) => U u
-unumZero = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) Number
+unumZero = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) ExactNumber
 
 -- | Infinite
 unumInfinite :: forall u.
@@ -175,7 +176,7 @@ unumInfinite :: forall u.
    , Bits (BackingWord u)
    , Encodable Infinite u
    ) => U u
-unumInfinite = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
+unumInfinite = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) ExactNumber
 
 type family Div2 n where
   Div2 0 = 0
@@ -238,8 +239,8 @@ type Encodable x u =
 
 -- | Uncertainty bit
 data UBit
-   = Number -- ^ Precise number
-   | Range  -- ^ Range above the number
+   = ExactNumber   -- ^ Exact number
+   | OpenInterval  -- ^ OpenInterval above the exact number
    deriving (Show,Eq)
 
 -- | Encode a number
@@ -250,8 +251,8 @@ unumEncode :: forall i x u.
    , Bits (BackingWord u)
    ) => Proxy u -> Proxy x -> UBit -> U u
 unumEncode _ _ b = case b of
-      Number -> U w
-      Range  -> U (setBit w 0)
+      ExactNumber  -> U w
+      OpenInterval -> U (setBit w 0)
    where
       w = fromIntegral (natVal (Proxy :: Proxy i)) `shiftL` 1
 
@@ -361,7 +362,7 @@ sornNonInfinite ::
    ) => SORN u
 sornNonInfinite = sornRemove (SORN (complement zeroBits)) inf
    where
-      inf = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
+      inf = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) ExactNumber
 
 -- | Full SORN without infinite
 sornNonZero ::
@@ -449,6 +450,21 @@ sornFromElems ::
    , Bits (SORNBackingWord u)
    ) => [U u] -> SORN u
 sornFromElems = foldl sornInsert sornEmpty
+
+-- | Create a contiguous SORN from two elements
+sornFromTo :: forall u.
+   ( Integral (BackingWord u)
+   , Bits (SORNBackingWord u)
+   , FiniteBits (BackingWord u)
+   , KnownNat (UnumSize u)
+   ) => U u -> U u -> SORN u
+sornFromTo (U a) (U b) = go sornEmpty a
+   where
+      go w x 
+         | x == b    = sornInsert w (U x)
+         | otherwise = go (sornInsert w (U x)) (mask (x+1))
+      mask = maskLeastBits s
+      s = unumSize (Proxy :: Proxy u)
 
 
 class SornAdd u where

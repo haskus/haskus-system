@@ -19,87 +19,87 @@ type U4 = Unum '[I 1, I 2, I 3, I 4]
 type UPI = Unum '[I 1, I 2, PI, I 4]
 
 u0 :: U U2
-u0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 0)) Number
+u0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 0)) ExactNumber
 
 u0' :: U U2
-u0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 0)) Range
+u0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 0)) OpenInterval
 
 u1 :: U U2
-u1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 1)) Number
+u1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 1)) ExactNumber
 
 u1' :: U U2
-u1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 1)) Range
+u1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 1)) OpenInterval
 
 u2 :: U U2
-u2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 2)) Number
+u2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 2)) ExactNumber
 
 u2' :: U U2
-u2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 2)) Range
+u2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (I 2)) OpenInterval
 
 r0 :: U U2
-r0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 0))) Number
+r0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 0))) ExactNumber
 
 r0' :: U U2
-r0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 0))) Range
+r0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 0))) OpenInterval
 
 r1 :: U U2
-r1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 1))) Number
+r1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 1))) ExactNumber
 
 r1' :: U U2
-r1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 1))) Range
+r1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 1))) OpenInterval
 
 r2 :: U U2
-r2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 2))) Number
+r2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 2))) ExactNumber
 
 r2' :: U U2
-r2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 2))) Range
+r2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (I 2))) OpenInterval
 
 n0 :: U U2
-n0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 0))) Number
+n0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 0))) ExactNumber
 
 n0' :: U U2
-n0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 0))) Range
+n0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 0))) OpenInterval
 
 n1 :: U U2
-n1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 1))) Number
+n1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 1))) ExactNumber
 
 n1' :: U U2
-n1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 1))) Range
+n1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 1))) OpenInterval
 
 n2 :: U U2
-n2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 2))) Number
+n2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 2))) ExactNumber
 
 n2' :: U U2
-n2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 2))) Range
+n2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Neg (I 2))) OpenInterval
 
 nr0 :: U U2
-nr0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 0)))) Number
+nr0 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 0)))) ExactNumber
 
 nr0' :: U U2
-nr0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 0)))) Range
+nr0' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 0)))) OpenInterval
 
 nr1 :: U U2
-nr1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 1)))) Number
+nr1 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 1)))) ExactNumber
 
 nr1' :: U U2
-nr1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 1)))) Range
+nr1' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 1)))) OpenInterval
 
 nr2 :: U U2
-nr2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 2)))) Number
+nr2 = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 2)))) ExactNumber
 
 nr2' :: U U2
-nr2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 2)))) Range
+nr2' = unumEncode (Proxy :: Proxy U2) (Proxy :: Proxy (Rcp (Neg (I 2)))) OpenInterval
 
 instance SornAdd U2 where
    sornAddU x y
-      -- negatives
-      | unumSign x == Negative
-        && unumSign y == Negative = sornNegate (sornAddU (unumNegate x) (unumNegate y))
       -- infinite
       | x == r0 && y == r0    = sornFull
       | x == r0               = sornSingle r0
       -- 0
       | x == u0               = sornSingle y
+      -- negatives
+      | unumSign x == Negative
+        && unumSign y == Negative = sornNegate (sornAddU (unumNegate x) (unumNegate y))
       -- 0..
       | x == u0' && y == r0'   = sornFromElems [r0',n2,n2']
       | x == u0' && y == n2    = sornSingle n2'
