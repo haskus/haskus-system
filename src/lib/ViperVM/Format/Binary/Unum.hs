@@ -5,7 +5,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module ViperVM.Format.Binary.Unum
    ( Unum
@@ -22,14 +24,17 @@ module ViperVM.Format.Binary.Unum
    , unumSize
    , unumZero
    , unumInfinite
-   , encode
+   , unumEncode
+   , unumBits
    , unumNegate
    , unumReciprocate
+   , unumLabels
    , Sign (..)
-   , sign
+   , unumSign
    -- * SORN
    , SORN
    , SORNBackingWord
+   , sornBits
    , sornSize
    , sornEmpty
    , sornFull
@@ -68,9 +73,27 @@ import ViperVM.Utils.HList
 --       Unum '[I 1, PI]  => /0 .. -PI .. -1 .. -/PI .. 0 .. /PI .. 1 .. PI .. /0
 data Unum (xs :: [*])
 
+
+class UnumNum a where
+   unumLabel :: a -> String
+
 data I (n :: Nat)
 data Neg a
 data Rcp a
+data Uncertain a
+
+instance KnownNat n => UnumNum (I n) where
+   unumLabel _ = show (natVal (Proxy :: Proxy n))
+
+instance UnumNum x => UnumNum (Rcp x) where
+   unumLabel _ = "/" ++ unumLabel (undefined :: x)
+
+instance UnumNum x => UnumNum (Neg x) where
+   unumLabel _ = "-" ++ unumLabel (undefined :: x)
+
+instance UnumNum x => UnumNum (Uncertain x) where
+   unumLabel _ = unumLabel (undefined :: x) ++ ".."
+
 type Infinite = Rcp (I 0)
 
 type family Simplify a where
@@ -103,6 +126,30 @@ type family UnumIndexables x where
    UnumIndexables u =
       Nub (Concat (UnumPositives u) (Reverse (MapNeg (UnumPositives u))))
 
+-- | All unum members
+type family UnumMembers x where
+   UnumMembers u = MakeMembers (UnumIndexables u)
+
+type family MakeMembers xs where
+   MakeMembers '[]       = '[]
+   MakeMembers (x ': xs) = x ': Uncertain x ': MakeMembers xs
+ 
+
+data GetLabel = GetLabel
+
+instance  forall a r.
+   ( UnumNum a
+   , r ~ [String]
+   ) => ApplyAB GetLabel (a, [String]) r where
+   applyAB _ (x,xs) = unumLabel x : xs
+
+-- | Unum labels
+unumLabels :: forall u v.
+   ( HFoldr' GetLabel [String] v [String]
+   , v ~ UnumMembers u
+   ) => Proxy u -> [String]
+unumLabels _ = hFoldr' GetLabel ([] :: [String]) (undefined :: HList v)
+
 -- | Compute the number of bits required
 type family UnumSize x where
    UnumSize x = 1 + Log2 (Length (UnumNumbers x)) -- add 1 for ubit
@@ -119,7 +166,7 @@ unumZero :: forall u.
    , Bits (BackingWord u)
    , Encodable (I 0) u
    ) => U u
-unumZero = encode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) Number
+unumZero = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) Number
 
 -- | Infinite
 unumInfinite :: forall u.
@@ -127,7 +174,7 @@ unumInfinite :: forall u.
    , Bits (BackingWord u)
    , Encodable Infinite u
    ) => U u
-unumInfinite = encode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
+unumInfinite = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
 
 type family Div2 n where
   Div2 0 = 0
@@ -171,12 +218,18 @@ newtype U u = U (BackingWord u)
 instance Eq (BackingWord u) => Eq (U u) where
    U x == U y = x == y
 
-instance
+instance forall u v.
+   ( HFoldr' GetLabel [String] v [String]
+   , v ~ UnumMembers u
+   , Integral (BackingWord u)
+   ) => Show (U u) where
+   show (U w) = unumLabels (Proxy :: Proxy u) !! fromIntegral w
+
+unumBits :: forall u.
    ( FiniteBits (BackingWord u)
    , KnownNat (UnumSize u)
-   ) => Show (U u) where
-   show (U w) = "Unum: " ++ drop (finiteBitSize w - fromIntegral (unumSize (Proxy :: Proxy u))) (bitsToString w)
-
+   ) => U u -> String
+unumBits (U w) = drop (finiteBitSize w - fromIntegral (unumSize (Proxy :: Proxy u))) (bitsToString w)
 
 type Encodable x u =
    ( KnownNat (IndexOf (Simplify x) (UnumIndexables u)))
@@ -189,19 +242,19 @@ data UBit
    deriving (Show,Eq)
 
 -- | Encode a number
-encode :: forall i x u.
+unumEncode :: forall i x u.
    ( i ~ IndexOf (Simplify x) (UnumIndexables u)
    , KnownNat i
    , Num (BackingWord u)
    , Bits (BackingWord u)
    ) => Proxy u -> Proxy x -> UBit -> U u
-encode _ _ b = case b of
+unumEncode _ _ b = case b of
       Number -> U w
       Range  -> U (setBit w 0)
    where
       w = fromIntegral (natVal (Proxy :: Proxy i)) `shiftL` 1
 
-{-# INLINE encode #-}
+{-# INLINE unumEncode #-}
 
 -- | Negate a number
 unumNegate :: forall u.
@@ -234,11 +287,11 @@ data Sign
    deriving (Show,Eq)
 
 -- | Get unum sign
-sign :: forall u.
+unumSign :: forall u.
    ( Bits (BackingWord u)
    , KnownNat (UnumSize u)
    ) => U u -> Sign
-sign (U w) = if testBit w n then Negative else Positive
+unumSign (U w) = if testBit w n then Negative else Positive
    where
       n = fromIntegral (unumSize (Proxy :: Proxy u) - 1)
 
@@ -250,13 +303,27 @@ type family SORNBackingWord u where
 
 newtype SORN u = SORN (SORNBackingWord u)
 
-instance
+instance forall u v.
+   ( KnownNat (SORNSize u)
+   , Bits (SORNBackingWord u)
+   , Num (BackingWord u)
+   , Integral (BackingWord u)
+   , HFoldr' GetLabel [String] v [String]
+   , v ~ UnumMembers u
+   ) => Show (SORN u) where
+   show = show . sornElems
+   
+
+-- | Show SORN bits
+sornBits :: forall u s.
    ( FiniteBits (SORNBackingWord u)
    , KnownNat (UnumSize u)
    , s ~ SORNSize u
    , KnownNat s
-   ) => Show (SORN u) where
-   show (SORN w) = "SORN: " ++ drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
+   ) => SORN u -> String
+sornBits (SORN w) = drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
+
+
 
 -- | Size of a SORN in bits
 sornSize :: forall u s.
@@ -287,7 +354,7 @@ sornNonInfinite ::
    ) => SORN u
 sornNonInfinite = sornRemove (SORN (complement zeroBits)) inf
    where
-      inf = encode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
+      inf = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) Number
 
 -- | Full SORN without infinite
 sornNonZero ::
@@ -361,7 +428,8 @@ sornElems :: forall u s.
    , Bits (SORNBackingWord u)
    , Num (BackingWord u)
    ) => SORN u -> [U u]
-sornElems (SORN x) = foldl b [] [s-1, s-2 .. 0]
+sornElems (SORN x) = foldl b [] (reverse ([s `shiftR` 1 .. s-1]
+                                  ++ [0 .. (s-1) `shiftR` 1]))
    where
       s      = fromIntegral (natVal (Proxy :: Proxy s))
       b us i = if testBit x i
