@@ -11,6 +11,7 @@
 
 module ViperVM.Format.Binary.Unum
    ( Unum
+   , UnumNum (..)
    , I
    , U (..)
    , Neg
@@ -454,6 +455,25 @@ class SornAdd u where
       ) => SORN u -> SORN u -> SORN u
    sornAdd a b =
       foldl sornUnion sornEmpty [ sornAddU x y
+                                | x <- sornElems a
+                                , y <- sornElems b
+                                ]
+   sornSubU :: 
+      ( FiniteBits (BackingWord u)
+      , Num (BackingWord u)
+      , KnownNat (UnumSize u)
+      ) => U u -> U u -> SORN u
+   sornSubU a b = sornAddU a (unumNegate b)
+
+   sornSub ::
+      ( KnownNat (SORNSize u)
+      , Bits (SORNBackingWord u)
+      , FiniteBits (BackingWord u)
+      , Num (BackingWord u)
+      , KnownNat (UnumSize u)
+      ) => SORN u -> SORN u -> SORN u
+   sornSub a b =
+      foldl sornUnion sornEmpty [ sornSubU x y
                                 | x <- sornElems a
                                 , y <- sornElems b
                                 ]
