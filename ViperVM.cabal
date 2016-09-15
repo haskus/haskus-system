@@ -221,6 +221,7 @@ library
     ViperVM.Format.Binary.VariableLength
     ViperVM.Format.Binary.Vector
     ViperVM.Format.Binary.Union
+    ViperVM.Format.Binary.Unum
     ViperVM.Format.Binary.Record
     ViperVM.Format.Binary.Storable
     ViperVM.Format.Binary.Word

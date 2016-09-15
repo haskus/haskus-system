@@ -75,7 +75,7 @@ type family Max (xs :: [Nat]) where
 -- | Helper for Max
 type family Max' (x :: Nat) (xs :: [Nat]) where
    Max' x '[]       = x
-   Max' x (a ': xs) = Max' (IfThenElse (x <=? a) a x) xs
+   Max' x (a ': xs) = Max' (IfNat (x <=? a) a x) xs
 
 -- | Tail of a list
 type family Tail (xs :: [*]) where

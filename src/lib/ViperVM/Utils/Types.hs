@@ -5,7 +5,8 @@
 
 -- | Common type functions
 module ViperVM.Utils.Types
-   ( IfThenElse
+   ( If
+   , IfNat
    , Modulo
    )
 where
@@ -13,9 +14,14 @@ where
 import GHC.TypeLits
 
 -- | If-then-else
-type family IfThenElse c (t :: Nat) (e :: Nat) where
-   IfThenElse 'True  t e = t
-   IfThenElse 'False t e = e
+type family If c t e where
+   If 'True  t e = t
+   If 'False t e = e
+
+-- | If-then-else
+type family IfNat c (t :: Nat) (e :: Nat) where
+   IfNat 'True  t e = t
+   IfNat 'False t e = e
 
 -- | Modulo
 type family Modulo (a :: Nat) (b :: Nat) where

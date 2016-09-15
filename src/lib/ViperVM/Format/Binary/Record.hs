@@ -83,7 +83,7 @@ type family RecordAlignment (fs :: [*]) a where
    RecordAlignment '[]                    a = a
    RecordAlignment (Field name typ ': fs) a =
       RecordAlignment fs
-         (IfThenElse (a <=? Alignment typ) (Alignment typ) a)
+         (IfNat (a <=? Alignment typ) (Alignment typ) a)
 
 -- | Return offset from a field path
 type family FieldPathOffset (fs :: [*]) (path :: [*]) (off :: Nat) where
