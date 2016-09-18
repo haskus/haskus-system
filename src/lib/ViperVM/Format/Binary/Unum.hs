@@ -32,7 +32,7 @@ module ViperVM.Format.Binary.Unum
    , unumLabels
    , Sign (..)
    , unumSign
-   -- * SORN
+   -- * SORN (bit-sets)
    , SORN
    , SORNBackingWord
    , sornBits
@@ -53,6 +53,11 @@ module ViperVM.Format.Binary.Unum
    , sornFromElems
    , sornFromTo
    , SornAdd (..)
+   -- * Contiguous SORN
+   , CSORN (..)
+   , csornToSorn
+   , csornEmpty
+   , csornFromTo
    )
 where
 
@@ -303,6 +308,23 @@ unumSign (U w) =
    where
       n = fromIntegral (unumSize (Proxy :: Proxy u) - 1)
 
+
+
+--------------------------------------------------------------------------------
+-- SORN implementation as bit-sets
+-- -------------------------------
+--  
+-- We use one bit per unum in the set.
+--
+-- E.g., 2-bit  unum means 4-bit          SORN
+--       8-bit  unum means 256-bit        SORN (32 B)
+--       16-bit unum means 65536-bit      SORN (8 kB)
+--       24-bit unum means 16777216-bit   SORN (2 MB)
+--       32-bit unum means 4294967296-bit SORN (512 MB)
+--
+--------------------------------------------------------------------------------
+
+
 type family SORNSize u where
    SORNSize u = 2 * Length (UnumNumbers u)
 
@@ -528,3 +550,77 @@ class SornAdd u where
       foldl sornUnion sornEmpty [ sornSubU x x
                                 | x <- sornElems a
                                 ]
+
+
+
+--------------------------------------------------------------------------------
+-- Contiguous SORN implementation
+-- -------------------------------
+--  
+-- We encode contiguous SORN with two values:
+--    * start: the starting unum
+--    * count: the number of unums from start upwards
+--
+-- Pros:
+--    * size is much smaller (2 * unum size),  especially for look-up tables because
+--    connected sets remain connected under addition, subtraction, multiplication
+--    and division.
+--    * trivial logic for negate and reciprocate (i.e., operate on bounds only)
+--------------------------------------------------------------------------------
+
+
+data CSORN u = CSORN 
+                  { csornStart :: !(U u)
+                  , csornCount :: !(BackingWord u)
+                  }
+
+instance forall u v.
+   ( KnownNat (SORNSize u)
+   , KnownNat (UnumSize u)
+   , FiniteBits (BackingWord u)
+   , Bits (SORNBackingWord u)
+   , Num (BackingWord u)
+   , Integral (BackingWord u)
+   , HFoldr' GetLabel [String] v [String]
+   , v ~ UnumMembers u
+   ) => Show (CSORN u) where
+   show = show . csornToSorn 
+
+-- | Convert a contiguous SORN into a SORN
+csornToSorn :: forall u.
+   ( KnownNat (UnumSize u)
+   , Num (BackingWord u)
+   , Integral (BackingWord u)
+   , FiniteBits (BackingWord u)
+   , Bits (SORNBackingWord u)
+   ) => CSORN u -> SORN u
+csornToSorn c =
+   if csornCount c == 0
+      then sornEmpty
+      else sornFromTo (csornStart c) (U x')
+         where
+            U x = csornStart c
+            x'  = maskLeastBits s (x + csornCount c - 1)
+            s   = unumSize (Proxy :: Proxy u)
+
+-- | Empty contigiuous SORN
+csornEmpty :: forall u.
+   ( Num (BackingWord u)
+   , Bits (BackingWord u)
+   , Encodable (I 0) u
+   ) => CSORN u
+csornEmpty = CSORN unumZero zeroBits
+
+-- | Contiguous SORN build
+csornFromTo :: forall u.
+   ( Num (BackingWord u)
+   , Bits (BackingWord u)
+   , KnownNat (UnumSize u)
+   , FiniteBits (BackingWord u)
+   ) => U u -> U u -> CSORN u
+csornFromTo start stop = CSORN start count
+   where
+      U x = start
+      U y = stop
+      s   = unumSize (Proxy :: Proxy u)
+      count = maskLeastBits s (y-x+1)
