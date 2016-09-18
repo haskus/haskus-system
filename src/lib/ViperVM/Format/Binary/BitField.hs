@@ -34,7 +34,9 @@
 -- that must be large enough to hold the number of bits for the field.
 --
 -- Operations on BitFields expect that the cumulated size of the fields is equal
--- to the whole word size: use a padding field if necessary.
+-- to the whole word size: use a padding field if necessary. Otherwise you can
+-- use unsafe versions of the functions: extractField', updateField',
+-- withField'.
 -- 
 -- You can extract and update the value of a field by its name:
 --
@@ -63,11 +65,13 @@ module ViperVM.Format.Binary.BitField
    , bitFieldsBits
    , BitField (..)
    , extractField
+   , extractField'
    , updateField
+   , updateField'
    , withField
+   , withField'
    , matchFields
    , matchNamedFields
-   , BitSize
    , Field
    )
 where
@@ -105,14 +109,6 @@ instance Storable s => CStorable (BitField n name s) where
    cPoke      = poke
    cAlignment = alignment
    cSizeOf    = sizeOf
-
--- | Bit size
--- TODO: use custom Storable class with sizeOf as type literal
-type family BitSize a :: Nat
-type instance BitSize Word8  = 8
-type instance BitSize Word16 = 16
-type instance BitSize Word32 = 32
-type instance BitSize Word64 = 64
 
 -- | Get the bit offset of a field from its name
 type family Offset (name :: Symbol) fs :: Nat where
@@ -205,12 +201,22 @@ extractField :: forall name fields b .
    , Bits b, Integral b
    , Field (Output name fields)
    ) => Proxy name -> BitFields b fields -> Output name fields
-extractField _ (BitFields w) = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
+{-# INLINE extractField #-}
+extractField = extractField' 
+
+-- | Get the value of a field (without checking sizes)
+extractField' :: forall name fields b .
+   ( KnownNat (Offset name fields)
+   , KnownNat (Size name fields)
+   , Bits b, Integral b
+   , Field (Output name fields)
+   ) => Proxy name -> BitFields b fields -> Output name fields
+{-# INLINE extractField' #-}
+extractField' _ (BitFields w) = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
    where
       off = natVal (Proxy :: Proxy (Offset name fields))
       sz  = natVal (Proxy :: Proxy (Size name fields))
 
-{-# INLINE extractField #-}
 
 -- | Set the value of a field
 updateField :: forall name fields b .
@@ -220,13 +226,23 @@ updateField :: forall name fields b .
    , Bits b, Integral b
    , Field (Output name fields)
    ) => Proxy name -> Output name fields -> BitFields b fields -> BitFields b fields
-updateField _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
+{-# INLINE updateField #-}
+updateField = updateField'
+
+-- | Set the value of a field (without checking sizes)
+updateField' :: forall name fields b .
+   ( KnownNat (Offset name fields)
+   , KnownNat (Size name fields)
+   , Bits b, Integral b
+   , Field (Output name fields)
+   ) => Proxy name -> Output name fields -> BitFields b fields -> BitFields b fields
+{-# INLINE updateField' #-}
+updateField' _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
    where
       off  = fromIntegral $ natVal (Proxy :: Proxy (Offset name fields))
       sz   = natVal (Proxy :: Proxy (Size name fields))
       mask = ((1 `shiftL` fromIntegral sz) - 1) `shiftL` off
 
-{-# INLINE updateField #-}
 
 -- | Modify the value of a field
 withField :: forall name fields b f .
@@ -237,11 +253,22 @@ withField :: forall name fields b f .
    , f ~ Output name fields
    , Field f
    ) => Proxy name -> (f -> f) -> BitFields b fields -> BitFields b fields
-withField name f bs = updateField name (f v) bs
-   where
-      v = extractField name bs
-
 {-# INLINE withField #-}
+withField = withField'
+
+-- | Modify the value of a field (without checking sizes)
+withField' :: forall name fields b f .
+   ( KnownNat (Offset name fields)
+   , KnownNat (Size name fields)
+   , Bits b, Integral b
+   , f ~ Output name fields
+   , Field f
+   ) => Proxy name -> (f -> f) -> BitFields b fields -> BitFields b fields
+{-# INLINE withField' #-}
+withField' name f bs = updateField' name (f v) bs
+   where
+      v = extractField' name bs
+
 
 -------------------------------------------------------------------------------------
 -- We use HFoldr' to extract each component and create a HList from it. Then we

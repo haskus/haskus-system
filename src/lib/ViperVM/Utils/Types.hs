@@ -8,10 +8,13 @@ module ViperVM.Utils.Types
    ( If
    , IfNat
    , Modulo
+   , module GHC.TypeLits
+   , Proxy (..)
    )
 where
 
 import GHC.TypeLits
+import Data.Proxy
 
 -- | If-then-else
 type family If c t e where

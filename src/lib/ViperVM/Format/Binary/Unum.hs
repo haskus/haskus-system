@@ -55,19 +55,20 @@ module ViperVM.Format.Binary.Unum
    , SornAdd (..)
    -- * Contiguous SORN
    , CSORN (..)
+   , csornSize
+   , csornBits
    , csornToSorn
    , csornEmpty
    , csornFromTo
    )
 where
 
-import GHC.TypeLits
-import Data.Proxy
-
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.BitField
 import ViperVM.Utils.Types
 import ViperVM.Utils.HList
+import ViperVM.Utils.Flow
 
 -- | An Unum
 --
@@ -195,16 +196,7 @@ type family Log2 n where
 
 -- | Backing word for the unum
 type family BackingWord x where
-   BackingWord x = BackingWord' (UnumSize x)
-
-type family BackingWord' (n :: Nat) where
-   BackingWord' n =
-       If (n <=? 8) Word8
-      (If (n <=? 16) Word16
-      (If (n <=? 32) Word32
-      (If (n <=? 64) Word64
-       Word64 -- FIXME
-      )))
+   BackingWord x = WordAtLeast (UnumSize x)
 
 type family MapRcp xs where
    MapRcp '[] = '[]
@@ -329,7 +321,7 @@ type family SORNSize u where
    SORNSize u = 2 * Length (UnumNumbers u)
 
 type family SORNBackingWord u where
-   SORNBackingWord u = BackingWord' (SORNSize u)
+   SORNBackingWord u = WordAtLeast (SORNSize u)
 
 newtype SORN u = SORN (SORNBackingWord u)
 
@@ -568,20 +560,47 @@ class SornAdd u where
 --    * trivial logic for negate and reciprocate (i.e., operate on bounds only)
 --------------------------------------------------------------------------------
 
+type family CSORNSize u where
+   CSORNSize u = 2 * UnumSize u
 
-data CSORN u = CSORN 
-                  { csornStart :: !(U u)
-                  , csornCount :: !(BackingWord u)
-                  }
+type family CSORNBackingWord u where
+   CSORNBackingWord u = WordAtLeast (CSORNSize u)
+
+newtype CSORN u
+   = CSORN (BitFields (CSORNBackingWord u)
+      '[ BitField (UnumSize u) "start" (BackingWord u)
+       , BitField (UnumSize u) "count" (BackingWord u)
+       ])
+
+csornStart :: forall u.
+   ( Integral (BackingWord u)
+   , Integral (CSORNBackingWord u)
+   , KnownNat (UnumSize u)
+   , Bits (CSORNBackingWord u)
+   , Field (BackingWord u)
+   ) => CSORN u -> U u
+csornStart (CSORN c) = U (extractField' (Proxy :: Proxy "start") c)
+
+csornCount ::
+   ( Integral (BackingWord u)
+   , Integral (CSORNBackingWord u)
+   , KnownNat (UnumSize u)
+   , Bits (CSORNBackingWord u)
+   , Field (BackingWord u)
+   ) => CSORN u -> BackingWord u
+csornCount (CSORN c) = extractField' (Proxy :: Proxy "count") c
 
 instance forall u v.
    ( KnownNat (SORNSize u)
    , KnownNat (UnumSize u)
    , FiniteBits (BackingWord u)
-   , Bits (SORNBackingWord u)
+   , Bits (CSORNBackingWord u)
+   , Integral (CSORNBackingWord u)
    , Num (BackingWord u)
    , Integral (BackingWord u)
    , HFoldr' GetLabel [String] v [String]
+   , Field (BackingWord u)
+   , Bits (SORNBackingWord u)
    , v ~ UnumMembers u
    ) => Show (CSORN u) where
    show = show . csornToSorn 
@@ -591,8 +610,11 @@ csornToSorn :: forall u.
    ( KnownNat (UnumSize u)
    , Num (BackingWord u)
    , Integral (BackingWord u)
+   , Integral (CSORNBackingWord u)
+   , Bits (CSORNBackingWord u)
    , FiniteBits (BackingWord u)
    , Bits (SORNBackingWord u)
+   , Field (BackingWord u)
    ) => CSORN u -> SORN u
 csornToSorn c =
    if csornCount c == 0
@@ -603,13 +625,28 @@ csornToSorn c =
             x'  = maskLeastBits s (x + csornCount c - 1)
             s   = unumSize (Proxy :: Proxy u)
 
+-- | Size of a contiguous SORN in bits
+csornSize :: forall u s.
+   ( s ~ CSORNSize u
+   , KnownNat s
+   ) => Proxy u -> Word
+csornSize _ = fromIntegral (natVal (Proxy :: Proxy s))
+
+-- | Show contiguous SORN bits
+csornBits :: forall u s.
+   ( FiniteBits (CSORNBackingWord u)
+   , KnownNat (UnumSize u)
+   , s ~ CSORNSize u
+   , KnownNat s
+   ) => CSORN u -> String
+csornBits (CSORN (BitFields w)) = drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
+
+
 -- | Empty contigiuous SORN
 csornEmpty :: forall u.
-   ( Num (BackingWord u)
-   , Bits (BackingWord u)
-   , Encodable (I 0) u
+   ( Bits (CSORNBackingWord u)
    ) => CSORN u
-csornEmpty = CSORN unumZero zeroBits
+csornEmpty = CSORN (BitFields zeroBits)
 
 -- | Contiguous SORN build
 csornFromTo :: forall u.
@@ -617,10 +654,16 @@ csornFromTo :: forall u.
    , Bits (BackingWord u)
    , KnownNat (UnumSize u)
    , FiniteBits (BackingWord u)
+   , Integral (CSORNBackingWord u)
+   , Bits (CSORNBackingWord u)
+   , Field (BackingWord u)
    ) => U u -> U u -> CSORN u
-csornFromTo start stop = CSORN start count
+csornFromTo start stop = CSORN b
    where
-      U x = start
-      U y = stop
-      s   = unumSize (Proxy :: Proxy u)
+      U x   = start
+      U y   = stop
+      s     = unumSize (Proxy :: Proxy u)
       count = maskLeastBits s (y-x+1)
+      b     = BitFields 0
+              |> updateField' (Proxy :: Proxy "start") x
+              |> updateField' (Proxy :: Proxy "count") count
