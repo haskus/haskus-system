@@ -1,4 +1,20 @@
 -- | Linux device handling
+--
+-- Devices in the kernel are identified with two numbers (major and minor) and
+-- their type (character or block).
+--
+-- For each device, there is a 1-1 correspondance with some paths in sysfs's
+-- /devices directory:
+--
+--    * type/major/minor -> sysfs path
+--       Look at target of symbolic link /dev/{block,char}/MAJOR:MINOR
+--
+--    * sysfs path -> type/major/minor
+--       In the sysfs's device directory (/devices/**):
+--          * type: if basename of "subsystem" link is "block" then block else
+--          character
+--          * major/minor: read contents of "dev" file
+--
 module ViperVM.Arch.Linux.Devices
    ( Device(..)
    , makeDevice
@@ -15,17 +31,9 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 
 -- | Device
---
--- Devices in the kernel are identified with two numbers (major and minor) and
--- their type (character or block).
---
--- For each device, there is a 1-1 correspondance with a path in sysfs's
--- /devices. The correspondance can be obtained by looking into sysfs's
--- /dev/{block,char} directories or by looking into "dev" files in sysfs's
--- directory for each device.
 data Device = Device
-   { deviceType :: !DeviceType
-   , deviceID   :: {-# UNPACK #-} !DeviceID
+   { deviceType :: !DeviceType               -- ^ Device type
+   , deviceID   :: {-# UNPACK #-} !DeviceID  -- ^ Device major and minor
    }
    deriving (Show,Eq,Ord)
 
