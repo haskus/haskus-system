@@ -54,6 +54,7 @@ module ViperVM.Arch.Linux.FileSystem
    , sysCreateSpecialFileAt
    -- * Device files
    , Device(..)
+   , makeDevice
    , DeviceType(..)
    , DeviceID(..)
    , createDeviceFile
@@ -472,6 +473,10 @@ data Device = Device
    , deviceID   :: DeviceID
    }
    deriving (Show,Eq,Ord)
+
+-- | Create a device identigier
+makeDevice :: DeviceType -> Word32 -> Word32 -> Device
+makeDevice typ major minor = Device typ (DeviceID major minor)
 
 -- | Device type
 data DeviceType
