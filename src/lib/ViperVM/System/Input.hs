@@ -38,9 +38,9 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
       isEvent (p,_) = "event" `isPrefixOf` takeBaseName p
       devs' = filter isEvent devs
    forM devs' $ \(devpath,dev) -> do
-      fd   <- getDeviceHandle dm (Device CharDevice dev)
+      fd   <- getDeviceHandle dm dev
       void $ sysCallWarn "Grab device" $ grabDevice fd
-      InputDevice devpath (Device CharDevice dev) fd
+      InputDevice devpath dev fd
          <$> sysCallAssert "Get device name"
                   (Input.getDeviceName fd)
          <*> sysCallAssert "Get device info"

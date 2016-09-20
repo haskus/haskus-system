@@ -1,3 +1,7 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
+
 -- | Linux device handling
 --
 -- Devices in the kernel are identified with two numbers (major and minor) and
@@ -21,14 +25,30 @@ module ViperVM.Arch.Linux.Devices
    , DeviceType(..)
    , DeviceID(..)
    , createDeviceFile
+   , sysfsReadDevFile
+   , sysfsReadDev
    )
 where
-
-import ViperVM.Format.Binary.Word
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Arch.Linux.FileSystem.ReadWrite
+import ViperVM.Arch.Linux.FileSystem.SymLink
+import ViperVM.Arch.Linux.Error
+
+import qualified ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Text
+import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Flow
+import ViperVM.System.Sys
+import ViperVM.System.FileSystem
+
+import System.FilePath
+import Control.Monad (void)
+import Text.Megaparsec
+import Text.Megaparsec.Lexer hiding (space)
+
 
 -- | Device
 data Device = Device
@@ -56,3 +76,52 @@ createDeviceFile hdl path dev perm = sysCreateSpecialFile hdl path typ perm (Jus
                   CharDevice  -> FileTypeCharDevice
                   BlockDevice -> FileTypeBlockDevice
 
+
+-- | Read device major and minor in "dev" file
+sysfsReadDevFile' :: Handle -> SysV '[DeviceID,ErrorCode]
+sysfsReadDevFile' devfd = do
+   let
+      -- parser for dev files
+      -- content format is: MMM:mmm\n (where M is major and m is minor)
+      parseDevFile :: Parsec Text DeviceID
+      parseDevFile = do
+         major <- fromIntegral <$> decimal
+         void (char ':')
+         minor <- fromIntegral <$> decimal
+         void eol
+         return (DeviceID major minor)
+
+   -- 16 bytes should be enough
+   sysCallWarn "Read dev file" (handleReadBuffer devfd Nothing 16)
+      >.-.> (\content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
+         Nothing -> error "Invalid dev file format"
+         Just x  -> x)
+
+-- | Read device major and minor from device path
+sysfsReadDevFile :: Handle -> FilePath -> Sys (Maybe DeviceID)
+sysfsReadDevFile hdl path = do
+   withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty sysfsReadDevFile'
+      >.-.> Just
+      >..-.> const Nothing
+      |> flowRes
+
+-- | Read device and subsystem
+sysfsReadDev :: Handle -> FilePath -> Sys (Maybe String, Maybe Device)
+sysfsReadDev hdl path = do
+   -- read the subsystem link
+   readSymbolicLink (Just hdl) (path </> "subsystem")
+      -- on success, only keep the basename as it is the subsystem name
+      >.-.> Just . takeBaseName
+      -- otherwise
+      >..-.> const Nothing
+      -- try to read "dev" file (we need the subsystem to know whether it is a
+      -- block or a char device)
+      >.~.> \case
+         Just s  -> do
+            let f = case s of
+                        "block" -> Device BlockDevice
+                        _       -> Device CharDevice
+            devid <- sysfsReadDevFile hdl path
+            return (Just s, f <$> devid)
+         Nothing -> return (Nothing, Nothing)
+      |> flowRes

@@ -5,7 +5,6 @@
 -- | Devices management
 module ViperVM.System.Devices
    ( Device (..)
-   , DeviceType (..)
    , DeviceManager (..)
    , DeviceTree (..)
    , SubsystemIndex (..)
@@ -22,7 +21,7 @@ import Prelude hiding (lookup)
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.Text (Text, bufferDecodeUtf8)
+import ViperVM.Format.Text (Text)
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
@@ -30,7 +29,6 @@ import ViperVM.Arch.Linux.Devices
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
-import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.SymLink
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
@@ -41,15 +39,12 @@ import ViperVM.Utils.Maybe
 
 import System.FilePath
 import System.Posix.Types (Fd(..))
-import Control.Monad (void,forever)
+import Control.Monad (forever)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Data.Set (Set)
 import Control.Concurrent
 import Control.Concurrent.STM
-
-import Text.Megaparsec
-import Text.Megaparsec.Lexer hiding (space)
 
 -- Note [sysfs]
 -- ~~~~~~~~~~~~
@@ -184,6 +179,7 @@ import Text.Megaparsec.Lexer hiding (space)
 -- with a single global lock thereafter.
 data DeviceTree = DeviceNode
    { deviceNodeSubsystem     :: Maybe Text          -- ^ Subsystem
+   , deviceDevice            :: Maybe Device        -- ^ Device identifier
    , deviceNodeChildren      :: Map Text DeviceTree -- ^ Children devices
    , deviceNodeOnRemove      :: TChan KernelEvent   -- ^ On "remove" event
    , deviceNodeOnChange      :: TChan KernelEvent   -- ^ On "change" event
@@ -209,6 +205,7 @@ data SubsystemIndex = SubsystemIndex
    , subsystemOnAdd    :: TChan Text -- ^ Signal device addition
    , subsystemOnRemove :: TChan Text -- ^ Signal device removal
    }
+
 
 -- | Init a device manager
 initDeviceManager :: Handle -> Handle -> Sys DeviceManager
@@ -261,22 +258,15 @@ initDeviceManager sysfs devfs = do
                            -- return Nothing on error
                            >..-.> const Nothing
 
-         -- read the subsystem link
-         readSymbolicLink (Just hdl) "subsystem"
-            -- on success, only keep the basename as it is the subsystem name
-            >.-.> (Just . Text.pack . takeBaseName)
-            -- on error, use Nothing for the subsystem
-            >..-.> const Nothing
-            -- then create the node
-            >.~.> (\subsystem -> do
-                     node <- DeviceNode subsystem (Map.fromList children)
-                              <$> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
-                              <*> sysIO newBroadcastTChanIO
-                     return (name,node))
+         (subsystem,dev) <- sysfsReadDev hdl "."
+         node <- DeviceNode (Text.pack <$> subsystem) dev (Map.fromList children)
+                  <$> sysIO newBroadcastTChanIO
+                  <*> sysIO newBroadcastTChanIO
+                  <*> sysIO newBroadcastTChanIO
+                  <*> sysIO newBroadcastTChanIO
+                  <*> sysIO newBroadcastTChanIO
+                  <*> sysIO newBroadcastTChanIO
+         flowRet (name,node)
 
       flags = BitSet.fromList [ HandleDirectory
                               , HandleNonBlocking
@@ -389,30 +379,24 @@ eventThread ch dm = do
          "devices" -> case kernelEventAction ev of
 
             ActionAdd        -> do
-               -- read the subsystem link
-               let subpath = Text.unpack (kernelEventDevPath ev) </> "subsystem"
-               readSymbolicLink (Just (dmSysFS dm)) subpath
-                  >.-.> Just . Text.pack . takeBaseName
-                  >..-.> const Nothing
-                  -- on success, add the node in the tree and signal it
-                  >.~!> (\subsystem -> do
-                              -- create the node (without any child, there will
-                              -- be events for them too)
-                              node <- DeviceNode subsystem Map.empty
-                                       <$> sysIO newBroadcastTChanIO
-                                       <*> sysIO newBroadcastTChanIO
-                                       <*> sysIO newBroadcastTChanIO
-                                       <*> sysIO newBroadcastTChanIO
-                                       <*> sysIO newBroadcastTChanIO
-                                       <*> sysIO newBroadcastTChanIO
-                              sysIO $ atomically $ do
-                                 modifyTVar (dmDevices dm) (insert devTreePath node)
-                                 -- Add device into subsystem index
-                                 -- TODO
-                                 -- Signal the addition
-                                 -- TODO
-                        )
+               (subsystem,dev) <- sysfsReadDev (dmSysFS dm) (Text.unpack (kernelEventDevPath ev))
+               -- create the node (without any child, there will be events for
+               -- them too)
+               node <- DeviceNode (Text.pack <$> subsystem) dev Map.empty
+                        <$> sysIO newBroadcastTChanIO
+                        <*> sysIO newBroadcastTChanIO
+                        <*> sysIO newBroadcastTChanIO
+                        <*> sysIO newBroadcastTChanIO
+                        <*> sysIO newBroadcastTChanIO
+                        <*> sysIO newBroadcastTChanIO
 
+               sysIO $ atomically $ do
+                  -- update the tree
+                  modifyTVar (dmDevices dm) (insert devTreePath node)
+                  -- Add device into subsystem index
+                  -- TODO
+                  -- Signal the addition
+                  -- TODO
 
             ActionRemove     -> do
                act <- sysIO $ atomically $ do
@@ -543,7 +527,7 @@ listDeviceClasses dm = do
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,DeviceID)]
+listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,Device)]
 listDevicesWithClass dm cls =
       -- try to open /class/CLASS directory
       readDevs ("class" </> cls)
@@ -560,38 +544,18 @@ listDevicesWithClass dm cls =
          let dirs'  = fmap entryName dirs
          flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
 
-
-      -- parser for dev files
-      -- content format is: MMM:mmm\n (where M is major and m is minor)
-      parseDevFile :: Parsec Text DeviceID
-      parseDevFile = do
-         major <- fromIntegral <$> decimal
-         void (char ':')
-         minor <- fromIntegral <$> decimal
-         void eol
-         return (DeviceID major minor)
-
-      -- read device major and minor in "dev" file
-      readDevFile :: Handle -> Flow Sys '[DeviceID,ErrorCode]
-      readDevFile devfd = do
-         -- 16 bytes should be enough
-         sysCallWarn "Read dev file" (handleReadBuffer devfd Nothing 16)
-         >.-.> \content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
-            Nothing -> error "Invalid dev file format"
-            Just x  -> x
+      makeDevicePath path = concat ("/" : dropWhile (/= "devices/") (splitPath path))
 
       -- read device directory
-      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,DeviceID)]
+      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
       readDev hdl dir = do
          -- read symlink pointing into /devices (we shall not directly use/return paths in /class)
          readSymbolicLink (Just hdl) dir
-            >.~&> (\path -> 
-               -- the link is relative to the current dir (i.e., /class/CLASS or
-               -- /bus/CLASS/devices)
-               withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty readDevFile
-                  -- return an absolute path of the form "/devices/*"
-                  >.-.>  (Just . (concat ("/" : dropWhile (/= "devices/") (splitPath path)),)))
+            -- the link is relative to the current dir (i.e., /class/CLASS or
+            -- /bus/CLASS/devices), return an absolute path of the form
+            -- "/devices/*"
+            >.-.> makeDevicePath
+            >.~.> (\path -> fmap (path,) . snd <$> sysfsReadDev (dmSysFS dm) path)
             -- on error (e.g., if there is no "dev" file), skip the device directory
-            >..~#> const (flowRet Nothing)
-
+            >..-.> const Nothing
 

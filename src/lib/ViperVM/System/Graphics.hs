@@ -74,13 +74,13 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
       isCard (p,_) = "card" `isPrefixOf` takeBaseName p
       devs' = filter isCard devs
    forM devs' $ \(devpath,dev) -> do
-      hdl   <- getDeviceHandle dm (Device CharDevice dev)
+      hdl   <- getDeviceHandle dm dev
       -- We support these capabilities
       setClientCapability hdl ClientCapStereo3D        True
       setClientCapability hdl ClientCapUniversalPlanes True
       setClientCapability hdl ClientCapAtomic          True
       -- Create the DRM event reader thread
-      GraphicCard devpath (Device CharDevice dev) (read (drop 4 devpath)) hdl
+      GraphicCard devpath dev (read (drop 4 devpath)) hdl
          <$> newEventWaiterThread hdl
 
 
