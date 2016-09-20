@@ -18,8 +18,6 @@ module ViperVM.Arch.Linux.FileSystem
    , AccessMode(..)
    , AccessModes
    , FileLock(..)
-   , Device(..)
-   , withDevice
    , Stat(..)
    , sysOpen
    , sysOpenAt
@@ -54,7 +52,10 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSyncFS
    , sysCreateSpecialFile
    , sysCreateSpecialFileAt
+   -- * Device files
+   , Device(..)
    , DeviceType(..)
+   , DeviceID(..)
    , createDeviceFile
    )
 where
@@ -328,41 +329,6 @@ makeMode typ perm opt =
 modeFilePermission :: (Integral a, FiniteBits a) => a -> FilePermissions
 modeFilePermission x = fromBits (fromIntegral x .&. 0x01FF)
 
--- | Device identifier
-data Device = Device
-   { deviceMajor :: Word32
-   , deviceMinor :: Word32
-   } deriving (Show,Eq)
-
-instance Storable Device where
-   sizeOf _    = 8
-   alignment _ = alignment (undefined :: Word64)
-   peek x      = f <$> peek (castPtr x :: Ptr Word64)
-      where
-         f y = Device
-            { deviceMajor = fromIntegral $
-                              ((y `shiftR` 8) .&. 0xFFF) .|.
-                              ((y `shiftR` 32) .&. complement 0xFFF)
-            , deviceMinor = fromIntegral $
-                              (y .&. 0xFF) .|.
-                              ((y `shiftR` 12) .&. complement 0xFF)
-            }
-   poke ptr x = poke (castPtr ptr :: Ptr Word64) (toKernelDevice x)
-
--- | Convert a Device into a Word64 suitable for the kernel
-toKernelDevice :: Device -> Word64
-toKernelDevice dev =
-      (minor .&. 0xFF) 
-        .|. ((major .&. 0xfff) `shiftL` 8)
-        .|. ((minor .&. complement 0xff) `shiftL` 12)
-        .|. ((major .&. complement 0xfff) `shiftL` 32)
-   where
-      minor = fromIntegral (deviceMinor dev) :: Word64
-      major = fromIntegral (deviceMajor dev) :: Word64
-
--- | Convert a Device into a Word64 suitable for the kernel
-withDevice :: Device -> (Word64 -> a) -> a
-withDevice dev f = f (toKernelDevice dev)
 
 -- | File stat
 --
@@ -370,14 +336,14 @@ withDevice dev f = f (toKernelDevice dev)
 -- architectures (a lot of ifdefs for field sizes and field order...)
 -- This one is for x86-64
 data StatStruct = StatStruct
-   { statDevice'           :: StorableWrap Device
+   { statDevice'           :: StorableWrap DeviceID
    , statInode'            :: Word64
    , statLinkCount'        :: Word64
    , statMode'             :: Word32
    , statUID'              :: Word32
    , statGID'              :: Word32
    , statPad0'             :: Word32
-   , statDevNum'           :: StorableWrap Device
+   , statDevNum'           :: StorableWrap DeviceID
    , statSize'             :: Int64
    , statBlockSize'        :: Int64
    , statBlockCount'       :: Int64
@@ -393,7 +359,7 @@ instance Storable StatStruct where
    peek        = cPeek
 
 data Stat = Stat
-   { statDevice            :: Device
+   { statDevice            :: DeviceID
    , statInode             :: Word64
    , statLinkCount         :: Word64
    , statMode              :: Word32
@@ -402,7 +368,7 @@ data Stat = Stat
    , statFilePermissions   :: FilePermissions
    , statUID               :: Word32
    , statGID               :: Word32
-   , statDevNum            :: Device
+   , statDevNum            :: DeviceID
    , statSize              :: Int64
    , statBlockSize         :: Int64
    , statBlockCount        :: Int64
@@ -465,28 +431,47 @@ sysSyncFS (Handle fd) = onSuccess (syscall_syncfs fd) (const ())
 -- | Create a special file
 --
 -- mknod syscall
-sysCreateSpecialFile :: FilePath -> FileType -> FilePermissions -> Maybe Device -> SysRet ()
+sysCreateSpecialFile :: FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> SysRet ()
 sysCreateSpecialFile path typ perm dev = do
    let 
       mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
-      dev' = fromMaybe (Device 0 0) dev
+      dev' = fromMaybe (DeviceID 0 0) dev
 
    withCString path $ \path' ->
-      withDevice dev' $ \dev'' ->
+      withDeviceID dev' $ \dev'' ->
          onSuccess (syscall_mknod path' mode dev'') (const ())
 
 -- | Create a special file
 --
 -- mknodat syscall
-sysCreateSpecialFileAt :: Handle -> FilePath -> FileType -> FilePermissions -> Maybe Device -> SysRet ()
+sysCreateSpecialFileAt :: Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> SysRet ()
 sysCreateSpecialFileAt (Handle fd) path typ perm dev = do
    let 
       mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
-      dev' = fromMaybe (Device 0 0) dev
+      dev' = fromMaybe (DeviceID 0 0) dev
 
    withCString path $ \path' ->
-      withDevice dev' $ \dev'' ->
+      withDeviceID dev' $ \dev'' ->
          onSuccess (syscall_mknodat fd path' mode dev'') (const ())
+
+----------------------------------
+-- Device files
+----------------------------------
+
+-- | Device
+--
+-- Devices in the kernel are identified with two numbers (major and minor) and
+-- their type (character or block).
+--
+-- For each device, there is a 1-1 correspondance with a path in sysfs's
+-- /devices. The correspondance can be obtained by looking into sysfs's
+-- /dev/{block,char} directories or by looking into "dev" files in sysfs's
+-- directory for each device.
+data Device = Device
+   { deviceType :: DeviceType
+   , deviceID   :: DeviceID
+   }
+   deriving (Show,Eq,Ord)
 
 -- | Device type
 data DeviceType
@@ -494,10 +479,50 @@ data DeviceType
    | BlockDevice  -- ^ Block device
    deriving (Show,Eq,Ord)
 
--- | Create a device special file
-createDeviceFile :: Handle -> FilePath -> DeviceType -> FilePermissions -> Device -> SysRet ()
-createDeviceFile fd path typ perm dev = sysCreateSpecialFileAt fd path typ' perm (Just dev)
+-- | Device identifier
+data DeviceID = DeviceID
+   { deviceMajor :: !Word32 -- ^ Major
+   , deviceMinor :: !Word32 -- ^ Minor
+   } deriving (Show,Eq,Ord)
+
+instance Storable DeviceID where
+   sizeOf _    = 8
+   alignment _ = alignment (undefined :: Word64)
+   peek x      = fromKernelDevice <$> peek (castPtr x :: Ptr Word64)
+   poke ptr x  = poke (castPtr ptr :: Ptr Word64) (toKernelDevice x)
+
+-- | Convert a DeviceID into a Word64 suitable for the kernel
+toKernelDevice :: DeviceID -> Word64
+toKernelDevice dev =
+      (minor .&. 0xFF) 
+        .|. ((major .&. 0xfff) `shiftL` 8)
+        .|. ((minor .&. complement 0xff) `shiftL` 12)
+        .|. ((major .&. complement 0xfff) `shiftL` 32)
    where
-      typ' = case typ of
-         CharDevice  -> FileTypeCharDevice
-         BlockDevice -> FileTypeBlockDevice
+      minor = fromIntegral (deviceMinor dev) :: Word64
+      major = fromIntegral (deviceMajor dev) :: Word64
+
+fromKernelDevice :: Word64 -> DeviceID
+fromKernelDevice y = DeviceID
+   { deviceMajor = fromIntegral $
+                     ((y `shiftR` 8) .&. 0xFFF) .|.
+                     ((y `shiftR` 32) .&. complement 0xFFF)
+   , deviceMinor = fromIntegral $
+                     (y .&. 0xFF) .|.
+                     ((y `shiftR` 12) .&. complement 0xFF)
+   }
+
+
+-- | Use a DeviceID as a Word64 suitable for the kernel
+withDeviceID :: DeviceID -> (Word64 -> a) -> a
+withDeviceID dev f = f (toKernelDevice dev)
+
+-- | Create a device special file
+createDeviceFile :: Handle -> FilePath -> Device -> FilePermissions -> SysRet ()
+createDeviceFile fd path dev perm = sysCreateSpecialFileAt fd path typ perm (Just devid)
+   where
+      devid = deviceID dev
+      typ   = case deviceType dev of
+                  CharDevice  -> FileTypeCharDevice
+                  BlockDevice -> FileTypeBlockDevice
+

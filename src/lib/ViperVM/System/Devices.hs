@@ -488,8 +488,8 @@ newKernelEventReader = do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: DeviceManager -> DeviceType -> Device -> Sys Handle
-getDeviceHandle dm typ dev = do
+getDeviceHandle :: DeviceManager -> Device -> Sys Handle
+getDeviceHandle dm dev = do
 
    -- get a fresh device number
    num <- sysIO $ atomically $ do
@@ -501,17 +501,13 @@ getDeviceHandle dm typ dev = do
       devname = "./dummy" ++ show num
       devfd   = dmDevFS dm
       logS    = "Opening "
-                ++ case typ of
-                     CharDevice  -> "character"
-                     BlockDevice -> "block"
-                ++ " device "
                 ++ show dev
                 ++ " into "
                 ++ devname
 
    sysLogSequence logS $ do
       sysCallAssert "Create device special file" $
-         createDeviceFile devfd devname typ BitSet.empty dev
+         createDeviceFile devfd devname dev BitSet.empty
       fd  <- sysCallAssert "Open device special file" $
          sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty
       sysCallAssert "Remove device special file" $
@@ -524,14 +520,14 @@ releaseDeviceHandle fd = do
    sysCallAssertQuiet "Close device" $ sysClose fd
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: DeviceManager -> DeviceType -> Device -> SysRet Handle
-openDeviceDir dm typ dev = sysOpenAt (dmDevFS dm) path (BitSet.fromList [HandleDirectory]) BitSet.empty
+openDeviceDir :: DeviceManager -> Device -> SysRet Handle
+openDeviceDir dm dev = sysOpenAt (dmDevFS dm) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids
-      typ' = case typ of
+      typ' = case deviceType dev of
          CharDevice  -> "char"
          BlockDevice -> "block"
-      ids  = show (deviceMajor dev) ++ ":" ++ show (deviceMinor dev)
+      ids  = show (deviceMajor (deviceID dev)) ++ ":" ++ show (deviceMinor (deviceID dev))
 
 
 -- | List devices classes
@@ -544,7 +540,7 @@ listDeviceClasses dm = do
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,Device)]
+listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,DeviceID)]
 listDevicesWithClass dm cls =
       -- try to open /class/CLASS directory
       readDevs ("class" </> cls)
@@ -564,16 +560,16 @@ listDevicesWithClass dm cls =
 
       -- parser for dev files
       -- content format is: MMM:mmm\n (where M is major and m is minor)
-      parseDevFile :: Parsec Text Device
+      parseDevFile :: Parsec Text DeviceID
       parseDevFile = do
          major <- fromIntegral <$> decimal
          void (char ':')
          minor <- fromIntegral <$> decimal
          void eol
-         return (Device major minor)
+         return (DeviceID major minor)
 
       -- read device major and minor in "dev" file
-      readDevFile :: Handle -> Flow Sys '[Device,ErrorCode]
+      readDevFile :: Handle -> Flow Sys '[DeviceID,ErrorCode]
       readDevFile devfd = do
          -- 16 bytes should be enough
          sysCallWarn "Read dev file" (handleReadBuffer devfd Nothing 16)
@@ -582,7 +578,7 @@ listDevicesWithClass dm cls =
             Just x  -> x
 
       -- read device directory
-      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
+      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,DeviceID)]
       readDev hdl dir = do
          -- read symlink pointing into /devices (we shall not directly use/return paths in /class)
          readSymbolicLink (Just hdl) dir
