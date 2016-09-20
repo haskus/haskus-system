@@ -9,7 +9,6 @@ import ViperVM.System.Sys
 import ViperVM.System.Event
 import ViperVM.System.Devices
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Internals.Input as Input
 

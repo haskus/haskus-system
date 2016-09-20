@@ -75,6 +75,7 @@ library
     ViperVM.Arch.Linux.Internals.Handle
     ViperVM.Arch.Linux.Internals.Arg
 
+    ViperVM.Arch.Linux.Devices
     ViperVM.Arch.Linux.Error
     ViperVM.Arch.Linux.ErrorCode
     ViperVM.Arch.Linux.EventPoll

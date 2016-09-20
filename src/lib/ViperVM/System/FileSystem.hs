@@ -7,7 +7,6 @@ module ViperVM.System.FileSystem
    ( withOpenAt
    , handleAtomicReadBufferAt
    , HandleFlag(..)
-   , Device(..)
    , FilePermission(..)
    )
 where

@@ -51,13 +51,9 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSync
    , sysSyncFS
    , sysCreateSpecialFile
-   , sysCreateSpecialFileAt
-   -- * Device files
-   , Device(..)
-   , makeDevice
-   , DeviceType(..)
-   , DeviceID(..)
-   , createDeviceFile
+   -- * Device
+   , DeviceID (..)
+   , withDeviceID
    )
 where
 
@@ -431,58 +427,19 @@ sysSyncFS (Handle fd) = onSuccess (syscall_syncfs fd) (const ())
 
 -- | Create a special file
 --
--- mknod syscall
-sysCreateSpecialFile :: FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> SysRet ()
-sysCreateSpecialFile path typ perm dev = do
+-- mknodat syscall. 
+sysCreateSpecialFile :: Maybe Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> SysRet ()
+sysCreateSpecialFile hdl path typ perm dev = do
    let 
       mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
       dev' = fromMaybe (DeviceID 0 0) dev
-
+      -- We pass a dummy file descriptor if the handle is not required
+      fd   = case hdl of
+                  Just (Handle x) -> x
+                  Nothing         -> (-1)
    withCString path $ \path' ->
       withDeviceID dev' $ \dev'' ->
-         onSuccess (syscall_mknod path' mode dev'') (const ())
-
--- | Create a special file
---
--- mknodat syscall
-sysCreateSpecialFileAt :: Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> SysRet ()
-sysCreateSpecialFileAt (Handle fd) path typ perm dev = do
-   let 
-      mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
-      dev' = fromMaybe (DeviceID 0 0) dev
-
-   withCString path $ \path' ->
-      withDeviceID dev' $ \dev'' ->
-         onSuccess (syscall_mknodat fd path' mode dev'') (const ())
-
-----------------------------------
--- Device files
-----------------------------------
-
--- | Device
---
--- Devices in the kernel are identified with two numbers (major and minor) and
--- their type (character or block).
---
--- For each device, there is a 1-1 correspondance with a path in sysfs's
--- /devices. The correspondance can be obtained by looking into sysfs's
--- /dev/{block,char} directories or by looking into "dev" files in sysfs's
--- directory for each device.
-data Device = Device
-   { deviceType :: DeviceType
-   , deviceID   :: DeviceID
-   }
-   deriving (Show,Eq,Ord)
-
--- | Create a device identigier
-makeDevice :: DeviceType -> Word32 -> Word32 -> Device
-makeDevice typ major minor = Device typ (DeviceID major minor)
-
--- | Device type
-data DeviceType
-   = CharDevice   -- ^ Character device
-   | BlockDevice  -- ^ Block device
-   deriving (Show,Eq,Ord)
+         onSuccessVoid (syscall_mknodat fd path' mode dev'')
 
 -- | Device identifier
 data DeviceID = DeviceID
@@ -521,13 +478,4 @@ fromKernelDevice y = DeviceID
 -- | Use a DeviceID as a Word64 suitable for the kernel
 withDeviceID :: DeviceID -> (Word64 -> a) -> a
 withDeviceID dev f = f (toKernelDevice dev)
-
--- | Create a device special file
-createDeviceFile :: Handle -> FilePath -> Device -> FilePermissions -> SysRet ()
-createDeviceFile fd path dev perm = sysCreateSpecialFileAt fd path typ perm (Just devid)
-   where
-      devid = deviceID dev
-      typ   = case deviceType dev of
-                  CharDevice  -> FileTypeCharDevice
-                  BlockDevice -> FileTypeBlockDevice
 

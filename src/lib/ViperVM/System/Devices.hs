@@ -4,7 +4,9 @@
 
 -- | Devices management
 module ViperVM.System.Devices
-   ( DeviceManager (..)
+   ( Device (..)
+   , DeviceType (..)
+   , DeviceManager (..)
    , DeviceTree (..)
    , SubsystemIndex (..)
    , initDeviceManager
@@ -24,6 +26,7 @@ import ViperVM.Format.Text (Text, bufferDecodeUtf8)
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Devices
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
@@ -507,7 +510,7 @@ getDeviceHandle dm dev = do
 
    sysLogSequence logS $ do
       sysCallAssert "Create device special file" $
-         createDeviceFile devfd devname dev BitSet.empty
+         createDeviceFile (Just devfd) devname dev BitSet.empty
       fd  <- sysCallAssert "Open device special file" $
          sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty
       sysCallAssert "Remove device special file" $
