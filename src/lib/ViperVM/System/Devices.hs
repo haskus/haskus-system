@@ -500,8 +500,16 @@ getDeviceHandle dm typ dev = do
    let 
       devname = "./dummy" ++ show num
       devfd   = dmDevFS dm
+      logS    = "Opening "
+                ++ case typ of
+                     CharDevice  -> "character"
+                     BlockDevice -> "block"
+                ++ " device "
+                ++ show dev
+                ++ " into "
+                ++ devname
 
-   sysLogSequence "Open device" $ do
+   sysLogSequence logS $ do
       sysCallAssert "Create device special file" $
          createDeviceFile devfd devname typ BitSet.empty dev
       fd  <- sysCallAssert "Open device special file" $
