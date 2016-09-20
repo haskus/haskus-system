@@ -1,9 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ViperVM.Arch.Linux.FileSystem
    ( FilePermission(..)
@@ -38,10 +40,8 @@ module ViperVM.Arch.Linux.FileSystem
    , sysTruncate
    , sysTruncatePath
    , sysLink
-   , sysSymlink
    , sysUnlink
    , sysUnlinkAt
-   , sysReadLinkAt
    , sysChangePermission
    , sysChangePermissionPath
    , sysChangeOwnership
@@ -65,11 +65,11 @@ import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
 import GHC.Generics (Generic)
 
-import ViperVM.Format.Binary.Bits (FiniteBits, Bits, (.|.), (.&.), shiftR, shiftL, complement)
+import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr, castPtr)
 import ViperVM.Format.Binary.BitSet
-import ViperVM.Format.String (CString, withCString, peekCString, peekCStringLen)
+import ViperVM.Format.String
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
@@ -220,12 +220,6 @@ sysLink src dest =
       withCString dest $ \dest' ->
          onSuccess (syscall_link src' dest') (const ())
 
-sysSymlink :: FilePath -> FilePath -> SysRet ()
-sysSymlink src dest =
-   withCString src $ \src' ->
-      withCString dest $ \dest' ->
-         onSuccess (syscall_symlink src' dest') (const ())
-
 sysUnlink :: FilePath -> SysRet ()
 sysUnlink path = withCString path $ \path' ->
    onSuccess (syscall_unlink path') (const ())
@@ -234,20 +228,7 @@ sysUnlinkAt :: Handle -> FilePath -> Bool -> SysRet ()
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
    onSuccess (syscall_unlinkat fd path' (if rmdir then 0x200 else 0)) (const ())
 
-sysReadLinkAt :: Handle -> FilePath -> SysRet String
-sysReadLinkAt (Handle fd) path = go' 2048
-   where
-      go' size = go size >.~#> \case
-                  Nothing -> go' (2*size)
-                  Just s  -> flowRet s
 
-      go size =
-         allocaBytes size $ \ptr ->
-            withCString path $ \path' ->
-               onSuccessIO (syscall_readlinkat fd path' ptr (fromIntegral size)) $ \n ->
-                  if fromIntegral n == size
-                     then return Nothing
-                     else Just <$> peekCStringLen (ptr, fromIntegral n)
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> SysRet ()
 sysChangePermissionPath path mode = withCString path $ \path' ->

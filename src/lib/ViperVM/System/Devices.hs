@@ -28,9 +28,10 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
+import ViperVM.Arch.Linux.FileSystem.SymLink
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
-import ViperVM.System.ReadWrite
+import ViperVM.System.FileSystem
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
@@ -258,7 +259,7 @@ initDeviceManager sysfs devfs = do
                            >..-.> const Nothing
 
          -- read the subsystem link
-         sysCallWarn "read link" (sysReadLinkAt hdl "subsystem")
+         readSymbolicLink (Just hdl) "subsystem"
             -- on success, only keep the basename as it is the subsystem name
             >.-.> (Just . Text.pack . takeBaseName)
             -- on error, use Nothing for the subsystem
@@ -387,7 +388,7 @@ eventThread ch dm = do
             ActionAdd        -> do
                -- read the subsystem link
                let subpath = Text.unpack (kernelEventDevPath ev) </> "subsystem"
-               sysCallWarn "read link" (sysReadLinkAt (dmSysFS dm) subpath)
+               readSymbolicLink (Just (dmSysFS dm)) subpath
                   >.-.> Just . Text.pack . takeBaseName
                   >..-.> const Nothing
                   -- on success, add the node in the tree and signal it
@@ -574,13 +575,13 @@ listDevicesWithClass dm cls =
 
       -- read device directory
       readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
-      readDev fd dir = do
+      readDev hdl dir = do
          -- read symlink pointing into /devices (we shall not directly use/return paths in /class)
-         sysCallWarn "read link" (sysReadLinkAt fd dir)
-            >.~#> (\path -> 
+         readSymbolicLink (Just hdl) dir
+            >.~&> (\path -> 
                -- the link is relative to the current dir (i.e., /class/CLASS or
                -- /bus/CLASS/devices)
-               withOpenAt fd (path </> "dev") BitSet.empty BitSet.empty readDevFile
+               withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty readDevFile
                   -- return an absolute path of the form "/devices/*"
                   >.-.>  (Just . (concat ("/" : dropWhile (/= "devices/") (splitPath path)),)))
             -- on error (e.g., if there is no "dev" file), skip the device directory

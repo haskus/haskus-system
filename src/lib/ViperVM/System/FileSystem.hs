@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module ViperVM.System.ReadWrite
+module ViperVM.System.FileSystem
    ( withOpenAt
    , handleAtomicReadBufferAt
    , HandleFlag(..)
@@ -55,5 +55,3 @@ handleAtomicReadBufferAt hdl path = withOpenAt hdl path BitSet.empty BitSet.empt
             if fromIntegral (bufferSize buf) == sz
                then go (sz*2) fd
                else flowSet buf
-
-

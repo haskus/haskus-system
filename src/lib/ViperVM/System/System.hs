@@ -28,7 +28,7 @@ import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.Process.MemoryMap
 
 import ViperVM.System.Sys
-import ViperVM.System.ReadWrite
+import ViperVM.System.FileSystem
 import ViperVM.System.Devices
 import ViperVM.Utils.Flow
 

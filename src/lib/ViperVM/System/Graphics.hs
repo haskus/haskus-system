@@ -20,7 +20,7 @@ where
 import ViperVM.System.Sys
 import ViperVM.System.Devices
 import ViperVM.System.Process
-import ViperVM.System.ReadWrite
+import ViperVM.System.FileSystem
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Flow
