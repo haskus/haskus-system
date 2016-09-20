@@ -544,7 +544,7 @@ listDevicesWithClass dm cls =
          let dirs'  = fmap entryName dirs
          flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
 
-      makeDevicePath path = concat ("/" : dropWhile (/= "devices/") (splitPath path))
+      makeDevicePath path = concat ("./" : dropWhile (/= "devices/") (splitPath path))
 
       -- read device directory
       readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
