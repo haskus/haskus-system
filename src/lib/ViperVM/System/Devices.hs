@@ -329,26 +329,21 @@ eventThread ch dm = do
          devTreePath = makeTreePath (kernelEventDevPath ev)
 
          -- move a node from (x:xs) to (y:ys) in the root tree
-         move :: [Text] -> [Text] -> DeviceTree -> (DeviceTree, DeviceTree)
+         move :: [Text] -> [Text] -> DeviceTree -> Maybe (DeviceTree, DeviceTree)
          move (x:xs) (y:ys) root
             -- we only modify the subtree concerned by the move
-            | x == y    = (root { deviceNodeChildren = Map.insert x (x') cs }, n)
-                  where
-                     -- FIXME: a "move" event can be sent during the first
-                     -- traversal of sysfs. We shouldn't fail here if we don't find
-                     -- the move source and we should check that we have added the
-                     -- move target and its parents (and add them otherwise)
-                     (x',n) = move xs ys (cs Map.! x) -- the parent node should exist
-                     cs     = deviceNodeChildren root
-         move xs ys root = (insert ys n (remove xs root), n)
-            where
-               n = lookup xs root
+            | x == y    = do
+               p      <- lookup [x] root
+               (p',n) <- move xs ys p
+               Just (insert [x] p' root, n)
+         move xs ys root = lookup xs root >>= \n -> Just (insert ys n (remove xs root), n)
 
          -- lookup for a node
+         lookup :: [Text] -> DeviceTree -> Maybe DeviceTree
          lookup path root = case path of
             []     -> error "lookup: empty path"
-            [x]    -> deviceNodeChildren root Map.! x
-            (x:xs) -> lookup xs (deviceNodeChildren root Map.! x)
+            [x]    -> Map.lookup x (deviceNodeChildren root)
+            (x:xs) -> lookup xs =<< Map.lookup x (deviceNodeChildren root)
 
          -- remove a node in the tree
          remove path root = root { deviceNodeChildren = cs' }
@@ -368,10 +363,18 @@ eventThread ch dm = do
                         [x]    -> Map.insert x node cs
                         (x:xs) -> Map.update (Just . insert xs node) x cs
 
-         signalEvent f = sysIO $ atomically $ do
-            tree <- readTVar (dmDevices dm)
-            let node = lookup devTreePath tree
-            writeTChan (f node) ev
+         signalEvent f = do
+            act <- sysIO $ atomically $ do
+               tree <- readTVar (dmDevices dm)
+               case lookup devTreePath tree of
+                  Just node -> do
+                     writeTChan (f node) ev
+                     return (return ())
+                  Nothing   -> do
+                     let s = "Event received for non existing device: "
+                             ++ show (kernelEventDevPath ev)
+                     return (sysWarning s)
+            act
 
 
       case Text.unpack (head devTreePath) of
@@ -407,13 +410,21 @@ eventThread ch dm = do
                         )
 
 
-            ActionRemove     -> sysIO $ atomically $ do
-               tree <- readTVar (dmDevices dm)
-               let node = lookup devTreePath tree
-               writeTVar (dmDevices dm) (remove devTreePath tree)
-               writeTChan (deviceNodeOnRemove node) ev
-               -- Remove from index
-               -- TODO
+            ActionRemove     -> do
+               act <- sysIO $ atomically $ do
+                  tree <- readTVar (dmDevices dm)
+                  case lookup devTreePath tree of
+                     Just node  -> do
+                        writeTVar (dmDevices dm) (remove devTreePath tree)
+                        writeTChan (deviceNodeOnRemove node) ev
+                        -- Remove from index
+                        -- TODO
+                        return (return ())
+                     Nothing -> do
+                        let s = "Remove event received for non existing device: "
+                                 ++ show (kernelEventDevPath ev)
+                        return (sysWarning s)
+               act
                
             ActionChange     -> signalEvent deviceNodeOnChange
             ActionOnline     -> signalEvent deviceNodeOnOnline
@@ -432,13 +443,22 @@ eventThread ch dm = do
                   oldTreePath = makeTreePath oldPath
                   newTreePath = devTreePath
 
-               sysIO $ atomically $ do
+               act <- sysIO $ atomically $ do
                   -- move the device in the tree
                   tree <- readTVar (dmDevices dm)
-                  let (tree',node) = move oldTreePath newTreePath tree
-                  writeTVar (dmDevices dm) tree'
-                  -- signal the event
-                  writeTChan (deviceNodeOnMove node) ev
+                  case move oldTreePath newTreePath tree of
+                     Just (tree',node) -> do
+                        writeTVar (dmDevices dm) tree'
+                        -- signal the event
+                        writeTChan (deviceNodeOnMove node) ev
+                        return (return ())
+                     -- FIXME: we should ensure that the target device has been
+                     -- read from sysfs
+                     Nothing           -> do
+                        let s = "Move event received for non existing device: "
+                                ++ show (kernelEventDevPath ev)
+                        return (sysWarning s)
+               act
 
          -- warn on unrecognized event
          str -> sysWarning ("sysfs event in /" ++ str ++ " ignored")
