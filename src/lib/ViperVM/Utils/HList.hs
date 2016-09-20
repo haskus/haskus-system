@@ -60,8 +60,6 @@ where
 import ViperVM.Utils.Types
 import Data.HList.FakePrelude (ApplyAB(..))
 import Data.HList.HList
-import Data.Proxy
-import GHC.TypeLits
 
 -- | Map a type function returning a Nat
 type family MapNat (f :: * -> Nat) (xs :: [*]) where

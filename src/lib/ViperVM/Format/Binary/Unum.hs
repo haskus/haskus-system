@@ -59,7 +59,10 @@ module ViperVM.Format.Binary.Unum
    , csornBits
    , csornToSorn
    , csornEmpty
+   , csornIsEmpty
    , csornFromTo
+   , csornFull
+   , csornSingle
    )
 where
 
@@ -318,7 +321,7 @@ unumSign (U w) =
 
 
 type family SORNSize u where
-   SORNSize u = 2 * Length (UnumNumbers u)
+   SORNSize u = Length (UnumMembers u)
 
 type family SORNBackingWord u where
    SORNBackingWord u = WordAtLeast (SORNSize u)
@@ -553,6 +556,11 @@ class SornAdd u where
 --    * start: the starting unum
 --    * count: the number of unums from start upwards
 --
+-- If count == 0
+--    If start == 0
+--       then empty SORN
+--       else full SORN
+--
 -- Pros:
 --    * size is much smaller (2 * unum size),  especially for look-up tables because
 --    connected sets remain connected under addition, subtraction, multiplication
@@ -579,7 +587,16 @@ csornStart :: forall u.
    , Bits (CSORNBackingWord u)
    , Field (BackingWord u)
    ) => CSORN u -> U u
-csornStart (CSORN c) = U (extractField' (Proxy :: Proxy "start") c)
+csornStart c = U (csornStart' c)
+
+csornStart' :: forall u.
+   ( Integral (BackingWord u)
+   , Integral (CSORNBackingWord u)
+   , KnownNat (UnumSize u)
+   , Bits (CSORNBackingWord u)
+   , Field (BackingWord u)
+   ) => CSORN u -> BackingWord u
+csornStart' (CSORN c) = extractField' (Proxy :: Proxy "start") c
 
 csornCount ::
    ( Integral (BackingWord u)
@@ -601,6 +618,7 @@ instance forall u v.
    , HFoldr' GetLabel [String] v [String]
    , Field (BackingWord u)
    , Bits (SORNBackingWord u)
+   , FiniteBits (SORNBackingWord u)
    , v ~ UnumMembers u
    ) => Show (CSORN u) where
    show = show . csornToSorn 
@@ -615,15 +633,19 @@ csornToSorn :: forall u.
    , FiniteBits (BackingWord u)
    , Bits (SORNBackingWord u)
    , Field (BackingWord u)
+   , KnownNat (SORNSize u)
+   , FiniteBits (SORNBackingWord u)
    ) => CSORN u -> SORN u
 csornToSorn c =
    if csornCount c == 0
-      then sornEmpty
+      then if start == 0
+         then sornEmpty
+         else sornFull
       else sornFromTo (csornStart c) (U x')
-         where
-            U x = csornStart c
-            x'  = maskLeastBits s (x + csornCount c - 1)
-            s   = unumSize (Proxy :: Proxy u)
+   where
+      start = csornStart' c
+      x'    = maskLeastBits s (start + csornCount c - 1)
+      s     = unumSize (Proxy :: Proxy u)
 
 -- | Size of a contiguous SORN in bits
 csornSize :: forall u s.
@@ -648,17 +670,29 @@ csornEmpty :: forall u.
    ) => CSORN u
 csornEmpty = CSORN (BitFields zeroBits)
 
+-- | Test if a contigiuous SORN is empty
+csornIsEmpty :: forall u.
+   ( Bits (CSORNBackingWord u)
+   ) => CSORN u -> Bool
+{-# INLINE csornIsEmpty #-}
+csornIsEmpty (CSORN (BitFields b)) = b == zeroBits
+
 -- | Contiguous SORN build
 csornFromTo :: forall u.
    ( Num (BackingWord u)
    , Bits (BackingWord u)
    , KnownNat (UnumSize u)
+   , KnownNat (SORNSize u)
    , FiniteBits (BackingWord u)
    , Integral (CSORNBackingWord u)
    , Bits (CSORNBackingWord u)
    , Field (BackingWord u)
+   , Integral (BackingWord u)
    ) => U u -> U u -> CSORN u
-csornFromTo start stop = CSORN b
+csornFromTo start stop =
+      if fromIntegral count == unumSize (Proxy :: Proxy u)
+         then csornFull
+         else CSORN b
    where
       U x   = start
       U y   = stop
@@ -667,3 +701,30 @@ csornFromTo start stop = CSORN b
       b     = BitFields 0
               |> updateField' (Proxy :: Proxy "start") x
               |> updateField' (Proxy :: Proxy "count") count
+
+
+-- | Full contiguous SORN
+csornFull :: forall u. 
+   ( Bits (CSORNBackingWord u)
+   , Integral (CSORNBackingWord u)
+   , Integral (BackingWord u)
+   , KnownNat (UnumSize u)
+   , Field (BackingWord u)
+   ) => CSORN u
+csornFull = CSORN (BitFields zeroBits
+  |> updateField' (Proxy :: Proxy "start") 1 -- dummy /= 0
+  |> updateField' (Proxy :: Proxy "count") 0)
+
+
+-- | Contiguous SORN singleton
+csornSingle :: forall u.
+   ( Bits (CSORNBackingWord u)
+   , Integral (CSORNBackingWord u)
+   , Integral (BackingWord u)
+   , KnownNat (UnumSize u)
+   , Field (BackingWord u)
+   ) => U u -> CSORN u
+csornSingle (U u) = CSORN (BitFields zeroBits
+  |> updateField' (Proxy :: Proxy "start") u
+  |> updateField' (Proxy :: Proxy "count") 1)
+

@@ -12,7 +12,7 @@ instance UnumNum PI where
 
 type U0 = Unum '[]
 type U1 = Unum '[I 1]
-type U2 = Unum '[I 1, I 2]
+type U2 = Unum '[I 1, I 2] -- incomplete system
 type U3 = Unum '[I 1, I 2, I 3]
 type U4 = Unum '[I 1, I 2, I 3, I 4]
 

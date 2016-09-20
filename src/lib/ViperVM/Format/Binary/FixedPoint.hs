@@ -18,6 +18,7 @@ where
 
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Word
 
 import Foreign.Storable
 import Foreign.CStorable
