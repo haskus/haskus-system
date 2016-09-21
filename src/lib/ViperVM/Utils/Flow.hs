@@ -24,6 +24,8 @@ module ViperVM.Utils.Flow
    -- * Non-variant single operations
    , (|>)
    , (<|)
+   , (||>)
+   , (<||)
    -- * First element operations
    , (.~.>)
    , (>.~.>)
@@ -173,6 +175,20 @@ infixl 0 |>
 f <| x = f x
 
 infixr 0 <|
+
+-- | Apply a function in a Functor
+(||>) :: Functor f => f a -> (a -> b) -> f b
+x ||> f = fmap f x
+
+infixl 0 ||>
+
+-- | Apply a function in a Functor
+(<||) :: Functor f => (a -> b) -> f a -> f b
+f <|| x = fmap f x
+
+infixr 0 <||
+
+
 
 ----------------------------------------------------------
 -- First element operations

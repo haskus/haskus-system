@@ -326,6 +326,8 @@ test-suite tests
       ,  ViperVM.Tests.Format.Binary.Vector
       ,  ViperVM.Tests.Utils.HArray
       ,  ViperVM.Tests.Utils
+      ,  ViperVM.Tests.System
+      ,  ViperVM.Tests.System.Devices
 
    build-depends:    
          base
@@ -333,6 +335,7 @@ test-suite tests
       ,  Cabal
       ,  cabal-test-quickcheck   >= 0.1
       ,  QuickCheck              >= 2.8
+      ,  containers
       ,  bytestring
 
 Benchmark bench-BitReverse

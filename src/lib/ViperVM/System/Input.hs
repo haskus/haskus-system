@@ -11,17 +11,19 @@ import ViperVM.System.Devices
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Internals.Input as Input
+import qualified ViperVM.Format.Text as Text
 
 import Control.Concurrent.STM
 import Data.Traversable (forM)
 import Prelude hiding (init,tail)
 import Control.Monad (void)
 import Data.List (isPrefixOf)
+import Data.Maybe (mapMaybe)
 import System.FilePath (takeBaseName)
 
 -- | Input device
 data InputDevice = InputDevice
-   { inputDevicePath             :: FilePath          -- ^ SysFS path
+   { inputDevicePath             :: DevicePath        -- ^ Device path
    , inputDeviceDev              :: Device            -- ^ Device ID
    , inputDeviceHandle           :: Handle            -- ^ Descriptor
    , inputDeviceName             :: String            -- ^ Device Name
@@ -35,8 +37,11 @@ loadInputDevices :: DeviceManager -> Sys [InputDevice]
 loadInputDevices dm = sysLogSequence "Load input devices" $ do
    devs <- listDevicesWithClass dm "input"
    let
-      isEvent (p,_) = "event" `isPrefixOf` takeBaseName p
-      devs' = filter isEvent devs
+      isEvent (p,_) = "event" `isPrefixOf` takeBaseName (Text.unpack p)
+      hasDevice (p,d) = case deviceDevice d of
+         Nothing -> Nothing
+         Just x  -> Just (p,x)
+      devs' = filter isEvent (mapMaybe hasDevice devs)
    forM devs' $ \(devpath,dev) -> do
       fd   <- getDeviceHandle dm dev
       void $ sysCallWarn "Grab device" $ grabDevice fd

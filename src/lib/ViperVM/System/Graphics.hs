@@ -21,6 +21,7 @@ import ViperVM.System.Sys
 import ViperVM.System.Devices
 import ViperVM.System.Process
 import qualified ViperVM.Format.Binary.BitSet as BitSet
+import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Handle
@@ -49,11 +50,12 @@ import Data.Foldable (traverse_)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
 import Data.List (isPrefixOf)
+import Data.Maybe (mapMaybe)
 import System.FilePath (takeBaseName)
 
 -- | Graphic card
 data GraphicCard = GraphicCard
-   { graphicCardPath    :: FilePath             -- ^ Path to the graphic card in SysFS
+   { graphicCardPath    :: DevicePath           -- ^ Path to the graphic card in SysFS
    , graphicCardDev     :: Device               -- ^ Device major/minor to create the device file descriptor
    , graphicCardID      :: Int                  -- ^ Card identifier
    , graphicCardHandle  :: Handle               -- ^ Device handle
@@ -71,16 +73,20 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
 
    devs <- listDevicesWithClass dm "drm"
    let
-      isCard (p,_) = "card" `isPrefixOf` takeBaseName p
-      devs' = filter isCard devs
+      isCard (p,_) = "card" `isPrefixOf` takeBaseName (Text.unpack p)
+      hasDevice (p,d) = case deviceDevice d of
+         Nothing -> Nothing
+         Just x  -> Just (p,x)
+      devs' = filter isCard (mapMaybe hasDevice devs)
    forM devs' $ \(devpath,dev) -> do
       hdl   <- getDeviceHandle dm dev
       -- We support these capabilities
       setClientCapability hdl ClientCapStereo3D        True
       setClientCapability hdl ClientCapUniversalPlanes True
       setClientCapability hdl ClientCapAtomic          True
+      let cardID = read (drop 4 (takeBaseName (Text.unpack devpath)))
       -- Create the DRM event reader thread
-      GraphicCard devpath dev (read (drop 4 devpath)) hdl
+      GraphicCard devpath dev cardID hdl
          <$> newEventWaiterThread hdl
 
 

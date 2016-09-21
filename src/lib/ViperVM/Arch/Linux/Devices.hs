@@ -27,6 +27,8 @@ module ViperVM.Arch.Linux.Devices
    , createDeviceFile
    , sysfsReadDevFile
    , sysfsReadDev
+   , sysfsMakeDev
+   , sysfsReadSubsystem
    )
 where
 
@@ -35,10 +37,9 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.SymLink
-import ViperVM.Arch.Linux.Error
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Text
+import ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Word
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
@@ -92,7 +93,7 @@ sysfsReadDevFile' devfd = do
          return (DeviceID major minor)
 
    -- 16 bytes should be enough
-   sysCallWarn "Read dev file" (handleReadBuffer devfd Nothing 16)
+   sysIO (handleReadBuffer devfd Nothing 16)
       >.-.> (\content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
          Nothing -> error "Invalid dev file format"
          Just x  -> x)
@@ -105,23 +106,28 @@ sysfsReadDevFile hdl path = do
       >..-.> const Nothing
       |> flowRes
 
--- | Read device and subsystem
-sysfsReadDev :: Handle -> FilePath -> Sys (Maybe String, Maybe Device)
-sysfsReadDev hdl path = do
-   -- read the subsystem link
+-- | Read subsystem link
+sysfsReadSubsystem :: Handle -> FilePath -> Sys (Maybe Text)
+sysfsReadSubsystem hdl path = do
    readSymbolicLink (Just hdl) (path </> "subsystem")
       -- on success, only keep the basename as it is the subsystem name
-      >.-.> Just . takeBaseName
+      >.-.> Just . Text.pack . takeBaseName
       -- otherwise
       >..-.> const Nothing
-      -- try to read "dev" file (we need the subsystem to know whether it is a
-      -- block or a char device)
-      >.~.> \case
-         Just s  -> do
-            let f = case s of
-                        "block" -> Device BlockDevice
-                        _       -> Device CharDevice
-            devid <- sysfsReadDevFile hdl path
-            return (Just s, f <$> devid)
-         Nothing -> return (Nothing, Nothing)
       |> flowRes
+
+-- | Make a Device from a subsystem and a DeviceID
+sysfsMakeDev :: Text -> DeviceID -> Device
+sysfsMakeDev subsystem devid = case Text.unpack subsystem of
+   "block" -> Device BlockDevice devid
+   _       -> Device CharDevice  devid
+
+-- | Read device and subsystem
+sysfsReadDev :: Handle -> FilePath -> Sys (Maybe Text, Maybe Device)
+sysfsReadDev hdl path = do
+   subsystem <- sysfsReadSubsystem hdl path
+   case subsystem of
+      Nothing -> return (Nothing,Nothing)
+      Just s  -> do
+         devid <- sysfsReadDevFile hdl path
+         return (Just s, sysfsMakeDev s <$> devid)

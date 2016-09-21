@@ -1,12 +1,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Devices management
 module ViperVM.System.Devices
    ( Device (..)
+   , DevicePath
    , DeviceManager (..)
-   , DeviceTree (..)
    , SubsystemIndex (..)
    , initDeviceManager
    , getDeviceHandle
@@ -14,6 +16,14 @@ module ViperVM.System.Devices
    , openDeviceDir
    , listDevicesWithClass
    , listDeviceClasses
+   , listDevices
+   -- * Device tree
+   , DeviceTree (..)
+   , deviceTreeCreate
+   , deviceTreeInsert
+   , deviceTreeRemove
+   , deviceTreeLookup
+   , deviceTreeMove
    )
 where
 
@@ -29,7 +39,6 @@ import ViperVM.Arch.Linux.Devices
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
-import ViperVM.Arch.Linux.FileSystem.SymLink
 import ViperVM.Arch.Linux.KernelEvent
 import ViperVM.System.Sys
 import ViperVM.System.FileSystem
@@ -37,11 +46,12 @@ import ViperVM.System.Process
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
 
-import System.FilePath
+import Control.Arrow (second)
 import System.Posix.Types (Fd(..))
-import Control.Monad (forever)
+import Control.Monad (void,when,forever)
 import qualified Data.Map as Map
 import Data.Map (Map)
+import qualified Data.Set as Set
 import Data.Set (Set)
 import Control.Concurrent
 import Control.Concurrent.STM
@@ -177,7 +187,7 @@ import Control.Concurrent.STM
 -- initialization phase (except when a device is (dis)connected, etc.), hence it
 -- is an immutable data structure. It is much easier to perform tree traversal
 -- with a single global lock thereafter.
-data DeviceTree = DeviceNode
+data DeviceTree = DeviceTree
    { deviceNodeSubsystem     :: Maybe Text          -- ^ Subsystem
    , deviceDevice            :: Maybe Device        -- ^ Device identifier
    , deviceNodeChildren      :: Map Text DeviceTree -- ^ Children devices
@@ -191,13 +201,15 @@ data DeviceTree = DeviceNode
 
 -- | Device manager
 data DeviceManager = DeviceManager
-   { dmEvents     :: TChan KernelEvent              -- ^ Netlink kobject events
-   , dmSysFS      :: Handle                         -- ^ Handle to sysfs
-   , dmDevFS      :: Handle                         -- ^ root of the tmpfs used to create device nodes
-   , dmDevNum     :: TVar Word64                    -- ^ counter used to create device node
-   , dmDevices    :: TVar DeviceTree                -- ^ Device hierarchy
-   , dmSubsystems :: TVar (Map Text SubsystemIndex) -- ^ Per-subsystem index
+   { dmEvents         :: TChan KernelEvent              -- ^ Netlink kobject events
+   , dmSysFS          :: Handle                         -- ^ Handle to sysfs
+   , dmDevFS          :: Handle                         -- ^ root of the tmpfs used to create device nodes
+   , dmDevNum         :: TVar Word64                    -- ^ counter used to create device node
+   , dmDevices        :: TVar DeviceTree                -- ^ Device hierarchy
+   , dmSubsystems     :: TVar (Map Text SubsystemIndex) -- ^ Per-subsystem index
+   , dmOnSubsystemAdd :: TChan Text                     -- ^ When a new subsystem appears
    }
+
 
 -- | Per-subsystem events
 data SubsystemIndex = SubsystemIndex
@@ -206,6 +218,198 @@ data SubsystemIndex = SubsystemIndex
    , subsystemOnRemove :: TChan Text -- ^ Signal device removal
    }
 
+type DevicePath = Text
+
+-- | Break a device tree path into (first component, remaining)
+bk :: DevicePath -> (Text,Text)
+bk = second f . Text.breakOn (Text.pack "/")
+   where
+      f xs 
+         | Text.null xs = xs
+         | otherwise    = Text.tail xs
+
+-- | Remove "/devices/" from the path
+mkPath :: DevicePath -> DevicePath
+mkPath = Text.drop 9
+
+-- | Create a device tree
+deviceTreeCreate :: Maybe Text -> Maybe Device -> Map Text DeviceTree -> IO DeviceTree
+deviceTreeCreate subsystem dev children = atomically (deviceTreeCreate' subsystem dev children)
+
+-- | Create a device tree
+deviceTreeCreate' :: Maybe Text -> Maybe Device -> Map Text DeviceTree -> STM DeviceTree
+deviceTreeCreate' subsystem dev children = DeviceTree subsystem dev children
+   <$> newBroadcastTChan
+   <*> newBroadcastTChan
+   <*> newBroadcastTChan
+   <*> newBroadcastTChan
+   <*> newBroadcastTChan
+   <*> newBroadcastTChan
+
+-- move a node in the tree
+deviceTreeMove :: Text -> Text -> DeviceTree -> STM DeviceTree
+deviceTreeMove src tgt = deviceTreeMove' (mkPath src) (mkPath tgt)
+
+-- lookup for a node
+deviceTreeLookup :: Text -> DeviceTree -> Maybe DeviceTree
+deviceTreeLookup path = deviceTreeLookup' (mkPath path)
+
+-- remove a node in the tree
+deviceTreeRemove :: Text -> DeviceTree -> DeviceTree
+deviceTreeRemove path = deviceTreeRemove' (mkPath path)
+
+-- insert a node in the tree
+deviceTreeInsert :: Text -> DeviceTree -> DeviceTree -> STM DeviceTree
+deviceTreeInsert path = deviceTreeInsert' (mkPath path)
+
+-- move a node from (x:xs) to (y:ys) in the root tree
+deviceTreeMove' :: Text -> Text -> DeviceTree -> STM DeviceTree
+deviceTreeMove' src tgt root = case (bk src, bk tgt) of
+   ((x,xs),(y,ys))
+      -- we only modify the subtree concerned by the move
+      | x == y    -> do
+         case Map.lookup x (deviceNodeChildren root) of
+            Nothing -> error "deviceTreeLookup: source node doesn't exists"
+            Just p  -> deviceTreeMove' xs ys p
+      | otherwise -> do
+         case deviceTreeLookup' src root of
+            Nothing -> error "deviceTreeLookup: source node doesn't exists"
+            Just n  -> deviceTreeInsert' tgt n (deviceTreeRemove' src root)
+
+-- lookup for a node
+deviceTreeLookup' :: Text -> DeviceTree -> Maybe DeviceTree
+deviceTreeLookup' path root = case bk path of
+   (x,xs)
+      | Text.null x 
+        && Text.null xs -> error "deviceTreeLookup': empty path"
+      | otherwise       -> do
+         n <- Map.lookup x (deviceNodeChildren root)
+         if Text.null xs
+            then Just n
+            else deviceTreeLookup' xs n
+
+-- remove a node in the tree
+deviceTreeRemove' :: Text -> DeviceTree -> DeviceTree
+deviceTreeRemove' path root = root { deviceNodeChildren = cs' }
+   where
+      cs = deviceNodeChildren root
+      cs' = case bk path of
+               (x,xs)
+                  | Text.null x 
+                    && Text.null xs -> error "deviceTreeRemove: empty path"
+                  | Text.null xs    -> Map.delete x cs
+                  | otherwise       -> Map.update (Just . deviceTreeRemove' xs) x cs
+
+-- insert a node in the tree
+deviceTreeInsert' :: Text -> DeviceTree -> DeviceTree -> STM DeviceTree
+deviceTreeInsert' path node root = do
+   let cs = deviceNodeChildren root
+
+   cs' <- case bk path of
+      (x,xs)
+         | Text.null x && Text.null xs -> error "deviceTreeInsert: empty path"
+         | Text.null xs                -> return (Map.insert x node cs)
+         | otherwise                   -> 
+            case Map.lookup x cs of
+               Just p  -> do
+                  node' <- deviceTreeInsert' xs node p
+                  return (Map.insert x node' cs)
+               -- the parent doesn't exist yet. Add it. As it should not be a
+               -- real device, we don't look for subsystem and device id (i.e.,
+               -- we don't call deviceAdd)
+               Nothing -> do
+                  p <- deviceTreeCreate' Nothing Nothing Map.empty
+                  node' <- deviceTreeInsert' xs node p
+                  return (Map.insert x node' cs)
+
+   return (root { deviceNodeChildren = cs' })
+
+
+-- | Add a device
+deviceAdd :: DeviceManager -> DevicePath -> Maybe KernelEvent -> Sys ()
+deviceAdd dm path mev = do
+   let
+      rpath       = tail (Text.unpack path)  -- relative path in sysfs (drop "/")
+
+   (msubsystem,mdev) <- case mev of
+      Nothing -> sysfsReadDev (dmSysFS dm) rpath
+      -- device id may be read from the event properties
+      Just ev -> do
+         let 
+            detail k    = Map.lookup (Text.pack k) (kernelEventDetails ev)
+            detailNum k = fmap (read . Text.unpack) (detail k)
+         case (detailNum "MAJOR", detailNum "MINOR") of
+            (Just ma, Just mi) -> do
+               sub <- sysfsReadSubsystem (dmSysFS dm) rpath
+               return (sub, (`sysfsMakeDev` DeviceID ma mi) <$> sub)
+            _                  -> sysfsReadDev (dmSysFS dm) rpath
+
+   node <- sysIO (deviceTreeCreate msubsystem mdev Map.empty)
+
+   sysIO $ atomically $ do
+      -- update the tree
+      tree  <- readTVar (dmDevices dm)
+      tree' <- deviceTreeInsert path node tree
+      writeTVar (dmDevices dm) tree'
+
+      case msubsystem of
+         Nothing        -> return ()
+         Just subsystem -> do
+            -- Add device into subsystem index
+            subs <- readTVar (dmSubsystems dm)
+            subs' <- case Map.lookup subsystem subs of
+
+               Nothing    -> do
+                  -- create new index
+                  index <- SubsystemIndex (Set.singleton path)
+                              <$> newBroadcastTChan
+                              <*> newBroadcastTChan
+                  -- signal the new subsystem
+                  writeTChan (dmOnSubsystemAdd dm) subsystem
+                  -- return the new index
+                  return (Map.insert subsystem index subs)
+
+               Just index -> do
+                  let
+                     devs   = subsystemDevices index
+                     devs'  = Set.insert path devs
+                     index' = index { subsystemDevices = devs' }
+                  -- signal the addition
+                  writeTChan (subsystemOnAdd index) path
+                  -- return the new index
+                  return (Map.insert subsystem index' subs)
+
+            writeTVar (dmSubsystems dm) subs'
+
+-- | Remove a device
+deviceRemove :: DeviceManager -> DevicePath -> KernelEvent -> Sys ()
+deviceRemove dm path ev = do
+   act <- sysIO $ atomically $ do
+      tree <- readTVar (dmDevices dm)
+      case deviceTreeLookup path tree of
+         Just node  -> do
+            -- remove from tree and signal
+            writeTVar (dmDevices dm) (deviceTreeRemove path tree)
+            writeTChan (deviceNodeOnRemove node) ev
+
+            case deviceNodeSubsystem node of
+               Nothing -> return ()
+               Just s  -> do
+                  -- Remove from index
+                  subs <- readTVar (dmSubsystems dm)
+                  let
+                     index  = subs Map.! s
+                     devs   = subsystemDevices index
+                     index' = index { subsystemDevices = Set.delete path devs}
+                  writeTVar (dmSubsystems dm) (Map.insert s index' subs)
+                  -- signal for index
+                  writeTChan (subsystemOnRemove index) path
+            return (return ())
+         Nothing -> do
+            let s = "Remove event received for non existing device: "
+                     ++ show path
+            return (sysWarning s)
+   act
 
 -- | Init a device manager
 initDeviceManager :: Handle -> Handle -> Sys DeviceManager
@@ -215,6 +419,22 @@ initDeviceManager sysfs devfs = do
    -- events start accumulating until we launch the handling thread
    bch <- newKernelEventReader
    ch <- sysIO $ atomically $ dupTChan bch
+
+   -- create empty device manager
+   root      <- sysIO $ deviceTreeCreate (Just (Text.pack "devices")) Nothing Map.empty
+   devNum    <- sysIO (newTVarIO 0)          -- device node counter
+   subIndex' <- sysIO (newTVarIO Map.empty)
+   tree'     <- sysIO (newTVarIO root)
+   sadd      <- sysIO newBroadcastTChanIO
+   let dm = DeviceManager
+               { dmDevices        = tree'
+               , dmSubsystems     = subIndex'
+               , dmEvents         = bch
+               , dmSysFS          = sysfs
+               , dmDevFS          = devfs
+               , dmDevNum         = devNum
+               , dmOnSubsystemAdd = sadd
+               }
 
    -- we enumerate devices from sysfs. Directory listing is non-atomic so
    -- directories may appear or be removed while we do the traversal. Hence we
@@ -226,13 +446,22 @@ initDeviceManager sysfs devfs = do
    -- haven't be able to read, etc.
    let
 
+      withDevDir hdl path f = withOpenAt hdl path flags BitSet.empty f
+      flags = BitSet.fromList [ HandleDirectory
+                              , HandleNonBlocking
+                              , HandleDontFollowSymLinks
+                              ]
+
       -- read a sysfs device directory and try to create a DeviceTree
       -- recursively from it. The current directory is already opened and the
       -- handle is passed (alongside the name and fullname).
       -- Return Nothing if it fails for any reason.
-      readSysfsDir :: Text -> Text -> Handle -> SysV '[(Text,DeviceTree)]
-      readSysfsDir name fullname hdl = do
+      readSysfsDir :: Text -> Handle -> SysV '[()]
+      readSysfsDir path hdl = do
          
+         when (path /= Text.pack "/devices") $
+            deviceAdd dm path Nothing
+
          -- list directories (sub-devices) that are *not* symlinks
          dirs <- sysIO (listDirectory hdl)
                  -- filter to keep only directories (sysfs fills the type field)
@@ -245,62 +474,19 @@ initDeviceManager sysfs devfs = do
                  |> flowRes
 
          -- recursively try to create a tree for each sub-dir
-         children <- flowRes <| 
-                     catMaybes <.-.<
-                     flowFor dirs $ \dir -> do
-                        let
-                           name'     = Text.pack dir
-                           fullname' = Text.concat [fullname, Text.pack "/", name']
+         void $ flowFor dirs $ \dir -> do
+            let path' = Text.concat [path, Text.pack "/", Text.pack dir]
+            withDevDir hdl dir (readSysfsDir path')
 
-                        withOpenAt hdl dir flags BitSet.empty (readSysfsDir name' fullname')
-                           -- wrap into Just on success
-                           >.-.> Just
-                           -- return Nothing on error
-                           >..-.> const Nothing
+         flowRet ()
 
-         (subsystem,dev) <- sysfsReadDev hdl "."
-         node <- DeviceNode (Text.pack <$> subsystem) dev (Map.fromList children)
-                  <$> sysIO newBroadcastTChanIO
-                  <*> sysIO newBroadcastTChanIO
-                  <*> sysIO newBroadcastTChanIO
-                  <*> sysIO newBroadcastTChanIO
-                  <*> sysIO newBroadcastTChanIO
-                  <*> sysIO newBroadcastTChanIO
-         flowRet (name,node)
-
-      flags = BitSet.fromList [ HandleDirectory
-                              , HandleNonBlocking
-                              , HandleDontFollowSymLinks
-                              ]
 
    -- list devices in /devices
-   tree <- withOpenAt sysfs "devices" flags BitSet.empty 
-                        (readSysfsDir (Text.pack "devices") (Text.pack "/devices"))
-           >..%~!!> (\err -> sysError ("Cannot read /devices in sysfs: " ++ show (err :: ErrorCode)))
-           >.-.> snd
-           |> flowRes
-
-
-   -- build subsystem index
-   -- TODO
-   let
-      --makeIndex path node
-      subIndex = undefined
-
-   -- device node counter
-   devNum <- sysIO (newTVarIO 0)
-
-   -- create device manager
-   subIndex' <- sysIO (newTVarIO subIndex)
-   tree'     <- sysIO (newTVarIO tree)
-   let dm = DeviceManager
-               { dmDevices    = tree'
-               , dmSubsystems = subIndex'
-               , dmEvents     = bch
-               , dmSysFS      = sysfs
-               , dmDevFS      = devfs
-               , dmDevNum     = devNum
-               }
+   void (withDevDir sysfs "devices" (readSysfsDir (Text.pack "/devices"))
+            >..%~!!> (\err -> sysError ("Cannot read /devices in sysfs: " 
+                                    ++ show (err :: ErrorCode)))
+        )
+   
 
    -- launch handling thread
    sysFork $ eventThread ch dm
@@ -315,137 +501,64 @@ eventThread ch dm = do
       ev <- sysIO $ atomically (readTChan ch)
 
       let 
-         -- convert a path into a list of directory names
-         -- (drop "", the blank before the first "/")
-         makeTreePath s = Text.split (== '/') s |> tail
-                            
-         -- path into the tree for the event
-         devTreePath = makeTreePath (kernelEventDevPath ev)
-
-         -- move a node from (x:xs) to (y:ys) in the root tree
-         move :: [Text] -> [Text] -> DeviceTree -> Maybe (DeviceTree, DeviceTree)
-         move (x:xs) (y:ys) root
-            -- we only modify the subtree concerned by the move
-            | x == y    = do
-               p      <- lookup [x] root
-               (p',n) <- move xs ys p
-               Just (insert [x] p' root, n)
-         move xs ys root = lookup xs root >>= \n -> Just (insert ys n (remove xs root), n)
-
-         -- lookup for a node
-         lookup :: [Text] -> DeviceTree -> Maybe DeviceTree
-         lookup path root = case path of
-            []     -> error "lookup: empty path"
-            [x]    -> Map.lookup x (deviceNodeChildren root)
-            (x:xs) -> lookup xs =<< Map.lookup x (deviceNodeChildren root)
-
-         -- remove a node in the tree
-         remove path root = root { deviceNodeChildren = cs' }
-            where
-               cs = deviceNodeChildren root
-               cs' = case path of
-                        []     -> error "remove: empty path"
-                        [x]    -> Map.delete x cs
-                        (x:xs) -> Map.update (Just . remove xs) x cs
-
-         -- insert a node in the tree
-         insert path node root = root { deviceNodeChildren = cs' }
-            where
-               cs = deviceNodeChildren root
-               cs' = case path of
-                        []     -> error "insert: empty path"
-                        [x]    -> Map.insert x node cs
-                        (x:xs) -> Map.update (Just . insert xs node) x cs
+         path = kernelEventDevPath ev
 
          signalEvent f = do
             act <- sysIO $ atomically $ do
                tree <- readTVar (dmDevices dm)
-               case lookup devTreePath tree of
+               case deviceTreeLookup path tree of
                   Just node -> do
                      writeTChan (f node) ev
                      return (return ())
                   Nothing   -> do
                      let s = "Event received for non existing device: "
-                             ++ show (kernelEventDevPath ev)
+                             ++ show path
                      return (sysWarning s)
             act
 
 
-      case Text.unpack (head devTreePath) of
+      case Text.unpack (fst (bk (Text.tail path))) of
          -- TODO: handle module ADD/REMOVE (/module/* path)
          "module" -> sysWarning "sysfs event in /module ignored"
          
          -- event in the device tree: update the device tree and trigger rules
          "devices" -> case kernelEventAction ev of
 
-            ActionAdd        -> do
-               (subsystem,dev) <- sysfsReadDev (dmSysFS dm) (Text.unpack (kernelEventDevPath ev))
-               -- create the node (without any child, there will be events for
-               -- them too)
-               node <- DeviceNode (Text.pack <$> subsystem) dev Map.empty
-                        <$> sysIO newBroadcastTChanIO
-                        <*> sysIO newBroadcastTChanIO
-                        <*> sysIO newBroadcastTChanIO
-                        <*> sysIO newBroadcastTChanIO
-                        <*> sysIO newBroadcastTChanIO
-                        <*> sysIO newBroadcastTChanIO
-
-               sysIO $ atomically $ do
-                  -- update the tree
-                  modifyTVar (dmDevices dm) (insert devTreePath node)
-                  -- Add device into subsystem index
-                  -- TODO
-                  -- Signal the addition
-                  -- TODO
-
-            ActionRemove     -> do
-               act <- sysIO $ atomically $ do
-                  tree <- readTVar (dmDevices dm)
-                  case lookup devTreePath tree of
-                     Just node  -> do
-                        writeTVar (dmDevices dm) (remove devTreePath tree)
-                        writeTChan (deviceNodeOnRemove node) ev
-                        -- Remove from index
-                        -- TODO
-                        return (return ())
-                     Nothing -> do
-                        let s = "Remove event received for non existing device: "
-                                 ++ show (kernelEventDevPath ev)
-                        return (sysWarning s)
-               act
-               
-            ActionChange     -> signalEvent deviceNodeOnChange
-            ActionOnline     -> signalEvent deviceNodeOnOnline
-            ActionOffline    -> signalEvent deviceNodeOnOffline
-            ActionOther _    -> signalEvent deviceNodeOnOther
+            ActionAdd     -> deviceAdd dm path (Just ev)
+            ActionRemove  -> deviceRemove dm path ev
+            ActionChange  -> signalEvent deviceNodeOnChange
+            ActionOnline  -> signalEvent deviceNodeOnOnline
+            ActionOffline -> signalEvent deviceNodeOnOffline
+            ActionOther _ -> signalEvent deviceNodeOnOther
 
             -- A device can be moved/renamed in the device tree (see kobject_rename
             -- in lib/kobject.c in the kernel sources)
-            ActionMove       -> do
+            ActionMove    -> do
                -- get old device path
                let oldPath' = Map.lookup (Text.pack "DEVPATH_OLD") (kernelEventDetails ev)
                oldPath <- case oldPath' of
                   Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
                   Just x  -> return x
-               let
-                  oldTreePath = makeTreePath oldPath
-                  newTreePath = devTreePath
 
                act <- sysIO $ atomically $ do
                   -- move the device in the tree
                   tree <- readTVar (dmDevices dm)
-                  case move oldTreePath newTreePath tree of
-                     Just (tree',node) -> do
+                  case deviceTreeLookup oldPath tree of
+                     Just node -> do
+                        -- move the node in the tree
+                        tree' <- deviceTreeMove oldPath path tree
                         writeTVar (dmDevices dm) tree'
                         -- signal the event
                         writeTChan (deviceNodeOnMove node) ev
                         return (return ())
-                     -- FIXME: we should ensure that the target device has been
-                     -- read from sysfs
-                     Nothing           -> do
+
+                     Nothing -> do
+                        -- the source device isn't already in the tree. We try
+                        -- to add it.
                         let s = "Move event received for non existing device: "
-                                ++ show (kernelEventDevPath ev)
-                        return (sysWarning s)
+                                ++ show path
+                                ++ ". We try to add it"
+                        return (sysWarning s >> deviceAdd dm path (Just ev))
                act
 
          -- warn on unrecognized event
@@ -485,7 +598,7 @@ getDeviceHandle dm dev = do
             return n
 
    let 
-      devname = "./dummy" ++ show num
+      devname = "./dev" ++ show num
       devfd   = dmDevFS dm
       logS    = "Opening "
                 ++ show dev
@@ -516,46 +629,38 @@ openDeviceDir dm dev = sysOpenAt (dmDevFS dm) path (BitSet.fromList [HandleDirec
          BlockDevice -> "block"
       ids  = show (deviceMajor (deviceID dev)) ++ ":" ++ show (deviceMinor (deviceID dev))
 
+-- | List devices
+listDevices :: DeviceManager -> Sys [Text]
+listDevices dm = sysIO (atomically (listDevices' dm))
+
+-- | List devices
+listDevices' :: DeviceManager -> STM [Text]
+listDevices' dm = go (Text.pack "/devices") <$> readTVar (dmDevices dm)
+   where
+      go parent n = parent : (cs >>= f)
+         where
+            cs       = Map.assocs (deviceNodeChildren n)
+            f (p,n') = go (Text.concat [parent, Text.pack "/", p]) n'
+
 
 -- | List devices classes
-listDeviceClasses :: DeviceManager -> Flow Sys '[[String],ErrorCode]
-listDeviceClasses dm = do
-   withOpenAt (dmSysFS dm) "class" BitSet.empty BitSet.empty $ \fd -> do
-      sysIO (listDirectory fd)
-         >.-.> fmap entryName
+listDeviceClasses :: DeviceManager -> Sys [Text]
+listDeviceClasses dm = sysIO (atomically (Map.keys <$> readTVar (dmSubsystems dm)))
 
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
-listDevicesWithClass :: DeviceManager -> String -> Sys [(FilePath,Device)]
-listDevicesWithClass dm cls =
-      -- try to open /class/CLASS directory
-      readDevs ("class" </> cls)
-      -- in case of error, try to open /bus/CLASS/devices
-      >..~#> const (readDevs ("bus" </> cls </> "devices"))
-      -- in case of error, we don't return any dev
-      >..~#> const (flowRet [])
-      |> flowRes
-   where 
+listDevicesWithClass :: DeviceManager -> String -> Sys [(DevicePath,DeviceTree)]
+listDevicesWithClass dm cls = sysIO $ atomically $ do
+   subs <- readTVar (dmSubsystems dm)
+   devs <- readTVar (dmDevices dm)
+   ds <- listDevices' dm
 
-      readDevs path = withOpenAt (dmSysFS dm) path BitSet.empty BitSet.empty $ \clsHdl -> do
-         -- list devices in a class
-         dirs <- sysCallAssert ("List devices in "++ path ++" directory") $ listDirectory clsHdl
-         let dirs'  = fmap entryName dirs
-         flowTraverse (readDev clsHdl) dirs' >.-.> catMaybes
-
-      makeDevicePath path = concat ("./" : dropWhile (/= "devices/") (splitPath path))
-
-      -- read device directory
-      readDev :: Handle -> FilePath -> SysV '[Maybe (FilePath,Device)]
-      readDev hdl dir = do
-         -- read symlink pointing into /devices (we shall not directly use/return paths in /class)
-         readSymbolicLink (Just hdl) dir
-            -- the link is relative to the current dir (i.e., /class/CLASS or
-            -- /bus/CLASS/devices), return an absolute path of the form
-            -- "/devices/*"
-            >.-.> makeDevicePath
-            >.~.> (\path -> fmap (path,) . snd <$> sysfsReadDev (dmSysFS dm) path)
-            -- on error (e.g., if there is no "dev" file), skip the device directory
-            >..-.> const Nothing
-
+   let paths = Map.lookup (Text.pack cls) subs
+               ||> Set.elems . subsystemDevices
+               |> fromMaybe []
+       getNode x = case deviceTreeLookup x devs of
+                     Just n  -> n
+                     Nothing -> error ("Mismatch between device tree and device subsystem index! Report this as a ViperVM bug. (" ++ show x ++ ") " ++ show ds)
+       nodes = fmap getNode paths
+   return (paths `zip` nodes)
