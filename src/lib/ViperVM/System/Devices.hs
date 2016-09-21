@@ -384,7 +384,7 @@ deviceAdd dm path mev = do
 -- | Remove a device
 deviceRemove :: DeviceManager -> DevicePath -> KernelEvent -> Sys ()
 deviceRemove dm path ev = do
-   act <- sysIO $ atomically $ do
+   notFound <- sysIO $ atomically $ do
       tree <- readTVar (dmDevices dm)
       case deviceTreeLookup path tree of
          Just node  -> do
@@ -404,12 +404,44 @@ deviceRemove dm path ev = do
                   writeTVar (dmSubsystems dm) (Map.insert s index' subs)
                   -- signal for index
                   writeTChan (subsystemOnRemove index) path
-            return (return ())
-         Nothing -> do
-            let s = "Remove event received for non existing device: "
+            return False
+         Nothing -> return True
+   
+   when notFound $ do
+      sysWarning $ "Remove event received for non existing device: "
                      ++ show path
-            return (sysWarning s)
-   act
+
+-- | Move a device
+--
+-- A device can be moved/renamed in the device tree (see kobject_rename
+-- in lib/kobject.c in the kernel sources)
+deviceMove :: DeviceManager -> DevicePath -> KernelEvent -> Sys ()
+deviceMove dm path ev = do
+   -- get old device path
+   let oldPath' = Map.lookup (Text.pack "DEVPATH_OLD") (kernelEventDetails ev)
+   oldPath <- case oldPath' of
+      Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
+      Just x  -> return x
+
+   notFound <- sysIO $ atomically $ do
+      -- move the device in the tree
+      tree <- readTVar (dmDevices dm)
+      case deviceTreeLookup oldPath tree of
+         Just node -> do
+            -- move the node in the tree
+            tree' <- deviceTreeMove oldPath path tree
+            writeTVar (dmDevices dm) tree'
+            -- signal the event
+            writeTChan (deviceNodeOnMove node) ev
+            return False
+
+         Nothing -> return True
+
+   when notFound $ do
+      sysWarning $ "Move event received for non existing device: "
+                    ++ show path
+                    ++ ". We try to add it"
+      deviceAdd dm path (Just ev)
 
 -- | Init a device manager
 initDeviceManager :: Handle -> Handle -> Sys DeviceManager
@@ -523,43 +555,13 @@ eventThread ch dm = do
          
          -- event in the device tree: update the device tree and trigger rules
          "devices" -> case kernelEventAction ev of
-
             ActionAdd     -> deviceAdd dm path (Just ev)
             ActionRemove  -> deviceRemove dm path ev
+            ActionMove    -> deviceMove dm path ev
             ActionChange  -> signalEvent deviceNodeOnChange
             ActionOnline  -> signalEvent deviceNodeOnOnline
             ActionOffline -> signalEvent deviceNodeOnOffline
             ActionOther _ -> signalEvent deviceNodeOnOther
-
-            -- A device can be moved/renamed in the device tree (see kobject_rename
-            -- in lib/kobject.c in the kernel sources)
-            ActionMove    -> do
-               -- get old device path
-               let oldPath' = Map.lookup (Text.pack "DEVPATH_OLD") (kernelEventDetails ev)
-               oldPath <- case oldPath' of
-                  Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
-                  Just x  -> return x
-
-               act <- sysIO $ atomically $ do
-                  -- move the device in the tree
-                  tree <- readTVar (dmDevices dm)
-                  case deviceTreeLookup oldPath tree of
-                     Just node -> do
-                        -- move the node in the tree
-                        tree' <- deviceTreeMove oldPath path tree
-                        writeTVar (dmDevices dm) tree'
-                        -- signal the event
-                        writeTChan (deviceNodeOnMove node) ev
-                        return (return ())
-
-                     Nothing -> do
-                        -- the source device isn't already in the tree. We try
-                        -- to add it.
-                        let s = "Move event received for non existing device: "
-                                ++ show path
-                                ++ ". We try to add it"
-                        return (sysWarning s >> deviceAdd dm path (Just ev))
-               act
 
          -- warn on unrecognized event
          str -> sysWarning ("sysfs event in /" ++ str ++ " ignored")
