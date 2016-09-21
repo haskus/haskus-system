@@ -225,11 +225,11 @@ defaultTerminal = do
 
    -- input
    inState <- sysIO $ newInputState (16 * 1024) stdin
-   sysFork $ sysIO $ inputThread inState
+   sysFork "Terminal input handler"$ sysIO $ inputThread inState
 
    -- output
    outState <- sysIO $ newOutputState stdout
-   sysFork $ sysIO $ outputThread outState
+   sysFork "Terminal output handler" $ sysIO $ outputThread outState
 
    return $ Terminal outState inState
 

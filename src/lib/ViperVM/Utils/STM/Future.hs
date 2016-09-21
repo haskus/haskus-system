@@ -1,5 +1,4 @@
-
--- | Future values
+-- | Future values (values that can only be set once)
 module ViperVM.Utils.STM.Future
    ( Future
    , FutureSource

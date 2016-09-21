@@ -9,6 +9,7 @@ module ViperVM.System.Sys
    , SysV
    , runSys
    , runSys'
+   , forkSys
    , sysIO
    , sysIO'
    , sysWith
@@ -74,6 +75,39 @@ runSys (Sys act) = do
          }
 
    evalStateT act initState
+
+-- | Fork the log in the Sys monad
+forkSys :: String -> Sys a -> Sys (IO a)
+forkSys name (Sys act) = do
+   (status,statusSrc) <- sysIO newFutureIO
+   (log,logSrc)       <- sysIO newFutureIO
+
+   (status2,statusSrc2) <- sysIO newFutureIO
+   (log2,logSrc2)       <- sysIO newFutureIO
+
+   mainState <- get
+
+   let
+      e = LogFork (Text.pack name) (LogNext status log) (LogNext status2 log2)
+
+      forkState = SysState
+         { sysLogRoot    = sysLogRoot mainState
+         , sysLogCurrent = logSrc2
+         , sysLogStatus  = statusSrc2
+         , sysLogGroups  = []
+         }
+
+   -- link with previous entry
+   c <- gets sysLogCurrent
+   sysIO $ atomically (setFuture e c)
+
+   -- set main state
+   put $ mainState
+            { sysLogCurrent = logSrc
+            , sysLogStatus  = statusSrc
+            }
+
+   return (evalStateT act forkState)
 
 -- | Run and return nothing
 runSys' :: Sys a -> IO ()

@@ -25,6 +25,7 @@ threadDelayMicroSec :: Word -> Sys ()
 threadDelayMicroSec = sysIO . threadDelay . fromIntegral
 
 -- | Fork a thread
--- TODO: fork log
-sysFork :: Sys () -> Sys ()
-sysFork = void . sysIO . forkIO . runSys
+sysFork :: String -> Sys () -> Sys ()
+sysFork name f = do
+   act <- forkSys name f
+   void $ sysIO $ forkIO act

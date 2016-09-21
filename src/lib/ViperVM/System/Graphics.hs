@@ -98,7 +98,7 @@ newEventWaiterThread fd@(Handle lowfd) = do
       rfd = Fd (fromIntegral lowfd)
 
    ch <- sysIO $ newBroadcastTChanIO
-   sysFork $ sysIO $ allocaBytes bufsz $ \ptr -> forever $ do
+   sysFork "Graphics event reader" $ sysIO $ allocaBytes bufsz $ \ptr -> forever $ do
       threadWaitRead rfd
       sysRead fd ptr (fromIntegral bufsz)
          >.~!> \sz2 -> do
