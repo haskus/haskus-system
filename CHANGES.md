@@ -9,6 +9,7 @@
    * Preliminary support for Unums 2.0
 * Apps
    * (x86 instructions viewer) Better HTML rendering for the operands
+* New website
 
 ## Version 0.5 (2016-08-23)
 
