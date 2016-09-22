@@ -2,10 +2,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ViperVM.System.FileSystem
    ( withOpenAt
-   , handleAtomicReadBufferAt
+   , atomicReadBuffer
+   , readBuffer
+   , readStorable
    , HandleFlag(..)
    , FilePermission(..)
    )
@@ -23,6 +26,9 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 import ViperVM.Utils.HList
+import ViperVM.Utils.Types
+
+import Foreign.Storable
 
 -- | Open at
 withOpenAt :: 
@@ -42,8 +48,8 @@ withOpenAt fd path flags perm act =
 -- Some files (e.g., in procfs) need to be read atomically to ensure that their
 -- contents is valid. In this function, we increase the buffer size until we can
 -- read the whole file in it with a single "read" call.
-handleAtomicReadBufferAt :: Handle -> FilePath -> SysV '[Buffer,ErrorCode]
-handleAtomicReadBufferAt hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 2000)
+atomicReadBuffer :: Handle -> FilePath -> SysV '[Buffer,ErrorCode]
+atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 2000)
    where
       go :: Word64 -> Handle -> SysV '[Buffer,ErrorCode]
       go sz fd =
@@ -54,3 +60,14 @@ handleAtomicReadBufferAt hdl path = withOpenAt hdl path BitSet.empty BitSet.empt
             if fromIntegral (bufferSize buf) == sz
                then go (sz*2) fd
                else flowSet buf
+
+
+-- | Read into a buffer
+readBuffer :: Handle -> Maybe Word64 -> Word64 -> SysV '[Buffer,ErrorCode]
+readBuffer hdl moffset size = sysIO (handleReadBuffer hdl moffset size)
+
+-- | Read a storable
+readStorable :: forall a. Storable a => Proxy a -> Handle -> Maybe Word64 -> SysV '[a,ErrorCode]
+readStorable _ hdl moffset = readBuffer hdl moffset size >.-.> bufferPeekStorable
+   where
+      size = fromIntegral (sizeOf (undefined :: a))

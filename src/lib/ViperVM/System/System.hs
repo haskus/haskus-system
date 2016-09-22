@@ -92,5 +92,5 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 -- | Get process memory mappings
 getProcessMemoryMap :: System -> SysV '[[MemoryMapEntry],ErrorCode]
 getProcessMemoryMap sys =
-   handleAtomicReadBufferAt (systemProcFS sys) "self/maps"
+   atomicReadBuffer (systemProcFS sys) "self/maps"
    >.-.> parseMemoryMap
