@@ -27,6 +27,7 @@ module ViperVM.System.Sys
    , sysError
    , sysWarning
    , sysErrorShow
+   , sysWarningShow
    )
 where
 
@@ -306,3 +307,7 @@ sysWarning text = do
 -- | Fail in Sys
 sysErrorShow :: Show a => String -> a -> Sys b
 sysErrorShow text a = sysError (text ++ ": " ++ show a)
+
+-- | Warning in Sys
+sysWarningShow :: Show a => String -> a -> Sys ()
+sysWarningShow text a = sysWarning (text ++ ": " ++ show a)

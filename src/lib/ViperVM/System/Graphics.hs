@@ -78,16 +78,18 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          Nothing -> Nothing
          Just x  -> Just (p,x)
       devs' = filter isCard (mapMaybe hasDevice devs)
-   forM devs' $ \(devpath,dev) -> do
-      hdl   <- getDeviceHandle dm dev
-      -- We support these capabilities
-      setClientCapability hdl ClientCapStereo3D        True
-      setClientCapability hdl ClientCapUniversalPlanes True
-      setClientCapability hdl ClientCapAtomic          True
+   flowForFilter devs' $ \(devpath,dev) -> do
       let cardID = read (drop 4 (takeBaseName (Text.unpack devpath)))
-      -- Create the DRM event reader thread
-      GraphicCard devpath dev cardID hdl
-         <$> newEventWaiterThread hdl
+      getDeviceHandle dm dev
+         >.~.> (\hdl -> do
+            -- We support these capabilities
+            setClientCapability hdl ClientCapStereo3D        True
+            setClientCapability hdl ClientCapUniversalPlanes True
+            setClientCapability hdl ClientCapAtomic          True
+            -- Create the DRM event reader thread
+            GraphicCard devpath dev cardID hdl
+               <$> newEventWaiterThread hdl
+            )
 
 
 -- | Create a new thread reading input events and putting them in a TChan

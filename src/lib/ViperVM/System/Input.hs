@@ -8,15 +8,13 @@ where
 import ViperVM.System.Sys
 import ViperVM.System.Event
 import ViperVM.System.Devices
+import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Internals.Input as Input
 import qualified ViperVM.Format.Text as Text
 
 import Control.Concurrent.STM
-import Data.Traversable (forM)
 import Prelude hiding (init,tail)
-import Control.Monad (void)
 import Data.List (isPrefixOf)
 import Data.Maybe (mapMaybe)
 import System.FilePath (takeBaseName)
@@ -42,12 +40,14 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
          Nothing -> Nothing
          Just x  -> Just (p,x)
       devs' = filter isEvent (mapMaybe hasDevice devs)
-   forM devs' $ \(devpath,dev) -> do
-      fd   <- getDeviceHandle dm dev
-      void $ sysCallWarn "Grab device" $ grabDevice fd
-      InputDevice devpath dev fd
-         <$> sysCallAssert "Get device name"
-                  (Input.getDeviceName fd)
-         <*> sysCallAssert "Get device info"
-                  (Input.getDeviceInfo fd)
-         <*> newEventReader fd
+   flowForFilter devs' $ \(devpath,dev) -> do
+      getDeviceHandle dm dev
+         -- try to grab device
+         >.~=> (\hdl -> sysIO (grabDevice hdl)
+                           >..~!> sysWarningShow "Cannot grab device")
+         -- try to read infos and return InputDevice
+         >.~?> (\hdl -> InputDevice devpath dev hdl
+                        <$< sysIO (Input.getDeviceName hdl)
+                        <*< sysIO (Input.getDeviceInfo hdl)
+                        <&< (flowRet' =<< newEventReader hdl)
+               )

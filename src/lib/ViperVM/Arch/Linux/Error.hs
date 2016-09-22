@@ -18,6 +18,7 @@ module ViperVM.Arch.Linux.Error
    , MemoryError (..)
    , InvalidParam (..)
    , EntryNotFound (..)
+   , DeviceNotFound (..)
    , InvalidRange (..)
    , FileSystemIOError (..)
    , OutOfKernelMemory (..)
@@ -72,6 +73,12 @@ data EntryNotFound
 data FileNotFound
    = FileNotFound
    deriving (Show,Eq)
+
+-- | Device not found
+data DeviceNotFound
+   = DeviceNotFound
+   deriving (Show,Eq)
+
 
 -- | Invalid range
 data InvalidRange

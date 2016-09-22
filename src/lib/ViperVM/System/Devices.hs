@@ -5,6 +5,18 @@
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Devices management
+--
+-- This module allows the creation of a 'DeviceManager' which:
+--
+--    * maintains an up-to-date tree of connected devices
+--    * maintains device index by subsystem type
+--    * signals when tree changes through STM channels
+--    * allows query of devices
+--    * allows device property querying/setting
+--
+-- Internally, it relies on Linux's sysfs and on a socket to receive netlink
+-- kernel object events.
+--
 module ViperVM.System.Devices
    ( Device (..)
    -- * Device manager
@@ -51,6 +63,7 @@ import ViperVM.System.Sys
 import ViperVM.System.FileSystem
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Variant
 import ViperVM.Utils.Maybe
 
 import Control.Arrow (second)
@@ -594,24 +607,20 @@ newKernelEventReader = do
 
 
 -- | Get device handle by name (i.e., sysfs path)
---
--- FIXME: partial function (should be able to fail)
-getDeviceHandleByName :: DeviceManager -> String -> Sys Handle
+getDeviceHandleByName :: DeviceManager -> String -> SysV '[Handle,DeviceNotFound,ErrorCode]
 getDeviceHandleByName dm path = do
    dev <- deviceLookup dm (Text.pack path)
    case dev >>= deviceDevice of
-      Just d  -> getDeviceHandle dm d
-      Nothing -> error "Cannot get device handle"
+      Just d  -> getDeviceHandle dm d ||> liftVariant
+      Nothing -> flowSet DeviceNotFound
 
 -- | Get a handle on a device
---
--- FIXME: partial function (should be able to fail)
 --
 -- Linux doesn't provide an API to open a device directly from its major and
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: DeviceManager -> Device -> Sys Handle
+getDeviceHandle :: DeviceManager -> Device -> SysV '[Handle,ErrorCode]
 getDeviceHandle dm dev = do
 
    -- get a fresh device number
@@ -629,13 +638,15 @@ getDeviceHandle dm dev = do
                 ++ devname
 
    sysLogSequence logS $ do
-      sysCallAssert "Create device special file" $
-         createDeviceFile (Just devfd) devname dev BitSet.empty
-      fd  <- sysCallAssert "Open device special file" $
-         sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty
-      sysCallAssert "Remove device special file" $
-         sysUnlinkAt devfd devname False
-      return fd
+      -- create special file in device fs
+      sysIO (createDeviceFile (Just devfd) devname dev BitSet.empty)
+         >.+&> do
+            -- on success, try to open it
+            hdl <- sysIO (sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty)
+            -- then remove it
+            sysIO (sysUnlinkAt devfd devname False)
+               >..~!> sysWarningShow "Unlinking special device file failed"
+            return hdl
 
 -- | Release a device handle
 releaseDeviceHandle :: Handle -> Sys ()
