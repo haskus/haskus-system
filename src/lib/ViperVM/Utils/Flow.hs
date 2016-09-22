@@ -19,6 +19,8 @@ module ViperVM.Utils.Flow
    , flowLift
    , flowTraverse
    , flowFor
+   , flowTraverseFilter
+   , flowForFilter
    , Liftable
    , Catchable
    -- * Non-variant single operations
@@ -29,10 +31,8 @@ module ViperVM.Utils.Flow
    -- * First element operations
    , (.~.>)
    , (>.~.>)
-   , (.-.>)
-   , (>.-.>)
-   , (<.-.)
-   , (<.-.<)
+   , (.~?>)
+   , (>.~?>)
    , (.~:>)
    , (>.~:>)
    , (.~^^>)
@@ -47,11 +47,39 @@ module ViperVM.Utils.Flow
    , (>.~=>)
    , (.~!>)
    , (>.~!>)
+   -- * First element, pure variant
+   , (.-.>)
+   , (>.-.>)
+   , (<.-.)
+   , (<.-.<)
+   -- * Functor, applicative equivalents
+   , (<$<)
+   , (<*<)
+   , (<&<)
+   -- * First element, const variant
+   , (.+.>)
+   , (>.+.>)
+   , (.+:>)
+   , (>.+:>)
+   , (.+^^>)
+   , (>.+^^>)
+   , (.+#>)
+   , (>.+#>)
+   , (.+->)
+   , (>.+->)
+   , (.+&>)
+   , (>.+&>)
+   , (.+=>)
+   , (>.+=>)
+   , (.+!>)
+   , (>.+!>)
    -- * Tail operations
    , (..~.>)
    , (>..~.>)
    , (..-.>)
    , (>..-.>)
+   , (..-..>)
+   , (>..-..>)
    , (..~..>)
    , (>..~..>)
    , (..~^^>)
@@ -148,6 +176,25 @@ flowFor :: forall m a b xs.
    ) => [a] -> (a -> Flow m (b ': xs)) -> Flow m ([b] ': xs)
 flowFor = flip flowTraverse
 
+-- | Traverse a list and return only valid values
+flowTraverseFilter :: forall m a b xs.
+   ( Monad m
+   ) => (a -> Flow m (b ': xs)) -> [a] -> m [b]
+flowTraverseFilter f = go
+   where
+      go :: [a] -> m [b]
+      go []     = return []
+      go (a:as) = do
+         f a >.~.> (\b -> (b:) <$> go as)
+             >..~.> const (go as)
+
+-- | Traverse a list and return only valid values
+flowForFilter :: forall m a b xs.
+   ( Monad m
+   ) => [a] -> (a -> Flow m (b ': xs)) -> m [b]
+flowForFilter = flip flowTraverseFilter
+
+
 -- | Extract single flow result
 flowRes :: Functor m => Flow m '[x] -> m x
 flowRes = fmap singleVariant
@@ -155,10 +202,17 @@ flowRes = fmap singleVariant
 
 -- | Lift an operation on a Variant into an operation on a flow
 liftm :: Monad m => (Variant x -> a -> m b) -> Flow m x -> a -> m b
+{-# INLINE liftm #-}
 liftm op x a = do
    x' <- x
    op x' a
 
+-- | Lift to const variant
+--liftc :: Monad m => (Variant x -> (a -> m b) -> m c) -> Variant x -> m b -> m c
+--{-# INLINE liftc #-}
+--liftc op x a = do
+--   x' <- x
+--   op x' a
 
 ----------------------------------------------------------
 -- Single element not wrapped into a variant
@@ -210,37 +264,25 @@ infixl 0 .~.>
 
 infixl 0 >.~.>
 
--- | Extract the first value, set the first value
-(.-.>) :: forall m l x a.
+-- | Extract the first value, set the first value but allow to fail
+(.~?>) :: forall m l x a.
    ( Monad m )
-   => Variant (a ': l) -> (a -> x) -> Flow m (x ': l)
-(.-.>) v f = return (updateVariant (Proxy :: Proxy 0) f v)
+   => Variant (a ': l) -> (a -> Flow m (x ': l)) -> Flow m (x ': l)
+(.~?>) v f = 
+   case getVariant0 v of
+      Just a  -> f a
+      Nothing -> return (updateVariant0 (const undefined) v)
 
-infixl 0 .-.>
+infixl 0 .~?>
 
--- | Extract the first value, set the first value
-(>.-.>) :: forall m l x a.
+-- | Extract the first value, set the first value but allow to fail
+(>.~?>) :: forall m l x a.
    ( Monad m )
-   => Flow m (a ': l) -> (a -> x) -> Flow m (x ': l)
-(>.-.>) = liftm (.-.>)
+   => Flow m (a ': l) -> (a -> Flow m (x ': l)) -> Flow m (x ': l)
+(>.~?>) = liftm (.~?>)
 
-infixl 0 >.-.>
+infixl 0 >.~?>
 
--- | Extract the first value, set the first value
-(<.-.) :: forall m l x a.
-   ( Monad m )
-   => (a -> x) -> Variant (a ': l) -> Flow m (x ': l)
-(<.-.) = flip (.-.>)
-
-infixr 0 <.-.
-
--- | Extract the first value, set the first value
-(<.-.<) :: forall m l x a.
-   ( Monad m )
-   => (a -> x) -> Flow m (a ': l) -> Flow m (x ': l)
-(<.-.<) = flip (>.-.>)
-
-infixr 0 <.-.<
 
 -- | Extract the first value, concat the result
 (.~:>) :: forall (k :: Nat) m l l2 a.
@@ -385,15 +427,237 @@ infixl 0 .~!>
 infixl 0 >.~!>
 
 ----------------------------------------------------------
+-- First element, pure variant
+----------------------------------------------------------
+
+-- | Extract the first value, set the first value
+(.-.>) :: forall m l x a.
+   ( Monad m )
+   => Variant (a ': l) -> (a -> x) -> Flow m (x ': l)
+(.-.>) v f = return (updateVariant (Proxy :: Proxy 0) f v)
+
+infixl 0 .-.>
+
+-- | Extract the first value, set the first value
+(>.-.>) :: forall m l x a.
+   ( Monad m )
+   => Flow m (a ': l) -> (a -> x) -> Flow m (x ': l)
+(>.-.>) = liftm (.-.>)
+
+infixl 0 >.-.>
+
+-- | Extract the first value, set the first value
+(<.-.) :: forall m l x a.
+   ( Monad m )
+   => (a -> x) -> Variant (a ': l) -> Flow m (x ': l)
+(<.-.) = flip (.-.>)
+
+infixr 0 <.-.
+
+-- | Extract the first value, set the first value
+(<.-.<) :: forall m l x a.
+   ( Monad m )
+   => (a -> x) -> Flow m (a ': l) -> Flow m (x ': l)
+(<.-.<) = flip (>.-.>)
+
+infixr 0 <.-.<
+
+----------------------------------------------------------
+-- Functor, applicative
+----------------------------------------------------------
+
+-- | Functor <$> equivalent
+(<$<) :: forall m l a b.
+   ( Monad m )
+   => (a -> b) -> Flow m (a ': l) -> Flow m (b ': l)
+(<$<) = (<.-.<)
+
+infixl 4 <$<
+
+-- | Applicative <*> equivalent
+(<*<) :: forall m l a b.
+   ( Monad m )
+   => Flow m ((a -> b) ': l) -> Flow m (a ': l) -> Flow m (b ': l)
+(<*<) mf mg = mf >.~?> (mg >.-.>)
+
+infixl 4 <*<
+
+-- | Applicative <*> equivalent, with error fusion
+(<&<) :: forall m xs ys zs y z.
+   ( Monad m
+   , Liftable xs zs
+   , Liftable ys zs
+   , zs ~ Fusion xs ys
+   ) => Flow m ((y -> z) ': xs) -> Flow m (y ': ys) -> Flow m (z ': zs)
+(<&<) mf mg = 
+   mf >..-..> liftVariant
+      >.~?> (\f -> mg >..-..> liftVariant
+                      >.-.> f
+            )
+
+infixl 4 <&<
+
+----------------------------------------------------------
+-- First element, const variant
+----------------------------------------------------------
+
+-- | Extract the first value, set the first value
+(.+.>) :: forall m l x a.
+   ( Monad m )
+   => Variant (a ': l) -> m x -> Flow m (x ': l)
+(.+.>) v f = v .~.> const f
+
+infixl 0 .+.>
+
+-- | Extract the first value, set the first value
+(>.+.>) :: forall m l x a.
+   ( Monad m )
+   => Flow m (a ': l) -> m x -> Flow m (x ': l)
+(>.+.>) = liftm (.+.>)
+
+infixl 0 >.+.>
+
+-- | Extract the first value, concat the result
+(.+:>) :: forall (k :: Nat) m l l2 a.
+   ( KnownNat k
+   , k ~ Length l2
+   , a ~ TypeAt 0 (a ': l)
+   , Monad m )
+   => Variant (a ': l) -> Flow m l2 -> Flow m (Concat l2 l)
+(.+:>) v f = v .~:> const f
+
+infixl 0 .+:>
+
+-- | Extract the first value, concat the results
+(>.+:>) :: forall (k :: Nat) m l l2 a.
+   ( KnownNat k
+   , k ~ Length l2
+   , Monad m )
+   => Flow m (a ': l) -> Flow m l2 -> Flow m (Concat l2 l)
+(>.+:>) = liftm (.+:>)
+
+infixl 0 >.+:>
+
+-- | Extract the first value, lift the result
+(.+^^>) :: forall m a xs ys zs.
+   ( Monad m
+   , Liftable xs zs
+   , Liftable ys zs
+   ) => Variant (a ': ys) -> Flow m xs -> Flow m zs
+(.+^^>) v f = v .~^^> const f
+
+infixl 0 .+^^>
+
+
+-- | Extract the first value, lift the result
+(>.+^^>) :: forall m a xs ys zs.
+   ( Monad m
+   , Liftable xs zs
+   , Liftable ys zs
+   ) => Flow m (a ': ys) -> Flow m xs -> Flow m zs
+(>.+^^>) = liftm (.+^^>)
+
+infixl 0 >.+^^>
+
+-- | Extract the first value, connect to the expected output
+(.+#>) :: forall m a ys zs.
+   ( Monad m
+   , Liftable ys zs
+   ) => Variant (a ': ys) -> Flow m zs -> Flow m zs
+(.+#>) v f = v .~#> const f
+
+infixl 0 .+#>
+
+-- | Extract the first value, connect to the expected output
+(>.+#>) :: forall m a ys zs.
+   ( Monad m
+   , Liftable ys zs
+   ) => Flow m (a ': ys) -> Flow m zs -> Flow m zs
+(>.+#>) = liftm (.+#>)
+
+infixl 0 >.+#>
+
+-- | Extract the first value, use the same output type
+(.+->) :: forall m x xs.
+   ( Monad m
+   ) => Variant (x ': xs) -> Flow m (x ': xs) -> Flow m (x ': xs)
+(.+->) v f = v .~-> const f
+
+infixl 0 .+->
+
+-- | Extract the first value, use the same output type
+(>.+->) :: forall m x xs.
+   ( Monad m
+   ) => Flow m (x ': xs) -> Flow m (x ': xs) -> Flow m (x ': xs)
+(>.+->) = liftm (.+->)
+
+infixl 0 >.+->
+
+-- | Take the first output, fusion the result
+(.+&>) ::
+   ( Liftable xs zs
+   , Liftable ys zs
+   , zs ~ Fusion xs ys
+   , Monad m
+   ) => Variant (a ': ys) -> Flow m xs -> Flow m zs
+(.+&>) v f = v .~&> const f
+
+infixl 0 .+&>
+
+-- | Take the first output, fusion the result
+(>.+&>) ::
+   ( Liftable xs zs
+   , Liftable ys zs
+   , zs ~ Fusion xs ys
+   , Monad m
+   ) => Flow m (a ': ys) -> Flow m xs -> Flow m zs
+(>.+&>) = liftm (.+&>)
+
+infixl 0 >.+&>
+
+-- | Extract the first value and perform effect. Passthrough the input value
+(.+=>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> m () -> Flow m (a ': l)
+(.+=>) v f = v .~=> const f
+
+infixl 0 .+=>
+
+-- | Extract the first value and perform effect. Passthrough the input value
+(>.+=>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> m () -> Flow m (a ': l)
+(>.+=>) = liftm (.+=>)
+
+infixl 0 >.+=>
+
+-- | Extract the first value and perform effect.
+(.+!>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> m () -> m ()
+(.+!>) v f = v .~!> const f
+
+infixl 0 .+!>
+
+-- | Extract the first value and perform effect.
+(>.+!>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> m () -> m ()
+(>.+!>) = liftm (.+!>)
+
+infixl 0 >.+!>
+
+
+----------------------------------------------------------
 -- Tail operations
 ----------------------------------------------------------
 
 -- | Extract the tail, set the first value
 (..~.>) ::
    ( Monad m
-   ) => Variant (a ': l) -> (Variant l -> Flow m '[a]) -> Flow m '[a]
+   ) => Variant (a ': l) -> (Variant l -> m a) -> m a
 (..~.>) v f = case headVariant v of
-   Right u -> flowRet u
+   Right u -> return u
    Left  l -> f l
 
 infixl 0 ..~.>
@@ -401,7 +665,7 @@ infixl 0 ..~.>
 -- | Extract the tail, set the first value
 (>..~.>) ::
    ( Monad m
-   ) => Flow m (a ': l) -> (Variant l -> Flow m '[a]) -> Flow m '[a]
+   ) => Flow m (a ': l) -> (Variant l -> m a) -> m a
 (>..~.>) = liftm (..~.>)
 
 infixl 0 >..~.>
@@ -423,6 +687,24 @@ infixl 0 ..-.>
 (>..-.>) = liftm (..-.>)
 
 infixl 0 >..-.>
+
+-- | Extract the tail, set the tail
+(..-..>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> (Variant l -> Variant xs) -> Flow m (a ': xs)
+(..-..>) v f = case headVariant v of
+   Right u -> flowRet u
+   Left  l -> return (prependVariant (Proxy :: Proxy '[a]) (f l))
+
+infixl 0 ..-..>
+
+-- | Extract the tail, set the tail
+(>..-..>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> (Variant l -> Variant xs) -> Flow m (a ': xs)
+(>..-..>) = liftm (..-..>)
+
+infixl 0 >..-..>
 
 -- | Extract the tail, set the tail
 (..~..>) ::
