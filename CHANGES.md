@@ -1,3 +1,15 @@
+## Version 0.6 (next)
+
+* Linux
+   * (Devices) Device manager with device index (by subsystem) and notifications
+   * (Graphics) Object property support (get only for now)
+   * (System) Make logging in Sys monad support fork
+   * (syscalls) readlink(at)
+* Binary
+   * Preliminary support for Unums 2.0
+* Apps
+   * (x86 instructions viewer) Better HTML rendering for the operands
+
 ## Version 0.5 (2016-08-23)
 
 * X86-64 disassembler
