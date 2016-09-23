@@ -124,8 +124,7 @@ where
 
 import ViperVM.Utils.Variant
 import ViperVM.Utils.HList
-import Data.Proxy
-import GHC.TypeLits
+import ViperVM.Utils.Types
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)
@@ -206,13 +205,6 @@ liftm :: Monad m => (Variant x -> a -> m b) -> Flow m x -> a -> m b
 liftm op x a = do
    x' <- x
    op x' a
-
--- | Lift to const variant
---liftc :: Monad m => (Variant x -> (a -> m b) -> m c) -> Variant x -> m b -> m c
---{-# INLINE liftc #-}
---liftc op x a = do
---   x' <- x
---   op x' a
 
 ----------------------------------------------------------
 -- Single element not wrapped into a variant
@@ -908,9 +900,9 @@ infixl 0 >..%~!>
    , Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> m y) -> Flow m (y ': ys)
-(%~.>) v f = case removeType v of
-   Left x   -> flowRet =<< f x
-   Right ys -> prependVariant (Proxy :: Proxy '[y]) <$> return ys
+(%~.>) v f = case catchVariant v of
+   Right x -> flowRet =<< f x
+   Left ys -> prependVariant (Proxy :: Proxy '[y]) <$> return ys
 
 infixl 0 %~.>
 
@@ -930,9 +922,9 @@ infixl 0 >%~.>
    , Catchable x xs
    , KnownNat (Length ys)
    ) => Variant xs -> (x -> Flow m ys) -> Flow m (Concat ys (Filter x xs))
-(%~:>) v f = case removeType v of
-   Left x   -> appendVariant  (Proxy :: Proxy (Filter x xs)) <$> f x
-   Right ys -> prependVariant (Proxy :: Proxy ys)            <$> return ys
+(%~:>) v f = case catchVariant v of
+   Right x -> appendVariant  (Proxy :: Proxy (Filter x xs)) <$> f x
+   Left ys -> prependVariant (Proxy :: Proxy ys)            <$> return ys
 
 infixl 0 %~:>
 
@@ -953,9 +945,9 @@ infixl 0 >%~:>
    , Liftable (Filter x xs) zs
    , Liftable ys zs
    ) => Variant xs -> (x -> Flow m ys) -> Flow m zs
-(%~^^>) v f = case removeType v of
-   Left x   -> liftVariant <$> f x
-   Right ys -> liftVariant <$> return ys
+(%~^^>) v f = case catchVariant v of
+   Right x -> liftVariant <$> f x
+   Left ys -> liftVariant <$> return ys
 
 infixl 0 %~^^>
 
@@ -976,9 +968,9 @@ infixl 0 >%~^^>
    , Catchable x xs
    , Liftable (Filter x xs) zs
    ) => Variant xs -> (x -> Flow m zs) -> Flow m zs
-(%~#>) v f = case removeType v of
-   Left x   -> f x
-   Right ys -> return (liftVariant ys)
+(%~#>) v f = case catchVariant v of
+   Right x -> f x
+   Left ys -> return (liftVariant ys)
 
 infixl 0 %~#>
 
@@ -997,9 +989,9 @@ infixl 0 >%~#>
    ( Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> Flow m xs) -> Flow m xs
-(%~->) v f = case removeType v of
-   Left x  -> f x
-   Right _ -> return v
+(%~->) v f = case catchVariant v of
+   Right x -> f x
+   Left _  -> return v
 
 infixl 0 %~->
 
@@ -1020,9 +1012,9 @@ infixl 0 >%~->
    , Liftable ys zs
    , zs ~ Fusion (Filter x xs) ys
    ) => Variant xs -> (x -> Flow m ys) -> Flow m zs
-(%~&>) v f = case removeType v of
-   Left x   -> liftVariant <$> f x
-   Right ys -> return (liftVariant ys)
+(%~&>) v f = case catchVariant v of
+   Right x -> liftVariant <$> f x
+   Left ys -> return (liftVariant ys)
 
 infixl 0 %~&>
 
@@ -1043,9 +1035,9 @@ infixl 0 >%~&>
    ( Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> m ()) -> Flow m xs
-(%~=>) v f = case removeType v of
-   Left x  -> f x >> return v
-   Right _ -> return v
+(%~=>) v f = case catchVariant v of
+   Right x -> f x >> return v
+   Left _  -> return v
 
 infixl 0 %~=>
 
@@ -1063,9 +1055,9 @@ infixl 0 >%~=>
    ( Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> m ()) -> m ()
-(%~!>) v f = case removeType v of
-   Left x  -> f x
-   Right _ -> return ()
+(%~!>) v f = case catchVariant v of
+   Right x -> f x
+   Left _  -> return ()
 
 infixl 0 %~!>
 
@@ -1083,9 +1075,9 @@ infixl 0 >%~!>
    ( Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> m ()) -> Flow m (Filter x xs)
-(%~!!>) v f = case removeType v of
-   Left x  -> f x >> error "%~!!> error"
-   Right u -> return u
+(%~!!>) v f = case catchVariant v of
+   Right x -> f x >> error "%~!!> error"
+   Left u  -> return u
 
 infixl 0 %~!!>
 

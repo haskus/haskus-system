@@ -50,7 +50,7 @@ module ViperVM.Utils.Variant
    , Liftable
    , Matchable
    , MatchableH
-   , removeType
+   , catchVariant
    , pickVariant
    , headVariant
    , singleVariant
@@ -292,16 +292,16 @@ type MaybeCatchable a xs =
 
 -- | Extract a type from a variant. Return either the value of this type or the
 -- remaining variant
-removeType :: forall l a l2 r is.
+catchVariant :: forall l a l2 r is.
    ( r ~ (Variant l, Int, Maybe Found)
    , is ~ Zip (Indexes l) (MapTest a l)
    , HFoldr' RemoveType r is r
    , l2 ~ Filter a l
-   ) => Variant l -> Either a (Variant l2)
-removeType v = case res of
-      (Variant _ a, _,     Just FoundSame)      -> Left (unsafeCoerce a)
-      (Variant t a, shift, Just FoundDifferent) -> Right (Variant (t-shift) a)
-      _ -> error "removeType error" -- shouldn't happen
+   ) => Variant l -> Either (Variant l2) a
+catchVariant v = case res of
+      (Variant _ a, _,     Just FoundSame)      -> Right (unsafeCoerce a)
+      (Variant t a, shift, Just FoundDifferent) -> Left (Variant (t-shift) a)
+      _ -> error "catchVariant error" -- shouldn't happen
    where
       res :: (Variant l, Int, Maybe Found)
       res = hFoldr' RemoveType
@@ -370,8 +370,7 @@ instance forall (n :: Nat) l i r .
                Nothing -> (v, Nothing)
                Just a  -> (v, Just s)
                   where
-                     s = "setVariantN @" ++ show n ++ " "++show a
-                     n = natVal (Proxy :: Proxy n)
+                     s = show a
 
 instance 
    ( HFoldr' VariantShow (Variant l, Maybe String) (Indexes l) (Variant l, Maybe String)
@@ -397,7 +396,6 @@ prependVariant :: forall (xs :: [*]) (ys :: [*]).
 prependVariant _ (Variant t a) = Variant (n+t) a
    where
       n = fromIntegral (natVal (Proxy :: Proxy (Length ys)))
-
 
 -- | Fusion variant values of the same type
 fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)
@@ -458,9 +456,9 @@ liftVariant v = s
 
 -- | Convert a variant of two values in a Either
 toEither :: forall a b. Variant '[a,b] -> Either b a
-toEither v = case removeType v1 of
-      Left x  -> x
-      Right _ -> undefined
+toEither v = case catchVariant v1 of
+      Right x -> x
+      Left _  -> undefined
    where
       v1 :: Variant '[Either b a, Either b a]
       v1 = updateVariant0 Right v2

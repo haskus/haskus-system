@@ -141,14 +141,14 @@ manyTill f g = go []
    where
       go xs = do
          v <- g
-         case removeType v of
-            Left EndOfInput   -> flowSet EndOfInput
-            Left SyntaxError -> do
+         case catchVariant v of
+            Right EndOfInput  -> flowSet EndOfInput
+            Right SyntaxError -> do
                u <- f
-               case removeType u of
-                  Left (e :: ParseError) -> flowSet e
-                  Right x                -> go (x:xs)
-            Right x           -> flowSet (reverse xs,x)
+               case catchVariant u of
+                  Right (e :: ParseError) -> flowSet e
+                  Left x                  -> go (x:xs)
+            Left x            -> flowSet (reverse xs,x)
 
 -- | Apply the first action zero or more times until the second succeeds.
 -- If the first action fails, the whole operation fails.
@@ -174,11 +174,11 @@ manyBounded _ (Just 0) _   = flowSet ([] :: [Variant zs])
 manyBounded (Just 0) max f = manyBounded Nothing max f
 manyBounded min max f      = do
    v <- f
-   case removeType v of
-      Left (e :: ParseError) -> case min of
+   case catchVariant v of
+      Right (e :: ParseError) -> case min of
          Just n | n > 0 -> flowSet e
          _              -> flowSet ([] :: [Variant zs])
-      Right x           -> do
+      Left x           -> do
          let minus1 = fmap (\k -> k - 1)
          xs <- manyBounded (minus1 min) (minus1 max) f
          case toEither xs of
