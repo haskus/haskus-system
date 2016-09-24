@@ -124,7 +124,7 @@ switchFrameBuffer' hdl crtcid fb flags = do
 
    ioctlPageFlip s hdl >.-.> const ()
 
--- | Get controllers (discard errors)
+-- | Get controllers
 getControllers :: Handle -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
 getControllers hdl = getResources hdl
    >.-.> resControllerIDs
