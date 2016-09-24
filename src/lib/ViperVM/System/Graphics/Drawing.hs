@@ -116,7 +116,8 @@ blendImage gfb img op pos clp = do
       (dx,dy,_,_)   = dstRect
 
       -- Convert betweeen RGBA8 and XRGB8 (endianness in DRM is misleading)
-      myPackPixel (PixelRGBA8 r g b a) =
+      {-# INLINE myPackPixel #-}
+      myPackPixel (PixelRGBA8 !r !g !b !a) =
           (fi r `unsafeShiftL` (2 * bitCount)) .|.
           (fi g `unsafeShiftL` (1 * bitCount)) .|.
           (fi b `unsafeShiftL` (0 * bitCount)) .|.
@@ -124,7 +125,8 @@ blendImage gfb img op pos clp = do
         where fi = fromIntegral
               bitCount = 8
 
-      myUnpackPixel v = PixelRGBA8
+      {-# INLINE myUnpackPixel #-}
+      myUnpackPixel !v = PixelRGBA8
           (low $ (v :: Word32) `unsafeShiftR` (2 * bitCount))
           (low $ v `unsafeShiftR` bitCount)
           (low v)
@@ -133,30 +135,33 @@ blendImage gfb img op pos clp = do
            low = fromIntegral . (.&. 0xFF)
            bitCount = 8
 
-   let
-      f x y = case op of
-               BlendAlpha -> do
-                  -- dest offset
-                  let !doff = (dx+x)*4 + (dy+y)*fromIntegral pitch
-                  -- old value
-                  !old <- myUnpackPixel <$> peekByteOff addr doff
-                  let
-                     !new  = pixelAt img (sx+x) (y+sy)
-                     !opa  = fromIntegral $ pixelOpacity new
-                     bl _ s d = if (z `shiftR` 8) /= 0
-                           then 255
-                           else fromIntegral (z .&. 0xff)
-                        where
-                           !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `shiftR` 8
-                     !v = myPackPixel (mixWith bl new old)
-                  pokeByteOff addr doff (v :: Word32)
+      pitch' = fromIntegral pitch
 
-               BlendCopy -> do
-                  let
-                     !doff = (dx+x)*4 + (dy+y)*fromIntegral pitch
-                     !new  = pixelAt img (sx+x) (y+sy)
-                     !v = myPackPixel new
-                  pokeByteOff addr doff (v :: Word32)
+   case op of
+      BlendAlpha -> 
+         forLoop 0 (< sh) (+1) $! \y ->
+            forLoop 0 (< sw) (+1) $! \x -> do
+               -- dest offset
+               let !doff = (dx+x)*4 + (dy+y)*pitch'
+               -- old value
+               !old <- myUnpackPixel <$> peekByteOff addr doff
+               let
+                  !new  = pixelAt img (sx+x) (y+sy)
+                  !opa  = fromIntegral $ pixelOpacity new
+                  -- clip to 255
+                  bl _ !s !d = if (z `unsafeShiftR` 8) /= 0
+                        then 255
+                        else fromIntegral (z .&. 0xff)
+                     where
+                        !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `unsafeShiftR` 8
+                  !v = myPackPixel (mixWith bl new old)
+               pokeByteOff addr doff (v :: Word32)
 
-   forLoop 0 (< sh) (+1) $ \y ->
-      forLoop 0 (< sw) (+1) $ \x -> f x y
+      BlendCopy ->
+         forLoop 0 (< sh) (+1) $ \y ->
+            forLoop 0 (< sw) (+1) $ \x -> do
+               let
+                  !doff = (dx+x)*4 + (dy+y)*pitch'
+                  !new  = pixelAt img (sx+x) (y+sy)
+                  !v = myPackPixel new
+               pokeByteOff addr doff (v :: Word32)
