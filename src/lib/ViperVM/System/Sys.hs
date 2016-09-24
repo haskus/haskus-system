@@ -79,7 +79,7 @@ runSys (Sys act) = do
 
 -- | Fork the log in the Sys monad
 forkSys :: String -> Sys a -> Sys (IO a)
-forkSys name (Sys act) = do
+forkSys name act = do
    (status,statusSrc) <- sysIO newFutureIO
    (log,logSrc)       <- sysIO newFutureIO
 
@@ -108,7 +108,12 @@ forkSys name (Sys act) = do
             , sysLogStatus  = statusSrc
             }
 
-   return (evalStateT act forkState)
+   let (Sys act') = do
+            v <- act
+            sysLog LogInfo "Fork ended"
+            return v
+
+   return (evalStateT act' forkState)
 
 -- | Run and return nothing
 runSys' :: Sys a -> IO ()
