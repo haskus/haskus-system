@@ -66,7 +66,7 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
 -- a mouse is moved diagonaly, there will be one event for each axis), then it
 -- sends a synchronization event. We bundle these events into a single
 -- InputEventBundle.
-newtype InputEventBundle = InputEventBundle [Event]
+newtype InputEventBundle = InputEventBundle [Event] deriving (Show,Eq)
 
 
 -- | Convert a stream a input events into a stream of input event bundles
