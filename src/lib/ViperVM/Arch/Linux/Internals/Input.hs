@@ -5,12 +5,13 @@
 module ViperVM.Arch.Linux.Internals.Input
    ( Property (..)
    , EventType (..)
-   , SyncEvent (..)
+   , SyncEventType (..)
+   , KeyEventType (..)
    , Key (..)
    , RelativeAxe (..)
    , AbsoluteAxe (..)
-   , SwitchEvent (..)
-   , MiscEvent (..)
+   , SwitchEventType (..)
+   , MiscEventType (..)
    , LED (..)
    , AutoRepeat (..)
    , Sound (..)
@@ -100,11 +101,11 @@ import Foreign.Marshal.Utils (fromBool)
 data Property
    = PropertyNeedPointer      -- ^ needs a pointer
    | PropertyDirect           -- ^ direct input devices
-   | PropertyButtonpad        -- ^ has button(s) under pad
+   | PropertyButtonPad        -- ^ has button(s) under pad
    | PropertySemiMultiTouch   -- ^ touch rectangle only
    | PropertyTopButtonPad     -- ^ softbuttons at top of pad
    | PropertyPointingStick    -- ^ is a pointing stick
-   | PropertyAccelerometer    -- ^ has ccelerometer
+   | PropertyAccelerometer    -- ^ has accelerometer
    deriving (Eq,Show,Enum,CEnum)
 
 -- | Event types
@@ -134,11 +135,18 @@ instance CEnum EventType where
         | otherwise -> x
 
 -- | Synchronization events
-data SyncEvent
+data SyncEventType
    = SyncReport
    | SyncConfig
    | SyncMultiTouchReport
    | SyncDropped
+   deriving (Show,Eq,Enum,CEnum)
+
+-- | Key event type
+data KeyEventType
+   = KeyRelease   -- ^ Key released
+   | KeyPress     -- ^ Key pressed
+   | KeyRepeat    -- ^ Key repeated (generated kernel event)
    deriving (Show,Eq,Enum,CEnum)
 
 
@@ -477,7 +485,7 @@ instance CEnum AbsoluteAxe where
         | otherwise -> error ("Unknown absolute axe "++show y)
 
 -- | Switch events
-data SwitchEvent
+data SwitchEventType
    = SwitchLID                -- ^ set = LID shut
    | SwitchTabletMode         -- ^ set = tablet mode
    | SwitchHeadphoneInsert    -- ^ set = inserted
@@ -496,7 +504,7 @@ data SwitchEvent
    deriving (Show,Eq,Enum,CEnum)
 
 -- | Misc events
-data MiscEvent
+data MiscEventType
    = MiscSerial
    | MiscPulseLED
    | MiscGesture

@@ -4,10 +4,21 @@
 module ViperVM.System.Input
    ( InputDevice(..)
    , InputEvent (..)
+   , InputEventType (..)
    , EventType (..)
    , loadInputDevices
    , InputEventBundle (..)
    , newInputEventHandler
+   -- re-export
+   , SyncEventType (..)
+   , KeyEventType (..)
+   , Key  (..)
+   , RelativeAxe (..)
+   , AbsoluteAxe (..)
+   , MiscEventType (..)
+   , SwitchEventType (..)
+   , LED (..)
+   , Sound (..)
    )
 where
 
@@ -41,11 +52,25 @@ data InputDevice = InputDevice
 
 -- | Input event
 data InputEvent = InputEvent
-   { inputEventTime  :: TimeVal     -- ^ Time
-   , inputEventType  :: EventType   -- ^ Event type
-   , inputEventCode  :: Word16      -- ^ Event code
-   , inputEventValue :: Int32       -- ^ Event value
+   { inputEventTime :: !TimeVal                       -- ^ Event date
+   , inputEventType :: {-# UNPACK #-} !InputEventType -- ^ Event type
    } deriving (Show,Eq)
+
+-- | Input event details
+data InputEventType
+   = InputSyncEvent SyncEventType Int32         -- ^ Synchronization event
+   | InputKeyEvent KeyEventType Key             -- ^ Key event
+   | InputRelativeEvent RelativeAxe Int32       -- ^ Relative event
+   | InputAbsoluteEvent AbsoluteAxe Int32       -- ^ Absolute event
+   | InputMiscEvent MiscEventType Int32         -- ^ Misc event
+   | InputSwitchEvent SwitchEventType Int32     -- ^ Switch event
+   | InputLEDEvent LED Int32                    -- ^ LED event
+   | InputSoundEvent Sound Int32                -- ^ Sound event
+   | InputReplayEvent Word16 Int32              -- ^ Replay event
+   | InputForceFeedbackEvent Word16 Int32       -- ^ Force feedback event
+   | InputPowerEvent Word16 Int32               -- ^ Power event
+   | InputForceFeedbackStatusEvent Word16 Int32 -- ^ Force feedback statusevent
+   deriving (Show,Eq)
 
 -- | Bundle of events
 --
@@ -55,9 +80,25 @@ data InputEvent = InputEvent
 -- InputEventBundle.
 newtype InputEventBundle = InputEventBundle [InputEvent] deriving (Show,Eq)
 
+-- | Convert a raw input event into an InputEvent
 makeInputEvent :: Input.Event -> InputEvent
-makeInputEvent (Input.Event {..}) =
-   InputEvent eventTime (fromEnumField eventType) eventCode eventValue
+makeInputEvent (Input.Event {..}) = InputEvent eventTime t
+   where
+      c = eventCode
+      v = eventValue
+      t = case fromEnumField eventType of
+            EventTypeSync                -> InputSyncEvent (toCEnum c) v
+            EventTypeKey                 -> InputKeyEvent (toCEnum v) (toCEnum c)
+            EventTypeRelative            -> InputRelativeEvent (toCEnum c) v
+            EventTypeAbsolute            -> InputAbsoluteEvent (toCEnum c) v
+            EventTypeMisc                -> InputMiscEvent (toCEnum c) v
+            EventTypeSwitch              -> InputSwitchEvent (toCEnum c) v
+            EventTypeLED                 -> InputLEDEvent (toCEnum c) v
+            EventTypeSound               -> InputSoundEvent (toCEnum c) v
+            EventTypeReplay              -> InputReplayEvent c v
+            EventTypeForceFeedback       -> InputForceFeedbackEvent c v
+            EventTypePower               -> InputPowerEvent c v
+            EventTypeForceFeedbackStatus -> InputForceFeedbackStatusEvent c v
 
 -- | List and load devices with the "input" class
 loadInputDevices :: DeviceManager -> Sys [InputDevice]
@@ -93,19 +134,23 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
 -- to only keep the channel of event bundles. It would avoid going through an
 -- intermediate channel (current implementation, that could be improved too).
 -- For now, we keep the event channel, mostly for debugging purpose.
+--
+-- TODO: handle SyncDropped (reader not fast enough to read kernel generated
+-- events, leading the kernel to drop events)
 newInputEventHandler :: TChan Input.Event -> Sys (TChan InputEventBundle)
 newInputEventHandler eventChannel = do
    bundleChannel <- sysIO newBroadcastTChanIO
-   onEventWithData [] eventChannel $ \xs ev -> do
-      case (fromEnumField (eventType ev), eventCode ev, eventValue ev) of
+   onEventWithData [] eventChannel $ \xs ev' -> do
+      let ev = makeInputEvent ev'
+      case inputEventType ev of
          -- Ignore kernel generated key-repeat events
          -- TODO: disable them in the kernel instead
-         (EventTypeKey, _, 2)  -> return xs
+         InputKeyEvent KeyRepeat _ -> return xs
          -- On synchronization, commit the bundle (without the sync event)
-         (EventTypeSync, 0, 0) -> do
+         InputSyncEvent SyncReport 0 -> do
             let bundle = InputEventBundle (reverse xs)
             sysIO $ atomically $ writeTChan bundleChannel bundle
             return []
          -- otherwise append the event
-         _                     -> return (makeInputEvent ev:xs)
+         _                     -> return (ev:xs)
    return bundleChannel
