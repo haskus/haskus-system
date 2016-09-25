@@ -4,6 +4,7 @@
 module ViperVM.System.Event
    ( newEventReader
    , onEvent
+   , onEventWithData
    )
 where
 
@@ -43,8 +44,18 @@ newEventReader fd@(Handle lowfd) = do
 
 -- | Read events in the given channel forever
 onEvent :: TChan e -> (e -> Sys ()) -> Sys ()
-onEvent bch f = do
+onEvent bch f = onEventWithData () bch (const f)
+
+-- | Read events in the given channel forever, pass a user-defined data
+onEventWithData :: a -> TChan e -> (a -> e -> Sys a) -> Sys ()
+onEventWithData x bch f = do
    sysLog LogInfo "Creating event listener"
 
    ch <- sysIO $ atomically $ dupTChan bch
-   sysFork "TChan event listener" $ sysIO $ forever (atomically (readTChan ch) >>= runSys' . f)
+   sysFork "TChan event listener" $ do
+      let
+         go a = do
+            e  <- sysIO (atomically (readTChan ch))
+            a' <- f a e
+            go a'
+      go x
