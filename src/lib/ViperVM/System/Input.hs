@@ -1,6 +1,10 @@
+{-# LANGUAGE RecordWildCards #-}
+
 -- | Manage input devices
 module ViperVM.System.Input
    ( InputDevice(..)
+   , InputEvent (..)
+   , EventType (..)
    , loadInputDevices
    , InputEventBundle (..)
    , newInputEventHandler
@@ -13,7 +17,9 @@ import ViperVM.System.Devices
 import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Input as Input
+import ViperVM.Arch.Linux.Time (TimeVal)
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Word
 import qualified ViperVM.Format.Text as Text
 
 import Control.Concurrent.STM
@@ -33,6 +39,25 @@ data InputDevice = InputDevice
    , inputDeviceBundles :: TChan InputEventBundle -- ^ Event bundle stream
    }
 
+-- | Input event
+data InputEvent = InputEvent
+   { inputEventTime  :: TimeVal     -- ^ Time
+   , inputEventType  :: EventType   -- ^ Event type
+   , inputEventCode  :: Word16      -- ^ Event code
+   , inputEventValue :: Int32       -- ^ Event value
+   } deriving (Show,Eq)
+
+-- | Bundle of events
+--
+-- Evdev sends a series of input events to describe a single "action" (e.g., if
+-- a mouse is moved diagonaly, there will be one event for each axis), then it
+-- sends a synchronization event. We bundle these events into a single
+-- InputEventBundle.
+newtype InputEventBundle = InputEventBundle [InputEvent] deriving (Show,Eq)
+
+makeInputEvent :: Input.Event -> InputEvent
+makeInputEvent (Input.Event {..}) =
+   InputEvent eventTime (fromEnumField eventType) eventCode eventValue
 
 -- | List and load devices with the "input" class
 loadInputDevices :: DeviceManager -> Sys [InputDevice]
@@ -60,13 +85,6 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
                      <&< flowRet' bundleChannel
                )
 
--- | Bundle of events
---
--- Evdev sends a series of input events to describe a single "action" (e.g., if
--- a mouse is moved diagonaly, there will be one event for each axis), then it
--- sends a synchronization event. We bundle these events into a single
--- InputEventBundle.
-newtype InputEventBundle = InputEventBundle [Event] deriving (Show,Eq)
 
 
 -- | Convert a stream a input events into a stream of input event bundles
@@ -89,5 +107,5 @@ newInputEventHandler eventChannel = do
             sysIO $ atomically $ writeTChan bundleChannel bundle
             return []
          -- otherwise append the event
-         _                     -> return (ev:xs)
+         _                     -> return (makeInputEvent ev:xs)
    return bundleChannel
