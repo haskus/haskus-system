@@ -58,18 +58,18 @@ data InputEvent = InputEvent
 
 -- | Input event details
 data InputEventType
-   = InputSyncEvent SyncEventType Int32         -- ^ Synchronization event
-   | InputKeyEvent KeyEventType Key             -- ^ Key event
-   | InputRelativeEvent RelativeAxe Int32       -- ^ Relative event
-   | InputAbsoluteEvent AbsoluteAxe Int32       -- ^ Absolute event
-   | InputMiscEvent MiscEventType Int32         -- ^ Misc event
-   | InputSwitchEvent SwitchEventType Int32     -- ^ Switch event
-   | InputLEDEvent LED Int32                    -- ^ LED event
-   | InputSoundEvent Sound Int32                -- ^ Sound event
-   | InputReplayEvent Word16 Int32              -- ^ Replay event
-   | InputForceFeedbackEvent Word16 Int32       -- ^ Force feedback event
-   | InputPowerEvent Word16 Int32               -- ^ Power event
-   | InputForceFeedbackStatusEvent Word16 Int32 -- ^ Force feedback statusevent
+   = InputSyncEvent !SyncEventType !Int32         -- ^ Synchronization event
+   | InputKeyEvent !KeyEventType !Key             -- ^ Key event
+   | InputRelativeEvent !RelativeAxe !Int32       -- ^ Relative event
+   | InputAbsoluteEvent !AbsoluteAxe !Int32       -- ^ Absolute event
+   | InputMiscEvent !MiscEventType !Int32         -- ^ Misc event
+   | InputSwitchEvent !SwitchEventType !Int32     -- ^ Switch event
+   | InputLEDEvent !LED !Int32                    -- ^ LED event
+   | InputSoundEvent !Sound !Int32                -- ^ Sound event
+   | InputReplayEvent !Word16 !Int32              -- ^ Replay event
+   | InputForceFeedbackEvent !Word16 !Int32       -- ^ Force feedback event
+   | InputPowerEvent !Word16 !Int32               -- ^ Power event
+   | InputForceFeedbackStatusEvent !Word16 !Int32 -- ^ Force feedback statusevent
    deriving (Show,Eq)
 
 -- | Bundle of events
