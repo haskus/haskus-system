@@ -72,7 +72,7 @@ import ViperVM.Utils.HList
 
 -- | A variant contains a value whose type is at the given position in the type
 -- list
-data Variant (l :: [*]) = forall a . Variant Int a
+data Variant (l :: [*]) = forall a . Variant Word a
 
 -- | Make GHC consider `l` as a representational parameter to make coercions
 -- between Variant values unsafe
@@ -255,8 +255,8 @@ data Found
 
 
 instance forall (n :: Nat) l l2 r i a (same :: Nat).
-   ( i ~ (Variant l, Int, Maybe Found) -- input
-   , r ~ (Variant l, Int, Maybe Found) -- result
+   ( i ~ (Variant l, Word, Maybe Found) -- input
+   , r ~ (Variant l, Word, Maybe Found) -- result
    , l2 ~ Filter a l
    , KnownNat n
    , KnownNat same
@@ -278,22 +278,22 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
 -- | a is catchable in xs
 type Catchable a xs =
    ( IsMember a xs ~ 'True
-   , HFoldr' RemoveType (Variant xs, Int, Maybe Found)
+   , HFoldr' RemoveType (Variant xs, Word, Maybe Found)
          (Zip (Indexes xs) (MapTest a xs))
-         (Variant xs, Int, Maybe Found)
+         (Variant xs, Word, Maybe Found)
    )
 
 -- | a may be catchable in xs
 type MaybeCatchable a xs =
-   ( HFoldr' RemoveType (Variant xs, Int, Maybe Found)
+   ( HFoldr' RemoveType (Variant xs, Word, Maybe Found)
          (Zip (Indexes xs) (MapTest a xs))
-         (Variant xs, Int, Maybe Found)
+         (Variant xs, Word, Maybe Found)
    )
 
 -- | Extract a type from a variant. Return either the value of this type or the
 -- remaining variant
 catchVariant :: forall l a l2 r is.
-   ( r ~ (Variant l, Int, Maybe Found)
+   ( r ~ (Variant l, Word, Maybe Found)
    , is ~ Zip (Indexes l) (MapTest a l)
    , HFoldr' RemoveType r is r
    , l2 ~ Filter a l
@@ -303,7 +303,7 @@ catchVariant v = case res of
       (Variant t a, shift, Just FoundDifferent) -> Left (Variant (t-shift) a)
       _ -> error "catchVariant error" -- shouldn't happen
    where
-      res :: (Variant l, Int, Maybe Found)
+      res :: (Variant l, Word, Maybe Found)
       res = hFoldr' RemoveType
                ((v,0,Nothing) :: r)
                (undefined :: HList (Zip (Indexes l) (MapTest a l)))
