@@ -164,7 +164,7 @@ listDirectory fd = do
 
       rec :: [DirectoryEntry] -> SysRet [DirectoryEntry]
       rec xs = sysGetDirectoryEntries fd bufferSize
-         >.~-> \case
+         >.~$> \case
             [] -> flowRet0 xs
             ks -> rec (filter filtr ks ++ xs)
 

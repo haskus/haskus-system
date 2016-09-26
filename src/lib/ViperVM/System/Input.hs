@@ -116,7 +116,7 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
          >.~=> (\hdl -> sysIO (grabDevice hdl)
                            >..~!> sysWarningShow "Cannot grab device")
          -- try to read infos and return InputDevice
-         >.~-> (\hdl -> do
+         >.~$> (\hdl -> do
                   eventChannel  <- newEventReader hdl
                   bundleChannel <- newInputEventHandler eventChannel
                   InputDevice devpath dev hdl

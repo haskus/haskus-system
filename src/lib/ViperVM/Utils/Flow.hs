@@ -32,14 +32,14 @@ module ViperVM.Utils.Flow
    -- * First element operations
    , (.~.>)
    , (>.~.>)
-   , (.~:>)
-   , (>.~:>)
+   , (.~+>)
+   , (>.~+>)
    , (.~^^>)
    , (>.~^^>)
    , (.~^>)
    , (>.~^>)
-   , (.~->)
-   , (>.~->)
+   , (.~$>)
+   , (>.~$>)
    , (.~|>)
    , (>.~|>)
    , (.~=>)
@@ -58,14 +58,14 @@ module ViperVM.Utils.Flow
    -- * First element, const variant
    , (.~~.>)
    , (>.~~.>)
-   , (.~~:>)
-   , (>.~~:>)
+   , (.~~+>)
+   , (>.~~+>)
    , (.~~^^>)
    , (>.~~^^>)
    , (.~~^>)
    , (>.~~^>)
-   , (.~~->)
-   , (>.~~->)
+   , (.~~$>)
+   , (>.~~$>)
    , (.~~|>)
    , (>.~~|>)
    , (.~~=>)
@@ -102,14 +102,14 @@ module ViperVM.Utils.Flow
    -- * Caught element operations
    , (%~.>)
    , (>%~.>)
-   , (%~:>)
-   , (>%~:>)
+   , (%~+>)
+   , (>%~+>)
    , (%~^^>)
    , (>%~^^>)
    , (%~^>)
    , (>%~^>)
-   , (%~->)
-   , (>%~->)
+   , (%~$>)
+   , (>%~$>)
    , (%~|>)
    , (>%~|>)
    , (%~=>)
@@ -186,7 +186,7 @@ flowTraverse f = go (flowRet0 [])
          where
             -- execute (f a) if previous execution succedded.
             -- prepend the result to the list
-            rs' = rs >.~-> \bs -> (f a >.-.> (:bs))
+            rs' = rs >.~$> \bs -> (f a >.-.> (:bs))
 
 -- | Traverse a list and stop on first error
 flowFor :: forall m a b xs.
@@ -276,25 +276,25 @@ infixl 0 .~.>
 infixl 0 >.~.>
 
 -- | Extract the first value, concat the result
-(.~:>) :: forall (k :: Nat) m l l2 a.
+(.~+>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
    , k ~ Length l2
    , a ~ TypeAt 0 (a ': l)
    , Monad m )
    => Variant (a ': l) -> (a -> Flow m l2) -> Flow m (Concat l2 l)
-(.~:>) v f = makeFlowOp selectFirst (applyF f) combineConcat v
+(.~+>) v f = makeFlowOp selectFirst (applyF f) combineConcat v
 
-infixl 0 .~:>
+infixl 0 .~+>
 
 -- | Extract the first value, concat the results
-(>.~:>) :: forall (k :: Nat) m l l2 a.
+(>.~+>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
    , k ~ Length l2
    , Monad m )
    => Flow m (a ': l) -> (a -> Flow m l2) -> Flow m (Concat l2 l)
-(>.~:>) = liftm (.~:>)
+(>.~+>) = liftm (.~+>)
 
-infixl 0 >.~:>
+infixl 0 >.~+>
 
 -- | Extract the first value, lift both
 (.~^^>) :: forall m a xs ys zs.
@@ -336,20 +336,20 @@ infixl 0 .~^>
 infixl 0 >.~^>
 
 -- | Extract the first value, use the same tail
-(.~->) :: forall m x xs a.
+(.~$>) :: forall m x xs a.
    ( Monad m
    ) => Variant (a ': xs) -> (a -> Flow m (x ': xs)) -> Flow m (x ': xs)
-(.~->) v f = makeFlowOp selectFirst (applyF f) combineSameTail v
+(.~$>) v f = makeFlowOp selectFirst (applyF f) combineSameTail v
 
-infixl 0 .~->
+infixl 0 .~$>
 
 -- | Extract the first value, use the same tail
-(>.~->) :: forall m x xs a.
+(>.~$>) :: forall m x xs a.
    ( Monad m
    ) => Flow m (a ': xs) -> (a -> Flow m (x ': xs)) -> Flow m (x ': xs)
-(>.~->) = liftm (.~->)
+(>.~$>) = liftm (.~$>)
 
-infixl 0 >.~->
+infixl 0 >.~$>
 
 -- | Take the first output, union the result
 (.~|>) ::
@@ -461,7 +461,7 @@ infixl 4 <$<
 (<*<) :: forall m l a b.
    ( Monad m )
    => Flow m ((a -> b) ': l) -> Flow m (a ': l) -> Flow m (b ': l)
-(<*<) mf mg = mf >.~-> (mg >.-.>)
+(<*<) mf mg = mf >.~$> (mg >.-.>)
 
 infixl 4 <*<
 
@@ -474,7 +474,7 @@ infixl 4 <*<
    ) => Flow m ((y -> z) ': xs) -> Flow m (y ': ys) -> Flow m (z ': zs)
 (<|<) mf mg = 
    mf >..-..> liftVariant
-      >.~-> (\f -> mg >..-..> liftVariant
+      >.~$> (\f -> mg >..-..> liftVariant
                       >.-.> f
             )
 
@@ -501,25 +501,25 @@ infixl 0 .~~.>
 infixl 0 >.~~.>
 
 -- | Extract the first value, concat the result
-(.~~:>) :: forall (k :: Nat) m l l2 a.
+(.~~+>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
    , k ~ Length l2
    , a ~ TypeAt 0 (a ': l)
    , Monad m )
    => Variant (a ': l) -> Flow m l2 -> Flow m (Concat l2 l)
-(.~~:>) v f = v .~:> const f
+(.~~+>) v f = v .~+> const f
 
-infixl 0 .~~:>
+infixl 0 .~~+>
 
 -- | Extract the first value, concat the results
-(>.~~:>) :: forall (k :: Nat) m l l2 a.
+(>.~~+>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
    , k ~ Length l2
    , Monad m )
    => Flow m (a ': l) -> Flow m l2 -> Flow m (Concat l2 l)
-(>.~~:>) = liftm (.~~:>)
+(>.~~+>) = liftm (.~~+>)
 
-infixl 0 >.~~:>
+infixl 0 >.~~+>
 
 -- | Extract the first value, lift the result
 (.~~^^>) :: forall m a xs ys zs.
@@ -561,20 +561,20 @@ infixl 0 .~~^>
 infixl 0 >.~~^>
 
 -- | Extract the first value, use the same output type
-(.~~->) :: forall m x xs.
+(.~~$>) :: forall m x xs a.
    ( Monad m
-   ) => Variant (x ': xs) -> Flow m (x ': xs) -> Flow m (x ': xs)
-(.~~->) v f = v .~-> const f
+   ) => Variant (a ': xs) -> Flow m (x ': xs) -> Flow m (x ': xs)
+(.~~$>) v f = v .~$> const f
 
-infixl 0 .~~->
+infixl 0 .~~$>
 
 -- | Extract the first value, use the same output type
-(>.~~->) :: forall m x xs.
+(>.~~$>) :: forall m x xs a.
    ( Monad m
-   ) => Flow m (x ': xs) -> Flow m (x ': xs) -> Flow m (x ': xs)
-(>.~~->) = liftm (.~~->)
+   ) => Flow m (a ': xs) -> Flow m (x ': xs) -> Flow m (x ': xs)
+(>.~~$>) = liftm (.~~$>)
 
-infixl 0 >.~~->
+infixl 0 >.~~$>
 
 -- | Take the first output, fusion the result
 (.~~|>) ::
@@ -906,26 +906,26 @@ infixl 0 %~.>
 infixl 0 >%~.>
 
 -- | Catch element, concat the result
-(%~:>) :: forall x xs ys m.
+(%~+>) :: forall x xs ys m.
    ( Monad m
    , Catchable x xs
    , KnownNat (Length ys)
    ) => Variant xs -> (x -> Flow m ys) -> Flow m (Concat ys (Filter x xs))
-(%~:>) v f = case catchVariant v of
+(%~+>) v f = case catchVariant v of
    Right x -> appendVariant  (Proxy :: Proxy (Filter x xs)) <$> f x
    Left ys -> prependVariant (Proxy :: Proxy ys)            <$> return ys
 
-infixl 0 %~:>
+infixl 0 %~+>
 
 -- | Catch element, concat the result
-(>%~:>) :: forall x xs ys m.
+(>%~+>) :: forall x xs ys m.
    ( Monad m
    , Catchable x xs
    , KnownNat (Length ys)
    ) => Flow m xs -> (x -> Flow m ys) -> Flow m (Concat ys (Filter x xs))
-(>%~:>) = liftm (%~:>)
+(>%~+>) = liftm (%~+>)
 
-infixl 0 >%~:>
+infixl 0 >%~+>
 
 -- | Catch element, lift the result
 (%~^^>) :: forall x xs ys zs m.
@@ -974,24 +974,24 @@ infixl 0 %~^>
 infixl 0 >%~^>
 
 -- | Catch element, use the same output type
-(%~->) :: forall x xs m.
+(%~$>) :: forall x xs m.
    ( Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> Flow m xs) -> Flow m xs
-(%~->) v f = case catchVariant v of
+(%~$>) v f = case catchVariant v of
    Right x -> f x
    Left _  -> return v
 
-infixl 0 %~->
+infixl 0 %~$>
 
 -- | Catch element, use the same output type
-(>%~->) :: forall x xs m.
+(>%~$>) :: forall x xs m.
    ( Monad m
    , Catchable x xs
    ) => Flow m xs -> (x -> Flow m xs) -> Flow m xs
-(>%~->) = liftm (%~->)
+(>%~$>) = liftm (%~$>)
 
-infixl 0 >%~->
+infixl 0 >%~$>
 
 -- | Catch element, fusion the result
 (%~|>) :: forall x xs ys zs m.

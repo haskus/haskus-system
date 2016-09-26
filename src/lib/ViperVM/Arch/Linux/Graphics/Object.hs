@@ -139,7 +139,7 @@ getObjectProperties hdl o =
                      (getObjectID o)
                      (fromCEnum (getObjectType o))
             getObjectProperties' s
-               >.~:> checkCount n
+               >.~|> checkCount n
                >.~.> extractProperties
 
       getObjectProperties' :: StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidParam,ObjectNotFound]

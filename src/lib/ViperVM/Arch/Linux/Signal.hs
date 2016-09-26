@@ -62,7 +62,7 @@ sysSendSignalAll sig =
 sysCheckProcess :: ProcessID -> SysRet Bool
 sysCheckProcess pid = sysSendSignal pid 0
    >.-.> const True
-   >%~-> \case
+   >%~$> \case
       ESRCH -> flowRet0 False
       e     -> flowRet1 e
 
