@@ -12,9 +12,9 @@ module ViperVM.Utils.Flow
    , IOV
    -- * Flow utils
    , flowRes
-   , flowRet
+   , flowRet0
    , flowRet1
-   , flowRet'
+   , flowRet0'
    , flowSet
    , flowLift
    , flowTraverse
@@ -136,16 +136,16 @@ type IOV l = Flow IO l
 ----------------------------------------------------------
 
 -- | Return in the first element
-flowRet :: Monad m => x -> Flow m (x ': xs)
-flowRet = return . setVariant0
+flowRet0 :: Monad m => x -> Flow m (x ': xs)
+flowRet0 = return . setVariant0
 
 -- | Return in the second element
 flowRet1 :: Monad m => x -> Flow m (y ': x ': xs)
 flowRet1 = return . setVariant1
 
 -- | Return a single element
-flowRet' :: Monad m => x -> Flow m '[x]
-flowRet' = flowRet
+flowRet0' :: Monad m => x -> Flow m '[x]
+flowRet0' = flowRet0
 
 -- | Return in the first well-typed element
 flowSet :: (Member x xs, Monad m) => x -> Flow m xs
@@ -159,7 +159,7 @@ flowLift = fmap liftVariant
 flowTraverse :: forall m a b xs.
    ( Monad m
    ) => (a -> Flow m (b ': xs)) -> [a] -> Flow m ([b] ': xs)
-flowTraverse f = go (flowRet [])
+flowTraverse f = go (flowRet0 [])
    where
       go :: Flow m ([b] ': xs) -> [a] -> Flow m ([b] ': xs)
       go rs []     = rs >.-.> reverse
@@ -667,8 +667,8 @@ infixl 0 >..~.>
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> a) -> Flow m '[a]
 (..-.>) v f = case headVariant v of
-   Right u -> flowRet u
-   Left  l -> flowRet (f l)
+   Right u -> flowRet0 u
+   Left  l -> flowRet0 (f l)
 
 infixl 0 ..-.>
 
@@ -685,7 +685,7 @@ infixl 0 >..-.>
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> Variant xs) -> Flow m (a ': xs)
 (..-..>) v f = case headVariant v of
-   Right u -> flowRet u
+   Right u -> flowRet0 u
    Left  l -> return (prependVariant (Proxy :: Proxy '[a]) (f l))
 
 infixl 0 ..-..>
@@ -703,7 +703,7 @@ infixl 0 >..-..>
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': xs)
 (..~..>) v f = case headVariant v of
-   Right u -> flowRet u
+   Right u -> flowRet0 u
    Left  l -> prependVariant (Proxy :: Proxy '[a]) <$> f l
 
 infixl 0 ..~..>
@@ -722,7 +722,7 @@ infixl 0 >..~..>
    , Liftable xs (a ': zs)
    ) => Variant (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': zs)
 (..~^^>) v f = case headVariant v of
-   Right u -> flowRet u
+   Right u -> flowRet0 u
    Left  l -> liftVariant <$> f l
 
 infixl 0 ..~^^>
@@ -901,7 +901,7 @@ infixl 0 >..%~!>
    , Catchable x xs
    ) => Variant xs -> (x -> m y) -> Flow m (y ': ys)
 (%~.>) v f = case catchVariant v of
-   Right x -> flowRet =<< f x
+   Right x -> flowRet0 =<< f x
    Left ys -> prependVariant (Proxy :: Proxy '[y]) <$> return ys
 
 infixl 0 %~.>

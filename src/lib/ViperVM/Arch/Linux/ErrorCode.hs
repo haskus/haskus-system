@@ -30,7 +30,7 @@ toErrorCode = toEnum . fromIntegral . (*(-1))
 -- | Use defaultCheck to check for error and return the value otherwise
 checkReturn :: Int64 -> SysRet Int64
 checkReturn x = case defaultCheck x of
-   Nothing  -> flowRet x
+   Nothing  -> flowRet0 x
    Just err -> flowRet1 err
 
 -- | Use defaultCheck to check for error and return () otherwise
@@ -46,7 +46,7 @@ onSuccessId f = do
    r <- f
    case defaultCheck r of
       Just err -> flowRet1 err
-      Nothing  -> flowRet r
+      Nothing  -> flowRet0 r
 
 -- | Apply a function to the result of the action if no error occured (use
 -- `defaultCheck` to detect an error)

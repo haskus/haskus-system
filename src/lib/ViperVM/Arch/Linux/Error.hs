@@ -177,7 +177,7 @@ sysCallWarnQuiet :: String -> SysRet a -> Flow Sys '[a,ErrorCode]
 sysCallWarnQuiet text act = do
    r <- sysIO act
    case toEither r of
-      Right v -> flowRet v
+      Right v -> flowRet0 v
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
          sysLog LogWarning msg

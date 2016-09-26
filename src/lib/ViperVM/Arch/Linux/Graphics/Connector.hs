@@ -89,7 +89,7 @@ getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~#> ge
                  || connPropsCount    res2 < connPropsCount    rawRes
                  || connEncodersCount res2 < connEncodersCount rawRes
                   then getConnectorFromID hdl connId
-                  else flowRet conn
+                  else flowRet0 conn
 
 rawGet :: Handle -> StructGetConnector -> Flow Sys '[(StructGetConnector,Connector),InvalidParam,InvalidProperty,EntryNotFound]
 rawGet hdl res2 = do
@@ -146,8 +146,8 @@ parseRes hdl res2 res4 = do
                (connHeight_ res4)
                (fromEnumField (connSubPixel_ res4)))
                
-      2 -> flowRet Disconnected
-      _ -> flowRet ConnectionUnknown
+      2 -> flowRet0 Disconnected
+      _ -> flowRet0 ConnectionUnknown
 
    encs  <- fmap EncoderID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
 
@@ -171,7 +171,7 @@ getConnectors hdl = getResources hdl
 -- | Encoder attached to the connector, if any
 connectorEncoder :: Connector -> Flow Sys '[Maybe Encoder,EntryNotFound,InvalidHandle]
 connectorEncoder conn = case connectorEncoderID conn of
-   Nothing    -> flowRet Nothing
+   Nothing    -> flowRet0 Nothing
    Just encId -> 
       getResources (connectorHandle conn) >.~#> \res ->
          getEncoderFromID (connectorHandle conn) res encId >.-.> Just
@@ -181,5 +181,5 @@ connectorController :: Connector -> Flow Sys '[(Maybe Controller, Maybe Encoder)
 connectorController conn =
    connectorEncoder conn >.~#> \enc ->
       case enc of
-         Nothing -> flowRet (Nothing,Nothing)
+         Nothing -> flowRet0 (Nothing,Nothing)
          Just e  -> encoderController e >.-.> (,enc)

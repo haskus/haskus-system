@@ -283,7 +283,7 @@ initDeviceManager sysfs devfs = do
             let path' = Text.concat [path, Text.pack "/", Text.pack dir]
             withDevDir hdl dir (readSysfsDir path')
 
-         flowRet ()
+         flowRet0 ()
 
 
    -- list devices in /devices

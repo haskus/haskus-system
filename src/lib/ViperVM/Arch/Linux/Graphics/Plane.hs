@@ -57,7 +57,7 @@ getPlaneResources hdl = getCount >.~#> getIDs
    
       -- get the plane IDs (invariant for a given device)
       getIDs :: Word32 -> Flow Sys '[[PlaneID],InvalidHandle]
-      getIDs 0 = flowRet []
+      getIDs 0 = flowRet0 []
       getIDs n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
          gpr (StructGetPlaneRes p' n)
@@ -110,7 +110,7 @@ getPlane hdl pid = getCount >.~#> getInfo
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid getResources
                fmts <- fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p)
-               flowRet Plane
+               flowRet0 Plane
                   { planeID                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
                   , planeFrameBufferId       = toMaybe FrameBufferID gpFbId

@@ -153,8 +153,8 @@ sysNanoSleep ts =
       alloca $ \(rem' :: Ptr TimeSpec) -> do
          ret <- syscall_nanosleep ts' rem'
          case defaultCheck ret of
-            Nothing    -> flowRet CompleteSleep
-            Just EINTR -> flowRet =<< (WokenUp <$> peek rem')
+            Nothing    -> flowRet0 CompleteSleep
+            Just EINTR -> flowRet0 =<< (WokenUp <$> peek rem')
             Just err   -> flowRet1 err
 
 -- | Suspend the calling thread for the specified amount of time
@@ -163,5 +163,5 @@ sysNanoSleep ts =
 nanoSleep :: TimeSpec -> SysRet ()
 nanoSleep ts = sysNanoSleep ts
    >.~#> \case
-      CompleteSleep -> flowRet ()
+      CompleteSleep -> flowRet0 ()
       (WokenUp r)   -> nanoSleep r
