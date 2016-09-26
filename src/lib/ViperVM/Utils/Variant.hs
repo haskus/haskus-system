@@ -23,8 +23,8 @@ module ViperVM.Utils.Variant
    , updateVariantM
    , updateVariantFold
    , updateVariantFoldM
-   , matchVariantHList
-   , matchVariant
+   , variantToHList
+   , variantToTuple
    , getVariant0
    , getVariant1
    , getVariant2
@@ -293,12 +293,9 @@ type MaybeCatchable a xs =
 
 -- | Extract a type from a variant. Return either the value of this type or the
 -- remaining variant
-catchVariant :: forall l a l2 r is.
-   ( r ~ (Variant l, Word, Maybe Found)
-   , is ~ Zip (Indexes l) (MapTest a l)
-   , HFoldr' RemoveType r is r
-   , l2 ~ Filter a l
-   ) => Variant l -> Either (Variant l2) a
+catchVariant :: forall l a.
+   ( MaybeCatchable a l
+   ) => Variant l -> Either (Variant (Filter a l)) a
 catchVariant v = case res of
       (Variant _ a, _,     Just FoundSame)      -> Right (unsafeCoerce a)
       (Variant t a, shift, Just FoundDifferent) -> Left (Variant (t-shift) a)
@@ -306,7 +303,7 @@ catchVariant v = case res of
    where
       res :: (Variant l, Word, Maybe Found)
       res = hFoldr' RemoveType
-               ((v,0,Nothing) :: r)
+               ((v,0,Nothing) :: (Variant l, Word, Maybe Found))
                (undefined :: HList (Zip (Indexes l) (MapTest a l)))
 
 -- | Pick a variant value
@@ -340,9 +337,9 @@ type Matchable l t =
    )
 
 -- | Get variant possible values in a HList of Maybe types
-matchVariantHList :: forall l.  (MatchableH l)
+variantToHList :: forall l.  (MatchableH l)
    => Variant l -> HList (MapMaybe l)
-matchVariantHList v = snd res
+variantToHList v = snd res
    where
       res :: (Variant l, HList (MapMaybe l))
       res = hFoldr' GetValue
@@ -350,8 +347,8 @@ matchVariantHList v = snd res
                (undefined :: HList (Indexes l))
 
 -- | Get variant possible values in a tuple of Maybe types
-matchVariant :: forall l t.  (Matchable l t) => Variant l -> t
-matchVariant = hToTuple' . matchVariantHList
+variantToTuple :: forall l t.  (Matchable l t) => Variant l -> t
+variantToTuple = hToTuple' . variantToHList
 
 -- | Retreive the last v
 singleVariant :: Variant '[a] -> a
