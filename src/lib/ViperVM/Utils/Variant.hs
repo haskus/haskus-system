@@ -16,8 +16,9 @@
 module ViperVM.Utils.Variant
    ( Variant
    , getVariantN
-   , setVariant
    , setVariantN
+   , setVariant
+   , getVariant
    , updateVariant
    , updateVariantM
    , updateVariantFold
@@ -406,6 +407,13 @@ setVariant :: forall a l.
    ( Member a l
    ) => a -> Variant l
 setVariant = setVariantN (Proxy :: Proxy (IndexOf a l))
+
+-- | Set the first matching type of a Variant
+getVariant :: forall a l.
+   ( Member a l
+   ) => Variant l -> Maybe a
+getVariant = getVariantN (Proxy :: Proxy (IndexOf a l))
+
 
 -- | xs is liftable in ys
 type Liftable xs ys =
