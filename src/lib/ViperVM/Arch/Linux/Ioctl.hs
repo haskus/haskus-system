@@ -196,7 +196,7 @@ ioctlReadVariableBuffer ::
    ) => CommandType -> CommandNumber -> (Int -> Ptr a -> IO b) -> Int -> Handle -> SysRet b
 ioctlReadVariableBuffer typ nr f n fd = allocaBytes n $ \ptr ->
    ioctlReadBytes typ nr n ptr fd
-      >.~#> \len ->
+      >.~^> \len ->
          if len <= fromIntegral n
             then flowRet0 =<< f n ptr
             -- try with the returned buffer size

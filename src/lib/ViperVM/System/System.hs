@@ -59,7 +59,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 
    -- create root path (allowed to fail if it already exists)
    sysCallAssert "Create root directory" $ do
-      createDir path >%~#> \case
+      createDir path >%~^> \case
          EEXIST -> flowRet0 ()
          e      -> flowSet e
 

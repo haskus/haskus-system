@@ -122,7 +122,7 @@ getObjectProperties hdl o =
        -- using an initial value we avoid a syscall in most cases.
       fixCount go 20
    where
-      fixCount f n = f n >%~#> \(InvalidCount n') -> fixCount f n'
+      fixCount f n = f n >%~^> \(InvalidCount n') -> fixCount f n'
 
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
@@ -143,7 +143,7 @@ getObjectProperties hdl o =
                >.~.> extractProperties
 
       getObjectProperties' :: StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidParam,ObjectNotFound]
-      getObjectProperties' s = sysIO (ioctlGetObjectProperties s hdl) >%~#> \case
+      getObjectProperties' s = sysIO (ioctlGetObjectProperties s hdl) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet ObjectNotFound
          e      -> unhdlErr "getObjectProperties" e

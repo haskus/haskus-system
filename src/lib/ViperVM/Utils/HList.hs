@@ -16,6 +16,8 @@ module ViperVM.Utils.HList
    ( MapNat
    , Max
    , Tail
+   , Drop
+   , Take
    , Init
    , Head
    , Snoc
@@ -78,6 +80,16 @@ type family Max' (x :: Nat) (xs :: [Nat]) where
 -- | Tail of a list
 type family Tail (xs :: [*]) where
    Tail (x ': xs) = xs
+
+-- | Drop elements in a list
+type family Drop (n :: Nat) (xs :: [*]) where
+   Drop 0 xs        = xs
+   Drop n (x ': xs) = Drop (n-1) xs
+
+-- | Take elements in a list
+type family Take (n :: Nat) (xs :: [*]) where
+   Take 0 xs        = '[]
+   Take n (x ': xs) = x ': (Take (n-1) xs)
 
 -- | Init of a list
 type family Init (xs :: [*]) where

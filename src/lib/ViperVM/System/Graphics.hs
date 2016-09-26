@@ -195,7 +195,7 @@ graphicCardPlanes :: GraphicCard -> Sys [Plane]
 graphicCardPlanes card = do
    let hdl = graphicCardHandle card
    getPlaneResources hdl
-      >.~#> flowTraverse (getPlane hdl)
+      >.~^> flowTraverse (getPlane hdl)
       -- shouldn't happen, except if we unplug the graphic card or unload the
       -- driver
       >..%~!!> (\(InvalidHandle _) -> error "Invalid handle")

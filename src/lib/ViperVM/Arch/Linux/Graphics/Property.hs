@@ -68,7 +68,7 @@ data InvalidProperty = InvalidProperty deriving (Show,Eq)
 getPropertyMeta :: Handle -> PropertyMetaID -> Flow Sys '[PropertyMeta,InvalidParam,InvalidProperty]
 getPropertyMeta fd pid = do
       -- get value size/number of elements/etc.
-      getProperty' gp >.~#> \g -> do
+      getProperty' gp >.~^> \g -> do
          getValues (gpsCountValues g) (gpsCountEnum g) (getPropertyTypeType g)
             >.-.> PropertyMeta pid
                (isImmutable g)
@@ -76,7 +76,7 @@ getPropertyMeta fd pid = do
                (fromCStringBuffer (gpsName g))
    where
       getProperty' :: StructGetProperty -> Flow Sys '[StructGetProperty,InvalidParam,InvalidProperty]
-      getProperty' r = sysIO (ioctlGetProperty r fd) >%~#> \case
+      getProperty' r = sysIO (ioctlGetProperty r fd) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet InvalidProperty
          e      -> unhdlErr "getPropertyMeta" e
@@ -96,7 +96,7 @@ getPropertyMeta fd pid = do
       allocaArray' n f = allocaArray (fromIntegral n) f
 
       getBlobStruct :: StructGetBlob -> Flow Sys '[StructGetBlob,InvalidParam,InvalidProperty]
-      getBlobStruct r = sysIO (ioctlGetBlob r fd) >%~#> \case
+      getBlobStruct r = sysIO (ioctlGetBlob r fd) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet InvalidProperty
          e      -> unhdlErr "getBlobStruct" e
@@ -110,7 +110,7 @@ getPropertyMeta fd pid = do
                      , gbData   = 0
                      }
 
-         getBlobStruct gb >.~#> \gb' -> do
+         getBlobStruct gb >.~^> \gb' -> do
             ptr <- sysIO . mallocBytes . fromIntegral . gbLength $ gb'
             getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
                -- free ptr on error

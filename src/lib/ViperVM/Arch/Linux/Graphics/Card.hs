@@ -60,7 +60,7 @@ getResources :: Handle -> Flow Sys '[Resources,InvalidHandle]
 getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
       getRes :: StructCardRes -> Flow Sys '[StructCardRes,InvalidHandle]
-      getRes r = sysIO (ioctlGetResources r hdl) >..%~#> \case
+      getRes r = sysIO (ioctlGetResources r hdl) >..%~^> \case
          EINVAL -> flowSet (InvalidHandle hdl)
          e      -> unhdlErr "getResources" e
 
@@ -86,14 +86,14 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                            , csMinWidth   = 0
                            , csMaxWidth   = 0
                            }
-            getRes res3 >.~#> \r ->
+            getRes res3 >.~^> \r ->
                -- we need to check that the number of resources is still
                -- lower than the size of our arrays (as resources may have
                -- appeared between the time we get the number of resources
                -- and the time we get them...) If not, we redo the whole
                -- process
                if all (uncurry (>)) (arraySizes `zip` extractSize r)
-                  then extractValues r >.~#> flowRet0
+                  then extractValues r >.~^> flowRet0
                   else getValues (extractSize r)
 
 

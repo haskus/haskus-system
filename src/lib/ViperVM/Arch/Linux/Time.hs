@@ -162,6 +162,6 @@ sysNanoSleep ts =
 -- When interrupted by a signal, suspend again for the remaining amount of time
 nanoSleep :: TimeSpec -> SysRet ()
 nanoSleep ts = sysNanoSleep ts
-   >.~#> \case
+   >.~^> \case
       CompleteSleep -> flowRet0 ()
       (WokenUp r)   -> nanoSleep r

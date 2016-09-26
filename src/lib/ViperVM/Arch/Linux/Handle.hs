@@ -32,7 +32,7 @@ getHandleFlags :: Handle -> Flow Sys '[HandleFlags,InvalidHandle]
 getHandleFlags hdl =
    sysFlow (sysFcntl hdl FcntlGetFlags (0 :: Int))
       >.-.> (BitSet.fromBits . fromIntegral)
-      >..%~#> \case
+      >..%~^> \case
          EBADF -> flowSet (InvalidHandle hdl)
          e     -> unhdlErr "getHandleFlags" e
 
@@ -40,7 +40,7 @@ getHandleFlags hdl =
 setHandleFlags :: Handle -> HandleFlags -> Flow Sys '[(),InvalidHandle]
 setHandleFlags hdl flgs =
    sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
-      >%~#> \case
+      >%~^> \case
          EBADF -> flowSet (InvalidHandle hdl)
          e     -> unhdlErr "setHandleFlags" e
 

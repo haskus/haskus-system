@@ -154,7 +154,7 @@ listDirectory fd = do
       -- If another thread changes the current position in the directory file
       -- descriptor, the returned list can be corrupted (redundant entries or
       -- missing ones)
-      >.~#> const (rec [])
+      >.~^> const (rec [])
    where
       bufferSize = 2 * 1024 * 1024
 

@@ -60,7 +60,7 @@ setAtomic hdl flags objProps = do
                      }
                ioctlAtomic s hdl
                   >.-.> const ()
-                  >..%~#> \case
+                  >..%~^> \case
                      EBADF  -> flowSet (InvalidHandle hdl)
                      EINVAL -> flowSet InvalidParam
                      ENOMEM -> flowSet MemoryError

@@ -65,14 +65,14 @@ data Connector = Connector
    } deriving (Show)
 
 getConnector' :: Handle -> StructGetConnector -> Flow Sys '[StructGetConnector,InvalidParam,EntryNotFound]
-getConnector' hdl r = sysIO (ioctlGetConnector r hdl) >%~#> \case
+getConnector' hdl r = sysIO (ioctlGetConnector r hdl) >%~^> \case
    EINVAL -> flowSet InvalidParam
    ENOENT -> flowSet EntryNotFound
    e      -> unhdlErr "getModeConnector" e
 
 -- | Get connector
 getConnectorFromID :: Handle -> ConnectorID -> Flow Sys '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
-getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~#> getValues
+getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~^> getValues
    where
       res = StructGetConnector 0 0 0 0 0 0 0 0 cid
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
@@ -80,7 +80,7 @@ getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~#> ge
 
       getValues :: StructGetConnector -> Flow Sys '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
       getValues res2 = do
-            rawGet hdl res2 >.~#> \(rawRes,conn) ->
+            rawGet hdl res2 >.~^> \(rawRes,conn) ->
                -- we need to check that the number of resources is still the same (as
                -- resources may have appeared between the time we get the number of
                -- resources and the time we get them...)
@@ -173,13 +173,13 @@ connectorEncoder :: Connector -> Flow Sys '[Maybe Encoder,EntryNotFound,InvalidH
 connectorEncoder conn = case connectorEncoderID conn of
    Nothing    -> flowRet0 Nothing
    Just encId -> 
-      getResources (connectorHandle conn) >.~#> \res ->
+      getResources (connectorHandle conn) >.~^> \res ->
          getEncoderFromID (connectorHandle conn) res encId >.-.> Just
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
 connectorController :: Connector -> Flow Sys '[(Maybe Controller, Maybe Encoder),EntryNotFound,InvalidHandle]
 connectorController conn =
-   connectorEncoder conn >.~#> \enc ->
+   connectorEncoder conn >.~^> \enc ->
       case enc of
          Nothing -> flowRet0 (Nothing,Nothing)
          Just e  -> encoderController e >.-.> (,enc)

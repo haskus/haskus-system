@@ -656,7 +656,7 @@ getDeviceHandle dm dev = do
    sysLogSequence logS $ do
       -- create special file in device fs
       sysIO (createDeviceFile (Just devfd) devname dev BitSet.empty)
-         >.+&> do
+         >.~~|> do
             -- on success, try to open it
             hdl <- sysIO (sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty)
             -- then remove it

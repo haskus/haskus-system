@@ -72,7 +72,7 @@ fromStructController hdl StructController{..} =
 getControllerFromID :: Handle -> ControllerID -> Flow Sys '[Controller,EntryNotFound, InvalidHandle]
 getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl)
       >.-.> fromStructController hdl
-      >%~#> \case
+      >%~^> \case
          EINVAL -> flowSet (InvalidHandle hdl)
          ENOENT -> flowSet EntryNotFound
          e      -> unhdlErr "getController" e
@@ -128,7 +128,7 @@ switchFrameBuffer' hdl crtcid fb flags = do
 getControllers :: Handle -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
 getControllers hdl = getResources hdl
    >.-.> resControllerIDs
-   >.~#> flowTraverse (getControllerFromID hdl)
+   >.~^> flowTraverse (getControllerFromID hdl)
 
 -- | Get controller gama look-up table
 getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])

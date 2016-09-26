@@ -43,7 +43,7 @@ newtype PlaneID = PlaneID Word32 deriving (Show,Eq)
 
 -- | Get the IDs of the supported planes
 getPlaneResources :: Handle -> Flow Sys '[[PlaneID], InvalidHandle]
-getPlaneResources hdl = getCount >.~#> getIDs
+getPlaneResources hdl = getCount >.~^> getIDs
    where
       gpr s = sysIO (ioctlGetPlaneResources s hdl)
 
@@ -51,7 +51,7 @@ getPlaneResources hdl = getCount >.~#> getIDs
       getCount :: Flow Sys '[Word32,InvalidHandle]
       getCount = gpr (StructGetPlaneRes 0 0)
          >.-.> gprsCountPlanes
-         >..%~#> \case
+         >..%~^> \case
             EINVAL -> flowSet (InvalidHandle hdl)
             e      -> unhdlErr "getPlaneResources" e
    
@@ -61,7 +61,7 @@ getPlaneResources hdl = getCount >.~#> getIDs
       getIDs n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
          gpr (StructGetPlaneRes p' n)
-            >..%~#> \case
+            >..%~^> \case
                EINVAL -> flowSet (InvalidHandle hdl)
                e      -> unhdlErr "getPlaneResources" e
             >.~.> \_ -> fmap PlaneID <$> sysIO (peekArray (fromIntegral n) p)
@@ -79,12 +79,12 @@ data Plane = Plane
 
 -- | Get plane information
 getPlane :: Handle -> PlaneID -> Flow Sys '[Plane,InvalidHandle,InvalidPlane]
-getPlane hdl pid = getCount >.~#> getInfo
+getPlane hdl pid = getCount >.~^> getInfo
    where
 
       gpr :: StructGetPlane -> Flow Sys '[StructGetPlane,InvalidHandle,InvalidPlane]
       gpr s = sysIO (ioctlGetPlane s hdl)
-         >..%~#> \case
+         >..%~^> \case
             EINVAL -> flowSet (InvalidHandle hdl)
             ENOENT -> flowSet (InvalidPlane (PlaneID (gpPlaneId s)))
             e      -> unhdlErr "getPlane" e
@@ -106,7 +106,7 @@ getPlane hdl pid = getCount >.~#> getInfo
             p' = fromIntegral (ptrToWordPtr p)
             si = StructGetPlane pid' 0 0 BitSet.empty 0 n p'
          gpr si
-            >.~#> \StructGetPlane{..} -> getResources hdl >.~#> \res -> do
+            >.~^> \StructGetPlane{..} -> getResources hdl >.~^> \res -> do
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid getResources
                fmts <- fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p)
@@ -173,7 +173,7 @@ setPlane hdl (PlaneID pid) opts = do
 
    sysIO (ioctlSetPlane s hdl)
       >.-.>   const ()
-      >..%~#> \case
+      >..%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet EntryNotFound
          ERANGE -> flowSet InvalidDestRect

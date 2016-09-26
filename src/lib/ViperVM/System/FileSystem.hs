@@ -38,7 +38,7 @@ withOpenAt ::
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> SysV zs
 withOpenAt fd path flags perm act =
    sysIO (sysOpenAt fd path flags perm)
-      >.~&> \fd1 -> do
+      >.~|> \fd1 -> do
          res <- act fd1
          sysCallAssertQuiet "Close file" $ sysClose fd1
          return res
@@ -56,7 +56,7 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
          sysCallWarnQuiet "atomic read file"
             -- use 0 offset to read from the beginning
             (handleReadBuffer fd (Just 0) sz)
-         >.~#> \buf ->
+         >.~^> \buf ->
             if fromIntegral (bufferSize buf) == sz
                then go (sz*2) fd
                else flowSet buf

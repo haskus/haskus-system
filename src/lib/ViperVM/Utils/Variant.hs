@@ -153,6 +153,7 @@ liftEitherM = fmap liftEither
 updateVariant :: forall (n :: Nat) l l2 .
    (KnownNat n)
    => Proxy n -> (TypeAt n l -> TypeAt n l2) -> Variant l -> Variant l2
+{-# INLINE updateVariant #-}
 updateVariant _ f v@(Variant t a) =
    case getVariantN (Proxy :: Proxy n) v of
       Nothing -> Variant t a
@@ -161,6 +162,7 @@ updateVariant _ f v@(Variant t a) =
 -- | Update first element
 updateVariant0 :: forall (l :: [*]) (l2 :: [*]).
    (TypeAt 0 l -> TypeAt 0 l2) -> Variant l -> Variant l2
+{-# INLINE updateVariant0 #-}
 updateVariant0 = updateVariant (Proxy :: Proxy 0)
 
 -- | Update second element
@@ -192,6 +194,7 @@ updateVariant5 = updateVariant (Proxy :: Proxy 5)
 updateVariantM :: forall (n :: Nat) l l2 m .
    (KnownNat n, Monad m)
    => Proxy n -> (TypeAt n l -> m (TypeAt n l2)) -> Variant l -> m (Variant l2)
+{-# INLINE updateVariantM #-}
 updateVariantM _ f v@(Variant t a) =
    case getVariantN (Proxy :: Proxy n) v of
       Nothing -> return (Variant t a)
@@ -310,6 +313,7 @@ catchVariant v = case res of
 pickVariant :: forall n l. 
    ( KnownNat n
    ) => Proxy n -> Variant l -> Either (Variant (RemoveAt n l)) (TypeAt n l)
+{-# INLINE pickVariant #-}
 pickVariant _ v@(Variant t a) = case getVariantN (Proxy :: Proxy n) v of
    Just x  -> Right x
    Nothing -> Left $ if t > fromIntegral (natVal (Proxy :: Proxy n))
@@ -318,6 +322,7 @@ pickVariant _ v@(Variant t a) = case getVariantN (Proxy :: Proxy n) v of
 
 -- | Pick the head of a variant value
 headVariant :: forall x xs. Variant (x ': xs) -> Either (Variant xs) x
+{-# INLINE headVariant #-}
 headVariant v@(Variant t a) = case getVariant0 v of
    Just x  -> Right x
    Nothing -> Left $ Variant (t-1) a
@@ -385,30 +390,35 @@ instance
 
 -- | Extend a variant by appending other possible values
 appendVariant :: forall (xs :: [*]) (ys :: [*]). Proxy ys -> Variant xs -> Variant (Concat xs ys)
+{-# INLINE appendVariant #-}
 appendVariant _ (Variant t a) = Variant t a
 
 -- | Extend a variant by prepending other possible values
 prependVariant :: forall (xs :: [*]) (ys :: [*]).
    ( KnownNat (Length ys)
    ) => Proxy ys -> Variant xs -> Variant (Concat ys xs)
+{-# INLINE prependVariant #-}
 prependVariant _ (Variant t a) = Variant (n+t) a
    where
       n = fromIntegral (natVal (Proxy :: Proxy (Length ys)))
 
 -- | Fusion variant values of the same type
 fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)
+{-# INLINE fusionVariant #-}
 fusionVariant = liftVariant
 
 -- | Set the first matching type of a Variant
 setVariant :: forall a l.
    ( Member a l
    ) => a -> Variant l
+{-# INLINE setVariant #-}
 setVariant = setVariantN (Proxy :: Proxy (IndexOf a l))
 
 -- | Set the first matching type of a Variant
 getVariant :: forall a l.
    ( Member a l
    ) => Variant l -> Maybe a
+{-# INLINE getVariant #-}
 getVariant = getVariantN (Proxy :: Proxy (IndexOf a l))
 
 

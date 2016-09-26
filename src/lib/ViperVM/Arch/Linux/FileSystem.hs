@@ -170,7 +170,7 @@ sysGetCurrentDirectory = go 128
       go n = allocaArray n $ \ptr -> do
          onSuccessId (syscall_getcwd ptr (fromIntegral n))
             >.~.> const (peekCString ptr)
-            >%~#> \case
+            >%~^> \case
                ERANGE -> go (2 * n)
                e      -> flowSet e
 

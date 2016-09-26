@@ -35,7 +35,7 @@ readSymbolicLink ::
    ) => Maybe Handle -> FilePath -> SysV (String ': errs)
 readSymbolicLink hdl path = do
    sysIO (sysReadLinkAt hdl path)
-      >%~#> \case
+      >%~^> \case
          EACCES       -> flowSet NotAllowed
          EINVAL       -> flowSet NotSymbolicLink
          EIO          -> flowSet FileSystemIOError
@@ -60,7 +60,7 @@ sysReadLinkAt hdl path = go' 2048
             Just (Handle x) -> x
             Nothing         -> (-1)
 
-      go' size = go size >.~#> \case
+      go' size = go size >.~^> \case
                   Nothing -> go' (2*size)
                   Just s  -> flowRet0 s
 

@@ -144,5 +144,5 @@ writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
       go _ 0     = flowRet0 ()
       go ptr len = sysWrite fd ptr (fromIntegral len)
-         >.~#> \c -> go (ptr `plusPtr` fromIntegral c)
+         >.~^> \c -> go (ptr `plusPtr` fromIntegral c)
                         (len - fromIntegral c)

@@ -59,7 +59,7 @@ instance forall x y z xs ys zs m a.
       , Monad m
       ) => ApplyAB (Choice a) (x,y) z
    where
-      applyAB _ (x,y) = x >%~&> \(_ :: a) -> y
+      applyAB _ (x,y) = x >%~|> \(_ :: a) -> y
 
 -- | Try to apply the actions in the list in order, until one of them succeeds.
 -- Returns the value of the succeeding action, or the value of the last one.
@@ -87,7 +87,7 @@ many ::
    , Catchable ParseError xs
    ) => Flow m xs -> Flow m '[[Variant zs]]
 many f = manyBounded Nothing Nothing f
-            >%~#> \(_ :: ParseError) -> flowRet0' []
+            >%~^> \(_ :: ParseError) -> flowRet0' []
 
 -- | Apply the action zero or more times (up to max) until a ParseError result
 -- is returned
@@ -97,7 +97,7 @@ manyAtMost ::
    , Catchable ParseError xs
    ) => Word -> Flow m xs -> Flow m '[[Variant zs]]
 manyAtMost max f = manyBounded Nothing (Just max) f
-                     >%~#> \(_ :: ParseError) -> flowRet0' []
+                     >%~^> \(_ :: ParseError) -> flowRet0' []
 
 -- | Apply the action zero or more times (up to max) until a ParseError result
 -- is returned
