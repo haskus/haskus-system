@@ -49,12 +49,11 @@ module ViperVM.Format.Binary.Union
 where
 
 import ViperVM.Utils.Memory (memCopy, memSet)
-import ViperVM.Utils.HList
+import ViperVM.Utils.Types
+import ViperVM.Utils.HList hiding (Union)
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 
-import GHC.TypeLits
-import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.ForeignPtr

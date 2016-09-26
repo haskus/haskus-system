@@ -55,7 +55,7 @@ instance forall x y z xs ys zs m a.
       , Catchable a xs
       , Liftable ys zs
       , Liftable (Filter a xs) zs
-      , zs ~ Fusion (Filter a xs) ys
+      , zs ~ Union (Filter a xs) ys
       , Monad m
       ) => ApplyAB (Choice a) (x,y) z
    where

@@ -362,7 +362,7 @@ infixl 0 >.~->
 (.~&>) ::
    ( Liftable xs zs
    , Liftable ys zs
-   , zs ~ Fusion xs ys
+   , zs ~ Union xs ys
    , Monad m
    ) => Variant (a ': ys) -> (a -> Flow m xs) -> Flow m zs
 (.~&>) v f = case headVariant v of
@@ -375,7 +375,7 @@ infixl 0 .~&>
 (>.~&>) ::
    ( Liftable xs zs
    , Liftable ys zs
-   , zs ~ Fusion xs ys
+   , zs ~ Union xs ys
    , Monad m
    ) => Flow m (a ': ys) -> (a -> Flow m xs) -> Flow m zs
 (>.~&>) = liftm (.~&>)
@@ -479,7 +479,7 @@ infixl 4 <*<
    ( Monad m
    , Liftable xs zs
    , Liftable ys zs
-   , zs ~ Fusion xs ys
+   , zs ~ Union xs ys
    ) => Flow m ((y -> z) ': xs) -> Flow m (y ': ys) -> Flow m (z ': zs)
 (<&<) mf mg = 
    mf >..-..> liftVariant
@@ -589,7 +589,7 @@ infixl 0 >.+->
 (.+&>) ::
    ( Liftable xs zs
    , Liftable ys zs
-   , zs ~ Fusion xs ys
+   , zs ~ Union xs ys
    , Monad m
    ) => Variant (a ': ys) -> Flow m xs -> Flow m zs
 (.+&>) v f = v .~&> const f
@@ -600,7 +600,7 @@ infixl 0 .+&>
 (>.+&>) ::
    ( Liftable xs zs
    , Liftable ys zs
-   , zs ~ Fusion xs ys
+   , zs ~ Union xs ys
    , Monad m
    ) => Flow m (a ': ys) -> Flow m xs -> Flow m zs
 (>.+&>) = liftm (.+&>)
@@ -1010,7 +1010,7 @@ infixl 0 >%~->
    , Catchable x xs
    , Liftable (Filter x xs) zs
    , Liftable ys zs
-   , zs ~ Fusion (Filter x xs) ys
+   , zs ~ Union (Filter x xs) ys
    ) => Variant xs -> (x -> Flow m ys) -> Flow m zs
 (%~&>) v f = case catchVariant v of
    Right x -> liftVariant <$> f x
@@ -1024,7 +1024,7 @@ infixl 0 %~&>
    , Catchable x xs
    , Liftable (Filter x xs) zs
    , Liftable ys zs
-   , zs ~ Fusion (Filter x xs) ys
+   , zs ~ Union (Filter x xs) ys
    ) => Flow m xs -> (x -> Flow m ys) -> Flow m zs
 (>%~&>) = liftm (%~&>)
 

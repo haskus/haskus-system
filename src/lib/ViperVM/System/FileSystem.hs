@@ -34,7 +34,7 @@ import Foreign.Storable
 withOpenAt :: 
    ( Liftable '[ErrorCode] zs
    , Liftable xs zs
-   , zs ~ Fusion xs '[ErrorCode]
+   , zs ~ Union xs '[ErrorCode]
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> SysV zs
 withOpenAt fd path flags perm act =
    sysIO (sysOpenAt fd path flags perm)

@@ -38,7 +38,7 @@ module ViperVM.Utils.HList
    , IndexOf
    , MaybeIndexOf
    , TypeAt
-   , Fusion
+   , Union
    , Member
    , HFoldr' (..)
    , HFoldl' (..)
@@ -208,9 +208,9 @@ type family TypeAt (n :: Nat) (l :: [*]) where
    TypeAt 0 (x ': xs) = x
    TypeAt n (x ': xs) = TypeAt (n-1) xs
 
--- | Fusion two lists
-type family Fusion (xs :: [*]) (ys :: [*]) where
-   Fusion xs ys = Nub (Concat xs ys)
+-- | Union two lists
+type family Union (xs :: [*]) (ys :: [*]) where
+   Union xs ys = Nub (Concat xs ys)
 
 --------------------------------------
 -- Constraints
