@@ -308,7 +308,8 @@ eventThread ch dm = do
 
       case Text.unpack (fst (bkPath (kernelEventDevPath ev))) of
          -- TODO: handle module ADD/REMOVE (/module/* path)
-         "module" -> sysWarning "sysfs event in /module ignored"
+         "module" -> sysWarningShow "sysfs event in /module ignored"
+                        (kernelEventDevPath ev)
          
          -- event in the device tree: update the device tree and trigger rules
          "devices" -> do
@@ -329,16 +330,31 @@ eventThread ch dm = do
                                    ++ show path)
 
             case kernelEventAction ev of
-               ActionAdd     -> deviceAdd dm path (Just ev)
-               ActionRemove  -> deviceRemove dm path ev
-               ActionMove    -> deviceMove dm path ev
-               ActionChange  -> signalEvent deviceNodeOnChange
-               ActionOnline  -> signalEvent deviceNodeOnOnline
-               ActionOffline -> signalEvent deviceNodeOnOffline
-               ActionOther _ -> signalEvent deviceNodeOnOther
+               ActionAdd     -> do
+                  sysLogInfoShow "Added device" path
+                  deviceAdd dm path (Just ev)
+               ActionRemove  -> do
+                  sysLogInfoShow "Removed device" path
+                  deviceRemove dm path ev
+               ActionMove    -> do
+                  sysLogInfoShow "Moved device" path
+                  deviceMove dm path ev
+               ActionChange  -> do
+                  sysLogInfoShow "Changed device" path
+                  signalEvent deviceNodeOnChange
+               ActionOnline  -> do
+                  sysLogInfoShow "Device goes online" path
+                  signalEvent deviceNodeOnOnline
+               ActionOffline -> do
+                  sysLogInfoShow "Device goes offline" path
+                  signalEvent deviceNodeOnOffline
+               ActionOther _ -> do
+                  sysLogInfoShow "Unknown device event" path
+                  signalEvent deviceNodeOnOther
 
          -- warn on unrecognized event
-         str -> sysWarning ("sysfs event in /" ++ str ++ " ignored")
+         str -> sysWarningShow ("sysfs event in /" ++ str ++ " ignored")
+                     (kernelEventDevPath ev)
 
 
 -- | Lookup a device by name
@@ -632,8 +648,8 @@ getDeviceHandle dm dev = do
    let 
       devname = "./dev" ++ show num
       devfd   = dmDevFS dm
-      logS    = "Opening "
-                ++ show dev
+      logS    = "Opening device "
+                ++ showDevice dev
                 ++ " into "
                 ++ devname
 

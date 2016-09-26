@@ -37,7 +37,7 @@ withOpenAt ::
    , zs ~ Fusion xs '[ErrorCode]
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> SysV zs
 withOpenAt fd path flags perm act =
-   sysCallWarnQuiet ("Open file \""++ path ++ "\"") (sysOpenAt fd path flags perm)
+   sysIO (sysOpenAt fd path flags perm)
       >.~&> \fd1 -> do
          res <- act fd1
          sysCallAssertQuiet "Close file" $ sysClose fd1

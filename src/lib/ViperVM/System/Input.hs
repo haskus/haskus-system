@@ -52,14 +52,14 @@ data InputDevice = InputDevice
 
 -- | Input event
 data InputEvent = InputEvent
-   { inputEventTime :: !TimeVal                       -- ^ Event date
-   , inputEventType :: {-# UNPACK #-} !InputEventType -- ^ Event type
+   { inputEventTime :: !TimeVal        -- ^ Event date
+   , inputEventType :: !InputEventType -- ^ Event type
    } deriving (Show,Eq)
 
 -- | Input event details
 data InputEventType
    = InputSyncEvent !SyncEventType !Int32         -- ^ Synchronization event
-   | InputKeyEvent !KeyEventType !Key             -- ^ Key event
+   | InputKeyEvent !KeyEventType !Word16          -- ^ Key event
    | InputRelativeEvent !RelativeAxe !Int32       -- ^ Relative event
    | InputAbsoluteEvent !AbsoluteAxe !Int32       -- ^ Absolute event
    | InputMiscEvent !MiscEventType !Int32         -- ^ Misc event
@@ -88,7 +88,7 @@ makeInputEvent (Input.Event {..}) = InputEvent eventTime t
       v = eventValue
       t = case fromEnumField eventType of
             EventTypeSync                -> InputSyncEvent (toCEnum c) v
-            EventTypeKey                 -> InputKeyEvent (toCEnum v) (toCEnum c)
+            EventTypeKey                 -> InputKeyEvent (toCEnum v) c
             EventTypeRelative            -> InputRelativeEvent (toCEnum c) v
             EventTypeAbsolute            -> InputAbsoluteEvent (toCEnum c) v
             EventTypeMisc                -> InputMiscEvent (toCEnum c) v
@@ -134,6 +134,8 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
 -- to only keep the channel of event bundles. It would avoid going through an
 -- intermediate channel (current implementation, that could be improved too).
 -- For now, we keep the event channel, mostly for debugging purpose.
+-- We would also need to check that it doesn't increase the number of dropped
+-- synchronization events.
 --
 -- TODO: handle SyncDropped (reader not fast enough to read kernel generated
 -- events, leading the kernel to drop events)

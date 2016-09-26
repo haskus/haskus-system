@@ -26,8 +26,10 @@ module ViperVM.System.Sys
    , sysAssertQuiet
    , sysError
    , sysWarning
+   , sysLogInfo
    , sysErrorShow
    , sysWarningShow
+   , sysLogInfoShow
    )
 where
 
@@ -304,10 +306,15 @@ sysError text = do
    sysLog LogError text
    sysOnError
 
--- | Warning in Sys
+-- | Log Warning in Sys
 sysWarning :: String -> Sys ()
 sysWarning text = do
    sysLog LogWarning text
+
+-- | Log Info in Sys
+sysLogInfo :: String -> Sys ()
+sysLogInfo text = do
+   sysLog LogInfo text
 
 -- | Fail in Sys
 sysErrorShow :: Show a => String -> a -> Sys b
@@ -316,3 +323,7 @@ sysErrorShow text a = sysError (text ++ ": " ++ show a)
 -- | Warning in Sys
 sysWarningShow :: Show a => String -> a -> Sys ()
 sysWarningShow text a = sysWarning (text ++ ": " ++ show a)
+
+-- | Log Info in Sys
+sysLogInfoShow :: Show a => String -> a -> Sys ()
+sysLogInfoShow text a = sysLogInfo (text ++ ": " ++ show a)

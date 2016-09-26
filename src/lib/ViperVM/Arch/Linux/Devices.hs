@@ -21,6 +21,7 @@
 --
 module ViperVM.Arch.Linux.Devices
    ( Device(..)
+   , showDevice
    , makeDevice
    , DeviceType(..)
    , DeviceID(..)
@@ -61,6 +62,15 @@ data Device = Device
 -- | Create a device identigier
 makeDevice :: DeviceType -> Word32 -> Word32 -> Device
 makeDevice typ major minor = Device typ (DeviceID major minor)
+
+-- | Show a device as a path in sysfs /dev
+showDevice :: Device -> String
+showDevice (Device typ (DeviceID ma mi)) =
+   "/dev/" ++ typ' ++ "/" ++ show ma ++ ":" ++ show mi
+   where
+      typ' = case typ of
+               CharDevice  -> "char"
+               BlockDevice -> "block"
 
 -- | Device type
 data DeviceType
