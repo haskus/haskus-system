@@ -112,9 +112,6 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
       devs' = filter isEvent (mapMaybe hasDevice devs)
    flowForFilter devs' $ \(devpath,dev) -> do
       getDeviceHandle dm dev
-         -- try to grab device
-         >.~=> (\hdl -> sysIO (grabDevice hdl)
-                           >..~!> sysWarningShow "Cannot grab device")
          -- try to read infos and return InputDevice
          >.~$> (\hdl -> do
                   eventChannel  <- newEventReader hdl
