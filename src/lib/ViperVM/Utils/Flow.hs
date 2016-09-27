@@ -29,6 +29,12 @@ module ViperVM.Utils.Flow
    , (<|)
    , (||>)
    , (<||)
+   -- * Named operators
+   , flowMap
+   , flowBind
+   , flowBind'
+   , flowMatch
+   , flowMatchFail
    -- * First element operations
    , (.~.>)
    , (>.~.>)
@@ -253,7 +259,41 @@ f <|| x = fmap f x
 
 infixr 0 <||
 
+----------------------------------------------------------
+-- Named operators
+----------------------------------------------------------
 
+-- | Map a pure function onto the correct value of the flow
+flowMap :: Monad m => Flow m (x ': xs) -> (x -> y) -> Flow m (y ': xs)
+flowMap = (>.-.>)
+
+-- | Bind two flows in a monadish way
+flowBind :: forall xs ys zs m x.
+   ( Liftable xs zs
+   , Liftable ys zs
+   , zs ~ Union xs ys
+   , Monad m
+   ) => Flow m (x ': ys) -> (x -> Flow m xs) -> Flow m zs
+flowBind = (>.~|>)
+
+-- | Bind two flows in a monadish way
+flowBind' :: Monad m => Flow m (x ': xs) -> (x -> Flow m (y ': xs)) -> Flow m (y ': xs)
+flowBind' = (>.~$>)
+
+-- | Match a value in a flow
+flowMatch :: forall x xs zs m.
+   ( Monad m
+   , Catchable x xs
+   , Liftable (Filter x xs) zs
+   ) => Flow m xs -> (x -> Flow m zs) -> Flow m zs
+flowMatch = (>%~^>)
+
+-- | Match a value in a flow and use a non-returning failure in this case
+flowMatchFail :: forall x xs m.
+   ( Monad m
+   , Catchable x xs
+   ) => Flow m xs -> (x -> m ()) -> Flow m (Filter x xs)
+flowMatchFail = (>%~!!>)
 
 ----------------------------------------------------------
 -- First element operations
