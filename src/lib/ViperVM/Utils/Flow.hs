@@ -263,11 +263,11 @@ infixr 0 <||
 -- Named operators
 ----------------------------------------------------------
 
--- | Map a pure function onto the correct value of the flow
+-- | Map a pure function onto the correct value in the flow
 flowMap :: Monad m => Flow m (x ': xs) -> (x -> y) -> Flow m (y ': xs)
 flowMap = (>.-.>)
 
--- | Bind two flows in a monadish way
+-- | Bind two flows in a monadish way (error types union)
 flowBind :: forall xs ys zs m x.
    ( Liftable xs zs
    , Liftable ys zs
@@ -276,7 +276,7 @@ flowBind :: forall xs ys zs m x.
    ) => Flow m (x ': ys) -> (x -> Flow m xs) -> Flow m zs
 flowBind = (>.~|>)
 
--- | Bind two flows in a monadish way
+-- | Bind two flows in a monadic way (constant error types)
 flowBind' :: Monad m => Flow m (x ': xs) -> (x -> Flow m (y ': xs)) -> Flow m (y ': xs)
 flowBind' = (>.~$>)
 
