@@ -27,25 +27,25 @@ import ViperVM.Arch.Linux.Internals.Graphics
 
 -- | Display mode
 data Mode = Mode
-   { modeClock               :: Word32
+   { modeClock               :: !Word32
 
-   , modeHorizontalDisplay   :: Word16
-   , modeHorizontalSyncStart :: Word16
-   , modeHorizontalSyncEnd   :: Word16
-   , modeHorizontalTotal     :: Word16
-   , modeHorizontalSkew      :: Word16
+   , modeHorizontalDisplay   :: !Word16
+   , modeHorizontalSyncStart :: !Word16
+   , modeHorizontalSyncEnd   :: !Word16
+   , modeHorizontalTotal     :: !Word16
+   , modeHorizontalSkew      :: !Word16
 
-   , modeVerticalDisplay     :: Word16
-   , modeVerticalSyncStart   :: Word16
-   , modeVerticalSyncEnd     :: Word16
-   , modeVerticalTotal       :: Word16
-   , modeVerticalScan        :: Word16
+   , modeVerticalDisplay     :: !Word16
+   , modeVerticalSyncStart   :: !Word16
+   , modeVerticalSyncEnd     :: !Word16
+   , modeVerticalTotal       :: !Word16
+   , modeVerticalScan        :: !Word16
 
-   , modeVerticalRefresh     :: Word32
-   , modeFlags               :: ModeFlags
-   , modeStereo3D            :: Stereo3D
-   , modeType                :: ModeTypes
-   , modeName                :: String
+   , modeVerticalRefresh     :: !Word32
+   , modeFlags               :: !ModeFlags
+   , modeStereo3D            :: !Stereo3D
+   , modeType                :: !ModeTypes
+   , modeName                :: !String
    } deriving (Show)
 
 instance Storable Mode where

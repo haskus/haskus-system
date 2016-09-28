@@ -248,21 +248,21 @@ data DirtyMode
 
 -- | drm_mode_modeinfo
 data StructMode = StructMode
-   { miClock      :: Word32
-   , miHDisplay   :: Word16
-   , miHSyncStart :: Word16
-   , miHSyncEnd   :: Word16
-   , miHTotal     :: Word16
-   , miHSkew      :: Word16
-   , miVDisplay   :: Word16
-   , miVSyncStart :: Word16
-   , miVSyncEnd   :: Word16
-   , miVTotal     :: Word16
-   , miVScan      :: Word16
-   , miVRefresh   :: Word32
-   , miFlags      :: ModeFlagsStereo3D
-   , miType       :: ModeTypes
-   , miName       :: CStringBuffer 32
+   { miClock      :: !Word32
+   , miHDisplay   :: !Word16
+   , miHSyncStart :: !Word16
+   , miHSyncEnd   :: !Word16
+   , miHTotal     :: !Word16
+   , miHSkew      :: !Word16
+   , miVDisplay   :: !Word16
+   , miVSyncStart :: !Word16
+   , miVSyncEnd   :: !Word16
+   , miVTotal     :: !Word16
+   , miVScan      :: !Word16
+   , miVRefresh   :: !Word32
+   , miFlags      :: !ModeFlagsStereo3D
+   , miType       :: !ModeTypes
+   , miName       :: !(CStringBuffer 32)
    } deriving (Generic)
 
 instance CStorable StructMode
@@ -282,18 +282,18 @@ emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 (BitFields 0) BitSet.empty 
 
 -- | drm_mode_card_res
 data StructCardRes = StructCardRes
-   { csFbIdPtr    :: Word64
-   , csCrtcIdPtr  :: Word64
-   , csConnIdPtr  :: Word64
-   , csEncIdPtr   :: Word64
-   , csCountFbs   :: Word32
-   , csCountCrtcs :: Word32
-   , csCountConns :: Word32
-   , csCountEncs  :: Word32
-   , csMinWidth   :: Word32
-   , csMaxWidth   :: Word32
-   , csMinHeight  :: Word32
-   , csMaxHeight  :: Word32
+   { csFbIdPtr    :: !Word64
+   , csCrtcIdPtr  :: !Word64
+   , csConnIdPtr  :: !Word64
+   , csEncIdPtr   :: !Word64
+   , csCountFbs   :: !Word32
+   , csCountCrtcs :: !Word32
+   , csCountConns :: !Word32
+   , csCountEncs  :: !Word32
+   , csMinWidth   :: !Word32
+   , csMaxWidth   :: !Word32
+   , csMinHeight  :: !Word32
+   , csMaxHeight  :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructCardRes where
@@ -308,15 +308,15 @@ instance Storable StructCardRes where
 
 -- | drm_mode_crtc
 data StructController = StructController
-   { contSetConnPtr :: Word64
-   , contConnCount  :: Word32
-   , contID         :: Word32
-   , contFbID       :: Word32
-   , contFbX        :: Word32
-   , contFbY        :: Word32
-   , contGammaSize  :: Word32
-   , contModeValid  :: Word32
-   , contModeInfo   :: StructMode
+   { contSetConnPtr :: !Word64
+   , contConnCount  :: !Word32
+   , contID         :: !Word32
+   , contFbID       :: !Word32
+   , contFbX        :: !Word32
+   , contFbY        :: !Word32
+   , contGammaSize  :: !Word32
+   , contModeValid  :: !Word32
+   , contModeInfo   :: !StructMode
    } deriving (Generic,CStorable)
 
 instance Storable StructController where
@@ -342,19 +342,19 @@ type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 --
 -- Planes blend with or override other bits on the CRTC
 data StructSetPlane = StructSetPlane
-   { spPlaneId :: Word32
-   , spCrtcId  :: Word32
-   , spFbId    :: Word32 -- ^ Frame buffer contains surface format type
-   , spFlags   :: ModeFieldPresents
-   , spCrtcX   :: Int32 -- ^ Signed dest location allows it to be partially off screen
-   , spCrtcY   :: Int32  
-   , spCrtcW   :: Word32
-   , spCrtcH   :: Word32
+   { spPlaneId :: !Word32
+   , spCrtcId  :: !Word32
+   , spFbId    :: !Word32 -- ^ Frame buffer contains surface format type
+   , spFlags   :: !ModeFieldPresents
+   , spCrtcX   :: !Int32 -- ^ Signed dest location allows it to be partially off screen
+   , spCrtcY   :: !Int32
+   , spCrtcW   :: !Word32
+   , spCrtcH   :: !Word32
 
-   , spSrcX    :: FixedPoint Word32 16 16
-   , spSrcY    :: FixedPoint Word32 16 16
-   , spSrcH    :: FixedPoint Word32 16 16
-   , spSrcW    :: FixedPoint Word32 16 16
+   , spSrcX    :: !(FixedPoint Word32 16 16)
+   , spSrcY    :: !(FixedPoint Word32 16 16)
+   , spSrcH    :: !(FixedPoint Word32 16 16)
+   , spSrcW    :: !(FixedPoint Word32 16 16)
    } deriving (Generic,CStorable)
 
 instance Storable StructSetPlane where
@@ -365,13 +365,13 @@ instance Storable StructSetPlane where
 
 -- | drm_mode_get_plane
 data StructGetPlane = StructGetPlane
-   { gpPlaneId       :: Word32
-   , gpCrtcId        :: Word32
-   , gpFbId          :: Word32
-   , gpPossibleCrtcs :: BitSet Word32 Int
-   , gpGammaSize     :: Word32
-   , gpCountFmtTypes :: Word32
-   , gpFormatTypePtr :: Word64
+   { gpPlaneId       :: !Word32
+   , gpCrtcId        :: !Word32
+   , gpFbId          :: !Word32
+   , gpPossibleCrtcs :: !(BitSet Word32 Int)
+   , gpGammaSize     :: !Word32
+   , gpCountFmtTypes :: !Word32
+   , gpFormatTypePtr :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructGetPlane where
@@ -382,8 +382,8 @@ instance Storable StructGetPlane where
 
 -- | drm_mode_get_plane_res
 data StructGetPlaneRes = StructGetPlaneRes
-   { gprsPlaneIdPtr  :: Word64
-   , gprsCountPlanes :: Word32
+   { gprsPlaneIdPtr  :: !Word64
+   , gprsCountPlanes :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructGetPlaneRes where
@@ -410,11 +410,11 @@ data EncoderType
 
 -- | drm_mode_get_encoder
 data StructGetEncoder = StructGetEncoder
-   { geEncoderId      :: Word32
-   , geEncoderType    :: EnumField Word32 EncoderType
-   , geCrtcId         :: Word32
-   , gePossibleCrtcs  :: BitSet Word32 Int -- ^ Valid controller indexes
-   , gePossibleClones :: BitSet Word32 Int -- ^ Valid clone encoder indexes
+   { geEncoderId      :: !Word32
+   , geEncoderType    :: !(EnumField Word32 EncoderType)
+   , geCrtcId         :: !Word32
+   , gePossibleCrtcs  :: !(BitSet Word32 Int) -- ^ Valid controller indexes
+   , gePossibleClones :: !(BitSet Word32 Int) -- ^ Valid clone encoder indexes
    } deriving (Generic,CStorable)
 
 instance Storable StructGetEncoder where
@@ -498,24 +498,24 @@ instance Show ConnectorType where
 
 -- | drm_mode_get_connector
 data StructGetConnector = StructGetConnector
-   { connEncodersPtr       :: Word64
-   , connModesPtr          :: Word64
-   , connPropsPtr          :: Word64
-   , connPropValuesPtr     :: Word64
+   { connEncodersPtr       :: !Word64
+   , connModesPtr          :: !Word64
+   , connPropsPtr          :: !Word64
+   , connPropValuesPtr     :: !Word64
 
-   , connModesCount        :: Word32
-   , connPropsCount        :: Word32
-   , connEncodersCount     :: Word32
+   , connModesCount        :: !Word32
+   , connPropsCount        :: !Word32
+   , connEncodersCount     :: !Word32
 
-   , connEncoderID_        :: Word32   -- ^ current encoder
-   , connConnectorID_      :: Word32   -- ^ ID
-   , connConnectorType_    :: EnumField Word32 ConnectorType
-   , connConnectorTypeID_  :: Word32
+   , connEncoderID_        :: !Word32   -- ^ current encoder
+   , connConnectorID_      :: !Word32   -- ^ ID
+   , connConnectorType_    :: !(EnumField Word32 ConnectorType)
+   , connConnectorTypeID_  :: !Word32
 
-   , connConnection_       :: Word32
-   , connWidth_            :: Word32   -- ^ HxW in millimeters
-   , connHeight_           :: Word32
-   , connSubPixel_         :: EnumField Word32 SubPixel
+   , connConnection_       :: !Word32
+   , connWidth_            :: !Word32   -- ^ HxW in millimeters
+   , connHeight_           :: !Word32
+   , connSubPixel_         :: !(EnumField Word32 SubPixel)
    } deriving (Generic,CStorable)
 
 instance Storable StructGetConnector where
@@ -561,8 +561,8 @@ isAtomic x = testBit (gpsFlags x) 31
 
 -- | drm_mode_property_enum
 data StructPropertyEnum = StructPropertyEnum
-   { peValue       :: Word64
-   , peName        :: CStringBuffer 32
+   { peValue       :: !Word64
+   , peName        :: !(CStringBuffer 32)
    } deriving (Generic,CStorable)
 
 instance Storable StructPropertyEnum where
@@ -573,13 +573,13 @@ instance Storable StructPropertyEnum where
 
 -- | drm_mode_get_property
 data StructGetProperty = StructGetProperty
-   { gpsValuesPtr      :: Word64 -- ^ Values or blob lengths
-   , gpsEnumBlobPtr    :: Word64 -- ^ Enum or blob id ptrs
-   , gpsPropId         :: Word32
-   , gpsFlags          :: Word32
-   , gpsName           :: CStringBuffer 32
-   , gpsCountValues    :: Word32
-   , gpsCountEnum      :: Word32
+   { gpsValuesPtr      :: !Word64 -- ^ Values or blob lengths
+   , gpsEnumBlobPtr    :: !Word64 -- ^ Enum or blob id ptrs
+   , gpsPropId         :: !Word32
+   , gpsFlags          :: !Word32
+   , gpsName           :: !(CStringBuffer 32)
+   , gpsCountValues    :: !Word32
+   , gpsCountEnum      :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructGetProperty where
@@ -590,9 +590,9 @@ instance Storable StructGetProperty where
 
 -- | drm_mode_set_property
 data StructSetProperty = StructSetProperty
-   { spsValue        :: Word64
-   , spsPropId       :: Word32
-   , spsConnId       :: Word32
+   { spsValue        :: !Word64
+   , spsPropId       :: !Word32
+   , spsConnId       :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructSetProperty where
@@ -604,11 +604,11 @@ instance Storable StructSetProperty where
 
 -- | drm_mode_obj_get_properties
 data StructGetObjectProperties = StructGetObjectProperties
-   { gopPropsPtr        :: Word64
-   , gopValuesPtr       :: Word64
-   , gopCountProps      :: Word32
-   , gopObjId           :: Word32
-   , gopObjType         :: Word32
+   { gopPropsPtr        :: !Word64
+   , gopValuesPtr       :: !Word64
+   , gopCountProps      :: !Word32
+   , gopObjId           :: !Word32
+   , gopObjType         :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructGetObjectProperties where
@@ -619,10 +619,10 @@ instance Storable StructGetObjectProperties where
 
 -- | drm_mode_obj_set_property
 data StructSetObjectProperty = StructSetObjectProperty
-   { sopValue           :: Word64
-   , sopPropId          :: Word32
-   , sopObjId           :: Word32
-   , sopObjType         :: Word32
+   { sopValue           :: !Word64
+   , sopPropId          :: !Word32
+   , sopObjId           :: !Word32
+   , sopObjType         :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructSetObjectProperty where
@@ -633,9 +633,9 @@ instance Storable StructSetObjectProperty where
 
 -- | drm_mode_get_blob
 data StructGetBlob = StructGetBlob
-   { gbBlobId     :: Word32
-   , gbLength     :: Word32
-   , gbData       :: Word64
+   { gbBlobId     :: !Word32
+   , gbLength     :: !Word32
+   , gbData       :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructGetBlob where
@@ -660,15 +660,15 @@ type FrameBufferFlags = BitSet Word32 FrameBufferFlag
 
 -- | Data matching the C structure drm_mode_fb_cmd2
 data StructFrameBufferCommand = StructFrameBufferCommand
-   { fc2FbId          :: Word32
-   , fc2Width         :: Word32
-   , fc2Height        :: Word32
-   , fc2PixelFormat   :: PixelFormat
-   , fc2Flags         :: FrameBufferFlags
-   , fc2Handles       :: Vector 4 Word32
-   , fc2Pitches       :: Vector 4 Word32  -- ^ Pitch for each plane
-   , fc2Offsets       :: Vector 4 Word32  -- ^ Offset of each plane
-   , fc2Modifiers     :: Vector 4 Word64  -- ^ tiling, compressed
+   { fc2FbId          :: !Word32
+   , fc2Width         :: !Word32
+   , fc2Height        :: !Word32
+   , fc2PixelFormat   :: !PixelFormat
+   , fc2Flags         :: !FrameBufferFlags
+   , fc2Handles       :: !(Vector 4 Word32)
+   , fc2Pitches       :: !(Vector 4 Word32)  -- ^ Pitch for each plane
+   , fc2Offsets       :: !(Vector 4 Word32)  -- ^ Offset of each plane
+   , fc2Modifiers     :: !(Vector 4 Word64)  -- ^ tiling, compressed
    } deriving (Generic,CStorable)
 
 instance Storable StructFrameBufferCommand where
@@ -708,11 +708,11 @@ dirtyMaxClips = 256
 
 -- | drm_mode_fb_dirty_cmd
 data StructFrameBufferDirty = StructFrameBufferDirty
-   { fdFbId          :: Word32
-   , fdFlags         :: Word32
-   , fdColor         :: Word32
-   , fdNumClips      :: Word32
-   , fdClipsPtr      :: Word64
+   { fdFbId          :: !Word32
+   , fdFlags         :: !Word32
+   , fdColor         :: !Word32
+   , fdNumClips      :: !Word32
+   , fdClipsPtr      :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructFrameBufferDirty where
@@ -723,8 +723,8 @@ instance Storable StructFrameBufferDirty where
 
 -- | drm_mode_mode_cmd
 data StructModeCommand = StructModeCommand
-   { mcConnId     :: Word32
-   , mcMode       :: StructMode
+   { mcConnId     :: !Word32
+   , mcMode       :: !StructMode
    } deriving (Generic,CStorable)
 
 instance Storable  StructModeCommand where
@@ -759,13 +759,13 @@ type CursorFlags = BitSet Word32 CursorFlag
 
 -- | drm_mode_cursor
 data StructCursor = StructCursor
-   { curFlags     :: CursorFlags
-   , curCrtcId    :: Word32
-   , curX         :: Int32
-   , curY         :: Int32
-   , curWidth     :: Word32
-   , curHeight    :: Word32
-   , curHandle    :: Word32
+   { curFlags     :: !CursorFlags
+   , curCrtcId    :: !Word32
+   , curX         :: !Int32
+   , curY         :: !Int32
+   , curWidth     :: !Word32
+   , curHeight    :: !Word32
+   , curHandle    :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable  StructCursor where
@@ -776,15 +776,15 @@ instance Storable  StructCursor where
 
 -- | drm_mode_cursor2
 data StructCursor2 = StructCursor2
-   { cur2Flags     :: CursorFlags
-   , cur2CrtcId    :: Word32
-   , cur2X         :: Int32
-   , cur2Y         :: Int32
-   , cur2Width     :: Word32
-   , cur2Height    :: Word32
-   , cur2Handle    :: Word32
-   , cur2HotX      :: Int32
-   , cur2HotY      :: Int32
+   { cur2Flags     :: !CursorFlags
+   , cur2CrtcId    :: !Word32
+   , cur2X         :: !Int32
+   , cur2Y         :: !Int32
+   , cur2Width     :: !Word32
+   , cur2Height    :: !Word32
+   , cur2Handle    :: !Word32
+   , cur2HotX      :: !Int32
+   , cur2HotY      :: !Int32
    } deriving (Generic,CStorable)
 
 instance Storable  StructCursor2 where
@@ -799,11 +799,11 @@ instance Storable  StructCursor2 where
 
 -- | drm_mode_crtc_lut
 data StructControllerLut = StructControllerLut
-   { clsCrtcId       :: Word32
-   , clsGammaSize    :: Word32
-   , clsRed          :: Word64
-   , clsGreen        :: Word64
-   , clsBlue         :: Word64
+   { clsCrtcId       :: !Word32
+   , clsGammaSize    :: !Word32
+   , clsRed          :: !Word64
+   , clsGreen        :: !Word64
+   , clsBlue         :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructControllerLut where
@@ -849,11 +849,11 @@ type PageFlipFlags = BitSet Word32 PageFlipFlag
 
 -- | drm_mode_crtc_page_flip
 data StructPageFlip = StructPageFlip
-   { pfCrtcId        :: Word32
-   , pfFbId          :: Word32
-   , pfFlags         :: PageFlipFlags
-   , pfReserved      :: Word32
-   , pfUserData      :: Word64
+   { pfCrtcId        :: !Word32
+   , pfFbId          :: !Word32
+   , pfFlags         :: !PageFlipFlags
+   , pfReserved      :: !Word32
+   , pfUserData      :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable  StructPageFlip where
@@ -868,13 +868,13 @@ instance Storable  StructPageFlip where
 
 -- | drm_mode_create_dumb
 data StructCreateDumb = StructCreateDumb
-   { cdHeight :: Word32
-   , cdWidth  :: Word32
-   , cdBPP    :: Word32 -- ^ Bits per pixel
-   , cdFlags  :: Word32
-   , cdHandle :: Word32 -- ^ Handle, pitch, size will be returned
-   , cdPitch  :: Word32
-   , cdSize   :: Word64
+   { cdHeight :: !Word32
+   , cdWidth  :: !Word32
+   , cdBPP    :: !Word32 -- ^ Bits per pixel
+   , cdFlags  :: !Word32
+   , cdHandle :: !Word32 -- ^ Handle, pitch, size will be returned
+   , cdPitch  :: !Word32
+   , cdSize   :: !Word64
    } deriving (Show,Generic,CStorable)
 
 instance Storable  StructCreateDumb where
@@ -886,9 +886,9 @@ instance Storable  StructCreateDumb where
 
 -- | drm_mode_map_dumb
 data StructMapDumb = StructMapDumb
-   { mdHandle :: Word32
-   , mdPad    :: Word32  -- Padding field: not useful
-   , mdOffset :: Word64  -- ^ Fake offset to use for subsequent mmap call
+   { mdHandle :: !Word32
+   , mdPad    :: !Word32  -- Padding field: not useful
+   , mdOffset :: !Word64  -- ^ Fake offset to use for subsequent mmap call
    } deriving (Show,Generic,CStorable)
 
 instance Storable StructMapDumb where
@@ -899,8 +899,8 @@ instance Storable StructMapDumb where
 
 
 -- | drm_mode_destroy_dumb
-data StructDestroyDumb = StructDestroyDumb
-   { dbHanlde :: Word32
+newtype StructDestroyDumb = StructDestroyDumb
+   { dbHandle :: Word32 -- ^ Dumb buffer handle
    } deriving (Generic,CStorable)
 
 instance Storable StructDestroyDumb where
@@ -942,14 +942,14 @@ type AtomicFlags = BitSet Word32 AtomicFlag
 
 -- | drm_mode_atomic
 data StructAtomic = StructAtomic
-   { atomFlags         :: AtomicFlags
-   , atomCountObjects  :: Word32
-   , atomObjectsPtr    :: Word64
-   , atomCountPropsPtr :: Word64
-   , atomPropsPtr      :: Word64
-   , atomPropValuesPtr :: Word64
-   , atomReserved      :: Word64
-   , atomUserData      :: Word64
+   { atomFlags         :: !AtomicFlags
+   , atomCountObjects  :: !Word32
+   , atomObjectsPtr    :: !Word64
+   , atomCountPropsPtr :: !Word64
+   , atomPropsPtr      :: !Word64
+   , atomPropValuesPtr :: !Word64
+   , atomReserved      :: !Word64
+   , atomUserData      :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructAtomic where
@@ -965,9 +965,9 @@ instance Storable StructAtomic where
 -- | Create a new 'blob' data property, copying length bytes from data pointer,
 -- and returning new blob ID.
 data StructCreateBlob = StructCreateBlob
-   { cbData   :: Word64 -- ^ Pointer to data to copy
-   , cbLength :: Word32 -- ^ Length of data to copy
-   , cbBlobID :: Word32 -- ^ Return: new property ID
+   { cbData   :: !Word64 -- ^ Pointer to data to copy
+   , cbLength :: !Word32 -- ^ Length of data to copy
+   , cbBlobID :: !Word32 -- ^ Return: new property ID
    } deriving (Generic,CStorable)
 
 instance Storable StructCreateBlob where
@@ -978,8 +978,8 @@ instance Storable StructCreateBlob where
 
 
 -- | Destroy a user-created blob property.
-data StructDestroyBlob = StructDestroyBlob
-   { dbBlobId :: Word32
+newtype StructDestroyBlob = StructDestroyBlob
+   { dbBlobId :: Word32 -- ^ blob identifier
    } deriving (Generic,CStorable)
 
 instance Storable StructDestroyBlob where
@@ -997,10 +997,10 @@ instance Storable StructDestroyBlob where
 -----------------------------------------------------------------------------
 
 data Clip = Clip
-   { clipX1 :: Word16
-   , clipY1 :: Word16
-   , clipX2 :: Word16
-   , clipY2 :: Word16
+   { clipX1 :: !Word16
+   , clipY1 :: !Word16
+   , clipX2 :: !Word16
+   , clipY2 :: !Word16
    } deriving (Show,Eq,Generic,CStorable)
 
 instance Storable Clip where
@@ -1045,8 +1045,8 @@ instance CEnum Capability where
 -- size.
 -- 
 data StructGetCap = StructGetCap
-   { gcCapability :: EnumField Word64 Capability
-   , gcValue      :: Word64
+   { gcCapability :: !(EnumField Word64 Capability)
+   , gcValue      :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructGetCap where
@@ -1068,8 +1068,8 @@ instance CEnum ClientCapability where
    toCEnum   = toEnum . (\x -> x-1) . fromIntegral
 
 data StructSetClientCap = StructSetClientCap
-   { sccCapability :: EnumField Word64 ClientCapability
-   , sccValue      :: Word64
+   { sccCapability :: !(EnumField Word64 ClientCapability)
+   , sccValue      :: !Word64
    } deriving (Generic,CStorable)
 
 instance Storable StructSetClientCap where
@@ -1093,9 +1093,9 @@ instance Enum PrimeFlag where
 
 -- | struct drm_prime_handle
 data StructPrimeHandle = StructPrimeHandle
-   { sphHandle :: Word32
-   , sphFlags  :: BitSet Word32 PrimeFlag -- ^ FD flags: only applciable for handle->fd
-   , sphFD     :: Int32                   -- ^ Returned DMAbuf file descriptor
+   { sphHandle :: !Word32
+   , sphFlags  :: !(BitSet Word32 PrimeFlag) -- ^ FD flags: only applciable for handle->fd
+   , sphFD     :: !Int32                     -- ^ Returned DMAbuf file descriptor
    }
    deriving (Generic,CStorable)
 
@@ -1217,8 +1217,8 @@ ioctlDestroyBlob = drmIoctl 0xBE
 
 -- | drm_event
 data StructEvent = StructEvent
-   { eventType   :: Word32
-   , eventLength :: Word32
+   { eventType   :: !Word32
+   , eventLength :: !Word32
    } deriving (Generic,CStorable)
 
 instance Storable StructEvent  where
@@ -1241,13 +1241,13 @@ toEventType v = case v of
 
 -- | drm_event_vblank
 data StructEventVBlank = StructEventVBlank
-   { vblankEventType         :: Word32
-   , vblankEventSize         :: Word32
-   , vblankEventUserData     :: Word64
-   , vblankEventSeconds      :: Word32
-   , vblankEventMicroseconds :: Word32
-   , vblankEventSequence     :: Word32
-   , vblankEventReserved     :: Word32
+   { vblankEventType         :: !Word32
+   , vblankEventSize         :: !Word32
+   , vblankEventUserData     :: !Word64
+   , vblankEventSeconds      :: !Word32
+   , vblankEventMicroseconds :: !Word32
+   , vblankEventSequence     :: !Word32
+   , vblankEventReserved     :: !Word32
    } 
    deriving (Show,Generic,CStorable)
 
