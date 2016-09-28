@@ -21,7 +21,7 @@ module ViperVM.Arch.Linux.Internals.Input
    , AbsoluteInfo (..)
    , KeymapEntry (..)
    , KeymapFlag (..)
-   , Mask (..)
+   , EventMask (..)
    , getVersion
    , getDeviceInfo
    , RepeatSettings (..)
@@ -47,8 +47,8 @@ module ViperVM.Arch.Linux.Internals.Input
    , grabDevice
    , releaseDevice
    , revokeDevice
-   , getMask
-   , setMask
+   , getEventMask
+   , setEventMask
    , setDeviceClock
    , DeviceID (..)
    , BusType (..)
@@ -91,6 +91,7 @@ import Foreign.CStorable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils (fromBool)
+import Data.Maybe
 
 
 -- =============================================================
@@ -654,15 +655,15 @@ data KeymapFlag
    = KeymapByIndex
    deriving (Eq,Show,Enum,CBitSet)
 
-
-data Mask = Mask
-   { maskType      :: Word32
-   , maskCodesSize :: Word32
-   , maskCodesPtr  :: Word64
+-- | Mask of events that are supported by the device
+data EventMask = EventMask
+   { maskType      :: !Word32
+   , maskCodesSize :: !Word32
+   , maskCodesPtr  :: !Word64
    }
    deriving (Show,Eq,Generic,CStorable)
 
-instance Storable Mask where
+instance Storable EventMask where
    sizeOf      = cSizeOf
    alignment   = cAlignment
    peek        = cPeek
@@ -801,13 +802,17 @@ getDeviceSoundStatus n fd = ioctlReadBuffer 0x45 0x1a ((n `div` 8) + 1) fd >.-.>
 getDeviceSwitchStatus :: Int -> Handle -> SysRet Buffer
 getDeviceSwitchStatus n fd = ioctlReadBuffer 0x45 0x1b ((n `div` 8) + 1) fd >.-.> snd
 
--- | Get the number of bits that can be set by the given event type
+-- | Return a bitset of the supported event codes for the given event type.
+-- If no event type is given, a bitset of the supported event types is returned
+-- instead.
+--
+-- Return the size of the written *bytes*
 --
 -- EVIOCGBIT
-getDeviceBits :: EventType -> Int -> Handle -> SysRet Buffer
+getDeviceBits :: Maybe EventType -> Int -> Handle -> SysRet (Int64, Buffer)
 getDeviceBits ev n fd = do
-   let code = fromCEnum ev
-   ioctlReadBuffer 0x45 (0x20 + code) ((n `div` 8) + 1) fd >.-.> snd
+   let code = fromMaybe 0 (fromCEnum <$> ev )
+   ioctlReadBuffer 0x45 (0x20 + code) ((n `div` 8) + 1) fd
 
 -- | Get absolute info
 --
@@ -890,8 +895,8 @@ revokeDevice = ioctlWriteValue 0x45 0x91 (0 :: Int)
 -- This ioctl may fail with ENODEV in case the file is revoked, EFAULT
 -- if the receive-buffer points to invalid memory, or EINVAL if the kernel
 -- does not implement the ioctl.
-getMask :: Handle -> SysRet Mask
-getMask = ioctlRead 0x45 0x92
+getEventMask :: Handle -> SysRet EventMask
+getEventMask = ioctlRead 0x45 0x92
 
 
 -- | Set event mask (event filter by type)
@@ -915,8 +920,8 @@ getMask = ioctlRead 0x45 0x92
 -- This ioctl may fail with ENODEV in case the file is revoked. EFAULT is
 -- returned if the receive-buffer points to invalid memory. EINVAL is returned
 -- if the kernel does not implement the ioctl.
-setMask :: Mask -> Handle -> SysRet ()
-setMask = ioctlWrite 0x45 0x93
+setEventMask :: EventMask -> Handle -> SysRet ()
+setEventMask = ioctlWrite 0x45 0x93
 
 -- | Set clock to use for timestamps
 --
