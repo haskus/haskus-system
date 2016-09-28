@@ -14,6 +14,7 @@ module ViperVM.Format.Binary.Buffer
    , bufferSize
    , isBufferEmpty
    , emptyBuffer
+   , bufferZero
    , bufferMap
    , bufferReverse
    , bufferDrop
@@ -28,6 +29,8 @@ module ViperVM.Format.Binary.Buffer
    , bufferTake
    , bufferTakeWhile
    , bufferTakeAtMost
+   , bufferZipWith
+   , bufferDup
    -- * Peek / Poke
    , bufferPeekStorable
    , bufferPeekStorableAt
@@ -64,13 +67,14 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Control.Monad
 import Data.ByteString (ByteString)
+import Data.List (foldl')
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits.Basic
-import ViperVM.Utils.Memory (memCopy)
+import ViperVM.Utils.Memory (memCopy,memSet)
 
 -- | A buffer
 newtype Buffer = Buffer ByteString deriving (Eq,Ord)
@@ -86,6 +90,61 @@ instance Show Buffer where
          toHex 0xE = "E"
          toHex 0xF = "F"
          toHex x   = show x
+
+instance Bits Buffer where
+   (.&.)      = bufferZipWith (.&.)
+   (.|.)      = bufferZipWith (.|.)
+   xor        = bufferZipWith xor
+   complement = bufferMap complement
+   shift b n
+      | n == 0     = b
+      | abs n <= 8 = bufferMap (`shift` n) b
+      | otherwise  = if q > 0
+            then bufferAppend zs b'
+            else bufferAppend b' zs
+         where
+            (q,r) = n `quotRem` 8
+            zs = bufferZero (fromIntegral (abs q))
+            b' = bufferMap (`shift` r) b
+
+   rotate     = shift
+   zeroBits   = emptyBuffer
+   isSigned _ = False
+   bitSize _  = undefined
+   bitSizeMaybe _ = Nothing
+   testBit b n = testBit p r
+      where
+         p     = bufferIndex b (bufferSize b - fromIntegral q)
+         (q,r) = n `quotRem` 8
+
+   bit _       = undefined
+   popCount b  = foldl' (+) 0 (fmap popCount (bufferUnpackByteList b))
+
+-- | Duplicate a buffer
+bufferDup :: Buffer -> IO Buffer
+bufferDup b = withBufferPtr b $ bufferPackPtr (bufferSize b)
+
+-- | Buffer filled with zero
+bufferZero :: Word -> Buffer
+bufferZero n = unsafePerformIO $ do
+   p <- mallocBytes (fromIntegral n)
+   memSet p (fromIntegral n) 0
+   bufferUnsafePackPtr n p
+
+-- | Zip two buffers with the given function
+bufferZipWith :: (Word8 -> Word8 -> Word8) -> Buffer -> Buffer -> Buffer
+bufferZipWith f a b
+      | bufferSize a /= bufferSize b = error "Non matching buffer sizes"
+      | otherwise = unsafePerformIO $ do
+            let sz = fromIntegral (bufferSize a)
+            pc <- mallocBytes sz
+            withBufferPtr a $ \pa ->
+               withBufferPtr b $ \pb ->
+                  forM_ [0..sz-1] $ \off -> do
+                     v <- f <$> peekByteOff pa off
+                            <*> peekByteOff pb off
+                     pokeByteOff pc off (v :: Word8)
+            bufferUnsafePackPtr (bufferSize a) pc
 
 -- | Unsafe: be careful if you modify the buffer contents or you may break
 -- referential transparency
