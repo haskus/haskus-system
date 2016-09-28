@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- | Manage graphics devices
 module ViperVM.System.Graphics
@@ -14,12 +16,19 @@ module ViperVM.System.Graphics
    , graphicCardControllers
    , graphicCardEncoders
    , graphicCardPlanes
+   -- * Multi-buffering
+   , RenderingEngine (..)
+   , BufferingState (..)
+   , FrameWait (..)
+   , initRenderingEngine
    )
 where
 
 import ViperVM.System.Sys
 import ViperVM.System.Devices
 import ViperVM.System.Process
+import ViperVM.System.Event
+import ViperVM.Format.Binary.BitSet (CBitSet(..), BitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Ptr
@@ -29,12 +38,13 @@ import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Memory
 
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
-import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Encoder
+import ViperVM.Arch.Linux.Graphics.Helper
 import ViperVM.Arch.Linux.Graphics.Plane
 import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Graphics.Mode
@@ -42,7 +52,7 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Monad (forM,forM_,forever)
+import Control.Monad
 
 import Control.Concurrent.STM
 import Control.Concurrent
@@ -50,7 +60,7 @@ import Data.Foldable (traverse_)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
 import Data.List (isPrefixOf)
-import Data.Maybe (mapMaybe)
+import Data.Maybe
 import System.FilePath (takeBaseName)
 
 -- | Graphic card
@@ -203,3 +213,155 @@ graphicCardPlanes card = do
       >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )
       -- return the result
       |> flowRes
+
+
+-----------------------------------------------------------------------
+-- Multi-buffering
+-----------------------------------------------------------------------
+
+-- | Rendering engine
+--
+-- Manage multi-buffering
+data RenderingEngine = RenderingEngine
+   { engineBuffereringState :: TVar (BufferingState GenericFrame) -- ^ Multi-buffering state
+   }
+
+-- | Multi-buffering state
+data BufferingState a = BufferingState
+   { fbShown    :: a          -- ^ Framebuffer currently displayed
+   , fbPending  :: Maybe a    -- ^ Framebuffer being flipped
+   , fbDrawn    :: Maybe a    -- ^ Framebuffer drawn but not yet submitted to be flipped
+   , fbDrawable :: [a]        -- ^ Framebuffers free to be drawed on
+   }
+
+-- | Rendering wait
+data FrameWait
+   = WaitPending  -- ^ Wait if there is a pending frame (that will be displayed asap)
+   | WaitDrawn    -- ^ wait if there is already a rendered frame
+   deriving (Show,Eq,Enum,CBitSet)
+
+
+-- | Init the rendering engine
+--
+-- TODO: indicate failure (GenericBuffer not supported, framebuffer allocation
+-- error, etc.)
+-- TODO: support multiple controllers/connectors
+-- TODO: support connections/disconnections
+-- TODO: better support for mode setting (change during rendering, etc.)
+-- TODO: support accelerated buffers
+initRenderingEngine :: GraphicCard -> Controller -> Mode -> Word -> [FrameWait] -> (Mode -> GenericFrame -> Sys ()) -> Sys RenderingEngine
+initRenderingEngine card ctrl mode nfb flags draw
+   | nfb <= 2  = error "initRenderingEngine: require at least 2 buffers"
+   | otherwise = do
+
+      -- Check support for generic buffers
+      let fd    = graphicCardHandle card
+      sysLogSequence "Load graphic card" $ do
+         cap  <- sysCallAssert "Get GenericBuffer capability" (fd `supports` CapGenericBuffer)
+         sysAssert "Generic buffer capability supported" cap
+
+      -- TODO: support other formats
+      let fmt = makePixelFormat XRGB8888 LittleEndian
+
+      -- initialize generic framebuffers
+      bufs <- forM [1..nfb] (const (initGenericFrameBuffer card mode fmt))
+
+      -- page flip
+      fbState <- sysIO $ newTVarIO (BufferingState
+                  { fbShown    = head bufs
+                  , fbPending  = Nothing
+                  , fbDrawn    = Nothing
+                  , fbDrawable = tail bufs
+                  })
+
+      fps <- sysIO $ newTVarIO (0 :: Word)
+
+      -- on page flip complete
+      -- FIXME: how do we know which controller has flipped?
+      onEvent (graphicCardChan card) $ \case
+         VBlankEvent FlipComplete _ ->
+            sysIO $ atomically $ do
+               s <- readTVar fbState
+               case fbPending s of
+                  Nothing -> return ()
+                  Just p  -> do
+                     writeTVar fbState $ s
+                        { fbShown    = p
+                        , fbPending  = Nothing
+                        , fbDrawable = fbShown s : fbDrawable s
+                        }
+                     modifyTVar' fps (+1)
+         _                          -> return ()
+
+
+      -- on drawn frame
+      sysFork "Multi-buffering manager" $ forever $ do
+         gfb <- sysIO $ atomically $ do
+            s <- readTVar fbState
+            -- check that the previous frame is flipped
+            -- and that we have a frame to draw
+            case (fbPending s, fbDrawn s) of
+               (Nothing, Just d) -> do
+                  -- make the frame pending
+                  writeTVar fbState $ s
+                     { fbPending = Just d
+                     , fbDrawn   = Nothing
+                     }
+                  return d
+               -- otherwise retry
+               _ -> retry
+
+         -- flip the pending frame
+         let (GenericFrame fb _) = gfb
+         sysCallAssertQuiet "Switch framebuffer" $
+            switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent])
+            
+
+      let
+         -- draw the next frame
+         drawNext :: BitSet Word FrameWait -> (GenericFrame -> Sys ()) -> Sys ()
+         drawNext wait f = do
+            -- reserve next frame
+            gfb <- sysIO $ atomically $ do
+                     s <- readTVar fbState
+                     when (BitSet.member wait WaitPending && isJust (fbPending s)) retry
+                     when (BitSet.member wait WaitDrawn   && isJust (fbDrawn   s)) retry
+                     -- find a drawable frame
+                     case fbDrawable s of
+                        []     -> retry
+                        (x:xs) -> do
+                           writeTVar fbState (s { fbDrawable = xs })
+                           return x
+            -- draw it
+            f gfb
+            -- indicate it is drawn
+            sysIO $ atomically $ do
+               s <- readTVar fbState
+               case fbDrawn s of
+                  Nothing -> writeTVar fbState (s { fbDrawn = Just gfb })
+                  Just d  -> do
+                     -- drop the alreay drawn frame and set the newer
+                     writeTVar fbState $ s
+                        { fbDrawn    = Just gfb
+                        , fbDrawable = d : fbDrawable s
+                        }
+            -- switch to another thread
+            sysIO yield
+
+      -- set mode and connectors
+      -- sysCallAssertQuiet "Set controller" $
+      --    setController ctrl (SetFB fb1) [conn] (Just mode)
+
+      -- Force the generation of the first page-flip event
+      sysCallAssertQuiet "Switch framebuffer" $
+         switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent])
+
+      sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
+         draw mode gfb
+         -- TODO: draw FPS if required as an overlay
+         -- TODO: maybe add option to dynamically enable/disable FPS counting
+
+      let rdr = RenderingEngine fbState
+
+      return rdr
+
