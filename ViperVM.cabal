@@ -196,6 +196,7 @@ library
     ViperVM.Format.Elf.Note
     ViperVM.Format.Elf.Move
     ViperVM.Format.Elf.Intel
+    ViperVM.Format.Elf.GHC
 
     ViperVM.Format.Dwarf
 

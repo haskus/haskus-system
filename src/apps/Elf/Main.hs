@@ -13,6 +13,7 @@ import ViperVM.Format.Elf.Intel
 import ViperVM.Format.Elf.Symbol
 import ViperVM.Format.Elf.Relocation
 import ViperVM.Format.Elf.Dynamic
+import ViperVM.Format.Elf.GHC
 
 import ViperVM.Format.Dwarf
 
@@ -542,6 +543,7 @@ showSymbols elf symSec ss = do
          th_ "Info"
          th_ "Value"
          th_ "Size"
+         th_ "Z-Name"
       forM_ (ss `zip` symNames) $ \(s,sname) -> tr_ $ do
          td_ $ do
             let idx = symbolNameIndex s
@@ -586,6 +588,12 @@ showSymbols elf symSec ss = do
 
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
+         td_ $ do
+            case sname of
+               Nothing   -> do
+                  span_ [class_ "invalid"] "None"
+               Just name -> do
+                  toHtml $ (decodeZString (Text.unpack name))
 
 showRelocationEntries :: Bool -> [RelocationEntry] -> Html ()
 showRelocationEntries withAddend es = do
