@@ -192,8 +192,8 @@ instance forall fs typ name rec b l2 i r.
    , StaticStorable typ
    , KnownSymbol name
    , r ~ (rec, HList ((String,typ) ': l2))  -- result type
-   ) => ApplyAB Extract (b, i) r where
-      applyAB _ (_, (rec,xs)) =
+   ) => Apply Extract (b, i) r where
+      apply _ (_, (rec,xs)) =
          (rec, HCons (symbolVal (Proxy :: Proxy name), recordField (Proxy :: Proxy name) rec) xs)
 
 -- | Convert a record into a HList

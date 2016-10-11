@@ -152,8 +152,8 @@ data GetLabel = GetLabel
 instance  forall a r.
    ( UnumNum a
    , r ~ [String]
-   ) => ApplyAB GetLabel (a, [String]) r where
-   applyAB _ (x,xs) = unumLabel x : xs
+   ) => Apply GetLabel (a, [String]) r where
+   apply _ (x,xs) = unumLabel x : xs
 
 -- | Unum labels
 unumLabels :: forall u v.

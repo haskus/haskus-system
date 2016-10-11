@@ -58,9 +58,9 @@ instance forall x y z xs ys zs m a.
       , Liftable (Filter a xs) zs
       , zs ~ Union (Filter a xs) ys
       , Monad m
-      ) => ApplyAB (Choice a) (x,y) z
+      ) => Apply (Choice a) (x,y) z
    where
-      applyAB _ (x,y) = x >%~|> \(_ :: a) -> y
+      apply _ (x,y) = x >%~|> \(_ :: a) -> y
 
 -- | Try to apply the actions in the list in order, until one of them succeeds.
 -- Returns the value of the succeeding action, or the value of the last one.

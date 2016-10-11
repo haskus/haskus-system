@@ -287,8 +287,8 @@ instance forall name bs b l l2 i (n :: Nat) s r w .
    , KnownNat (Offset name l)
    , KnownNat (Size name l)
    , Field (Output name l)
-   ) => ApplyAB Extract (b, i) r where
-      applyAB _ (_, (bs,xs)) =
+   ) => Apply Extract (b, i) r where
+      apply _ (_, (bs,xs)) =
          (bs, HCons (extractField (Proxy :: Proxy name) bs) xs)
 
 instance forall name bs b l l2 i (n :: Nat) s r w .
@@ -297,8 +297,8 @@ instance forall name bs b l l2 i (n :: Nat) s r w .
    , i ~ HList l2             -- input type
    , r ~ HList (String ': l2) -- result type
    , KnownSymbol name
-   ) => ApplyAB Name (b, i) r where
-      applyAB _ (_, xs) = HCons (symbolVal (Proxy :: Proxy name)) xs
+   ) => Apply Name (b, i) r where
+      apply _ (_, xs) = HCons (symbolVal (Proxy :: Proxy name)) xs
 
 fieldValues :: forall l l2 w bs .
    ( bs ~ BitFields w l

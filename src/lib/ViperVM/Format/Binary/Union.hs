@@ -152,11 +152,11 @@ instance forall fs.
 data FoldSizeOf    = FoldSizeOf
 data FoldAlignment = FoldAlignment
 
-instance (r ~ Int, Storable a) => ApplyAB FoldSizeOf (a, Int) r where
-   applyAB _ (_,r) = max r (sizeOf (undefined :: a))
+instance (r ~ Int, Storable a) => Apply FoldSizeOf (a, Int) r where
+   apply _ (_,r) = max r (sizeOf (undefined :: a))
 
-instance (r ~ Int, Storable a) => ApplyAB FoldAlignment (a, Int) r where
-   applyAB _ (_,r) = max r (alignment (undefined :: a))
+instance (r ~ Int, Storable a) => Apply FoldAlignment (a, Int) r where
+   apply _ (_,r) = max r (alignment (undefined :: a))
 
 -- | Get the union size (i.e. the maximum of the types in the union)
 unionSize :: forall l . HFoldr' FoldSizeOf Int l Int => Union l -> Int

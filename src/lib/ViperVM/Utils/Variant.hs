@@ -249,8 +249,8 @@ instance forall (n :: Nat) l l2 i r .
    ( i ~ (Variant l, HList l2)                         -- input
    , r ~ (Variant l, HList (Maybe (TypeAt n l) ': l2)) -- result
    , KnownNat n
-   ) => ApplyAB GetValue (Proxy n,i) r where
-      applyAB _ (_, (v,xs)) = (v, getVariantN (Proxy :: Proxy n) v `HCons` xs)
+   ) => Apply GetValue (Proxy n,i) r where
+      apply _ (_, (v,xs)) = (v, getVariantN (Proxy :: Proxy n) v `HCons` xs)
 
 
 data Found
@@ -264,8 +264,8 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
    , l2 ~ Filter a l
    , KnownNat n
    , KnownNat same
-   ) => ApplyAB RemoveType ((Proxy n,Proxy same),i) r where
-      applyAB _ (_, (v,shift,r)) =
+   ) => Apply RemoveType ((Proxy n,Proxy same),i) r where
+      apply _ (_, (v,shift,r)) =
             case r of
                -- we already have a result: we update the shift
                Just _  -> (v, shift + same, r)
@@ -366,8 +366,8 @@ instance forall (n :: Nat) l i r .
    , r ~ (Variant l, Maybe String) -- result
    , Show (TypeAt n l)
    , KnownNat n
-   ) => ApplyAB VariantShow (Proxy n,i) r where
-      applyAB _ (_, i) = case i of
+   ) => Apply VariantShow (Proxy n,i) r where
+      apply _ (_, i) = case i of
          (_, Just _)  -> i
          (v, Nothing) -> case getVariantN (Proxy :: Proxy n) v of
                Nothing -> (v, Nothing)
@@ -442,8 +442,8 @@ instance forall (n :: Nat) (m :: Nat) xs ys i r x.
    , m ~ IndexOf x ys
    , KnownNat m
    , KnownNat n
-   ) => ApplyAB VariantLift (Proxy n,i) r where
-      applyAB _ (_, i) = case i of
+   ) => Apply VariantLift (Proxy n,i) r where
+      apply _ (_, i) = case i of
          (_, Just _)  -> i
          (v, Nothing) -> case getVariantN (Proxy :: Proxy n) v of
                Nothing -> (v, Nothing)

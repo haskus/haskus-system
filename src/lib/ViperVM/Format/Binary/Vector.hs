@@ -199,8 +199,8 @@ instance forall (n :: Nat) v a r s.
    , KnownNat s
    , StaticStorable a
    , Storable a
-   ) => ApplyAB StoreVector (v, IO (Ptr a)) r where
-      applyAB _ (v, getP) = do
+   ) => Apply StoreVector (v, IO (Ptr a)) r where
+      apply _ (v, getP) = do
          p <- getP
          let
             vsz = fromIntegral (natVal (Proxy :: Proxy n))
