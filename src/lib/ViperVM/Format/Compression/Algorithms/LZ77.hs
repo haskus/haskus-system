@@ -52,7 +52,7 @@ data Code a = Code
 -- `ls` is the maximal word length
 -- `n` is the buffer length
 -- `ini` is the value filling the buffer initially
-compress :: (Show a, Eq a) => Int -> Int -> a -> [a] -> [Code a]
+compress :: (Eq a) => Int -> Int -> a -> [a] -> [Code a]
 compress ls n ini = rec (Seq.replicate (n-ls) ini)
    where
       -- return the length and the value of the longest prefix

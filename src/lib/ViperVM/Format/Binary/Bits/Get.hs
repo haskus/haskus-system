@@ -72,7 +72,7 @@ skipBitsToAlignOnWord8 s = case bitGetStateBitOffset s of
    n -> skipBits (8-n) s
 
 -- | Read the given number of bits and put the result in a word
-getBits :: (Integral a, FiniteBits a, BitReversable a) => Word -> BitGetState -> a
+getBits :: (Integral a, FiniteBits a) => Word -> BitGetState -> a
 getBits nbits (BitGetState bs off bo) = rec zeroBits 0 bs off nbits
    where
       -- w   = current result
@@ -161,7 +161,7 @@ runBitGet :: BitOrder -> BitGet a -> Buffer -> a
 runBitGet bo m bs = runIdentity (runBitGetT bo m bs)
 
 -- | Evaluate a BitGet monad, return the remaining state
-runBitGetPartialT :: Monad m => BitOrder -> BitGetT m a -> Buffer -> m (a, BitGetState)
+runBitGetPartialT :: BitOrder -> BitGetT m a -> Buffer -> m (a, BitGetState)
 runBitGetPartialT bo m bs = runStateT m (newBitGetState bo bs)
 
 -- | Evaluate a BitGet monad, return the remaining state
@@ -169,7 +169,7 @@ runBitGetPartial :: BitOrder -> BitGet a -> Buffer -> (a, BitGetState)
 runBitGetPartial bo m bs = runIdentity (runBitGetPartialT bo m bs)
 
 -- | Resume a BitGet evaluation
-resumeBitGetPartialT :: Monad m => BitGetT m a -> BitGetState -> m (a, BitGetState)
+resumeBitGetPartialT :: BitGetT m a -> BitGetState -> m (a, BitGetState)
 resumeBitGetPartialT = runStateT 
 
 -- | Resume a BitGet evaluation

@@ -201,9 +201,10 @@ updateVariantM _ f v@(Variant t a) =
       Just x  -> Variant t <$> f x
 
 -- | Update a variant value with a variant and fold the result
-updateVariantFold :: forall (n :: Nat) (m :: Nat) l l2 .
-   (KnownNat n, KnownNat m, m ~ Length l2)
-   => Proxy n -> (TypeAt n l -> Variant l2) -> Variant l -> Variant (ReplaceAt n l l2)
+updateVariantFold :: forall (n :: Nat) l l2 .
+   ( KnownNat n
+   , KnownNat (Length l2)
+   ) => Proxy n -> (TypeAt n l -> Variant l2) -> Variant l -> Variant (ReplaceAt n l l2)
 updateVariantFold _ f v@(Variant t a) =
    case getVariantN (Proxy :: Proxy n) v of
       Nothing ->
@@ -216,13 +217,12 @@ updateVariantFold _ f v@(Variant t a) =
          Variant t2 a2 -> Variant (t2+n) a2
    where
       n   = fromIntegral (natVal (Proxy :: Proxy n))
-      nl2 = fromIntegral (natVal (Proxy :: Proxy m))
+      nl2 = fromIntegral (natVal (Proxy :: Proxy (Length l2)))
 
 -- | Update a variant value with a variant and fold the result
-updateVariantFoldM :: forall (n :: Nat) (k :: Nat) m l l2.
+updateVariantFoldM :: forall (n :: Nat) m l l2.
    ( KnownNat n
-   , KnownNat k
-   , k ~ Length l2
+   , KnownNat (Length l2)
    , Monad m
    ) => Proxy n -> (TypeAt n l -> m (Variant l2)) -> Variant l -> m (Variant (ReplaceAt n l l2))
 updateVariantFoldM _ f v@(Variant t a) =
@@ -239,7 +239,7 @@ updateVariantFoldM _ f v@(Variant t a) =
             Variant t2 a2 -> return (Variant (t2+n) a2)
    where
       n   = fromIntegral (natVal (Proxy :: Proxy n))
-      nl2 = fromIntegral (natVal (Proxy :: Proxy k))
+      nl2 = fromIntegral (natVal (Proxy :: Proxy (Length l2)))
 
 data GetValue    = GetValue
 data RemoveType  = RemoveType

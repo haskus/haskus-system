@@ -21,7 +21,7 @@ import qualified ViperVM.Utils.STM.TList as TList
 -- after is executed when the node is leaved
 -- children gets node's children
 --
-deepFirst :: (Monad m, Ord a, Eq a) => (a -> m ()) -> (a -> m ()) -> (a -> m [a]) -> [a] -> m ()
+deepFirst :: (Monad m, Ord a) => (a -> m ()) -> (a -> m ()) -> (a -> m [a]) -> [a] -> m ()
 deepFirst before after children = foldM_ go Set.empty
    where
       go visited x 
@@ -44,7 +44,7 @@ deepFirst before after children = foldM_ go Set.empty
 -- visit is executed when the node is entered. If False is returned, the traversal ends
 -- children gets node's children
 --
-breadthFirst :: (Monad m, Ord a, Eq a) => (a -> m Bool) -> (a -> m [a]) -> [a] -> m ()
+breadthFirst :: (Monad m, Ord a) => (a -> m Bool) -> (a -> m [a]) -> [a] -> m ()
 breadthFirst visit children = go Set.empty
    where
       go _ [] = 

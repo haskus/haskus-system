@@ -64,7 +64,7 @@ type PriorityTable a = Map a Priority
 type PriorityQueue a = MinPQueue Priority a
 
 -- | Compute a priority table (i.e. number of occurences for each element)
-computePriorityTable :: (Foldable m, Eq a, Ord a) => m a -> PriorityTable a
+computePriorityTable :: (Foldable m, Ord a) => m a -> PriorityTable a
 computePriorityTable = foldl' f Map.empty 
    where
       f ocs k = Map.insertWith' (+) k 1 ocs
@@ -105,7 +105,7 @@ computeHuffmanTreeFromPriorityQueue pq = rec pq'
                   q'''= PQueue.insert (k1+k2) (Node m1 m2) q''
 
 -- | Create a Huffman tree
-computeHuffmanTreeFromFoldable :: (Foldable m, Eq a, Ord a) => m a -> Tree a
+computeHuffmanTreeFromFoldable :: (Foldable m, Ord a) => m a -> Tree a
 computeHuffmanTreeFromFoldable = computeHuffmanTreeFromPriorityQueue . computePriorityQueue . computePriorityTable
 
 -- | Build a tree from a set of codes

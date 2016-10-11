@@ -98,7 +98,7 @@ unions ss = do
    return ret
 
 -- | Apply a function to each element in the set
-map :: (Element a, Element b) => (a -> b) -> TSet a -> STM (TSet b)
+map :: (Element b) => (a -> b) -> TSet a -> STM (TSet b)
 map f m = do
    r <- empty
    ListT.traverse_ (\x -> insert (f x) r) (stream m)

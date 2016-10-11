@@ -49,6 +49,7 @@ import ViperVM.System.FileSystem
 import System.FilePath
 import Control.Monad (void)
 import Text.Megaparsec
+import Text.Megaparsec.Text
 import Text.Megaparsec.Lexer hiding (space)
 
 
@@ -87,26 +88,26 @@ createDeviceFile hdl path dev perm = sysCreateSpecialFile hdl path typ perm (Jus
                   CharDevice  -> FileTypeCharDevice
                   BlockDevice -> FileTypeBlockDevice
 
+-- parser for dev files
+-- content format is: MMM:mmm\n (where M is major and m is minor)
+parseDevFile :: Parser DeviceID
+parseDevFile = do
+   major <- fromIntegral <$> decimal
+   void (char ':')
+   minor <- fromIntegral <$> decimal
+   void eol
+   return (DeviceID major minor)
+
 
 -- | Read device major and minor in "dev" file
 sysfsReadDevFile' :: Handle -> SysV '[DeviceID,ErrorCode]
-sysfsReadDevFile' devfd = do
-   let
-      -- parser for dev files
-      -- content format is: MMM:mmm\n (where M is major and m is minor)
-      parseDevFile :: Parsec Text DeviceID
-      parseDevFile = do
-         major <- fromIntegral <$> decimal
-         void (char ':')
-         minor <- fromIntegral <$> decimal
-         void eol
-         return (DeviceID major minor)
-
+sysfsReadDevFile' devfd =
    -- 16 bytes should be enough
    sysIO (handleReadBuffer devfd Nothing 16)
-      >.-.> (\content -> case parseMaybe parseDevFile (bufferDecodeUtf8 content) of
-         Nothing -> error "Invalid dev file format"
-         Just x  -> x)
+      >.-.> (\content -> do
+         case parse parseDevFile "" (Text.bufferDecodeUtf8 content) of
+            Right x -> x
+            Left _  -> error "Invalid dev file format")
 
 -- | Read device major and minor from device path
 sysfsReadDevFile :: Handle -> FilePath -> Sys (Maybe DeviceID)

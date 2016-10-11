@@ -67,7 +67,7 @@ putBits n w s@(BitPutState builder b o bo) = s'
       -- Select bits to store in the current byte.
       -- Put them in the correct order and return them in the least-significant
       -- bits of the returned value
-      selectBits :: (Num a, FiniteBits a, BitReversable a, Integral a) => a -> Word8
+      selectBits :: (FiniteBits a, BitReversable a, Integral a) => a -> Word8
       selectBits x = fromIntegral $ case bo of
          BB ->                       maskLeastBits cn $ x `shiftR` fromIntegral (n-cn)
          LB -> reverseLeastBits cn $ maskLeastBits cn $ x `shiftR` fromIntegral (n-cn)

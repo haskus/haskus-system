@@ -15,7 +15,7 @@ module ViperVM.Arch.Linux.Topology
 where
 
 import Text.Megaparsec
-import Text.Megaparsec.ByteString
+import Text.Megaparsec.Text
 import Text.Megaparsec.Lexer hiding (space)
 
 import System.Directory
@@ -26,6 +26,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 
+import ViperVM.Format.Binary.Buffer (bufferReadFile)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import qualified ViperVM.Format.Text as Text
@@ -39,8 +40,8 @@ data CPUMap = CPUMap (V.Vector Word32) deriving (Show)
 -- | Read cpumap files
 readMemInfo :: FilePath -> IO (Map Text Word64)
 readMemInfo p = do
-   r <- parseFromFile parseMemInfo p
-   case r of
+   buf <- bufferReadFile p
+   case parse parseMemInfo p (Text.bufferDecodeUtf8 buf) of
       Right v  -> return v
       Left err -> error ("meminfo parsing error: " ++ show err)
    
@@ -68,8 +69,8 @@ parseMemInfo = parseFile
 -- | Read cpumap files
 readCPUMap :: FilePath -> IO CPUMap
 readCPUMap p = do
-   r <- parseFromFile parseCPUMap p
-   case r of
+   buf <- bufferReadFile p
+   case parse parseCPUMap p (Text.bufferDecodeUtf8 buf) of
       Right v  -> return v
       Left err -> error ("cpumap parsing error: " ++ show err)
 

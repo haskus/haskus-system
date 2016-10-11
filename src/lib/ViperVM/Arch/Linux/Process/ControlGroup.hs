@@ -9,9 +9,10 @@ where
 import Prelude hiding (takeWhile)
 
 import Text.Megaparsec
-import Text.Megaparsec.ByteString
+import Text.Megaparsec.Text
 import Text.Megaparsec.Lexer hiding (space)
 
+import ViperVM.Format.Binary.Buffer (bufferReadFile)
 import ViperVM.Format.Text (Text)
 import qualified ViperVM.Format.Text as Text
 import Control.Monad (void)
@@ -26,8 +27,8 @@ data ControlGroupEntry = ControlGroupEntry
 -- | Read /proc/[pid]/cgroup
 readControlGroup :: FilePath -> IO [ControlGroupEntry]
 readControlGroup p = do
-   r <- parseFromFile parseControlGroup p
-   case r of
+   buf <- bufferReadFile p
+   case parse parseControlGroup p (Text.bufferDecodeUtf8 buf) of
       Right v  -> return v
       Left err -> error ("control group parsing error: "++ show err)
 

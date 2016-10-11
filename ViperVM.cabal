@@ -288,7 +288,7 @@ library
       ,  either                    >= 4.4
       ,  vector                    >= 0.11
       ,  directory                 >= 1.2
-      ,  megaparsec                >= 4.4 && < 5.0
+      ,  megaparsec                >= 5.0
       ,  dynamic-linker-template   >= 0.1
       ,  transformers              >= 0.4
       ,  unix                      >= 2.7

@@ -152,40 +152,43 @@ instance forall f z z' r x zx xs.
       hFoldl' f z (_ `HCons` xs) = hFoldl' f (apply f (z,(undefined :: x)) :: z') xs
 
 instance (z ~ z') => HFoldl' f z '[] z' where
-    hFoldl' _ z _ = z
+   hFoldl' _ z _ = z
 
 
 
 class HZipList x y l | x y -> l, l -> x y where
-  hZipList   :: HList x -> HList y -> HList l
-  hUnzipList :: HList l -> (HList x, HList y)
+   hZipList   :: HList x -> HList y -> HList l
+   hUnzipList :: HList l -> (HList x, HList y)
 
 instance HZipList '[] '[] '[] where
-  hZipList _ _ = HNil
-  hUnzipList _ = (HNil, HNil)
+   hZipList _ _ = HNil
+   hUnzipList _ = (HNil, HNil)
 
 instance ((x,y)~z, HZipList xs ys zs) => HZipList (x ': xs) (y ': ys) (z ': zs) where
-  hZipList (HCons x xs) (HCons y ys) = (x,y) `HCons` hZipList xs ys
-  hUnzipList (HCons ~(x,y) zs) = let ~(xs,ys) = hUnzipList zs in (x `HCons` xs, y `HCons` ys)
+   hZipList (HCons x xs) (HCons y ys) = (x,y) `HCons` hZipList xs ys
+   hUnzipList (HCons ~(x,y) zs) = let ~(xs,ys) = hUnzipList zs in (x `HCons` xs, y `HCons` ys)
 
 
 class HRevApp l1 l2 l3 | l1 l2 -> l3 where
-    hRevApp :: HList l1 -> HList l2 -> HList l3
+   hRevApp :: HList l1 -> HList l2 -> HList l3
 
 instance HRevApp '[] l2 l2 where
-    hRevApp _ l = l
+   hRevApp _ l = l
 
 instance HRevApp l (x ': l') z => HRevApp (x ': l) l' z where
-    hRevApp (HCons x l) l' = hRevApp l (HCons x l')
+   hRevApp (HCons x l) l' = hRevApp l (HCons x l')
 
 
 
 class HReverse xs sx | xs -> sx, sx -> xs where
-    hReverse :: HList xs -> HList sx
+   hReverse :: HList xs -> HList sx
 
-instance (HRevApp xs '[] sx,
-          HRevApp sx '[] xs) => HReverse xs sx where
-    hReverse l = hRevApp l HNil
+instance
+      ( HRevApp xs '[] sx
+      , HRevApp sx '[] xs
+      ) => HReverse xs sx
+   where
+      hReverse l = hRevApp l HNil
 
 
 --------------------------------------
