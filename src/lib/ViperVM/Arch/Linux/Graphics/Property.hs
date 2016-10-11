@@ -136,9 +136,9 @@ getPropertyMeta fd pid = do
                _ <- getProperty' gp'
                f valuePtr blobPtr
 
-      withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr ()) ->
+      withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr Word) ->
          f =<< sysIO (peekArray (fromIntegral n) ptr)
-      withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr ()) ptr ->
+      withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr Word) ptr ->
          f =<< sysIO (peekArray (fromIntegral n) ptr)
       withBuffers' n m f = withBuffers n m $ \p1 p2 -> do
          vs <- sysIO (peekArray (fromIntegral n) p1)
