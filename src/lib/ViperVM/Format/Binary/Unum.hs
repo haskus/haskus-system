@@ -70,6 +70,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.BitField
 import ViperVM.Utils.Types
+import ViperVM.Utils.Types.List
 import ViperVM.Utils.HList
 import ViperVM.Utils.Flow
 

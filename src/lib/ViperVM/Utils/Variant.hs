@@ -63,13 +63,13 @@ module ViperVM.Utils.Variant
    )
 where
 
-import GHC.TypeLits
 import Unsafe.Coerce
-import Data.Proxy
 import Data.Maybe
 import Control.Monad
 
+import ViperVM.Utils.Types
 import ViperVM.Utils.HList
+import ViperVM.Utils.Types.List
 
 -- | A variant contains a value whose type is at the given position in the type
 -- list

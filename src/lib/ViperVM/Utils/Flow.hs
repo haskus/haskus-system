@@ -148,8 +148,8 @@ module ViperVM.Utils.Flow
 where
 
 import ViperVM.Utils.Variant
-import ViperVM.Utils.HList
 import ViperVM.Utils.Types
+import ViperVM.Utils.Types.List
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)

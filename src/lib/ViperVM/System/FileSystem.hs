@@ -25,8 +25,8 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
-import ViperVM.Utils.HList
 import ViperVM.Utils.Types
+import ViperVM.Utils.Types.List
 
 import Foreign.Storable
 

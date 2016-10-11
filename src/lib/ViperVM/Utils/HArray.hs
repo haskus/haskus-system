@@ -37,7 +37,7 @@ import Unsafe.Coerce
 import GHC.TypeLits
 import Control.Monad
 
-import ViperVM.Utils.HList
+import ViperVM.Utils.Types.List
 
 -- | heterogeneous array
 data HArray (types :: [*]) = forall a. HArray (Vector a)

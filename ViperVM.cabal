@@ -170,6 +170,7 @@ library
     ViperVM.Utils.Maybe
     ViperVM.Utils.Memory
     ViperVM.Utils.Types
+    ViperVM.Utils.Types.List
     ViperVM.Utils.STM.TEq
     ViperVM.Utils.STM.TMap
     ViperVM.Utils.STM.TSet

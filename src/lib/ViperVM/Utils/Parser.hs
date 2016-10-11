@@ -26,9 +26,10 @@ where
 
 import Prelude hiding (min,max)
 import ViperVM.Utils.HList
+import ViperVM.Utils.Types
+import ViperVM.Utils.Types.List
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Variant
-import Data.Proxy
 
 
 -- A parser is a Flow function that can either:
