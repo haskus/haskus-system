@@ -51,21 +51,21 @@ vectorBuffer :: Vector n a -> Buffer
 vectorBuffer (Vector b) = b
 
 -- | Offset of the i-th element in a stored vector
-type family ElemOffset a n where
-   ElemOffset a n = n * (SizeOf a)
+type family ElemOffset a i n where
+   ElemOffset a i n = IfNat (i+1 <=? n)
+      (i * (SizeOf a))
+      (TypeError ('Text "Invalid vector index: " ':<>: 'ShowType i
+                 :$$: 'Text "Vector size: "      ':<>: 'ShowType n))
 
-instance forall a n s.
-   ( StaticStorable a
-   , s ~ ElemOffset a n
-   , KnownNat s
-   , KnownNat (SizeOf a)
+instance forall a n.
+   ( KnownNat (SizeOf a * n)
    ) => StaticStorable (Vector n a) where
 
-   type SizeOf (Vector n a)    = ElemOffset a n
+   type SizeOf (Vector n a)    = SizeOf a * n
    type Alignment (Vector n a) = Alignment a
 
    staticPeek ptr =
-      Vector <$> bufferPackPtr (natValue @s) (castPtr ptr)
+      Vector <$> bufferPackPtr (natValue @(SizeOf a * n)) (castPtr ptr)
 
    staticPoke ptr (Vector b) = bufferPoke ptr b
 
@@ -90,37 +90,26 @@ instance forall n a.
    cPoke        = poke
 
 -- | Yield the first n elements
-take :: forall n m a s.
-   ( KnownNat n
-   , KnownNat m
-   , KnownNat s
-   , s ~ ElemOffset a n
-   )
-   => Proxy n -> Vector (m+n) a -> Vector n a
+take :: forall n m a.
+   ( KnownNat (SizeOf a * n)
+   ) => Proxy n -> Vector (m+n) a -> Vector n a
 {-# INLINE take #-}
-take _ (Vector b) = Vector (bufferTake (natValue @s) b)
+take _ (Vector b) = Vector (bufferTake (natValue @(SizeOf a * n)) b)
 
 -- | Drop the first n elements
-drop :: forall n m a s.
-   ( KnownNat n
-   , KnownNat m
-   , KnownNat s
-   , s ~ ElemOffset a n
+drop :: forall n m a.
+   ( KnownNat (SizeOf a * n)
    ) => Proxy n -> Vector (m+n) a -> Vector m a
 {-# INLINE drop #-}
-drop _ (Vector b) = Vector (bufferDrop (natValue @s) b)
+drop _ (Vector b) = Vector (bufferDrop (natValue @(SizeOf a * n)) b)
 
 -- | /O(1)/ Index safely into the vector using a type level index.
-index :: forall a (n :: Nat) (m :: Nat) s.
-   ( KnownNat n
-   , KnownNat m
-   , KnownNat s
+index :: forall a i n.
+   ( KnownNat (ElemOffset a i n)
    , Storable a
-   , CmpNat n m ~ 'LT
-   , s ~ ElemOffset a n
-   ) => Proxy n -> Vector m a -> a
+   ) => Proxy i -> Vector n a -> a
 {-# INLINE index #-}
-index _ (Vector b) = bufferPeekStorableAt b (natValue @s)
+index _ (Vector b) = bufferPeekStorableAt b (natValue @(ElemOffset a i n))
 
 -- | Convert a list into a vector if the number of elements matches
 fromList :: forall a (n :: Nat) .
@@ -180,13 +169,11 @@ replicate v = fromFilledList v []
 
 data StoreVector = StoreVector -- Store a vector at the right offset
 
-instance forall (n :: Nat) v a r s.
+instance forall n v a r.
    ( v ~ Vector n a
    , r ~ IO (Ptr a)
    , KnownNat n
    , KnownNat (SizeOf a)
-   , s ~ ElemOffset a n
-   , KnownNat s
    , StaticStorable a
    , Storable a
    ) => Apply StoreVector (v, IO (Ptr a)) r where

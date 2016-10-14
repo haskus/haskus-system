@@ -57,13 +57,13 @@ instance
       staticPoke p (EnumField v)     = staticPoke (castPtr p :: Ptr b) (fromCEnum v)
 
 -- | Read an enum field
-fromEnumField :: CEnum a => EnumField b a -> a
+fromEnumField :: EnumField b a -> a
 fromEnumField (EnumField a) = a
 
 {-# INLINE fromEnumField #-}
 
 -- | Create an enum field
-toEnumField :: CEnum a => a -> EnumField b a
+toEnumField :: a -> EnumField b a
 toEnumField = EnumField
 
 {-# INLINE toEnumField #-}

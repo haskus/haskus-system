@@ -189,7 +189,7 @@ skipBitsToAlignOnWord8M :: Monad m =>  BitGetT m ()
 skipBitsToAlignOnWord8M = modify skipBitsToAlignOnWord8
 
 -- | Read the given number of bits and put the result in a word
-getBitsM :: (Integral a, FiniteBits a, BitReversable a, Monad m) => Word -> BitGetT m a
+getBitsM :: (Integral a, FiniteBits a, Monad m) => Word -> BitGetT m a
 getBitsM n = do
    v <- gets (getBits n)
    skipBitsM n

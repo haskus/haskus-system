@@ -124,7 +124,7 @@ showInsn i = do
    H.hr
 
 
-myShowHex :: (Show a,Integral a,Ord a,Num a) => Bool -> a -> String
+myShowHex :: (Show a,Integral a) => Bool -> a -> String
 myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
    where
       pad = if usePad && x <= 0xF then "0" else ""

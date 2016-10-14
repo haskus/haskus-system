@@ -115,7 +115,7 @@ delete (BitSet b) e = BitSet $ clearBit b (toBitOffset e)
 
 
 -- | Unwrap the bitset
-toBits :: (CBitSet a, FiniteBits b) => BitSet b a -> b
+toBits :: BitSet b a -> b
 toBits (BitSet b) = b
 
 -- | Wrap a bitset

@@ -319,7 +319,6 @@ infixl 0 >.~.>
 (.~+>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
    , k ~ Length l2
-   , a ~ TypeAt 0 (a ': l)
    , Monad m )
    => Variant (a ': l) -> (a -> Flow m l2) -> Flow m (Concat l2 l)
 (.~+>) v f = makeFlowOp selectFirst (applyF f) combineConcat v
@@ -1184,7 +1183,7 @@ applyVM :: Monad m => (Variant a -> m b) -> Variant a -> Flow m '[b]
 applyVM f = fmap setVariant0 . f
 
 -- | Lift a monadic function
-applyF :: Monad m => (a -> Flow m b) -> Variant '[a] -> Flow m b
+applyF :: (a -> Flow m b) -> Variant '[a] -> Flow m b
 {-# INLINE applyF #-}
 applyF f = f . singleVariant
 

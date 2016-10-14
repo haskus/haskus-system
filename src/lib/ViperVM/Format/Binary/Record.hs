@@ -113,17 +113,15 @@ recordAlignment :: forall fs.
 recordAlignment _ = natValue' @(RecordAlignment fs 1)
 
 -- | Get a field offset
-recordFieldOffset :: forall name fs o.
-   ( o ~ FieldOffset name fs 0
-   , KnownNat o
+recordFieldOffset :: forall name fs.
+   ( KnownNat (FieldOffset name fs 0)
    ) => Proxy (name :: Symbol) -> Record fs -> Int
-recordFieldOffset _ _ = natValue @o
+recordFieldOffset _ _ = natValue @(FieldOffset name fs 0)
 
 -- | Get a field
-recordField :: forall name a fs o.
-   ( o ~ FieldOffset name fs 0
+recordField :: forall name a fs.
+   ( KnownNat (FieldOffset name fs 0)
    , a ~ FieldType name fs
-   , KnownNat o
    , StaticStorable a
    ) => Proxy (name :: Symbol) -> Record fs -> a
 recordField p r@(Record fp) = unsafePerformIO $
