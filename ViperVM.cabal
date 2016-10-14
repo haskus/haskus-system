@@ -167,6 +167,7 @@ library
     ViperVM.Utils.Hash
     ViperVM.Utils.HList
     ViperVM.Utils.Embed
+    ViperVM.Utils.List
     ViperVM.Utils.Maybe
     ViperVM.Utils.Memory
     ViperVM.Utils.Types
@@ -178,7 +179,7 @@ library
     ViperVM.Utils.STM.TTree
     ViperVM.Utils.STM.Future
     ViperVM.Utils.STM.TGraph
-    ViperVM.Utils.Tuples
+    ViperVM.Utils.Tuple
 
     ViperVM.Format.CPIO
     ViperVM.Format.Text

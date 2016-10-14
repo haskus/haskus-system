@@ -12,8 +12,7 @@ module ViperVM.Arch.X86_64.ISA.Registers
    )
 where
 
-import Data.Maybe (fromJust)
-
+import ViperVM.Utils.Maybe (fromJust)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import ViperVM.Arch.X86_64.ISA.Mode

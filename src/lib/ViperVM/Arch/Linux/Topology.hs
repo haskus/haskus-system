@@ -19,9 +19,7 @@ import Text.Megaparsec.Text
 import Text.Megaparsec.Lexer hiding (space)
 
 import System.Directory
-import Data.List (isPrefixOf,stripPrefix)
 import Control.Monad (void,forM)
-import Data.Maybe (fromJust,mapMaybe)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
@@ -31,6 +29,8 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
+import ViperVM.Utils.List (isPrefixOf,stripPrefix)
+import ViperVM.Utils.Maybe (fromJust,mapMaybe)
 
 -- | A CPUMap is a set of CPU identifiers
 --

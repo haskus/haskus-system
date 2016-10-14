@@ -67,7 +67,6 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Control.Monad
 import Data.ByteString (ByteString)
-import Data.List (foldl')
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
@@ -75,6 +74,7 @@ import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits.Basic
 import ViperVM.Utils.Memory (memCopy,memSet)
+import ViperVM.Utils.List (foldl')
 
 -- | A buffer
 newtype Buffer = Buffer ByteString deriving (Eq,Ord)

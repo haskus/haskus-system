@@ -12,8 +12,7 @@ import ViperVM.Format.Binary.Get as G
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Arch.X86_64.ISA.Decoder
 import ViperVM.Arch.X86_64.ISA.Insn
-
-import Data.List (intersect)
+import ViperVM.Utils.List (intersect)
 
 data Disass
    = RawBytes    Word Buffer [String]

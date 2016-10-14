@@ -21,8 +21,7 @@ module ViperVM.Format.Binary.Bits
    )
 where
 
-import Data.List (foldl')
-
+import ViperVM.Utils.List (foldl')
 import ViperVM.Format.Binary.Bits.Basic
 import ViperVM.Format.Binary.Bits.Reverse
 import ViperVM.Format.Binary.Bits.Order

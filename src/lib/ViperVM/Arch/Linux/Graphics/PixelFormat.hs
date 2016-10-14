@@ -17,10 +17,11 @@ import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Types
+import ViperVM.Utils.Tuple (swap)
+
 import Data.Char (ord)
-import Data.Proxy
 import Data.Map (Map, (!), fromList)
-import Data.Tuple (swap)
 import Foreign.Storable
 import Foreign.CStorable
 

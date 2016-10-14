@@ -1,10 +1,13 @@
--- | Tuples helpers
-module ViperVM.Utils.Tuples
+-- | Tuple helpers
+module ViperVM.Utils.Tuple
    ( uncurry4
    , take4
    , fromTuple4
+   , module Data.Tuple
    )
 where
+
+import Data.Tuple
 
 -- | Uncurry specialised for quadruple
 uncurry4 :: (a -> b -> c -> d -> e) -> (a,b,c,d) -> e

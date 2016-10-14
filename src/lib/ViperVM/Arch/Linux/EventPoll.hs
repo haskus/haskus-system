@@ -10,8 +10,7 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Format.Binary.Word (Word64)
 import ViperVM.Format.Binary.Bits ((.|.))
-
-import Data.List (foldl')
+import ViperVM.Utils.List (foldl')
 
 -- | Polling flag
 data EventPollFlag

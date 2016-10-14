@@ -84,6 +84,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Maybe
 
 import GHC.Generics (Generic)
 import Foreign.Storable
@@ -91,7 +92,6 @@ import Foreign.CStorable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils (fromBool)
-import Data.Maybe
 
 
 -- =============================================================

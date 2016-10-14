@@ -32,11 +32,11 @@ import ViperVM.Arch.Linux.Time (TimeVal)
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import qualified ViperVM.Format.Text as Text
+import ViperVM.Utils.List (isPrefixOf)
+import ViperVM.Utils.Maybe (mapMaybe)
 
 import Control.Concurrent.STM
 import Prelude hiding (init,tail)
-import Data.List (isPrefixOf)
-import Data.Maybe (mapMaybe)
 import System.FilePath (takeBaseName)
 
 -- | Input device

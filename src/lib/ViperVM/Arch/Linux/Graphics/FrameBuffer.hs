@@ -15,7 +15,6 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    )
 where
 
-import Data.List (zip4)
 import Foreign.Marshal.Array
 
 import ViperVM.Arch.Linux.ErrorCode
@@ -26,8 +25,9 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
-import ViperVM.Utils.Tuples
+import ViperVM.Utils.Tuple
 import ViperVM.Utils.Flow
+import ViperVM.Utils.List (zip4)
 
 -- | Surface
 data Surface = Surface

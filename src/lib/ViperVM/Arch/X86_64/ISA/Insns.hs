@@ -28,8 +28,7 @@ module ViperVM.Arch.X86_64.ISA.Insns
    )
 where
 
-import Data.List ((\\))
-
+import ViperVM.Utils.List ((\\))
 import ViperVM.Arch.X86_64.ISA.MicroArch
 import ViperVM.Arch.X86_64.ISA.Mode
 import ViperVM.Arch.X86_64.ISA.Registers

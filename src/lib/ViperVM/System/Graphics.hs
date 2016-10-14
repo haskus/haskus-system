@@ -33,6 +33,8 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Flow
+import ViperVM.Utils.List (isPrefixOf)
+import ViperVM.Utils.Maybe
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
@@ -59,8 +61,6 @@ import Control.Concurrent
 import Data.Foldable (traverse_)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
-import Data.List (isPrefixOf)
-import Data.Maybe
 import System.FilePath (takeBaseName)
 
 -- | Graphic card

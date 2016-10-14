@@ -7,11 +7,11 @@ module ViperVM.Arch.OpenCL.Library
    )
 where
 
-import Data.List (stripPrefix)
 import System.Posix.DynamicLinker
 import System.Posix.DynamicLinker.Template
-import Data.Maybe (fromJust)
 
+import ViperVM.Utils.Maybe (fromJust)
+import ViperVM.Utils.List (stripPrefix)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr)
 import ViperVM.Format.String (CString)

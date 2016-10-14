@@ -65,9 +65,9 @@ module ViperVM.Utils.Variant
 where
 
 import Unsafe.Coerce
-import Data.Maybe
 import Control.Monad
 
+import ViperVM.Utils.Maybe
 import ViperVM.Utils.Types
 import ViperVM.Utils.HList
 import ViperVM.Utils.Types.List

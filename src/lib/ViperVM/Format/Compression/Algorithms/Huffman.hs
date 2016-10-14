@@ -46,9 +46,9 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.PQueue.Prio.Min (MinPQueue)
 import qualified Data.PQueue.Prio.Min as PQueue
-import Data.Tuple (swap)
 import Control.Arrow (first)
 
+import ViperVM.Utils.Tuple (swap)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Bits

@@ -28,7 +28,7 @@ import Data.Foldable (traverse_)
 import ListT (fold)
 import qualified ListT
 
-import Data.Maybe (fromJust,isJust,isNothing)
+import ViperVM.Utils.Maybe (fromJust,isJust,isNothing)
 
 -- | STM hashmap
 type TMap a b = SMAP.Map a b

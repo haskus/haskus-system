@@ -17,11 +17,11 @@ import ViperVM.Arch.X86_64.ISA.Insn
 import ViperVM.Arch.X86_64.ISA.Encoding
 import ViperVM.Arch.X86_64.ISA.Registers
 import ViperVM.Arch.X86_64.Disassembler
+import ViperVM.Utils.List
+import ViperVM.Utils.Maybe
 
 import Data.Text.Lazy.Builder
 import qualified Data.Text.Lazy as LT
-import Data.Maybe
-import Data.List
 import Numeric (showHex)
 
 -- | Disassemble a buffer containing X86-64 assembly.

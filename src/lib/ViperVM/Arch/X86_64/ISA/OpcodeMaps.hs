@@ -13,8 +13,8 @@ where
 import ViperVM.Arch.X86_64.ISA.Insns
 import ViperVM.Arch.X86_64.ISA.Insn
 import ViperVM.Arch.X86_64.ISA.Encoding
+import ViperVM.Utils.Maybe
 
-import Data.Maybe
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Vector as V

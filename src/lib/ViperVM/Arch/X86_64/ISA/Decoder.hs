@@ -23,9 +23,10 @@ import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.BitField
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 
+import ViperVM.Utils.List (nub, (\\))
+import ViperVM.Utils.Maybe
+
 import qualified Data.Map as Map
-import Data.List (nub, (\\))
-import Data.Maybe
 import qualified Data.Vector as V
 import Control.Monad
 

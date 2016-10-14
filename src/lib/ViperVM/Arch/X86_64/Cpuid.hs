@@ -38,7 +38,7 @@ import ViperVM.Format.Binary.Vector as V
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.String
 import ViperVM.Format.Text as Text
-import ViperVM.Utils.Tuples (fromTuple4)
+import ViperVM.Utils.Tuple (fromTuple4)
 import ViperVM.Utils.Types
 
 #ifdef __GLASGOW_HASKELL__

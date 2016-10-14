@@ -65,9 +65,9 @@ import ViperVM.Utils.HList
 import ViperVM.Utils.Parser
 import ViperVM.Utils.Variant
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Types
+import ViperVM.Utils.Maybe (isJust)
 
-import Data.Proxy
-import Data.Maybe (isJust)
 import Foreign.Storable
 
 -- | The phantom type `a` is used to distinguish between several readers

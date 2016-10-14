@@ -18,15 +18,15 @@ module ViperVM.Format.Compression.Algorithms.Deflate
    )
 where
 
-import Data.List (sortBy)
-import Data.Tuple (swap)
-import Data.Maybe (fromJust)
 import Control.Monad (when,replicateM)
 import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 import Data.Ord(comparing)
 
+import ViperVM.Utils.List (sortBy)
+import ViperVM.Utils.Tuple (swap)
+import ViperVM.Utils.Maybe (fromJust)
 import ViperVM.Format.Binary.Bits (shiftL, xor, (.|.), (.&.), testBit)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer

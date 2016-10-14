@@ -11,7 +11,7 @@ import Data.Char
 -- compilers or assembly might not allow (e.g. :, %, #) these have to be
 -- encoded. The encoding is called z-encoding
 --
---  * https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/SymbolNames
+-- * https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/SymbolNames
 -- * compiler/utils/Encoding.hs in GHC sources
 --
 -- Tuples

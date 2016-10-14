@@ -45,13 +45,13 @@ where
 
 import qualified Data.Serialize.Get as BG
 import Data.Serialize.Get (Get)
-import Data.Maybe
 
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits.Order
 import ViperVM.Format.Binary.Bits.Get (BitGet, runBitGetPartial, skipBitsToAlignOnWord8M, bitGetStateInput)
+import ViperVM.Utils.Maybe
 
 
 -- | Test whether all input *in the current chunk* has been consumed

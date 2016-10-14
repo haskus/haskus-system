@@ -24,7 +24,6 @@ module ViperVM.Arch.Linux.Memory
 where
 
 import Foreign.Marshal.Array (allocaArray, peekArray)
-import Data.Maybe (fromMaybe)
 
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.BitSet as BitSet
@@ -32,6 +31,7 @@ import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits ((.&.))
 import ViperVM.Utils.Types
+import ViperVM.Utils.Maybe (fromMaybe)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls

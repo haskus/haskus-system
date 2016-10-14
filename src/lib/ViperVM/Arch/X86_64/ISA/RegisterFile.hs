@@ -11,8 +11,8 @@ module ViperVM.Arch.X86_64.ISA.RegisterFile
 where
 
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Maybe (mapMaybe)
 
-import Data.Maybe (mapMaybe)
 import Data.Map (Map)
 import qualified Data.Map as Map
 

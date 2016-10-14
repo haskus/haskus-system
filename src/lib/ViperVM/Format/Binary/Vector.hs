@@ -31,9 +31,9 @@ import Foreign.Storable
 import Foreign.CStorable
 import Prelude hiding (replicate, head, last,
                        tail, init, map, length, drop, take, concat)
-import qualified Data.List as List
 import System.IO.Unsafe (unsafePerformIO)
 
+import qualified ViperVM.Utils.List as List
 import ViperVM.Utils.Types
 import ViperVM.Utils.HList
 import ViperVM.Format.Binary.Storable
