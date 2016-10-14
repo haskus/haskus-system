@@ -127,8 +127,8 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                let 
                   len     = fromIntegral (dirLength hdr)
                   sizede  = sizeOf (undefined :: DirectoryEntryHeader)
-                  namepos = p `plusPtr` sizede
-                  nextpos = p `plusPtr` len
+                  namepos = p `indexPtr` sizede
+                  nextpos = p `indexPtr` len
                   nextlen = n - len
                name <- peekCString (castPtr namepos)
                let x = DirectoryEntry (dirInod hdr) (toCEnum (dirFileTyp hdr)) name

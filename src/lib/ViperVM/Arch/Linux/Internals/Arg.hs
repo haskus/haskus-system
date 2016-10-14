@@ -5,7 +5,7 @@ module ViperVM.Arch.Linux.Internals.Arg
 where
 
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Ptr (Ptr, ptrToIntPtr)
+import ViperVM.Format.Binary.Ptr (Ptr, ptrToWordPtr)
 
 
 -- | Parameters that can be directly passed to system calls
@@ -18,5 +18,5 @@ instance Arg Word    where toArg = fromIntegral
 instance Arg Word64  where toArg = fromIntegral
 instance Arg Word32  where toArg = fromIntegral
 instance Arg CUShort where toArg = fromIntegral
-instance Arg (Ptr a) where toArg = fromIntegral . ptrToIntPtr
+instance Arg (Ptr a) where toArg = fromIntegral . ptrToWordPtr
 

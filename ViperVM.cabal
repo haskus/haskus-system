@@ -232,6 +232,7 @@ library
     ViperVM.Format.Binary.Word
     ViperVM.Format.Binary.Ptr
 
+    ViperVM.Format.Binary.Layout
     ViperVM.Format.FileSystem.ISO9660
 
     ViperVM.Apps.CPIO

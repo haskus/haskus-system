@@ -24,7 +24,7 @@ import System.IO.Unsafe
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Ptr (Ptr,plusPtr)
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Arch.Common.Errors
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.TransferResult
@@ -134,7 +134,7 @@ transfer net f (hostPtr,Region off1 sh1) (buffer,Region off2 sh2) = do
       clTransfer (Right ev) = CL.waitForEvents [ev] >> return TransferSuccess
       
       -- FIXME: unsafe coercion from CSize to Int
-      ptr = hostPtr `plusPtr` fromIntegral off1
+      ptr = hostPtr `indexPtr` fromIntegral off1
 
    case (sh1,sh2) of
 

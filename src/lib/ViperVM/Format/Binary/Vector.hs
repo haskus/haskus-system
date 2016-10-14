@@ -29,7 +29,6 @@ where
 
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.Marshal.Alloc
 import Prelude hiding (replicate, head, last,
                        tail, init, map, length, drop, take, concat)
 import qualified Data.List as List
@@ -195,7 +194,7 @@ instance forall (n :: Nat) v a r s.
          p <- getP
          let
             vsz = natValue @n
-            p'  = p `plusPtr` (-1 * vsz * sizeOf (undefined :: a))
+            p'  = p `indexPtr` (-1 * vsz * sizeOf (undefined :: a))
          poke (castPtr p') v 
          return p'
 
@@ -214,6 +213,6 @@ concat :: forall l (n :: Nat) a .
    => HList l -> Vector n a
 concat vs = unsafePerformIO $ do
    let sz = sizeOf (undefined :: a) * natValue @n
-   p <- mallocBytes sz :: IO (Ptr ())
-   _ <- hFoldr StoreVector (return (p `plusPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
+   p <- mallocBytes (fromIntegral sz) :: IO (Ptr ())
+   _ <- hFoldr StoreVector (return (castPtr p `indexPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
    Vector <$> bufferUnsafePackPtr (fromIntegral sz) p

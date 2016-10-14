@@ -776,7 +776,7 @@ getDeviceMultiTouchSlots code nSlots fd = do
    allocaBytes (fromIntegral sz) $ \ptr -> do
       pokeByteOff ptr 0 code
       ioctlReadBytes 0x45 0x0a (fromIntegral sz) ptr fd
-         >.~.> const (peekArray nSlots (ptr `plusPtr` 4))
+         >.~.> const (peekArray nSlots (ptr `indexPtr` 4))
 
 -- | Get global key state (one bit per pressed key)
 --

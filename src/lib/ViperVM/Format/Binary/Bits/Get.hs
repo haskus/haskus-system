@@ -31,13 +31,12 @@ module ViperVM.Format.Binary.Bits.Get
    )
 where
 
-import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Storable (poke)
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.State
 import Control.Monad.Identity
 
-import ViperVM.Format.Binary.Ptr (plusPtr)
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Bits.Order
 import ViperVM.Format.Binary.Bits
@@ -139,7 +138,7 @@ getBitsBuffer n (BitGetState bs o bo) =
                         w  = bufferUnsafeIndex bs (len-i)
                         w' = (w `shiftL` fromIntegral o) .|. r
                         r' = w `shiftR` (8-fromIntegral o)
-                     poke (ptr `plusPtr` fromIntegral (len-i)) w'
+                     poke (castPtr ptr `indexPtr` fromIntegral (len-i)) w'
                      return r'
                foldM_ f 0 [1..len]
                bufferUnsafeInit <$> bufferPackPtr len ptr

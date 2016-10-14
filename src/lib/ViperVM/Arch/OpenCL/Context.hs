@@ -12,7 +12,7 @@ import ViperVM.Arch.OpenCL.Platform
 import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Format.Binary.Enum
-import ViperVM.Format.Binary.Ptr (nullPtr, ptrToIntPtr, nullFunPtr)
+import ViperVM.Format.Binary.Ptr
 
 import Control.Monad (void)
 import Foreign.Marshal.Array (withArray)
@@ -22,9 +22,9 @@ data Context = Context Library Context_ deriving (Eq)
 
 instance Entity Context where 
    unwrap (Context _ x) = x
-   cllib (Context l _) = l
-   retain = retainContext
-   release = releaseContext
+   cllib (Context l _)  = l
+   retain               = retainContext
+   release              = releaseContext
 
 -- | Context information
 data CLContextInfo
@@ -42,7 +42,7 @@ instance CEnum CLContextInfo where
 -- | Create a context
 createContext :: Platform -> [Device] -> CLRet Context
 createContext pf devs = do
-   let props = [fromCEnum CL_CONTEXT_PLATFORM, ptrToIntPtr (unwrap pf), 0]
+   let props = [fromCEnum CL_CONTEXT_PLATFORM, ptrToWordPtr (unwrap pf), 0]
        ndevs = fromIntegral (length devs)
        lib = cllib pf
    withArray (fmap unwrap devs) $ \devs' ->

@@ -61,7 +61,7 @@ module ViperVM.Format.Binary.Buffer
    )
 where
 
-import Foreign.Marshal.Alloc
+import Foreign.Marshal.Alloc (malloc)
 import Foreign.Marshal.Array
 import Foreign.Storable
 import System.IO.Unsafe
@@ -140,7 +140,7 @@ bufferZipWith f a b
             pc <- mallocBytes sz
             withBufferPtr a $ \pa ->
                withBufferPtr b $ \pb ->
-                  forM_ [0..sz-1] $ \off -> do
+                  forM_ [0..fromIntegral sz-1] $ \off -> do
                      v <- f <$> peekByteOff pa off
                             <*> peekByteOff pb off
                      pokeByteOff pc off (v :: Word8)

@@ -27,7 +27,6 @@ import ViperVM.Format.String
 
 import Foreign.Storable
 import Foreign.Marshal.Array
-import Foreign.Marshal.Alloc
 
 
 -- | Property meta-information

@@ -30,7 +30,6 @@ module ViperVM.Format.Binary.Record
    )
 where
 
-import Foreign.ForeignPtr
 import System.IO.Unsafe
 
 import ViperVM.Format.Binary.Ptr
@@ -129,7 +128,7 @@ recordField :: forall name a fs o.
    ) => Proxy (name :: Symbol) -> Record fs -> a
 recordField p r@(Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr ->do
-      let ptr' = ptr `plusPtr` recordFieldOffset p r
+      let ptr' = ptr `indexPtr` recordFieldOffset p r
       staticPeek (castPtr ptr')
 
 data Path (fs :: [*])
@@ -151,7 +150,7 @@ recordFieldPath :: forall path a fs o.
 recordFieldPath _ (Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr -> do
       let
-         ptr' = ptr `plusPtr` natValue @o
+         ptr' = ptr `indexPtr` natValue @o
       staticPeek (castPtr ptr')
 
 

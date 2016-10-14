@@ -27,7 +27,7 @@ peekEvents = go
       go _ 0 = return []
       go p r = do
          (ev,len) <- peekEvent p
-         evs <- go (p `plusPtr` fromIntegral len) (r - len)
+         evs <- go (p `indexPtr` fromIntegral len) (r - len)
          return (ev:evs)
 
       peekEvent :: Ptr () -> IO (Event,Word32)
@@ -36,6 +36,6 @@ peekEvents = go
          v <- case toEventType (eventType e) of
             Just t  -> VBlankEvent t <$> peek (castPtr ptr)
             Nothing -> CustomEvent (eventType e) <$>
-               bufferPackPtr (fromIntegral (eventLength e) - 8) (castPtr ptr `plusPtr` 8)
+               bufferPackPtr (fromIntegral (eventLength e) - 8) (castPtr ptr `indexPtr` 8)
                                
          return (v,eventLength e)

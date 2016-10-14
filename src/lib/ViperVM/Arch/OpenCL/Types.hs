@@ -6,7 +6,7 @@ module ViperVM.Arch.OpenCL.Types where
 
 import Foreign.Storable (Storable(..))
 
-import ViperVM.Format.Binary.Ptr (Ptr,FunPtr,IntPtr)
+import ViperVM.Format.Binary.Ptr (Ptr,FunPtr,WordPtr)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (CString)
 import ViperVM.Arch.OpenCL.ImageFormat
@@ -78,7 +78,7 @@ type CLDeviceExecCapability_ = CLbitfield
 type CLContextInfo_ = Word32
 
 -- | OpenCL context property
-type CLContextProperty_ = IntPtr
+type CLContextProperty_ = WordPtr
 
 -- | OpenCL command queue info
 type CLCommandQueueInfo_ = Word32

@@ -23,13 +23,12 @@ module ViperVM.Arch.Linux.FileSystem.ReadWrite
 where
 
 import Foreign.CStorable
-import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array (withArray)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 
 import GHC.Generics (Generic)
 
-import ViperVM.Format.Binary.Ptr (Ptr, castPtr, plusPtr)
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word (Word64, Word32)
 import ViperVM.Format.Binary.Bits (shiftR)
 import ViperVM.Format.Binary.Buffer
@@ -144,5 +143,5 @@ writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
       go _ 0     = flowRet0 ()
       go ptr len = sysWrite fd ptr (fromIntegral len)
-         >.~^> \c -> go (ptr `plusPtr` fromIntegral c)
+         >.~^> \c -> go (ptr `indexPtr` fromIntegral c)
                         (len - fromIntegral c)

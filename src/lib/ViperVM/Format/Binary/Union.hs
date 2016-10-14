@@ -58,7 +58,6 @@ import ViperVM.Format.Binary.Ptr
 
 import Foreign.Storable
 import Foreign.CStorable
-import Foreign.ForeignPtr
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (when)
 
@@ -100,7 +99,7 @@ toUnion' zero v = unsafePerformIO $ do
       -- set bytes after the object to 0
       when zero $ do
          let psz = sizeOf (undefined :: a)
-         memSet (p `plusPtr` psz) (fromIntegral (sz - psz)) 0
+         memSet (p `indexPtr` psz) (fromIntegral (sz - psz)) 0
       poke (castPtr p) v
    return $ Union fp
 

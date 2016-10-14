@@ -37,7 +37,7 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
 import Foreign.Storable
-import Foreign.Marshal.Alloc
+import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 
 -- | Terminal (input and output, no error output)
@@ -97,7 +97,7 @@ inputThread s = forever $ do
                      then setFuture () semsrc
                      -- we update the remaining number of bytes to read
                      else do
-                        let buf' = IOBuffer (size-size') (ptr `plusPtr` fromIntegral size')
+                        let buf' = IOBuffer (size-size') (ptr `indexPtr` fromIntegral size')
                         TList.append_ (buf',semsrc) (inputRequests s)
             return (after,size,ptr)
 
@@ -106,7 +106,7 @@ inputThread s = forever $ do
             b <- takeTMVar (inputBuffer s)
             let
                size = inputBufferSize b - inputBufferStop b
-               ptr  = inputBufferPtr b `plusPtr` fromIntegral (inputBufferStop b)
+               ptr  = inputBufferPtr b `indexPtr` fromIntegral (inputBufferStop b)
                after size' = do
                   let
                      b' = b { inputBufferStop = inputBufferStop b + size' }
@@ -145,7 +145,7 @@ readFromHandle s sz ptr = do
                               }
                      else b { inputBufferStart = start' }
          after  = putTMVar (inputBuffer s) b'
-      return (after, size', inputBufferPtr b `plusPtr` fromIntegral (inputBufferStart b))
+      return (after, size', inputBufferPtr b `indexPtr` fromIntegral (inputBufferStart b))
 
    when (bsz /= 0) $
       memCopy ptr bptr (fromIntegral bsz)
@@ -160,7 +160,7 @@ readFromHandle s sz ptr = do
          then setFuture () semsrc
          else do
             -- if we haven't read everything, register
-            let b = IOBuffer (sz - bsz) (ptr `plusPtr` fromIntegral bsz)
+            let b = IOBuffer (sz - bsz) (ptr `indexPtr` fromIntegral bsz)
             TList.prepend_ (b,semsrc) (inputRequests s)
       return sem
 
@@ -202,7 +202,7 @@ outputThread s = forever $ do
       then setFuture () semsrc
       else do
          let buf' = IOBuffer (iobufferSize buf - n)
-                             (iobufferPtr buf `plusPtr` fromIntegral n)
+                             (iobufferPtr buf `indexPtr` fromIntegral n)
                            
          TList.append_ (buf',semsrc) (outputBuffers s)
    
