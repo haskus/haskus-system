@@ -146,10 +146,10 @@ import ViperVM.Format.Binary.FixedPoint
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.String
+import ViperVM.Utils.Types.Generics (Generic)
 
 import Foreign.Storable
 import Foreign.CStorable
-import GHC.Generics (Generic)
 
 -- =============================================================
 --    From linux/include/uapi/drm/drm_mode.h

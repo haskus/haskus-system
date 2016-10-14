@@ -19,7 +19,6 @@ where
 
 import Foreign.Storable
 import Foreign.CStorable
-import GHC.Generics (Generic)
 import Foreign.Marshal.Array
 
 import ViperVM.Format.Binary.BitSet as BitSet
@@ -33,6 +32,7 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Types.Generics (Generic)
 
 sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> SysRet ()
 sysCreateDirectory fd path perm sticky = do

@@ -16,9 +16,6 @@ module ViperVM.Format.CPIO
    )
 where
 
-import ViperVM.Format.Text (Text)
-import qualified ViperVM.Format.Text as Text
-
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 
@@ -27,13 +24,16 @@ import Data.Foldable (forM_)
 import Numeric (showHex)
 import Foreign.Storable
 import Foreign.CStorable
-import GHC.Generics
 import Data.Char (ord)
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Get
+import ViperVM.Utils.Types.Generics (Generic)
+import ViperVM.Format.Text (Text)
+import qualified ViperVM.Format.Text as Text
+
 
 
 {- We only consider the "new" CPIO format because the old ones are deprecated.

@@ -15,9 +15,9 @@ where
 import Foreign.Marshal.Array (withArray, peekArray)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
-import GHC.Generics (Generic)
 
 import ViperVM.Utils.Maybe (mapMaybe)
+import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode

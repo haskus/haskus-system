@@ -25,13 +25,13 @@ import Foreign.CStorable
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 
-import GHC.Generics (Generic)
-
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Types.Generics (Generic)
+
 
 -- | Time spec
 data TimeSpec = TimeSpec {

@@ -174,8 +174,8 @@ where
 
 import Foreign.CStorable
 import Foreign.Storable
-import GHC.Generics (Generic)
 
+import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Union
 import ViperVM.Format.Binary.Word

@@ -85,8 +85,8 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
+import ViperVM.Utils.Types.Generics (Generic)
 
-import GHC.Generics (Generic)
 import Foreign.Storable
 import Foreign.CStorable
 import Foreign.Marshal.Alloc

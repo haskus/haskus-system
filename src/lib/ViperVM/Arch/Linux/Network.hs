@@ -27,8 +27,8 @@ import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Array (peekArray,allocaArray)
 import Foreign.Storable
 import Foreign.CStorable
-import GHC.Generics (Generic)
 
+import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Utils.List (foldl')
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle

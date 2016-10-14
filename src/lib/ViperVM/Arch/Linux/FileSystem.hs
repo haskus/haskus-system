@@ -61,7 +61,6 @@ import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 import Foreign.CStorable
-import GHC.Generics (Generic)
 
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
@@ -71,6 +70,7 @@ import ViperVM.Format.String
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
+import ViperVM.Utils.Types.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
