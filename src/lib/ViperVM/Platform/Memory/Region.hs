@@ -60,9 +60,11 @@ data Region = Region
    } deriving (Show)
 
 -- | Pattern synonym for region with 1D shape
+pattern Region1D :: Word64 -> Width -> Region
 pattern Region1D o w = Region o (Shape1D w)
 
 -- | Pattern synonym for region with 2D shape
+pattern Region2D :: Word64 -> Height -> Width -> Padding -> Region
 pattern Region2D o h w p = Region o (Shape2D h w p)
 
 
