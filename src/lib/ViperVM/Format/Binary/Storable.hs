@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- | Storable class
 module ViperVM.Format.Binary.Storable
@@ -51,20 +52,18 @@ type family PaddingEx (m :: Nat) (a :: Nat) where
 
 
 -- | Get statically known size
-staticSizeOf :: forall a v.
+staticSizeOf :: forall a.
    ( StaticStorable a
-   , v ~ SizeOf a
-   , KnownNat v
+   , KnownNat (SizeOf a)
    ) => a -> Word
-staticSizeOf _ = natValue' @v
+staticSizeOf _ = natValue' @(SizeOf a)
 
 -- | Get statically known alignment
-staticAlignment :: forall a v.
+staticAlignment :: forall a.
    ( StaticStorable a
-   , v ~ SizeOf a
-   , KnownNat v
+   , KnownNat (Alignment a)
    ) => a -> Word
-staticAlignment _ = natValue' @v
+staticAlignment _ = natValue' @(Alignment a)
 
 
 instance StaticStorable Word8 where
