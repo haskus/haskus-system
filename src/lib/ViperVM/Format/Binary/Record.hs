@@ -1,6 +1,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE InstanceSigs #-}
@@ -29,8 +30,6 @@ module ViperVM.Format.Binary.Record
    )
 where
 
-import Data.Proxy
-import GHC.TypeLits
 import Foreign.ForeignPtr
 import System.IO.Unsafe
 
@@ -103,23 +102,23 @@ type family ExtractRecord x where
    ExtractRecord (Record fs) = fs
 
 -- | Get record size
-recordSize :: forall s fs.
-   ( s ~ FullRecordSize fs
-   , KnownNat s) => Record fs -> Word
-recordSize _ = fromIntegral $ natVal (Proxy :: Proxy s)
+recordSize :: forall fs.
+   ( KnownNat (FullRecordSize fs)
+   ) => Record fs -> Word
+recordSize _ = natValue' @(FullRecordSize fs)
 
 -- | Get record alignment
-recordAlignment :: forall a fs.
-   ( a ~ RecordAlignment fs 1
-   , KnownNat a) => Record fs -> Word
-recordAlignment _ = fromIntegral $ natVal (Proxy :: Proxy a)
+recordAlignment :: forall fs.
+   ( KnownNat (RecordAlignment fs 1)
+   ) => Record fs -> Word
+recordAlignment _ = natValue' @(RecordAlignment fs 1)
 
 -- | Get a field offset
 recordFieldOffset :: forall name fs o.
    ( o ~ FieldOffset name fs 0
    , KnownNat o
    ) => Proxy (name :: Symbol) -> Record fs -> Int
-recordFieldOffset _ _ = fromIntegral $ natVal (Proxy :: Proxy o)
+recordFieldOffset _ _ = natValue @o
 
 -- | Get a field
 recordField :: forall name a fs o.
@@ -140,9 +139,7 @@ recordFieldPathOffset :: forall path fs o.
    ( o ~ FieldPathOffset fs path 0
    , KnownNat o
    ) => Path path -> Record fs -> Int
-recordFieldPathOffset _ _ = o
-   where
-      o    = fromIntegral (natVal (Proxy :: Proxy o))
+recordFieldPathOffset _ _ = natValue @o
 
 -- | Get a field from its path
 recordFieldPath :: forall path a fs o.
@@ -154,8 +151,7 @@ recordFieldPath :: forall path a fs o.
 recordFieldPath _ (Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr -> do
       let
-         o    = fromIntegral (natVal (Proxy :: Proxy o))
-         ptr' = ptr `plusPtr` o
+         ptr' = ptr `plusPtr` natValue @o
       staticPeek (castPtr ptr')
 
 
@@ -194,7 +190,7 @@ instance forall fs typ name rec b l2 i r.
    , r ~ (rec, HList ((String,typ) ': l2))  -- result type
    ) => Apply Extract (b, i) r where
       apply _ (_, (rec,xs)) =
-         (rec, HCons (symbolVal (Proxy :: Proxy name), recordField (Proxy :: Proxy name) rec) xs)
+         (rec, HCons (symbolValue @name, recordField (Proxy :: Proxy name) rec) xs)
 
 -- | Convert a record into a HList
 recordToList :: forall fs l.

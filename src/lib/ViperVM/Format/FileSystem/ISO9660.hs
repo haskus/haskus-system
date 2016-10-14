@@ -40,9 +40,9 @@ import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
+import ViperVM.Utils.Types
 
 import GHC.Generics
-import GHC.TypeLits
 import Foreign.Storable
 import Foreign.CStorable
 

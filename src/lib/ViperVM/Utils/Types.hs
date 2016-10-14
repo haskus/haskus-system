@@ -8,14 +8,27 @@
 
 -- | Common type functions
 module ViperVM.Utils.Types
-   ( If
-   , IfNat
-   , Modulo
-   , module GHC.TypeLits
-   , Proxy (..)
+   ( Nat
+   , Symbol
    , natValue
    , natValue'
    , symbolValue
+   , KnownNat
+   , KnownSymbol
+   , CmpNat
+   , CmpSymbol
+   , type (<=?)
+   , type (<=)
+   , type (+)
+   , type (-)
+   , type (*)
+   , type (^)
+   , If
+   , IfNat
+   , Modulo
+   , Proxy (..)
+   , TypeError
+   , ErrorMessage (..)
    )
 where
 

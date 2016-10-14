@@ -31,8 +31,6 @@ module ViperVM.Arch.X86_64.Cpuid
    )
    where
 
-import GHC.TypeLits
-
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Union
@@ -41,6 +39,7 @@ import ViperVM.Format.Binary.Bits
 import ViperVM.Format.String
 import ViperVM.Format.Text as Text
 import ViperVM.Utils.Tuples (fromTuple4)
+import ViperVM.Utils.Types
 
 #ifdef __GLASGOW_HASKELL__
 
@@ -48,7 +47,7 @@ import ViperVM.Utils.Tuples (fromTuple4)
 -- Implementation using Haskell foreign primops
 --------------------------------------------------
 
-import GHC.Base
+import GHC.Base (Word#)
 import GHC.Word
 
 foreign import prim "x86_64_cpuid_primop" cpuid# :: Word# -> (# Word#, Word#, Word#, Word# #)
@@ -107,7 +106,7 @@ initCpuid = Cpuid x
 
 -- | Convert a vector of values into a Text
 valToText :: forall (n :: Nat)  (m :: Nat) .
-   ( m ~ (n GHC.TypeLits.* 4)
+   ( m ~ (n * 4)
    , KnownNat n
    , KnownNat m
    )

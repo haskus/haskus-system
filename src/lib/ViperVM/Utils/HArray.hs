@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ConstraintKinds #-}
 
 -- | Heterogeneous array: like a HList but indexed in O(1)
@@ -32,12 +33,11 @@ module ViperVM.Utils.HArray
 where
 
 import Data.Vector as V
-import Data.Proxy
 import Unsafe.Coerce
-import GHC.TypeLits
 import Control.Monad
 
 import ViperVM.Utils.Types.List
+import ViperVM.Utils.Types
 
 -- | heterogeneous array
 data HArray (types :: [*]) = forall a. HArray (Vector a)
@@ -75,9 +75,7 @@ type HArrayTryIndexT t (ts :: [*]) =
 -- | Get an element by index
 getHArrayN :: forall (n :: Nat) (ts :: [*]) t.
    (HArrayIndex n t ts) => Proxy n -> HArray ts -> t
-getHArrayN _ (HArray as) = unsafeCoerce (as ! idx)
-   where
-      idx = fromIntegral (natVal (Proxy :: Proxy n))
+getHArrayN _ (HArray as) = unsafeCoerce (as ! natValue @n)
 
 -- | Get first element
 getHArray0 :: (HArrayIndex 0 t ts) => HArray ts -> t
@@ -86,9 +84,7 @@ getHArray0 = getHArrayN (Proxy :: Proxy 0)
 -- | Set an element by index
 setHArrayN :: forall (n :: Nat) (ts :: [*]) t.
    (HArrayIndex n t ts) => Proxy n -> t -> HArray ts -> HArray ts
-setHArrayN _ a (HArray as) = HArray (as V.// [(idx,unsafeCoerce a)])
-   where
-      idx = fromIntegral (natVal (Proxy :: Proxy n))
+setHArrayN _ a (HArray as) = HArray (as V.// [(natValue @n,unsafeCoerce a)])
 
 -- | Get an element by type (select the first one with this type)
 getHArrayT :: forall t ts.
@@ -107,7 +103,7 @@ tryGetHArrayT as = if n == 0
       then Nothing
       else Just $ getHArrayN (Proxy :: Proxy (MaybeIndexOf t ts)) as'
    where
-      n   = natVal (Proxy :: Proxy (MaybeIndexOf t ts))
+      n   = natValue' @(MaybeIndexOf t ts)
       as' :: HArray (t ': ts)
       as' = prependHArray undefined as
 

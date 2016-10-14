@@ -3,6 +3,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -19,11 +20,10 @@ where
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Types
 
 import Foreign.Storable
 import Foreign.CStorable
-import Data.Proxy
-import GHC.TypeLits
 
 -- | Fixed-point number
 -- `w` is the backing type
@@ -65,10 +65,7 @@ toFixedPoint :: forall a w (n :: Nat) (d :: Nat).
    , Num w
    , Integral w
    ) => a -> FixedPoint w n d
-toFixedPoint a = FixedPoint
-      $ BitFields (round (a * 2^dbits))
-   where
-      dbits = natVal (Proxy :: Proxy d)
+toFixedPoint a = FixedPoint $ BitFields (round (a * 2^natValue' @d))
 
 -- | Convert from a fixed-point value
 fromFixedPoint :: forall a w (n :: Nat) (d :: Nat).
@@ -81,7 +78,6 @@ fromFixedPoint :: forall a w (n :: Nat) (d :: Nat).
    , Num w
    , Integral w
    ) => FixedPoint w n d -> a
-fromFixedPoint (FixedPoint bf) = w / 2^dbits
+fromFixedPoint (FixedPoint bf) = w / 2^(natValue' @d)
    where
       w = fromIntegral (bitFieldsBits bf)
-      dbits = natVal (Proxy :: Proxy d)

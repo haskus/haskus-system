@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -76,8 +77,6 @@ module ViperVM.Format.Binary.BitField
    )
 where
 
-import GHC.TypeLits
-import Data.Proxy
 import Foreign.Storable
 import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
@@ -85,6 +84,7 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import ViperVM.Utils.HList
+import ViperVM.Utils.Types
 
 -- | Bit fields on a base type b
 newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
@@ -212,10 +212,10 @@ extractField' :: forall name fields b .
    , Field (Output name fields)
    ) => Proxy name -> BitFields b fields -> Output name fields
 {-# INLINE extractField' #-}
-extractField' _ (BitFields w) = toField ((w `shiftR` fromIntegral off) .&. ((1 `shiftL` fromIntegral sz) - 1))
+extractField' _ (BitFields w) = toField ((w `shiftR` off) .&. ((1 `shiftL` sz) - 1))
    where
-      off = natVal (Proxy :: Proxy (Offset name fields))
-      sz  = natVal (Proxy :: Proxy (Size name fields))
+      off = natValue @(Offset name fields)
+      sz  = natValue @(Size name fields)
 
 
 -- | Set the value of a field
@@ -239,9 +239,9 @@ updateField' :: forall name fields b .
 {-# INLINE updateField' #-}
 updateField' _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
    where
-      off  = fromIntegral $ natVal (Proxy :: Proxy (Offset name fields))
-      sz   = natVal (Proxy :: Proxy (Size name fields))
-      mask = ((1 `shiftL` fromIntegral sz) - 1) `shiftL` off
+      off  = natValue @(Offset name fields)
+      sz   = natValue @(Size name fields)
+      mask = ((1 `shiftL` sz) - 1) `shiftL` off
 
 
 -- | Modify the value of a field
@@ -298,7 +298,7 @@ instance forall name bs b l l2 i (n :: Nat) s r w .
    , r ~ HList (String ': l2) -- result type
    , KnownSymbol name
    ) => Apply Name (b, i) r where
-      apply _ (_, xs) = HCons (symbolVal (Proxy :: Proxy name)) xs
+      apply _ (_, xs) = HCons (symbolValue @name) xs
 
 fieldValues :: forall l l2 w bs .
    ( bs ~ BitFields w l

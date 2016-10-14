@@ -3,6 +3,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -82,13 +83,13 @@ type role Variant representational
 -- | Set the value with the given indexed type
 setVariantN :: forall (n :: Nat) (l :: [*]). (KnownNat n)
    => Proxy n -> TypeAt n l -> Variant l
-setVariantN _ = Variant (fromIntegral (natVal (Proxy :: Proxy n)))
+setVariantN _ = Variant (natValue' @n)
 
 -- | Get the value if it has the indexed type
 getVariantN :: forall (n :: Nat) (l :: [*]). (KnownNat n)
    => Proxy n -> Variant l -> Maybe (TypeAt n l)
 getVariantN _ (Variant t a) = do
-   guard (t == fromIntegral (natVal (Proxy :: Proxy n)))
+   guard (t == natValue' @n)
    return (unsafeCoerce a) -- we know it is the effective type
 
 -- | Get first element
@@ -216,8 +217,8 @@ updateVariantFold _ f v@(Variant t a) =
       Just x  -> case f x of
          Variant t2 a2 -> Variant (t2+n) a2
    where
-      n   = fromIntegral (natVal (Proxy :: Proxy n))
-      nl2 = fromIntegral (natVal (Proxy :: Proxy (Length l2)))
+      n   = natValue @n
+      nl2 = natValue @(Length l2)
 
 -- | Update a variant value with a variant and fold the result
 updateVariantFoldM :: forall (n :: Nat) m l l2.
@@ -238,8 +239,8 @@ updateVariantFoldM _ f v@(Variant t a) =
          case y of
             Variant t2 a2 -> return (Variant (t2+n) a2)
    where
-      n   = fromIntegral (natVal (Proxy :: Proxy n))
-      nl2 = fromIntegral (natVal (Proxy :: Proxy (Length l2)))
+      n   = natValue @n
+      nl2 = natValue @(Length l2)
 
 data GetValue    = GetValue
 data RemoveType  = RemoveType
@@ -277,7 +278,7 @@ instance forall (n :: Nat) l l2 r i a (same :: Nat).
                      else (v, shift, Just FoundSame)
          where
             -- if (a /= TypeAt n l), same == 0, else same == 1
-            same = fromIntegral (natVal (Proxy :: Proxy same))
+            same = natValue @same
 
 -- | a is catchable in xs
 type Catchable a xs =
@@ -316,7 +317,7 @@ pickVariant :: forall n l.
 {-# INLINE pickVariant #-}
 pickVariant _ v@(Variant t a) = case getVariantN (Proxy :: Proxy n) v of
    Just x  -> Right x
-   Nothing -> Left $ if t > fromIntegral (natVal (Proxy :: Proxy n))
+   Nothing -> Left $ if t > natValue @n
       then Variant (t-1) a
       else Variant t a
 
@@ -400,7 +401,7 @@ prependVariant :: forall (xs :: [*]) (ys :: [*]).
 {-# INLINE prependVariant #-}
 prependVariant _ (Variant t a) = Variant (n+t) a
    where
-      n = fromIntegral (natVal (Proxy :: Proxy (Length ys)))
+      n = natValue @(Length ys)
 
 -- | Fusion variant values of the same type
 fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)

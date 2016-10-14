@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -95,7 +96,7 @@ data Rcp a
 data Uncertain a
 
 instance KnownNat n => UnumNum (I n) where
-   unumLabel _ = show (natVal (Proxy :: Proxy n))
+   unumLabel _ = show (natValue' @n)
 
 instance UnumNum x => UnumNum (Rcp x) where
    unumLabel _ = "/" ++ unumLabel (undefined :: x)
@@ -170,7 +171,7 @@ type family UnumSize x where
 unumSize :: forall u.
    ( KnownNat (UnumSize u)
    ) => Proxy u -> Word
-unumSize _ = fromIntegral (natVal (Proxy :: Proxy (UnumSize u)))
+unumSize _ = natValue @(UnumSize u)
 
 -- | Zero
 unumZero :: forall u.
@@ -255,7 +256,7 @@ unumEncode _ _ b = case b of
       ExactNumber  -> U w
       OpenInterval -> U (setBit w 0)
    where
-      w = fromIntegral (natVal (Proxy :: Proxy i)) `shiftL` 1
+      w = natValue @i `shiftL` 1
 
 {-# INLINE unumEncode #-}
 
@@ -347,7 +348,7 @@ sornBits :: forall u s.
    , s ~ SORNSize u
    , KnownNat s
    ) => SORN u -> String
-sornBits (SORN w) = drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
+sornBits (SORN w) = drop (finiteBitSize w - natValue @s) (bitsToString w)
 
 
 
@@ -356,7 +357,7 @@ sornSize :: forall u s.
    ( s ~ SORNSize u
    , KnownNat s
    ) => Proxy u -> Word
-sornSize _ = fromIntegral (natVal (Proxy :: Proxy s))
+sornSize _ = natValue @s
 
 -- | Empty SORN
 sornEmpty :: (Bits (SORNBackingWord u)) => SORN u
@@ -457,7 +458,7 @@ sornElems :: forall u s.
 sornElems (SORN x) = foldl b [] (reverse ([s `shiftR` 1 .. s-1]
                                   ++ [0 .. (s-1) `shiftR` 1]))
    where
-      s      = fromIntegral (natVal (Proxy :: Proxy s))
+      s      = natValue @s
       b us i = if testBit x i
                   then U (fromIntegral i) : us
                   else us
@@ -653,7 +654,7 @@ csornSize :: forall u s.
    ( s ~ CSORNSize u
    , KnownNat s
    ) => Proxy u -> Word
-csornSize _ = fromIntegral (natVal (Proxy :: Proxy s))
+csornSize _ = natValue @s
 
 -- | Show contiguous SORN bits
 csornBits :: forall u s.
@@ -662,7 +663,7 @@ csornBits :: forall u s.
    , s ~ CSORNSize u
    , KnownNat s
    ) => CSORN u -> String
-csornBits (CSORN (BitFields w)) = drop (finiteBitSize w - fromIntegral (natVal (Proxy :: Proxy s))) (bitsToString w)
+csornBits (CSORN (BitFields w)) = drop (finiteBitSize w - natValue @s) (bitsToString w)
 
 
 -- | Empty contigiuous SORN

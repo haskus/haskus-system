@@ -40,7 +40,7 @@ type family WordAtLeast (n :: Nat) where
       (If (n <=? 16) Word16
       (If (n <=? 32) Word32
       (If (n <=? 64) Word64
-       Word64 -- FIXME: use TypeError
+      (TypeError ('Text "Cannot find Word with size " ':<>: 'ShowType n))
       )))
 
 -- | Bit size

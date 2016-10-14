@@ -15,10 +15,10 @@ where
 
 import Foreign.C.String
 import Foreign.C.Types (CChar(..))
-import GHC.TypeLits
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Vector as Vec
+import ViperVM.Utils.Types
 
 -- | Fixed-size buffer containing a CString
 type CStringBuffer (n :: Nat) = Vector n Int8

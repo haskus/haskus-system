@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -15,13 +16,11 @@ module ViperVM.Format.Binary.Storable
    )
 where
 
-import GHC.TypeLits
-import Data.Proxy
 import qualified Foreign.Storable as FS
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
-import ViperVM.Utils.Types (Modulo)
+import ViperVM.Utils.Types
 
 -- | A storable data in constant space whose size is known at compile time
 class StaticStorable a where
@@ -57,7 +56,7 @@ staticSizeOf :: forall a v.
    , v ~ SizeOf a
    , KnownNat v
    ) => a -> Word
-staticSizeOf _ = fromIntegral (natVal (Proxy :: Proxy v))
+staticSizeOf _ = natValue' @v
 
 -- | Get statically known alignment
 staticAlignment :: forall a v.
@@ -65,7 +64,7 @@ staticAlignment :: forall a v.
    , v ~ SizeOf a
    , KnownNat v
    ) => a -> Word
-staticAlignment _ = fromIntegral (natVal (Proxy :: Proxy v))
+staticAlignment _ = natValue' @v
 
 
 instance StaticStorable Word8 where

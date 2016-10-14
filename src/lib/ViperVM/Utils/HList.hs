@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -69,7 +70,7 @@ hTail (HCons _ l) = l
 
 -- | Length
 hLength :: forall xs. (KnownNat (Length xs)) => HList xs -> Word
-hLength _ = fromIntegral (natVal (Proxy :: Proxy (Length xs)))
+hLength _ = natValue' @(Length xs)
 
 class HAppendList l1 l2 where
   hAppend :: HList l1 -> HList l2 -> HList (Concat l1 l2)

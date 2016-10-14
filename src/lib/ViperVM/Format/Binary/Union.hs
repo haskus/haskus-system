@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -134,16 +135,15 @@ instance forall fs.
       type Alignment (Union fs) = Max (MapAlignment fs)
 
       staticPeek ptr = do
-         let sz = fromIntegral $ natVal (Proxy :: Proxy (SizeOf (Union fs)))
+         let sz = natValue @(SizeOf (Union fs))
          fp <- mallocForeignPtrBytes sz
          withForeignPtr fp $ \p -> 
             memCopy p (castPtr ptr) (fromIntegral sz)
          return (Union fp)
 
       staticPoke ptr (Union fp) = do
-         let sz = natVal (Proxy :: Proxy (SizeOf (Union fs)))
          withForeignPtr fp $ \p ->
-            memCopy (castPtr ptr) p (fromIntegral sz)
+            memCopy (castPtr ptr) p (natValue @(SizeOf (Union fs)))
 
 -------------------------------------------------------------------------------------
 -- We use HFoldr' to get the maximum size and alignment of the types in the union
