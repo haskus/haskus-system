@@ -25,11 +25,10 @@ where
 
 import Control.Monad (void)
 import Foreign.Marshal.Alloc (alloca)
-import Foreign.Storable
-import Foreign.CStorable
 
 import ViperVM.Format.Binary.Ptr (Ptr, nullPtr)
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 

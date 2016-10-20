@@ -56,8 +56,6 @@ import ViperVM.Utils.HList
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 
-import Foreign.Storable
-import Foreign.CStorable
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (when)
 

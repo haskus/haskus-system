@@ -25,8 +25,6 @@ where
 
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Array (peekArray,allocaArray)
-import Foreign.Storable
-import Foreign.CStorable
 
 import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Utils.List (foldl')
@@ -34,6 +32,7 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Ptr (nullPtr)
 

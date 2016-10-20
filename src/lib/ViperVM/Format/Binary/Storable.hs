@@ -14,10 +14,14 @@ module ViperVM.Format.Binary.Storable
    , PaddingEx
    , staticSizeOf
    , staticAlignment
+   , module Foreign.Storable
+   , module Foreign.CStorable
    )
 where
 
 import qualified Foreign.Storable as FS
+import Foreign.CStorable
+import Foreign.Storable
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr

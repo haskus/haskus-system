@@ -59,6 +59,7 @@ where
 
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.MultiState
 import ViperVM.Utils.HArray
 import ViperVM.Utils.HList
@@ -67,8 +68,6 @@ import ViperVM.Utils.Variant
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types
 import ViperVM.Utils.Maybe (isJust)
-
-import Foreign.Storable
 
 -- | The phantom type `a` is used to distinguish between several readers
 newtype Reader a = Reader Buffer

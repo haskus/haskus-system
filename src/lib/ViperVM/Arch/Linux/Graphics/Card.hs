@@ -23,13 +23,12 @@ import ViperVM.System.Sys
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Utils.Memory (allocaArrays,peekArrays)
 import ViperVM.Utils.Flow
-
-import Foreign.Storable
 
 -- | Graphic card ressources
 data Resources = Resources

@@ -17,14 +17,13 @@ module ViperVM.Arch.Linux.FileSystem.Directory
    )
 where
 
-import Foreign.Storable
-import Foreign.CStorable
 import Foreign.Marshal.Array
 
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
 
 import ViperVM.Arch.Linux.ErrorCode

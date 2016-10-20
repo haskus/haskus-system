@@ -37,6 +37,7 @@ import ViperVM.Format.String (peekCString)
 import ViperVM.Format.Binary.Ptr (Ptr, castPtr, nullPtr)
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Storable
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -45,7 +46,6 @@ import ViperVM.Arch.OpenCL.Error
 
 import Data.Ord (comparing)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
-import Foreign.Storable (peek, sizeOf)
 
 -- | Device
 data Device = Device Library Device_ deriving (Eq)

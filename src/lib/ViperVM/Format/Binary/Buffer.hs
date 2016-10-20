@@ -63,7 +63,6 @@ where
 
 import Foreign.Marshal.Alloc (malloc)
 import Foreign.Marshal.Array
-import Foreign.Storable
 import System.IO.Unsafe
 import Control.Monad
 import Data.ByteString (ByteString)
@@ -72,6 +71,7 @@ import qualified Data.ByteString.Unsafe as BS
 
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Bits.Basic
 import ViperVM.Utils.Memory (memCopy,memSet)
 import ViperVM.Utils.List (foldl')

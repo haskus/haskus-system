@@ -44,7 +44,6 @@ module ViperVM.Arch.Linux.Ioctl
    )
 where
 
-import Foreign.Storable
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (with)
 
@@ -52,6 +51,7 @@ import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Storable
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle

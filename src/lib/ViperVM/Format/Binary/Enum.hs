@@ -13,8 +13,6 @@ where
 
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
-import Foreign.Storable
-import Foreign.CStorable
 
 -----------------------------------------------------------------------------
 -- EnumField b a: directly store the value of enum "a" as a "b"

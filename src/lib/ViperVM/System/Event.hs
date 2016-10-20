@@ -13,7 +13,6 @@ import Control.Concurrent
 import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
 import Control.Monad (forever)
-import Foreign.Storable
 import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
 
@@ -23,6 +22,7 @@ import ViperVM.Utils.Flow
 import ViperVM.System.Sys
 import ViperVM.System.Process
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 
 -- | Create a new thread reading events and putting them in a TChan
 newEventReader :: forall a. Storable a => Handle -> Sys (TChan a)

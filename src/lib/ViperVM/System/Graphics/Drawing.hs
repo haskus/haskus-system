@@ -19,12 +19,12 @@ import Graphics.Rasterific
 import Graphics.Rasterific.Texture
 import Codec.Picture.Png
 import Codec.Picture.Types
-import Foreign.Storable
 
 import Control.Loop (forLoop)
 
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Buffer as B
 import ViperVM.System.Graphics
 import ViperVM.Arch.Linux.Graphics.FrameBuffer

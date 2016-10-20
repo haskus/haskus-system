@@ -31,6 +31,7 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
 import ViperVM.Utils.List (elemIndex)
 
@@ -39,7 +40,6 @@ import Control.Monad.Trans.Either
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)
 import Foreign.Marshal.Utils (withMany)
-import Foreign.Storable (peek, sizeOf)
 
 -- | Program
 data Program = Program Library Program_ deriving (Eq)

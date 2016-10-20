@@ -30,6 +30,7 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (peekCString)
 import ViperVM.Format.Binary.Ptr (Ptr,nullPtr,castPtr)
+import ViperVM.Format.Binary.Storable
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -40,7 +41,6 @@ import ViperVM.Arch.OpenCL.Device
 import Control.Monad.Trans.Either
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,peekArray)
-import Foreign.Storable (peek,sizeOf)
 
 -- | Platform
 data Platform = Platform Library Platform_ deriving (Eq)

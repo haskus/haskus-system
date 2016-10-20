@@ -29,12 +29,12 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
 
 import Control.Monad (liftM2)
 import Foreign.Marshal.Array (peekArray, allocaArray)
-import Foreign.Storable
 
 -- | Indicate if a cable is plugged in the connector
 data Connection

@@ -20,10 +20,8 @@ where
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Types
-
-import Foreign.Storable
-import Foreign.CStorable
 
 -- | Fixed-point number
 -- `w` is the backing type

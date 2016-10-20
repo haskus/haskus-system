@@ -14,14 +14,13 @@ module ViperVM.Arch.Linux.Graphics.Mode
    )
 where
 
-import Data.Proxy
-import Foreign.Storable
-import Foreign.CStorable
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (castPtr)
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
+import ViperVM.Utils.Types
 
 import ViperVM.Arch.Linux.Internals.Graphics
 

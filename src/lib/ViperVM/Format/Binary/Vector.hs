@@ -27,8 +27,6 @@ module ViperVM.Format.Binary.Vector
    )
 where
 
-import Foreign.Storable
-import Foreign.CStorable
 import Prelude hiding (replicate, head, last,
                        tail, init, map, length, drop, take, concat)
 import System.IO.Unsafe (unsafePerformIO)
@@ -39,6 +37,7 @@ import ViperVM.Utils.HList
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Storable
 
 -- | Vector with type-checked size
 data Vector (n :: Nat) a = Vector Buffer

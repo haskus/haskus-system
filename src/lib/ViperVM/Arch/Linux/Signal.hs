@@ -23,9 +23,9 @@ import ViperVM.Arch.Linux.Process
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 
-import Foreign.Storable
 import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Alloc (alloca)
 

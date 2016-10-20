@@ -145,11 +145,9 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.FixedPoint
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
 import ViperVM.Utils.Types.Generics (Generic)
-
-import Foreign.Storable
-import Foreign.CStorable
 
 -- =============================================================
 --    From linux/include/uapi/drm/drm_mode.h

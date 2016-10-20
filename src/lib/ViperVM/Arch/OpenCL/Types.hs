@@ -4,10 +4,9 @@
 -- | OpenCL basic types
 module ViperVM.Arch.OpenCL.Types where
 
-import Foreign.Storable (Storable(..))
-
 import ViperVM.Format.Binary.Ptr (Ptr,FunPtr,WordPtr)
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String (CString)
 import ViperVM.Arch.OpenCL.ImageFormat
 

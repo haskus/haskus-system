@@ -8,10 +8,9 @@ module ViperVM.Arch.OpenCL.ImageFormat
    )
 where
 
-import Foreign.Storable (Storable(..))
-
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 
 -- | Image storage format
 data ImageFormat = ImageFormat

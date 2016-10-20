@@ -22,13 +22,12 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
-
-import Foreign.Storable
 
 -- | Open at
 withOpenAt :: 

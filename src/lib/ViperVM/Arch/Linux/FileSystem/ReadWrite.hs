@@ -22,11 +22,10 @@ module ViperVM.Arch.Linux.FileSystem.ReadWrite
    )
 where
 
-import Foreign.CStorable
 import Foreign.Marshal.Array (withArray)
-import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
 
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Word (Word64, Word32)
 import ViperVM.Format.Binary.Bits (shiftR)
 import ViperVM.Format.Binary.Buffer

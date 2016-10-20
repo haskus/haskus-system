@@ -39,12 +39,10 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.Generics (Generic)
-
-import Foreign.Storable
-import Foreign.CStorable
 
 -- | String with characters: A-Z 0-9 _ * " % & ' ( ) * + , - . / : ; < = > ?
 newtype StringA (n :: Nat) = StringA (CStringBuffer n) deriving (Show,Generic,CStorable)

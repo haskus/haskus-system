@@ -24,12 +24,14 @@ module ViperVM.Format.Binary.Word
    , CInt
    , CULong
    , CLong
+   , module GHC.Word
    )
 where
 
 import Data.Word
 import Data.Int
 import Foreign.C.Types
+import GHC.Word
 
 import ViperVM.Utils.Types
 

@@ -29,6 +29,7 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Text
 import ViperVM.Format.String (withCStringLen)
 
@@ -36,7 +37,6 @@ import Control.Monad (void,when,forever)
 import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
-import Foreign.Storable
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 

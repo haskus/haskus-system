@@ -71,12 +71,11 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types.Generics (Generic)
 
-import Foreign.Storable
 import Foreign.Marshal.Utils (toBool)
-import Foreign.CStorable
 
 -- =============================================================
 --    From linux/include/uapi/linux/fs.h

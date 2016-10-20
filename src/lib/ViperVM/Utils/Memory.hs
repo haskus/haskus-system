@@ -14,10 +14,10 @@ where
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 
 import Data.Foldable (traverse_)
 import Control.Monad (void)
-import Foreign.Storable
 import Foreign.Marshal.Utils
 import Foreign.Marshal.Array
 

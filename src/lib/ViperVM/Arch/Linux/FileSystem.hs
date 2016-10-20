@@ -59,10 +59,9 @@ where
 
 import Foreign.Marshal.Array (allocaArray)
 import Foreign.Marshal.Alloc (allocaBytes)
-import Foreign.Storable (Storable, peek, poke, sizeOf, alignment)
-import Foreign.CStorable
 
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr, castPtr)
 import ViperVM.Format.Binary.BitSet

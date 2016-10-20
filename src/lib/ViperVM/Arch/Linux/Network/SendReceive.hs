@@ -10,13 +10,13 @@ where
 
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
-import Foreign.Storable
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr (Ptr, nullPtr, castPtr)
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Utils.Flow

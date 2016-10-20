@@ -77,12 +77,11 @@ module ViperVM.Format.Binary.BitField
    )
 where
 
-import Foreign.Storable
-import Foreign.CStorable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.HList
 import ViperVM.Utils.Types
 

@@ -10,12 +10,11 @@ module ViperVM.Arch.Linux.Info
 where
 
 import Foreign.Marshal.Alloc
-import Foreign.Storable
-import Foreign.CStorable
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
 import ViperVM.Utils.Types.Generics (Generic)

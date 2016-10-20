@@ -14,18 +14,18 @@ module ViperVM.Arch.Linux.Graphics.Property
    )
 where
 
-import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
+import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String 
 
-import Foreign.Storable
 import Foreign.Marshal.Array
 
 

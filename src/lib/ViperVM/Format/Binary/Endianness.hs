@@ -32,10 +32,8 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Bits ((.|.), shiftL)
 import ViperVM.Format.Binary.Storable
+import ViperVM.Format.Binary.Word
 
-import GHC.Word
-import Foreign.Storable
-import Foreign.CStorable
 import System.IO.Unsafe
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc (alloca)

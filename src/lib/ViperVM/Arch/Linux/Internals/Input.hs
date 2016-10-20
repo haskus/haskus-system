@@ -78,6 +78,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String (peekCString)
 import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
@@ -87,8 +88,6 @@ import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
 import ViperVM.Utils.Types.Generics (Generic)
 
-import Foreign.Storable
-import Foreign.CStorable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils (fromBool)

@@ -13,12 +13,11 @@ module ViperVM.Arch.Linux.Internals.Ioctl
    )
 where
 
-import Data.Proxy
-import Foreign.Storable
-
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Storable
+import ViperVM.Utils.Types
 
 
 -- =============================================================
