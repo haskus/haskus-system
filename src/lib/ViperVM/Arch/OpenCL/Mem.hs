@@ -22,6 +22,7 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr, nullPtr)
 import ViperVM.Format.Binary.Storable
+import ViperVM.Utils.Flow
 
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
@@ -32,7 +33,6 @@ import ViperVM.Arch.OpenCL.CommandQueue
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
 
-import Control.Monad (void)
 import Data.Ord (comparing)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign (allocaArray,pokeArray)

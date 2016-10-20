@@ -28,7 +28,7 @@ import STMContainers.Set (Element)
 import ListT (ListT, fold)
 import qualified ListT
 
-import Data.Foldable (forM_)
+import ViperVM.Utils.Flow (forM_)
 
 -- | STM Set
 type TSet a = SSET.Set a

@@ -19,8 +19,6 @@ where
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 
-import Control.Monad (when)
-import Data.Foldable (forM_)
 import Numeric (showHex)
 import Data.Char (ord)
 
@@ -30,6 +28,7 @@ import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Types.Generics (Generic)
+import ViperVM.Utils.Flow (forM_,when)
 import ViperVM.Format.Text (Text)
 import qualified ViperVM.Format.Text as Text
 

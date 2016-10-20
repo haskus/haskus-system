@@ -36,7 +36,6 @@ where
 import Prelude hiding (log)
 import Data.String (fromString)
 import Control.Monad.State
-import Data.Foldable (traverse_)
 import Control.Concurrent.STM
 
 import ViperVM.Utils.STM.Future
@@ -266,23 +265,23 @@ sysLogPrint = do
                   , t
                   , status'
                   )
-               traverse_ (printLog i) =<< pollFutureIO n
+               mapM_ (printLog i) =<< pollFutureIO n
 
             LogGroup t fl (LogNext _ n) -> do
                Text.putStrLn $ textFormat (fromString "{}--+- {}")
                   ( Text.replicate i (Text.pack "  |")
                   , t
                   )
-               traverse_ (printLog (i+1)) =<< pollFutureIO n
-               traverse_ (printLog i)     =<< pollFutureIO fl
+               mapM_ (printLog (i+1)) =<< pollFutureIO n
+               mapM_ (printLog i)     =<< pollFutureIO fl
 
             LogFork t (LogNext _ n1) (LogNext _ n2) -> do
                Text.putStrLn $ textFormat (fromString "{}--*- FORK: {}")
                   ( Text.replicate i (Text.pack "  |")
                   , t
                   )
-               traverse_ (printLog (i+1)) =<< pollFutureIO n2
-               traverse_ (printLog i)     =<< pollFutureIO n1
+               mapM_ (printLog (i+1)) =<< pollFutureIO n2
+               mapM_ (printLog i)     =<< pollFutureIO n1
 
 -- | Assert in Sys (log the success)
 sysAssert :: String -> Bool -> Sys ()

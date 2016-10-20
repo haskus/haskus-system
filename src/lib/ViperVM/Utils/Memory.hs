@@ -15,9 +15,8 @@ where
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
+import ViperVM.Utils.Flow
 
-import Data.Foldable (traverse_)
-import Control.Monad (void)
 import Foreign.Marshal.Utils
 import Foreign.Marshal.Array
 
@@ -51,13 +50,13 @@ allocaArrays sizes f = go [] sizes
 
 -- | Peek several arrays
 peekArrays :: (Storable s, Integral a) => [a] -> [Ptr s] -> IO [[s]]
-peekArrays szs ptrs = traverse f (szs `zip` ptrs)
+peekArrays szs ptrs = mapM f (szs `zip` ptrs)
    where
       f (sz,p) = peekArray (fromIntegral sz) p
 
 -- | Poke several arrays
 pokeArrays :: (Storable s) => [Ptr s] -> [[s]] -> IO ()
-pokeArrays ptrs vs = traverse_ f (ptrs `zip` vs)
+pokeArrays ptrs vs = mapM_ f (ptrs `zip` vs)
    where
       f = uncurry pokeArray
 

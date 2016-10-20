@@ -4,10 +4,7 @@ module ViperVM.Platform.Loading
    ) 
 where
 
-import Control.Monad (filterM,when)
 import Control.Concurrent.STM
-import Data.Foldable (forM_)
-import Data.Traversable (forM)
 import qualified ListT
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
@@ -32,6 +29,7 @@ import ViperVM.Platform.Config
 import ViperVM.Utils.STM.TSet (TSet)
 import qualified ViperVM.Utils.STM.TSet as TSet
 import qualified ViperVM.Utils.STM.TMap as TMap
+import ViperVM.Utils.Flow
 
 -- | Init a memory
 memoryInit :: MemoryPeer -> IO Memory

@@ -68,7 +68,6 @@ import ViperVM.Utils.Maybe
 
 import Control.Arrow (second)
 import System.Posix.Types (Fd(..))
-import Control.Monad (void,unless,when,forever)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set

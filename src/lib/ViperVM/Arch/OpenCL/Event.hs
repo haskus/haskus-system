@@ -10,8 +10,8 @@ import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Format.Binary.Enum
+import ViperVM.Utils.Flow
 
-import Control.Monad (void)
 import Foreign.Marshal.Array (withArray)
 
 -- | OpenCL event

@@ -54,11 +54,8 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Monad
-
 import Control.Concurrent.STM
 import Control.Concurrent
-import Data.Foldable (traverse_)
 import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
 import System.FilePath (takeBaseName)
@@ -117,7 +114,7 @@ newEventWaiterThread fd@(Handle lowfd) = do
          -- FIXME: we should somehow signal that an error occured and
          -- that we won't report future events (if any)
          evs <- peekEvents ptr (fromIntegral sz2)
-         atomically $ traverse_ (writeTChan ch) evs
+         atomically $ mapM_ (writeTChan ch) evs
    return ch
 
 

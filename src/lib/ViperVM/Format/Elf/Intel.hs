@@ -32,13 +32,13 @@ where
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Control.Monad (when, forM)
 
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Flow (when, forM)
 
 
 -- | ZCA table

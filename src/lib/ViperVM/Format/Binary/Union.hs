@@ -53,11 +53,11 @@ import ViperVM.Utils.Memory (memCopy, memSet)
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List hiding (Union)
 import ViperVM.Utils.HList
+import ViperVM.Utils.Flow (when)
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 
 import System.IO.Unsafe (unsafePerformIO)
-import Control.Monad (when)
 
 
 -- TODO: rewrite rules

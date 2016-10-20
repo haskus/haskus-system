@@ -10,7 +10,6 @@ module ViperVM.Platform.Transfer
    )
 where
 
-import Control.Monad (void)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 
@@ -19,6 +18,7 @@ import ViperVM.Platform.TransferResult
 import ViperVM.Platform.Memory.Data
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Drivers (transferRegion)
+import ViperVM.Utils.Flow
 
 -- | A transfer
 data Transfer = Transfer 

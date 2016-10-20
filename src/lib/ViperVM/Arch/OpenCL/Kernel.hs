@@ -7,8 +7,7 @@ where
 import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
-
-import Control.Monad (void)
+import ViperVM.Utils.Flow
 
 -- | Kernel
 data Kernel = Kernel Library Kernel_ deriving (Eq)

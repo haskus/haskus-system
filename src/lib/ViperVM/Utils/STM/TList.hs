@@ -30,10 +30,9 @@ where
 import Prelude hiding (null,length,last,filter)
 
 import Control.Concurrent.STM
-import Data.Foldable (forM_,traverse_)
-import Control.Monad (void,when,join)
-
 import qualified Data.STM.LinkedList as LL
+
+import ViperVM.Utils.Flow
 
 -- | A transactional list
 type TList a = LL.LinkedList a
@@ -86,18 +85,18 @@ delete = LL.delete
 
 -- | Only keep element matching the criterium
 filter :: (e -> STM Bool) -> TList e -> STM ()
-filter f l = traverse_ go =<< first l
+filter f l = mapM_ go =<< first l
    where
       go current = do
          n <- next current
          match <- f (value current)
          when (not match) (delete current)
-         traverse_ go n
+         mapM_ go n
          
 -- | Find the first element matching the predicate (if any)
 find :: forall e. (e -> STM Bool) -> TList e -> STM (Maybe e)
 find f l = do
-      mn <- join <$> (traverse go =<< first l)
+      mn <- join <$> (mapM go =<< first l)
       return (fmap value mn)
    where
       go :: TNode e -> STM (Maybe (TNode e))
@@ -106,7 +105,7 @@ find f l = do
          match <- f (value current)
          if match
             then return (Just current)
-            else join <$> traverse go n
+            else join <$> mapM go n
 
 -- | Append an element to the list
 append :: a -> TList a -> STM (TNode a)

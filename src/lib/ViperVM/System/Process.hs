@@ -8,9 +8,9 @@ module ViperVM.System.Process
 where
 
 import ViperVM.System.Sys
+import ViperVM.Utils.Flow
 
 import Control.Concurrent
-import Control.Monad
 
 -- | Delay the thread (seconds)
 threadDelaySec :: Word -> Sys ()

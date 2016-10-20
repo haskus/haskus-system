@@ -14,8 +14,8 @@ import Text.Megaparsec.Lexer hiding (space)
 
 import ViperVM.Format.Binary.Buffer (bufferReadFile)
 import ViperVM.Format.Text (Text)
+import ViperVM.Utils.Flow
 import qualified ViperVM.Format.Text as Text
-import Control.Monad (void)
 
 -- | Control group entry
 data ControlGroupEntry = ControlGroupEntry

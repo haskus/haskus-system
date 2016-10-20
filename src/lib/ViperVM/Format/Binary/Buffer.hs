@@ -64,7 +64,6 @@ where
 import Foreign.Marshal.Alloc (malloc)
 import Foreign.Marshal.Array
 import System.IO.Unsafe
-import Control.Monad
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
@@ -75,6 +74,7 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Bits.Basic
 import ViperVM.Utils.Memory (memCopy,memSet)
 import ViperVM.Utils.List (foldl')
+import ViperVM.Utils.Flow
 
 -- | A buffer
 newtype Buffer = Buffer ByteString deriving (Eq,Ord)

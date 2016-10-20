@@ -12,12 +12,12 @@ module ViperVM.Platform.Data.Vector
 where
 
 import Control.Concurrent.STM
-import Control.Monad (void)
 
 import ViperVM.Platform.Types(Data(..))
 import ViperVM.Platform.Memory.Layout
 import qualified ViperVM.Platform.Memory.Object as MD
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Flow
 
 -- | Vector
 type Vector = MD.Object VectorParameters VectorRepresentation VectorSource

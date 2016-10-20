@@ -24,11 +24,11 @@ import Prelude hiding (lookup,null)
 import Control.Concurrent.STM
 import qualified STMContainers.Map as SMAP
 import STMContainers.Map (Key)
-import Data.Foldable (traverse_)
 import ListT (fold)
 import qualified ListT
 
 import ViperVM.Utils.Maybe (fromJust,isJust,isNothing)
+import ViperVM.Utils.Flow
 
 -- | STM hashmap
 type TMap a b = SMAP.Map a b
@@ -74,7 +74,7 @@ insert k v = SMAP.insert v k
 fromList :: Key k => [(k,v)] -> STM (TMap k v)
 fromList vs = do
    m <- empty
-   traverse_ (\(k,v) -> insert k v m) vs
+   mapM_ (\(k,v) -> insert k v m) vs
    return m
 
 -- | Delete an element from the map

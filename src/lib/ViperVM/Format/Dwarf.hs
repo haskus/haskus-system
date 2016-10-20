@@ -78,7 +78,6 @@ module ViperVM.Format.Dwarf
 where
 
 import Data.Tree (Tree(..))
-import Control.Monad (forM)
 
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Text (Text)
@@ -89,6 +88,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.VariableLength
 import ViperVM.Utils.Maybe (fromJust,isJust)
+import ViperVM.Utils.Flow (forM)
 
 -- DWARF 4
 -- =======

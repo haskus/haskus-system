@@ -25,10 +25,10 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 
 import ViperVM.Utils.List (nub, (\\))
 import ViperVM.Utils.Maybe
+import ViperVM.Utils.Flow
 
 import qualified Data.Map as Map
 import qualified Data.Vector as V
-import Control.Monad
 
 -- ===========================================================================
 -- X86 execution mode

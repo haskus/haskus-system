@@ -34,10 +34,10 @@ where
 
 import Data.Vector as V
 import Unsafe.Coerce
-import Control.Monad
 
 import ViperVM.Utils.Types.List
 import ViperVM.Utils.Types
+import ViperVM.Utils.Flow
 
 -- | heterogeneous array
 data HArray (types :: [*]) = forall a. HArray (Vector a)

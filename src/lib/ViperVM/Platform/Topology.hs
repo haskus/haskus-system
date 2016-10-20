@@ -9,11 +9,11 @@ module ViperVM.Platform.Topology
 where
 
 import Control.Concurrent.STM
-import Data.Traversable (forM)
 
 import qualified ViperVM.Platform.Drivers as Peer
 import ViperVM.Platform.Types (Memory(..), Network(..))
 import ViperVM.Utils.STM.TSet as TSet
+import ViperVM.Utils.Flow
 
 
 -- | Indicate if a memory is an host memory

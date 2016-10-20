@@ -16,6 +16,7 @@ where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Enum
+import ViperVM.Utils.Flow
 
 import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
@@ -23,8 +24,6 @@ import ViperVM.Arch.OpenCL.Types
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
-
-import Control.Monad (void)
 
 -- | Command queue
 data CommandQueue = CommandQueue Library CommandQueue_ deriving (Eq)

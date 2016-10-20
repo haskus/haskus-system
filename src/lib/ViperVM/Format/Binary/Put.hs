@@ -21,8 +21,8 @@ where
 import qualified Data.ByteString as BS
 import qualified Data.Serialize.Put as BP
 import Data.Serialize.Put (Put)
-import Control.Monad (replicateM_)
 
+import ViperVM.Utils.Flow (replicateM_)
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Text (Text)

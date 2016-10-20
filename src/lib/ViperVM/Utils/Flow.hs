@@ -29,6 +29,25 @@ module ViperVM.Utils.Flow
    , (<|)
    , (||>)
    , (<||)
+   -- * Monadic/applicative operators
+   , when
+   , unless
+   , guard
+   , void
+   , forever
+   , foldM
+   , foldM_
+   , forM
+   , forM_
+   , mapM
+   , mapM_
+   , sequence
+   , replicateM
+   , replicateM_
+   , filterM
+   , join
+   , (<=<)
+   , (>=>)
    -- * Named operators
    , flowMap
    , flowBind
@@ -150,6 +169,10 @@ where
 import ViperVM.Utils.Variant
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
+
+import Control.Monad
+import Data.Traversable
+import Data.Foldable
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)

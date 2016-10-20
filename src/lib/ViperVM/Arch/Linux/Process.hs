@@ -23,7 +23,6 @@ module ViperVM.Arch.Linux.Process
    )
 where
 
-import Control.Monad (void)
 import Foreign.Marshal.Alloc (alloca)
 
 import ViperVM.Format.Binary.Ptr (Ptr, nullPtr)
@@ -31,6 +30,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Utils.Flow
 
 -- | Process ID
 newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord,Storable,CStorable)

@@ -25,6 +25,7 @@ import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
 import ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
+import ViperVM.Utils.Flow (void,when,forever)
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
@@ -33,7 +34,6 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Text
 import ViperVM.Format.String (withCStringLen)
 
-import Control.Monad (void,when,forever)
 import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))

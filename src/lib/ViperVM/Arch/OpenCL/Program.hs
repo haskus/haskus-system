@@ -34,8 +34,8 @@ import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
 import ViperVM.Utils.List (elemIndex)
+import ViperVM.Utils.Flow
 
-import Control.Monad (void)
 import Control.Monad.Trans.Either
 import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
 import Foreign.Marshal.Alloc (alloca,allocaBytes)

@@ -55,7 +55,6 @@ where
 
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
-import Control.Monad (forM)
 import Control.Arrow (second)
 
 import qualified ViperVM.Format.Text as Text
@@ -81,6 +80,7 @@ import ViperVM.Format.Dwarf
 
 import ViperVM.Utils.Maybe (fromJust)
 import ViperVM.Utils.List (find)
+import ViperVM.Utils.Flow (forM)
 
 -- | Structure representing a ELF file
 --

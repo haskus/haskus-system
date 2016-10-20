@@ -10,11 +10,10 @@ module ViperVM.Platform.Memory.Object
 where
 
 import Control.Concurrent.STM
-import Data.Foldable (traverse_)
-import Control.Monad ((<=<))
 
 import ViperVM.Platform.Types (Data,MultiData,MultiData_(..))
 import ViperVM.Utils.STM.TList as TList
+import ViperVM.Utils.Flow
 
 -- | A data with possibly more than one instance
 --
@@ -40,8 +39,8 @@ class MultiDatable s where
 
 instance MultiDatable s => MultiData_ (Object p r s) where
    mdInstances = fmap (fmap instanceData) . TList.toList . objectInstances
-   mdSources = traverse toMultiData <=< (TList.toList . objectSources)
-   mdTargets = traverse toMultiData <=< (TList.toList . objectTargets)
+   mdSources = mapM toMultiData <=< (TList.toList . objectSources)
+   mdTargets = mapM toMultiData <=< (TList.toList . objectTargets)
 
 -- | Create a new Object
 new :: p -> STM (Object p r s)
@@ -60,6 +59,6 @@ addInstance obj r d = do
 removeInstance :: DataInstance r -> STM ()
 removeInstance di = do
    node <- tryTakeTMVar (instanceNode di)
-   traverse_ TList.delete node
+   mapM_ TList.delete node
 
 

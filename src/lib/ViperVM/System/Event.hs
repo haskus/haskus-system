@@ -10,9 +10,7 @@ where
 
 import Control.Concurrent.STM
 import Control.Concurrent
-import Data.Foldable (traverse_)
 import Prelude hiding (init,tail)
-import Control.Monad (forever)
 import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
 
@@ -39,7 +37,7 @@ newEventReader fd@(Handle lowfd) = do
          >.~!> \sz2 -> do
             -- FIXME: we should somehow signal that an error occured
             evs <- peekArray (fromIntegral sz2 `div` sz) ptr
-            atomically (traverse_ (writeTChan ch) evs)
+            atomically (mapM_ (writeTChan ch) evs)
    return ch
 
 -- | Read events in the given channel forever

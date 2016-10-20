@@ -13,9 +13,9 @@ where
 import qualified ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.TList (TList)
 import ViperVM.Utils.STM.TEq
+import ViperVM.Utils.Flow
 
 import Control.Concurrent.STM
-import Data.Foldable (traverse_)
 
 -- | A STM mutable tree
 data TTree k v = TTree
@@ -53,7 +53,7 @@ detachChild n = do
    -- remove child from parent
    let f c = not <$> (treeKey c `teq` treeKey n)
    p <- readTVar (treeParent n)
-   traverse_ (TList.filter f . treeChildren) p
+   mapM_ (TList.filter f . treeChildren) p
 
    -- remove parent from child
    writeTVar (treeParent n) Nothing

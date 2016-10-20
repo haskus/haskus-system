@@ -19,8 +19,8 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Get
 import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.Endianness
+import ViperVM.Utils.Flow (when)
 
-import Control.Monad (when)
 import Text.Printf
 
 -- | Pre-header

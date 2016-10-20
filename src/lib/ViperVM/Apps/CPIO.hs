@@ -10,9 +10,9 @@ import ViperVM.Format.Binary.Put
 import ViperVM.Format.Binary.BitSet as BitSet
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.FileSystem
+import ViperVM.Utils.Flow
 
 import System.FilePath
-import Control.Monad
 
 -- | Archive several files in a CPIO archive using dummy metadata
 --

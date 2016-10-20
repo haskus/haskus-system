@@ -17,8 +17,6 @@ import ViperVM.Format.Binary.Word
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 
-import Control.Monad (void)
-
 -- | Get a capability
 getCapability :: Handle -> Capability -> SysRet Word64
 getCapability hdl cap = do

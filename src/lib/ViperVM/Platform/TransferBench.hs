@@ -20,11 +20,11 @@ import ViperVM.Platform.Types
 import ViperVM.Platform.Memory.Region
 import ViperVM.Platform.Memory
 
+import ViperVM.Utils.Flow
 import qualified ViperVM.Utils.STM.TMap as TMap
 import qualified ViperVM.Utils.STM.TList as TList
 
 import Control.Concurrent.STM
-import Data.Traversable (forM)
 import Criterion.Measurement
 
 -- | Bench network and store results

@@ -19,12 +19,11 @@ import ViperVM.Format.Binary.BufferList
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (wordPtrToPtr)
 import ViperVM.Format.Text as Text
+import ViperVM.Utils.Flow
 
 import Text.Megaparsec
 import Text.Megaparsec.ByteString
 import Text.Megaparsec.Lexer hiding (space)
-
-import Control.Monad (void)
 
 -- | Memory map entry
 data MemoryMapEntry = MemoryMapEntry

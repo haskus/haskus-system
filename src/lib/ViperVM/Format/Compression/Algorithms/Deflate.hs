@@ -18,12 +18,12 @@ module ViperVM.Format.Compression.Algorithms.Deflate
    )
 where
 
-import Control.Monad (when,replicateM)
 import qualified Data.Sequence as Seq
 import Data.Sequence ((><), Seq, (|>))
 import Data.Foldable (toList)
 import Data.Ord(comparing)
 
+import ViperVM.Utils.Flow (when,replicateM)
 import ViperVM.Utils.List (sortBy)
 import ViperVM.Utils.Tuple (swap)
 import ViperVM.Utils.Maybe (fromJust)

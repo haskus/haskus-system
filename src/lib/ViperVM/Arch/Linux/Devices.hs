@@ -47,7 +47,6 @@ import ViperVM.System.Sys
 import ViperVM.System.FileSystem
 
 import System.FilePath
-import Control.Monad (void)
 import Text.Megaparsec
 import Text.Megaparsec.Text
 import Text.Megaparsec.Lexer hiding (space)

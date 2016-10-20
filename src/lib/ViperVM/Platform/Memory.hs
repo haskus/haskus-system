@@ -9,12 +9,12 @@ module ViperVM.Platform.Memory
 where
 
 import Control.Concurrent.STM
-import Data.Foldable (forM_)
 
 import qualified ViperVM.Platform.Drivers as Peer
 import qualified ViperVM.Platform.Drivers.OpenCL as OpenCL
 import qualified ViperVM.Platform.Drivers.Host as Host
 
+import ViperVM.Utils.Flow
 import qualified ViperVM.Utils.STM.TSet as TSet
 import ViperVM.Format.Binary.Endianness
 import ViperVM.Format.Binary.Word
