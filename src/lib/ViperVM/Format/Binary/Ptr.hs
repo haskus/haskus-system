@@ -40,6 +40,8 @@ module ViperVM.Format.Binary.Ptr
    -- * Function pointer
    , Ptr.FunPtr
    , Ptr.nullFunPtr
+   , Ptr.castPtrToFunPtr
+   , Ptr.castFunPtrToPtr
    -- * Pointer as a Word
    , Ptr.WordPtr
    , Ptr.wordPtrToPtr
