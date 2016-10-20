@@ -21,11 +21,11 @@ import ViperVM.Utils.Types.Generics (Generic)
 
 -- | struct utsname
 data SystemInfo = SystemInfo
-   { systemName     :: CStringBuffer 65
-   , systemNodeName :: CStringBuffer 65
-   , systemRelease  :: CStringBuffer 65
-   , systemVersion  :: CStringBuffer 65
-   , systemMachine  :: CStringBuffer 65
+   { systemName     :: CStringBuffer 65 -- ^ OS name
+   , systemNodeName :: CStringBuffer 65 -- ^ Network name
+   , systemRelease  :: CStringBuffer 65 -- ^ Release
+   , systemVersion  :: CStringBuffer 65 -- ^ Version
+   , systemMachine  :: CStringBuffer 65 -- ^ Hardware identifier
    } deriving (Show,Generic,CStorable)
 
 instance Storable SystemInfo where

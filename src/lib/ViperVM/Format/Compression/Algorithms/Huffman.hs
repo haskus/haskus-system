@@ -39,9 +39,7 @@ module ViperVM.Format.Compression.Algorithms.Huffman
    )
 where
 
-import Prelude hiding (mapM_)
-
-import Data.Foldable (foldl', mapM_)
+import Data.Foldable (foldl')
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.PQueue.Prio.Min (MinPQueue)
