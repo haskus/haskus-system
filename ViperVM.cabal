@@ -67,6 +67,7 @@ library
 
     ViperVM.Arch.Linux.Internals.FileSystem
     ViperVM.Arch.Linux.Internals.Input
+    ViperVM.Arch.Linux.Internals.Input.Keys
     ViperVM.Arch.Linux.Internals.Sound
     ViperVM.Arch.Linux.Internals.Graphics
     ViperVM.Arch.Linux.Internals.Reboot
