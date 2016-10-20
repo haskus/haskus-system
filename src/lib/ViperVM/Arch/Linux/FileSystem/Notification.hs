@@ -99,7 +99,7 @@ data PollResult
 -- | Poll a set of file descriptors
 --
 -- Timeout in milliseconds
-sysPoll :: [PollEntry] -> Bool -> Maybe Int64 -> SysRet PollResult
+sysPoll :: [PollEntry] -> Bool -> Maybe Int64 -> IOErr PollResult
 sysPoll entries blocking timeout = do
    
    let 

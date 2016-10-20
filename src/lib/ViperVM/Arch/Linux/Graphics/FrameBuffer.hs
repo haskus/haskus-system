@@ -70,7 +70,7 @@ toFrameBuffer StructFrameBufferCommand{..} = s
 
 
 -- | Create a framebuffer
-addFrameBuffer :: Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Surface] -> SysRet FrameBuffer
+addFrameBuffer :: Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Surface] -> IOErr FrameBuffer
 addFrameBuffer hdl width height fmt flags buffers = do
    
    let s = FrameBuffer (FrameBufferID 0) width height
@@ -79,14 +79,14 @@ addFrameBuffer hdl width height fmt flags buffers = do
    ioctlAddFrameBuffer (fromFrameBuffer s) hdl >.-.> toFrameBuffer
 
 -- | Release a frame buffer
-removeFrameBuffer :: Handle -> FrameBuffer -> SysRet ()
+removeFrameBuffer :: Handle -> FrameBuffer -> IOErr ()
 removeFrameBuffer hdl fb = do
    let FrameBufferID fbid = fbID fb
    ioctlRemoveFrameBuffer fbid hdl >.-.> const ()
 
 
 -- | Indicate dirty parts of a framebuffer
-dirtyFrameBuffer :: Handle -> FrameBuffer -> DirtyAnnotation -> SysRet ()
+dirtyFrameBuffer :: Handle -> FrameBuffer -> DirtyAnnotation -> IOErr ()
 dirtyFrameBuffer hdl fb mode = do
    let
       (color,flags,clips) = case mode of

@@ -28,13 +28,13 @@ data LoadModuleFlag
 type LoadModuleFlags = BitSet Word LoadModuleFlag
 
 -- | Load a module from a file
-loadModuleFromFile :: Handle -> String -> LoadModuleFlags -> SysRet ()
+loadModuleFromFile :: Handle -> String -> LoadModuleFlags -> IOErr ()
 loadModuleFromFile (Handle fd) params flags = do
    withCString params $ \params' ->
       onSuccess (syscall_finit_module fd  params' (BitSet.toBits flags)) (const ())
 
 -- | Load a module from memory
-loadModuleFromMemory :: Ptr () -> Word64 -> String -> SysRet ()
+loadModuleFromMemory :: Ptr () -> Word64 -> String -> IOErr ()
 loadModuleFromMemory ptr sz params =
    withCString params $ \params' ->
       onSuccess (syscall_init_module ptr sz params') (const ())

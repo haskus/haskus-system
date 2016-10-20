@@ -106,32 +106,32 @@ instance Enum Clock where
       _  -> error "Unknown clock"
 
 -- | Retrieve clock time
-sysClockGetTime :: Clock -> SysRet TimeSpec
+sysClockGetTime :: Clock -> IOErr TimeSpec
 sysClockGetTime clk =
    alloca $ \(t :: Ptr TimeSpec) ->
       onSuccessIO (syscall_clock_gettime (fromEnum clk) t) (const $ peek t)
 
 -- | Set clock time
-sysClockSetTime :: Clock -> TimeSpec -> SysRet ()
+sysClockSetTime :: Clock -> TimeSpec -> IOErr ()
 sysClockSetTime clk time =
    with time $ \(t :: Ptr TimeSpec) ->
       onSuccess (syscall_clock_settime (fromEnum clk) t) (const ())
 
 -- | Retrieve clock resolution
-sysClockGetResolution :: Clock -> SysRet TimeSpec
+sysClockGetResolution :: Clock -> IOErr TimeSpec
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
       onSuccessIO (syscall_clock_getres (fromEnum clk) t) (const $ peek t)
 
 -- | Retrieve time of day
-sysGetTimeOfDay :: SysRet TimeVal
+sysGetTimeOfDay :: IOErr TimeVal
 sysGetTimeOfDay =
    alloca $ \(tv :: Ptr TimeVal) ->
       -- timezone arg is deprecated (NULL passed instead)
       onSuccessIO (syscall_gettimeofday tv nullPtr) (const $ peek tv)
 
 -- | Set time of day
-sysSetTimeOfDay :: TimeVal -> SysRet ()
+sysSetTimeOfDay :: TimeVal -> IOErr ()
 sysSetTimeOfDay tv =
    with tv $ \ptv ->
       -- timezone arg is deprecated (NULL passed instead)
@@ -146,7 +146,7 @@ data SleepResult
 -- | Suspend the calling thread for the specified amount of time
 --
 -- Can be interrupted by a signal (in this case it returns the remaining time)
-sysNanoSleep :: TimeSpec -> SysRet SleepResult
+sysNanoSleep :: TimeSpec -> IOErr SleepResult
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
@@ -159,7 +159,7 @@ sysNanoSleep ts =
 -- | Suspend the calling thread for the specified amount of time
 --
 -- When interrupted by a signal, suspend again for the remaining amount of time
-nanoSleep :: TimeSpec -> SysRet ()
+nanoSleep :: TimeSpec -> IOErr ()
 nanoSleep ts = sysNanoSleep ts
    >.~^> \case
       CompleteSleep -> flowRet0 ()

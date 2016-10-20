@@ -43,17 +43,17 @@ data ShutFlag
    deriving (Enum,Show)
 
 -- | Shut down part of a full-duplex connection
-sysShutdown :: Handle -> ShutFlag -> SysRet ()
+sysShutdown :: Handle -> ShutFlag -> IOErr ()
 sysShutdown (Handle fd) flag =
    onSuccess (syscall_shutdown fd (fromEnum flag)) (const ())
 
 -- | Call sendfile using implicit file cursor for input
-sysSendFile :: Handle -> Handle -> Word64 -> SysRet Word64
+sysSendFile :: Handle -> Handle -> Word64 -> IOErr Word64
 sysSendFile (Handle outfd) (Handle infd) count =
    onSuccess (syscall_sendfile outfd infd nullPtr count) fromIntegral
 
 -- | Call sendFile using explicit input offset, returns new offset
-sysSendFileWithOffset :: Handle -> Handle -> Word64 -> Word64 -> SysRet (Word64,Word64)
+sysSendFileWithOffset :: Handle -> Handle -> Word64 -> Word64 -> IOErr (Word64,Word64)
 sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
    with offset $ \off ->
       onSuccessIO (syscall_sendfile outfd infd off count) $ \x -> do
@@ -153,7 +153,7 @@ instance Enum SocketOption where
 -- | Create a socket (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocket' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet Handle
+sysSocket' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> IOErr Handle
 sysSocket' typ protocol subprotocol opts =
    let
       f :: Enum a => a -> Word64
@@ -165,7 +165,7 @@ sysSocket' typ protocol subprotocol opts =
 -- | Create a socket pair (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocketPair' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> SysRet (Handle,Handle)
+sysSocketPair' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> IOErr (Handle,Handle)
 sysSocketPair' typ protocol subprotocol opts =
    let
       f :: Enum a => a -> Word64
@@ -258,7 +258,7 @@ data SocketType
    deriving (Show,Eq)
 
 -- | Create a socket
-sysSocket :: SocketType -> [SocketOption] -> SysRet Handle
+sysSocket :: SocketType -> [SocketOption] -> IOErr Handle
 sysSocket typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocket' SockRawTypeStream SockProtIPv4 0 opts
@@ -268,7 +268,7 @@ sysSocket typ opts =
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Create a socket pair
-sysSocketPair :: SocketType -> [SocketOption] -> SysRet (Handle,Handle)
+sysSocketPair :: SocketType -> [SocketOption] -> IOErr (Handle,Handle)
 sysSocketPair typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocketPair' SockRawTypeStream SockProtIPv4 0 opts
@@ -278,13 +278,13 @@ sysSocketPair typ opts =
       SockTypeNetlink nt -> sysSocketPair' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Bind a socket
-sysBind :: Storable a => Handle -> a -> SysRet ()
+sysBind :: Storable a => Handle -> a -> IOErr ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
       onSuccess (syscall_bind fd addr' (sizeOf addr)) (const ())
 
 -- | Connect a socket
-sysConnect :: Storable a => Handle -> a -> SysRet ()
+sysConnect :: Storable a => Handle -> a -> IOErr ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
       onSuccess (syscall_connect fd addr' (sizeOf addr)) (const ())
@@ -293,7 +293,7 @@ sysConnect (Handle fd) addr =
 --
 -- We use accept4 (288) instead of accept (43) to support socket options
 --
-sysAccept :: Storable a => Handle -> a -> [SocketOption] -> SysRet Handle
+sysAccept :: Storable a => Handle -> a -> [SocketOption] -> IOErr Handle
 sysAccept (Handle fd) addr opts =
    let 
       f :: Enum a => a -> Word64
@@ -306,7 +306,7 @@ sysAccept (Handle fd) addr opts =
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
-sysListen :: Handle -> Word64 -> SysRet ()
+sysListen :: Handle -> Word64 -> IOErr ()
 sysListen (Handle fd) backlog =
    onSuccess (syscall_listen fd backlog) (const ())
 
@@ -325,7 +325,7 @@ instance Storable NetlinkSocket where
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
-sysBindNetlink :: Handle -> Word32 -> Word32 -> SysRet ()
+sysBindNetlink :: Handle -> Word32 -> Word32 -> IOErr ()
 sysBindNetlink fd portID groups = sysBind fd s
    where
       s = NetlinkSocket p portID groups

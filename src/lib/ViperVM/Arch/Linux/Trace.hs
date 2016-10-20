@@ -190,5 +190,5 @@ data PeekSigInfoFlags
    
    
 -- | Trace a process
-sysTrace :: TraceRequest -> ProcessID -> Ptr () -> Ptr () -> SysRet Int64
+sysTrace :: TraceRequest -> ProcessID -> Ptr () -> Ptr () -> IOErr Int64
 sysTrace req (ProcessID pid) addr dat = onSuccessId (syscall_ptrace (fromEnum req) pid addr dat)

@@ -79,7 +79,7 @@ data DeviceType
    deriving (Show,Eq,Ord)
 
 -- | Create a device special file
-createDeviceFile :: Maybe Handle -> FilePath -> Device -> FilePermissions -> SysRet ()
+createDeviceFile :: Maybe Handle -> FilePath -> Device -> FilePermissions -> IOErr ()
 createDeviceFile hdl path dev perm = sysCreateSpecialFile hdl path typ perm (Just devid)
    where
       devid = deviceID dev

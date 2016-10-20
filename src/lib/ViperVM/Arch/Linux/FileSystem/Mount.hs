@@ -36,7 +36,7 @@ data UnmountFlag
 type UnmountFlags = BitSet Word64 UnmountFlag
 
 -- | Mount a file system
-sysMount :: String -> String -> String -> MountFlags -> Ptr () -> SysRet ()
+sysMount :: String -> String -> String -> MountFlags -> Ptr () -> IOErr ()
 sysMount source target fstype flags dat =
    withCString source $ \source' ->
       withCString target $ \target' ->
@@ -45,26 +45,26 @@ sysMount source target fstype flags dat =
 
 
 -- | Unmount a file system
-sysUnmount :: String -> UnmountFlags -> SysRet ()
+sysUnmount :: String -> UnmountFlags -> IOErr ()
 sysUnmount target flags =
    withCString target $ \target' ->
       onSuccess (syscall_umount2 target' (BitSet.toBits flags)) (const ())
 
 -- | Type of the low-level Linux "mount" function
-type MountCall = String -> String -> String -> MountFlags -> Ptr () -> SysRet ()
+type MountCall = String -> String -> String -> MountFlags -> Ptr () -> IOErr ()
 
 -- | Mount SysFS at the given location
-mountSysFS :: MountCall -> FilePath -> SysRet ()
+mountSysFS :: MountCall -> FilePath -> IOErr ()
 mountSysFS mount path = mount "none" path "sysfs" BitSet.empty nullPtr
 
 -- | Mount DevFS at the given location
-mountDevFS :: MountCall -> FilePath -> SysRet ()
+mountDevFS :: MountCall -> FilePath -> IOErr ()
 mountDevFS mount path = mount "none" path "devtmpfs" BitSet.empty nullPtr
 
 -- | Mount ProcFS at the given location
-mountProcFS :: MountCall -> FilePath -> SysRet ()
+mountProcFS :: MountCall -> FilePath -> IOErr ()
 mountProcFS mount path = mount "none" path "proc" BitSet.empty nullPtr
 
 -- | Mount TmpFS at the given location
-mountTmpFS :: MountCall -> FilePath -> SysRet ()
+mountTmpFS :: MountCall -> FilePath -> IOErr ()
 mountTmpFS mount path = mount "none" path "tmpfs" BitSet.empty nullPtr

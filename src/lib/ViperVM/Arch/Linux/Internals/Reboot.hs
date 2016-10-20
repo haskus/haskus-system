@@ -39,7 +39,7 @@ fromPowerCommand x = case x of
    PowerSoftSuspend        -> 0xD000FCE2
 
 -- | reboot syscall
-sysPower :: PowerCommand -> SysRet ()
+sysPower :: PowerCommand -> IOErr ()
 sysPower cmd = case cmd of
       PowerRestartCommand cmdPath -> withCString cmdPath f
       _                           -> f nullPtr

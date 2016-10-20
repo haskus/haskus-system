@@ -18,14 +18,14 @@ import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 
 -- | Get a capability
-getCapability :: Handle -> Capability -> SysRet Word64
+getCapability :: Handle -> Capability -> IOErr Word64
 getCapability hdl cap = do
    let s = StructGetCap (toEnumField cap) 0
    ioctlGetCapabilities s hdl
       >.-.> gcValue
 
 -- | Indicate if a capability is supported
-supports :: Handle -> Capability -> SysRet Bool
+supports :: Handle -> Capability -> IOErr Bool
 supports hdl cap = getCapability hdl cap
    >.-.> (/= 0)
 

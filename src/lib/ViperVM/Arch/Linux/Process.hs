@@ -50,7 +50,7 @@ sysExit :: Int64 -> IO ()
 sysExit n = void (syscall_exit n)
 
 -- | Get CPU and NUMA node executing the current process
-sysGetCPU :: SysRet (Word,Word)
+sysGetCPU :: IOErr (Word,Word)
 sysGetCPU =
    alloca $ \cpu ->
       alloca $ \node ->
@@ -78,7 +78,7 @@ sysGetEffectiveUserID :: IO UserID
 sysGetEffectiveUserID = UserID . fromIntegral <$> syscall_geteuid
 
 -- | Set effective user ID of the calling process
-sysSetEffectiveUserID :: UserID -> SysRet ()
+sysSetEffectiveUserID :: UserID -> IOErr ()
 sysSetEffectiveUserID (UserID uid) =
    onSuccess (syscall_setuid uid) (const ())
 
@@ -91,19 +91,19 @@ sysGetEffectiveGroupID :: IO GroupID
 sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall_getegid
 
 -- | Set effective group ID of the calling process
-sysSetEffectiveGroupID :: GroupID -> SysRet ()
+sysSetEffectiveGroupID :: GroupID -> IOErr ()
 sysSetEffectiveGroupID (GroupID gid) =
    onSuccess (syscall_setgid gid) (const ())
 
 -- | Create a child process
-sysFork :: SysRet ProcessID
+sysFork :: IOErr ProcessID
 sysFork = onSuccess syscall_fork (ProcessID . fromIntegral)
 
 -- | Create a child process and block parent
-sysVFork :: SysRet ProcessID
+sysVFork :: IOErr ProcessID
 sysVFork = onSuccess syscall_vfork (ProcessID . fromIntegral)
 
 -- | Yield the processor
-sysSchedulerYield :: SysRet ()
+sysSchedulerYield :: IOErr ()
 sysSchedulerYield = onSuccess syscall_sched_yield (const ())
 

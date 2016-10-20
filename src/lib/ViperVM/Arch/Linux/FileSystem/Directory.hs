@@ -33,7 +33,7 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types.Generics (Generic)
 
-sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> SysRet ()
+sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> IOErr ()
 sysCreateDirectory fd path perm sticky = do
    let
       opt = if sticky then BitSet.fromList [FileOptSticky] else BitSet.empty
@@ -45,7 +45,7 @@ sysCreateDirectory fd path perm sticky = do
          Just (Handle fd') -> onSuccess (syscall_mkdirat fd' path' mode) (const ())
 
 
-sysRemoveDirectory :: FilePath -> SysRet ()
+sysRemoveDirectory :: FilePath -> IOErr ()
 sysRemoveDirectory path = withCString path $ \path' ->
    onSuccess (syscall_rmdir path') (const ())
 
@@ -115,7 +115,7 @@ instance CEnum DirectoryEntryType where
 --
 -- TODO: propose a "pgetdents64" syscall for Linux with an additional offset
 -- (like pread, pwrite)
-sysGetDirectoryEntries :: Handle -> Int -> SysRet [DirectoryEntry]
+sysGetDirectoryEntries :: Handle -> Int -> IOErr [DirectoryEntry]
 sysGetDirectoryEntries (Handle fd) buffersize = do
 
    let
@@ -145,7 +145,7 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
 --
 -- Warning: reading concurrently the same file descriptor returns mixed up
 -- results because of the stateful kernel interface
-listDirectory :: Handle -> SysRet [DirectoryEntry]
+listDirectory :: Handle -> IOErr [DirectoryEntry]
 listDirectory fd = do
       -- Return at the beginning of the directory
       sysSeek' fd 0 SeekSet
@@ -161,7 +161,7 @@ listDirectory fd = do
       filtr x = nam /= "." && nam /= ".."
          where nam = entryName x
 
-      rec :: [DirectoryEntry] -> SysRet [DirectoryEntry]
+      rec :: [DirectoryEntry] -> IOErr [DirectoryEntry]
       rec xs = sysGetDirectoryEntries fd bufferSize
          >.~$> \case
             [] -> flowRet0 xs

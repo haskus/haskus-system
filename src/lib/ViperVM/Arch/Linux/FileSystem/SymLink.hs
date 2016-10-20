@@ -51,7 +51,7 @@ readSymbolicLink hdl path = do
 
 
 -- | Wrapper for readlinkat syscall
-sysReadLinkAt :: Maybe Handle -> FilePath -> SysRet String
+sysReadLinkAt :: Maybe Handle -> FilePath -> IOErr String
 sysReadLinkAt hdl path = go' 2048
    where
       -- if no handle is passed, we assume the path is absolute and we give a
@@ -74,7 +74,7 @@ sysReadLinkAt hdl path = go' 2048
                      else Just <$> peekCStringLen (ptr, fromIntegral n)
 
 -- | Create a symbolic link
-sysSymlink :: FilePath -> FilePath -> SysRet ()
+sysSymlink :: FilePath -> FilePath -> IOErr ()
 sysSymlink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->

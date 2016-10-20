@@ -24,6 +24,6 @@ fromFlags :: [EventPollFlag] -> Word64
 fromFlags = foldl' (.|.) 0 . fmap fromFlag
 
 -- | Create event poller
-sysEventPollCreate :: [EventPollFlag] -> SysRet Handle
+sysEventPollCreate :: [EventPollFlag] -> IOErr Handle
 sysEventPollCreate flags =
    onSuccess (syscall_epoll_create1 (fromFlags flags)) (Handle . fromIntegral)

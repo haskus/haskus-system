@@ -3,7 +3,7 @@
 
 -- | Management of returned values from syscalls
 module ViperVM.Arch.Linux.ErrorCode 
-   ( SysRet
+   ( IOErr
    , ErrorCode (..)
    , unhdlErr
    , defaultCheck
@@ -21,14 +21,14 @@ import ViperVM.Format.Binary.Word (Int64)
 import ViperVM.Utils.Flow
 
 -- | Syscall return type
-type SysRet a = IOV '[a,ErrorCode]
+type IOErr a = IOV '[a,ErrorCode]
 
 -- | Convert an error code into ErrorCode type
 toErrorCode :: Int64 -> ErrorCode
 toErrorCode = toEnum . fromIntegral . (*(-1))
 
 -- | Use defaultCheck to check for error and return the value otherwise
-checkReturn :: Int64 -> SysRet Int64
+checkReturn :: Int64 -> IOErr Int64
 checkReturn x = case defaultCheck x of
    Nothing  -> flowRet0 x
    Just err -> flowRet1 err
@@ -36,12 +36,12 @@ checkReturn x = case defaultCheck x of
 -- | Use defaultCheck to check for error and return () otherwise
 --
 -- Similar to LIBC's behavior (return 0 except on error)
-checkReturn' :: Int64 -> SysRet ()
+checkReturn' :: Int64 -> IOErr ()
 checkReturn' x = checkReturn x >.-.> const ()
 
 
 -- | Check for error and return the value otherwise
-onSuccessId :: IO Int64 -> SysRet Int64
+onSuccessId :: IO Int64 -> IOErr Int64
 onSuccessId f = do
    r <- f
    case defaultCheck r of
@@ -50,16 +50,16 @@ onSuccessId f = do
 
 -- | Apply a function to the result of the action if no error occured (use
 -- `defaultCheck` to detect an error)
-onSuccess :: IO Int64 -> (Int64 -> a) -> SysRet a
+onSuccess :: IO Int64 -> (Int64 -> a) -> IOErr a
 onSuccess f g = onSuccessId f >.-.> g
 
 -- | Check for error and return void
-onSuccessVoid :: IO Int64 -> SysRet ()
+onSuccessVoid :: IO Int64 -> IOErr ()
 onSuccessVoid f = onSuccessId f >.-.> const ()
 
 -- | Apply an IO function to the result of the action if no error occured (use
 -- `defaultCheck` to detect an error)
-onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> SysRet a
+onSuccessIO :: IO Int64 -> (Int64 -> IO a) -> IOErr a
 onSuccessIO f g = onSuccessId f >.~.> g
 
 

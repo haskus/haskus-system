@@ -81,7 +81,7 @@ getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl)
       crtc             = emptyStructController { contID = cid }
 
 
-setController' :: Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> SysRet ()
+setController' :: Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> IOErr ()
 setController' hdl crtcid fb conns mode = do
    let
       ControllerID cid = crtcid
@@ -115,7 +115,7 @@ setController' hdl crtcid fb conns mode = do
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> SysRet ()
+switchFrameBuffer' :: Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> IOErr ()
 switchFrameBuffer' hdl crtcid fb flags = do
    let
       ControllerID cid = crtcid

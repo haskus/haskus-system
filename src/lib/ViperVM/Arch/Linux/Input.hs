@@ -16,7 +16,7 @@ import ViperVM.Utils.Flow
 
 -- | Call getDeviceBits until the buffer is large enough to contain all the
 -- event codes. Initial buffer size should be sensible size in *bits*.
-getDeviceBits' :: Handle -> Maybe EventType -> Word -> SysRet Buffer
+getDeviceBits' :: Handle -> Maybe EventType -> Word -> IOErr Buffer
 getDeviceBits' hdl ev bitSize = go ((bitSize + 7) `div` 8)
    where
       go sz = do
@@ -30,6 +30,6 @@ getDeviceBits' hdl ev bitSize = go ((bitSize + 7) `div` 8)
 
 
 -- | Return the event types supported by the input device
-getSupportedEvents :: Handle -> SysRet Buffer
+getSupportedEvents :: Handle -> IOErr Buffer
 getSupportedEvents hdl = do
    getDeviceBits' hdl Nothing 0x20

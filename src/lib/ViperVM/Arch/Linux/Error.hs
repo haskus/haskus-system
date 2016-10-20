@@ -132,7 +132,7 @@ sysOnSuccessVoid :: IO Int64 -> Flow Sys '[(),ErrorCode]
 sysOnSuccessVoid a = sysFlow a >.-.> const ()
 
 -- | Assert that the given action doesn't fail
-sysCallAssert :: String -> SysRet a -> Sys a
+sysCallAssert :: String -> IOErr a -> Sys a
 sysCallAssert text act = do
    r <- sysIO act
    sysCallAssert' text r
@@ -150,7 +150,7 @@ sysCallAssert' text r =
          return v
 
 -- | Assert that the given action doesn't fail, log only on error
-sysCallAssertQuiet :: String -> SysRet a -> Sys a
+sysCallAssertQuiet :: String -> IOErr a -> Sys a
 sysCallAssertQuiet text act = do
    r <- sysIO act
    case toEither r of
@@ -160,7 +160,7 @@ sysCallAssertQuiet text act = do
       Right v  -> return v
 
 -- | Log a warning if the given action fails, otherwise log success
-sysCallWarn :: String -> SysRet a -> Flow Sys '[a,ErrorCode]
+sysCallWarn :: String -> IOErr a -> Flow Sys '[a,ErrorCode]
 sysCallWarn text act = do
    r <- sysIO act
    case toEither r of
@@ -173,7 +173,7 @@ sysCallWarn text act = do
    return r
 
 -- | Log a warning only if the given action fails
-sysCallWarnQuiet :: String -> SysRet a -> Flow Sys '[a,ErrorCode]
+sysCallWarnQuiet :: String -> IOErr a -> Flow Sys '[a,ErrorCode]
 sysCallWarnQuiet text act = do
    r <- sysIO act
    case toEither r of

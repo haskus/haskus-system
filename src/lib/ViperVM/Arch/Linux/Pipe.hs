@@ -13,7 +13,7 @@ import ViperVM.Format.Binary.Ptr (Ptr)
 import ViperVM.Format.Binary.Storable
 
 -- | Create a pipe
-createPipe :: SysRet (Handle, Handle)
+createPipe :: IOErr (Handle, Handle)
 createPipe =
    allocaArray 2 $ \ptr ->
       onSuccessIO (syscall_pipe (ptr :: Ptr Word)) 

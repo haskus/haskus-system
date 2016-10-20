@@ -669,7 +669,7 @@ releaseDeviceHandle fd = do
    sysCallAssertQuiet "Close device" $ sysClose fd
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: DeviceManager -> Device -> SysRet Handle
+openDeviceDir :: DeviceManager -> Device -> IOErr Handle
 openDeviceDir dm dev = sysOpenAt (dmDevFS dm) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids

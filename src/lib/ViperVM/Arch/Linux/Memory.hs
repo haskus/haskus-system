@@ -142,7 +142,7 @@ type MapFlags = BitSet Word32 MapFlag
 -- | Map files or devices into memory
 --
 -- Optional `hugepagesize` is in Log2 and on 6 bits
-sysMemMap :: Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (Handle, Word64) -> SysRet (Ptr ())
+sysMemMap :: Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (Handle, Word64) -> IOErr (Ptr ())
 sysMemMap addr len prot flags hugepagesize source = do
    let 
       (fd,off) = fromMaybe (-1,0) ((\(Handle fd', x) -> (fd',x)) <$> source)
@@ -160,12 +160,12 @@ sysMemMap addr len prot flags hugepagesize source = do
    onSuccess (syscall_mmap addr' len prot' fld' fd off) (wordPtrToPtr . fromIntegral)
 
 -- | Unmap memory
-sysMemUnmap :: Ptr () -> Word64 -> SysRet ()
+sysMemUnmap :: Ptr () -> Word64 -> IOErr ()
 sysMemUnmap addr len =
    onSuccessVoid (syscall_munmap addr len)
 
 -- | Set protection of a region of memory
-sysMemProtect :: Ptr () -> Word64 -> MemProtectFlags -> SysRet ()
+sysMemProtect :: Ptr () -> Word64 -> MemProtectFlags -> IOErr ()
 sysMemProtect addr len prot = do
    let prot' = BitSet.toBits prot
    onSuccessVoid (syscall_mprotect addr len prot')
@@ -229,7 +229,7 @@ instance Enum MemAdvice where
       _   -> error "Unknown mem advice code"
 
 
-sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> SysRet ()
+sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> IOErr ()
 sysMemAdvise addr len adv = 
    onSuccessVoid (syscall_madvise addr len (fromEnum adv)) 
 
@@ -241,11 +241,11 @@ data MemSync
 
 type MemSyncFlags = BitSet Word32 MemSync
 
-sysMemSync :: Ptr () -> Word64 -> MemSyncFlags -> SysRet ()
+sysMemSync :: Ptr () -> Word64 -> MemSyncFlags -> IOErr ()
 sysMemSync addr len flag = 
    onSuccessVoid (syscall_msync addr len (fromIntegral (BitSet.toBits flag)))
 
-sysMemInCore :: Ptr () -> Word64 -> SysRet [Bool]
+sysMemInCore :: Ptr () -> Word64 -> IOErr [Bool]
 sysMemInCore addr len = do
    -- On x86-64, page size is at least 4k
    let n = fromIntegral $ (len + 4095) `div` 4096
@@ -254,10 +254,10 @@ sysMemInCore addr len = do
          (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
 
 
-sysMemLock :: Ptr () -> Word64 -> SysRet ()
+sysMemLock :: Ptr () -> Word64 -> IOErr ()
 sysMemLock addr len = onSuccessVoid (syscall_mlock addr len)
 
-sysMemUnlock :: Ptr () -> Word64 -> SysRet ()
+sysMemUnlock :: Ptr () -> Word64 -> IOErr ()
 sysMemUnlock addr len = onSuccessVoid (syscall_munlock addr len)
 
 data MemLockFlag
@@ -267,8 +267,8 @@ data MemLockFlag
 
 type MemLockFlags = BitSet Word64 MemLockFlag
 
-sysMemLockAll :: MemLockFlags -> SysRet ()
+sysMemLockAll :: MemLockFlags -> IOErr ()
 sysMemLockAll flags = onSuccessVoid (syscall_mlockall (BitSet.toBits flags))
 
-sysMemUnlockAll :: SysRet ()
+sysMemUnlockAll :: IOErr ()
 sysMemUnlockAll = onSuccessVoid syscall_munlockall

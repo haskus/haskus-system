@@ -50,24 +50,24 @@ instance Storable IOVec where
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
-sysRead :: Handle -> Ptr () -> Word64 -> SysRet Word64
+sysRead :: Handle -> Ptr () -> Word64 -> IOErr Word64
 sysRead (Handle fd) ptr count =
    onSuccess (syscall_read fd ptr count) fromIntegral
 
 -- | Read a file descriptor at a given position
-sysReadWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> SysRet Word64
+sysReadWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> IOErr Word64
 sysReadWithOffset (Handle fd) offset ptr count =
    onSuccess (syscall_pread64 fd ptr count offset) fromIntegral
 
 -- | Read "count" bytes from a handle (starting at optional "offset") and put
 -- them at "ptr" (allocated memory should be large enough).  Returns the number
 -- of bytes read or 0 if end of file
-handleRead :: Handle -> Maybe Word64 -> Ptr () -> Word64 -> SysRet Word64
+handleRead :: Handle -> Maybe Word64 -> Ptr () -> Word64 -> IOErr Word64
 handleRead hdl Nothing       = sysRead hdl
 handleRead hdl (Just offset) = sysReadWithOffset hdl offset
 
 -- | Read n bytes in a buffer
-handleReadBuffer :: Handle -> Maybe Word64 -> Word64 -> SysRet Buffer
+handleReadBuffer :: Handle -> Maybe Word64 -> Word64 -> IOErr Buffer
 handleReadBuffer hdl offset size = do
    b <- mallocBytes (fromIntegral size)
    handleRead hdl offset b (fromIntegral size)
@@ -78,7 +78,7 @@ handleReadBuffer hdl offset size = do
 
 
 -- | Like read but uses several buffers
-sysReadMany :: Handle -> [(Ptr a, Word64)] -> SysRet Word64
+sysReadMany :: Handle -> [(Ptr a, Word64)] -> IOErr Word64
 sysReadMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -88,7 +88,7 @@ sysReadMany (Handle fd) bufs =
       onSuccess (syscall_readv fd bufs' count) fromIntegral
 
 -- | Like readMany, with additional offset in file
-sysReadManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> SysRet Word64
+sysReadManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> IOErr Word64
 sysReadManyWithOffset (Handle fd) offset bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -102,18 +102,18 @@ sysReadManyWithOffset (Handle fd) offset bufs =
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
-sysWrite :: Handle -> Ptr a -> Word64 -> SysRet Word64
+sysWrite :: Handle -> Ptr a -> Word64 -> IOErr Word64
 sysWrite (Handle fd) buf count =
    onSuccess (syscall_write fd buf count) fromIntegral
 
 -- | Write a file descriptor at a given position
-sysWriteWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> SysRet Word64
+sysWriteWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> IOErr Word64
 sysWriteWithOffset (Handle fd) offset buf count =
    onSuccess (syscall_pwrite64 fd buf count offset) fromIntegral
 
 
 -- | Like write but uses several buffers
-sysWriteMany :: Handle -> [(Ptr a, Word64)] -> SysRet Word64
+sysWriteMany :: Handle -> [(Ptr a, Word64)] -> IOErr Word64
 sysWriteMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -123,7 +123,7 @@ sysWriteMany (Handle fd) bufs =
       onSuccess (syscall_writev fd bufs' count) fromIntegral
 
 -- | Like writeMany, with additional offset in file
-sysWriteManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> SysRet Word64
+sysWriteManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> IOErr Word64
 sysWriteManyWithOffset (Handle fd) offset bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -136,7 +136,7 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       onSuccess (syscall_pwritev fd bufs' count ol oh) fromIntegral
 
 -- | Write a buffer
-writeBuffer :: Handle -> Buffer -> SysRet ()
+writeBuffer :: Handle -> Buffer -> IOErr ()
 writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
       go _ 0     = flowRet0 ()

@@ -33,33 +33,33 @@ import Foreign.Marshal.Alloc (alloca)
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
-sysPause :: SysRet ()
+sysPause :: IOErr ()
 sysPause = onSuccess syscall_pause (const ())
 
 -- | Alarm
-sysAlarm :: Word-> SysRet Word
+sysAlarm :: Word-> IOErr Word
 sysAlarm seconds =
    onSuccess (syscall_alarm seconds) fromIntegral
 
 -- | Kill syscall
-sysSendSignal :: ProcessID -> Int -> SysRet ()
+sysSendSignal :: ProcessID -> Int -> IOErr ()
 sysSendSignal (ProcessID pid) sig =
    onSuccess (syscall_kill (fromIntegral pid) sig) (const ())
 
 -- | Send a signal to every process in the process group of the calling process
-sysSendSignalGroup :: Int -> SysRet ()
+sysSendSignalGroup :: Int -> IOErr ()
 sysSendSignalGroup sig =
    onSuccess (syscall_kill 0 sig) (const ())
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
-sysSendSignalAll :: Int -> SysRet ()
+sysSendSignalAll :: Int -> IOErr ()
 sysSendSignalAll sig =
    onSuccess (syscall_kill (-1) sig) (const ())
 
 -- | Check if a given process or process group exists
 --
 -- Send signal "0" the given process
-sysCheckProcess :: ProcessID -> SysRet Bool
+sysCheckProcess :: ProcessID -> IOErr Bool
 sysCheckProcess pid = sysSendSignal pid 0
    >.-.> const True
    >%~$> \case
@@ -74,7 +74,7 @@ data ChangeSignals
    deriving (Show,Eq,Enum)
 
 -- | Change signal mask
-sysChangeSignalMask :: ChangeSignals -> Maybe SignalSet -> SysRet SignalSet
+sysChangeSignalMask :: ChangeSignals -> Maybe SignalSet -> IOErr SignalSet
 sysChangeSignalMask act set =
    let f x = alloca $ \(ret :: Ptr SignalSet) ->
                onSuccessIO (syscall_sigprocmask (fromEnum act) x ret) (const $ peek ret)

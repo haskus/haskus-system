@@ -35,7 +35,7 @@ instance Storable SystemInfo where
    sizeOf    = cSizeOf
 
 -- | "uname" syscall
-systemInfo :: SysRet SystemInfo
+systemInfo :: IOErr SystemInfo
 systemInfo = alloca $ \ptr -> onSuccessIO (uname ptr) (const (peek ptr))
    where
       uname :: Ptr SystemInfo -> IO Int64

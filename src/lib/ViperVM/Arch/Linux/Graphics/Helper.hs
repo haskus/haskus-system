@@ -22,7 +22,7 @@ data FBConfig
 --
 -- A connected framebuffer is required to set a mode: if ReuseFB is passed, the
 -- connected one is used.
-setController :: Controller -> FBConfig -> [Connector] -> Maybe Mode -> SysRet ()
+setController :: Controller -> FBConfig -> [Connector] -> Maybe Mode -> IOErr ()
 setController ctrl fbconf conns mode = do
    let 
       fbpos = case fbconf of
@@ -34,6 +34,6 @@ setController ctrl fbconf conns mode = do
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
-switchFrameBuffer :: Controller -> FrameBuffer -> PageFlipFlags -> SysRet ()
+switchFrameBuffer :: Controller -> FrameBuffer -> PageFlipFlags -> IOErr ()
 switchFrameBuffer ctrl fb flags =
    switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (fbID fb) flags

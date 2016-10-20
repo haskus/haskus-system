@@ -306,22 +306,22 @@ instance Storable HwDspImage where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-hwIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
+hwIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 hwIoctlW = ioctlWrite 0x48
 
-hwIoctlR :: Storable a => Word8 -> Handle -> SysRet a
+hwIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 hwIoctlR = ioctlRead 0x48
 
-ioctlHwVersion :: Handle -> SysRet Int
+ioctlHwVersion :: Handle -> IOErr Int
 ioctlHwVersion = hwIoctlR 0x00
 
-ioctlHwInfo :: Handle -> SysRet HwInfo
+ioctlHwInfo :: Handle -> IOErr HwInfo
 ioctlHwInfo = hwIoctlR 0x01
 
-ioctlHwDspStatus :: Handle -> SysRet HwDspStatus
+ioctlHwDspStatus :: Handle -> IOErr HwDspStatus
 ioctlHwDspStatus = hwIoctlR 0x02
 
-ioctlHwDspLoad :: HwDspImage -> Handle -> SysRet ()
+ioctlHwDspLoad :: HwDspImage -> Handle -> IOErr ()
 ioctlHwDspLoad = hwIoctlW 0x03
 
 -----------------------------------------------------------------------------
@@ -960,106 +960,106 @@ instance Enum ChannelOption where
       17 -> ChannelDriverSpec
       _  -> error "Unknown channel option"        
 
-pcmIoctl :: Word8 -> Handle -> SysRet ()
+pcmIoctl :: Word8 -> Handle -> IOErr ()
 pcmIoctl n = ioctlSignal 0x41 n (0 :: Int)
 
-pcmIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
+pcmIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 pcmIoctlWR = ioctlWriteRead 0x41
 
-pcmIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
+pcmIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 pcmIoctlW = ioctlWrite 0x41
 
-pcmIoctlR :: Storable a => Word8 -> Handle -> SysRet a
+pcmIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 pcmIoctlR = ioctlRead 0x41
 
-ioctlPcmVersion :: Handle -> SysRet Int
+ioctlPcmVersion :: Handle -> IOErr Int
 ioctlPcmVersion = pcmIoctlR 0x00
 
-ioctlPcmInfo :: Handle -> SysRet PcmInfo
+ioctlPcmInfo :: Handle -> IOErr PcmInfo
 ioctlPcmInfo = pcmIoctlR 0x01
 
-ioctlPcmTimeStamp :: Int -> Handle -> SysRet ()
+ioctlPcmTimeStamp :: Int -> Handle -> IOErr ()
 ioctlPcmTimeStamp = pcmIoctlW 0x02
 
-ioctlPcmTTimeStamp :: Int -> Handle -> SysRet ()
+ioctlPcmTTimeStamp :: Int -> Handle -> IOErr ()
 ioctlPcmTTimeStamp = pcmIoctlW 0x03
 
-ioctlPcmHwRefine :: PcmHwParams -> Handle -> SysRet PcmHwParams
+ioctlPcmHwRefine :: PcmHwParams -> Handle -> IOErr PcmHwParams
 ioctlPcmHwRefine = pcmIoctlWR 0x10
 
-ioctlPcmHwParams :: PcmHwParams -> Handle -> SysRet PcmHwParams
+ioctlPcmHwParams :: PcmHwParams -> Handle -> IOErr PcmHwParams
 ioctlPcmHwParams = pcmIoctlWR 0x11
 
-ioctlPcmHwFree :: Handle -> SysRet ()
+ioctlPcmHwFree :: Handle -> IOErr ()
 ioctlPcmHwFree = pcmIoctl 0x12
 
-ioctlPcmSwParams :: PcmSwParams -> Handle -> SysRet PcmSwParams
+ioctlPcmSwParams :: PcmSwParams -> Handle -> IOErr PcmSwParams
 ioctlPcmSwParams = pcmIoctlWR 0x13
 
-ioctlPcmStatus :: Handle -> SysRet PcmStatus
+ioctlPcmStatus :: Handle -> IOErr PcmStatus
 ioctlPcmStatus = pcmIoctlR 0x20
 
-ioctlPcmDelay :: Handle -> SysRet Int64
+ioctlPcmDelay :: Handle -> IOErr Int64
 ioctlPcmDelay = pcmIoctlR 0x21
 
-ioctlPcmHwSync :: Handle -> SysRet ()
+ioctlPcmHwSync :: Handle -> IOErr ()
 ioctlPcmHwSync = pcmIoctl 0x22
 
-ioctlPcmSyncPtr :: PcmSyncPtr -> Handle -> SysRet PcmSyncPtr
+ioctlPcmSyncPtr :: PcmSyncPtr -> Handle -> IOErr PcmSyncPtr
 ioctlPcmSyncPtr = pcmIoctlWR 0x23
 
-ioctlPcmStatusExt :: PcmStatus -> Handle -> SysRet PcmStatus
+ioctlPcmStatusExt :: PcmStatus -> Handle -> IOErr PcmStatus
 ioctlPcmStatusExt = pcmIoctlWR 0x24
 
-ioctlPcmChannelInfo :: Handle -> SysRet PcmChannelInfo
+ioctlPcmChannelInfo :: Handle -> IOErr PcmChannelInfo
 ioctlPcmChannelInfo = pcmIoctlR 0x32
 
-ioctlPcmPrepare :: Handle -> SysRet ()
+ioctlPcmPrepare :: Handle -> IOErr ()
 ioctlPcmPrepare = pcmIoctl 0x40
 
-ioctlPcmReset :: Handle -> SysRet ()
+ioctlPcmReset :: Handle -> IOErr ()
 ioctlPcmReset = pcmIoctl 0x41
 
-ioctlPcmStart :: Handle -> SysRet ()
+ioctlPcmStart :: Handle -> IOErr ()
 ioctlPcmStart = pcmIoctl 0x42
 
-ioctlPcmDrop :: Handle -> SysRet ()
+ioctlPcmDrop :: Handle -> IOErr ()
 ioctlPcmDrop = pcmIoctl 0x43
 
-ioctlPcmDrain :: Handle -> SysRet ()
+ioctlPcmDrain :: Handle -> IOErr ()
 ioctlPcmDrain = pcmIoctl 0x44
 
-ioctlPcmPause :: Int -> Handle -> SysRet ()
+ioctlPcmPause :: Int -> Handle -> IOErr ()
 ioctlPcmPause = pcmIoctlW 0x45
 
-ioctlPcmRewind :: Word64 -> Handle -> SysRet ()
+ioctlPcmRewind :: Word64 -> Handle -> IOErr ()
 ioctlPcmRewind = pcmIoctlW 0x46
 
-ioctlPcmResume :: Handle -> SysRet ()
+ioctlPcmResume :: Handle -> IOErr ()
 ioctlPcmResume = pcmIoctl 0x47
 
-ioctlPcmXRun :: Handle -> SysRet ()
+ioctlPcmXRun :: Handle -> IOErr ()
 ioctlPcmXRun = pcmIoctl 0x48
 
-ioctlPcmForward :: Word64 -> Handle -> SysRet ()
+ioctlPcmForward :: Word64 -> Handle -> IOErr ()
 ioctlPcmForward = pcmIoctlW 0x49
 
-ioctlPcmWriteIFrames :: XferI -> Handle -> SysRet ()
+ioctlPcmWriteIFrames :: XferI -> Handle -> IOErr ()
 ioctlPcmWriteIFrames = pcmIoctlW 0x50
 
-ioctlPcmReadIFrames :: Handle -> SysRet XferI
+ioctlPcmReadIFrames :: Handle -> IOErr XferI
 ioctlPcmReadIFrames = pcmIoctlR 0x51
 
-ioctlPcmWriteNFrames :: XferN -> Handle -> SysRet ()
+ioctlPcmWriteNFrames :: XferN -> Handle -> IOErr ()
 ioctlPcmWriteNFrames = pcmIoctlW 0x52
 
-ioctlPcmReadNFrames :: Handle -> SysRet XferN
+ioctlPcmReadNFrames :: Handle -> IOErr XferN
 ioctlPcmReadNFrames = pcmIoctlR 0x53
 
-ioctlPcmLink :: Int -> Handle -> SysRet ()
+ioctlPcmLink :: Int -> Handle -> IOErr ()
 ioctlPcmLink = pcmIoctlW 0x60
 
-ioctlPcmUnlink :: Handle -> SysRet ()
+ioctlPcmUnlink :: Handle -> IOErr ()
 ioctlPcmUnlink = pcmIoctl 0x61
 
 
@@ -1132,32 +1132,32 @@ instance Storable MidiStatus where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-midiIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
+midiIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 midiIoctlW = ioctlWrite 0x57
 
-midiIoctlR :: Storable a => Word8 -> Handle -> SysRet a
+midiIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 midiIoctlR = ioctlRead 0x57
 
-midiIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
+midiIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 midiIoctlWR = ioctlWriteRead 0x57
 
 
-ioctlMidiVersion :: Handle -> SysRet Int
+ioctlMidiVersion :: Handle -> IOErr Int
 ioctlMidiVersion = midiIoctlR 0x00
 
-ioctlMidiInfo :: Handle -> SysRet MidiInfo
+ioctlMidiInfo :: Handle -> IOErr MidiInfo
 ioctlMidiInfo = midiIoctlR 0x01
 
-ioctlMidiParams :: MidiParams -> Handle -> SysRet MidiParams
+ioctlMidiParams :: MidiParams -> Handle -> IOErr MidiParams
 ioctlMidiParams = midiIoctlWR 0x10
 
-ioctlMidiStatus :: MidiStatus -> Handle -> SysRet MidiStatus
+ioctlMidiStatus :: MidiStatus -> Handle -> IOErr MidiStatus
 ioctlMidiStatus = midiIoctlWR 0x20
 
-ioctlMidiDrop :: Int -> Handle -> SysRet ()
+ioctlMidiDrop :: Int -> Handle -> IOErr ()
 ioctlMidiDrop = midiIoctlW 0x30
 
-ioctlMidiDrain :: Int -> Handle -> SysRet ()
+ioctlMidiDrain :: Int -> Handle -> IOErr ()
 ioctlMidiDrain = midiIoctlW 0x31
 
 
@@ -1346,58 +1346,58 @@ instance Storable TimerStatus where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-timerIoctl :: Word8 -> Handle -> SysRet ()
+timerIoctl :: Word8 -> Handle -> IOErr ()
 timerIoctl n = ioctlSignal 0x54 n (0 :: Int)
 
-timerIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
+timerIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 timerIoctlW = ioctlWrite 0x54
 
-timerIoctlR :: Storable a => Word8 -> Handle -> SysRet a
+timerIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 timerIoctlR = ioctlRead 0x54
 
-timerIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
+timerIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 timerIoctlWR = ioctlWriteRead 0x54
 
-ioctlTimerVersion :: Handle -> SysRet Int
+ioctlTimerVersion :: Handle -> IOErr Int
 ioctlTimerVersion = timerIoctlR 0x00
 
-ioctlTimerNextDevice :: TimerId -> Handle -> SysRet TimerId
+ioctlTimerNextDevice :: TimerId -> Handle -> IOErr TimerId
 ioctlTimerNextDevice = timerIoctlWR 0x01
 
-ioctlTimerTRead :: Int -> Handle -> SysRet ()
+ioctlTimerTRead :: Int -> Handle -> IOErr ()
 ioctlTimerTRead = timerIoctlW 0x02
 
-ioctlTimerGInfo :: TimerGInfo -> Handle -> SysRet TimerGInfo
+ioctlTimerGInfo :: TimerGInfo -> Handle -> IOErr TimerGInfo
 ioctlTimerGInfo = timerIoctlWR 0x03
 
-ioctlTimerGParams :: TimerGParams -> Handle -> SysRet ()
+ioctlTimerGParams :: TimerGParams -> Handle -> IOErr ()
 ioctlTimerGParams = timerIoctlW 0x04
 
-ioctlTimerGStatus :: TimerGStatus -> Handle -> SysRet TimerGStatus
+ioctlTimerGStatus :: TimerGStatus -> Handle -> IOErr TimerGStatus
 ioctlTimerGStatus = timerIoctlWR 0x05
 
-ioctlTimerSelect :: TimerSelect -> Handle -> SysRet ()
+ioctlTimerSelect :: TimerSelect -> Handle -> IOErr ()
 ioctlTimerSelect = timerIoctlW 0x10
 
-ioctlTimerInfo :: Handle -> SysRet TimerInfo
+ioctlTimerInfo :: Handle -> IOErr TimerInfo
 ioctlTimerInfo = timerIoctlR 0x11
 
-ioctlTimerParams :: TimerParams -> Handle -> SysRet ()
+ioctlTimerParams :: TimerParams -> Handle -> IOErr ()
 ioctlTimerParams = timerIoctlW 0x12
 
-ioctlTimerStatus :: Handle -> SysRet TimerStatus
+ioctlTimerStatus :: Handle -> IOErr TimerStatus
 ioctlTimerStatus = timerIoctlR 0x14
 
-ioctlTimerStart :: Handle -> SysRet ()
+ioctlTimerStart :: Handle -> IOErr ()
 ioctlTimerStart = timerIoctl 0xa0
 
-ioctlTimerStop :: Handle -> SysRet ()
+ioctlTimerStop :: Handle -> IOErr ()
 ioctlTimerStop = timerIoctl 0xa1
 
-ioctlTimerContinue :: Handle -> SysRet ()
+ioctlTimerContinue :: Handle -> IOErr ()
 ioctlTimerContinue = timerIoctl 0xa2
 
-ioctlTimerPause :: Handle -> SysRet ()
+ioctlTimerPause :: Handle -> IOErr ()
 ioctlTimerPause = timerIoctl 0xa3
 
 data TimerRead = TimerRead
@@ -1696,88 +1696,88 @@ instance Storable ControlTLV where
    alignment = cAlignment
    sizeOf    = cSizeOf
 
-controlIoctlW :: Storable a => Word8 -> a -> Handle -> SysRet ()
+controlIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 controlIoctlW = ioctlWrite 0x55
 
-controlIoctlR :: Storable a => Word8 -> Handle -> SysRet a
+controlIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 controlIoctlR = ioctlRead 0x55
 
-controlIoctlWR :: Storable a => Word8 -> a -> Handle -> SysRet a
+controlIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 controlIoctlWR = ioctlWriteRead 0x55
 
-ioctlControlVersion :: Handle -> SysRet Int
+ioctlControlVersion :: Handle -> IOErr Int
 ioctlControlVersion = controlIoctlR 0x00
 
-ioctlControlCardInfo :: Handle -> SysRet ControlCardInfo
+ioctlControlCardInfo :: Handle -> IOErr ControlCardInfo
 ioctlControlCardInfo = controlIoctlR 0x01
 
-ioctlControlElemList :: ControlElementList -> Handle -> SysRet ControlElementList
+ioctlControlElemList :: ControlElementList -> Handle -> IOErr ControlElementList
 ioctlControlElemList = controlIoctlWR 0x10
 
-ioctlControlElemInfo :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
+ioctlControlElemInfo :: ControlElementInfo -> Handle -> IOErr ControlElementInfo
 ioctlControlElemInfo = controlIoctlWR 0x11
 
-ioctlControlElemRead :: ControlElementValue -> Handle -> SysRet ControlElementValue
+ioctlControlElemRead :: ControlElementValue -> Handle -> IOErr ControlElementValue
 ioctlControlElemRead = controlIoctlWR 0x12
 
-ioctlControlElemWrite :: ControlElementValue -> Handle -> SysRet ControlElementValue
+ioctlControlElemWrite :: ControlElementValue -> Handle -> IOErr ControlElementValue
 ioctlControlElemWrite = controlIoctlWR 0x13
 
-ioctlControlElemLock :: ControlElementId -> Handle -> SysRet ()
+ioctlControlElemLock :: ControlElementId -> Handle -> IOErr ()
 ioctlControlElemLock = controlIoctlW 0x14
 
-ioctlControlElemUnlock :: ControlElementId -> Handle -> SysRet ()
+ioctlControlElemUnlock :: ControlElementId -> Handle -> IOErr ()
 ioctlControlElemUnlock = controlIoctlW 0x15
 
-ioctlControlSubscribeEvents :: Int -> Handle -> SysRet Int
+ioctlControlSubscribeEvents :: Int -> Handle -> IOErr Int
 ioctlControlSubscribeEvents = controlIoctlWR 0x16
 
-ioctlControlElemAdd :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
+ioctlControlElemAdd :: ControlElementInfo -> Handle -> IOErr ControlElementInfo
 ioctlControlElemAdd = controlIoctlWR 0x17
 
-ioctlControlElemReplace :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
+ioctlControlElemReplace :: ControlElementInfo -> Handle -> IOErr ControlElementInfo
 ioctlControlElemReplace = controlIoctlWR 0x18
 
-ioctlControlElemRemove :: ControlElementInfo -> Handle -> SysRet ControlElementInfo
+ioctlControlElemRemove :: ControlElementInfo -> Handle -> IOErr ControlElementInfo
 ioctlControlElemRemove = controlIoctlWR 0x19
 
-ioctlControlTLVRead :: ControlTLV -> Handle -> SysRet ControlTLV
+ioctlControlTLVRead :: ControlTLV -> Handle -> IOErr ControlTLV
 ioctlControlTLVRead = controlIoctlWR 0x1a
 
-ioctlControlTLVWrite :: ControlTLV -> Handle -> SysRet ControlTLV
+ioctlControlTLVWrite :: ControlTLV -> Handle -> IOErr ControlTLV
 ioctlControlTLVWrite = controlIoctlWR 0x1b
 
-ioctlControlTLVCommand :: ControlTLV -> Handle -> SysRet ControlTLV
+ioctlControlTLVCommand :: ControlTLV -> Handle -> IOErr ControlTLV
 ioctlControlTLVCommand = controlIoctlWR 0x1c
 
-ioctlControlHwDepNextDevice :: Int -> Handle -> SysRet Int
+ioctlControlHwDepNextDevice :: Int -> Handle -> IOErr Int
 ioctlControlHwDepNextDevice = controlIoctlWR 0x20
 
-ioctlControlHwInfo :: Handle -> SysRet HwInfo
+ioctlControlHwInfo :: Handle -> IOErr HwInfo
 ioctlControlHwInfo = controlIoctlR 0x21
 
-ioctlControlPcmNextDevice :: Handle -> SysRet Int
+ioctlControlPcmNextDevice :: Handle -> IOErr Int
 ioctlControlPcmNextDevice = controlIoctlR 0x30
 
-ioctlControlPcmInfo :: PcmInfo -> Handle -> SysRet PcmInfo
+ioctlControlPcmInfo :: PcmInfo -> Handle -> IOErr PcmInfo
 ioctlControlPcmInfo = controlIoctlWR 0x31
 
-ioctlControlPcmPreferSubdevice :: Int -> Handle -> SysRet ()
+ioctlControlPcmPreferSubdevice :: Int -> Handle -> IOErr ()
 ioctlControlPcmPreferSubdevice = controlIoctlW 0x32
 
-ioctlControlMidiNextDevice :: Int -> Handle -> SysRet Int
+ioctlControlMidiNextDevice :: Int -> Handle -> IOErr Int
 ioctlControlMidiNextDevice = controlIoctlWR 0x40
 
-ioctlControlMidiInfo :: MidiInfo -> Handle -> SysRet MidiInfo
+ioctlControlMidiInfo :: MidiInfo -> Handle -> IOErr MidiInfo
 ioctlControlMidiInfo = controlIoctlWR 0x41
 
-ioctlControlMidiPreferSubdevice :: Int -> Handle -> SysRet ()
+ioctlControlMidiPreferSubdevice :: Int -> Handle -> IOErr ()
 ioctlControlMidiPreferSubdevice = controlIoctlW 0x42
 
-ioctlControlPower :: Int -> Handle -> SysRet Int
+ioctlControlPower :: Int -> Handle -> IOErr Int
 ioctlControlPower = controlIoctlWR 0xd0
 
-ioctlControlPowerState :: Handle -> SysRet Int
+ioctlControlPowerState :: Handle -> IOErr Int
 ioctlControlPowerState = controlIoctlR 0xd1
 
 

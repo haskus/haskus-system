@@ -92,10 +92,10 @@ type SendReceiveFlags = BitSet Word64 SendReceiveFlag
 -- | Receive data from a socket
 --
 -- recvfrom syscall
-sysReceive :: Storable a => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> SysRet Word64
+sysReceive :: Storable a => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> IOErr Word64
 sysReceive (Handle fd) ptr size flags addr = do
    let
-      call :: Ptr a -> Ptr Word64 -> SysRet Word64
+      call :: Ptr a -> Ptr Word64 -> IOErr Word64
       call add len = onSuccess (syscall_recvfrom fd ptr size (BitSet.toBits flags) add len) fromIntegral
 
    case addr of
@@ -103,7 +103,7 @@ sysReceive (Handle fd) ptr size flags addr = do
       Just a  -> with a $ \a' -> 
          with (fromIntegral (sizeOf a)) $ \sptr -> call a' sptr
 
-receiveBuffer :: Handle -> Int -> SendReceiveFlags -> SysRet Buffer
+receiveBuffer :: Handle -> Int -> SendReceiveFlags -> IOErr Buffer
 receiveBuffer fd size flags = do
    b <- mallocBytes size
    sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
