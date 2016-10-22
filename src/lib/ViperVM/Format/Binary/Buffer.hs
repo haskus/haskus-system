@@ -239,10 +239,12 @@ bufferInit (Buffer bs) = Buffer $ BS.init bs
 
 -- | Head
 bufferHead :: Buffer -> Word8
+{-# INLINE bufferHead #-}
 bufferHead (Buffer bs) = BS.head bs
 
 -- | Index
 bufferIndex :: Buffer -> Word -> Word8
+{-# INLINE bufferIndex #-}
 bufferIndex (Buffer bs) n = BS.index bs (fromIntegral n)
 
 -- | Unpack
