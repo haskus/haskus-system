@@ -13,7 +13,6 @@ where
 import qualified ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.TList (TList)
 import ViperVM.Utils.STM.TEq
-import ViperVM.Utils.Flow
 
 import Control.Concurrent.STM
 

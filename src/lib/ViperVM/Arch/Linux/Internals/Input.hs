@@ -1,6 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ViperVM.Arch.Linux.Internals.Input
    ( Property (..)
@@ -87,11 +91,14 @@ import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.Internals.Input.Keys
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
+import ViperVM.Utils.Embed
 import ViperVM.Utils.Types.Generics (Generic)
 
+import Data.Data
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils (fromBool)
+import System.IO.Unsafe (unsafePerformIO)
 
 
 -- =============================================================
@@ -151,7 +158,608 @@ data KeyEventType
    deriving (Show,Eq,Enum,CEnum)
 
 
--- Keys are defined in "Keys" module
+-- DO NOT CHANGE KEY ORDER OR ADD NEW KEYS WITHOUT CHANGING THE KEY TABLE IN
+-- "Keys" SUBMODULE
+
+-- | Keys
+data Key
+   = KeyReserved
+   | KeyEsc
+   | Key1
+   | Key2
+   | Key3
+   | Key4
+   | Key5
+   | Key6
+   | Key7
+   | Key8
+   | Key9
+   | Key0
+   | Minus
+   | Equal
+   | BackSpace
+   | Tab
+   | Q
+   | W
+   | E
+   | R
+   | T
+   | Y
+   | U
+   | I
+   | O
+   | P
+   | LeftBrace
+   | RightBrace
+   | Enter
+   | LeftCtrl
+   | A
+   | S
+   | D
+   | F
+   | G
+   | H
+   | J
+   | K
+   | L
+   | SemiColon
+   | Apostrophe
+   | Grave
+   | LeftShift
+   | BackSlash
+   | Z
+   | X
+   | C
+   | V
+   | B
+   | N
+   | M
+   | Comma
+   | Dot
+   | Slash
+   | RightShift
+   | KeyPadAsterisk
+   | LeftAlt
+   | Space
+   | CapsLock
+   | F1
+   | F2
+   | F3
+   | F4
+   | F5
+   | F6
+   | F7
+   | F8
+   | F9
+   | F10
+   | NumLock
+   | SCrollLock
+   | KeyPad7
+   | KeyPad8
+   | KeyPad9
+   | KeyPadMinus
+   | KeyPad4
+   | KeyPad5
+   | KeyPad6
+   | KeyPadPlus
+   | KeyPad1
+   | KeyPad2
+   | KeyPad3
+   | KeyPad0
+   | KeyPadDot
+   | Zenkakuhankaku
+   | Key102ND
+   | F11
+   | F12
+   | RO
+   | Katakana
+   | Hiragana
+   | Henkan
+   | KatakanaHiragana
+   | Muhenkan
+   | KeyPadJPComma
+   | KeyPadEnter
+   | RightCtrl
+   | KeyPadSlash
+   | SysRq
+   | RightAlt
+   | LineFeed
+   | Home
+   | Up
+   | PageUp
+   | KeyLeft
+   | KeyRight
+   | End
+   | Down
+   | PageDown
+   | Insert
+   | Delete
+   | Macro
+   | Mute
+   | VolumeDown
+   | VolumeUp
+   | Power            -- ^ System Power Down
+   | KeyPadEqual
+   | KeyPadPlusMinus
+   | Pause
+   | Scale            -- ^ Compiz Scale (Expose)
+   | KeyPadComma
+   | Hangeul
+   | Hanja
+   | Yen
+   | LeftMeta
+   | RightMeta
+   | Compose
+   | Stop
+   | Again
+   | Properties
+   | Undo
+   | Front
+   | Copy
+   | Open
+   | Paste
+   | Find
+   | Cut
+   | Help
+   | Menu
+   | Calc
+   | Setup
+   | Sleep
+   | WakeUp
+   | File
+   | SendFile
+   | DeleteFile
+   | Transfer
+   | Prog1
+   | Prog2
+   | Web
+   | MsDos
+   | ScreenLock
+   | RotateDisplay    -- ^ Display orientation for e.g. tablets
+   | CycleWindows
+   | Mail
+   | Bookmarks
+   | Computer
+   | Back
+   | Forward
+   | CloseCD
+   | EjectCD
+   | EjectCloseCD
+   | NextSong
+   | PlayPause
+   | PreviousSong
+   | StopCD
+   | Record
+   | Rewind
+   | Phone            -- ^ Media Select Telephone
+   | ISO
+   | Config           -- ^ Consumer Control Configuration
+   | HomePage
+   | Refresh
+   | Exit
+   | Move
+   | Edit
+   | ScrollUp
+   | ScrollDown
+   | KeyPadLeftParen
+   | KeypadRightParen
+   | New
+   | Redo
+   | F13
+   | F14
+   | F15
+   | F16
+   | F17
+   | F18
+   | F19
+   | F20
+   | F21
+   | F22
+   | F23
+   | F24
+   | PlayCD
+   | PauseCD
+   | Prog3
+   | Prog4
+   | DashBoard
+   | Suspend
+   | Close
+   | Play
+   | FastForward
+   | BassBoost
+   | Print
+   | HP
+   | Camera
+   | Sound
+   | Question
+   | Email
+   | Chat
+   | Search
+   | Connect
+   | Finance
+   | Sport
+   | Shop
+   | AltErase
+   | Cancel
+   | BrightnessDown
+   | BrightnessUp
+   | Media
+   | SwitchVideoMode  -- ^ Cycle between available video outputs (Monitor/LCD/TV-out/etc)
+   | KbdIllumToggle
+   | KbdIllumDown
+   | KbdIllumUp
+   | Send
+   | Reply
+   | ForwardMail
+   | Save
+   | Documents
+   | Battery
+   | BlueTooth
+   | WLAN
+   | UWB
+   | Unknown
+   | VideoNext        -- ^ drive next video source
+   | VideoPrev        -- ^ drive previous video source
+   | BrightnessCycle  -- ^ brightness up, after max is min
+   | BrightnessAuto   -- ^ Set Auto Brightness: manual brightness control is off, rely on ambient
+   | DisplayOff       -- ^ display device to off state
+   | WWAN             -- ^ Wireless WAN (LTE, UMTS, GSM, etc.)
+   | RfKill           -- ^ Key that controls all radios
+   | MicMute          -- ^ Mute / unmute the microphone
+   | Button0
+   | Button1
+   | Button2
+   | Button3
+   | Button4
+   | Button5
+   | Button6
+   | Button7
+   | Button8
+   | Button9
+   -- Mouse
+   | MouseLeft
+   | MouseRight
+   | MouseMiddle
+   | MouseSide
+   | MouseExtra
+   | MouseForward
+   | MouseBack
+   | MouseTask
+   -- Joystick
+   | JoystickTrigger
+   | JoystickThumb
+   | JoystickThumb2
+   | JoystickTop
+   | JoystickTop2
+   | JoystickPinkie
+   | JoystickBase
+   | JoystickBase2
+   | JoystickBase3
+   | JoystickBase4
+   | JoystickBase5
+   | JoystickBase6
+   | JoystickDead
+   -- GamePad
+   | GamePadA
+   | GamePadB
+   | GamePadC
+   | GamePadX
+   | GamePadY
+   | GamePadZ
+   | GamePadTL
+   | GamePadTR
+   | GamePadTL2
+   | GamePadTR2
+   | GamePadSelect
+   | GamePadStart
+   | GamePadMode
+   | GamePadThumbL
+   | GamePadThumbR
+   -- Digital
+   | DigitalToolPen
+   | DigitalToolRubber
+   | DigitalToolBrush
+   | DigitalToolPencil
+   | DigitalToolAirbrush
+   | DigitalToolFinger
+   | DigitalToolMouse
+   | DigitalToolLens
+   | DigitalToolQuintTap
+   | DigitalTouch
+   | DigitalStylus
+   | DigitalStylus2
+   | DigitalToolDoubleTap
+   | DigitalToolTripleTap
+   | DigitalToolQuadTap
+   -- Wheel
+   | WheelDown
+   | WheelUp
+
+   | Ok
+   | Select
+   | Goto
+   | Clear
+   | Power2
+   | Option
+   | Info
+   | Time
+   | Vendor
+   | Archive
+   | Program
+   | Channel
+   | Favorites
+   | EPG
+   | PVR
+   | MHP
+   | Language
+   | Title
+   | Subtitle
+   | Angle
+   | Zoom
+   | Mode
+   | Appboard
+   | Screen
+   | PC
+   | TV
+   | TV2
+   | VCR
+   | VCR2
+   | SAT
+   | SAT2
+   | CD
+   | Tape
+   | Radio
+   | Tuner
+   | Player
+   | Text
+   | DVD
+   | Aux
+   | MP3
+   | Audio
+   | Video
+   | Directory
+   | List
+   | Memo
+   | Calendar
+   | Red
+   | Green
+   | Yellow
+   | Blue
+   | ChannelUp
+   | ChannelDown
+   | First
+   | Last
+   | AB
+   | Next
+   | Restart
+   | Slow
+   | Shuffle
+   | Break
+   | Previous
+   | Digits
+   | Teen
+   | Twen
+   | VideoPhone
+   | Games
+   | ZoomIn
+   | ZoomOut
+   | ZoomReset
+   | WordProcessor
+   | Editor
+   | Spreadsheet
+   | GraphicsEditor
+   | Presentation
+   | DataBase
+   | News
+   | VoiceMail
+   | AddressBook
+   | Messenger
+   | DisplayToggle
+   | SpellCheck
+   | LogOff
+   | Dollar
+   | Euro
+   | FrameBack
+   | FrameForward
+   | ContextMenu
+   | MediaRepeat
+   | Key10ChannelsUp
+   | Key10ChennelsDown
+   | Images
+   -- Insert delete
+   | DeleteEndOfLine
+   | DeleteEOS
+   | InsertLine
+   | DeleteLine
+   -- FN key
+   | FN
+   | FNEsc
+   | FNF1
+   | FNF2
+   | FNF3
+   | FNF4
+   | FNF5
+   | FNF6
+   | FNF7
+   | FNF8
+   | FNF9
+   | FNF10
+   | FNF11
+   | FNF12
+   | FN1
+   | FN2
+   | FND
+   | FNE
+   | FNF
+   | FNS
+   | FNB
+   -- Braille
+   | BrailleDot1
+   | BrailleDot2
+   | BrailleDot3
+   | BrailleDot4
+   | BrailleDot5
+   | BrailleDot6
+   | BrailleDot7
+   | BrailleDot8
+   | BrailleDot9
+   | BrailleDot10
+   -- Numeric
+   | Numeric0
+   | Numeric1
+   | Numeric2
+   | Numeric3
+   | Numeric4
+   | Numeric5
+   | Numeric6
+   | Numeric7
+   | Numeric8
+   | Numeric9
+   | NumericStar
+   | NumericPound
+   | NumericA
+   | NumericB
+   | NumericC
+   | NumericD
+
+   | KeyCameraFocus
+   | KeyWifiProtectedSetup
+
+   | KeyTouchPadToggle
+   | KeyTouchPadOn
+   | KeyTouchPadOff
+
+   | CameraZoomIn
+   | CameraZoomOut
+   | CameraUp
+   | CameraDown
+   | CameraLeft
+   | CameraRight
+
+   | AttendantOn
+   | AttendantOff
+   | AttendantToggle
+   | LightsToggle
+
+   | DPadUp
+   | DPadDown
+   | DPadLeft
+   | DPadRight
+
+   | AmbientLightSensorToggle
+
+   | ButtonConfig
+   | TaskManager
+   | Journal
+   | ControlPanel
+   | AppsSelect
+   | ScreenSaver
+   | VoiceCommand
+
+   | BrightnessMin
+   | BrightnessMax
+
+   | KBDInputAssistPrev
+   | KBDInputAssistNext
+   | KBDInputAssistPrevGroup
+   | KBDInputAssistNextGroup
+   | KBDInputAssistAccept
+   | KBDInputAssistCancel
+
+   -- Diagonal movement keys
+   | RightUp
+   | RightDown
+   | LeftUp
+   | LeftDown
+
+   | RootMenu
+   | MediaTopMenu
+
+   | Numeric11
+   | Numeric12
+
+   | ToggleAudioDesc -- ^ Toggle Audio Description: refers to an audio service
+                     -- that helps blind and visually impaired consumers understand the action in a
+                     -- program. Note: in some countries this is referred to as "Video Description".
+   | Toggle3DMode
+   | NextFavorite
+   | StopRecord
+   | PauseRecord
+   | VideoOnDemand
+   | UnMute
+   | FastReverse
+   | SlowReverse
+
+   | TriggerHappy1
+   | TriggerHappy2
+   | TriggerHappy3
+   | TriggerHappy4
+   | TriggerHappy5
+   | TriggerHappy6
+   | TriggerHappy7
+   | TriggerHappy8
+   | TriggerHappy9
+   | TriggerHappy10
+   | TriggerHappy11
+   | TriggerHappy12
+   | TriggerHappy13
+   | TriggerHappy14
+   | TriggerHappy15
+   | TriggerHappy16
+   | TriggerHappy17
+   | TriggerHappy18
+   | TriggerHappy19
+   | TriggerHappy20
+   | TriggerHappy21
+   | TriggerHappy22
+   | TriggerHappy23
+   | TriggerHappy24
+   | TriggerHappy25
+   | TriggerHappy26
+   | TriggerHappy27
+   | TriggerHappy28
+   | TriggerHappy29
+   | TriggerHappy30
+   | TriggerHappy31
+   | TriggerHappy32
+   | TriggerHappy33
+   | TriggerHappy34
+   | TriggerHappy35
+   | TriggerHappy36
+   | TriggerHappy37
+   | TriggerHappy38
+   | TriggerHappy39
+   | TriggerHappy40
+
+   | CustomKey Word16
+   deriving (Data,Show,Eq)
+
+-- Keys are 16-bit numbers. Some keys have special meaning associated by the
+-- kernel. There are defined as constants in the C header file.
+--
+-- We want to associate a Key data-type constructor to each meaningful key:
+--    data Key = KeyA | KeyB | ...
+-- Because some key number haven't any special meaning, we would need to define
+-- "reserved" keys to fill the holes if we want constructor tags to be equal to
+-- the C constants:
+--    data Key = KeyA | KeyReserved0 | KeyB | ...
+-- As this isn't pretty, we want a single KeyCustom instead:
+--    data Key = KeyA | KeyB | KeyCustom Word16
+-- To do that, we use a permutation table that maps key numbers with a specified
+-- meaning to the constructor tag number and "hole" numbers accordingly.
+-- The permutation table is generated at compile time and conversions are in
+-- O(1).
+--
+-- DO NOT CHANGE THE CONSTRUCTOR ORDER WITHOUT CHANGING THE PERMUTATION TABLE
+
+keyTablePtr :: Ptr Word16
+keyTablePtr = Ptr $(embedBytes keyTable)
+
+instance CEnum Key where
+   toCEnum x = makeEnumWithCustom @Key
+                  (unsafePerformIO (peekElemOff keyTablePtr (fromIntegral x)))
+
+   fromCEnum = error "fromCEnumm not implemented for Key"
 
 -- | Relative axes
 data RelativeAxe

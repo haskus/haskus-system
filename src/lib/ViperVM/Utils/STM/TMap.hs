@@ -28,7 +28,6 @@ import ListT (fold)
 import qualified ListT
 
 import ViperVM.Utils.Maybe (fromJust,isJust,isNothing)
-import ViperVM.Utils.Flow
 
 -- | STM hashmap
 type TMap a b = SMAP.Map a b
