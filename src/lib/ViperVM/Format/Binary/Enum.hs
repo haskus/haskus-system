@@ -8,11 +8,15 @@ module ViperVM.Format.Binary.Enum
    , CEnum (..)
    , fromEnumField
    , toEnumField
+   , makeEnum
+   , makeEnumWithCustom
    )
 where
 
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
+
+import Data.Data
 
 -----------------------------------------------------------------------------
 -- EnumField b a: directly store the value of enum "a" as a "b"
@@ -84,4 +88,35 @@ class CEnum a where
    toCEnum         :: Integral b => b -> a
    default toCEnum :: (Enum a, Integral b) => b -> a
    toCEnum         = toEnum . fromIntegral
+
+--
+-- | Make an enum with the last constructor taking a parameter for the rest of
+-- the range
+--
+-- E.g., data T = A | B | C | D Word8
+-- makeEnumWithCustom :: Int -> T
+-- makeEnumWithCustom x = case x of
+--    0 -> A
+--    1 -> B
+--    2 -> C
+--    n -> D (n - 3)
+makeEnumWithCustom :: forall a i. (Data a,Integral i) => i -> a
+{-# INLINE makeEnumWithCustom #-}
+makeEnumWithCustom x =
+   if x' < maxConstrIndex t
+      then fromConstr (indexConstr t x')
+      else fromConstrB (fromConstr (toConstr (x' - m)))
+               (indexConstr t m)
+   where
+      m   = maxConstrIndex t
+      x'  = fromIntegral x + 1
+      t   = dataTypeOf (undefined :: a)
+
+-- | Make an enum from a number (0 indexed)
+makeEnum :: forall a i. (Data a,Integral i) => i -> a
+{-# INLINE makeEnum #-}
+makeEnum x =fromConstr (indexConstr t x')
+   where
+      x'  = fromIntegral x + 1
+      t   = dataTypeOf (undefined :: a)
 
