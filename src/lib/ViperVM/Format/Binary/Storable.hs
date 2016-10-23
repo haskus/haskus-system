@@ -16,12 +16,15 @@ module ViperVM.Format.Binary.Storable
    , staticAlignment
    , module Foreign.Storable
    , module Foreign.CStorable
+   , wordBytes
    )
 where
 
 import qualified Foreign.Storable as FS
+import Foreign.Marshal.Utils
 import Foreign.CStorable
 import Foreign.Storable
+import System.IO.Unsafe
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
@@ -117,3 +120,15 @@ instance StaticStorable Int64 where
    type Alignment Int64 = 8
    staticPeek = FS.peek
    staticPoke = FS.poke
+
+
+-- | Get bytes in host-endianness order
+wordBytes :: forall a.
+   ( Storable a
+   , StaticStorable a
+   , KnownNat (SizeOf a)
+   ) => a -> [Word8]
+{-# INLINE wordBytes #-}
+wordBytes x = unsafePerformIO $
+   with x $ \p -> mapM (peekByteOff p) [0..natValue @(SizeOf a) - 1]
+
