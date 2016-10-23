@@ -27,7 +27,7 @@
 module ViperVM.Format.Binary.Ptr
    ( PtrLike (..)
    -- * Pointer
-   , Ptr
+   , Ptr (..)
    , Ptr.free
    -- * Finalized pointer
    , FinalizedPtr (..)
@@ -53,7 +53,8 @@ import qualified Foreign.Ptr               as Ptr
 import qualified Foreign.Marshal.Alloc     as Ptr
 import qualified Foreign.ForeignPtr        as FP
 import qualified Foreign.ForeignPtr.Unsafe as FP
-import Foreign.Ptr (Ptr)
+-- we import GHC.Ptr instead of Foreign.Ptr to have access to Ptr constructors
+import GHC.Ptr (Ptr (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import Unsafe.Coerce
 import System.IO.Unsafe
