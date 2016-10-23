@@ -6,11 +6,7 @@
 
 -- | Unsigned and signed words
 module ViperVM.Format.Binary.Word
-   ( Word8
-   , Word16
-   , Word32
-   , Word64
-   , Int8
+   ( Int8
    , Int16
    , Int32
    , Int64
@@ -51,4 +47,3 @@ type instance BitSize Word8  = 8
 type instance BitSize Word16 = 16
 type instance BitSize Word32 = 32
 type instance BitSize Word64 = 64
-
