@@ -334,9 +334,13 @@ test-suite tests
       ,  ViperVM.Tests.Utils
       ,  ViperVM.Tests.System
       ,  ViperVM.Tests.System.Devices
+      ,  ViperVM.Tests.Arch
+      ,  ViperVM.Tests.Arch.Linux
+      ,  ViperVM.Tests.Arch.Linux.Input
 
    build-depends:    
          base
+      , stm
       ,  ViperVM
       ,  Cabal
       ,  cabal-test-quickcheck   >= 0.1
