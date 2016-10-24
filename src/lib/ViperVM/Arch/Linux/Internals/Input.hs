@@ -759,7 +759,7 @@ instance CEnum Key where
    toCEnum x = makeEnumWithCustom @Key
                   (unsafePerformIO (peekElemOff keyTablePtr (fromIntegral x)))
 
-   fromCEnum = error "fromCEnumm not implemented for Key"
+   fromCEnum = error "fromCEnumm not implemented for Key" --TODO
 
 -- | Relative axes
 data RelativeAxe
