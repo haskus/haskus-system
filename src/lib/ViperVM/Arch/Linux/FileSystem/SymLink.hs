@@ -16,11 +16,9 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.String
-
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
-
-import Foreign.Marshal.Alloc (allocaBytes)
 
 -- | Read the path in a symbolic link
 readSymbolicLink :: 

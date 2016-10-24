@@ -13,9 +13,8 @@ import ViperVM.Arch.OpenCL.Device
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
-
-import Foreign.Marshal.Array (withArray)
 
 -- | A context is basically a group of devices sharing entities
 data Context = Context Library Context_ deriving (Eq)

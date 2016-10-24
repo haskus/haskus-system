@@ -45,22 +45,10 @@ import ViperVM.Utils.Types
 import ViperVM.Utils.Types.Generics (Generic)
 
 -- | String with characters: A-Z 0-9 _ * " % & ' ( ) * + , - . / : ; < = > ?
-newtype StringA (n :: Nat) = StringA (CStringBuffer n) deriving (Show,Generic,CStorable)
-
-instance (KnownNat n) => Storable (StringA n) where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+newtype StringA (n :: Nat) = StringA (CStringBuffer n) deriving (Show,Generic,Storable)
 
 -- | String with characters: A-Z 0-9 _
-newtype StringD (n :: Nat) = StringD (CStringBuffer n) deriving (Show,Generic,CStorable)
-
-instance (KnownNat n) => Storable (StringD n) where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+newtype StringD (n :: Nat) = StringD (CStringBuffer n) deriving (Show,Generic,Storable)
 
 -- | Store the number in both endiannesses: Little-Endian then Big-Endian
 newtype BothEndian w = BothEndian w
@@ -75,21 +63,14 @@ data DateTime = DateTime
    , dateSecond                  :: StringD 2 -- ^ Second from 0 to 59
    , dateCentiSeconds            :: StringD 2 -- ^ Hundredths of a second from 0 to 99
    , dateTimeZone                :: Word8     -- ^ Time zone offset from GMT in 15 minute intervals, starting at interval -48 (west) and running up to interval 52 (east). So value 0 indicates interval -48 which equals GMT-12 hours, and value 100 indicates interval 52 which equals GMT+13 hours.
-   } deriving (Show,Generic)
-
-deriving instance CStorable DateTime
-instance Storable DateTime where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+   } deriving (Show,Generic,Storable)
 
 instance (ByteReversable w, Storable w) => Storable (BothEndian w) where
    sizeOf _              = 2 * (sizeOf (undefined :: w))
    alignment _           = alignment (undefined :: w)
    peek p                = (BothEndian . littleEndianToHost) <$> peek (castPtr p)
    poke p (BothEndian v) = do
-      let s = sizeOf (undefined :: w)
+      let s = fromIntegral (sizeOf (undefined :: w))
       pokeByteOff (castPtr p) 0 (hostToLittleEndian v)
       pokeByteOff (castPtr p) s (hostToBigEndian v)
 

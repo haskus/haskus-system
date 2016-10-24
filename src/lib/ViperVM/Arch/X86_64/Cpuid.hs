@@ -70,7 +70,7 @@ cpuid2 (W32# eax) (W32# ecx) =
 -- Implementation using Haskell FFI
 --------------------------------------------------
 
-import Foreign.Marshal.Array
+import ViperVM.Format.Binary.Storable
 import System.IO.Unsafe (unsafePerformIO)
 
 foreign import ccall unsafe "x86_64_cpuid_ffi" cpuid_ :: Word32 -> Ptr Word32 -> IO ()

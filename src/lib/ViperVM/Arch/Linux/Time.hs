@@ -20,9 +20,6 @@ module ViperVM.Arch.Linux.Time
    )
 where
 
-import Foreign.Marshal.Alloc (alloca)
-import Foreign.Marshal.Utils (with)
-
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
 import ViperVM.Format.Binary.Storable
@@ -33,28 +30,16 @@ import ViperVM.Utils.Types.Generics (Generic)
 
 
 -- | Time spec
-data TimeSpec = TimeSpec {
-   tsSeconds      :: {-# UNPACK #-} !Int64,
-   tsNanoSeconds  :: {-# UNPACK #-} !Int64
-} deriving (Show,Eq,Ord,Generic,CStorable)
-
-instance Storable TimeSpec where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+data TimeSpec = TimeSpec
+   { tsSeconds      :: {-# UNPACK #-} !Int64
+   , tsNanoSeconds  :: {-# UNPACK #-} !Int64
+   } deriving (Show,Eq,Ord,Generic,Storable)
 
 -- | Time val
 data TimeVal = TimeVal
    { tvSeconds       :: Word64
    , tvMicroSeconds  :: Word64
-   } deriving (Show, Eq, Ord, Generic, CStorable)
-
-instance Storable TimeVal where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Show,Eq,Ord,Generic,Storable)
 
 -- | Timeval difference in microseconds
 timeValDiff :: TimeVal -> TimeVal -> Word64

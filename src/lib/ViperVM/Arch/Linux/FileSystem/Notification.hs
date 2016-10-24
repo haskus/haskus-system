@@ -12,8 +12,6 @@ module ViperVM.Arch.Linux.FileSystem.Notification
    )
 where
 
-import Foreign.Marshal.Array (withArray, peekArray)
-
 import ViperVM.Utils.Maybe (mapMaybe)
 import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Format.Binary.Word
@@ -28,13 +26,7 @@ data PollStruct = PollStruct
    { pollFD             :: Int32
    , pollEvents         :: Word16
    , pollReturnedEvents :: Word16
-   } deriving (Generic,CStorable)
-
-instance Storable PollStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Generic,Storable)
 
 -- | Polling event
 data PollEvent

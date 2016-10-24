@@ -4,8 +4,6 @@ module ViperVM.Arch.Linux.Pipe
    )
 where
 
-import Foreign.Marshal.Array (allocaArray)
-
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls

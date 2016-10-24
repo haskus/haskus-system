@@ -22,8 +22,6 @@ module ViperVM.Arch.Linux.FileSystem.ReadWrite
    )
 where
 
-import Foreign.Marshal.Array (withArray)
-
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Word (Word64, Word32)
@@ -40,13 +38,7 @@ import ViperVM.Utils.Types.Generics (Generic)
 data IOVec = IOVec
    { iovecPtr  :: Ptr ()
    , iovecSize :: Word64
-   } deriving (Generic,CStorable)
-
-instance Storable IOVec where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Generic,Storable)
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file

@@ -23,9 +23,8 @@ module ViperVM.Arch.Linux.Memory
    )
 where
 
-import Foreign.Marshal.Array (allocaArray, peekArray)
-
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word

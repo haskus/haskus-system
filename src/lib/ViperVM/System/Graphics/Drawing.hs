@@ -25,6 +25,7 @@ import Control.Loop (forLoop)
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer as B
 import ViperVM.System.Graphics
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
@@ -84,7 +85,7 @@ fillFrame gfb color = do
    forLoop 0 (< fromIntegral (fbHeight fb)) (+1) $ \y ->
       forLoop 0 (< fromIntegral (fbWidth fb)) (+1) $ \x -> do
          let !off = x*4 + y*fromIntegral pitch
-         pokeByteOff addr off (color :: Word32)
+         pokeByteOff (castPtr addr) off (color :: Word32)
 
 
 -- | Display an image
@@ -144,7 +145,7 @@ blendImage gfb img op pos clp = do
                -- dest offset
                let !doff = (dx+x)*4 + (dy+y)*pitch'
                -- old value
-               !old <- myUnpackPixel <$> peekByteOff addr doff
+               !old <- myUnpackPixel <$> peekByteOff (castPtr addr) doff
                let
                   !new  = pixelAt img (sx+x) (y+sy)
                   !opa  = fromIntegral $ pixelOpacity new
@@ -155,7 +156,7 @@ blendImage gfb img op pos clp = do
                      where
                         !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `unsafeShiftR` 8
                   !v = myPackPixel (mixWith bl new old)
-               pokeByteOff addr doff (v :: Word32)
+               pokeByteOff (castPtr addr) doff (v :: Word32)
 
       BlendCopy ->
          forLoop 0 (< sh) (+1) $ \y ->
@@ -164,4 +165,4 @@ blendImage gfb img op pos clp = do
                   !doff = (dx+x)*4 + (dy+y)*pitch'
                   !new  = pixelAt img (sx+x) (y+sy)
                   !v = myPackPixel new
-               pokeByteOff addr doff (v :: Word32)
+               pokeByteOff (castPtr addr) doff (v :: Word32)

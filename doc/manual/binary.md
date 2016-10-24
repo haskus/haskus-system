@@ -73,27 +73,17 @@ You map C data structures with Haskell data type as follows:
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-import Foreign.Storable
-import Foreign.CStorable
-import GHC.Generics (Generic)
+import ViperVM.Format.Binary.Storable
+import ViperVM.Utils.Types.Generics (Generic)
 
 data StructX = StructX
    { xField0 :: Word8
    , xField1 :: Word64
-   } deriving (Show,Generic,CStorable)
-
-instance Storable StructX where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 ```
 
-The CStorable instance handles the alignment of the field as a C non-packed
+The Storable instance handles the alignment of the field as a C non-packed
 structure would (i.e. there are 7 padding bytes between xField0 and xField1).
-
-The boilerplate Storable instance cannot be derived automatically for now. We
-use CStorable members to define it.
 
 `peek` and `poke` can be used to read and write the data structure in memory.
 

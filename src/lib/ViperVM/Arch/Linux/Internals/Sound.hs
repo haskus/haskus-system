@@ -199,14 +199,7 @@ data AesIec958 = AesIec958
    , aesSubcode     :: Vector 147 Word8 -- ^ AES/IEC958 subcode bits
    , aesPadding     :: CChar            -- ^ nothing
    , aesDigSubFrame :: Vector 4 Word8   -- ^ AES/IEC958 subframe bits
-   } deriving (Generic, Show, CStorable)
-
-instance Storable AesIec958 where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Generic, Show, Storable)
 
 -----------------------------------------------------------------------------
 -- Digit audio interface
@@ -218,13 +211,7 @@ data Cea861AudioInfoFrame = Cea861AudioInfoFrame
    , ceaUnused                 :: Word8 -- ^ not used, all zeros
    , ceaChannelAllocationCode  :: Word8 -- ^ channel allocation code
    , ceaDownmixLevelShift      :: Word8 -- ^ downmix inhibit & level-shit values
-   } deriving (Generic, Show, CStorable)
-
-instance Storable Cea861AudioInfoFrame where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Generic, Show, Storable)
 
 -----------------------------------------------------------------------------
 -- Section for driver hardware dependent interface - /dev/snd/hw?
@@ -268,13 +255,7 @@ data HwInfo = HwInfo
    , hwInfoName      :: CStringBuffer 80 -- ^ hwdep name
    , hwInfoInterface :: Int              -- ^ hwdep interface
    , hwInfoReserved  :: Vector 64 Word8  -- ^ reserved for future
-   } deriving (Generic, Show, CStorable)
-
-instance Storable HwInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Generic, Show, Storable)
 
 -- | Generic DSP loader
 data HwDspStatus = HwDspStatus
@@ -284,13 +265,7 @@ data HwDspStatus = HwDspStatus
    , hwDspLoadedDsps :: Word             -- ^ R: bit flags indicating the loaded DSPs
    , hwDspChipReady  :: Word             -- ^ R: 1 = initialization finished
    , hwDspReserved   :: Vector 16 Word8  -- ^ reserved for future use
-   } deriving (Generic, Show, CStorable)
-
-instance Storable HwDspStatus where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Generic, Show, Storable)
 
 data HwDspImage = HwDspImage
    { hwDspImageIndex      :: Word             -- ^ W: DSP index
@@ -298,13 +273,7 @@ data HwDspImage = HwDspImage
    , hwDspImageBin        :: Ptr ()           -- ^ W: binary image
    , hwDspImageLength     :: CSize            -- ^ W: size of image in bytes
    , hwDspImageDriverData :: Word64           -- ^ W: driver-specific data
-   } deriving (Generic, Show, CStorable)
-
-instance Storable HwDspImage where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Generic, Show, Storable)
 
 hwIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 hwIoctlW = ioctlWrite 0x48
@@ -630,13 +599,7 @@ data PcmInfo = PcmInfo
    , pcmInfoSubDevicesAvailabled :: Word
    , pcmInfoSync                 :: Vector 16 Word8  -- ^ hardware synchronization ID
    , pcmInfoReserved             :: Vector 64 Word8  -- ^ reserved for future...
-   } deriving (Generic, Show, CStorable)
-
-instance Storable PcmInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Generic, Show, Storable)
 
 data PcmHwParam
    = PcmHwParamAccess      -- ^ Access type
@@ -695,13 +658,7 @@ data Interval = Interval
    { intervalMin :: Word
    , intervalMax :: Word
    , intervalOptions :: IntervalOptions
-   } deriving (Show,Eq,Generic,CStorable)
-
-instance Storable Interval where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Eq,Generic,Storable)
 
 data IntervalOption
    = IntervalOpenMin
@@ -722,13 +679,7 @@ type PcmHwParamsFlags = BitSet Word PcmHwParamsFlag
 
 data Mask = Mask
    { maskBits :: Vector 8 Word32
-   } deriving (Generic,CStorable,Show)
-
-instance Storable Mask where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Generic,Storable,Show)
 
 data PcmHwParams = PcmHwParams
    { pcmHwParamsFlags               :: PcmHwParamsFlags
@@ -742,14 +693,7 @@ data PcmHwParams = PcmHwParams
    , pcmHwParamsRateDenominator     :: Word               -- ^ R: rate denominator
    , pcmHwParamsFifoSize            :: Word64             -- ^ R: chip FIFO size in frames
    , pcmHwParamsReserved            :: Vector 64 Word8    -- ^ reserved for future
-   } deriving (Generic, CStorable, Show)
-
-instance Storable PcmHwParams where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Generic, Storable, Show)
 
 data PcmTimeStampMode
    = PcmTimeStampNone
@@ -770,27 +714,14 @@ data PcmSwParams = PcmSwParams
    , pcmSwParamsProtoVersion     :: Word            -- ^ protocol version
    , pcmSwParamsTimeStampType    :: Word            -- ^ timestamp type (req. proto >= 2.0.12)
    , pcmSwParamsReserved         :: Vector 56 Word8 -- ^ reserved for future
-   } deriving (Generic, CStorable, Show)
-
-instance Storable PcmSwParams where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Generic, Storable, Show)
 
 data PcmChannelInfo = PcmChannelInfo
    { pcmChannelInfoChannel :: Word
    , pcmChannelInfoOffset  :: Int64 -- ^ mmap offset
    , pcmChannelInfoFirst   :: Word  -- ^ offset to first sample in bits
    , pcmChannelInfoStep    :: Word  -- ^ samples distance in bits
-   } deriving (Show,Generic,CStorable)
-
-instance Storable PcmChannelInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data PcmAudioTimeStamp
    = PcmAudioTimeStampCompat           -- ^ For backwards compatibility only, maps to wallclock/link time for HDAudio playback and DEFAULT/DMA time for everything else
@@ -817,14 +748,7 @@ data PcmStatus = PcmStatus
    , pcmStatusDriverTimeStamp    :: TimeSpec        -- ^ useful in case reference system tstamp is reported with delay
    , pcmStatusTimeStampAccuracy  :: Word32          -- ^ in ns units, only valid if indicated in audio_tstamp_data
    , pcmStatusReserved           :: Vector 20 Word8 -- ^ must be filled with zero
-   } deriving (Show,Generic,CStorable)
-
-instance Storable PcmStatus where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data PcmMmapStatus = PcmMmapStatus
    { pcmMmapStatusState          :: PcmStateField -- ^ RO: state - SNDRV_PCM_STATE_XXXX
@@ -833,24 +757,12 @@ data PcmMmapStatus = PcmMmapStatus
    , pcmMmapStatusTimeStamp      :: TimeSpec -- ^ Timestamp
    , pcmMmapStatusSuspendedState :: PcmStateField -- ^ RO: suspended stream state
    , pcmMmapStatusAudioTimeStamp :: TimeSpec -- ^ from sample counter or wall clock
-   } deriving (Show,Generic,CStorable)
-
-instance Storable PcmMmapStatus where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data PcmMmapControl = PcmMmapControl
    { pcmMmapControlApplPtr  :: Word64  -- ^ RW: appl ptr (0...boundary-1)
    , pcmMmapControlAvailMin :: Word64  -- ^ RW: min available frames for wakeup
-   } deriving (Show,Generic,CStorable)
-
-instance Storable PcmMmapControl where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data PcmSyncFlag
    = PcmSyncFlagHwSync        -- ^ execute hwsync 
@@ -861,42 +773,23 @@ data PcmSyncFlag
 type PcmSyncFlags = BitSet Word PcmSyncFlag
 
 data PcmSyncPtr = PcmSyncPtr
-   { pcmSyncPtrFlags :: PcmSyncFlags
-   , pcmSyncPtrStatus :: PcmMmapStatus
-   , pcmSyncPtrControl   :: PcmMmapControl
+   { pcmSyncPtrFlags   :: PcmSyncFlags
+   , pcmSyncPtrStatus  :: PcmMmapStatus
+   , pcmSyncPtrControl :: PcmMmapControl
    , pcmSyncPtrPadding :: Vector 48 Word8
-   } deriving (Show, Generic, CStorable)
-
-instance Storable PcmSyncPtr where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show, Generic, Storable)
 
 data XferI = XferI
    { xferiResult :: Int64
    , xferiBuffer :: Ptr ()
    , xferiFrames :: Word64
-   } deriving (Show, Generic, CStorable)
-
-instance Storable XferI where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show, Generic, Storable)
 
 data XferN = XferN
    { xfernResult  :: Int64
    , xfernBuffers :: Ptr (Ptr ())
    , xfernFrames  :: Word64
-   } deriving (Show, Generic, CStorable)
-
-instance Storable XferN where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show, Generic, Storable)
 
 data PcmTimeStampType
    = PcmTimeStampGetTimeOfDay  -- ^ gettimeofday equivalent 
@@ -1096,13 +989,7 @@ data MidiInfo = MidiInfo
    , midiInfoSubDeviceCount :: Word
    , midiInfoSubDeviceAvail :: Word
    , midiInfoReserved       :: Vector 64 Word8  -- ^ reserved for future use
-   } deriving (Show, Generic, CStorable)
-
-instance Storable MidiInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show, Generic, Storable)
 
 data MidiParams = MidiParams
    { midiParamsStream          :: Int
@@ -1110,13 +997,7 @@ data MidiParams = MidiParams
    , midiParamsAvailMin        :: CSize           -- ^ minimum avail bytes for wakeup
    , midiParamsNoActiveSensing :: Word            -- ^ do not send active sensing byte in close()
    , midiParamsReserved        :: Vector 16 Word8 -- ^ reserved for future use
-   } deriving (Show, Generic, CStorable)
-
-instance Storable MidiParams where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show, Generic, Storable)
 
 data MidiStatus = MidiStatus
    { midiStatusStream    :: Int
@@ -1124,13 +1005,7 @@ data MidiStatus = MidiStatus
    , midiStatusAvail     :: CSize           -- ^ available bytes
    , midiStatusXRuns     :: CSize           -- ^ count of overruns since last status (in bytes)
    , midiStatusReserved  :: Vector 16 Word8 -- ^ reserved for future use
-   } deriving (Show, Generic, CStorable)
-
-instance Storable MidiStatus where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show, Generic, Storable)
 
 midiIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 midiIoctlW = ioctlWrite 0x57
@@ -1222,14 +1097,7 @@ data TimerId = TimerId
    , timerIdCard           :: Int
    , timerIdDevice         :: Int
    , timerIdSubDevice      :: Int
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerId where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data TimerGInfo = TimerGInfo
    { timerGInfoTimerID       :: TimerId          -- ^ requested timer ID
@@ -1243,26 +1111,14 @@ data TimerGInfo = TimerGInfo
    , timerGInfoResolutionMax :: Word64           -- ^ maximal period resolution in ns
    , timerGInfoClients       :: Word             -- ^ active timer clients
    , timerGInfoReserved2     :: Vector 32 Word8
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerGInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data TimerGParams = TimerGParams
    { timerGParamsTimerId          :: TimerId        -- ^ requested timer ID
    , timerGParamsPeriodNumerator  :: Word64         -- ^ requested precise period duration (in seconds) - numerator
    , timerGParamsPeriodDenomintor :: Word64         -- ^ requested precise period duration (in seconds) - denominator
    , timerGParamsReserved         :: Vector 32 Word8
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerGParams where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data TimerGStatus = TimerGStatus
    { timerGStatusTimerId               :: TimerId         -- ^ requested timer ID
@@ -1270,26 +1126,12 @@ data TimerGStatus = TimerGStatus
    , timerGStatusResolutionNumerator   :: Word64          -- ^ precise current period resolution (in seconds) - numerator
    , timerGStatusResolutionDenominator :: Word64          -- ^ precise current period resolution (in seconds) - denominator
    , timerGStatusReserved              :: Vector 32 Word8
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerGStatus where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data TimerSelect = TimerSelect
    { timerSelectTimerId  :: TimerId         -- ^ bind to timer ID
    , timerSelectReserved :: Vector 32 Word8 -- ^ reserved
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerSelect where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data TimerInfo = TimerInfo
    { timerInfoFlags      :: TimerFlags       -- ^ timer flags
@@ -1299,14 +1141,7 @@ data TimerInfo = TimerInfo
    , timerInfoReserved   :: Word64           -- ^ reserved for future use
    , timerInfoResolution :: Word64           -- ^ average period resolution in ns
    , timerInfoReserved2  :: Vector 64 Word8
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data TimerParamsFlag
    = TimerParamFlagAuto       -- ^ auto start, otherwise one-shot 
@@ -1323,13 +1158,7 @@ data TimerParams = TimerParams
    , timerParamsReserved  :: Word             -- ^ reserved, was: failure locations
    , timerParamsFilter    :: Word             -- ^ event filter (bitmask of SNDRV_TIMER_EVENT_*)
    , timerParamsReserved2 :: Vector 60 Word8  -- ^ reserved
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerParams where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data TimerStatus = TimerStatus
    { timerStatusTimeStamp  :: TimeSpec        -- ^ Timestamp - last update
@@ -1338,13 +1167,7 @@ data TimerStatus = TimerStatus
    , timerStatusOverrun    :: Word            -- ^ count of read queue overruns
    , timerStatusQueue      :: Word            -- ^ used queue size
    , timerStatusReserved   :: Vector 64 Word8 -- ^ reserved
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerStatus where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 timerIoctl :: Word8 -> Handle -> IOErr ()
 timerIoctl n = ioctlSignal 0x54 n (0 :: Int)
@@ -1403,13 +1226,7 @@ ioctlTimerPause = timerIoctl 0xa3
 data TimerRead = TimerRead
    { timerReadResolution :: Word
    , timerReadTicks      :: Word
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerRead where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data TimerEvent
    = TimerEventResolution        -- ^ val = resolution in ns 
@@ -1469,13 +1286,7 @@ data TimerTRead = TimerTRead
    { timerTReadEvent     :: Int
    , timerTReadTimeStamp :: TimeSpec
    , timerTReadValue     :: Word
-   } deriving (Show,Generic,CStorable)
-
-instance Storable TimerTRead where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Driver control interface - /dev/snd/control*
@@ -1494,13 +1305,7 @@ data ControlCardInfo = ControlCardInfo
    , controlCardInfoReserved   :: Vector 16 Word8   -- ^ reserved for future (was ID of mixer)
    , controlCardInfoMixerName  :: CStringBuffer 80  -- ^ visual mixer identification
    , controlCardInfoComponents :: CStringBuffer 128 -- ^ card components / fine identification, delimited with one space (AC97 etc..)
-   } deriving (Show,Generic,CStorable)
-
-instance Storable ControlCardInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data ControlElementType
    = ControlElemNone
@@ -1588,14 +1393,7 @@ data ControlElementId = ControlElementId
    , controlElemIdSubDevice :: Word             -- ^ subdevice (substream) number
    , controlElemIdName      :: CStringBuffer 44 -- ^ ASCII name of item
    , controlElemIdIndex     :: Word             -- ^ index of item
-   } deriving (Show,Generic,CStorable)
-
-instance Storable ControlElementId where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data ControlElementList = ControlElementList
    { controlElemListOffset   :: Word            -- ^ W: first element ID to get
@@ -1604,69 +1402,37 @@ data ControlElementList = ControlElementList
    , controlElemListCount    :: Word            -- ^ R: count of all elements
    , controlElemListPids     :: Ptr ()          -- ^ R: IDs
    , controlElemListReserved :: Vector 50 Word8
-   } deriving (Show,Generic,CStorable)
-
-instance Storable ControlElementList where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data IntegerValue = IntegerValue
    { integerValueMin  :: Word32 -- ^ R: minimum value
    , integerValueMax  :: Word32 -- ^ R: maximum value
    , integerValueStep :: Word32 -- ^ R: step (0 variable)
-   } deriving (Show,Generic,CStorable)
-
-instance Storable IntegerValue where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data Integer64Value = Integer64Value
    { integer64ValueMin  :: Word64 -- ^ R: minimum value
    , integer64ValueMax  :: Word64 -- ^ R: maximum value
    , integer64ValueStep :: Word64 -- ^ R: step (0 variable)
-   } deriving (Show,Generic,CStorable)
-
-instance Storable Integer64Value where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data EnumeratedValue = EnumeratedValue
-   { enumeratedCount    :: Word             -- ^ R: number of items
-   , enumeratedItem     :: Word             -- ^ W: item number
-   , enumeratedName     :: CStringBuffer 64 -- ^ R: value name
-   , enumeratedNamesPtr :: Word64           -- ^ W: names list (ELEM_ADD only)
+   { enumeratedCount       :: Word             -- ^ R: number of items
+   , enumeratedItem        :: Word             -- ^ W: item number
+   , enumeratedName        :: CStringBuffer 64 -- ^ R: value name
+   , enumeratedNamesPtr    :: Word64           -- ^ W: names list (ELEM_ADD only)
    , enumeratedNamesLength :: Word
-   } deriving (Show,Generic,CStorable)
-
-instance Storable EnumeratedValue where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data ControlElementInfo = ControlElementInfo
-   { controlElemInfoId :: ControlElementId
-   , controlElemInfoType :: Int
-   , controlElemInfoAccess :: Word
-   , controlElemInfoCount :: Word
-   , controlElemInfoOwner :: ProcessID
-   , controlElemInfoValue :: Union '[IntegerValue,Integer64Value,EnumeratedValue,Vector 128 Word8]
+   { controlElemInfoId         :: ControlElementId
+   , controlElemInfoType       :: Int
+   , controlElemInfoAccess     :: Word
+   , controlElemInfoCount      :: Word
+   , controlElemInfoOwner      :: ProcessID
+   , controlElemInfoValue      :: Union '[IntegerValue,Integer64Value,EnumeratedValue,Vector 128 Word8]
    , controlElemInfoDimensions :: Vector 4 Word16
-   } deriving (Show,Generic,CStorable)
-
-
-instance Storable ControlElementInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 data ControlElementValue = ControlElementValue
    { controlElemValueId        :: ControlElementId                    -- ^ W: element ID
@@ -1674,27 +1440,14 @@ data ControlElementValue = ControlElementValue
    , controlElemValueValue     :: Union '[Vector 512 Word8,AesIec958]
    , controlElemValueTimeStamp :: TimeSpec
    , controlElemValueReserved  :: Vector 112 Word8
-   } deriving (Show,Generic,CStorable)
-
-instance Storable ControlElementValue where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
-
+   } deriving (Show,Generic,Storable)
 
 data ControlTLV = ControlTLV
    { controlTlvNumId  :: Word          -- ^ control element numeric identification
    , controlTlvLength :: Word          -- ^ in bytes aligned to 4
    , controlTlvTlv    :: Vector 0 Word -- ^ first TLV
    -- FIXME: the array is allocated "after" the struct...
-   } deriving (Show,Generic,CStorable)
-
-instance Storable ControlTLV where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 controlIoctlW :: Storable a => Word8 -> a -> Handle -> IOErr ()
 controlIoctlW = ioctlWrite 0x55
@@ -1816,10 +1569,4 @@ data ControlEvent = ControlEvent
    { controlEventType   :: Int
    , controlEventMask   :: Word
    , controlEventElemId :: ControlElementId
-   } deriving (Show,Generic,CStorable)
-
-instance Storable ControlEvent where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)

@@ -75,8 +75,6 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types.Generics (Generic)
 
-import Foreign.Marshal.Utils (toBool)
-
 -- =============================================================
 --    From linux/include/uapi/linux/fs.h
 -- =============================================================
@@ -103,13 +101,7 @@ data FileCloneRange = FileCloneRange
    , fcrSrcLength  :: Word64
    , fcrDestOffset :: Word64
    }
-   deriving (Show,Generic,CStorable)
-
-instance Storable FileCloneRange where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   deriving (Show,Generic,Storable)
 
 -- | struct fstrim_range
 data TrimRange = TrimRange
@@ -117,14 +109,7 @@ data TrimRange = TrimRange
    , trLength    :: Word64
    , trMinLength :: Word64
    }
-   deriving (Show,Generic,CStorable)
-
-instance Storable TrimRange where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
+   deriving (Show,Generic,Storable)
 
 -- | extent-same (dedupe) ioctls; these MUST match the btrfs ioctl definitions
 data DedupeRangeFlag
@@ -145,14 +130,7 @@ data FileDedupeRangeInfo = FileDedupeRangeInfo
                                 -- == FILE_DEDUPE_RANGE_DIFFERS if data differs
    , fdriReserved     :: Word32 -- ^ must be zero 
    }
-   deriving (Show,Eq,Generic,CStorable)
-
-instance Storable FileDedupeRangeInfo where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
+   deriving (Show,Eq,Generic,Storable)
 
 -- | from struct btrfs_ioctl_file_extent_same_args
 -- struct file_dedupe_range
@@ -163,13 +141,7 @@ data FileDedupeRangeHeader = FileDedupeRangeHeader
    , fdrReserved1 :: Word16 -- ^ must be zero
    , fdrReserved2 :: Word32 -- ^ must be zero
    }
-   deriving (Show,Eq,Generic,CStorable)
-
-instance Storable FileDedupeRangeHeader where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   deriving (Show,Eq,Generic,Storable)
 
 
 -----------------------------------------------------------------------------
@@ -182,13 +154,7 @@ data FilesStatStruct = FilesStatStruct
    , fssNrFreeFiles :: CULong -- ^ Read-only
    , fssMaxFiles    :: CULong -- ^ Tunable
    }
-   deriving (Show,Eq,Generic,CStorable)
-
-instance Storable FilesStatStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   deriving (Show,Eq,Generic,Storable)
 
 -- | struct inodes_stat_t
 data InodesStat = InodesStat
@@ -196,13 +162,7 @@ data InodesStat = InodesStat
    , isNrUnused :: CLong
    , isDummy    :: Vector 5 CLong -- padding for sysctl ABI compatibility
    }
-   deriving (Show,Generic,CStorable)
-
-instance Storable InodesStat where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   deriving (Show,Generic,Storable)
 
 -- | These are the fs-independent mount-flags: up to 32 flags are supported
 data MountFlag
@@ -259,14 +219,7 @@ data FsxAttr = FsxAttr
    , fsxProjectID :: Word32              -- ^ project identifier (get/set)
    , fsxPadding   :: Vector 12 Word8
    }
-   deriving (Show,Generic,CStorable)
-
-instance Storable FsxAttr where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
+   deriving (Show,Generic,Storable)
 
 data XFlag
    = XFlagRealTime         -- ^ data in realtime volume 
@@ -326,7 +279,7 @@ instance CBitSet XFlag where
 
 
 csize :: Int
-csize = sizeOf (undefined :: CSize)
+csize = sizeOf' (undefined :: CSize)
 
 -- blkIoctl :: Word8 -> Int64 -> Handle -> IOErr Int64
 -- blkIoctl n = ioctlSignalValue 0x12 n
@@ -363,8 +316,7 @@ ioctlSetReadOnlyStatus b =
 -- | BLKROGET get read-only status (0 = read_write)
 ioctlGetReadOnlyStatus :: Handle -> IOErr Bool
 ioctlGetReadOnlyStatus fd =
-   ioctlReadCmd (ioctlCommand None 0x12 94 0) fd
-   >.-.> (toBool :: Int -> Bool)
+   ioctlReadCmd (ioctlCommand None 0x12 94 0) fd >.-.> (/= (0 :: Int))
 
 -- | BLKRRPART re-read partition table
 ioctlReReadPartitionTable :: Handle -> IOErr ()
@@ -438,13 +390,7 @@ ioctlTraceTearDown = ioctlSignal 0x12 118 (0 :: Int)
 data Range = Range
    { rangeStart  :: Word64
    , rangeLength :: Word64
-   } deriving (Generic,CStorable)
-
-instance Storable Range where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+   } deriving (Generic,Storable)
 
 -- | BLKDISCARD
 ioctlDiscard :: Range -> Handle -> IOErr ()

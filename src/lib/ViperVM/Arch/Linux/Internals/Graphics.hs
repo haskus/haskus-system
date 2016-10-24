@@ -263,13 +263,7 @@ data StructMode = StructMode
    , miName       :: !(CStringBuffer 32)
    } deriving (Generic)
 
-instance CStorable StructMode
-
-instance Storable StructMode where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+instance Storable StructMode
 
 emptyStructMode :: StructMode
 emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 (BitFields 0) BitSet.empty emptyCStringBuffer
@@ -292,13 +286,7 @@ data StructCardRes = StructCardRes
    , csMaxWidth   :: !Word32
    , csMinHeight  :: !Word32
    , csMaxHeight  :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable StructCardRes where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Controller
@@ -315,15 +303,7 @@ data StructController = StructController
    , contGammaSize  :: !Word32
    , contModeValid  :: !Word32
    , contModeInfo   :: !StructMode
-   } deriving (Generic,CStorable)
-
-instance Storable StructController where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
-
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Plane
@@ -353,13 +333,7 @@ data StructSetPlane = StructSetPlane
    , spSrcY    :: !(FixedPoint Word32 16 16)
    , spSrcH    :: !(FixedPoint Word32 16 16)
    , spSrcW    :: !(FixedPoint Word32 16 16)
-   } deriving (Generic,CStorable)
-
-instance Storable StructSetPlane where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Generic,Storable)
 
 -- | drm_mode_get_plane
 data StructGetPlane = StructGetPlane
@@ -370,25 +344,14 @@ data StructGetPlane = StructGetPlane
    , gpGammaSize     :: !Word32
    , gpCountFmtTypes :: !Word32
    , gpFormatTypePtr :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructGetPlane where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Generic,Storable)
 
 -- | drm_mode_get_plane_res
 data StructGetPlaneRes = StructGetPlaneRes
    { gprsPlaneIdPtr  :: !Word64
    , gprsCountPlanes :: !Word32
-   } deriving (Generic,CStorable)
+   } deriving (Generic,Storable)
 
-instance Storable StructGetPlaneRes where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
 
 -----------------------------------------------------------------------------
 -- Encoder
@@ -413,14 +376,7 @@ data StructGetEncoder = StructGetEncoder
    , geCrtcId         :: !Word32
    , gePossibleCrtcs  :: !(BitSet Word32 Int) -- ^ Valid controller indexes
    , gePossibleClones :: !(BitSet Word32 Int) -- ^ Valid clone encoder indexes
-   } deriving (Generic,CStorable)
-
-instance Storable StructGetEncoder where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
-
+   } deriving (Generic,Storable)
 
 -- | This is for connectors with multiple signal types
 data SubConnectorType
@@ -514,13 +470,8 @@ data StructGetConnector = StructGetConnector
    , connWidth_            :: !Word32   -- ^ HxW in millimeters
    , connHeight_           :: !Word32
    , connSubPixel_         :: !(EnumField Word32 SubPixel)
-   } deriving (Generic,CStorable)
+   } deriving (Generic,Storable)
 
-instance Storable StructGetConnector where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
 
 -----------------------------------------------------------------------------
 -- Properties
@@ -561,13 +512,7 @@ isAtomic x = testBit (gpsFlags x) 31
 data StructPropertyEnum = StructPropertyEnum
    { peValue       :: !Word64
    , peName        :: !(CStringBuffer 32)
-   } deriving (Generic,CStorable)
-
-instance Storable StructPropertyEnum where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | drm_mode_get_property
 data StructGetProperty = StructGetProperty
@@ -578,27 +523,14 @@ data StructGetProperty = StructGetProperty
    , gpsName           :: !(CStringBuffer 32)
    , gpsCountValues    :: !Word32
    , gpsCountEnum      :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable StructGetProperty where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | drm_mode_set_property
 data StructSetProperty = StructSetProperty
    { spsValue        :: !Word64
    , spsPropId       :: !Word32
    , spsConnId       :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable StructSetProperty where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
+   } deriving (Generic,Storable)
 
 -- | drm_mode_obj_get_properties
 data StructGetObjectProperties = StructGetObjectProperties
@@ -607,13 +539,7 @@ data StructGetObjectProperties = StructGetObjectProperties
    , gopCountProps      :: !Word32
    , gopObjId           :: !Word32
    , gopObjType         :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable StructGetObjectProperties where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | drm_mode_obj_set_property
 data StructSetObjectProperty = StructSetObjectProperty
@@ -621,26 +547,14 @@ data StructSetObjectProperty = StructSetObjectProperty
    , sopPropId          :: !Word32
    , sopObjId           :: !Word32
    , sopObjType         :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable StructSetObjectProperty where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | drm_mode_get_blob
 data StructGetBlob = StructGetBlob
    { gbBlobId     :: !Word32
    , gbLength     :: !Word32
    , gbData       :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructGetBlob where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Framebuffer
@@ -667,13 +581,7 @@ data StructFrameBufferCommand = StructFrameBufferCommand
    , fc2Pitches       :: !(Vector 4 Word32)  -- ^ Pitch for each plane
    , fc2Offsets       :: !(Vector 4 Word32)  -- ^ Offset of each plane
    , fc2Modifiers     :: !(Vector 4 Word64)  -- ^ tiling, compressed
-   } deriving (Generic,CStorable)
-
-instance Storable StructFrameBufferCommand where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | Mark a region of a framebuffer as dirty.
 -- 
@@ -711,25 +619,13 @@ data StructFrameBufferDirty = StructFrameBufferDirty
    , fdColor         :: !Word32
    , fdNumClips      :: !Word32
    , fdClipsPtr      :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructFrameBufferDirty where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | drm_mode_mode_cmd
 data StructModeCommand = StructModeCommand
    { mcConnId     :: !Word32
    , mcMode       :: !StructMode
-   } deriving (Generic,CStorable)
-
-instance Storable  StructModeCommand where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 
 -----------------------------------------------------------------------------
@@ -764,13 +660,7 @@ data StructCursor = StructCursor
    , curWidth     :: !Word32
    , curHeight    :: !Word32
    , curHandle    :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable  StructCursor where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- | drm_mode_cursor2
 data StructCursor2 = StructCursor2
@@ -783,13 +673,7 @@ data StructCursor2 = StructCursor2
    , cur2Handle    :: !Word32
    , cur2HotX      :: !Int32
    , cur2HotY      :: !Int32
-   } deriving (Generic,CStorable)
-
-instance Storable  StructCursor2 where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Gamma look-up table
@@ -802,13 +686,7 @@ data StructControllerLut = StructControllerLut
    , clsRed          :: !Word64
    , clsGreen        :: !Word64
    , clsBlue         :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructControllerLut where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Page flipping
@@ -852,13 +730,7 @@ data StructPageFlip = StructPageFlip
    , pfFlags         :: !PageFlipFlags
    , pfReserved      :: !Word32
    , pfUserData      :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable  StructPageFlip where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Generic buffer
@@ -873,13 +745,7 @@ data StructCreateDumb = StructCreateDumb
    , cdHandle :: !Word32 -- ^ Handle, pitch, size will be returned
    , cdPitch  :: !Word32
    , cdSize   :: !Word64
-   } deriving (Show,Generic,CStorable)
-
-instance Storable  StructCreateDumb where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Show,Generic,Storable)
 
 
 -- | drm_mode_map_dumb
@@ -887,25 +753,12 @@ data StructMapDumb = StructMapDumb
    { mdHandle :: !Word32
    , mdPad    :: !Word32  -- Padding field: not useful
    , mdOffset :: !Word64  -- ^ Fake offset to use for subsequent mmap call
-   } deriving (Show,Generic,CStorable)
-
-instance Storable StructMapDumb where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
+   } deriving (Show,Generic,Storable)
 
 -- | drm_mode_destroy_dumb
 newtype StructDestroyDumb = StructDestroyDumb
    { dbHandle :: Word32 -- ^ Dumb buffer handle
-   } deriving (Generic,CStorable)
-
-instance Storable StructDestroyDumb where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Atomic
@@ -948,13 +801,7 @@ data StructAtomic = StructAtomic
    , atomPropValuesPtr :: !Word64
    , atomReserved      :: !Word64
    , atomUserData      :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructAtomic where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Blob
@@ -966,25 +813,12 @@ data StructCreateBlob = StructCreateBlob
    { cbData   :: !Word64 -- ^ Pointer to data to copy
    , cbLength :: !Word32 -- ^ Length of data to copy
    , cbBlobID :: !Word32 -- ^ Return: new property ID
-   } deriving (Generic,CStorable)
-
-instance Storable StructCreateBlob where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
+   } deriving (Generic,Storable)
 
 -- | Destroy a user-created blob property.
 newtype StructDestroyBlob = StructDestroyBlob
    { dbBlobId :: Word32 -- ^ blob identifier
-   } deriving (Generic,CStorable)
-
-instance Storable StructDestroyBlob where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 -- =============================================================
 --    From linux/include/uapi/drm/drm.h
@@ -999,14 +833,7 @@ data Clip = Clip
    , clipY1 :: !Word16
    , clipX2 :: !Word16
    , clipY2 :: !Word16
-   } deriving (Show,Eq,Generic,CStorable)
-
-instance Storable Clip where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
-
+   } deriving (Show,Eq,Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Capabilities
@@ -1045,13 +872,7 @@ instance CEnum Capability where
 data StructGetCap = StructGetCap
    { gcCapability :: !(EnumField Word64 Capability)
    , gcValue      :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructGetCap where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+   } deriving (Generic,Storable)
 
 -- | Client capabilities
 data ClientCapability
@@ -1068,13 +889,7 @@ instance CEnum ClientCapability where
 data StructSetClientCap = StructSetClientCap
    { sccCapability :: !(EnumField Word64 ClientCapability)
    , sccValue      :: !Word64
-   } deriving (Generic,CStorable)
-
-instance Storable StructSetClientCap where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+   } deriving (Generic,Storable)
 
 data PrimeFlag
    = PrimeFlagReadWrite
@@ -1095,13 +910,7 @@ data StructPrimeHandle = StructPrimeHandle
    , sphFlags  :: !(BitSet Word32 PrimeFlag) -- ^ FD flags: only applciable for handle->fd
    , sphFD     :: !Int32                     -- ^ Returned DMAbuf file descriptor
    }
-   deriving (Generic,CStorable)
-
-instance Storable StructPrimeHandle where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+   deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- IOCTLs
@@ -1217,13 +1026,7 @@ ioctlDestroyBlob = drmIoctl 0xBE
 data StructEvent = StructEvent
    { eventType   :: !Word32
    , eventLength :: !Word32
-   } deriving (Generic,CStorable)
-
-instance Storable StructEvent  where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   } deriving (Generic,Storable)
 
 data EventType
    = VBlank
@@ -1247,13 +1050,7 @@ data StructEventVBlank = StructEventVBlank
    , vblankEventSequence     :: !Word32
    , vblankEventReserved     :: !Word32
    } 
-   deriving (Show,Generic,CStorable)
-
-instance Storable StructEventVBlank where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   peek        = cPeek
-   poke        = cPoke
+   deriving (Show,Generic,Storable)
 
 -- =============================================================
 --    From linux/include/uapi/drm/drm_crtc.h

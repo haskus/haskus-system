@@ -17,8 +17,6 @@ module ViperVM.Arch.Linux.FileSystem.Directory
    )
 where
 
-import Foreign.Marshal.Array
-
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Enum
@@ -55,13 +53,7 @@ data DirectoryEntryHeader = DirectoryEntryHeader
    , dirOffset    :: Int64    -- ^ Offset of the next entry
    , dirLength    :: Word16   -- ^ Length of the entry
    , dirFileTyp   :: Word8    -- ^ Type of file
-   } deriving (Generic,CStorable)
-
-instance Storable DirectoryEntryHeader where
-   peek      = cPeek
-   poke      = cPoke
-   sizeOf    = cSizeOf
-   alignment = cAlignment
+   } deriving (Generic,Storable)
 
 data DirectoryEntry = DirectoryEntry
    { entryInode :: Word64
@@ -126,8 +118,8 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                let 
                   len     = fromIntegral (dirLength hdr)
                   sizede  = sizeOf (undefined :: DirectoryEntryHeader)
-                  namepos = p `indexPtr` sizede
-                  nextpos = p `indexPtr` len
+                  namepos = p `indexPtr'` sizede
+                  nextpos = p `indexPtr'` len
                   nextlen = n - len
                name <- peekCString (castPtr namepos)
                let x = DirectoryEntry (dirInod hdr) (toCEnum (dirFileTyp hdr)) name

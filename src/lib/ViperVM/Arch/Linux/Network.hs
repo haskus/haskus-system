@@ -23,9 +23,6 @@ module ViperVM.Arch.Linux.Network
    )
 where
 
-import Foreign.Marshal.Utils (with)
-import Foreign.Marshal.Array (peekArray,allocaArray)
-
 import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Utils.List (foldl')
 import ViperVM.Arch.Linux.ErrorCode
@@ -281,13 +278,13 @@ sysSocketPair typ opts =
 sysBind :: Storable a => Handle -> a -> IOErr ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall_bind fd addr' (sizeOf addr)) (const ())
+      onSuccess (syscall_bind fd addr' (fromIntegral (sizeOf addr))) (const ())
 
 -- | Connect a socket
 sysConnect :: Storable a => Handle -> a -> IOErr ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall_connect fd addr' (sizeOf addr)) (const ())
+      onSuccess (syscall_connect fd addr' (fromIntegral (sizeOf addr))) (const ())
 
 -- | Accept a connection on a socket
 --
@@ -301,7 +298,7 @@ sysAccept (Handle fd) addr opts =
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      onSuccess (syscall_accept4 fd addr' (sizeOf addr) opts') (Handle . fromIntegral)
+      onSuccess (syscall_accept4 fd addr' (fromIntegral (sizeOf addr)) opts') (Handle . fromIntegral)
 
 -- | Listen on a socket
 --
@@ -314,13 +311,7 @@ sysListen (Handle fd) backlog =
 -- | Netlink socket binding
 data NetlinkSocket
    = NetlinkSocket Word32 Word32 Word32
-   deriving (Generic, CStorable)
-
-instance Storable NetlinkSocket where
-   sizeOf    = cSizeOf
-   alignment = cAlignment
-   peek      = cPeek
-   poke      = cPoke
+   deriving (Generic, Storable)
 
 -- | Bind a netlink socket
 --

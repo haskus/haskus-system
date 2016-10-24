@@ -9,8 +9,6 @@ module ViperVM.Arch.Linux.Info
    )
 where
 
-import Foreign.Marshal.Alloc
-
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Word
@@ -26,13 +24,7 @@ data SystemInfo = SystemInfo
    , systemRelease  :: CStringBuffer 65 -- ^ Release
    , systemVersion  :: CStringBuffer 65 -- ^ Version
    , systemMachine  :: CStringBuffer 65 -- ^ Hardware identifier
-   } deriving (Show,Generic,CStorable)
-
-instance Storable SystemInfo where
-   peek      = cPeek
-   poke      = cPoke
-   alignment = cAlignment
-   sizeOf    = cSizeOf
+   } deriving (Show,Generic,Storable)
 
 -- | "uname" syscall
 systemInfo :: IOErr SystemInfo

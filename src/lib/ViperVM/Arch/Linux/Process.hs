@@ -23,8 +23,6 @@ module ViperVM.Arch.Linux.Process
    )
 where
 
-import Foreign.Marshal.Alloc (alloca)
-
 import ViperVM.Format.Binary.Ptr (Ptr, nullPtr)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
@@ -33,16 +31,16 @@ import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Utils.Flow
 
 -- | Process ID
-newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype ProcessID = ProcessID Word32 deriving (Show,Eq,Ord,Storable)
 
 -- | Thread ID
-newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype ThreadID = ThreadID Word32 deriving (Show,Eq,Ord,Storable)
 
 -- | User ID
-newtype UserID = UserID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype UserID = UserID Word32 deriving (Show,Eq,Ord,Storable)
 
 -- | Group ID
-newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord,Storable,CStorable)
+newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord,Storable)
 
 -- | Exit the current process with the given return value
 -- This syscall does not return.

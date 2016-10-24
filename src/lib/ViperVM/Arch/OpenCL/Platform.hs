@@ -39,8 +39,6 @@ import ViperVM.Arch.OpenCL.Error
 import ViperVM.Arch.OpenCL.Device
 
 import Control.Monad.Trans.Either
-import Foreign.Marshal.Alloc (alloca)
-import Foreign (allocaArray,peekArray)
 
 -- | Platform
 data Platform = Platform Library Platform_ deriving (Eq)

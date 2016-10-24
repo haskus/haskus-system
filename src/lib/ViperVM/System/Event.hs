@@ -11,7 +11,6 @@ where
 import Control.Concurrent.STM
 import Control.Concurrent
 import Prelude hiding (init,tail)
-import Foreign.Marshal (allocaArray, peekArray)
 import System.Posix.Types (Fd(..))
 
 import ViperVM.Arch.Linux.Handle
@@ -36,7 +35,7 @@ newEventReader fd@(Handle lowfd) = do
       sysRead fd (castPtr ptr) (fromIntegral sz * fromIntegral nb)
          >.~!> \sz2 -> do
             -- FIXME: we should somehow signal that an error occured
-            evs <- peekArray (fromIntegral sz2 `div` sz) ptr
+            evs <- peekArray (fromIntegral sz2 `div` fromIntegral sz) ptr
             atomically (mapM_ (writeTChan ch) evs)
    return ch
 

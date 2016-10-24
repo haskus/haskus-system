@@ -45,7 +45,6 @@ module ViperVM.Format.Binary.Union
    , fromUnion
    , toUnion
    , toUnionZero
-   , unionCast
    )
 where
 
@@ -92,26 +91,14 @@ toUnionZero = toUnion' True
 toUnion' :: forall a l . (Storable (Union l), Storable a, IsMember a l ~ 'True) => Bool -> a -> Union l
 toUnion' zero v = unsafePerformIO $ do
    let sz = sizeOf (undefined :: Union l)
-   fp <- mallocForeignPtrBytes sz
+   fp <- mallocForeignPtrBytes (fromIntegral sz)
    withForeignPtr fp $ \p -> do
       -- set bytes after the object to 0
       when zero $ do
          let psz = sizeOf (undefined :: a)
-         memSet (p `indexPtr` psz) (fromIntegral (sz - psz)) 0
+         memSet (p `indexPtr'` psz) (fromIntegral (sz - psz)) 0
       poke (castPtr p) v
    return $ Union fp
-
--- | Convert two storable values
-unionCast :: forall a b.
-   ( Storable a
-   , Storable b
-   , Member a '[a,b]
-   , Member b '[a,b]
-   ) => a -> b
-unionCast a = fromUnion u
-   where
-      u :: Union '[a,b]
-      u = toUnion a
 
 type family MapSizeOf fs where
    MapSizeOf '[]       = '[]
@@ -149,34 +136,34 @@ instance forall fs.
 data FoldSizeOf    = FoldSizeOf
 data FoldAlignment = FoldAlignment
 
-instance (r ~ Int, Storable a) => Apply FoldSizeOf (a, Int) r where
+instance (r ~ Word, Storable a) => Apply FoldSizeOf (a, Word) r where
    apply _ (_,r) = max r (sizeOf (undefined :: a))
 
-instance (r ~ Int, Storable a) => Apply FoldAlignment (a, Int) r where
+instance (r ~ Word, Storable a) => Apply FoldAlignment (a, Word) r where
    apply _ (_,r) = max r (alignment (undefined :: a))
 
 -- | Get the union size (i.e. the maximum of the types in the union)
-unionSize :: forall l . HFoldr' FoldSizeOf Int l Int => Union l -> Int
-unionSize _ = hFoldr' FoldSizeOf (0 :: Int) (undefined :: HList l)
+unionSize :: forall l . HFoldr' FoldSizeOf Word l Word => Union l -> Word
+unionSize _ = hFoldr' FoldSizeOf (0 :: Word) (undefined :: HList l)
 
 -- | Get the union alignment (i.e. the maximum of the types in the union)
-unionAlignment :: forall l . HFoldr' FoldAlignment Int l Int => Union l -> Int
-unionAlignment _ = hFoldr' FoldAlignment (0 :: Int) (undefined :: HList l)
+unionAlignment :: forall l . HFoldr' FoldAlignment Word l Word => Union l -> Word
+unionAlignment _ = hFoldr' FoldAlignment (0 :: Word) (undefined :: HList l)
 
 
 -------------------------------------------------------------------------------------
--- Finally we can write the Storable and CStorable instances
+-- Finally we can write the Storable instance
 -------------------------------------------------------------------------------------
 
 instance
-   ( HFoldr' FoldSizeOf Int l Int
-   , HFoldr' FoldAlignment Int l Int
+   ( HFoldr' FoldSizeOf Word l Word
+   , HFoldr' FoldAlignment Word l Word
    ) => Storable (Union l) where
    sizeOf             = unionSize
    alignment          = unionAlignment
    peek ptr = do
       let sz = sizeOf (undefined :: Union l)
-      fp <- mallocForeignPtrBytes sz
+      fp <- mallocForeignPtrBytes (fromIntegral sz)
       withForeignPtr fp $ \p -> 
          memCopy p (castPtr ptr) (fromIntegral sz)
       return (Union fp)
@@ -185,9 +172,3 @@ instance
       let sz = sizeOf (undefined :: Union l)
       withForeignPtr fp $ \p ->
          memCopy (castPtr ptr) p (fromIntegral sz)
-
-instance (Storable (Union l)) => CStorable (Union l) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf

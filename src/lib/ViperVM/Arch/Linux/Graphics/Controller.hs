@@ -20,8 +20,6 @@ module ViperVM.Arch.Linux.Graphics.Controller
    )
 where
 
-import Foreign.Marshal.Array
-
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Mode
@@ -33,6 +31,7 @@ import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 
 -- | Video controller
 --

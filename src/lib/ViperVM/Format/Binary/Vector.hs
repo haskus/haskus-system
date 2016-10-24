@@ -37,7 +37,6 @@ import ViperVM.Utils.HList
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
-import ViperVM.Format.Binary.Storable
 
 -- | Vector with type-checked size
 data Vector (n :: Nat) a = Vector Buffer
@@ -54,7 +53,7 @@ type family ElemOffset a i n where
    ElemOffset a i n = IfNat (i+1 <=? n)
       (i * (SizeOf a))
       (TypeError ('Text "Invalid vector index: " ':<>: 'ShowType i
-                 :$$: 'Text "Vector size: "      ':<>: 'ShowType n))
+                 ':$$: 'Text "Vector size: "     ':<>: 'ShowType n))
 
 instance forall a n.
    ( KnownNat (SizeOf a * n)
@@ -78,15 +77,6 @@ instance forall a n.
       Vector <$> bufferPackPtr (fromIntegral (sizeOf (undefined :: Vector n a))) (castPtr ptr)
 
    poke ptr (Vector b) = bufferPoke ptr b
-
-instance forall n a.
-   ( KnownNat n
-   , Storable a
-   ) => CStorable (Vector n a) where
-   cSizeOf      = sizeOf
-   cAlignment   = alignment
-   cPeek        = peek
-   cPoke        = poke
 
 -- | Yield the first n elements
 take :: forall n m a.
@@ -180,7 +170,7 @@ instance forall n v a r.
          p <- getP
          let
             vsz = natValue @n
-            p'  = p `indexPtr` (-1 * vsz * sizeOf (undefined :: a))
+            p'  = p `indexPtr'` (-1 * vsz * sizeOf (undefined :: a))
          poke (castPtr p') v 
          return p'
 
@@ -200,5 +190,5 @@ concat :: forall l (n :: Nat) a .
 concat vs = unsafePerformIO $ do
    let sz = sizeOf (undefined :: a) * natValue @n
    p <- mallocBytes (fromIntegral sz) :: IO (Ptr ())
-   _ <- hFoldr StoreVector (return (castPtr p `indexPtr` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
+   _ <- hFoldr StoreVector (return (castPtr p `indexPtr'` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
    Vector <$> bufferUnsafePackPtr (fromIntegral sz) p

@@ -90,24 +90,12 @@ newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
 
 -- | Get backing word
 bitFieldsBits :: BitFields b f -> b
+{-# INLINE bitFieldsBits #-}
 bitFieldsBits (BitFields b) = b
 
-{-# INLINE bitFieldsBits #-}
-
-instance Storable b => CStorable (BitFields b fields) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf
 
 -- | A field of n bits
 newtype BitField (n :: Nat) (name :: Symbol) s = BitField s deriving (Storable)
-
-instance Storable s => CStorable (BitField n name s) where
-   cPeek      = peek
-   cPoke      = poke
-   cAlignment = alignment
-   cSizeOf    = sizeOf
 
 -- | Get the bit offset of a field from its name
 type family Offset (name :: Symbol) fs :: Nat where

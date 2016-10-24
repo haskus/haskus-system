@@ -26,9 +26,6 @@ import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 
-import Foreign.Marshal.Utils (with)
-import Foreign.Marshal.Alloc (alloca)
-
 -- | Signal set
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 

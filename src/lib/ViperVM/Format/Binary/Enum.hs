@@ -38,17 +38,6 @@ instance
 
 instance
       ( Integral b
-      , Storable b
-      , CEnum a
-      ) => CStorable (EnumField b a)
-   where
-      cPeek      = peek
-      cPoke      = poke
-      cAlignment = alignment
-      cSizeOf    = sizeOf
-
-instance
-      ( Integral b
       , StaticStorable b
       , CEnum a
       ) => StaticStorable (EnumField b a)

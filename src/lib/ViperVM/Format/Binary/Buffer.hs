@@ -61,8 +61,6 @@ module ViperVM.Format.Binary.Buffer
    )
 where
 
-import Foreign.Marshal.Alloc (malloc)
-import Foreign.Marshal.Array
 import System.IO.Unsafe
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -284,7 +282,7 @@ bufferPackStorable x = Buffer $ unsafePerformIO $ do
    let sza = sizeOf (undefined :: a)
    p <- malloc
    poke p x
-   BS.unsafePackMallocCStringLen (castPtr p, sza)
+   BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sza)
 
 -- | Pack a list of Storable
 bufferPackStorableList :: forall a. Storable a => [a] -> Buffer
@@ -292,10 +290,10 @@ bufferPackStorableList xs = Buffer $ unsafePerformIO $ do
    let 
       sza = sizeOf (undefined :: a)
       lxs = length xs
-   p <- mallocArray lxs
+   p <- mallocArray (fromIntegral lxs)
    forM_ (xs `zip` [0..]) $ \(x,o) ->
       pokeElemOff p o x
-   BS.unsafePackMallocCStringLen (castPtr p, sza * lxs)
+   BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sza * lxs)
 
 -- | Pack from a pointer (copy)
 bufferPackPtr :: Word -> Ptr () -> IO Buffer
@@ -305,7 +303,7 @@ bufferPackPtr sz ptr = do
    bufferUnsafePackPtr sz p
 
 -- | Pack from a pointer (add finalizer)
-bufferUnsafePackPtr :: Word -> Ptr () -> IO Buffer
+bufferUnsafePackPtr :: Word -> Ptr a -> IO Buffer
 bufferUnsafePackPtr sz p =
    Buffer <$> BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz)
 

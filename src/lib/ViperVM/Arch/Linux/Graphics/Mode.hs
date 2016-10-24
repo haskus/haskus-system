@@ -48,10 +48,10 @@ data Mode = Mode
    } deriving (Show)
 
 instance Storable Mode where
-   sizeOf _    = cSizeOf (undefined :: StructMode)
-   alignment _ = cAlignment (undefined :: StructMode)
-   peek v      = fromStructMode <$> cPeek (castPtr v)
-   poke p v    = cPoke (castPtr p) (toStructMode v)
+   sizeOf _    = sizeOf (undefined :: StructMode)
+   alignment _ = alignment (undefined :: StructMode)
+   peek v      = fromStructMode <$> peek (castPtr v)
+   poke p v    = poke (castPtr p) (toStructMode v)
 
 
 fromStructMode :: StructMode -> Mode

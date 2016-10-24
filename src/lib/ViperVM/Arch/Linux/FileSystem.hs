@@ -57,9 +57,6 @@ module ViperVM.Arch.Linux.FileSystem
    )
 where
 
-import Foreign.Marshal.Array (allocaArray)
-import Foreign.Marshal.Alloc (allocaBytes)
-
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Word
@@ -332,27 +329,21 @@ modeFilePermission x = fromBits (fromIntegral x .&. 0x01FF)
 -- architectures (a lot of ifdefs for field sizes and field order...)
 -- This one is for x86-64
 data StatStruct = StatStruct
-   { statDevice'           :: StorableWrap DeviceID
+   { statDevice'           :: DeviceID
    , statInode'            :: Word64
    , statLinkCount'        :: Word64
    , statMode'             :: Word32
    , statUID'              :: Word32
    , statGID'              :: Word32
    , statPad0'             :: Word32
-   , statDevNum'           :: StorableWrap DeviceID
+   , statDevNum'           :: DeviceID
    , statSize'             :: Int64
    , statBlockSize'        :: Int64
    , statBlockCount'       :: Int64
    , statLastAccess'       :: TimeSpec
    , statLastModif'        :: TimeSpec
    , statLastStatusChange' :: TimeSpec
-   } deriving (Generic,CStorable)
-
-instance Storable StatStruct where
-   sizeOf      = cSizeOf
-   alignment   = cAlignment
-   poke        = cPoke
-   peek        = cPeek
+   } deriving (Generic,Storable)
 
 data Stat = Stat
    { statDevice            :: DeviceID
@@ -374,28 +365,24 @@ data Stat = Stat
    } deriving (Show)
 
 toStat :: StatStruct -> Stat
-toStat (StatStruct {..}) = 
-   let
-      Storable statDevice'' = statDevice'
-      Storable statDevNum'' = statDevNum'
-   in Stat
-      { statDevice            = statDevice''
-      , statInode             = statInode'
-      , statMode              = statMode'
-      , statFileType          = modeFileType statMode'
-      , statFileOptions       = modeFileOptions statMode'
-      , statFilePermissions   = modeFilePermission statMode'
-      , statLinkCount         = statLinkCount'
-      , statUID               = statUID'
-      , statGID               = statGID'
-      , statDevNum            = statDevNum''
-      , statSize              = statSize'
-      , statBlockSize         = statBlockSize'
-      , statBlockCount        = statBlockCount'
-      , statLastAccess        = statLastAccess'
-      , statLastModif         = statLastModif'
-      , statLastStatusChange  = statLastStatusChange'
-      }
+toStat (StatStruct {..}) = Stat
+   { statDevice            = statDevice'
+   , statInode             = statInode'
+   , statMode              = statMode'
+   , statFileType          = modeFileType statMode'
+   , statFileOptions       = modeFileOptions statMode'
+   , statFilePermissions   = modeFilePermission statMode'
+   , statLinkCount         = statLinkCount'
+   , statUID               = statUID'
+   , statGID               = statGID'
+   , statDevNum            = statDevNum'
+   , statSize              = statSize'
+   , statBlockSize         = statBlockSize'
+   , statBlockCount        = statBlockCount'
+   , statLastAccess        = statLastAccess'
+   , statLastModif         = statLastModif'
+   , statLastStatusChange  = statLastStatusChange'
+   }
 
 -- | Stat on a path
 --
@@ -404,7 +391,7 @@ toStat (StatStruct {..}) =
 sysFileStat :: FilePath -> Bool -> IOErr Stat
 sysFileStat path followLink = do
    withCString path $ \path' ->
-      allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
+      allocaBytes (sizeOf' (undefined :: StatStruct)) $ \s ->
          let
             -- select between stat and lstat syscalls
             sc = if followLink then syscall_stat else syscall_lstat
@@ -414,7 +401,7 @@ sysFileStat path followLink = do
 -- | Stat on file descriptor
 sysHandleStat :: Handle -> IOErr Stat
 sysHandleStat (Handle fd) =
-   allocaBytes (sizeOf (undefined :: StatStruct)) $ \s ->
+   allocaBytes (sizeOf' (undefined :: StatStruct)) $ \s ->
       onSuccessIO (syscall_fstat fd s) (const (toStat <$> peek s))
 
 

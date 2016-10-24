@@ -26,6 +26,7 @@
 -- offset field.
 module ViperVM.Format.Binary.Ptr
    ( PtrLike (..)
+   , indexPtr'
    -- * Pointer
    , Ptr (..)
    , Ptr.free
@@ -142,6 +143,9 @@ class PtrLike (p :: * -> *) where
 -- concatLayoutPaths :: LayoutPath p1 -> LayoutPath p2 -> LayoutPath (Concat p1 p2)
 -- concatPaths = undefined
 
+-- | Generalized version of 'indexPtr'
+indexPtr' :: Integral b => Ptr a -> b -> Ptr a
+indexPtr' p a = indexPtr p (fromIntegral a)
 
 
 instance PtrLike Ptr where

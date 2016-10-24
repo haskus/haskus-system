@@ -45,7 +45,6 @@ import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
 
 import Data.Ord (comparing)
-import Foreign.Marshal.Alloc (alloca,allocaBytes)
 
 -- | Device
 data Device = Device Library Device_ deriving (Eq)

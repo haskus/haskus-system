@@ -13,8 +13,6 @@ module ViperVM.Arch.Linux.Graphics.Object
    )
 where
 
-import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Ptr
 import ViperVM.Arch.Linux.Graphics.Controller
 import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.Encoder
@@ -27,12 +25,13 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
-
+import ViperVM.Format.Binary.Storable
+import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Enum
 import ViperVM.Utils.Flow
 import ViperVM.System.Sys
 
-import Foreign.Marshal.Array
 
 data ObjectType
    = ObjectController

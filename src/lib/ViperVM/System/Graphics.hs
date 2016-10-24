@@ -32,6 +32,7 @@ import ViperVM.Format.Binary.BitSet (CBitSet(..), BitSet)
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 import ViperVM.Utils.List (isPrefixOf)
 import ViperVM.Utils.Maybe
@@ -56,7 +57,6 @@ import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
 import Control.Concurrent.STM
 import Control.Concurrent
-import Foreign.Marshal (allocaBytes)
 import System.Posix.Types (Fd(..))
 import System.FilePath (takeBaseName)
 

@@ -26,9 +26,6 @@ import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String 
 
-import Foreign.Marshal.Array
-
-
 -- | Property meta-information
 data PropertyMeta = PropertyMeta
    { propertyID        :: Word32       -- ^ ID of the property type

@@ -25,7 +25,7 @@ import ViperVM.Utils.Types
 -- | Fixed-size buffer containing a CString
 newtype CStringBuffer (n :: Nat)
    = CStringBuffer (Vector n Int8)
-   deriving (CStorable,Storable)
+   deriving (Storable)
 
 instance KnownNat n => Show (CStringBuffer n) where
    show = show . fromCStringBuffer

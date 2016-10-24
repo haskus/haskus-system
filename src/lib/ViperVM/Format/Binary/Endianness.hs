@@ -35,8 +35,6 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Word
 
 import System.IO.Unsafe
-import Foreign.Marshal.Array
-import Foreign.Marshal.Alloc (alloca)
 
 -- | Endianness
 data Endianness 
@@ -203,14 +201,6 @@ instance (ByteReversable a, Storable a) => Storable (AsBigEndian a) where
    peek ptr                 = AsBigEndian . bigEndianToHost <$> peek (castPtr ptr)
    poke ptr (AsBigEndian v) = poke (castPtr ptr) (hostToBigEndian v)
 
-instance (ByteReversable a, Storable a) => CStorable (AsBigEndian a) where
-   cPeek      = peek
-   cPoke      = poke
-   cSizeOf    = sizeOf
-   cAlignment = alignment
-
-
-   
 instance (ByteReversable a, StaticStorable a) => StaticStorable (AsLittleEndian a) where
    type SizeOf (AsLittleEndian a)    = SizeOf a
    type Alignment (AsLittleEndian a) = Alignment a
@@ -222,11 +212,5 @@ instance (ByteReversable a, Storable a) => Storable (AsLittleEndian a) where
    sizeOf _    = sizeOf (undefined :: a)
    alignment _ = alignment (undefined :: a)
 
-   peek ptr                 = AsLittleEndian . bigEndianToHost <$> peek (castPtr ptr)
+   peek ptr                    = AsLittleEndian . bigEndianToHost <$> peek (castPtr ptr)
    poke ptr (AsLittleEndian v) = poke (castPtr ptr) (hostToLittleEndian v)
-
-instance (ByteReversable a, Storable a) => CStorable (AsLittleEndian a) where
-   cPeek      = peek
-   cPoke      = poke
-   cSizeOf    = sizeOf
-   cAlignment = alignment

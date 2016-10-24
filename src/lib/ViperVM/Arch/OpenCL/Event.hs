@@ -10,9 +10,8 @@ import ViperVM.Arch.OpenCL.Entity
 import ViperVM.Arch.OpenCL.Library
 import ViperVM.Arch.OpenCL.Error
 import ViperVM.Format.Binary.Enum
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
-
-import Foreign.Marshal.Array (withArray)
 
 -- | OpenCL event
 data Event = Event Library Event_ deriving (Eq)

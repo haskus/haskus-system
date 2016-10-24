@@ -11,6 +11,7 @@ where
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
+import ViperVM.Format.Binary.Ptr
 
 -- | Image storage format
 data ImageFormat = ImageFormat
@@ -22,12 +23,12 @@ instance Storable ImageFormat where
    alignment _ = alignment (undefined :: Double)
    sizeOf _ = 64
    peek p = do
-      a <- fmap toCEnum (peekByteOff p 0 :: IO Word32)
-      b <- fmap toCEnum (peekByteOff p 4 :: IO Word32)
+      a <- fmap toCEnum (peekByteOff (castPtr p) 0 :: IO Word32)
+      b <- fmap toCEnum (peekByteOff (castPtr p) 4 :: IO Word32)
       return $ ImageFormat a b
    poke p (ImageFormat a b) = do
-      pokeByteOff p 0 (fromCEnum a :: Word32)
-      pokeByteOff p 4 (fromCEnum b :: Word32)
+      pokeByteOff (castPtr p) 0 (fromCEnum a :: Word32)
+      pokeByteOff (castPtr p) 4 (fromCEnum b :: Word32)
 
 -- | Image addressing mode
 data AddressingMode

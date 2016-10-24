@@ -76,7 +76,7 @@ import ViperVM.Format.Binary.Storable
 --
 -- The elements in the Enum a are flags corresponding to each bit of b starting
 -- from the least-significant bit.
-newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable,CStorable)
+newtype BitSet b a = BitSet b deriving (Eq,Ord,Storable)
 
 instance (Show a, CBitSet a, FiniteBits b) => Show (BitSet b a) where
    show b = "fromList " ++ show (toList b)

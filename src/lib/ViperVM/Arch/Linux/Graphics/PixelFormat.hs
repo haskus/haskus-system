@@ -59,12 +59,6 @@ formatFormat (PixelFormat fmt) =
    fromEnumField (extractField (Proxy :: Proxy "format") fmt)
 {-# INLINE formatFormat #-}
 
-instance CStorable PixelFormat where
-   cSizeOf      = sizeOf
-   cAlignment   = alignment
-   cPeek        = peek
-   cPoke        = poke
-
 type CFormat = BitFields Word32
   '[ BitField 8 "d" Int
    , BitField 8 "c" Int

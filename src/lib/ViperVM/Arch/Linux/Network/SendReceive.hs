@@ -8,16 +8,13 @@ module ViperVM.Arch.Linux.Network.SendReceive
    )
 where
 
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Utils
-
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
-import ViperVM.Format.Binary.Ptr (Ptr, nullPtr, castPtr)
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Utils.Flow
 
@@ -105,7 +102,7 @@ sysReceive (Handle fd) ptr size flags addr = do
 
 receiveBuffer :: Handle -> Int -> SendReceiveFlags -> IOErr Buffer
 receiveBuffer fd size flags = do
-   b <- mallocBytes size
+   b <- mallocBytes (fromIntegral size)
    sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
       -- free the buffer on error
       >..~=> const (free b)

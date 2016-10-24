@@ -31,7 +31,7 @@ newtype FixedPoint w (i :: Nat) (f :: Nat) = FixedPoint (BitFields w
    '[ BitField i "integer"    w
     , BitField f "fractional" w
     ])
-   deriving (Storable,CStorable)
+   deriving (Storable)
 
 deriving instance forall w n d.
    ( Integral w

@@ -37,8 +37,6 @@ import ViperVM.Format.String (withCStringLen)
 import Control.Concurrent
 import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
-import Foreign.Marshal.Alloc (alloca)
-import Foreign.Marshal.Utils (with)
 
 -- | Terminal (input and output, no error output)
 data Terminal = Terminal

@@ -34,8 +34,6 @@ import ViperVM.Arch.OpenCL.Context
 import ViperVM.Arch.OpenCL.Device
 
 import Data.Ord (comparing)
-import Foreign.Marshal.Alloc (alloca)
-import Foreign (allocaArray,pokeArray)
 
 -- | Memory object (buffer, image)
 data Mem = Mem Library Mem_ deriving (Eq)

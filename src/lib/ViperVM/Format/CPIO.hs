@@ -127,13 +127,7 @@ data FileDesc = FileDesc
    , fileDevMinor    :: Word64   -- ^ Disk device minor number
    , fileRDevMajor   :: Word64   -- ^ Special file major number
    , fileRDevMinor   :: Word64   -- ^ Special file minor number
-   } deriving (Show,Generic,CStorable)
-
-instance Storable FileDesc where
-   peek      = cPeek
-   poke      = cPoke
-   sizeOf    = cSizeOf
-   alignment = cAlignment
+   } deriving (Show,Generic,Storable)
 
 -- | Put a number as a 8-char string padding left with zeros
 putNumber :: Word64 -> Put

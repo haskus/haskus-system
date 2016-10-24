@@ -14,7 +14,6 @@ where
 
 import Control.Exception (Exception, throw)
 import Data.Typeable (Typeable)
-import Foreign.Marshal.Alloc (alloca)
 
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Storable

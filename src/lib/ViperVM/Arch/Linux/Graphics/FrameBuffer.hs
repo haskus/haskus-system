@@ -15,8 +15,6 @@ module ViperVM.Arch.Linux.Graphics.FrameBuffer
    )
 where
 
-import Foreign.Marshal.Array
-
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Graphics.Card
@@ -25,6 +23,7 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Tuple
 import ViperVM.Utils.Flow
 import ViperVM.Utils.List (zip4)

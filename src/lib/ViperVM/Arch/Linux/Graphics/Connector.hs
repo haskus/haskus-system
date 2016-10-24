@@ -19,7 +19,6 @@ where
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
-
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Encoder
@@ -34,7 +33,6 @@ import ViperVM.Utils.Flow
 import ViperVM.System.Sys
 
 import Control.Monad (liftM2)
-import Foreign.Marshal.Array (peekArray, allocaArray)
 
 -- | Indicate if a cable is plugged in the connector
 data Connection

@@ -37,9 +37,6 @@ import ViperVM.Utils.List (elemIndex)
 import ViperVM.Utils.Flow
 
 import Control.Monad.Trans.Either
-import Foreign.Marshal.Array (withArray, allocaArray, peekArray)
-import Foreign.Marshal.Alloc (alloca,allocaBytes)
-import Foreign.Marshal.Utils (withMany)
 
 -- | Program
 data Program = Program Library Program_ deriving (Eq)
@@ -128,7 +125,7 @@ getProgramDevices prog = runEitherT $ do
    count <- EitherT $ fmap fromIntegral <$> getProgramDeviceCount prog
    
    let 
-      size = fromIntegral $ count * sizeOf (undefined :: Device_)
+      size = fromIntegral $ count * fromIntegral (sizeOf (undefined :: Device_))
       infoid = CL_PROGRAM_DEVICES
 
    devs <- EitherT $ allocaArray count $ \(dat :: Ptr Device_) -> whenSuccess 
@@ -149,7 +146,7 @@ getProgramBinarySizes prog = runEitherT $ do
    count <- EitherT $ fmap fromIntegral <$> getProgramDeviceCount prog
 
    let 
-      size = fromIntegral $ count * sizeOf (undefined :: CSize)
+      size   = fromIntegral $ count * fromIntegral (sizeOf (undefined :: CSize))
       infoid = CL_PROGRAM_BINARY_SIZES
 
    EitherT $ allocaArray count $ \(dat :: Ptr CSize) -> whenSuccess 
@@ -176,7 +173,7 @@ getProgramBinary prog dev = runEitherT $ do
          sizes <- EitherT $ getProgramBinarySizes prog
          let binsize = fromIntegral $ sizes !! idx
              ndev    = length devs
-             size    = fromIntegral $ ndev * sizeOf (undefined :: Ptr ())
+             size    = fromIntegral $ ndev * fromIntegral (sizeOf (undefined :: Ptr ()))
              infoid  = CL_PROGRAM_BINARIES
 
          case binsize of

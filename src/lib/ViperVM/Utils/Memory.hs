@@ -17,9 +17,6 @@ import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 
-import Foreign.Marshal.Utils
-import Foreign.Marshal.Array
-
 -- | Copy memory
 memCopy :: Ptr a -> Ptr b -> Word64 -> IO ()
 memCopy dest src size = void (memcpy dest src size)
