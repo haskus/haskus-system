@@ -59,9 +59,11 @@ server pth elf conf = do
    simpleHTTP conf $ msum
       [ dir "css" $ dir "style.css" $ ok css
 
+      , dir "all" $ nullDir >> ok' (allPage pth elf)
+
       -- Section specific
       , dir "section" $ nullDir >> ok' (sectionsPage pth elf)
-      
+
       , dir "section" $ path $ \secnum -> do
          -- retrieve section by index
          sec <- lookupMaybe (getSectionByIndex elf secnum)
@@ -100,6 +102,47 @@ hexStr a = textFormat "0x{}" (Only $ Text.hex a)
 
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
+   p_ . toHtml $ "Info about: " ++ pth
+   h2_ "Pre-header"
+   showPreHeader (elfPreHeader elf)
+   h2_ "Header"
+   showHeader (elfHeader elf)
+   h2_ "Sections"
+   table_ $ do
+      tr_ $ do
+         th_ "Name"
+         th_ "Type"
+         th_ "Flags"
+         th_ "Address"
+         th_ "Offset"
+         th_ "Size"
+         th_ "Link"
+         th_ "Info"
+         th_ "Alignment"
+         th_ "Entry size"
+      forM_ (Vector.indexed (elfSections elf)) $ \(i,s) -> tr_ $ do
+         let name = fromMaybe "(none)" $ do
+               n <- getSectionName elf s
+               return $ if (n == "")
+                  then "(none)"
+                  else n
+         td_ $ a_ [href_ (textFormat "section/{}" (Only i))] (toHtml name)
+         td_ . toHtml $ show (sectionType s)
+         td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
+         td_ . toHtml $ hexStr (sectionAddr s)
+         td_ . toHtml $ show (sectionOffset s)
+         td_ . toHtml $ show (sectionSize s)
+         td_ . toHtml $ show (sectionLink s)
+         td_ . toHtml $ show (sectionInfo s)
+         td_ . toHtml $ show (sectionAlignment s)
+         td_ . toHtml $ show (sectionEntrySize s)
+
+   a_ [href_ "all"] "Show all sections"
+   h2_ "Segments"
+   showSegments elf
+
+allPage :: FilePath -> Elf -> Html ()
+allPage pth elf = do
    p_ . toHtml $ "Info about: " ++ pth
    h2_ "Pre-header"
    showPreHeader (elfPreHeader elf)
@@ -229,133 +272,130 @@ showSections elf =
             Just str -> toHtml str
             Nothing  -> span_ [class_ "invalid"] "Invalid section name"
       h3_ $ do
-         toHtml $ textFormat "Section {} \"" (Only (i :: Int))
+         toHtml $ textFormat "Section {} " (Only (i :: Int))
          name
-         "\""
       showSection elf i secname s
 
 showSection :: Elf -> Int -> Maybe Text -> Section -> Html ()
 showSection elf secnum secname s = do
    table_ $ do
       tr_ $ do
+         th_ "Name"
          th_ "Name index"
-         td_ . toHtml $ show (sectionNameIndex s)
-      tr_ $ do
          th_ "Type"
-         td_ . toHtml $ show (sectionType s)
-      tr_ $ do
          th_ "Flags"
-         td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
-      tr_ $ do
          th_ "Address"
-         td_ . toHtml $ hexStr (sectionAddr s)
-      tr_ $ do
          th_ "Offset"
-         td_ . toHtml $ show (sectionOffset s)
-      tr_ $ do
          th_ "Size"
-         td_ . toHtml $ show (sectionSize s)
-      tr_ $ do
          th_ "Link"
-         td_ . toHtml $ show (sectionLink s)
-      tr_ $ do
          th_ "Info"
-         td_ . toHtml $ show (sectionInfo s)
-      tr_ $ do
          th_ "Alignment"
-         td_ . toHtml $ show (sectionAlignment s)
-      tr_ $ do
          th_ "Entry size"
+      tr_ $ do
+         let name = fromMaybe "(none)" $ do
+               n <- getSectionName elf s
+               return $ if (n == "")
+                  then "(none)"
+                  else n
+         td_ $ toHtml name
+         td_ $ toHtml $ show (sectionNameIndex s)
+         td_ . toHtml $ show (sectionType s)
+         td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
+         td_ . toHtml $ hexStr (sectionAddr s)
+         td_ . toHtml $ show (sectionOffset s)
+         td_ . toHtml $ show (sectionSize s)
+         td_ . toHtml $ show (sectionLink s)
+         td_ . toHtml $ show (sectionInfo s)
+         td_ . toHtml $ show (sectionAlignment s)
          td_ . toHtml $ show (sectionEntrySize s)
 
-      case getFullSectionType elf s of
-         -- Show string table
-         BasicSectionType SectionTypeSTRTAB -> tr_ $ do
-            th_ "Strings"
-            let strs = getStringsFromSection elf s
-            td_ $ table_ $ do
-               tr_ $ do
-                  th_ "Offset"
-                  th_ "Value"
-               forM_ strs $ \(i,str) -> tr_ $ do
-                  td_ (toHtml (show i))
-                  td_ (toHtml str)
+   case getFullSectionType elf s of
+      -- Show string table
+      BasicSectionType SectionTypeSTRTAB -> do
+         h4_ "Strings"
+         let strs = getStringsFromSection elf s
+         table_ $ do
+            tr_ $ do
+               th_ "Offset"
+               th_ "Value"
+            forM_ strs $ \(i,str) -> tr_ $ do
+               td_ (toHtml (show i))
+               td_ (toHtml str)
 
-         -- Show symbol table
-         BasicSectionType SectionTypeSYMTAB -> tr_ $ do
-            th_ "Symbols"
-            let syms = getSymbolsFromSection elf s
-            td_ $ showSymbols elf s syms
+      -- Show symbol table
+      BasicSectionType SectionTypeSYMTAB -> do
+         h4_ "Symbols"
+         let syms = getSymbolsFromSection elf s
+         showSymbols elf s syms
 
-         -- Show dynamic symbol table
-         BasicSectionType SectionTypeDYNSYM -> tr_ $ do
-            th_ "Dynamic symbols"
-            let syms = getSymbolsFromSection elf s
-            td_ $ showSymbols elf s syms
+      -- Show dynamic symbol table
+      BasicSectionType SectionTypeDYNSYM -> do
+         h4_ "Dynamic symbols"
+         let syms = getSymbolsFromSection elf s
+         showSymbols elf s syms
 
-         -- Show dynamic info
-         BasicSectionType SectionTypeDYNAMIC -> tr_ $ do
-            th_ "Dynamic information"
-            let des = getDynamicEntriesFromSection elf s
-            td_ $ showDynamicEntries des
+      -- Show dynamic info
+      BasicSectionType SectionTypeDYNAMIC -> do
+         h4_ "Dynamic information"
+         let des = getDynamicEntriesFromSection elf s
+         showDynamicEntries des
 
-         -- Show interpreter path
-         BasicSectionType SectionTypePROGBITS
-            | getSectionName elf s == Just ".interp" -> tr_ $ do
-               th_ "Interpreter path"
-               let c = getSectionContentBuffer elf s
-               td_ . toHtml $ Text.bufferDecodeUtf8 c
+      -- Show interpreter path
+      BasicSectionType SectionTypePROGBITS
+         | getSectionName elf s == Just ".interp" -> do
+            h4_ "Interpreter path"
+            let c = getSectionContentBuffer elf s
+            toHtml $ Text.bufferDecodeUtf8 c
 
-         -- Show relocation entries
-         typ@(SectionTypeRelocation {}) -> tr_ $ do
-            th_ "Relocation entries"
-            let es = getRelocationEntriesFromSection elf s
-            td_ $ showRelocationEntries
-                     (relocSectionHasAddend typ)
-                     es
+      -- Show relocation entries
+      typ@(SectionTypeRelocation {}) -> do
+         h4_ "Relocation entries"
+         let es = getRelocationEntriesFromSection elf s
+         showRelocationEntries
+                  (relocSectionHasAddend typ)
+                  es
 
-         -- Show version needed entries
-         BasicSectionType SectionTypeGNU_verneed -> tr_ $ do
-            th_ "Version needed entries"
-            let es = getVersionNeededEntriesFromSection elf s
-            td_ $ showVersionNeededEntries es
+      -- Show version needed entries
+      BasicSectionType SectionTypeGNU_verneed -> do
+         h4_ "Version needed entries"
+         let es = getVersionNeededEntriesFromSection elf s
+         showVersionNeededEntries es
 
-         -- Show notes
-         BasicSectionType SectionTypeNOTE -> tr_ $ do
-            th_ "Notes"
-            let es = getNoteEntriesFromSection elf s
-            td_ $ showNoteEntries es
+      -- Show notes
+      BasicSectionType SectionTypeNOTE -> do
+         h4_ "Notes"
+         let es = getNoteEntriesFromSection elf s
+         showNoteEntries es
 
-         -- Show Intel debug opt
-         BasicSectionType SectionTypePROGBITS
-            | secname == Just ".debug_opt_report" -> tr_ $ do
-               th_ "Intel ZCA table"
-               let zca = getZCATableFromSection elf s
-               td_ $ do
-                  showZCATable zca
+      -- Show Intel debug opt
+      BasicSectionType SectionTypePROGBITS
+         | secname == Just ".debug_opt_report" -> do
+            h4_ "Intel ZCA table"
+            let zca = getZCATableFromSection elf s
+            showZCATable zca
 
-         -- Show debug info
-         BasicSectionType SectionTypePROGBITS
-            | getSectionName elf s == Just ".debug_info" -> tr_ $ do
-               th_ "Debug info"
-               let c = getDebugInfoFromSection elf s
-               td_ $ showDebugInfo c
+      -- Show debug info
+      BasicSectionType SectionTypePROGBITS
+         | getSectionName elf s == Just ".debug_info" -> do
+            h4_ "Debug info"
+            let c = getDebugInfoFromSection elf s
+            showDebugInfo c
 
-         -- Show debug type
-         BasicSectionType SectionTypePROGBITS
-            | getSectionName elf s == Just ".debug_type" -> tr_ $ do
-               th_ "Debug type"
-               let c = getDebugTypeFromSection elf s
-               td_ . toHtml $ show c
+      -- Show debug type
+      BasicSectionType SectionTypePROGBITS
+         | getSectionName elf s == Just ".debug_type" -> do
+            h4_ "Debug type"
+            let c = getDebugTypeFromSection elf s
+            toHtml $ show c
 
-         -- Show debug abbrev
-         BasicSectionType SectionTypePROGBITS
-            | getSectionName elf s == Just ".debug_abbrev" -> tr_ $ do
-               th_ "Debug abbreviations"
-               let c = getDebugAbbrevFromSection elf s
-               td_ $ showDebugAbbrev c
+      -- Show debug abbrev
+      BasicSectionType SectionTypePROGBITS
+         | getSectionName elf s == Just ".debug_abbrev" -> do
+            h4_ "Debug abbreviations"
+            let c = getDebugAbbrevFromSection elf s
+            showDebugAbbrev c
 
-         _ -> return ()
+      _ -> return ()
 
 
 
@@ -536,14 +576,13 @@ showSymbols elf symSec ss = do
          
    table_ $ do
       tr_ $ do
-         th_ "(index) Name"
+         th_ "(index) Name / Z-Name"
          th_ "Binding"
          th_ "Type"
          th_ "Visibility"
          th_ "Info"
          th_ "Value"
          th_ "Size"
-         th_ "Z-Name"
       forM_ (ss `zip` symNames) $ \(s,sname) -> tr_ $ do
          td_ $ do
             let idx = symbolNameIndex s
@@ -553,6 +592,15 @@ showSymbols elf symSec ss = do
                   span_ [class_ "invalid"] "None"
                Just name -> do
                   toHtml $ textFormat "({}) {}" (idx, name)
+                  -- GHC Z-String
+                  let 
+                     name' = Text.unpack name
+                     zs    = decodeZString name'
+                  case decodeZString name' of
+                     Just zs | zs /= name' -> do
+                        br_ []
+                        toHtml ("Z-Name: " ++ zs)
+                     _ -> return ()
 
          td_ $ case symbolBinding s of
             SymbolBindingLocal      -> span_ [class_ "sym_local"]  "Local"
@@ -588,12 +636,6 @@ showSymbols elf symSec ss = do
 
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
-         td_ $ do
-            case sname of
-               Nothing   -> do
-                  span_ [class_ "invalid"] "None"
-               Just name -> do
-                  toHtml $ (decodeZString (Text.unpack name))
 
 showRelocationEntries :: Bool -> [RelocationEntry] -> Html ()
 showRelocationEntries withAddend es = do

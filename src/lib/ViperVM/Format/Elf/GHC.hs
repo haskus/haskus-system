@@ -82,66 +82,74 @@ import Data.Char
 -- escape characters. 
 
 
-decodeZString :: String -> String
-decodeZString [] = []
+decodeZString :: String -> Maybe String
+decodeZString [] = Just []
 decodeZString ('Z' : d : rest)
   | isDigit d = decode_tuple   d rest
-  | otherwise = decode_upper   d : decodeZString rest
+  | otherwise = (:) <$> decode_upper d <*> decodeZString rest
 decodeZString ('z' : d : rest)
   | isDigit d = decode_num_esc d rest
-  | otherwise = decode_lower   d : decodeZString rest
-decodeZString (c   : rest) = c : decodeZString rest
+  | otherwise = (:) <$> decode_lower d <*> decodeZString rest
+decodeZString (c   : rest) = (c :) <$> decodeZString rest
 
-decode_upper :: Char -> Char
-decode_upper 'L' = '('
-decode_upper 'R' = ')'
-decode_upper 'M' = '['
-decode_upper 'N' = ']'
-decode_upper 'C' = ':'
-decode_upper 'Z' = 'Z'
-decode_upper ch  = {-pprTrace "decode_upper" (char ch)-} ch
+decode_upper :: Char -> Maybe Char
+decode_upper 'L' = Just '('
+decode_upper 'R' = Just ')'
+decode_upper 'M' = Just '['
+decode_upper 'N' = Just ']'
+decode_upper 'C' = Just ':'
+decode_upper 'Z' = Just 'Z'
+decode_upper _   = Nothing
 
-decode_lower :: Char -> Char
-decode_lower 'z' = 'z'
-decode_lower 'a' = '&'
-decode_lower 'b' = '|'
-decode_lower 'c' = '^'
-decode_lower 'd' = '$'
-decode_lower 'e' = '='
-decode_lower 'g' = '>'
-decode_lower 'h' = '#'
-decode_lower 'i' = '.'
-decode_lower 'l' = '<'
-decode_lower 'm' = '-'
-decode_lower 'n' = '!'
-decode_lower 'p' = '+'
-decode_lower 'q' = '\''
-decode_lower 'r' = '\\'
-decode_lower 's' = '/'
-decode_lower 't' = '*'
-decode_lower 'u' = '_'
-decode_lower 'v' = '%'
-decode_lower ch  = ch
+decode_lower :: Char -> Maybe Char
+decode_lower 'z' = Just 'z'
+decode_lower 'a' = Just '&'
+decode_lower 'b' = Just '|'
+decode_lower 'c' = Just '^'
+decode_lower 'd' = Just '$'
+decode_lower 'e' = Just '='
+decode_lower 'g' = Just '>'
+decode_lower 'h' = Just '#'
+decode_lower 'i' = Just '.'
+decode_lower 'l' = Just '<'
+decode_lower 'm' = Just '-'
+decode_lower 'n' = Just '!'
+decode_lower 'p' = Just '+'
+decode_lower 'q' = Just '\''
+decode_lower 'r' = Just '\\'
+decode_lower 's' = Just '/'
+decode_lower 't' = Just '*'
+decode_lower 'u' = Just '_'
+decode_lower 'v' = Just '%'
+decode_lower _   = Nothing
 
 -- Characters not having a specific code are coded as z224U (in hex)
-decode_num_esc :: Char -> String -> String
+decode_num_esc :: Char -> String -> Maybe String
 decode_num_esc d = go (digitToInt d)
   where
     go n (c : rest)
       | isHexDigit c    = go (16*n + digitToInt c) rest
-    go n ('U' : rest)   = chr n : decodeZString rest
-    go n other          = error ("decode_num_esc: " ++ show n ++  ' ':other)
+    go n ('U' : rest)   = (chr n :) <$> decodeZString rest
+    go n other          = Nothing
 
-decode_tuple :: Char -> String -> String
+decode_tuple :: Char -> String -> Maybe String
 decode_tuple d = go (digitToInt d)
    where
     -- NB. recurse back to decodeZString after decoding the tuple, because
     -- the tuple might be embedded in a longer name.
     go n (c : rest)
       | isDigit c    = go (10*n + digitToInt c) rest
-    go 0 ('T':rest)  = "()" ++ decodeZString rest
-    go n ('T':rest)  = '(' : replicate (n-1) ',' ++ ")" ++ decodeZString rest
-    go 1 ('H':rest)  = "(# #)" ++ decodeZString rest
-    go n ('H':rest)  = '(' : '#' : replicate (n-1) ',' ++ "#)" ++ decodeZString rest
-    go n other       = error ("decode_tuple: " ++ show n ++ ' ':other)
+    go 0 ('T':rest)  = do
+      r <- decodeZString rest
+      return ("()" ++ r)
+    go n ('T':rest)  = do
+      r <- decodeZString rest
+      return ('(' : replicate (n-1) ',' ++ ")" ++ r)
+    go 1 ('H':rest)  = do
+      r <- decodeZString rest
+      return ("(# #)" ++ r)
+    go n ('H':rest)  = do
+      r <- decodeZString rest
+      return ('(' : '#' : replicate (n-1) ',' ++ "#)" ++ r)
+    go n other       = Nothing
 
