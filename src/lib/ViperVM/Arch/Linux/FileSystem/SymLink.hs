@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 -- | Symbolic links
@@ -66,7 +67,7 @@ sysReadLinkAt hdl path = go' 2048
       go size =
          allocaBytes size $ \ptr ->
             withCString path $ \path' ->
-               onSuccessIO (syscall_readlinkat fd path' ptr (fromIntegral size)) $ \n ->
+               onSuccessIO (syscall @"readlinkat" fd path' ptr (fromIntegral size)) $ \n ->
                   if fromIntegral n == size
                      then return Nothing
                      else Just <$> peekCStringLen (ptr, fromIntegral n)
@@ -76,5 +77,5 @@ sysSymlink :: FilePath -> FilePath -> IOErr ()
 sysSymlink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         onSuccess (syscall_symlink src' dest') (const ())
+         onSuccess (syscall @"symlink" src' dest') (const ())
 

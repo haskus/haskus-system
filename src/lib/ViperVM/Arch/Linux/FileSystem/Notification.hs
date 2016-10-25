@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Notifications on file system (poll, select, inotify, etc.)
 module ViperVM.Arch.Linux.FileSystem.Notification
@@ -16,6 +18,7 @@ import ViperVM.Utils.Maybe (mapMaybe)
 import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
@@ -113,7 +116,7 @@ sysPoll entries blocking timeout = do
             Just x  -> abs x
    
    withArray fds $ \fds' -> do
-      onSuccessIO (syscall_poll fds' nfds timeout') $ \case
+      onSuccessIO (syscall @"poll" (castPtr fds') nfds timeout') $ \case
          0 -> return PollTimeOut
          _ -> do
             retfds <- peekArray (length fds) fds'

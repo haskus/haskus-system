@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | System info (uname)
 module ViperVM.Arch.Linux.Info
@@ -31,4 +32,4 @@ systemInfo :: IOErr SystemInfo
 systemInfo = alloca $ \ptr -> onSuccessIO (uname ptr) (const (peek ptr))
    where
       uname :: Ptr SystemInfo -> IO Int64
-      uname = syscall_uname . castPtr
+      uname = syscall @"uname" . castPtr

@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -63,7 +64,7 @@ import ViperVM.Utils.Flow
 -- | Send a custom command to a device
 ioctl :: Arg a => Command -> a -> Handle -> IOErr Int64
 ioctl (Command cmd) arg (Handle fd) =
-   onSuccessId (syscall_ioctl fd (fromIntegral (bitFieldsBits cmd)) (toArg arg))
+   onSuccessId (syscall @"ioctl" fd (fromIntegral (bitFieldsBits cmd)) (toArg arg))
 
 -----------------------------------------------------------------------------
 -- Write/Read

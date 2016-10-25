@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | File control (fcntl)
 module ViperVM.Arch.Linux.Internals.Fcntl
@@ -41,4 +43,4 @@ data FcntlCommand
 
 -- | Fcntl syscall
 sysFcntl :: Arg a => Handle -> FcntlCommand -> a -> IO Int64
-sysFcntl (Handle fd) cmd = syscall_fcntl fd (fromCEnum cmd)
+sysFcntl (Handle fd) cmd arg = syscall @"fcntl" fd (fromCEnum cmd) (toArg arg)

@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Process tracing (ptrace)
 module ViperVM.Arch.Linux.Trace
@@ -191,4 +193,4 @@ data PeekSigInfoFlags
    
 -- | Trace a process
 sysTrace :: TraceRequest -> ProcessID -> Ptr () -> Ptr () -> IOErr Int64
-sysTrace req (ProcessID pid) addr dat = onSuccessId (syscall_ptrace (fromEnum req) pid addr dat)
+sysTrace req (ProcessID pid) addr dat = onSuccessId (syscall @"ptrace" (fromEnum req) pid addr dat)

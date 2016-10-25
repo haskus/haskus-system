@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ViperVM.Arch.Linux.Network
    ( sysShutdown
@@ -31,7 +33,7 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Bits
-import ViperVM.Format.Binary.Ptr (nullPtr)
+import ViperVM.Format.Binary.Ptr
 
 data ShutFlag
    = ShutRead
@@ -42,18 +44,18 @@ data ShutFlag
 -- | Shut down part of a full-duplex connection
 sysShutdown :: Handle -> ShutFlag -> IOErr ()
 sysShutdown (Handle fd) flag =
-   onSuccess (syscall_shutdown fd (fromEnum flag)) (const ())
+   onSuccess (syscall @"shutdown" fd (fromEnum flag)) (const ())
 
 -- | Call sendfile using implicit file cursor for input
 sysSendFile :: Handle -> Handle -> Word64 -> IOErr Word64
 sysSendFile (Handle outfd) (Handle infd) count =
-   onSuccess (syscall_sendfile outfd infd nullPtr count) fromIntegral
+   onSuccess (syscall @"sendfile" outfd infd nullPtr count) fromIntegral
 
 -- | Call sendFile using explicit input offset, returns new offset
 sysSendFileWithOffset :: Handle -> Handle -> Word64 -> Word64 -> IOErr (Word64,Word64)
 sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
    with offset $ \off ->
-      onSuccessIO (syscall_sendfile outfd infd off count) $ \x -> do
+      onSuccessIO (syscall @"sendfile" outfd infd off count) $ \x -> do
          newOff <- peek off
          return (fromIntegral x, newOff)
 
@@ -157,7 +159,7 @@ sysSocket' typ protocol subprotocol opts =
       f = fromIntegral . fromEnum
       typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
    in
-   onSuccess (syscall_socket (fromEnum protocol) typ' subprotocol) (Handle . fromIntegral)
+   onSuccess (syscall @"socket" (fromEnum protocol) typ' subprotocol) (Handle . fromIntegral)
 
 -- | Create a socket pair (low-level API)
 --
@@ -171,7 +173,7 @@ sysSocketPair' typ protocol subprotocol opts =
       toTuple [x,y] = (x,y)
       toTuple _     = error "Invalid tuple"
    in
-   allocaArray 2 $ \ptr -> onSuccessIO (syscall_socketpair (fromEnum protocol) typ' subprotocol ptr)
+   allocaArray 2 $ \ptr -> onSuccessIO (syscall @"socketpair" (fromEnum protocol) typ' subprotocol (castPtr ptr))
       (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
 
 -- | IP type
@@ -278,13 +280,13 @@ sysSocketPair typ opts =
 sysBind :: Storable a => Handle -> a -> IOErr ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall_bind fd addr' (fromIntegral (sizeOf addr))) (const ())
+      onSuccess (syscall @"bind" fd (castPtr addr') (fromIntegral (sizeOf addr))) (const ())
 
 -- | Connect a socket
 sysConnect :: Storable a => Handle -> a -> IOErr ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall_connect fd addr' (fromIntegral (sizeOf addr))) (const ())
+      onSuccess (syscall @"connect" fd (castPtr addr') (fromIntegral (sizeOf addr))) (const ())
 
 -- | Accept a connection on a socket
 --
@@ -298,14 +300,14 @@ sysAccept (Handle fd) addr opts =
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      onSuccess (syscall_accept4 fd addr' (fromIntegral (sizeOf addr)) opts') (Handle . fromIntegral)
+      onSuccess (syscall @"accept4" fd (castPtr addr') (fromIntegral (sizeOf addr)) opts') (Handle . fromIntegral)
 
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
 sysListen :: Handle -> Word64 -> IOErr ()
 sysListen (Handle fd) backlog =
-   onSuccess (syscall_listen fd backlog) (const ())
+   onSuccess (syscall @"listen" fd backlog) (const ())
 
 
 -- | Netlink socket binding

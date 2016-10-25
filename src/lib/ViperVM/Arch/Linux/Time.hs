@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Linux time
 module ViperVM.Arch.Linux.Time
@@ -21,7 +23,7 @@ module ViperVM.Arch.Linux.Time
 where
 
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
@@ -94,33 +96,33 @@ instance Enum Clock where
 sysClockGetTime :: Clock -> IOErr TimeSpec
 sysClockGetTime clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      onSuccessIO (syscall_clock_gettime (fromEnum clk) t) (const $ peek t)
+      onSuccessIO (syscall @"clock_gettime" (fromEnum clk) (castPtr t)) (const $ peek t)
 
 -- | Set clock time
 sysClockSetTime :: Clock -> TimeSpec -> IOErr ()
 sysClockSetTime clk time =
    with time $ \(t :: Ptr TimeSpec) ->
-      onSuccess (syscall_clock_settime (fromEnum clk) t) (const ())
+      onSuccess (syscall @"clock_settime" (fromEnum clk) (castPtr t)) (const ())
 
 -- | Retrieve clock resolution
 sysClockGetResolution :: Clock -> IOErr TimeSpec
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      onSuccessIO (syscall_clock_getres (fromEnum clk) t) (const $ peek t)
+      onSuccessIO (syscall @"clock_getres" (fromEnum clk) (castPtr t)) (const $ peek t)
 
 -- | Retrieve time of day
 sysGetTimeOfDay :: IOErr TimeVal
 sysGetTimeOfDay =
    alloca $ \(tv :: Ptr TimeVal) ->
       -- timezone arg is deprecated (NULL passed instead)
-      onSuccessIO (syscall_gettimeofday tv nullPtr) (const $ peek tv)
+      onSuccessIO (syscall @"gettimeofday" (castPtr tv) nullPtr) (const $ peek tv)
 
 -- | Set time of day
 sysSetTimeOfDay :: TimeVal -> IOErr ()
 sysSetTimeOfDay tv =
    with tv $ \ptv ->
       -- timezone arg is deprecated (NULL passed instead)
-      onSuccessVoid (syscall_settimeofday ptv nullPtr)
+      onSuccessVoid (syscall @"settimeofday" (castPtr ptv) nullPtr)
 
 -- | Result of a sleep
 data SleepResult
@@ -135,7 +137,7 @@ sysNanoSleep :: TimeSpec -> IOErr SleepResult
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
-         ret <- syscall_nanosleep ts' rem'
+         ret <- syscall @"nanosleep" (castPtr ts') (castPtr rem')
          case defaultCheck ret of
             Nothing    -> flowRet0 CompleteSleep
             Just EINTR -> flowRet0 =<< (WokenUp <$> peek rem')

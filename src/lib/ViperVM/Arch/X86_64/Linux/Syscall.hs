@@ -3,10 +3,27 @@
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnliftedFFITypes #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | Linux syscall
 module ViperVM.Arch.X86_64.Linux.Syscall
-   ( syscall0
+   ( S
+   , PrimOp
+   , Safe
+   , SyscallByName
+   , syscall_
+   , SelSyscall
+   -- * Internals
+   , syscall0
    , syscall1
    , syscall2
    , syscall3
@@ -25,8 +42,112 @@ where
 
 import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Format.Binary.Word
+import ViperVM.Utils.Types
 import GHC.Base
 import GHC.Int
+
+------------------------------------
+-- Syscalls
+-- ~~~~~~~~
+--
+-- We support syscall definition as a type-level table:
+--
+--    type Syscalls =
+--       '[ S 16 PrimOp "ioctl" (Int64 -> Int64 -> IO Int64)
+--        , S 17 Safe   "dummy"  (IO Int64)
+--        ]
+--
+-- For each syscall (S n s name t):
+--    - n is the syscall number
+--    - s is the safety: PrimOp or Safe (FFI)
+--    - name is the syscall name
+--    - t is the syscall parameters and return types
+--
+-- To call a syscall, use 'syscall_' as follow:
+--    syscall_ @Syscalls @"ioctl"
+--
+-- A simple wrapper should be defined alongside each table:
+--    syscall = syscall_ @Syscalls
+--
+-- Why do we do this?
+-- ------------------
+--
+-- 1) It avoids defining one function per syscall
+-- 2) It makes it easier to read and check against the kernel tables
+-- 3) It makes it easier to switch from one table to another on another
+-- architecture
+-- 4) It allows syscall numbers to be retrieved by name (mayb be useful to
+-- generate code)
+--
+
+-- | syscall with the given name from the given syscall table
+syscall_ :: forall (syscalls :: [*]) (name :: Symbol) (n :: Nat) s t.
+   ( S n s name t ~ SyscallByName name syscalls
+   , SelSyscall s t
+   , KnownNat n
+   ) => t
+{-# INLINE syscall_ #-}
+syscall_ = (selectCall @s :: Int64 -> t) (natValue @n)
+
+data S (n :: Nat) safety (name :: Symbol) t
+
+type family SyscallByName (name :: Symbol) (xs :: [*]) where
+   SyscallByName name '[]                 = TypeError ('Text "Cannot find syscall " ':<>: 'ShowType name)
+   SyscallByName name (S n s name t : xs) = S n s name t
+   SyscallByName name (S n s xxxx t : xs) = SyscallByName name xs
+
+-- | Call syscall using primop
+data PrimOp
+
+-- | Call syscall using safe FFI
+data Safe
+
+-- | Select the syscall function
+class SelSyscall s t where
+   selectCall :: Int64 -> t
+
+instance SelSyscall PrimOp (IO Int64) where
+   selectCall = syscall0
+
+instance Arg a => SelSyscall PrimOp (a -> IO Int64) where
+   selectCall = syscall1
+
+instance (Arg a, Arg b) => SelSyscall PrimOp (a -> b -> IO Int64) where
+   selectCall = syscall2
+
+instance (Arg a, Arg b, Arg c) => SelSyscall PrimOp (a -> b -> c -> IO Int64) where
+   selectCall = syscall3
+
+instance (Arg a, Arg b, Arg c, Arg d) => SelSyscall PrimOp (a -> b -> c -> d -> IO Int64) where
+   selectCall = syscall4
+
+instance (Arg a, Arg b, Arg c, Arg d, Arg e) => SelSyscall PrimOp (a -> b -> c -> d -> e -> IO Int64) where
+   selectCall = syscall5
+
+instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => SelSyscall PrimOp (a -> b -> c -> d -> e -> f -> IO Int64) where
+   selectCall = syscall6
+
+instance SelSyscall Safe (IO Int64) where
+   selectCall = syscall0safe
+
+instance Arg a => SelSyscall Safe (a -> IO Int64) where
+   selectCall = syscall1safe
+
+instance (Arg a, Arg b) => SelSyscall Safe (a -> b -> IO Int64) where
+   selectCall = syscall2safe
+
+instance (Arg a, Arg b, Arg c) => SelSyscall Safe (a -> b -> c -> IO Int64) where
+   selectCall = syscall3safe
+
+instance (Arg a, Arg b, Arg c, Arg d) => SelSyscall Safe (a -> b -> c -> d -> IO Int64) where
+   selectCall = syscall4safe
+
+instance (Arg a, Arg b, Arg c, Arg d, Arg e) => SelSyscall Safe (a -> b -> c -> d -> e -> IO Int64) where
+   selectCall = syscall5safe
+
+instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => SelSyscall Safe (a -> b -> c -> d -> e -> f -> IO Int64) where
+   selectCall = syscall6safe
+
 
 --------------------------------------------------
 -- Implementation using Haskell foreign primops

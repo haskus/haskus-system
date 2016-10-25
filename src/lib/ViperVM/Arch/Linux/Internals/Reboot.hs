@@ -1,3 +1,6 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+
 -- | Linux 'reboot' syscall
 module ViperVM.Arch.Linux.Internals.Reboot
    ( PowerCommand(..)
@@ -44,7 +47,7 @@ sysPower cmd = case cmd of
       PowerRestartCommand cmdPath -> withCString cmdPath f
       _                           -> f nullPtr
    where
-      f path = onSuccessVoid (syscall_reboot magic1 magic2 cmd' path)
+      f path = onSuccessVoid (syscall @"reboot" magic1 magic2 cmd' path)
       magic1 = 0xfee1dead :: Word64
       magic2 = 0x28121969 :: Word64
       cmd'   = fromPowerCommand cmd

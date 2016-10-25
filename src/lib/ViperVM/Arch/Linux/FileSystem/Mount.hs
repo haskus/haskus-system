@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Filesystem mount
 module ViperVM.Arch.Linux.FileSystem.Mount
@@ -41,14 +43,14 @@ sysMount source target fstype flags dat =
    withCString source $ \source' ->
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->
-            onSuccess (syscall_mount source' target' fstype' (BitSet.toBits flags) dat) (const ())
+            onSuccess (syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat) (const ())
 
 
 -- | Unmount a file system
 sysUnmount :: String -> UnmountFlags -> IOErr ()
 sysUnmount target flags =
    withCString target $ \target' ->
-      onSuccess (syscall_umount2 target' (BitSet.toBits flags)) (const ())
+      onSuccess (syscall @"umount2" target' (BitSet.toBits flags)) (const ())
 
 -- | Type of the low-level Linux "mount" function
 type MountCall = String -> String -> String -> MountFlags -> Ptr () -> IOErr ()

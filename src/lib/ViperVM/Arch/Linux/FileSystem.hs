@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ViperVM.Arch.Linux.FileSystem
    ( FilePermission(..)
@@ -79,19 +80,19 @@ import ViperVM.Arch.Linux.Internals.FileSystem
 sysOpen :: FilePath -> HandleFlags -> FilePermissions -> IOErr Handle
 sysOpen path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall_open path' (BitSet.toBits flags) (BitSet.toBits mode))
+      onSuccess (syscall @"open" path' (BitSet.toBits flags) (BitSet.toBits mode))
          (Handle . fromIntegral)
 
 -- | Open a file
 sysOpenAt :: Handle -> FilePath -> HandleFlags -> FilePermissions -> IOErr Handle
 sysOpenAt (Handle fd) path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall_openat fd path' (BitSet.toBits flags) (BitSet.toBits mode))
+      onSuccess (syscall @"openat" fd path' (BitSet.toBits flags) (BitSet.toBits mode))
          (Handle . fromIntegral)
 
 sysCreateCString :: CString -> FilePermissions -> IOErr Handle
 sysCreateCString path mode = 
-   onSuccess (syscall_creat path (BitSet.toBits mode)) (Handle . fromIntegral)
+   onSuccess (syscall @"creat" path (BitSet.toBits mode)) (Handle . fromIntegral)
 
 sysCreate :: String -> FilePermissions -> IOErr Handle
 sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
@@ -99,7 +100,7 @@ sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 -- | Close a file descriptor
 sysClose :: Handle -> IOErr ()
 sysClose (Handle fd) =
-   onSuccess (syscall_close fd) (const ())
+   onSuccess (syscall @"close" fd) (const ())
 
 
 -- | File permissions
@@ -121,7 +122,7 @@ type FilePermissions = BitSet Word FilePermission
 -- | Reposition read/write file offset, return the new position
 sysSeek :: Handle -> Int64 -> SeekWhence -> IOErr Int64
 sysSeek (Handle fd) off whence =
-   onSuccess (syscall_lseek fd off (fromEnum whence)) id
+   onSuccess (syscall @"lseek" fd off (fromEnum whence)) id
 
 -- | Reposition read/write file offset
 sysSeek' :: Handle -> Int64 -> SeekWhence -> IOErr ()
@@ -141,30 +142,30 @@ type AccessModes = BitSet Word64 AccessMode
 
 sysAccess :: FilePath -> AccessModes -> IOErr ()
 sysAccess path mode = withCString path $ \path' ->
-   onSuccess (syscall_access path' (BitSet.toBits mode)) (const ())
+   onSuccess (syscall @"access" path' (BitSet.toBits mode)) (const ())
 
 
 sysDup :: Handle -> IOErr Handle
 sysDup (Handle oldfd) = 
-   onSuccess (syscall_dup oldfd) (Handle . fromIntegral)
+   onSuccess (syscall @"dup" oldfd) (Handle . fromIntegral)
 
 sysDup2 :: Handle -> Handle -> IOErr Handle
 sysDup2 (Handle oldfd) (Handle newfd) = 
-   onSuccess (syscall_dup2 oldfd newfd) (Handle . fromIntegral)
+   onSuccess (syscall @"dup2" oldfd newfd) (Handle . fromIntegral)
 
 sysSetCurrentDirectoryPath :: FilePath -> IOErr ()
 sysSetCurrentDirectoryPath path = withCString path $ \path' ->
-   onSuccess (syscall_chdir path') (const ())
+   onSuccess (syscall @"chdir" path') (const ())
 
 sysSetCurrentDirectory :: Handle -> IOErr ()
 sysSetCurrentDirectory (Handle fd) = 
-   onSuccess (syscall_fchdir fd) (const ())
+   onSuccess (syscall @"fchdir" fd) (const ())
 
 sysGetCurrentDirectory :: IOErr FilePath
 sysGetCurrentDirectory = go 128
    where
       go n = allocaArray n $ \ptr -> do
-         onSuccessId (syscall_getcwd ptr (fromIntegral n))
+         onSuccessId (syscall @"getcwd" ptr (fromIntegral n))
             >.~.> const (peekCString ptr)
             >%~^> \case
                ERANGE -> go (2 * n)
@@ -174,7 +175,7 @@ sysRename :: FilePath -> FilePath -> IOErr ()
 sysRename oldPath newPath =
    withCString oldPath $ \old' ->
       withCString newPath $ \new' ->
-         onSuccess (syscall_rename old' new') (const ())
+         onSuccess (syscall @"rename" old' new') (const ())
 
 data FileLock =
      SharedLock
@@ -191,75 +192,74 @@ sysFileLock (Handle fd) mode nonBlocking = do
 
       nb = if nonBlocking then 4 else 0
 
-   onSuccess (syscall_flock fd (mode' .|. nb :: Int64)) (const ())
+   onSuccess (syscall @"flock" fd (mode' .|. nb :: Int64)) (const ())
 
 
 sysFileSync :: Handle -> IOErr ()
-sysFileSync (Handle fd) = onSuccess (syscall_fsync fd) (const ())
+sysFileSync (Handle fd) = onSuccess (syscall @"fsync" fd) (const ())
 
 sysFileDataSync :: Handle -> IOErr ()
-sysFileDataSync (Handle fd) = onSuccess (syscall_fdatasync fd) (const ())
+sysFileDataSync (Handle fd) = onSuccess (syscall @"fdatasync" fd) (const ())
 
 sysTruncatePath :: FilePath -> Word64 -> IOErr ()
 sysTruncatePath path size = withCString path $ \path' ->
-   onSuccess (syscall_truncate path' size) (const ())
+   onSuccess (syscall @"truncate" path' size) (const ())
 
 sysTruncate :: Handle -> Word64 -> IOErr ()
 sysTruncate (Handle fd) size =
-   onSuccess (syscall_ftruncate fd size) (const ())
+   onSuccess (syscall @"ftruncate" fd size) (const ())
 
 sysLink :: FilePath -> FilePath -> IOErr ()
 sysLink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         onSuccess (syscall_link src' dest') (const ())
+         onSuccess (syscall @"link" src' dest') (const ())
 
 sysUnlink :: FilePath -> IOErr ()
 sysUnlink path = withCString path $ \path' ->
-   onSuccess (syscall_unlink path') (const ())
+   onSuccess (syscall @"unlink" path') (const ())
 
 sysUnlinkAt :: Handle -> FilePath -> Bool -> IOErr ()
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
-   onSuccess (syscall_unlinkat fd path' (if rmdir then 0x200 else 0)) (const ())
+   onSuccess (syscall @"unlinkat" fd path' (if rmdir then 0x200 else 0)) (const ())
 
 
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> IOErr ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   onSuccess (syscall_chmod path' (BitSet.toBits mode)) (const ())
+   onSuccess (syscall @"chmod" path' (BitSet.toBits mode)) (const ())
 
 sysChangePermission :: Handle -> FilePermissions -> IOErr ()
 sysChangePermission (Handle fd) mode = 
-   onSuccess (syscall_fchmod fd (BitSet.toBits mode)) (const ())
+   onSuccess (syscall @"fchmod" fd (BitSet.toBits mode)) (const ())
 
 
 -- | Avoid duplication in *chown syscalls
 chownEx :: (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> IOErr ()
-chownEx sc a uid gid = do
-   let
+chownEx sc a uid gid = onSuccess (sc a uid' gid') (const ())
+   where
       fuid (UserID x) = x
       fgid (GroupID x) = x
       uid' = maybe (-1) fuid uid
       gid' = maybe (-1) fgid gid
-   onSuccess (sc a uid' gid') (const ())
 
 
 -- | chown
 sysChangeOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> IOErr ()
-sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx syscall_chown p uid gid)
+sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx (syscall @"chown") p uid gid)
 
 -- | lchown
 sysChangeLinkOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> IOErr ()
-sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx syscall_lchown p uid gid)
+sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx (syscall @"lchown") p uid gid)
 
 -- | fchown
 sysChangeOwnership :: Handle -> Maybe UserID -> Maybe GroupID -> IOErr ()
-sysChangeOwnership (Handle fd) = chownEx syscall_fchown fd
+sysChangeOwnership (Handle fd) = chownEx (syscall @"fchown") fd
 
 -- | umask
 sysSetProcessUMask :: FilePermissions -> IOErr FilePermissions
 sysSetProcessUMask mode =
-   onSuccess (syscall_umask (BitSet.toBits mode)) (fromBits . fromIntegral)
+   onSuccess (syscall @"umask" (BitSet.toBits mode)) (fromBits . fromIntegral)
 
 -- | File type
 data FileType
@@ -394,22 +394,22 @@ sysFileStat path followLink = do
       allocaBytes (sizeOf' (undefined :: StatStruct)) $ \s ->
          let
             -- select between stat and lstat syscalls
-            sc = if followLink then syscall_stat else syscall_lstat
+            sc = if followLink then syscall @"stat" else syscall @"lstat"
          in
-         onSuccessIO (sc path' s) (const (toStat <$> peek s))
+         onSuccessIO (sc path' (castPtr s)) (const (toStat <$> peek s))
 
 -- | Stat on file descriptor
 sysHandleStat :: Handle -> IOErr Stat
 sysHandleStat (Handle fd) =
    allocaBytes (sizeOf' (undefined :: StatStruct)) $ \s ->
-      onSuccessIO (syscall_fstat fd s) (const (toStat <$> peek s))
+      onSuccessIO (syscall @"fstat" fd (castPtr s)) (const (toStat <$> peek s))
 
 
 sysSync :: IOErr ()
-sysSync = onSuccess syscall_sync (const ())
+sysSync = onSuccess (syscall @"sync") (const ())
 
 sysSyncFS :: Handle -> IOErr ()
-sysSyncFS (Handle fd) = onSuccess (syscall_syncfs fd) (const ())
+sysSyncFS (Handle fd) = onSuccess (syscall @"syncfs" fd) (const ())
 
 -- | Create a special file
 --
@@ -425,7 +425,7 @@ sysCreateSpecialFile hdl path typ perm dev = do
                   Nothing         -> (-1)
    withCString path $ \path' ->
       withDeviceID dev' $ \dev'' ->
-         onSuccessVoid (syscall_mknodat fd path' mode dev'')
+         onSuccessVoid (syscall @"mknodat" fd path' mode dev'')
 
 -- | Device identifier
 data DeviceID = DeviceID

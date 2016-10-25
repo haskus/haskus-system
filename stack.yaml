@@ -1,14 +1,7 @@
-# For more information, see: http://docs.haskellstack.org/en/stable/yaml_configuration.html
-
-# Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
 resolver: lts-7.3
-
-# Local packages, usually specified by relative directory name
 packages:
 - '.'
 - '../dynamic-linker-template/'
-
-# Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - c-storable-deriving-0.1.3
 - dynamic-linker-template-0.1.1.0
@@ -17,17 +10,15 @@ extra-deps:
 - diagrams-1.3.0.1
 - pqueue-1.3.1.1
 
-# Override default flag values for local packages and extra-deps
 flags:
    diagrams:
       rasterific: true
 
-# Extra package databases containing global packages
 extra-package-dbs: []
 
 ghc-options:
-   # GHCI needs it because of the foreign primops
-   "*": -fobject-code
+   "*": -fobject-code         # GHCI needs it because of the foreign primops
+   "*": -freduction-depth=0   # used to allow compilation of large type-level Syscalls table
 
 # Control whether we use the GHC we find on the path
 # system-ghc: true

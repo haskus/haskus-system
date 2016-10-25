@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Linux signals
 module ViperVM.Arch.Linux.Signal
@@ -22,36 +23,37 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Process
 import ViperVM.Format.Binary.Vector (Vector)
 import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Ptr (Ptr,nullPtr)
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Memory
 
 -- | Signal set
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
 sysPause :: IOErr ()
-sysPause = onSuccess syscall_pause (const ())
+sysPause = onSuccess (syscall @"pause") (const ())
 
 -- | Alarm
 sysAlarm :: Word-> IOErr Word
 sysAlarm seconds =
-   onSuccess (syscall_alarm seconds) fromIntegral
+   onSuccess (syscall @"alarm" seconds) fromIntegral
 
 -- | Kill syscall
 sysSendSignal :: ProcessID -> Int -> IOErr ()
 sysSendSignal (ProcessID pid) sig =
-   onSuccess (syscall_kill (fromIntegral pid) sig) (const ())
+   onSuccess (syscall @"kill" (fromIntegral pid) sig) (const ())
 
 -- | Send a signal to every process in the process group of the calling process
 sysSendSignalGroup :: Int -> IOErr ()
 sysSendSignalGroup sig =
-   onSuccess (syscall_kill 0 sig) (const ())
+   onSuccess (syscall @"kill" 0 sig) (const ())
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
 sysSendSignalAll :: Int -> IOErr ()
 sysSendSignalAll sig =
-   onSuccess (syscall_kill (-1) sig) (const ())
+   onSuccess (syscall @"kill" (-1) sig) (const ())
 
 -- | Check if a given process or process group exists
 --
@@ -73,9 +75,6 @@ data ChangeSignals
 -- | Change signal mask
 sysChangeSignalMask :: ChangeSignals -> Maybe SignalSet -> IOErr SignalSet
 sysChangeSignalMask act set =
-   let f x = alloca $ \(ret :: Ptr SignalSet) ->
-               onSuccessIO (syscall_sigprocmask (fromEnum act) x ret) (const $ peek ret)
-   in
-   case set of
-      Just s -> with s f
-      Nothing -> f nullPtr
+   withMaybeOrNull set $ \x ->
+      alloca $ \(ret :: Ptr SignalSet) ->
+         onSuccessIO (syscall @"rt_sigprocmask" (fromEnum act) (castPtr x) (castPtr ret)) (const $ peek ret)

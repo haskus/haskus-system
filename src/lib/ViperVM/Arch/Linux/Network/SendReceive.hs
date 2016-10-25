@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ViperVM.Arch.Linux.Network.SendReceive
    ( SendReceiveFlag(..)
@@ -93,7 +95,7 @@ sysReceive :: Storable a => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Ma
 sysReceive (Handle fd) ptr size flags addr = do
    let
       call :: Ptr a -> Ptr Word64 -> IOErr Word64
-      call add len = onSuccess (syscall_recvfrom fd ptr size (BitSet.toBits flags) add len) fromIntegral
+      call add len = onSuccess (syscall @"recvfrom" fd ptr size (BitSet.toBits flags) (castPtr add) len) fromIntegral
 
    case addr of
       Nothing -> call nullPtr nullPtr

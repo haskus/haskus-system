@@ -1,832 +1,350 @@
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 -- | Linux syscalls on X86_64
 module ViperVM.Arch.X86_64.Linux.Syscalls where
 
 import ViperVM.Arch.X86_64.Linux.Syscall
-import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.String (CString)
-
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Utils.Types
 
 type FD = Word -- file descriptor alias
 
--- | read
-syscall_read :: FD -> Ptr a -> Word64 -> IO Int64
-syscall_read = syscall3 0
-{-# INLINE syscall_read #-}
-
--- | write
-syscall_write :: FD -> Ptr a -> Word64 -> IO Int64
-syscall_write = syscall3 1
-{-# INLINE syscall_write #-}
-
--- | open
-syscall_open :: CString -> Int -> Word -> IO Int64
-syscall_open = syscall3 2
-{-# INLINE syscall_open #-}
-
--- | close
-syscall_close :: FD -> IO Int64
-syscall_close = syscall1 3
-{-# INLINE syscall_close #-}
-
--- | stat
-syscall_stat :: CString -> Ptr a -> IO Int64
-syscall_stat = syscall2 4
-{-# INLINE syscall_stat #-}
-
--- | fstat
-syscall_fstat :: FD -> Ptr a -> IO Int64
-syscall_fstat = syscall2 5
-{-# INLINE syscall_fstat #-}
-
--- | lstat
-syscall_lstat :: CString -> Ptr a -> IO Int64
-syscall_lstat = syscall2 6
-{-# INLINE syscall_lstat #-}
-
--- | poll
-syscall_poll :: Ptr a -> Word64 -> Int64 -> IO Int64
-syscall_poll = syscall3 7
-{-# INLINE syscall_poll #-}
-
--- | lseek
-syscall_lseek :: FD -> Int64 -> Int -> IO Int64
-syscall_lseek = syscall3 8
-{-# INLINE syscall_lseek #-}
-
--- | mmap
-syscall_mmap :: Ptr a -> Word64 -> Int64 -> Int64 -> FD -> Word64 -> IO Int64
-syscall_mmap = syscall6 9
-{-# INLINE syscall_mmap #-}
-
--- | mprotect
-syscall_mprotect :: Ptr a -> Word64 -> Int64 -> IO Int64
-syscall_mprotect = syscall3 10
-{-# INLINE syscall_mprotect #-}
-
--- | munmap
-syscall_munmap :: Ptr a -> Word64 -> IO Int64
-syscall_munmap = syscall2 11
-{-# INLINE syscall_munmap #-}
-
--- | brk
-syscall_brk :: Word64 -> IO Int64
-syscall_brk = syscall1 12
-{-# INLINE syscall_brk #-}
-
--- | rt_sigaction
-syscall_rt_sigaction :: Int -> Ptr a -> Ptr b -> IO Int64
-syscall_rt_sigaction = syscall3 13
-{-# INLINE syscall_rt_sigaction #-}
-
--- | rt_sigreturn
-
--- | sigprocmask
-syscall_sigprocmask :: Int -> Ptr a -> Ptr b -> IO Int64
-syscall_sigprocmask = syscall3 14
-{-# INLINE syscall_sigprocmask #-}
-
--- | rt_sigreturn
-syscall_rt_sigreturn :: IO Int64
-syscall_rt_sigreturn = syscall0 15
-{-# INLINE syscall_rt_sigreturn #-}
-
--- | ioctl
-syscall_ioctl :: FD -> Int64 -> Int64 -> IO Int64
-syscall_ioctl = syscall3 16
-{-# INLINE syscall_ioctl #-}
-
--- | pread64
-syscall_pread64 :: FD -> Ptr a -> Word64 -> Word64 -> IO Int64
-syscall_pread64 = syscall4 17
-{-# INLINE syscall_pread64 #-}
-
--- | pwrite64
-syscall_pwrite64 :: FD -> Ptr a -> Word64 -> Word64 -> IO Int64
-syscall_pwrite64 = syscall4 18
-{-# INLINE syscall_pwrite64 #-}
-
--- | readv
-syscall_readv :: FD -> Ptr a -> Int -> IO Int64
-syscall_readv = syscall3 19
-{-# INLINE syscall_readv #-}
-
--- | writev
-syscall_writev :: FD -> Ptr a -> Int-> IO Int64
-syscall_writev = syscall3 20
-{-# INLINE syscall_writev #-}
-
--- | access
-syscall_access :: CString -> Word64 -> IO Int64
-syscall_access = syscall2 21
-{-# INLINE syscall_access #-}
-
--- | pipe
-syscall_pipe :: Ptr Word -> IO Int64
-syscall_pipe = syscall1 22
-{-# INLINE syscall_pipe #-}
-
--- | select
-syscall_select :: Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> IO Int64
-syscall_select = syscall5safe 23
-{-# INLINE syscall_select #-}
-
--- | sched_yield
-syscall_sched_yield :: IO Int64
-syscall_sched_yield = syscall0 24
-{-# INLINE syscall_sched_yield #-}
-
--- | mremap
-syscall_mremap :: Ptr () -> Word64 -> Word64 -> Int -> Ptr () -> IO Int64
-syscall_mremap = syscall5 25
-{-# INLINE syscall_mremap #-}
-
--- | msync
-syscall_msync :: Ptr a -> Word64 -> Int64 -> IO Int64
-syscall_msync = syscall3 26
-{-# INLINE syscall_msync #-}
-
--- | mincore
-syscall_mincore :: Ptr a -> Word64 -> Ptr Word8 -> IO Int64
-syscall_mincore = syscall3 27
-{-# INLINE syscall_mincore #-}
-
--- | madvise
-syscall_madvise :: Ptr a -> Word64 -> Int -> IO Int64
-syscall_madvise = syscall3 28
-{-# INLINE syscall_madvise #-}
-
--- | shmget
-syscall_shmget :: Int32 -> Word64 -> Int -> IO Int64
-syscall_shmget = syscall3 29
-{-# INLINE syscall_shmget #-}
-
--- | shmat
-syscall_shmat :: Int -> Ptr () -> Int -> IO Int64
-syscall_shmat = syscall3 30
-{-# INLINE syscall_shmat #-}
-
--- | shmctl
-syscall_shmctl :: Int -> Int -> Ptr () -> IO Int64
-syscall_shmctl = syscall3 31
-{-# INLINE syscall_shmctl #-}
-
--- | dup
-syscall_dup :: FD -> IO Int64
-syscall_dup = syscall1 32
-{-# INLINE syscall_dup #-}
-
--- | dup2
-syscall_dup2 :: FD -> FD -> IO Int64
-syscall_dup2 = syscall2 33
-{-# INLINE syscall_dup2 #-}
-
--- | pause
-syscall_pause :: IO Int64
-syscall_pause = syscall0 34
-{-# INLINE syscall_pause #-}
-
--- | nanosleep
-syscall_nanosleep :: Ptr a -> Ptr a -> IO Int64
-syscall_nanosleep = syscall2 35
-{-# INLINE syscall_nanosleep #-}
-
--- | getitimer
-syscall_getitimer :: Int -> Ptr a -> IO Int64
-syscall_getitimer = syscall2 36
-{-# INLINE syscall_getitimer #-}
-
--- | alarm
-syscall_alarm :: Word -> IO Int64
-syscall_alarm = syscall1 37
-{-# INLINE syscall_alarm #-}
-
--- | setitimer
-syscall_setitimer :: Int -> Ptr a -> Ptr b -> IO Int64
-syscall_setitimer = syscall3 38
-{-# INLINE syscall_setitimer #-}
-
--- | getpid
-syscall_getpid :: IO Int64
-syscall_getpid = syscall0 39
-{-# INLINE syscall_getpid #-}
-
--- | sendfile
-syscall_sendfile :: FD -> FD -> Ptr Word64 -> Word64 -> IO Int64
-syscall_sendfile = syscall4 40
-{-# INLINE syscall_sendfile #-}
-
--- | socket
-syscall_socket :: Int -> Word64 -> Int -> IO Int64
-syscall_socket = syscall3 41
-{-# INLINE syscall_socket #-}
-
--- | connect
-syscall_connect :: FD -> Ptr a -> Int -> IO Int64
-syscall_connect = syscall3 42
-{-# INLINE syscall_connect #-}
-
--- | sendto
-syscall_sendto :: FD -> Ptr a -> Word64 -> Int -> Ptr b -> Word32 -> IO Int64
-syscall_sendto = syscall6 44
-{-# INLINE syscall_sendto #-}
-
--- | recvfrom
-syscall_recvfrom :: FD -> Ptr () -> Word64 -> Word64 -> Ptr a -> Ptr Word64 -> IO Int64
-syscall_recvfrom = syscall6 45
-{-# INLINE syscall_recvfrom #-}
-
--- | sendmsg
-syscall_sendmsg :: FD -> Ptr a -> Int -> IO Int64
-syscall_sendmsg = syscall3 46
-{-# INLINE syscall_sendmsg #-}
-
--- | recvmsg
-syscall_recvmsg :: FD -> Ptr a -> Int -> IO Int64
-syscall_recvmsg = syscall3 47
-{-# INLINE syscall_recvmsg #-}
-
--- | shutdown
-syscall_shutdown :: FD -> Int -> IO Int64
-syscall_shutdown = syscall2 48
-{-# INLINE syscall_shutdown #-}
-
--- | bind
-syscall_bind :: FD -> Ptr a -> Int -> IO Int64
-syscall_bind = syscall3 49
-{-# INLINE syscall_bind #-}
-
--- | listen
-syscall_listen :: FD -> Word64 -> IO Int64
-syscall_listen = syscall2 50
-{-# INLINE syscall_listen #-}
-
--- | getsockname
-syscall_getsockname :: FD -> Ptr a -> Ptr Int32 -> IO Int64
-syscall_getsockname = syscall3 51
-{-# INLINE syscall_getsockname #-}
-
--- | getpeername
-syscall_getpeername :: FD -> Ptr a -> Ptr Int32 -> IO Int64
-syscall_getpeername = syscall3 52
-{-# INLINE syscall_getpeername #-}
-
--- | socketpair
-syscall_socketpair :: Int -> Word64 -> Int -> Ptr Word -> IO Int64
-syscall_socketpair = syscall4 53
-{-# INLINE syscall_socketpair #-}
-
--- | fork
-syscall_fork :: IO Int64
-syscall_fork = syscall0 57
-{-# INLINE syscall_fork #-}
-
--- | vfork
-syscall_vfork :: IO Int64
-syscall_vfork = syscall0 58
-{-# INLINE syscall_vfork #-}
-
--- | exit
-syscall_exit :: Int64 -> IO Int64
-syscall_exit = syscall1 60
-{-# INLINE syscall_exit #-}
-
--- | kill
-syscall_kill :: Int64 -> Int -> IO Int64
-syscall_kill = syscall2 62
-{-# INLINE syscall_kill #-}
-
--- | uname
-syscall_uname :: Ptr () -> IO Int64
-syscall_uname = syscall1 63
-{-# INLINE syscall_uname #-}
-
--- | fcntl
-syscall_fcntl :: Arg a => FD -> Int64 -> a -> IO Int64
-syscall_fcntl = syscall3 72
-
-{-# INLINE syscall_fcntl #-}
-
--- | flock
-syscall_flock :: FD -> Int64 -> IO Int64
-syscall_flock = syscall2 73
-{-# INLINE syscall_flock #-}
-
--- | fsync
-syscall_fsync :: FD -> IO Int64
-syscall_fsync = syscall1 74
-{-# INLINE syscall_fsync #-}
-
--- | fdatasync
-syscall_fdatasync :: FD -> IO Int64
-syscall_fdatasync = syscall1 75
-{-# INLINE syscall_fdatasync #-}
-
--- | truncate
-syscall_truncate :: CString -> Word64 -> IO Int64
-syscall_truncate = syscall2 76
-{-# INLINE syscall_truncate #-}
-
--- | ftruncate
-syscall_ftruncate :: FD -> Word64 -> IO Int64
-syscall_ftruncate = syscall2 77
-{-# INLINE syscall_ftruncate #-}
-
--- | getcwd
-syscall_getcwd :: CString -> Word64 -> IO Int64
-syscall_getcwd = syscall2 79
-{-# INLINE syscall_getcwd #-}
-
--- | chdir
-syscall_chdir :: CString -> IO Int64
-syscall_chdir = syscall1 80
-{-# INLINE syscall_chdir #-}
-
--- | fchdir
-syscall_fchdir :: FD -> IO Int64
-syscall_fchdir = syscall1 81
-{-# INLINE syscall_fchdir #-}
-
--- | rename
-syscall_rename :: CString -> CString -> IO Int64
-syscall_rename = syscall2 82
-{-# INLINE syscall_rename #-}
-
--- | mkdir
-syscall_mkdir :: CString -> Word64 -> IO Int64
-syscall_mkdir = syscall2 83
-{-# INLINE syscall_mkdir #-}
-
--- | rmdir
-syscall_rmdir :: CString -> IO Int64
-syscall_rmdir = syscall1 84
-{-# INLINE syscall_rmdir #-}
-
--- | creat
-syscall_creat :: CString -> Word -> IO Int64
-syscall_creat = syscall2 85
-{-# INLINE syscall_creat #-}
-
--- | link
-syscall_link :: CString -> CString -> IO Int64
-syscall_link = syscall2 86
-{-# INLINE syscall_link #-}
-
--- | unlink
-syscall_unlink :: CString -> IO Int64
-syscall_unlink = syscall1 87
-{-# INLINE syscall_unlink #-}
-
--- | symlink
-syscall_symlink :: CString -> CString -> IO Int64
-syscall_symlink = syscall2 88
-{-# INLINE syscall_symlink #-}
-
--- | readlink
-syscall_readlink :: CString -> CString -> Word64 -> IO Int64
-syscall_readlink = syscall3 89
-{-# INLINE syscall_readlink #-}
-
--- | chmod
-syscall_chmod :: CString -> Word -> IO Int64
-syscall_chmod = syscall2 90
-{-# INLINE syscall_chmod #-}
-
--- | fchmod
-syscall_fchmod :: FD -> Word -> IO Int64
-syscall_fchmod = syscall2 91
-{-# INLINE syscall_fchmod #-}
-
--- | chown
-syscall_chown :: CString -> Word32 -> Word32 -> IO Int64
-syscall_chown = syscall3 92
-{-# INLINE syscall_chown #-}
-
--- | fchown
-syscall_fchown :: FD -> Word32 -> Word32 -> IO Int64
-syscall_fchown = syscall3 93
-{-# INLINE syscall_fchown #-}
-
--- | lchown
-syscall_lchown :: CString -> Word32 -> Word32 -> IO Int64
-syscall_lchown = syscall3 94
-{-# INLINE syscall_lchown #-}
-
--- | umask
-syscall_umask :: Word -> IO Int64
-syscall_umask = syscall1 95
-{-# INLINE syscall_umask #-}
-
--- | gettimeofday
-syscall_gettimeofday :: Ptr a -> Ptr () -> IO Int64
-syscall_gettimeofday = syscall2 96
-{-# INLINE syscall_gettimeofday #-}
-
--- | ptrace
-syscall_ptrace :: Int -> Word32 -> Ptr () -> Ptr () -> IO Int64
-syscall_ptrace = syscall4 101
-{-# INLINE syscall_ptrace #-}
-
--- | getuid
-syscall_getuid :: IO Int64
-syscall_getuid = syscall0 102
-{-# INLINE syscall_getuid #-}
-
--- | getgid
-syscall_getgid :: IO Int64
-syscall_getgid = syscall0 104
-{-# INLINE syscall_getgid #-}
-
--- | setuid
-syscall_setuid :: Word32 -> IO Int64
-syscall_setuid = syscall1 105
-{-# INLINE syscall_setuid #-}
-
--- | setgid
-syscall_setgid :: Word32 -> IO Int64
-syscall_setgid = syscall1 106
-{-# INLINE syscall_setgid #-}
-
--- | geteuid
-syscall_geteuid :: IO Int64
-syscall_geteuid = syscall0 107
-{-# INLINE syscall_geteuid #-}
-
--- | getegid
-syscall_getegid :: IO Int64
-syscall_getegid = syscall0 108
-{-# INLINE syscall_getegid #-}
-
--- | getppid
-syscall_getppid :: IO Int64
-syscall_getppid = syscall0 110
-{-# INLINE syscall_getppid #-}
-
--- | mknod
-syscall_mknod :: CString -> Word64 -> Word64 -> IO Int64
-syscall_mknod = syscall3 133
-{-# INLINE syscall_mknod #-}
-
--- | mlock
-syscall_mlock :: Ptr a -> Word64 -> IO Int64
-syscall_mlock = syscall2 149
-{-# INLINE syscall_mlock #-}
-
--- | munlock
-syscall_munlock :: Ptr a -> Word64 -> IO Int64
-syscall_munlock = syscall2 150
-{-# INLINE syscall_munlock #-}
-
--- | mlockall
-syscall_mlockall :: Word64 -> IO Int64
-syscall_mlockall = syscall1 151
-{-# INLINE syscall_mlockall #-}
-
--- | munlockall
-syscall_munlockall :: IO Int64
-syscall_munlockall = syscall0 152
-{-# INLINE syscall_munlockall #-}
-
--- | sync
-syscall_sync :: IO Int64
-syscall_sync = syscall0 162
-{-# INLINE syscall_sync #-}
-
--- | settimeofday
-syscall_settimeofday :: Ptr a -> Ptr () -> IO Int64
-syscall_settimeofday = syscall2 164
-{-# INLINE syscall_settimeofday #-}
-
--- | mount
-syscall_mount :: CString -> CString -> CString -> Word64 -> Ptr a -> IO Int64
-syscall_mount = syscall5 165
-{-# INLINE syscall_mount #-}
-
--- | umount2
-syscall_umount2 :: CString -> Word64 -> IO Int64
-syscall_umount2 = syscall2 166
-{-# INLINE syscall_umount2 #-}
-
--- | reboot
-syscall_reboot :: Word64 -> Word64 -> Word64 -> CString -> IO Int64
-syscall_reboot = syscall4 169
-{-# INLINE syscall_reboot #-}
-
--- | init_module
-syscall_init_module :: Ptr () -> Word64 -> CString -> IO Int64
-syscall_init_module = syscall3 175
-{-# INLINE syscall_init_module #-}
-
--- | gettid
-syscall_gettid :: IO Int64
-syscall_gettid = syscall0 186
-{-# INLINE syscall_gettid #-}
-
--- | futex
-syscall_futex :: Ptr Int64 -> Int -> Int64 -> Ptr a -> Ptr Int64 -> Int64 -> IO Int64
-syscall_futex = syscall6 202
-{-# INLINE syscall_futex #-}
-
--- | getdents64
-syscall_getdents64 :: FD -> Ptr a -> Word -> IO Int64
-syscall_getdents64 = syscall3 217
-{-# INLINE syscall_getdents64 #-}
-
--- | clock_settime
-syscall_clock_settime :: Int -> Ptr a -> IO Int64
-syscall_clock_settime = syscall2 227
-{-# INLINE syscall_clock_settime #-}
-
--- | clock_gettime
-syscall_clock_gettime :: Int -> Ptr a -> IO Int64
-syscall_clock_gettime = syscall2 228
-{-# INLINE syscall_clock_gettime #-}
-
--- | clock_getres
-syscall_clock_getres :: Int -> Ptr a -> IO Int64
-syscall_clock_getres = syscall2 229
-{-# INLINE syscall_clock_getres #-}
-
--- | openat
-syscall_openat :: FD -> CString -> Int -> Word -> IO Int64
-syscall_openat = syscall4 257
-{-# INLINE syscall_openat #-}
-
--- | mkdirat
-syscall_mkdirat :: FD -> CString -> Word64 -> IO Int64
-syscall_mkdirat = syscall3 258
-{-# INLINE syscall_mkdirat #-}
-
--- | mknodat
-syscall_mknodat :: FD -> CString -> Word64 -> Word64 -> IO Int64
-syscall_mknodat = syscall4 259
-{-# INLINE syscall_mknodat #-}
-
--- | unlinkat
-syscall_unlinkat :: FD -> CString -> Word -> IO Int64
-syscall_unlinkat = syscall3 263
-{-# INLINE syscall_unlinkat #-}
-
--- | symlinkat
-syscall_symlinkat :: CString -> FD -> CString -> IO Int64
-syscall_symlinkat = syscall3 266
-{-# INLINE syscall_symlinkat #-}
-
--- | readlinkat
-syscall_readlinkat :: FD -> CString -> CString -> Word64 -> IO Int64
-syscall_readlinkat = syscall4 267
-{-# INLINE syscall_readlinkat #-}
-
--- | pselect
-syscall_pselect :: Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> IO Int64
-syscall_pselect = syscall6safe 270
-{-# INLINE syscall_pselect #-}
-
--- | accept4
-syscall_accept4 :: FD -> Ptr a -> Int -> Word64 -> IO Int64
-syscall_accept4 = syscall4 288
-{-# INLINE syscall_accept4 #-}
-
--- | epoll_create1
-syscall_epoll_create1 :: Word64 -> IO Int64
-syscall_epoll_create1 = syscall1 291
-{-# INLINE syscall_epoll_create1 #-}
-
--- | preadv
-syscall_preadv :: FD -> Ptr a -> Int -> Word32 -> Word32 -> IO Int64
-syscall_preadv = syscall5 295
-{-# INLINE syscall_preadv #-}
-
--- | pwritev
-syscall_pwritev :: FD -> Ptr a -> Int -> Word32 -> Word32 -> IO Int64
-syscall_pwritev = syscall5 296
-{-# INLINE syscall_pwritev #-}
-
--- | syncfs
-syscall_syncfs :: FD -> IO Int64
-syscall_syncfs = syscall1 306
-{-# INLINE syscall_syncfs #-}
-
--- | getcpu
-syscall_getcpu :: Ptr Word -> Ptr Word -> Ptr a -> IO Int64
-syscall_getcpu = syscall3 309
-{-# INLINE syscall_getcpu #-}
-
--- | finit_module
-syscall_finit_module :: FD -> CString -> Word -> IO Int64
-syscall_finit_module = syscall3 313
-{-# INLINE syscall_finit_module #-}
-
-{-
- - Remaining syscalls to wrap
- - 
- - The complete table is in:
- - linux/arch/x86/entry/syscalls/syscall_64.tbl
- - in the kernel tree.
- -
-54	64	setsockopt		sys_setsockopt
-55	64	getsockopt		sys_getsockopt
-56	common	clone			stub_clone
-59	64	execve			stub_execve
-61	common	wait4			sys_wait4
-64	common	semget			sys_semget
-65	common	semop			sys_semop
-66	common	semctl			sys_semctl
-67	common	shmdt			sys_shmdt
-68	common	msgget			sys_msgget
-69	common	msgsnd			sys_msgsnd
-70	common	msgrcv			sys_msgrcv
-71	common	msgctl			sys_msgctl
-78	common	getdents		sys_getdents
-97	common	getrlimit		sys_getrlimit
-98	common	getrusage		sys_getrusage
-99	common	sysinfo			sys_sysinfo
-100	common	times			sys_times
-103	common	syslog			sys_syslog
-109	common	setpgid			sys_setpgid
-111	common	getpgrp			sys_getpgrp
-112	common	setsid			sys_setsid
-113	common	setreuid		sys_setreuid
-114	common	setregid		sys_setregid
-115	common	getgroups		sys_getgroups
-116	common	setgroups		sys_setgroups
-117	common	setresuid		sys_setresuid
-118	common	getresuid		sys_getresuid
-119	common	setresgid		sys_setresgid
-120	common	getresgid		sys_getresgid
-121	common	getpgid			sys_getpgid
-122	common	setfsuid		sys_setfsuid
-123	common	setfsgid		sys_setfsgid
-124	common	getsid			sys_getsid
-125	common	capget			sys_capget
-126	common	capset			sys_capset
-127	64	rt_sigpending		sys_rt_sigpending
-128	64	rt_sigtimedwait		sys_rt_sigtimedwait
-129	64	rt_sigqueueinfo		sys_rt_sigqueueinfo
-130	common	rt_sigsuspend		sys_rt_sigsuspend
-131	64	sigaltstack		sys_sigaltstack
-132	common	utime			sys_utime
-134	64	uselib
-135	common	personality		sys_personality
-136	common	ustat			sys_ustat
-137	common	statfs			sys_statfs
-138	common	fstatfs			sys_fstatfs
-139	common	sysfs			sys_sysfs
-140	common	getpriority		sys_getpriority
-141	common	setpriority		sys_setpriority
-142	common	sched_setparam		sys_sched_setparam
-143	common	sched_getparam		sys_sched_getparam
-144	common	sched_setscheduler	sys_sched_setscheduler
-145	common	sched_getscheduler	sys_sched_getscheduler
-146	common	sched_get_priority_max	sys_sched_get_priority_max
-147	common	sched_get_priority_min	sys_sched_get_priority_min
-148	common	sched_rr_get_interval	sys_sched_rr_get_interval
-153	common	vhangup			sys_vhangup
-154	common	modify_ldt		sys_modify_ldt
-155	common	pivot_root		sys_pivot_root
-156	64	_sysctl			sys_sysctl
-157	common	prctl			sys_prctl
-158	common	arch_prctl		sys_arch_prctl
-159	common	adjtimex		sys_adjtimex
-160	common	setrlimit		sys_setrlimit
-161	common	chroot			sys_chroot
-163	common	acct			sys_acct
-167	common	swapon			sys_swapon
-168	common	swapoff			sys_swapoff
-170	common	sethostname		sys_sethostname
-171	common	setdomainname		sys_setdomainname
-172	common	iopl			stub_iopl
-173	common	ioperm			sys_ioperm
-174	64	create_module
-176	common	delete_module		sys_delete_module
-177	64	get_kernel_syms
-178	64	query_module
-179	common	quotactl		sys_quotactl
-180	64	nfsservctl
-181	common	getpmsg
-182	common	putpmsg
-183	common	afs_syscall
-184	common	tuxcall
-185	common	security
-187	common	readahead		sys_readahead
-188	common	setxattr		sys_setxattr
-189	common	lsetxattr		sys_lsetxattr
-190	common	fsetxattr		sys_fsetxattr
-191	common	getxattr		sys_getxattr
-192	common	lgetxattr		sys_lgetxattr
-193	common	fgetxattr		sys_fgetxattr
-194	common	listxattr		sys_listxattr
-195	common	llistxattr		sys_llistxattr
-196	common	flistxattr		sys_flistxattr
-197	common	removexattr		sys_removexattr
-198	common	lremovexattr		sys_lremovexattr
-199	common	fremovexattr		sys_fremovexattr
-200	common	tkill			sys_tkill
-201	common	time			sys_time
-203	common	sched_setaffinity	sys_sched_setaffinity
-204	common	sched_getaffinity	sys_sched_getaffinity
-205	64	set_thread_area
-206	common	io_setup		sys_io_setup
-207	common	io_destroy		sys_io_destroy
-208	common	io_getevents		sys_io_getevents
-209	common	io_submit		sys_io_submit
-210	common	io_cancel		sys_io_cancel
-211	64	get_thread_area
-212	common	lookup_dcookie		sys_lookup_dcookie
-214	64	epoll_ctl_old
-215	64	epoll_wait_old
-216	common	remap_file_pages	sys_remap_file_pages
-218	common	set_tid_address		sys_set_tid_address
-219	common	restart_syscall		sys_restart_syscall
-220	common	semtimedop		sys_semtimedop
-221	common	fadvise64		sys_fadvise64
-222	64	timer_create		sys_timer_create
-223	common	timer_settime		sys_timer_settime
-224	common	timer_gettime		sys_timer_gettime
-225	common	timer_getoverrun	sys_timer_getoverrun
-226	common	timer_delete		sys_timer_delete
-230	common	clock_nanosleep		sys_clock_nanosleep
-231	common	exit_group		sys_exit_group
-232	common	epoll_wait		sys_epoll_wait
-233	common	epoll_ctl		sys_epoll_ctl
-234	common	tgkill			sys_tgkill
-235	common	utimes			sys_utimes
-236	64	vserver
-237	common	mbind			sys_mbind
-238	common	set_mempolicy		sys_set_mempolicy
-239	common	get_mempolicy		sys_get_mempolicy
-240	common	mq_open			sys_mq_open
-241	common	mq_unlink		sys_mq_unlink
-242	common	mq_timedsend		sys_mq_timedsend
-243	common	mq_timedreceive		sys_mq_timedreceive
-244	64	mq_notify		sys_mq_notify
-245	common	mq_getsetattr		sys_mq_getsetattr
-246	64	kexec_load		sys_kexec_load
-247	64	waitid			sys_waitid
-248	common	add_key			sys_add_key
-249	common	request_key		sys_request_key
-250	common	keyctl			sys_keyctl
-251	common	ioprio_set		sys_ioprio_set
-252	common	ioprio_get		sys_ioprio_get
-253	common	inotify_init		sys_inotify_init
-254	common	inotify_add_watch	sys_inotify_add_watch
-255	common	inotify_rm_watch	sys_inotify_rm_watch
-256	common	migrate_pages		sys_migrate_pages
-260	common	fchownat		sys_fchownat
-261	common	futimesat		sys_futimesat
-262	common	newfstatat		sys_newfstatat
-264	common	renameat		sys_renameat
-265	common	linkat			sys_linkat
-268	common	fchmodat		sys_fchmodat
-269	common	faccessat		sys_faccessat
-271	common	ppoll			sys_ppoll
-272	common	unshare			sys_unshare
-273	64	set_robust_list		sys_set_robust_list
-274	64	get_robust_list		sys_get_robust_list
-275	common	splice			sys_splice
-276	common	tee			sys_tee
-277	common	sync_file_range		sys_sync_file_range
-278	64	vmsplice		sys_vmsplice
-279	64	move_pages		sys_move_pages
-280	common	utimensat		sys_utimensat
-281	common	epoll_pwait		sys_epoll_pwait
-282	common	signalfd		sys_signalfd
-283	common	timerfd_create		sys_timerfd_create
-284	common	eventfd			sys_eventfd
-285	common	fallocate		sys_fallocate
-286	common	timerfd_settime		sys_timerfd_settime
-287	common	timerfd_gettime		sys_timerfd_gettime
-289	common	signalfd4		sys_signalfd4
-290	common	eventfd2		sys_eventfd2
-292	common	dup3			sys_dup3
-293	common	pipe2			sys_pipe2
-294	common	inotify_init1		sys_inotify_init1
-297	64	rt_tgsigqueueinfo	sys_rt_tgsigqueueinfo
-298	common	perf_event_open		sys_perf_event_open
-299	64	recvmmsg		sys_recvmmsg
-300	common	fanotify_init		sys_fanotify_init
-301	common	fanotify_mark		sys_fanotify_mark
-302	common	prlimit64		sys_prlimit64
-303	common	name_to_handle_at	sys_name_to_handle_at
-304	common	open_by_handle_at	sys_open_by_handle_at
-305	common	clock_adjtime		sys_clock_adjtime
-307	64	sendmmsg		sys_sendmmsg
-308	common	setns			sys_setns
-310	64	process_vm_readv	sys_process_vm_readv
-311	64	process_vm_writev	sys_process_vm_writev
-312	common	kcmp			sys_kcmp
-314	common	sched_setattr		sys_sched_setattr
-315	common	sched_getattr		sys_sched_getattr
-316   renameat2
-317   seccomp
-318   getrandom
-319   memfd_create
-320   kexec_file_load
-321   bpf
-322	64	execveat		stub_execveat
-323	common	userfaultfd		sys_userfaultfd
-324	common	membarrier		sys_membarrier
-325	common	mlock2			sys_mlock2
-326	common	copy_file_range		sys_copy_file_range
--}
+-- | Call a syscall by its name
+syscall :: forall (name :: Symbol) (n :: Nat) s t.
+   ( S n s name t ~ SyscallByName name Syscalls
+   , SelSyscall s t
+   , KnownNat n
+   ) => t
+{-# INLINE syscall #-}
+syscall = syscall_ @Syscalls @name @n @s @t
+
+-- =============================================================
+-- From linux/arch/x86/entry/syscalls/syscall_64.tbl
+-- =============================================================
+
+-- | Linux syscalls on X86_64
+type Syscalls =
+   '[ S 0   PrimOp "read"                    (FD -> Ptr () -> Word64 -> IO Int64)
+    , S 1   PrimOp "write"                   (FD -> Ptr () -> Word64 -> IO Int64)
+    , S 2   PrimOp "open"                    (CString -> Int -> Word -> IO Int64)
+    , S 3   PrimOp "close"                   (FD -> IO Int64)
+    , S 4   PrimOp "stat"                    (CString -> Ptr () -> IO Int64)
+    , S 5   PrimOp "fstat"                   (FD -> Ptr () -> IO Int64)
+    , S 6   PrimOp "lstat"                   (CString -> Ptr () -> IO Int64)
+    , S 7   PrimOp "poll"                    (Ptr () -> Word64 -> Int64 -> IO Int64)
+    , S 8   PrimOp "lseek"                   (FD -> Int64 -> Int -> IO Int64)
+    , S 9   PrimOp "mmap"                    (Ptr () -> Word64 -> Int64 -> Int64 -> FD -> Word64 -> IO Int64)
+    , S 10  PrimOp "mprotect"                (Ptr () -> Word64 -> Int64 -> IO Int64)
+    , S 11  PrimOp "munmap"                  (Ptr () -> Word64 -> IO Int64)
+    , S 12  PrimOp "brk"                     (Word64 -> IO Int64)
+    , S 13  PrimOp "rt_sigaction"            (Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 14  PrimOp "rt_sigprocmask"          (Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 15  PrimOp "rt_sigreturn"            (IO Int64)
+    , S 16  PrimOp "ioctl"                   (FD -> Int64 -> Int64 -> IO Int64)
+    , S 17  PrimOp "pread64"                 (FD -> Ptr () -> Word64 -> Word64 -> IO Int64)
+    , S 18  PrimOp "pwrite64"                (FD -> Ptr () -> Word64 -> Word64 -> IO Int64)
+    , S 19  PrimOp "readv"                   (FD -> Ptr () -> Int -> IO Int64)
+    , S 20  PrimOp "writev"                  (FD -> Ptr () -> Int -> IO Int64)
+    , S 21  PrimOp "access"                  (CString -> Word64 -> IO Int64)
+    , S 22  PrimOp "pipe"                    (Ptr Word -> IO Int64)
+    , S 23  Safe   "select"                  (Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> IO Int64)
+    , S 24  PrimOp "sched_yield"             (IO Int64)
+    , S 25  PrimOp "mremap"                  (Ptr () -> Word64 -> Word64 -> Int -> Ptr () -> IO Int64)
+    , S 26  PrimOp "msync"                   (Ptr () -> Word64 -> Int64 -> IO Int64)
+    , S 27  PrimOp "mincore"                 (Ptr () -> Word64 -> Ptr Word8 -> IO Int64)
+    , S 28  PrimOp "madvise"                 (Ptr () -> Word64 -> Int -> IO Int64)
+    , S 29  PrimOp "shmget"                  (Int32 -> Word64 -> Int -> IO Int64)
+    , S 30  PrimOp "shmat"                   (Int -> Ptr () -> Int -> IO Int64)
+    , S 31  PrimOp "shmctl"                  (Int -> Int -> Ptr () -> IO Int64)
+    , S 32  PrimOp "dup"                     (FD -> IO Int64)
+    , S 33  PrimOp "dup2"                    (FD -> FD -> IO Int64)
+    , S 34  PrimOp "pause"                   (IO Int64)
+    , S 35  PrimOp "nanosleep"               (Ptr () -> Ptr () -> IO Int64)
+    , S 36  PrimOp "getitimer"               (Int -> Ptr () -> IO Int64)
+    , S 37  PrimOp "alarm"                   (Word -> IO Int64)
+    , S 38  PrimOp "setitimer"               (Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 39  PrimOp "getpid"                  (IO Int64)
+    , S 40  PrimOp "sendfile"                (FD -> FD -> Ptr Word64 -> Word64 -> IO Int64)
+    , S 41  PrimOp "socket"                  (Int -> Word64 -> Int -> IO Int64)
+    , S 42  PrimOp "connect"                 (FD -> Ptr () -> Int -> IO Int64)
+    , S 44  PrimOp "sendto"                  (FD -> Ptr () -> Word64 -> Int -> Ptr () -> Word32 -> IO Int64)
+    , S 45  PrimOp "recvfrom"                (FD -> Ptr () -> Word64 -> Word64 -> Ptr () -> Ptr Word64 -> IO Int64)
+    , S 46  PrimOp "sendmsg"                 (FD -> Ptr () -> Int -> IO Int64)
+    , S 47  PrimOp "recvmsg"                 (FD -> Ptr () -> Int -> IO Int64)
+    , S 48  PrimOp "shutdown"                (FD -> Int -> IO Int64)
+    , S 49  PrimOp "bind"                    (FD -> Ptr () -> Int -> IO Int64)
+    , S 50  PrimOp "listen"                  (FD -> Word64 -> IO Int64)
+    , S 51  PrimOp "getsockname"             (FD -> Ptr () -> Ptr Int32 -> IO Int64)
+    , S 52  PrimOp "getpeername"             (FD -> Ptr () -> Ptr Int32 -> IO Int64)
+    , S 53  PrimOp "socketpair"              (Int -> Word64 -> Int -> Ptr Word -> IO Int64)
+    , S 54  PrimOp "setsockopt"              (Int -> Int -> Int -> Ptr () -> Int32 -> Int64)
+    , S 55  PrimOp "getsockopt"              (Int -> Int -> Int -> Ptr () -> Ptr Int32 -> Int64)
+    , S 56  Safe   "clone"                   (Ptr () -> Ptr () -> Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> Int64)
+    , S 57  Safe   "fork"                    (IO Int64)
+    , S 58  Safe   "vfork"                   (IO Int64)
+    , S 59  Safe   "execve"                  (CString -> Ptr CString -> Ptr CString -> IO Int64)
+    , S 60  PrimOp "exit"                    (Int64 -> IO Int64)
+    , S 61  Safe   "wait4"                   (Word -> Ptr Int -> Int -> Ptr () -> IO Int64)
+    , S 62  PrimOp "kill"                    (Int64 -> Int -> IO Int64)
+    , S 63  PrimOp "uname"                   (Ptr () -> IO Int64)
+    , S 64  PrimOp "semget"                  (Int32 -> Int -> Int -> IO Int64)
+    , S 65  PrimOp "semop"                   (Int -> Ptr () -> Word64 -> IO Int64)
+    , S 66  PrimOp "semctl"                  (Int -> Int -> Int -> Ptr () -> IO Int64)
+    , S 67  PrimOp "shmdt"                   (Ptr () -> IO Int64)
+    , S 68  PrimOp "msgget"                  (Int32 -> Int -> IO Int64)
+    , S 69  PrimOp "msgsnd"                  (Int -> Ptr () -> Word64 -> Int -> IO Int64)
+    , S 70  PrimOp "msgrcv"                  (Int -> Ptr () -> Word64 -> Word64 -> Int -> IO Int64)
+    , S 71  PrimOp "msgctl"                  (Int -> Int -> Ptr () -> IO Int64)
+    , S 72  PrimOp "fcntl"                   (FD -> Int64 -> Int64 -> IO Int64)
+    , S 73  PrimOp "flock"                   (FD -> Int64 -> IO Int64)
+    , S 74  PrimOp "fsync"                   (FD -> IO Int64)
+    , S 75  PrimOp "fdatasync"               (FD -> IO Int64)
+    , S 76  PrimOp "truncate"                (CString -> Word64 -> IO Int64)
+    , S 77  PrimOp "ftruncate"               (FD -> Word64 -> IO Int64)
+    , S 78  PrimOp "getdents"                (Int -> Ptr () -> Int -> IO Int64)
+    , S 79  PrimOp "getcwd"                  (CString -> Word64 -> IO Int64)
+    , S 80  PrimOp "chdir"                   (CString -> IO Int64)
+    , S 81  PrimOp "fchdir"                  (FD -> IO Int64)
+    , S 82  PrimOp "rename"                  (CString -> CString -> IO Int64)
+    , S 83  PrimOp "mkdir"                   (CString -> Word64 -> IO Int64)
+    , S 84  PrimOp "rmdir"                   (CString -> IO Int64)
+    , S 85  PrimOp "creat"                   (CString -> Word -> IO Int64)
+    , S 86  PrimOp "link"                    (CString -> CString -> IO Int64)
+    , S 87  PrimOp "unlink"                  (CString -> IO Int64)
+    , S 88  PrimOp "symlink"                 (CString -> CString -> IO Int64)
+    , S 89  PrimOp "readlink"                (CString -> CString -> Word64 -> IO Int64)
+    , S 90  PrimOp "chmod"                   (CString -> Word -> IO Int64)
+    , S 91  PrimOp "fchmod"                  (FD -> Word -> IO Int64)
+    , S 92  PrimOp "chown"                   (CString -> Word32 -> Word32 -> IO Int64)
+    , S 93  PrimOp "fchown"                  (FD -> Word32 -> Word32 -> IO Int64)
+    , S 94  PrimOp "lchown"                  (CString -> Word32 -> Word32 -> IO Int64)
+    , S 95  PrimOp "umask"                   (Word -> IO Int64)
+    , S 96  PrimOp "gettimeofday"            (Ptr () -> Ptr () -> IO Int64)
+    , S 97  PrimOp "getrlimit"               (Int -> Ptr () -> IO Int64)
+    , S 98  PrimOp "getrusage"               (Int -> Ptr () -> IO Int64)
+    , S 99  PrimOp "sysinfo"                 (Ptr () -> IO Int64)
+    , S 100 PrimOp "times"                   (Ptr () -> IO Int64)
+    , S 101 PrimOp "ptrace"                  (Int -> Word32 -> Ptr () -> Ptr () -> IO Int64)
+    , S 102 PrimOp "getuid"                  (IO Int64)
+    , S 103 PrimOp "syslog"                  (Int -> CString -> Int -> IO Int64)
+    , S 104 PrimOp "getgid"                  (IO Int64)
+    , S 105 PrimOp "setuid"                  (Word32 -> IO Int64)
+    , S 106 PrimOp "setgid"                  (Word32 -> IO Int64)
+    , S 107 PrimOp "geteuid"                 (IO Int64)
+    , S 108 PrimOp "getegid"                 (IO Int64)
+    , S 109 PrimOp "setpgid"                 (Word32 -> Word32 -> IO Int64)
+    , S 110 PrimOp "getppid"                 (IO Int64)
+    , S 111 PrimOp "getpgrp"                 (Word32 -> IO Int64)
+    , S 112 PrimOp "setsid"                  (IO Int64)
+    , S 113 PrimOp "setreuid"                (Word32 -> Word32 -> IO Int64)
+    , S 114 PrimOp "setregid"                (Word32 -> Word32 -> IO Int64)
+    , S 115 PrimOp "getgroups"               (Int -> Ptr Word32 -> IO Int64)
+    , S 116 PrimOp "setgroups"               (Word64 -> Ptr Word32 -> IO Int64)
+    , S 117 PrimOp "setresuid"               (Word32 -> Word32 -> Word32 -> IO Int64)
+    , S 118 PrimOp "getresuid"               (Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> IO Int64)
+    , S 119 PrimOp "setresgid"               (Word32 -> Word32 -> Word32 -> IO Int64)
+    , S 120 PrimOp "getresgid"               (Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> IO Int64)
+    , S 121 PrimOp "getpgid"                 (Word32 -> IO Int64)
+    , S 122 PrimOp "setfsuid"                (Word32 -> IO Int64)
+    , S 123 PrimOp "setfsgid"                (Word32 -> IO Int64)
+    , S 124 PrimOp "getsid"                  (Word32 -> IO Int64)
+    , S 125 PrimOp "capget"                  (Ptr () -> Ptr () -> IO Int64)
+    , S 126 PrimOp "capset"                  (Ptr () -> Ptr () -> IO Int64)
+    , S 127 PrimOp "rt_sigpending"           (Ptr () -> IO Int64)
+    , S 128 Safe   "rt_sigtimedwait"         (Ptr () -> Ptr () -> Ptr () -> IO Int64)
+    , S 129 PrimOp "rt_sigqueueinfo"         (Word -> Int -> Ptr () -> IO Int64)
+    , S 130 Safe   "rt_sigsuspend"           (Ptr () -> IO Int64)
+    , S 131 PrimOp "rt_sigaltstack"          (Ptr () -> Ptr () -> IO Int64)
+    , S 132 PrimOp "utime"                   (CString -> Ptr () -> IO Int64)
+    , S 133 PrimOp "mknod"                   (CString -> Word64 -> Word64 -> IO Int64)
+    , S 135 PrimOp "personality"             (Word64 -> IO Int64)
+    , S 136 PrimOp "ustat"                   (Word64 -> Ptr () -> IO Int64)
+    , S 137 PrimOp "statfs"                  (CString -> Ptr () -> IO Int64)
+    , S 138 PrimOp "fstatfs"                 (FD -> Ptr () -> IO Int64)
+    , S 139 PrimOp "sysfs"                   (Int -> Word64 -> Ptr () -> IO Int64)
+    , S 140 PrimOp "getpriority"             (Int -> Word64 -> IO Int64)
+    , S 141 PrimOp "setpriority"             (Int -> Word64 -> Int -> IO Int64)
+    , S 142 PrimOp "sched_setparam"          (Word -> Ptr () -> IO Int64)
+    , S 143 PrimOp "sched_getparam"          (Word -> Ptr () -> IO Int64)
+    , S 144 PrimOp "sched_setscheduler"      (Word -> Int -> Ptr () -> IO Int64)
+    , S 145 PrimOp "sched_getscheduler"      (Word -> IO Int64)
+    , S 146 PrimOp "sched_get_priority_max"  (Int -> IO Int64)
+    , S 147 PrimOp "sched_get_priority_min"  (Int -> IO Int64)
+    , S 148 PrimOp "sched_rr_get_interval"   (Word -> Ptr () -> IO Int64)
+    , S 149 PrimOp "mlock"                   (Ptr () -> Word64 -> IO Int64)
+    , S 150 PrimOp "munlock"                 (Ptr () -> Word64 -> IO Int64)
+    , S 151 PrimOp "mlockall"                (Word64 -> IO Int64)
+    , S 152 PrimOp "munlockall"              (IO Int64)
+    , S 153 PrimOp "vhangup"                 (IO Int64)
+    , S 154 PrimOp "modify_ldt"              (Int -> Ptr () -> Word64 -> IO Int64)
+    , S 155 PrimOp "pivot_root"              (CString -> CString -> IO Int64)
+    , S 156 PrimOp "sysctl"                  (Ptr () -> IO Int64)
+    , S 157 PrimOp "prctl"                   (Int -> Word64 -> Word64 -> Word64 -> Word64 -> IO Int64)
+    , S 158 PrimOp "arch_prctl"              (Int -> Word64 -> IO Int64)
+    , S 159 PrimOp "adjtimex"                (Ptr () -> IO Int64)
+    , S 160 PrimOp "setrlimit"               (Int -> Ptr () -> IO Int64)
+    , S 161 PrimOp "chroot"                  (CString -> IO Int64)
+    , S 162 Safe   "sync"                    (IO Int64)
+    , S 163 PrimOp "acct"                    (CString -> IO Int64)
+    , S 164 PrimOp "settimeofday"            (Ptr () -> Ptr () -> IO Int64)
+    , S 165 PrimOp "mount"                   (CString -> CString -> CString -> Word64 -> Ptr () -> IO Int64)
+    , S 166 PrimOp "umount2"                 (CString -> Word64 -> IO Int64)
+    , S 167 PrimOp "swapon"                  (CString -> Int -> IO Int64)
+    , S 168 PrimOp "swapoff"                 (CString -> IO Int64)
+    , S 169 PrimOp "reboot"                  (Word64 -> Word64 -> Word64 -> CString -> IO Int64)
+    , S 170 PrimOp "sethostname"             (CString -> Word64 -> IO Int64)
+    , S 171 PrimOp "setdomainname"           (CString -> Word64 -> IO Int64)
+    , S 172 PrimOp "iopl"                    (Int -> IO Int64)
+    , S 173 PrimOp "ioperm"                  (Word64 -> Word64 -> Int -> IO Int64)
+    , S 174 PrimOp "create_module"           (CString -> Word64 -> IO Int64)
+    , S 175 PrimOp "init_module"             (Ptr () -> Word64 -> CString -> IO Int64)
+    , S 176 PrimOp "delete_module"           (CString -> Int -> IO Int64)
+    , S 179 PrimOp "quotactl"                (Int -> CString -> Int -> CString -> IO Int64)
+    , S 186 PrimOp "gettid"                  (IO Int64)
+    , S 187 PrimOp "readahead"               (Int -> Word64 -> Word64 -> IO Int64)
+    , S 188 PrimOp "setxattr"                (CString -> CString -> Ptr () -> Word64 -> Int -> IO Int64)
+    , S 189 PrimOp "lsetxattr"               (CString -> CString -> Ptr () -> Word64 -> Int -> IO Int64)
+    , S 190 PrimOp "fsetxattr"               (FD -> CString -> Ptr () -> Word64 -> Int -> IO Int64)
+    , S 191 PrimOp "getxattr"                (CString -> CString -> Ptr () -> Word64 -> IO Int64)
+    , S 192 PrimOp "lgetxattr"               (CString -> CString -> Ptr () -> Word64 -> IO Int64)
+    , S 193 PrimOp "fgetxattr"               (FD -> CString -> Ptr () -> Word64 -> IO Int64)
+    , S 194 PrimOp "listxattr"               (CString -> CString -> Word64 -> IO Int64)
+    , S 195 PrimOp "llistxattr"              (CString -> CString -> Word64 -> IO Int64)
+    , S 196 PrimOp "flistxattr"              (FD -> CString -> Word64 -> IO Int64)
+    , S 197 PrimOp "removexattr"             (CString -> CString -> IO Int64)
+    , S 198 PrimOp "lremovexattr"            (CString -> CString -> IO Int64)
+    , S 199 PrimOp "fremovexattr"            (FD -> CString -> IO Int64)
+    , S 200 PrimOp "tkill"                   (Int -> Int -> IO Int64)
+    , S 201 PrimOp "time"                    (Ptr () -> IO Int64)
+    , S 202 PrimOp "futex"                   (Ptr Int64 -> Int -> Int64 -> Ptr () -> Ptr Int64 -> Int64 -> IO Int64)
+    , S 203 PrimOp "sched_setaffinity"       (Word -> Word64 -> Ptr () -> IO Int64)
+    , S 204 PrimOp "sched_getaffinity"       (Word -> Word64 -> Ptr () -> IO Int64)
+    , S 206 PrimOp "io_setup"                (Word64 -> Ptr () -> IO Int64)
+    , S 207 PrimOp "io_destroy"              (Word64 -> IO Int64)
+    , S 208 PrimOp "io_getevents"            (Word64 -> Word64 -> Word64 -> Ptr () -> Ptr () -> IO Int64)
+    , S 209 PrimOp "io_submit"               (Word64 -> Word64 -> Ptr () -> IO Int64)
+    , S 210 PrimOp "io_cancel"               (Word64 -> Ptr () -> Ptr () -> IO Int64)
+    , S 212 PrimOp "lookup_dcookie"          (Word64 -> CString -> Word64 -> IO Int64)
+    , S 216 PrimOp "remap_file_pages"        (Ptr () -> Word64 -> Int -> Word64 -> Int -> IO Int64)
+    , S 217 PrimOp "getdents64"              (FD -> Ptr () -> Word -> IO Int64)
+    , S 218 PrimOp "set_tid_address"         (Ptr Int -> IO Int64)
+    , S 219 PrimOp "restart_syscall"         (IO Int64)
+    , S 220 PrimOp "semtimedop"              (Int -> Ptr () -> Word64 -> Ptr () -> IO Int64)
+    , S 221 PrimOp "fadvise64"               (FD -> Word64 -> Word64 -> Int -> IO Int64)
+    , S 222 PrimOp "timer_create"            (Int32 -> Ptr () -> Ptr () -> IO Int64)
+    , S 223 PrimOp "timer_settime"           (Ptr () -> Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 224 PrimOp "timer_gettime"           (Ptr () -> Ptr () -> IO Int64)
+    , S 225 PrimOp "timer_getoverrun"        (Ptr () -> IO Int64)
+    , S 226 PrimOp "timer_delete"            (Ptr () -> IO Int64)
+    , S 227 PrimOp "clock_settime"           (Int -> Ptr () -> IO Int64)
+    , S 228 PrimOp "clock_gettime"           (Int -> Ptr () -> IO Int64)
+    , S 229 PrimOp "clock_getres"            (Int -> Ptr () -> IO Int64)
+    , S 230 PrimOp "clock_nanosleep"         (Int -> Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 231 Safe   "exit_group"              (Int -> IO Int64)
+    , S 232 PrimOp "epoll_wait"              (Int -> Ptr () -> Int -> Int -> IO Int64)
+    , S 233 PrimOp "epoll_ctl"               (Int -> Int -> Int -> Ptr () -> IO Int64)
+    , S 234 PrimOp "tgkill"                  (Int -> Int -> Int -> IO Int64)
+    , S 235 PrimOp "utimes"                  (CString -> Ptr () -> IO Int64)
+    , S 237 PrimOp "mbind"                   (Ptr () -> Word64 -> Int -> Ptr () -> Word64 -> Word64 -> IO Int64)
+    , S 238 PrimOp "set_mempolicy"           (Int -> Ptr () -> Word64 -> IO Int64)
+    , S 239 PrimOp "get_mempolicy"           (Ptr Int -> Ptr () -> Word64 -> Ptr () -> Word64 -> IO Int64)
+    , S 240 PrimOp "mq_open"                 (CString -> Int -> Word -> Ptr () -> IO Int64)
+    , S 241 PrimOp "mq_unlink"               (CString -> IO Int64)
+    , S 242 PrimOp "mq_timedsend"            (Int -> CString -> Word64 -> Word -> IO Int64)
+    , S 243 PrimOp "mq_timedreceive"         (Int -> CString -> Word64 -> Ptr Word -> IO Int64)
+    , S 244 PrimOp "mq_notify"               (Int -> Ptr () -> IO Int64)
+    , S 245 PrimOp "mq_getsetattr"           (Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 246 PrimOp "kexec_load"              (Word64 -> Word64 -> Ptr () -> Word64 -> IO Int64)
+    , S 247 PrimOp "waitid"                  (Int -> Int -> Ptr () -> Int -> Ptr () -> IO Int64)
+    , S 248 PrimOp "add_key"                 (CString -> CString -> Ptr () -> Word64 -> Int32 -> IO Int64)
+    , S 249 PrimOp "request_key"             (CString -> CString -> Ptr () -> Int32 -> IO Int64)
+    , S 250 PrimOp "keyctl"                  (Int -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64)
+    , S 251 PrimOp "ioprio_set"              (Int -> Int -> Int -> IO Int64)
+    , S 252 PrimOp "ioprio_get"              (Int -> Int -> IO Int64)
+    , S 253 PrimOp "inotify_init"            (IO Int64)
+    , S 254 PrimOp "inotify_add_watch"       (Int -> CString -> Word32 -> IO Int64)
+    , S 255 PrimOp "inotify_rm_watch"        (Int -> Int -> IO Int64)
+    , S 256 PrimOp "migrate_pages"           (Int -> Word64 -> Ptr Word64 -> Ptr Word64 -> IO Int64)
+    , S 257 PrimOp "openat"                  (FD -> CString -> Int -> Word -> IO Int64)
+    , S 258 PrimOp "mkdirat"                 (FD -> CString -> Word64 -> IO Int64)
+    , S 259 PrimOp "mknodat"                 (FD -> CString -> Word64 -> Word64 -> IO Int64)
+    , S 260 PrimOp "fchownat"                (FD -> CString -> Int -> Int -> Int -> IO Int64)
+    , S 261 PrimOp "futimesat"               (FD -> CString -> Ptr () -> IO Int64)
+    , S 262 PrimOp "fstatat64"               (FD -> CString -> Ptr () -> Int -> IO Int64)
+    , S 263 PrimOp "unlinkat"                (FD -> CString -> Word -> IO Int64)
+    , S 264 PrimOp "renameat"                (FD -> CString -> FD -> CString -> IO Int64)
+    , S 265 PrimOp "linkat"                  (FD -> CString -> FD -> CString -> Int -> IO Int64)
+    , S 266 PrimOp "symlinkat"               (CString -> FD -> CString -> IO Int64)
+    , S 267 PrimOp "readlinkat"              (FD -> CString -> CString -> Word64 -> IO Int64)
+    , S 268 PrimOp "fchmodat"                (FD -> CString -> Word -> Int -> IO Int64)
+    , S 269 PrimOp "faccessat"               (FD -> CString -> Int -> Int -> IO Int64)
+    , S 270 Safe   "pselect"                 (Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> IO Int64)
+    , S 271 PrimOp "ppoll"                   (Ptr () -> Word64 -> Ptr () -> Ptr () -> IO Int64)
+    , S 272 PrimOp "unshare"                 (Int -> IO Int64)
+    , S 273 PrimOp "set_robust_list"         (Ptr () -> Word64 -> IO Int64)
+    , S 274 PrimOp "get_robust_list"         (Int -> Ptr () -> Ptr Word64 -> IO Int64)
+    , S 275 PrimOp "splice"                  (Int -> Ptr () -> Int -> Ptr () -> Word64 -> Word -> IO Int64)
+    , S 276 PrimOp "tee"                     (Int -> Int -> Word64 -> Word -> IO Int64)
+    , S 277 PrimOp "sync_file_range"         (FD -> Word64 -> Word64 -> Word -> IO Int64)
+    , S 278 PrimOp "vmsplice"                (FD -> Ptr () -> Word64 -> Word -> IO Int64)
+    , S 279 PrimOp "move_pages"              (Int -> Word64 -> Ptr () -> Ptr Int -> Int -> Int -> IO Int64)
+    , S 280 PrimOp "utimensat"               (Int -> CString -> Ptr () -> Int -> IO Int64)
+    , S 281 Safe   "epoll_pwait"             (Int -> Ptr () -> Int -> Int -> Ptr () -> IO Int64)
+    , S 282 PrimOp "signalfd"                (FD -> Word64 -> Ptr () -> IO Int64)
+    , S 283 PrimOp "timerfd_create"          (Int -> Int -> IO Int64)
+    , S 284 PrimOp "eventfd"                 (Int -> IO Int64)
+    , S 285 PrimOp "fallocate"               (FD -> Int -> Word64 -> Word64 -> IO Int64)
+    , S 286 PrimOp "timerfd_settime"         (FD -> Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 287 PrimOp "timerfd_gettime"         (FD -> Ptr () -> IO Int64)
+    , S 288 PrimOp "accept4"                 (FD -> Ptr () -> Int -> Word64 -> IO Int64)
+    , S 289 PrimOp "signalfd4"               (FD -> Word64 -> Ptr () -> Int -> IO Int64)
+    , S 290 PrimOp "eventfd2"                (Int -> Int -> IO Int64)
+    , S 291 PrimOp "epoll_create1"           (Word64 -> IO Int64)
+    , S 292 PrimOp "dup3"                    (FD -> FD -> Int -> IO Int64)
+    , S 293 PrimOp "pipe2"                   (Ptr FD -> Int -> IO Int64)
+    , S 294 PrimOp "inotify_init1"           (Int -> IO Int64)
+    , S 295 PrimOp "preadv"                  (FD -> Ptr () -> Int -> Word32 -> Word32 -> IO Int64)
+    , S 296 PrimOp "pwritev"                 (FD -> Ptr () -> Int -> Word32 -> Word32 -> IO Int64)
+    , S 297 PrimOp "rt_tgsigqueueinfo"       (Int -> Int -> Int -> Ptr () -> IO Int64)
+    , S 298 PrimOp "perf_event_open"         (Ptr () -> Int -> Int -> Int -> Word64 -> IO Int64)
+    , S 299 PrimOp "recvmmsg"                (FD -> Ptr () -> Word -> Word -> Ptr () -> IO Int64)
+    , S 300 PrimOp "fanotify_init"           (Int -> Int -> IO Int64)
+    , S 301 PrimOp "fanotify_mark"           (Int -> Word -> Word64 -> Int -> CString -> IO Int64)
+    , S 302 PrimOp "prlimit64"               (Int -> Int -> Ptr () -> Ptr () -> IO Int64)
+    , S 303 PrimOp "name_to_handle_at"       (FD -> CString -> Ptr () -> Ptr Int -> Int -> IO Int64)
+    , S 304 PrimOp "open_to_handle_at"       (Int -> Ptr () -> Int -> IO Int64)
+    , S 305 PrimOp "clock_adjtime"           (Int -> Ptr () -> IO Int64)
+    , S 306 Safe   "syncfs"                  (FD -> IO Int64)
+    , S 307 PrimOp "sendmmsg"                (FD -> Ptr () -> Word -> Word -> IO Int64)
+    , S 308 PrimOp "setns"                   (FD -> Int -> IO Int64)
+    , S 309 PrimOp "getcpu"                  (Ptr Word -> Ptr Word -> Ptr () -> IO Int64)
+    , S 310 PrimOp "process_vm_readv"        (Int -> Ptr () -> Word64 -> Ptr () -> Word64 -> Word64 -> IO Int64)
+    , S 311 PrimOp "process_vm_writev"       (Int -> Ptr () -> Word64 -> Ptr () -> Word64 -> Word64 -> IO Int64)
+    , S 312 PrimOp "kcmp"                    (Int -> Int -> Int -> Word64 -> Word64 -> IO Int64)
+    , S 313 PrimOp "finit_module"            (FD -> CString -> Word -> IO Int64)
+    , S 314 PrimOp "sched_setattr"           (Int -> Ptr () -> Word -> IO Int64)
+    , S 315 PrimOp "sched_getattr"           (Int -> Ptr () -> Word -> Word -> IO Int64)
+    , S 316 PrimOp "renameat2"               (FD -> CString -> FD -> CString -> Word -> IO Int64)
+    , S 317 PrimOp "seccomp"                 (Word -> Word -> Ptr () -> IO Int64)
+    , S 318 PrimOp "getrandom"               (Ptr () -> Word64 -> Word -> IO Int64)
+    , S 319 PrimOp "memfd_create"            (CString -> Word -> IO Int64)
+    , S 320 PrimOp "kexec_file_load"         (FD -> FD -> Word64 -> CString -> Word64 -> IO Int64)
+    , S 321 PrimOp "bpf"                     (Int -> Ptr () -> Word -> IO Int64)
+    , S 322 PrimOp "execveat"                (FD -> CString -> Ptr CString -> Ptr CString -> Int -> IO Int64)
+    , S 323 PrimOp "userfaultfd"             (Int -> IO Int64)
+    , S 324 PrimOp "membarrier"              (Int -> Int -> IO Int64)
+    , S 325 PrimOp "mlock2"                  (Ptr () -> Word64 -> Int -> IO Int64)
+    , S 326 PrimOp "copy_file_range"         (FD -> Ptr Word64 -> FD -> Ptr Word64 -> Word64 -> Word -> IO Int64)
+    , S 327 PrimOp "preadv2"                 (FD -> Ptr () -> Int -> Word64 -> Int -> IO Int64)
+    , S 328 PrimOp "pwritev2"                (FD -> Ptr () -> Int -> Word64 -> Int -> IO Int64)
+    , S 329 PrimOp "pkey_mprotect"           (Word64 -> Word64 -> Word64 -> Int -> IO Int64)
+    , S 330 PrimOp "pkey_alloc"              (Word64 -> Word64 -> IO Int64)
+    , S 331 PrimOp "pkey_free"               (Int -> IO Int64)
+    ]

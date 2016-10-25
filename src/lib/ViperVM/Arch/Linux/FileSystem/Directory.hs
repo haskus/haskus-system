@@ -4,6 +4,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+
 
 -- | Directory
 module ViperVM.Arch.Linux.FileSystem.Directory
@@ -39,13 +42,13 @@ sysCreateDirectory fd path perm sticky = do
 
    withCString path $ \path' ->
       case fd of
-         Nothing -> onSuccess (syscall_mkdir path' mode) (const ())
-         Just (Handle fd') -> onSuccess (syscall_mkdirat fd' path' mode) (const ())
+         Nothing -> onSuccess (syscall @"mkdir" path' mode) (const ())
+         Just (Handle fd') -> onSuccess (syscall @"mkdirat" fd' path' mode) (const ())
 
 
 sysRemoveDirectory :: FilePath -> IOErr ()
 sysRemoveDirectory path = withCString path $ \path' ->
-   onSuccess (syscall_rmdir path') (const ())
+   onSuccess (syscall @"rmdir" path') (const ())
 
 
 data DirectoryEntryHeader = DirectoryEntryHeader
@@ -130,7 +133,7 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                   else return xs
 
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
-      onSuccessIO (syscall_getdents64 fd ptr (fromIntegral buffersize)) $ \nread -> 
+      onSuccessIO (syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize)) $ \nread -> 
          readEntries (castPtr ptr) (fromIntegral nread)
 
 -- | Return the content of a directory

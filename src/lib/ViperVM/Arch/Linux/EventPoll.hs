@@ -1,3 +1,6 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+
 -- | Event polling
 module ViperVM.Arch.Linux.EventPoll
    ( EventPollFlag(..)
@@ -26,4 +29,4 @@ fromFlags = foldl' (.|.) 0 . fmap fromFlag
 -- | Create event poller
 sysEventPollCreate :: [EventPollFlag] -> IOErr Handle
 sysEventPollCreate flags =
-   onSuccess (syscall_epoll_create1 (fromFlags flags)) (Handle . fromIntegral)
+   onSuccess (syscall @"epoll_create1" (fromFlags flags)) (Handle . fromIntegral)

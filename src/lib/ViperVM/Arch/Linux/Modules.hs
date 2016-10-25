@@ -1,4 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+
 
 -- | Kernel module management
 module ViperVM.Arch.Linux.Modules
@@ -31,10 +34,10 @@ type LoadModuleFlags = BitSet Word LoadModuleFlag
 loadModuleFromFile :: Handle -> String -> LoadModuleFlags -> IOErr ()
 loadModuleFromFile (Handle fd) params flags = do
    withCString params $ \params' ->
-      onSuccess (syscall_finit_module fd  params' (BitSet.toBits flags)) (const ())
+      onSuccess (syscall @"finit_module" fd  params' (BitSet.toBits flags)) (const ())
 
 -- | Load a module from memory
 loadModuleFromMemory :: Ptr () -> Word64 -> String -> IOErr ()
 loadModuleFromMemory ptr sz params =
    withCString params $ \params' ->
-      onSuccess (syscall_init_module ptr sz params') (const ())
+      onSuccess (syscall @"init_module" ptr sz params') (const ())
