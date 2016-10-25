@@ -1,113 +1,5 @@
--- | Linux syscalls on X86
-module ViperVM.Arch.X86_64.Linux.Syscalls
-   ( syscall_access
-   , syscall_chdir
-   , syscall_chmod
-   , syscall_chown
-   , syscall_close
-   , syscall_creat
-   , syscall_dup
-   , syscall_dup2
-   , syscall_fchdir
-   , syscall_fchmod
-   , syscall_fchown
-   , syscall_fdatasync
-   , syscall_fcntl
-   , syscall_flock
-   , syscall_epoll_create1
-   , syscall_fstat
-   , syscall_mount
-   , syscall_umount2
-   , syscall_poll
-   , syscall_read
-   , syscall_pread64
-   , syscall_readv
-   , syscall_preadv
-   , syscall_write
-   , syscall_pwrite64
-   , syscall_writev
-   , syscall_pwritev
-   , syscall_futex
-   , syscall_uname
-   , syscall_mmap
-   , syscall_munmap
-   , syscall_mprotect
-   , syscall_brk
-   , syscall_recvfrom
-   , syscall_shutdown
-   , syscall_sendfile
-   , syscall_socket
-   , syscall_socketpair
-   , syscall_bind
-   , syscall_connect
-   , syscall_accept4
-   , syscall_madvise
-   , syscall_listen
-   , syscall_pipe
-   , syscall_msync
-   , syscall_reboot
-   , syscall_init_module
-   , syscall_exit
-   , syscall_getcpu
-   , syscall_sched_yield
-   , syscall_getpid
-   , syscall_getppid
-   , syscall_fork
-   , syscall_vfork
-   , syscall_getegid
-   , syscall_gettid
-   , syscall_pause
-   , syscall_alarm
-   , syscall_clock_gettime
-   , syscall_clock_settime
-   , syscall_clock_getres
-   , syscall_nanosleep
-   , syscall_ptrace
-   , syscall_sigprocmask
-   , syscall_kill
-   , syscall_getuid
-   , syscall_geteuid
-   , syscall_getgid
-   , syscall_setgid
-   , syscall_setuid
-   , syscall_mlock
-   , syscall_munlock
-   , syscall_mlockall
-   , syscall_munlockall
-   , syscall_mincore
-   , syscall_mkdir
-   , syscall_mkdirat
-   , syscall_fsync
-   , syscall_ftruncate
-   , syscall_getcwd
-   , syscall_ioctl
-   , syscall_lchown
-   , syscall_link
-   , syscall_lseek
-   , syscall_lstat
-   , syscall_mknod
-   , syscall_mknodat
-   , syscall_getdents64
-   , syscall_rmdir
-   , syscall_open
-   , syscall_openat
-   , syscall_rename
-   , syscall_stat
-   , syscall_unlink
-   , syscall_symlink
-   , syscall_readlink
-   , syscall_sync
-   , syscall_settimeofday
-   , syscall_syncfs
-   , syscall_truncate
-   , syscall_umask
-   , syscall_gettimeofday
-   , syscall_unlinkat
-   , syscall_symlinkat
-   , syscall_readlinkat
-   , syscall_finit_module
-   )
-   where
+-- | Linux syscalls on X86_64
+module ViperVM.Arch.X86_64.Linux.Syscalls where
 
 import ViperVM.Arch.X86_64.Linux.Syscall
 import ViperVM.Arch.Linux.Internals.Arg
@@ -117,9 +9,6 @@ import ViperVM.Format.String (CString)
 import ViperVM.Format.Binary.Ptr
 
 type FD = Word -- file descriptor alias
-type Mode = Word
-type AccessMode = Word64
-type SizeT = Word
 
 -- | read
 syscall_read :: FD -> Ptr a -> Word64 -> IO Int64
@@ -132,7 +21,7 @@ syscall_write = syscall3 1
 {-# INLINE syscall_write #-}
 
 -- | open
-syscall_open :: CString -> Int -> Mode -> IO Int64
+syscall_open :: CString -> Int -> Word -> IO Int64
 syscall_open = syscall3 2
 {-# INLINE syscall_open #-}
 
@@ -186,10 +75,22 @@ syscall_brk :: Word64 -> IO Int64
 syscall_brk = syscall1 12
 {-# INLINE syscall_brk #-}
 
+-- | rt_sigaction
+syscall_rt_sigaction :: Int -> Ptr a -> Ptr b -> IO Int64
+syscall_rt_sigaction = syscall3 13
+{-# INLINE syscall_rt_sigaction #-}
+
+-- | rt_sigreturn
+
 -- | sigprocmask
 syscall_sigprocmask :: Int -> Ptr a -> Ptr b -> IO Int64
 syscall_sigprocmask = syscall3 14
 {-# INLINE syscall_sigprocmask #-}
+
+-- | rt_sigreturn
+syscall_rt_sigreturn :: IO Int64
+syscall_rt_sigreturn = syscall0 15
+{-# INLINE syscall_rt_sigreturn #-}
 
 -- | ioctl
 syscall_ioctl :: FD -> Int64 -> Int64 -> IO Int64
@@ -217,7 +118,7 @@ syscall_writev = syscall3 20
 {-# INLINE syscall_writev #-}
 
 -- | access
-syscall_access :: CString -> AccessMode -> IO Int64
+syscall_access :: CString -> Word64 -> IO Int64
 syscall_access = syscall2 21
 {-# INLINE syscall_access #-}
 
@@ -226,10 +127,20 @@ syscall_pipe :: Ptr Word -> IO Int64
 syscall_pipe = syscall1 22
 {-# INLINE syscall_pipe #-}
 
+-- | select
+syscall_select :: Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> IO Int64
+syscall_select = syscall5safe 23
+{-# INLINE syscall_select #-}
+
 -- | sched_yield
 syscall_sched_yield :: IO Int64
 syscall_sched_yield = syscall0 24
 {-# INLINE syscall_sched_yield #-}
+
+-- | mremap
+syscall_mremap :: Ptr () -> Word64 -> Word64 -> Int -> Ptr () -> IO Int64
+syscall_mremap = syscall5 25
+{-# INLINE syscall_mremap #-}
 
 -- | msync
 syscall_msync :: Ptr a -> Word64 -> Int64 -> IO Int64
@@ -245,6 +156,21 @@ syscall_mincore = syscall3 27
 syscall_madvise :: Ptr a -> Word64 -> Int -> IO Int64
 syscall_madvise = syscall3 28
 {-# INLINE syscall_madvise #-}
+
+-- | shmget
+syscall_shmget :: Int32 -> Word64 -> Int -> IO Int64
+syscall_shmget = syscall3 29
+{-# INLINE syscall_shmget #-}
+
+-- | shmat
+syscall_shmat :: Int -> Ptr () -> Int -> IO Int64
+syscall_shmat = syscall3 30
+{-# INLINE syscall_shmat #-}
+
+-- | shmctl
+syscall_shmctl :: Int -> Int -> Ptr () -> IO Int64
+syscall_shmctl = syscall3 31
+{-# INLINE syscall_shmctl #-}
 
 -- | dup
 syscall_dup :: FD -> IO Int64
@@ -266,10 +192,20 @@ syscall_nanosleep :: Ptr a -> Ptr a -> IO Int64
 syscall_nanosleep = syscall2 35
 {-# INLINE syscall_nanosleep #-}
 
+-- | getitimer
+syscall_getitimer :: Int -> Ptr a -> IO Int64
+syscall_getitimer = syscall2 36
+{-# INLINE syscall_getitimer #-}
+
 -- | alarm
 syscall_alarm :: Word -> IO Int64
 syscall_alarm = syscall1 37
 {-# INLINE syscall_alarm #-}
+
+-- | setitimer
+syscall_setitimer :: Int -> Ptr a -> Ptr b -> IO Int64
+syscall_setitimer = syscall3 38
+{-# INLINE syscall_setitimer #-}
 
 -- | getpid
 syscall_getpid :: IO Int64
@@ -291,6 +227,31 @@ syscall_connect :: FD -> Ptr a -> Int -> IO Int64
 syscall_connect = syscall3 42
 {-# INLINE syscall_connect #-}
 
+-- | sendto
+syscall_sendto :: FD -> Ptr a -> Word64 -> Int -> Ptr b -> Word32 -> IO Int64
+syscall_sendto = syscall6 44
+{-# INLINE syscall_sendto #-}
+
+-- | recvfrom
+syscall_recvfrom :: FD -> Ptr () -> Word64 -> Word64 -> Ptr a -> Ptr Word64 -> IO Int64
+syscall_recvfrom = syscall6 45
+{-# INLINE syscall_recvfrom #-}
+
+-- | sendmsg
+syscall_sendmsg :: FD -> Ptr a -> Int -> IO Int64
+syscall_sendmsg = syscall3 46
+{-# INLINE syscall_sendmsg #-}
+
+-- | recvmsg
+syscall_recvmsg :: FD -> Ptr a -> Int -> IO Int64
+syscall_recvmsg = syscall3 47
+{-# INLINE syscall_recvmsg #-}
+
+-- | shutdown
+syscall_shutdown :: FD -> Int -> IO Int64
+syscall_shutdown = syscall2 48
+{-# INLINE syscall_shutdown #-}
+
 -- | bind
 syscall_bind :: FD -> Ptr a -> Int -> IO Int64
 syscall_bind = syscall3 49
@@ -301,20 +262,20 @@ syscall_listen :: FD -> Word64 -> IO Int64
 syscall_listen = syscall2 50
 {-# INLINE syscall_listen #-}
 
+-- | getsockname
+syscall_getsockname :: FD -> Ptr a -> Ptr Int32 -> IO Int64
+syscall_getsockname = syscall3 51
+{-# INLINE syscall_getsockname #-}
+
+-- | getpeername
+syscall_getpeername :: FD -> Ptr a -> Ptr Int32 -> IO Int64
+syscall_getpeername = syscall3 52
+{-# INLINE syscall_getpeername #-}
+
 -- | socketpair
 syscall_socketpair :: Int -> Word64 -> Int -> Ptr Word -> IO Int64
 syscall_socketpair = syscall4 53
 {-# INLINE syscall_socketpair #-}
-
--- | recvfrom
-syscall_recvfrom :: FD -> Ptr () -> Word64 -> Word64 -> Ptr a -> Ptr Word64 -> IO Int64
-syscall_recvfrom = syscall6 45
-{-# INLINE syscall_recvfrom #-}
-
--- | shutdown
-syscall_shutdown :: FD -> Int -> IO Int64
-syscall_shutdown = syscall2 48
-{-# INLINE syscall_shutdown #-}
 
 -- | fork
 syscall_fork :: IO Int64
@@ -373,7 +334,7 @@ syscall_ftruncate = syscall2 77
 {-# INLINE syscall_ftruncate #-}
 
 -- | getcwd
-syscall_getcwd :: CString -> SizeT -> IO Int64
+syscall_getcwd :: CString -> Word64 -> IO Int64
 syscall_getcwd = syscall2 79
 {-# INLINE syscall_getcwd #-}
 
@@ -403,7 +364,7 @@ syscall_rmdir = syscall1 84
 {-# INLINE syscall_rmdir #-}
 
 -- | creat
-syscall_creat :: CString -> Mode -> IO Int64
+syscall_creat :: CString -> Word -> IO Int64
 syscall_creat = syscall2 85
 {-# INLINE syscall_creat #-}
 
@@ -428,12 +389,12 @@ syscall_readlink = syscall3 89
 {-# INLINE syscall_readlink #-}
 
 -- | chmod
-syscall_chmod :: CString -> Mode -> IO Int64
+syscall_chmod :: CString -> Word -> IO Int64
 syscall_chmod = syscall2 90
 {-# INLINE syscall_chmod #-}
 
 -- | fchmod
-syscall_fchmod :: FD -> Mode -> IO Int64
+syscall_fchmod :: FD -> Word -> IO Int64
 syscall_fchmod = syscall2 91
 {-# INLINE syscall_fchmod #-}
 
@@ -588,7 +549,7 @@ syscall_clock_getres = syscall2 229
 {-# INLINE syscall_clock_getres #-}
 
 -- | openat
-syscall_openat :: FD -> CString -> Int -> Mode -> IO Int64
+syscall_openat :: FD -> CString -> Int -> Word -> IO Int64
 syscall_openat = syscall4 257
 {-# INLINE syscall_openat #-}
 
@@ -616,6 +577,11 @@ syscall_symlinkat = syscall3 266
 syscall_readlinkat :: FD -> CString -> CString -> Word64 -> IO Int64
 syscall_readlinkat = syscall4 267
 {-# INLINE syscall_readlinkat #-}
+
+-- | pselect
+syscall_pselect :: Int -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> Ptr () -> IO Int64
+syscall_pselect = syscall6safe 270
+{-# INLINE syscall_pselect #-}
 
 -- | accept4
 syscall_accept4 :: FD -> Ptr a -> Int -> Word64 -> IO Int64
@@ -659,20 +625,6 @@ syscall_finit_module = syscall3 313
  - linux/arch/x86/entry/syscalls/syscall_64.tbl
  - in the kernel tree.
  -
-13	64	rt_sigaction		sys_rt_sigaction
-15	64	rt_sigreturn		stub_rt_sigreturn
-23	common	select			sys_select
-25	common	mremap			sys_mremap
-29	common	shmget			sys_shmget
-30	common	shmat			sys_shmat
-31	common	shmctl			sys_shmctl
-36	common	getitimer		sys_getitimer
-38	common	setitimer		sys_setitimer
-44	common	sendto			sys_sendto
-46	64	sendmsg			sys_sendmsg
-47	64	recvmsg			sys_recvmsg
-51	common	getsockname		sys_getsockname
-52	common	getpeername		sys_getpeername
 54	64	setsockopt		sys_setsockopt
 55	64	getsockopt		sys_getsockopt
 56	common	clone			stub_clone
@@ -828,7 +780,6 @@ syscall_finit_module = syscall3 313
 265	common	linkat			sys_linkat
 268	common	fchmodat		sys_fchmodat
 269	common	faccessat		sys_faccessat
-270	common	pselect6		sys_pselect6
 271	common	ppoll			sys_ppoll
 272	common	unshare			sys_unshare
 273	64	set_robust_list		sys_set_robust_list

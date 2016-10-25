@@ -13,6 +13,7 @@ class Arg a where
    toArg :: a -> Int64
 
 instance Arg Int     where toArg = fromIntegral
+instance Arg Int32   where toArg = fromIntegral
 instance Arg Int64   where toArg = id
 instance Arg Word    where toArg = fromIntegral
 instance Arg Word64  where toArg = fromIntegral
