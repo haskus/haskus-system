@@ -29,6 +29,9 @@ syscall = syscall_ @Syscalls @name @n @s @t
 -- From linux/arch/x86/entry/syscalls/syscall_64.tbl
 -- =============================================================
 
+-- FIXME: the table is large and requires -freduction-depth=0 for SyscallByName
+-- to be reducible.
+
 -- | Linux syscalls on X86_64
 type Syscalls =
    '[ S 0   PrimOp "read"                    (FD -> Ptr () -> Word64 -> IO Int64)

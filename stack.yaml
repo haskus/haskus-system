@@ -20,20 +20,7 @@ ghc-options:
    "*": -fobject-code         # GHCI needs it because of the foreign primops
    "*": -freduction-depth=0   # used to allow compilation of large type-level Syscalls table
 
-# Control whether we use the GHC we find on the path
 # system-ghc: true
-
-# Require a specific version of stack, using version ranges
-# require-stack-version: -any # Default
-# require-stack-version: >= 1.0.0
-
-# Override the architecture used by stack, especially useful on Windows
-# arch: i386
-# arch: x86_64
-
-# Extra directories used by stack for building
-# extra-include-dirs: [/path/to/dir]
-# extra-lib-dirs: [/path/to/dir]
 
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
