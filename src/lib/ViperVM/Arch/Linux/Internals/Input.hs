@@ -160,8 +160,8 @@ data KeyEventType
 
 -- | Keys
 data Key
-   = KeyReserved
-   | KeyEsc
+   = ReservedKey
+   | Esc
    | Key1
    | Key2
    | Key3
