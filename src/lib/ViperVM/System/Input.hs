@@ -59,7 +59,7 @@ data InputEvent = InputEvent
 -- | Input event details
 data InputEventType
    = InputSyncEvent !SyncEventType !Int32         -- ^ Synchronization event
-   | InputKeyEvent !KeyEventType !Word16          -- ^ Key event
+   | InputKeyEvent !KeyEventType !Key             -- ^ Key event
    | InputRelativeEvent !RelativeAxe !Int32       -- ^ Relative event
    | InputAbsoluteEvent !AbsoluteAxe !Int32       -- ^ Absolute event
    | InputMiscEvent !MiscEventType !Int32         -- ^ Misc event
@@ -88,7 +88,7 @@ makeInputEvent (Input.Event {..}) = InputEvent eventTime t
       v = eventValue
       t = case fromEnumField eventType of
             EventTypeSync                -> InputSyncEvent (toCEnum c) v
-            EventTypeKey                 -> InputKeyEvent (toCEnum v) c
+            EventTypeKey                 -> InputKeyEvent (toCEnum v) (toCEnum c)
             EventTypeRelative            -> InputRelativeEvent (toCEnum c) v
             EventTypeAbsolute            -> InputAbsoluteEvent (toCEnum c) v
             EventTypeMisc                -> InputMiscEvent (toCEnum c) v
