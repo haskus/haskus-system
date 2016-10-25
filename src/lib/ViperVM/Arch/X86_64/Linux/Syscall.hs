@@ -1,12 +1,8 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface #-}
-
-
-#ifdef __GLASGOW_HASKELL__
-{-# LANGUAGE GHCForeignImportPrim, 
-             MagicHash, 
-             UnboxedTuples,
-             UnliftedFFITypes #-}
-#endif
+{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE GHCForeignImportPrim #-}
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UnliftedFFITypes #-}
 
 -- | Linux syscall
 module ViperVM.Arch.X86_64.Linux.Syscall
@@ -17,18 +13,24 @@ module ViperVM.Arch.X86_64.Linux.Syscall
    , syscall4
    , syscall5
    , syscall6
-) where
+   , syscall0safe
+   , syscall1safe
+   , syscall2safe
+   , syscall3safe
+   , syscall4safe
+   , syscall5safe
+   , syscall6safe
+   )
+where
 
 import ViperVM.Arch.Linux.Internals.Arg
-
-#ifdef __GLASGOW_HASKELL__
+import ViperVM.Format.Binary.Word
+import GHC.Base
+import GHC.Int
 
 --------------------------------------------------
 -- Implementation using Haskell foreign primops
 --------------------------------------------------
-
-import GHC.Base
-import GHC.Int
 
 foreign import prim "x86_64_linux_syscall_primop6" syscall6_# :: Int# -> Int# -> Int# -> Int# -> Int# -> Int# -> Int# -> State# RealWorld -> (# State# RealWorld, Int# #)
 foreign import prim "x86_64_linux_syscall_primop5" syscall5_# :: Int# -> Int# -> Int# -> Int# -> Int# -> Int# -> State# RealWorld -> (# State# RealWorld, Int# #)
@@ -73,24 +75,6 @@ syscall0_ :: Int64 -> IO Int64
 syscall0_ (I64# n) = IO $ \s ->
    case (syscall0_# n s) of (# s1, r #) -> (# s1, I64# r #)
 
-#else
-
---------------------------------------------------
--- Implementation using Haskell FFI
---------------------------------------------------
-
-import ViperVM.Format.Binary.Word (Int64)
-
-foreign import ccall "x86_64_linux_syscall6" syscall6_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
-foreign import ccall "x86_64_linux_syscall5" syscall5_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
-foreign import ccall "x86_64_linux_syscall4" syscall4_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
-foreign import ccall "x86_64_linux_syscall3" syscall3_ :: Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
-foreign import ccall "x86_64_linux_syscall2" syscall2_ :: Int64 -> Int64 -> Int64 -> IO Int64
-foreign import ccall "x86_64_linux_syscall1" syscall1_ :: Int64 -> Int64 -> IO Int64
-foreign import ccall "x86_64_linux_syscall0" syscall0_ :: Int64 -> IO Int64
-
-#endif
-
 -- | Syscall with 6 parameters
 syscall6 :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64
 syscall6 n a b c d e f = syscall6_ n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e) (toArg f)
@@ -118,3 +102,48 @@ syscall1 n a = syscall1_ n (toArg a)
 -- | Syscall with 0 parameter
 syscall0 :: Int64 -> IO Int64
 syscall0 = syscall0_
+
+
+
+
+--------------------------------------------------
+-- Implementation using Haskell FFI
+--------------------------------------------------
+
+
+foreign import ccall safe "x86_64_linux_syscall6" syscall6safe_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall safe "x86_64_linux_syscall5" syscall5safe_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall safe "x86_64_linux_syscall4" syscall4safe_ :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall safe "x86_64_linux_syscall3" syscall3safe_ :: Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall safe "x86_64_linux_syscall2" syscall2safe_ :: Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall safe "x86_64_linux_syscall1" syscall1safe_ :: Int64 -> Int64 -> IO Int64
+foreign import ccall safe "x86_64_linux_syscall0" syscall0safe_ :: Int64 -> IO Int64
+
+-- | Syscall with 6 parameters
+syscall6safe :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64
+syscall6safe n a b c d e f = syscall6safe_ n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e) (toArg f)
+
+-- | Syscall with 5 parameters
+syscall5safe :: (Arg a, Arg b, Arg c, Arg d, Arg e) => Int64 -> a -> b -> c -> d -> e -> IO Int64
+syscall5safe n a b c d e = syscall5safe_ n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e)
+
+-- | Syscall with 4 parameters
+syscall4safe :: (Arg a, Arg b, Arg c, Arg d) => Int64 -> a -> b -> c -> d -> IO Int64
+syscall4safe n a b c d = syscall4safe_ n (toArg a) (toArg b) (toArg c) (toArg d)
+
+-- | Syscall with 3 parameters
+syscall3safe :: (Arg a, Arg b, Arg c) => Int64 -> a -> b -> c -> IO Int64
+syscall3safe n a b c = syscall3safe_ n (toArg a) (toArg b) (toArg c)
+
+-- | Syscall with 2 parameters
+syscall2safe :: (Arg a, Arg b) => Int64 -> a -> b -> IO Int64
+syscall2safe n a b = syscall2safe_ n (toArg a) (toArg b)
+
+-- | Syscall with 1 parameter
+syscall1safe :: (Arg a) => Int64 -> a -> IO Int64
+syscall1safe n a = syscall1safe_ n (toArg a)
+
+-- | Syscall with 0 parameter
+syscall0safe :: Int64 -> IO Int64
+syscall0safe = syscall0safe_
+
