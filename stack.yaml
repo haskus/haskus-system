@@ -19,7 +19,10 @@ ghc-options:
    "*": -fobject-code         # GHCI needs it because of the foreign primops
    "*": -freduction-depth=0   # used to allow compilation of large type-level Syscalls table
 
-# system-ghc: true
-
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+#
+# To test with GHC head, uncomment this and add "ghc-stage2" aliased as "ghc" in
+# the PATH
+# compiler: ghc-8.1.20161023
+# system-ghc: true
