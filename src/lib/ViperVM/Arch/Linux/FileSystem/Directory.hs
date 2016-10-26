@@ -115,12 +115,12 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
 
    let
       readEntries p n
-         | n < sizeOf (undefined :: DirectoryEntryHeader) = return []
+         | n < sizeOfT @DirectoryEntryHeader = return []
          | otherwise = do
                hdr  <- peek p
                let 
                   len     = fromIntegral (dirLength hdr)
-                  sizede  = sizeOf (undefined :: DirectoryEntryHeader)
+                  sizede  = sizeOfT @DirectoryEntryHeader
                   namepos = p `indexPtr'` sizede
                   nextpos = p `indexPtr'` len
                   nextlen = n - len

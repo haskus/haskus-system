@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Display mode (resolution, refresh rate, etc.)
 module ViperVM.Arch.Linux.Graphics.Mode
@@ -48,8 +49,8 @@ data Mode = Mode
    } deriving (Show)
 
 instance Storable Mode where
-   sizeOf _    = sizeOf (undefined :: StructMode)
-   alignment _ = alignment (undefined :: StructMode)
+   sizeOf _    = sizeOfT     @StructMode
+   alignment _ = alignmentT  @StructMode
    peek v      = fromStructMode <$> peek (castPtr v)
    poke p v    = poke (castPtr p) (toStructMode v)
 

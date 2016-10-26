@@ -71,10 +71,10 @@ instance forall a n.
    ( KnownNat n
    , Storable a
    ) => Storable (Vector n a) where
-   sizeOf _    = natValue @n * sizeOf (undefined :: a)
-   alignment _ = alignment (undefined :: a)
+   sizeOf _    = natValue @n * sizeOfT @a
+   alignment _ = alignmentT @a
    peek ptr    = do
-      Vector <$> bufferPackPtr (fromIntegral (sizeOf (undefined :: Vector n a))) (castPtr ptr)
+      Vector <$> bufferPackPtr (sizeOfT' @(Vector n a)) (castPtr ptr)
 
    poke ptr (Vector b) = bufferPoke ptr b
 
@@ -145,7 +145,7 @@ toList (Vector b)
    | otherwise = fmap (bufferPeekStorableAt b . (sza*)) [0..n-1]
    where
       n   = natValue @n
-      sza = fromIntegral (sizeOf (undefined :: a))
+      sza = sizeOfT' @a
 
 -- | Create a vector by replicating a value
 replicate :: forall a (n :: Nat) .
@@ -170,7 +170,7 @@ instance forall n v a r.
          p <- getP
          let
             vsz = natValue @n
-            p'  = p `indexPtr'` (-1 * vsz * sizeOf (undefined :: a))
+            p'  = p `indexPtr'` (-1 * vsz * sizeOfT @a)
          poke (castPtr p') v 
          return p'
 
@@ -188,7 +188,7 @@ concat :: forall l (n :: Nat) a .
    )
    => HList l -> Vector n a
 concat vs = unsafePerformIO $ do
-   let sz = sizeOf (undefined :: a) * natValue @n
+   let sz = sizeOfT @a * natValue @n
    p <- mallocBytes (fromIntegral sz) :: IO (Ptr ())
    _ <- hFoldr StoreVector (return (castPtr p `indexPtr'` sz) :: IO (Ptr a)) vs :: IO (Ptr a)
    Vector <$> bufferUnsafePackPtr (fromIntegral sz) p

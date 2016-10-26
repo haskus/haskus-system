@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Byte order ("endianness")
@@ -195,8 +196,8 @@ instance (ByteReversable a, StaticStorable a) => StaticStorable (AsBigEndian a) 
 
 
 instance (ByteReversable a, Storable a) => Storable (AsBigEndian a) where
-   sizeOf _    = sizeOf (undefined :: a)
-   alignment _ = alignment (undefined :: a)
+   sizeOf _    = sizeOfT    @a
+   alignment _ = alignmentT @a
 
    peek ptr                 = AsBigEndian . bigEndianToHost <$> peek (castPtr ptr)
    poke ptr (AsBigEndian v) = poke (castPtr ptr) (hostToBigEndian v)
@@ -209,8 +210,8 @@ instance (ByteReversable a, StaticStorable a) => StaticStorable (AsLittleEndian 
    staticPoke ptr (AsLittleEndian v) = staticPoke (castPtr ptr) (hostToLittleEndian v)
 
 instance (ByteReversable a, Storable a) => Storable (AsLittleEndian a) where
-   sizeOf _    = sizeOf (undefined :: a)
-   alignment _ = alignment (undefined :: a)
+   sizeOf _    = sizeOfT    @a
+   alignment _ = alignmentT @a
 
    peek ptr                    = AsLittleEndian . bigEndianToHost <$> peek (castPtr ptr)
    poke ptr (AsLittleEndian v) = poke (castPtr ptr) (hostToLittleEndian v)

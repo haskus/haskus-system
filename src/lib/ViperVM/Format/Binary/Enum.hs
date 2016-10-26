@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Store an Enum in the given backing word type
 module ViperVM.Format.Binary.Enum
@@ -31,8 +32,8 @@ instance
       , CEnum a
       ) => Storable (EnumField b a)
    where
-      sizeOf _             = sizeOf (undefined :: b)
-      alignment _          = alignment (undefined :: b)
+      sizeOf _             = sizeOfT    @b
+      alignment _          = alignmentT @b
       peek p               = (EnumField . toCEnum) <$> peek (castPtr p :: Ptr b)
       poke p (EnumField v) = poke (castPtr p :: Ptr b) (fromCEnum v)
 

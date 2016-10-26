@@ -391,7 +391,7 @@ toStat (StatStruct {..}) = Stat
 sysFileStat :: FilePath -> Bool -> IOErr Stat
 sysFileStat path followLink = do
    withCString path $ \path' ->
-      allocaBytes (sizeOf' (undefined :: StatStruct)) $ \s ->
+      allocaBytes (sizeOfT' @StatStruct) $ \s ->
          let
             -- select between stat and lstat syscalls
             sc = if followLink then syscall @"stat" else syscall @"lstat"
@@ -401,7 +401,7 @@ sysFileStat path followLink = do
 -- | Stat on file descriptor
 sysHandleStat :: Handle -> IOErr Stat
 sysHandleStat (Handle fd) =
-   allocaBytes (sizeOf' (undefined :: StatStruct)) $ \s ->
+   allocaBytes (sizeOfT' @StatStruct) $ \s ->
       onSuccessIO (syscall @"fstat" fd (castPtr s)) (const (toStat <$> peek s))
 
 
@@ -435,7 +435,7 @@ data DeviceID = DeviceID
 
 instance Storable DeviceID where
    sizeOf _    = 8
-   alignment _ = alignment (undefined :: Word64)
+   alignment _ = alignmentT @Word64
    peek x      = fromKernelDevice <$> peek (castPtr x :: Ptr Word64)
    poke ptr x  = poke (castPtr ptr :: Ptr Word64) (toKernelDevice x)
 

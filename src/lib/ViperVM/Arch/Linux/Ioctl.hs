@@ -81,7 +81,7 @@ ioctlWriteReadCmdRet cmd a fd =
 ioctlWriteReadRet :: forall a. Storable a => CommandType -> CommandNumber -> a -> Handle -> IOErr (Int64,a)
 ioctlWriteReadRet typ nr = ioctlWriteReadCmdRet cmd
    where
-      cmd = ioctlCommand WriteRead typ nr (sizeOf' (undefined :: a))
+      cmd = ioctlCommand WriteRead typ nr (sizeOfT' @a)
 
 -- | Write and read a storable
 ioctlWriteRead :: Storable a => CommandType -> CommandNumber -> a -> Handle -> IOErr a
@@ -106,7 +106,7 @@ ioctlReadCmdRet cmd fd =
 ioctlReadRet :: forall a. Storable a => CommandType -> CommandNumber -> Handle -> IOErr (Int64,a)
 ioctlReadRet typ nr = ioctlReadCmdRet cmd
    where
-      cmd = ioctlCommand Read typ nr (sizeOf' (undefined :: a))
+      cmd = ioctlCommand Read typ nr (sizeOfT' @a)
 
 -- | Read a storable
 ioctlRead :: Storable a => CommandType -> CommandNumber -> Handle -> IOErr a
@@ -129,7 +129,7 @@ ioctlWriteCmdRet cmd a fd =
 ioctlWriteRet :: forall a. Storable a => CommandType -> CommandNumber -> a -> Handle -> IOErr Int64
 ioctlWriteRet typ nr = ioctlWriteCmdRet cmd
    where
-      cmd = ioctlCommand Write typ nr (sizeOf' (undefined :: a))
+      cmd = ioctlCommand Write typ nr (sizeOfT' @a)
 
 -- | Write a storable
 ioctlWrite :: Storable a => CommandType -> CommandNumber -> a -> Handle -> IOErr ()

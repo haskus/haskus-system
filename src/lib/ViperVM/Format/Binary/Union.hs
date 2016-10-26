@@ -90,12 +90,12 @@ toUnionZero = toUnion' True
 -- | Create a new union from one of the union types
 toUnion' :: forall a l . (Storable (Union l), Storable a, IsMember a l ~ 'True) => Bool -> a -> Union l
 toUnion' zero v = unsafePerformIO $ do
-   let sz = sizeOf (undefined :: Union l)
+   let sz = sizeOfT @(Union l)
    fp <- mallocForeignPtrBytes (fromIntegral sz)
    withForeignPtr fp $ \p -> do
       -- set bytes after the object to 0
       when zero $ do
-         let psz = sizeOf (undefined :: a)
+         let psz = sizeOfT @a
          memSet (p `indexPtr'` psz) (fromIntegral (sz - psz)) 0
       poke (castPtr p) v
    return $ Union fp
@@ -137,10 +137,10 @@ data FoldSizeOf    = FoldSizeOf
 data FoldAlignment = FoldAlignment
 
 instance (r ~ Word, Storable a) => Apply FoldSizeOf (a, Word) r where
-   apply _ (_,r) = max r (sizeOf (undefined :: a))
+   apply _ (_,r) = max r (sizeOfT @a)
 
 instance (r ~ Word, Storable a) => Apply FoldAlignment (a, Word) r where
-   apply _ (_,r) = max r (alignment (undefined :: a))
+   apply _ (_,r) = max r (alignmentT @a)
 
 -- | Get the union size (i.e. the maximum of the types in the union)
 unionSize :: forall l . HFoldr' FoldSizeOf Word l Word => Union l -> Word
@@ -162,13 +162,11 @@ instance
    sizeOf             = unionSize
    alignment          = unionAlignment
    peek ptr = do
-      let sz = sizeOf (undefined :: Union l)
-      fp <- mallocForeignPtrBytes (fromIntegral sz)
+      let sz = sizeOfT' @(Union l)
+      fp <- mallocForeignPtrBytes sz
       withForeignPtr fp $ \p -> 
          memCopy p (castPtr ptr) (fromIntegral sz)
       return (Union fp)
 
-   poke ptr (Union fp) = do
-      let sz = sizeOf (undefined :: Union l)
-      withForeignPtr fp $ \p ->
-         memCopy (castPtr ptr) p (fromIntegral sz)
+   poke ptr (Union fp) = withForeignPtr fp $ \p ->
+      memCopy (castPtr ptr) p (sizeOfT' @(Union l))

@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Event management
 module ViperVM.System.Event
@@ -25,7 +26,7 @@ import ViperVM.Format.Binary.Storable
 newEventReader :: forall a. Storable a => Handle -> Sys (TChan a)
 newEventReader fd@(Handle lowfd) = do
    let
-      sz  = sizeOf (undefined :: a)
+      sz  = sizeOfT @a
       rfd = Fd (fromIntegral lowfd)
       nb  = 50 -- number of events read at once
 

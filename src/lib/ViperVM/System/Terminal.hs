@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Terminal helpers
 module ViperVM.System.Terminal
@@ -282,7 +283,7 @@ readTermBytes term sz ptr = readFromHandle (termIn term) sz (castPtr ptr)
 readTerm :: Storable a => Terminal -> Sys a
 readTerm term = sysIO $
    alloca $ \(ptr :: Ptr a) -> do
-      sem <- readTermBytes term (fromIntegral $ sizeOf (undefined :: a)) ptr
+      sem <- readTermBytes term (sizeOfT' @a) ptr
       atomically $ waitFuture sem
       peek ptr
 

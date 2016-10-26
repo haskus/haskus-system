@@ -1,4 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+
 -- | OpenCL platform module
 module ViperVM.Arch.OpenCL.Platform
    ( Platform
@@ -188,7 +190,7 @@ getPlatformInfos' pf = PlatformInfos
 getDevicePlatform :: Device -> CLRet Platform
 getDevicePlatform dev = do
    let
-      sz = fromIntegral (sizeOf (undefined :: Platform_))
+      sz = sizeOfT' @Platform_
    alloca $ \(dat :: Ptr Platform_) -> whenSuccess 
       (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum CL_DEVICE_PLATFORM) sz (castPtr dat) nullPtr)
       (Platform (cllib dev) <$> peek dat)

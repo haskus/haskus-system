@@ -100,7 +100,7 @@ sysReceive (Handle fd) ptr size flags addr = do
    case addr of
       Nothing -> call nullPtr nullPtr
       Just a  -> with a $ \a' -> 
-         with (fromIntegral (sizeOf a)) $ \sptr -> call a' sptr
+         with (sizeOf' a) $ \sptr -> call a' sptr
 
 receiveBuffer :: Handle -> Int -> SendReceiveFlags -> IOErr Buffer
 receiveBuffer fd size flags = do

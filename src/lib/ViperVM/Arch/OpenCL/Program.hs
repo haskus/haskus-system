@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | OpenCL program module
 module ViperVM.Arch.OpenCL.Program
@@ -105,7 +106,7 @@ buildProgram prog dev options =
 -- | Return a unsigned int program info
 getProgramInfoWord32 :: ProgramInfo -> Program -> CLRet Word32
 getProgramInfoWord32 infoid prog = do
-   let size = fromIntegral $ sizeOf (0 :: Word32)
+   let size = sizeOfT' @Word32
    alloca $ \(dat :: Ptr Word32) -> whenSuccess 
       (rawClGetProgramInfo (cllib prog) (unwrap prog) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (peek dat)
@@ -125,7 +126,7 @@ getProgramDevices prog = runEitherT $ do
    count <- EitherT $ fmap fromIntegral <$> getProgramDeviceCount prog
    
    let 
-      size = fromIntegral $ count * fromIntegral (sizeOf (undefined :: Device_))
+      size = fromIntegral $ count * sizeOfT' @Device_
       infoid = CL_PROGRAM_DEVICES
 
    devs <- EitherT $ allocaArray count $ \(dat :: Ptr Device_) -> whenSuccess 
@@ -146,7 +147,7 @@ getProgramBinarySizes prog = runEitherT $ do
    count <- EitherT $ fmap fromIntegral <$> getProgramDeviceCount prog
 
    let 
-      size   = fromIntegral $ count * fromIntegral (sizeOf (undefined :: CSize))
+      size   = fromIntegral $ count * sizeOfT' @CSize
       infoid = CL_PROGRAM_BINARY_SIZES
 
    EitherT $ allocaArray count $ \(dat :: Ptr CSize) -> whenSuccess 
@@ -173,7 +174,7 @@ getProgramBinary prog dev = runEitherT $ do
          sizes <- EitherT $ getProgramBinarySizes prog
          let binsize = fromIntegral $ sizes !! idx
              ndev    = length devs
-             size    = fromIntegral $ ndev * fromIntegral (sizeOf (undefined :: Ptr ()))
+             size    = fromIntegral $ ndev * sizeOfT' @(Ptr ())
              infoid  = CL_PROGRAM_BINARIES
 
          case binsize of

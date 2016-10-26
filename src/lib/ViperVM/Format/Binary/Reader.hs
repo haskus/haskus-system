@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -127,7 +128,7 @@ binTryReadT :: forall r m s a.
    , ReaderM r s
    , Storable a) => Proxy r -> MStateT s m (Maybe a)
 binTryReadT _ = binRemainingT (Proxy :: Proxy r) >>= \sz ->
-   if sz >= fromIntegral (sizeOf (undefined :: a))
+   if sz >= sizeOfT' @a
       then Just <$> binReadT (Proxy :: Proxy r)
       else return Nothing
 
@@ -144,7 +145,7 @@ binTryReadIfT :: forall r m s a.
    , ReaderM r s
    , Storable a) => Proxy r -> (a -> Bool) -> MStateT s m (Maybe a)
 binTryReadIfT r cond = binTryPeekT r >>= \case
-   Just w | cond w -> binSkipT r (fromIntegral (sizeOf w)) >> return (Just w)
+   Just w | cond w -> binSkipT r (sizeOf' w) >> return (Just w)
    _               -> return Nothing
 
 -- | Try to read if there are enough bytes and if the condition is met
@@ -160,7 +161,7 @@ binTryPeekT :: forall r m s a.
    , ReaderM r s
    , Storable a) => Proxy r -> MStateT s m (Maybe a)
 binTryPeekT _ = binRemainingT (Proxy :: Proxy r) >>= \sz ->
-   if sz >= fromIntegral (sizeOf (undefined :: a))
+   if sz >= sizeOfT' @a
       then Just <$> binPeekT (Proxy :: Proxy r)
       else return Nothing
 
@@ -240,7 +241,7 @@ binReadWithT p f = do
 
    -- check the size
    sz <- binRemainingT p
-   if sz < fromIntegral (sizeOf (undefined :: a))
+   if sz < sizeOfT' @a
       then flowSet EndOfInput
       else do
          let (buf',a) = bufferRead buf

@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | A memory buffer with a fixed address
 --
@@ -176,11 +177,9 @@ bufferPeekStorableAt :: forall a.
    )
    => Buffer -> Word -> a
 bufferPeekStorableAt b n
-   | n + sza > bufferSize b = error "Invalid buffer index"
-   | otherwise = unsafePerformIO $ withBufferPtr b $ \p ->
-      peekByteOff p (fromIntegral n)
-   where
-      sza = fromIntegral (sizeOf (undefined :: a))
+   | n + sizeOfT' @a > bufferSize b = error "Invalid buffer index"
+   | otherwise                      = unsafePerformIO $ withBufferPtr b $ \p ->
+                                        peekByteOff p (fromIntegral n)
    
 
 -- | Pop a Storable and return the new buffer
@@ -191,7 +190,7 @@ bufferPopStorable buf
          a <- withBufferPtr buf peek
          return (bufferDrop sza buf, a)
    where
-      sza = fromIntegral (sizeOf (undefined :: a)) 
+      sza = sizeOfT' @a
 
 -- | Poke a buffer
 bufferPoke :: Ptr a -> Buffer -> IO ()
@@ -279,21 +278,18 @@ bufferPackByteList = Buffer . BS.pack
 -- | Pack a Storable
 bufferPackStorable :: forall a. Storable a => a -> Buffer
 bufferPackStorable x = Buffer $ unsafePerformIO $ do
-   let sza = sizeOf (undefined :: a)
    p <- malloc
    poke p x
-   BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sza)
+   BS.unsafePackMallocCStringLen (castPtr p, sizeOfT' @a)
 
 -- | Pack a list of Storable
 bufferPackStorableList :: forall a. Storable a => [a] -> Buffer
 bufferPackStorableList xs = Buffer $ unsafePerformIO $ do
-   let 
-      sza = sizeOf (undefined :: a)
-      lxs = length xs
+   let lxs = length xs
    p <- mallocArray (fromIntegral lxs)
    forM_ (xs `zip` [0..]) $ \(x,o) ->
       pokeElemOff p o x
-   BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sza * lxs)
+   BS.unsafePackMallocCStringLen (castPtr p, sizeOfT' @a * lxs)
 
 -- | Pack from a pointer (copy)
 bufferPackPtr :: Word -> Ptr () -> IO Buffer

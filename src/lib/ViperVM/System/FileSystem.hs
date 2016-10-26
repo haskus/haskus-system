@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ViperVM.System.FileSystem
@@ -69,4 +70,4 @@ readBuffer hdl moffset size = sysIO (handleReadBuffer hdl moffset size)
 readStorable :: forall a. Storable a => Proxy a -> Handle -> Maybe Word64 -> SysV '[a,ErrorCode]
 readStorable _ hdl moffset = readBuffer hdl moffset size >.-.> bufferPeekStorable
    where
-      size = fromIntegral (sizeOf (undefined :: a))
+      size = sizeOfT' @a

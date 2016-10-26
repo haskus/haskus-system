@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Linux FS internals
 module ViperVM.Arch.Linux.Internals.FileSystem
@@ -279,7 +280,7 @@ instance CBitSet XFlag where
 
 
 csize :: Int
-csize = sizeOf' (undefined :: CSize)
+csize = sizeOfT' @CSize
 
 -- blkIoctl :: Word8 -> Int64 -> Handle -> IOErr Int64
 -- blkIoctl n = ioctlSignalValue 0x12 n

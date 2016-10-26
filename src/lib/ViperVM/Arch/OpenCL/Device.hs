@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | OpenCL device module
 module ViperVM.Arch.OpenCL.Device
@@ -231,7 +232,7 @@ getDeviceInfoString infoid dev =
 -- | Return a boolean device info
 getDeviceInfoBool :: DeviceInfo -> Device -> CLRet Bool
 getDeviceInfoBool infoid dev = do
-   let size = fromIntegral $ sizeOf (fromBool False)
+   let size = sizeOf' (fromBool False)
    alloca $ \(dat :: Ptr CLbool) -> whenSuccess 
       (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (fromCLBool <$> peek dat)
@@ -239,7 +240,7 @@ getDeviceInfoBool infoid dev = do
 -- | Return a unsigned long device info
 getDeviceInfoWord64 :: DeviceInfo -> Device -> CLRet Word64
 getDeviceInfoWord64 infoid dev = do
-   let size = fromIntegral $ sizeOf (0 :: Word64)
+   let size = sizeOfT' @Word64
    alloca $ \(dat :: Ptr Word64) -> whenSuccess 
       (rawClGetDeviceInfo (cllib dev) (unwrap dev) (fromCEnum infoid) size (castPtr dat) nullPtr)
       (peek dat)

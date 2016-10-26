@@ -6,6 +6,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | ISO 9660 / ECMA-119
 --
@@ -66,11 +67,11 @@ data DateTime = DateTime
    } deriving (Show,Generic,Storable)
 
 instance (ByteReversable w, Storable w) => Storable (BothEndian w) where
-   sizeOf _              = 2 * (sizeOf (undefined :: w))
-   alignment _           = alignment (undefined :: w)
+   sizeOf _              = 2 * sizeOfT @w
+   alignment _           = alignmentT @w
    peek p                = (BothEndian . littleEndianToHost) <$> peek (castPtr p)
    poke p (BothEndian v) = do
-      let s = fromIntegral (sizeOf (undefined :: w))
+      let s = sizeOfT' @w
       pokeByteOff (castPtr p) 0 (hostToLittleEndian v)
       pokeByteOff (castPtr p) s (hostToBigEndian v)
 

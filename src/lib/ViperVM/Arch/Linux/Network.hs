@@ -280,13 +280,13 @@ sysSocketPair typ opts =
 sysBind :: Storable a => Handle -> a -> IOErr ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall @"bind" fd (castPtr addr') (fromIntegral (sizeOf addr))) (const ())
+      onSuccess (syscall @"bind" fd (castPtr addr') (sizeOf' addr)) (const ())
 
 -- | Connect a socket
 sysConnect :: Storable a => Handle -> a -> IOErr ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall @"connect" fd (castPtr addr') (fromIntegral (sizeOf addr))) (const ())
+      onSuccess (syscall @"connect" fd (castPtr addr') (sizeOf' addr)) (const ())
 
 -- | Accept a connection on a socket
 --
@@ -300,7 +300,7 @@ sysAccept (Handle fd) addr opts =
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      onSuccess (syscall @"accept4" fd (castPtr addr') (fromIntegral (sizeOf addr)) opts') (Handle . fromIntegral)
+      onSuccess (syscall @"accept4" fd (castPtr addr') (sizeOf' addr) opts') (Handle . fromIntegral)
 
 -- | Listen on a socket
 --

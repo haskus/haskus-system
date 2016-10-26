@@ -20,9 +20,9 @@ data ImageFormat = ImageFormat
    } deriving (Show)
 
 instance Storable ImageFormat where
-   alignment _ = alignment (undefined :: Double)
-   sizeOf _ = 64
-   peek p = do
+   alignment _ = 4
+   sizeOf _    = 8
+   peek p      = do
       a <- fmap toCEnum (peekByteOff (castPtr p) 0 :: IO Word32)
       b <- fmap toCEnum (peekByteOff (castPtr p) 4 :: IO Word32)
       return $ ImageFormat a b

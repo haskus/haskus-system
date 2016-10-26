@@ -6,6 +6,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Storable class
 module ViperVM.Format.Binary.Storable
@@ -19,6 +20,11 @@ module ViperVM.Format.Binary.Storable
    -- * Storable
    , Storable (..)
    , sizeOf'
+   , sizeOfT
+   , sizeOfT'
+   , alignment'
+   , alignmentT
+   , alignmentT'
    , peekByteOff
    , pokeByteOff
    , peekElemOff
@@ -126,7 +132,33 @@ class Storable a where
 
 -- | Generalized 'sizeOf'
 sizeOf' :: (Integral b, Storable a) => a -> b
+{-# INLINE sizeOf' #-}
 sizeOf' = fromIntegral . sizeOf
+
+-- | SizeOf (for type-application)
+sizeOfT :: forall a. (Storable a) => Word
+{-# INLINE sizeOfT #-}
+sizeOfT = sizeOf (undefined :: a)
+
+-- | SizeOf' (for type-application)
+sizeOfT' :: forall a b. (Storable a, Integral b) => b
+{-# INLINE sizeOfT' #-}
+sizeOfT' = sizeOf' (undefined :: a)
+
+-- | Generalized 'alignment'
+alignment' :: (Integral b, Storable a) => a -> b
+{-# INLINE alignment' #-}
+alignment' = fromIntegral . alignment
+
+-- | Alignment (for type-application)
+alignmentT :: forall a. (Storable a) => Word
+{-# INLINE alignmentT #-}
+alignmentT = alignment (undefined :: a)
+
+-- | Alignment' (for type-application)
+alignmentT' :: forall a b. (Storable a, Integral b) => b
+{-# INLINE alignmentT' #-}
+alignmentT' = alignment' (undefined :: a)
 
 -- | Peek with byte offset
 peekByteOff :: Storable a => Ptr a -> Int -> IO a
@@ -140,11 +172,11 @@ pokeByteOff ptr off = poke (ptr `indexPtr` off)
 
 -- | Peek with element size offset
 peekElemOff :: forall a. Storable a => Ptr a -> Int -> IO a
-peekElemOff ptr off = peekByteOff ptr (off * fromIntegral (sizeOf (undefined :: a)))
+peekElemOff ptr off = peekByteOff ptr (off * sizeOfT' @a)
 
 -- | Poke with element size offset
 pokeElemOff :: Storable a => Ptr a -> Int -> a -> IO ()
-pokeElemOff ptr off val = pokeByteOff ptr (off * fromIntegral (sizeOf val)) val
+pokeElemOff ptr off val = pokeByteOff ptr (off * sizeOf' val) val
 
 
 -- | @'alloca' f@ executes the computation @f@, passing as argument
@@ -156,9 +188,7 @@ pokeElemOff ptr off val = pokeByteOff ptr (off * fromIntegral (sizeOf val)) val
 --
 alloca :: forall a b. Storable a => (Ptr a -> IO b) -> IO b
 {-# INLINE alloca #-}
-alloca = allocaBytesAligned (fromIntegral (sizeOf dummy)) (fromIntegral (alignment dummy))
-   where
-      dummy = undefined :: a 
+alloca = allocaBytesAligned (sizeOfT' @a) (alignmentT' @a)
 
 -- | Allocate a block of memory that is sufficient to hold values of type
 -- @a@. The size of the area allocated is determined by the 'sizeOf'
@@ -168,7 +198,7 @@ alloca = allocaBytesAligned (fromIntegral (sizeOf dummy)) (fromIntegral (alignme
 -- no longer required.
 malloc :: forall a. Storable a => IO (Ptr a)
 {-# INLINE malloc #-}
-malloc = mallocBytes (sizeOf (undefined :: a))
+malloc = mallocBytes (sizeOfT @a)
 
 -- | @'with' val f@ executes the computation @f@, passing as argument
 -- a pointer to a temporarily allocated block of memory into which
@@ -186,14 +216,12 @@ with val f =
 -- | Temporarily allocate space for the given number of elements
 -- (like 'alloca', but for multiple elements).
 allocaArray :: forall a b. Storable a => Int -> (Ptr a -> IO b) -> IO b
-allocaArray size = allocaBytesAligned (size * fromIntegral (sizeOf dummy)) (fromIntegral (alignment dummy))
-   where
-      dummy = undefined :: a
+allocaArray size = allocaBytesAligned (size * sizeOfT' @a) (alignmentT' @a)
 
 -- | Allocate space for the given number of elements
 -- (like 'malloc', but for multiple elements).
 mallocArray :: forall a. Storable a => Word -> IO (Ptr a)
-mallocArray size = mallocBytes (size * sizeOf (undefined :: a))
+mallocArray size = mallocBytes (size * sizeOfT @a)
 
 -- | Convert an array of given length into a Haskell list.  The implementation
 -- is tail-recursive and so uses constant stack space.
@@ -228,7 +256,6 @@ withArrayLen vals f  =
 
 -- | Replicates a @withXXX@ combinator over a list of objects, yielding a list of
 -- marshalled objects
---
 withMany :: (a -> (b -> res) -> res)  -- withXXX combinator for one object
          -> [a]                       -- storable objects
          -> ([b] -> res)              -- action on list of marshalled obj.s
