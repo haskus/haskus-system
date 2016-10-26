@@ -110,6 +110,7 @@ welcomePage pth elf = do
    h2_ "Sections"
    table_ $ do
       tr_ $ do
+         th_ "#"
          th_ "Name"
          th_ "Type"
          th_ "Flags"
@@ -126,6 +127,7 @@ welcomePage pth elf = do
                return $ if (n == "")
                   then "(none)"
                   else n
+         td_ $ toHtml (show i)
          td_ $ a_ [href_ (textFormat "section/{}" (Only i))] (toHtml name)
          td_ . toHtml $ show (sectionType s)
          td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
@@ -576,6 +578,7 @@ showSymbols elf symSec ss = do
          
    table_ $ do
       tr_ $ do
+         th_ "#"
          th_ "(index) Name / Z-Name"
          th_ "Binding"
          th_ "Type"
@@ -583,7 +586,9 @@ showSymbols elf symSec ss = do
          th_ "Info"
          th_ "Value"
          th_ "Size"
-      forM_ (ss `zip` symNames) $ \(s,sname) -> tr_ $ do
+      forM_ (zip3 ss symNames [(0 :: Word)..]) $ \(s,sname,i) -> tr_ $ do
+         td_ $ toHtml (show i)
+
          td_ $ do
             let idx = symbolNameIndex s
             case sname of
@@ -593,9 +598,7 @@ showSymbols elf symSec ss = do
                Just name -> do
                   toHtml $ textFormat "({}) {}" (idx, name)
                   -- GHC Z-String
-                  let 
-                     name' = Text.unpack name
-                     zs    = decodeZString name'
+                  let name' = Text.unpack name
                   case decodeZString name' of
                      Just zs | zs /= name' -> do
                         br_ []
