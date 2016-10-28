@@ -16,8 +16,9 @@ flags:
 extra-package-dbs: []
 
 ghc-options:
-   "*": -fobject-code         # GHCI needs it because of the foreign primops
-   "*": -freduction-depth=0   # used to allow compilation of large type-level Syscalls table
+   "*": -fobject-code -freduction-depth=0
+   # -fobject-code       -- GHCI needs it because of the foreign primops
+   # -freduction-depth=0 -- used to allow compilation of large type-level Syscalls table
 
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
