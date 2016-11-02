@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Linux error management
 module ViperVM.Arch.Linux.Error
@@ -177,8 +178,8 @@ sysCallWarnQuiet :: String -> IOErr a -> Flow Sys '[a,ErrorCode]
 sysCallWarnQuiet text act = do
    r <- sysIO act
    case toEither r of
-      Right v -> flowRet0 v
+      Right v -> flowSetN @0 v
       Left err -> do
          let msg = printf "%s (failed with %s)" text (show err)
          sysLog LogWarning msg
-         flowRet1 err
+         flowSetN @1 err

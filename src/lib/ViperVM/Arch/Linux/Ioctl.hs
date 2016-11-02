@@ -197,7 +197,7 @@ ioctlReadVariableBuffer typ nr f n fd = allocaBytes n $ \ptr ->
    ioctlReadBytes typ nr n ptr fd
       >.~^> \len ->
          if len <= fromIntegral n
-            then flowRet0 =<< f n ptr
+            then flowSet =<< f n ptr
             -- try with the returned buffer size
             else ioctlReadVariableBuffer typ nr f (fromIntegral len) fd
 

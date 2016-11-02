@@ -141,7 +141,7 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
 writeBuffer :: Handle -> Buffer -> IOErr ()
 writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
-      go _ 0     = flowRet0 ()
+      go _ 0     = flowSetN @0 ()
       go ptr len = sysWrite fd ptr (fromIntegral len)
          >.~^> \c -> go (ptr `indexPtr` fromIntegral c)
                         (len - fromIntegral c)

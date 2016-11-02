@@ -65,8 +65,8 @@ sysCheckProcess :: ProcessID -> IOErr Bool
 sysCheckProcess pid = sysSendSignal pid 0
    >.-.> const True
    >%~$> \case
-      ESRCH -> flowRet0 False
-      e     -> flowRet1 e
+      ESRCH -> flowSet False
+      e     -> flowSet e
 
 -- | Signal actions
 data ChangeSignals

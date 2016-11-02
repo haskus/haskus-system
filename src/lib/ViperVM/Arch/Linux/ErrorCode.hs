@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Management of returned values from syscalls
 module ViperVM.Arch.Linux.ErrorCode 
@@ -23,22 +24,22 @@ type IOErr a = IOV '[a,ErrorCode]
 toErrorCode :: Int64 -> Variant '[Int64,ErrorCode]
 {-# INLINE toErrorCode #-}
 toErrorCode r
-   | r < 0     = setVariant1 (toEnum (fromIntegral (abs r)))
-   | otherwise = setVariant0 r
+   | r < 0     = setVariantN @1 (toEnum (fromIntegral (abs r)))
+   | otherwise = setVariantN @0 r
 
 -- | Convert negative values into error codes, return () otherwise
 toErrorCodeVoid :: Int64 -> Variant '[(),ErrorCode]
 {-# INLINE toErrorCodeVoid #-}
 toErrorCodeVoid r
-   | r < 0     = setVariant1 (toEnum (fromIntegral (abs r)))
-   | otherwise = setVariant0 ()
+   | r < 0     = setVariantN @1 (toEnum (fromIntegral (abs r)))
+   | otherwise = setVariantN @0 ()
 
 -- | Convert negative values into error codes, return `f r` otherwise
 toErrorCodePure :: (Int64 -> a) -> Int64 -> Variant '[a,ErrorCode]
 {-# INLINE toErrorCodePure #-}
 toErrorCodePure f r
-   | r < 0     = setVariant1 (toEnum (fromIntegral (abs r)))
-   | otherwise = setVariant0 (f r)
+   | r < 0     = setVariantN @1 (toEnum (fromIntegral (abs r)))
+   | otherwise = setVariantN @0 (f r)
 
 -- | Error to call when a syscall returns an unexpected error value
 unhdlErr :: Show err => String -> err -> a

@@ -3,9 +3,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | First-class control-flow (based on Variant)
 module ViperVM.Utils.Flow
@@ -13,9 +15,8 @@ module ViperVM.Utils.Flow
    , IOV
    -- * Flow utils
    , flowRes
-   , flowRet0
-   , flowRet1
-   , flowRet0'
+   , flowSingle
+   , flowSetN
    , flowSet
    , flowLift
    , flowTraverse
@@ -184,20 +185,19 @@ type IOV l = Flow IO l
 ----------------------------------------------------------
 
 -- | Return in the first element
-flowRet0 :: Monad m => x -> Flow m (x ': xs)
-flowRet0 = return . setVariant0
-
--- | Return in the second element
-flowRet1 :: Monad m => x -> Flow m (y ': x ': xs)
-flowRet1 = return . setVariant1
-
--- | Return a single element
-flowRet0' :: Monad m => x -> Flow m '[x]
-flowRet0' = flowRet0
+flowSetN :: forall (n :: Nat) xs m.
+   ( Monad m
+   , KnownNat n
+   ) => TypeAt n xs -> Flow m xs
+flowSetN = return . setVariantN @n
 
 -- | Return in the first well-typed element
 flowSet :: (Member x xs, Monad m) => x -> Flow m xs
 flowSet = return . setVariant
+
+-- | Return a single element
+flowSingle :: Monad m => x -> Flow m '[x]
+flowSingle = flowSetN @0
 
 -- | Lift a flow into another
 flowLift :: (Liftable xs ys , Monad m) => Flow m xs -> Flow m ys
@@ -207,7 +207,7 @@ flowLift = fmap liftVariant
 flowTraverse :: forall m a b xs.
    ( Monad m
    ) => (a -> Flow m (b ': xs)) -> [a] -> Flow m ([b] ': xs)
-flowTraverse f = go (flowRet0 [])
+flowTraverse f = go (flowSetN @0 [])
    where
       go :: Flow m ([b] ': xs) -> [a] -> Flow m ([b] ': xs)
       go rs []     = rs >.-.> reverse
@@ -718,8 +718,8 @@ infixl 0 >..~.>
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> a) -> Flow m '[a]
 (..-.>) v f = case headVariant v of
-   Right u -> flowRet0 u
-   Left  l -> flowRet0 (f l)
+   Right u -> flowSetN @0 u
+   Left  l -> flowSetN @0 (f l)
 
 infixl 0 ..-.>
 
@@ -736,7 +736,7 @@ infixl 0 >..-.>
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> Variant xs) -> Flow m (a ': xs)
 (..-..>) v f = case headVariant v of
-   Right u -> flowRet0 u
+   Right u -> flowSetN @0 u
    Left  l -> return (prependVariant (Proxy :: Proxy '[a]) (f l))
 
 infixl 0 ..-..>
@@ -754,7 +754,7 @@ infixl 0 >..-..>
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': xs)
 (..~..>) v f = case headVariant v of
-   Right u -> flowRet0 u
+   Right u -> flowSetN @0 u
    Left  l -> prependVariant (Proxy :: Proxy '[a]) <$> f l
 
 infixl 0 ..~..>
@@ -773,7 +773,7 @@ infixl 0 >..~..>
    , Liftable xs (a ': zs)
    ) => Variant (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': zs)
 (..~^^>) v f = case headVariant v of
-   Right u -> flowRet0 u
+   Right u -> flowSetN @0 u
    Left  l -> liftVariant <$> f l
 
 infixl 0 ..~^^>
@@ -952,7 +952,7 @@ infixl 0 >..%~!>
    , Catchable x xs
    ) => Variant xs -> (x -> m y) -> Flow m (y ': ys)
 (%~.>) v f = case catchVariant v of
-   Right x -> flowRet0 =<< f x
+   Right x -> flowSetN @0 =<< f x
    Left ys -> prependVariant (Proxy :: Proxy '[y]) <$> return ys
 
 infixl 0 %~.>
@@ -1168,7 +1168,7 @@ makeFlowOpM select apply combine v = v >>= makeFlowOp select apply combine
 -- | Select the first value
 selectFirst :: Variant (x ': xs) -> Either (Variant xs) (Variant '[x])
 {-# INLINE selectFirst #-}
-selectFirst = fmap setVariant0 . headVariant
+selectFirst = fmap (setVariantN @0) . headVariant
 
 -- | Select the tail
 selectTail :: Variant (x ': xs) -> Either (Variant '[x]) (Variant xs)
@@ -1183,7 +1183,7 @@ selectType ::
    ( Catchable x xs
    ) => Variant xs -> Either (Variant (Filter x xs)) (Variant '[x])
 {-# INLINE selectType #-}
-selectType = fmap setVariant0 . catchVariant
+selectType = fmap (setVariantN @0) . catchVariant
 
 -- | Const application
 applyConst :: Flow m ys -> (Variant xs -> Flow m ys)
@@ -1203,7 +1203,7 @@ applyM = liftF
 -- | Lift a monadic function
 applyVM :: Monad m => (Variant a -> m b) -> Variant a -> Flow m '[b]
 {-# INLINE applyVM #-}
-applyVM f = fmap setVariant0 . f
+applyVM f = fmap (setVariantN @0) . f
 
 -- | Lift a monadic function
 applyF :: (a -> Flow m b) -> Variant '[a] -> Flow m b
@@ -1279,8 +1279,8 @@ combineSingle = \case
 
 -- | Lift a pure function into a Variant to Variant function
 liftV :: (a -> b) -> Variant '[a] -> Variant '[b]
-liftV = updateVariant0
+liftV = updateVariantN @0
 
 -- | Lift a function into a Flow
 liftF :: Monad m => (a -> m b) -> Variant '[a] -> Flow m '[b]
-liftF = updateVariantM (Proxy :: Proxy 0)
+liftF = updateVariantM @0

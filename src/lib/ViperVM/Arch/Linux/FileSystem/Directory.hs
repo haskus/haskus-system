@@ -163,6 +163,6 @@ listDirectory fd = do
       rec :: [DirectoryEntry] -> IOErr [DirectoryEntry]
       rec xs = sysGetDirectoryEntries fd bufferSize
          >.~$> \case
-            [] -> flowRet0 xs
+            [] -> flowSetN @0 xs
             ks -> rec (filter filtr ks ++ xs)
 

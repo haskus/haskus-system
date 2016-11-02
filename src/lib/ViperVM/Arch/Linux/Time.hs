@@ -148,8 +148,8 @@ sysNanoSleep ts =
          syscall @"nanosleep" (castPtr ts') (castPtr rem')
             ||> toErrorCodePure (const CompleteSleep)
             >%~$> \case
-               EINTR -> flowRet0 =<< (WokenUp <$> peek rem')
-               err   -> flowRet1 err
+               EINTR -> flowSet =<< (WokenUp <$> peek rem')
+               err   -> flowSet err
 
 -- | Suspend the calling thread for the specified amount of time
 --
@@ -157,5 +157,5 @@ sysNanoSleep ts =
 nanoSleep :: TimeSpec -> IOErr ()
 nanoSleep ts = sysNanoSleep ts
    >.~^> \case
-      CompleteSleep -> flowRet0 ()
+      CompleteSleep -> flowSet ()
       (WokenUp r)   -> nanoSleep r

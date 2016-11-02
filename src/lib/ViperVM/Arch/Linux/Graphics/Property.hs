@@ -143,13 +143,13 @@ getPropertyMeta fd pid = do
          
       getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow Sys '[PropertyType,InvalidParam,InvalidProperty]
       getValues nval nblob ttype = case ttype of
-         PropTypeObject      -> flowRet0 PropObject
-         PropTypeRange       -> withValueBuffer nval (flowRet0 . PropRange)
-         PropTypeSignedRange -> withValueBuffer nval (flowRet0 . PropSignedRange)
+         PropTypeObject      -> flowSet PropObject
+         PropTypeRange       -> withValueBuffer nval (flowSet . PropRange)
+         PropTypeSignedRange -> withValueBuffer nval (flowSet . PropSignedRange)
          PropTypeEnum        -> withBlobBuffer nblob $ \es ->
-            flowRet0 (PropEnum [(peValue e, fromCStringBuffer $ peName e) | e <- es])
+            flowSet (PropEnum [(peValue e, fromCStringBuffer $ peName e) | e <- es])
          PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
-            flowRet0 (PropBitmask [(peValue e, fromCStringBuffer $ peName e) | e <- es])
+            flowSet (PropBitmask [(peValue e, fromCStringBuffer $ peName e) | e <- es])
 
          PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
             flowTraverse getBlob bids

@@ -119,8 +119,8 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
                   InputDevice devpath dev hdl
                      <$< sysIO (Input.getDeviceName hdl)
                      <*< sysIO (Input.getDeviceInfo hdl)
-                     <|< flowRet0' eventChannel
-                     <|< flowRet0' bundleChannel
+                     <|< flowSingle eventChannel
+                     <|< flowSingle bundleChannel
                )
 
 

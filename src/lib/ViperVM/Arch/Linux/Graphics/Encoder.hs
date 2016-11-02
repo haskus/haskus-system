@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Encoders management
 --
@@ -66,7 +67,7 @@ getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl)
 -- | Controller attached to the encoder, if any
 encoderController :: Encoder -> Flow Sys '[Maybe Controller ,EntryNotFound,InvalidHandle]
 encoderController enc = case encoderControllerID enc of
-   Nothing     -> flowRet0 Nothing
+   Nothing     -> flowSetN @0 Nothing
    Just contId -> getControllerFromID (encoderHandle enc) contId >.-.> Just
 
 -- | Get encoders (discard errors)

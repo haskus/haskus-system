@@ -62,7 +62,7 @@ sysReadLinkAt hdl path = go' 2048
 
       go' size = go size >.~^> \case
                   Nothing -> go' (2*size)
-                  Just s  -> flowRet0 s
+                  Just s  -> flowSetN @0 s
 
       go size =
          allocaBytes size $ \ptr ->

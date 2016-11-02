@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | System
 module ViperVM.System.System
@@ -60,7 +61,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    -- create root path (allowed to fail if it already exists)
    sysCallAssert "Create root directory" $ do
       createDir path >%~^> \case
-         EEXIST -> flowRet0 ()
+         EEXIST -> flowSetN @0 ()
          e      -> flowSet e
 
    -- mount a tmpfs in root path

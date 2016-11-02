@@ -451,7 +451,7 @@ binLookAheadTestT p c = singleVariant <$> f
    where
       f = binLookAheadT p (binReadIfT' p c) 
             >.-.> isJust
-            >%~#> \(_ :: ParseError) -> flowRet False
+            >%~#> \(_ :: ParseError) -> flowSet False
 
 -- | Look-ahead. Only backtrack the reader, not the other parts of the state
 binLookAheadTest :: forall m s a.
@@ -470,7 +470,7 @@ instance forall z x z' m s r.
    , Storable x
    ) => ApplyAB (ReadTuple r) (HList z,x) z' where
       applyAB _ (z,_) = binReadWithT (Proxy :: Proxy r) $ \(x :: x) ->
-         flowRet (x `HCons` z) :: z'
+         flowSet (x `HCons` z) :: z'
 
 -- | Read a tuple
 binReadTupleT :: forall v (v2 :: [*]) t r s m z.

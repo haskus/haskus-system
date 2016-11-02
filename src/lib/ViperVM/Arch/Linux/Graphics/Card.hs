@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Graphic card resources
 module ViperVM.Arch.Linux.Graphics.Card
@@ -92,7 +93,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                -- and the time we get them...) If not, we redo the whole
                -- process
                if all (uncurry (>)) (arraySizes `zip` extractSize r)
-                  then extractValues r >.~^> flowRet0
+                  then extractValues r >.~^> flowSetN @0
                   else getValues (extractSize r)
 
 
@@ -103,7 +104,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             as' = fmap (wordPtrToPtr . fromIntegral) as
             arraySizes = extractSize r
          [fbs,ctrls,conns,encs] <- sysIO (peekArrays arraySizes as')
-         flowRet0 $ Resources
+         flowSetN @0 $ Resources
                (fmap FrameBufferID fbs)
                (fmap ControllerID  ctrls)
                (fmap ConnectorID   conns)
