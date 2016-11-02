@@ -37,18 +37,21 @@ import ViperVM.Utils.Types.Generics (Generic)
 sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> IOErr ()
 sysCreateDirectory fd path perm sticky = do
    let
-      opt = if sticky then BitSet.fromList [FileOptSticky] else BitSet.empty
-      mode = makeMode FileTypeDirectory perm opt
+      opt        = if sticky
+                     then BitSet.fromList [FileOptSticky]
+                     else BitSet.empty
+      mode       = makeMode FileTypeDirectory perm opt
+      call path' = case fd of
+         Nothing           -> syscall @"mkdir" path' mode
+         Just (Handle fd') -> syscall @"mkdirat" fd' path' mode
 
-   withCString path $ \path' ->
-      case fd of
-         Nothing -> onSuccess (syscall @"mkdir" path' mode) (const ())
-         Just (Handle fd') -> onSuccess (syscall @"mkdirat" fd' path' mode) (const ())
+   withCString path call ||> toErrorCodeVoid
 
 
 sysRemoveDirectory :: FilePath -> IOErr ()
 sysRemoveDirectory path = withCString path $ \path' ->
-   onSuccess (syscall @"rmdir" path') (const ())
+   syscall @"rmdir" path'
+      ||> toErrorCodeVoid
 
 
 data DirectoryEntryHeader = DirectoryEntryHeader
@@ -133,8 +136,9 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                   else return xs
 
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
-      onSuccessIO (syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize)) $ \nread -> 
-         readEntries (castPtr ptr) (fromIntegral nread)
+      syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize)
+         ||> toErrorCode
+         >.~.> (\nread -> readEntries (castPtr ptr) (fromIntegral nread))
 
 -- | Return the content of a directory
 --

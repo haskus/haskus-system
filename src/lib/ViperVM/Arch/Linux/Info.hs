@@ -17,6 +17,7 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
 import ViperVM.Utils.Types.Generics (Generic)
+import ViperVM.Utils.Flow
 
 -- | struct utsname
 data SystemInfo = SystemInfo
@@ -29,7 +30,9 @@ data SystemInfo = SystemInfo
 
 -- | "uname" syscall
 systemInfo :: IOErr SystemInfo
-systemInfo = alloca $ \ptr -> onSuccessIO (uname ptr) (const (peek ptr))
+systemInfo = alloca $ \ptr -> uname ptr
+      ||>   toErrorCode
+      >.~.> (const (peek ptr))
    where
       uname :: Ptr SystemInfo -> IO Int64
       uname = syscall @"uname" . castPtr

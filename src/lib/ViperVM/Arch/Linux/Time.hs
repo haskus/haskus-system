@@ -96,33 +96,41 @@ instance Enum Clock where
 sysClockGetTime :: Clock -> IOErr TimeSpec
 sysClockGetTime clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      onSuccessIO (syscall @"clock_gettime" (fromEnum clk) (castPtr t)) (const $ peek t)
+      syscall @"clock_gettime" (fromEnum clk) (castPtr t)
+         ||>   toErrorCode
+         >.~.> (const $ peek t)
 
 -- | Set clock time
 sysClockSetTime :: Clock -> TimeSpec -> IOErr ()
 sysClockSetTime clk time =
    with time $ \(t :: Ptr TimeSpec) ->
-      onSuccess (syscall @"clock_settime" (fromEnum clk) (castPtr t)) (const ())
+      syscall @"clock_settime" (fromEnum clk) (castPtr t)
+         ||> toErrorCodeVoid
 
 -- | Retrieve clock resolution
 sysClockGetResolution :: Clock -> IOErr TimeSpec
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      onSuccessIO (syscall @"clock_getres" (fromEnum clk) (castPtr t)) (const $ peek t)
+      syscall @"clock_getres" (fromEnum clk) (castPtr t)
+         ||>   toErrorCode
+         >.~.> (const $ peek t)
 
 -- | Retrieve time of day
 sysGetTimeOfDay :: IOErr TimeVal
 sysGetTimeOfDay =
    alloca $ \(tv :: Ptr TimeVal) ->
       -- timezone arg is deprecated (NULL passed instead)
-      onSuccessIO (syscall @"gettimeofday" (castPtr tv) nullPtr) (const $ peek tv)
+      syscall @"gettimeofday" (castPtr tv) nullPtr
+         ||>   toErrorCode
+         >.~.> (const $ peek tv)
 
 -- | Set time of day
 sysSetTimeOfDay :: TimeVal -> IOErr ()
 sysSetTimeOfDay tv =
    with tv $ \ptv ->
       -- timezone arg is deprecated (NULL passed instead)
-      onSuccessVoid (syscall @"settimeofday" (castPtr ptv) nullPtr)
+      syscall @"settimeofday" (castPtr ptv) nullPtr
+         ||> toErrorCodeVoid
 
 -- | Result of a sleep
 data SleepResult
@@ -137,11 +145,11 @@ sysNanoSleep :: TimeSpec -> IOErr SleepResult
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
-         ret <- syscall @"nanosleep" (castPtr ts') (castPtr rem')
-         case defaultCheck ret of
-            Nothing    -> flowRet0 CompleteSleep
-            Just EINTR -> flowRet0 =<< (WokenUp <$> peek rem')
-            Just err   -> flowRet1 err
+         syscall @"nanosleep" (castPtr ts') (castPtr rem')
+            ||> toErrorCodePure (const CompleteSleep)
+            >%~$> \case
+               EINTR -> flowRet0 =<< (WokenUp <$> peek rem')
+               err   -> flowRet1 err
 
 -- | Suspend the calling thread for the specified amount of time
 --

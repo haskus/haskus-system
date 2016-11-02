@@ -19,6 +19,7 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String (withCString)
+import ViperVM.Utils.Flow
 
 
 -- | Load module flag
@@ -34,10 +35,12 @@ type LoadModuleFlags = BitSet Word LoadModuleFlag
 loadModuleFromFile :: Handle -> String -> LoadModuleFlags -> IOErr ()
 loadModuleFromFile (Handle fd) params flags = do
    withCString params $ \params' ->
-      onSuccess (syscall @"finit_module" fd  params' (BitSet.toBits flags)) (const ())
+      syscall @"finit_module" fd  params' (BitSet.toBits flags)
+         ||> toErrorCodeVoid
 
 -- | Load a module from memory
 loadModuleFromMemory :: Ptr () -> Word64 -> String -> IOErr ()
 loadModuleFromMemory ptr sz params =
    withCString params $ \params' ->
-      onSuccess (syscall @"init_module" ptr sz params') (const ())
+      syscall @"init_module" ptr sz params'
+         ||> toErrorCodeVoid

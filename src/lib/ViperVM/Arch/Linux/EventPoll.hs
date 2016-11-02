@@ -14,6 +14,7 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Format.Binary.Word (Word64)
 import ViperVM.Format.Binary.Bits ((.|.))
 import ViperVM.Utils.List (foldl')
+import ViperVM.Utils.Flow
 
 -- | Polling flag
 data EventPollFlag
@@ -29,4 +30,5 @@ fromFlags = foldl' (.|.) 0 . fmap fromFlag
 -- | Create event poller
 sysEventPollCreate :: [EventPollFlag] -> IOErr Handle
 sysEventPollCreate flags =
-   onSuccess (syscall @"epoll_create1" (fromFlags flags)) (Handle . fromIntegral)
+   syscall @"epoll_create1" (fromFlags flags)
+      ||> toErrorCodePure (Handle . fromIntegral)

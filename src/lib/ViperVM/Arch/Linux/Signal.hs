@@ -33,27 +33,30 @@ newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
 sysPause :: IOErr ()
-sysPause = onSuccess (syscall @"pause") (const ())
+sysPause = syscall @"pause" ||> toErrorCodeVoid
 
 -- | Alarm
 sysAlarm :: Word-> IOErr Word
-sysAlarm seconds =
-   onSuccess (syscall @"alarm" seconds) fromIntegral
+sysAlarm seconds = syscall @"alarm" seconds
+   ||> toErrorCodePure fromIntegral
 
 -- | Kill syscall
 sysSendSignal :: ProcessID -> Int -> IOErr ()
 sysSendSignal (ProcessID pid) sig =
-   onSuccess (syscall @"kill" (fromIntegral pid) sig) (const ())
+   syscall @"kill" (fromIntegral pid) sig
+      ||> toErrorCodeVoid
 
 -- | Send a signal to every process in the process group of the calling process
 sysSendSignalGroup :: Int -> IOErr ()
 sysSendSignalGroup sig =
-   onSuccess (syscall @"kill" 0 sig) (const ())
+   syscall @"kill" 0 sig
+      ||> toErrorCodeVoid
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
 sysSendSignalAll :: Int -> IOErr ()
 sysSendSignalAll sig =
-   onSuccess (syscall @"kill" (-1) sig) (const ())
+   syscall @"kill" (-1) sig
+      ||> toErrorCodeVoid
 
 -- | Check if a given process or process group exists
 --
@@ -77,4 +80,6 @@ sysChangeSignalMask :: ChangeSignals -> Maybe SignalSet -> IOErr SignalSet
 sysChangeSignalMask act set =
    withMaybeOrNull set $ \x ->
       alloca $ \(ret :: Ptr SignalSet) ->
-         onSuccessIO (syscall @"rt_sigprocmask" (fromEnum act) (castPtr x) (castPtr ret)) (const $ peek ret)
+         syscall @"rt_sigprocmask" (fromEnum act) (castPtr x) (castPtr ret)
+            ||>   toErrorCode
+            >.~.> (const $ peek ret)

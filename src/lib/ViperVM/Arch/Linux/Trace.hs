@@ -19,6 +19,7 @@ import ViperVM.Arch.Linux.Process (ProcessID(..))
 import ViperVM.Format.Binary.BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
+import ViperVM.Utils.Flow
 
 -- | Tracing request
 data TraceRequest
@@ -193,4 +194,6 @@ data PeekSigInfoFlags
    
 -- | Trace a process
 sysTrace :: TraceRequest -> ProcessID -> Ptr () -> Ptr () -> IOErr Int64
-sysTrace req (ProcessID pid) addr dat = onSuccessId (syscall @"ptrace" (fromEnum req) pid addr dat)
+sysTrace req (ProcessID pid) addr dat =
+   syscall @"ptrace" (fromEnum req) pid addr dat
+      ||> toErrorCode

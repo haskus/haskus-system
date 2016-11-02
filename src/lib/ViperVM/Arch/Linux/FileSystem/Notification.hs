@@ -16,6 +16,7 @@ where
 
 import ViperVM.Utils.Maybe (mapMaybe)
 import ViperVM.Utils.Types.Generics (Generic)
+import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
@@ -116,9 +117,11 @@ sysPoll entries blocking timeout = do
             Just x  -> abs x
    
    withArray fds $ \fds' -> do
-      onSuccessIO (syscall @"poll" (castPtr fds') nfds timeout') $ \case
-         0 -> return PollTimeOut
-         _ -> do
-            retfds <- peekArray (length fds) fds'
-            return (PollEvents $ mapMaybe fromPollStruct retfds)
+      syscall @"poll" (castPtr fds') nfds timeout'
+         ||> toErrorCode
+         >.~.> (\case
+            0 -> return PollTimeOut
+            _ -> do
+               retfds <- peekArray (length fds) fds'
+               return (PollEvents $ mapMaybe fromPollStruct retfds))
 

@@ -301,13 +301,6 @@ csize = sizeOfT' @CSize
 -- blkIoctlW :: Storable a => Word8 -> Handle -> a -> IOErr ()
 -- blkIoctlW n = ioctlWrite 0x12 n
 -- 
--- 
--- onSuccessIO' :: IOErr a -> (a -> IO b) -> IOErr b
--- onSuccessIO' s f = do
---    r <- s
---    case r of
---       Left err -> return (Left err)
---       Right u  -> Right <$> f u
 
 -- | BLKROSET set device read-only (0 = read-write)
 ioctlSetReadOnlyStatus :: Bool -> Handle -> IOErr ()
@@ -328,7 +321,9 @@ ioctlReReadPartitionTable = ioctlSignal 0x12 95 (0 :: Int)
 --ioctlGetDeviceSize32 :: Handle -> IOErr CLong
 --ioctlGetDeviceSize32 fd =
 --   with 0 $ \(p :: Ptr CLong) ->
---      onSuccessIO (blkIoctl 96 0 fd) (const $ peek p)
+--      blkIoctl 96 0 fd
+--       ||>   toErrorCode
+--       >.~.> (const $ peek p)
 
 -- | BLKFLSBUF  flush buffer cache
 ioctlFlushBuferCache :: Handle -> IOErr ()

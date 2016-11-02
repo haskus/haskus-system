@@ -32,6 +32,7 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits ((.&.))
 import ViperVM.Utils.Types
 import ViperVM.Utils.Maybe (fromMaybe)
+import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
@@ -157,18 +158,20 @@ sysMemMap addr len prot flags hugepagesize source = do
       prot'    = BitSet.toBits prot
       addr'    = fromMaybe nullPtr addr
    
-   onSuccess (syscall @"mmap" addr' len prot' fld' fd off) (wordPtrToPtr . fromIntegral)
+   syscall @"mmap" addr' len prot' fld' fd off
+      ||> toErrorCodePure (wordPtrToPtr . fromIntegral)
 
 -- | Unmap memory
 sysMemUnmap :: Ptr () -> Word64 -> IOErr ()
-sysMemUnmap addr len =
-   onSuccessVoid (syscall @"munmap" addr len)
+sysMemUnmap addr len = syscall @"munmap" addr len
+   ||> toErrorCodeVoid
 
 -- | Set protection of a region of memory
 sysMemProtect :: Ptr () -> Word64 -> MemProtectFlags -> IOErr ()
 sysMemProtect addr len prot = do
    let prot' = BitSet.toBits prot
-   onSuccessVoid (syscall @"mprotect" addr len prot')
+   syscall @"mprotect" addr len prot'
+      ||> toErrorCodeVoid
 
 
 data MemAdvice
@@ -231,7 +234,8 @@ instance Enum MemAdvice where
 
 sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> IOErr ()
 sysMemAdvise addr len adv = 
-   onSuccessVoid (syscall @"madvise" addr len (fromEnum adv)) 
+   syscall @"madvise" addr len (fromEnum adv)
+      ||> toErrorCodeVoid
 
 data MemSync
    = MemAsync
@@ -243,22 +247,26 @@ type MemSyncFlags = BitSet Word32 MemSync
 
 sysMemSync :: Ptr () -> Word64 -> MemSyncFlags -> IOErr ()
 sysMemSync addr len flag = 
-   onSuccessVoid (syscall @"msync" addr len (fromIntegral (BitSet.toBits flag)))
+   syscall @"msync" addr len (fromIntegral (BitSet.toBits flag))
+      ||> toErrorCodeVoid
 
 sysMemInCore :: Ptr () -> Word64 -> IOErr [Bool]
 sysMemInCore addr len = do
    -- On x86-64, page size is at least 4k
    let n = fromIntegral $ (len + 4095) `div` 4096
    allocaArray n $ \arr ->
-      onSuccessIO (syscall @"mincore" addr len (arr :: Ptr Word8))
-         (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
+      syscall @"mincore" addr len (arr :: Ptr Word8)
+         ||>   toErrorCode
+         >.~.> (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
 
 
 sysMemLock :: Ptr () -> Word64 -> IOErr ()
-sysMemLock addr len = onSuccessVoid (syscall @"mlock" addr len)
+sysMemLock addr len = syscall @"mlock" addr len
+   ||> toErrorCodeVoid
 
 sysMemUnlock :: Ptr () -> Word64 -> IOErr ()
-sysMemUnlock addr len = onSuccessVoid (syscall @"munlock" addr len)
+sysMemUnlock addr len = syscall @"munlock" addr len
+   ||> toErrorCodeVoid
 
 data MemLockFlag
    = LockCurrentPages
@@ -268,7 +276,9 @@ data MemLockFlag
 type MemLockFlags = BitSet Word64 MemLockFlag
 
 sysMemLockAll :: MemLockFlags -> IOErr ()
-sysMemLockAll flags = onSuccessVoid (syscall @"mlockall" (BitSet.toBits flags))
+sysMemLockAll flags = syscall @"mlockall" (BitSet.toBits flags)
+   ||> toErrorCodeVoid
 
 sysMemUnlockAll :: IOErr ()
-sysMemUnlockAll = onSuccessVoid (syscall @"munlockall")
+sysMemUnlockAll = syscall @"munlockall"
+   ||> toErrorCodeVoid

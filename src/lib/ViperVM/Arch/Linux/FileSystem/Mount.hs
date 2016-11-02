@@ -25,6 +25,7 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Internals.FileSystem
+import ViperVM.Utils.Flow
 
 -- | Unmount flag
 data UnmountFlag
@@ -43,14 +44,16 @@ sysMount source target fstype flags dat =
    withCString source $ \source' ->
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->
-            onSuccess (syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat) (const ())
+            syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat
+               ||> toErrorCodeVoid
 
 
 -- | Unmount a file system
 sysUnmount :: String -> UnmountFlags -> IOErr ()
 sysUnmount target flags =
    withCString target $ \target' ->
-      onSuccess (syscall @"umount2" target' (BitSet.toBits flags)) (const ())
+      syscall @"umount2" target' (BitSet.toBits flags)
+         ||> toErrorCodeVoid
 
 -- | Type of the low-level Linux "mount" function
 type MountCall = String -> String -> String -> MountFlags -> Ptr () -> IOErr ()

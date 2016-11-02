@@ -27,6 +27,7 @@ where
 
 import ViperVM.Utils.Types.Generics (Generic)
 import ViperVM.Utils.List (foldl')
+import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
@@ -44,20 +45,23 @@ data ShutFlag
 -- | Shut down part of a full-duplex connection
 sysShutdown :: Handle -> ShutFlag -> IOErr ()
 sysShutdown (Handle fd) flag =
-   onSuccess (syscall @"shutdown" fd (fromEnum flag)) (const ())
+   syscall @"shutdown" fd (fromEnum flag)
+      ||> toErrorCodeVoid
 
 -- | Call sendfile using implicit file cursor for input
 sysSendFile :: Handle -> Handle -> Word64 -> IOErr Word64
 sysSendFile (Handle outfd) (Handle infd) count =
-   onSuccess (syscall @"sendfile" outfd infd nullPtr count) fromIntegral
+   syscall @"sendfile" outfd infd nullPtr count
+      ||> toErrorCodePure fromIntegral
 
 -- | Call sendFile using explicit input offset, returns new offset
 sysSendFileWithOffset :: Handle -> Handle -> Word64 -> Word64 -> IOErr (Word64,Word64)
 sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
-   with offset $ \off ->
-      onSuccessIO (syscall @"sendfile" outfd infd off count) $ \x -> do
+   with offset $ \off -> syscall @"sendfile" outfd infd off count
+      ||> toErrorCode
+      >.~.> (\x -> do
          newOff <- peek off
-         return (fromIntegral x, newOff)
+         return (fromIntegral x, newOff))
 
 -- | Socket protocol family
 data SocketProtocol
@@ -154,27 +158,28 @@ instance Enum SocketOption where
 -- `subprotocol` may be 0
 sysSocket' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> IOErr Handle
 sysSocket' typ protocol subprotocol opts =
-   let
+   syscall @"socket" (fromEnum protocol) typ' subprotocol
+      ||> toErrorCodePure (Handle . fromIntegral)
+   where
       f :: Enum a => a -> Word64
       f = fromIntegral . fromEnum
       typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
-   in
-   onSuccess (syscall @"socket" (fromEnum protocol) typ' subprotocol) (Handle . fromIntegral)
 
 -- | Create a socket pair (low-level API)
 --
 -- `subprotocol` may be 0
 sysSocketPair' :: SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> IOErr (Handle,Handle)
 sysSocketPair' typ protocol subprotocol opts =
-   let
+   allocaArray 2 $ \ptr ->
+      syscall @"socketpair" (fromEnum protocol) typ' subprotocol (castPtr ptr)
+         ||>   toErrorCode
+         >.~.> (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
+   where
       f :: Enum a => a -> Word64
       f = fromIntegral . fromEnum
       typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
       toTuple [x,y] = (x,y)
       toTuple _     = error "Invalid tuple"
-   in
-   allocaArray 2 $ \ptr -> onSuccessIO (syscall @"socketpair" (fromEnum protocol) typ' subprotocol (castPtr ptr))
-      (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
 
 -- | IP type
 data IPType
@@ -280,13 +285,15 @@ sysSocketPair typ opts =
 sysBind :: Storable a => Handle -> a -> IOErr ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall @"bind" fd (castPtr addr') (sizeOf' addr)) (const ())
+      syscall @"bind" fd (castPtr addr') (sizeOf' addr)
+         ||> toErrorCodeVoid
 
 -- | Connect a socket
 sysConnect :: Storable a => Handle -> a -> IOErr ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
-      onSuccess (syscall @"connect" fd (castPtr addr') (sizeOf' addr)) (const ())
+      syscall @"connect" fd (castPtr addr') (sizeOf' addr)
+         ||> toErrorCodeVoid
 
 -- | Accept a connection on a socket
 --
@@ -300,14 +307,16 @@ sysAccept (Handle fd) addr opts =
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      onSuccess (syscall @"accept4" fd (castPtr addr') (sizeOf' addr) opts') (Handle . fromIntegral)
+      syscall @"accept4" fd (castPtr addr') (sizeOf' addr) opts'
+         ||> toErrorCodePure (Handle . fromIntegral)
 
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
 sysListen :: Handle -> Word64 -> IOErr ()
 sysListen (Handle fd) backlog =
-   onSuccess (syscall @"listen" fd backlog) (const ())
+   syscall @"listen" fd backlog
+      ||> toErrorCodeVoid
 
 
 -- | Netlink socket binding

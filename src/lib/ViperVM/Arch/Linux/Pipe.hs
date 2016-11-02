@@ -13,13 +13,15 @@ import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
+import ViperVM.Utils.Flow
 
 -- | Create a pipe
 createPipe :: IOErr (Handle, Handle)
 createPipe =
    allocaArray 2 $ \(ptr :: Ptr Word) ->
-      onSuccessIO (syscall @"pipe" (castPtr ptr))
-         (const ((,)
+      syscall @"pipe" (castPtr ptr)
+         ||> toErrorCode
+         >.~.> (const ((,)
             <$> (Handle <$> peekElemOff ptr 0)
             <*> (Handle <$> peekElemOff ptr 1)))
       

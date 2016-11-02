@@ -67,15 +67,18 @@ sysReadLinkAt hdl path = go' 2048
       go size =
          allocaBytes size $ \ptr ->
             withCString path $ \path' ->
-               onSuccessIO (syscall @"readlinkat" fd path' ptr (fromIntegral size)) $ \n ->
-                  if fromIntegral n == size
-                     then return Nothing
-                     else Just <$> peekCStringLen (ptr, fromIntegral n)
+               syscall @"readlinkat" fd path' ptr (fromIntegral size)
+                  ||> toErrorCode
+                  >.~.> (\n ->
+                     if fromIntegral n == size
+                        then return Nothing
+                        else Just <$> peekCStringLen (ptr, fromIntegral n))
 
 -- | Create a symbolic link
 sysSymlink :: FilePath -> FilePath -> IOErr ()
 sysSymlink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         onSuccess (syscall @"symlink" src' dest') (const ())
+         syscall @"symlink" src' dest'
+            ||> toErrorCodeVoid
 

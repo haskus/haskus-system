@@ -80,27 +80,28 @@ import ViperVM.Arch.Linux.Internals.FileSystem
 sysOpen :: FilePath -> HandleFlags -> FilePermissions -> IOErr Handle
 sysOpen path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall @"open" path' (BitSet.toBits flags) (BitSet.toBits mode))
-         (Handle . fromIntegral)
+      syscall @"open" path' (BitSet.toBits flags) (BitSet.toBits mode)
+         ||> toErrorCodePure (Handle . fromIntegral)
 
 -- | Open a file
 sysOpenAt :: Handle -> FilePath -> HandleFlags -> FilePermissions -> IOErr Handle
 sysOpenAt (Handle fd) path flags mode = 
    withCString path $ \path' -> 
-      onSuccess (syscall @"openat" fd path' (BitSet.toBits flags) (BitSet.toBits mode))
-         (Handle . fromIntegral)
+      syscall @"openat" fd path' (BitSet.toBits flags) (BitSet.toBits mode)
+         ||> toErrorCodePure (Handle . fromIntegral)
 
 sysCreateCString :: CString -> FilePermissions -> IOErr Handle
 sysCreateCString path mode = 
-   onSuccess (syscall @"creat" path (BitSet.toBits mode)) (Handle . fromIntegral)
+   syscall @"creat" path (BitSet.toBits mode)
+      ||> toErrorCodePure (Handle . fromIntegral)
 
 sysCreate :: String -> FilePermissions -> IOErr Handle
 sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
 
 -- | Close a file descriptor
 sysClose :: Handle -> IOErr ()
-sysClose (Handle fd) =
-   onSuccess (syscall @"close" fd) (const ())
+sysClose (Handle fd) = syscall @"close" fd
+   ||> toErrorCodeVoid
 
 
 -- | File permissions
@@ -122,7 +123,8 @@ type FilePermissions = BitSet Word FilePermission
 -- | Reposition read/write file offset, return the new position
 sysSeek :: Handle -> Int64 -> SeekWhence -> IOErr Int64
 sysSeek (Handle fd) off whence =
-   onSuccess (syscall @"lseek" fd off (fromEnum whence)) id
+   syscall @"lseek" fd off (fromEnum whence)
+      ||> toErrorCode
 
 -- | Reposition read/write file offset
 sysSeek' :: Handle -> Int64 -> SeekWhence -> IOErr ()
@@ -142,30 +144,36 @@ type AccessModes = BitSet Word64 AccessMode
 
 sysAccess :: FilePath -> AccessModes -> IOErr ()
 sysAccess path mode = withCString path $ \path' ->
-   onSuccess (syscall @"access" path' (BitSet.toBits mode)) (const ())
+   syscall @"access" path' (BitSet.toBits mode)
+      ||> toErrorCodeVoid
 
 
 sysDup :: Handle -> IOErr Handle
 sysDup (Handle oldfd) = 
-   onSuccess (syscall @"dup" oldfd) (Handle . fromIntegral)
+   syscall @"dup" oldfd
+      ||> toErrorCodePure (Handle . fromIntegral)
 
 sysDup2 :: Handle -> Handle -> IOErr Handle
 sysDup2 (Handle oldfd) (Handle newfd) = 
-   onSuccess (syscall @"dup2" oldfd newfd) (Handle . fromIntegral)
+   syscall @"dup2" oldfd newfd
+      ||> toErrorCodePure (Handle . fromIntegral)
 
 sysSetCurrentDirectoryPath :: FilePath -> IOErr ()
 sysSetCurrentDirectoryPath path = withCString path $ \path' ->
-   onSuccess (syscall @"chdir" path') (const ())
+   syscall @"chdir" path'
+      ||> toErrorCodeVoid
 
 sysSetCurrentDirectory :: Handle -> IOErr ()
 sysSetCurrentDirectory (Handle fd) = 
-   onSuccess (syscall @"fchdir" fd) (const ())
+   syscall @"fchdir" fd
+      ||> toErrorCodeVoid
 
 sysGetCurrentDirectory :: IOErr FilePath
 sysGetCurrentDirectory = go 128
    where
       go n = allocaArray n $ \ptr -> do
-         onSuccessId (syscall @"getcwd" ptr (fromIntegral n))
+         syscall @"getcwd" ptr (fromIntegral n)
+            ||>   toErrorCode
             >.~.> const (peekCString ptr)
             >%~^> \case
                ERANGE -> go (2 * n)
@@ -175,7 +183,8 @@ sysRename :: FilePath -> FilePath -> IOErr ()
 sysRename oldPath newPath =
    withCString oldPath $ \old' ->
       withCString newPath $ \new' ->
-         onSuccess (syscall @"rename" old' new') (const ())
+         syscall @"rename" old' new'
+            ||> toErrorCodeVoid
 
 data FileLock =
      SharedLock
@@ -183,60 +192,66 @@ data FileLock =
    | RemoveLock
 
 sysFileLock :: Handle -> FileLock -> Bool -> IOErr ()
-sysFileLock (Handle fd) mode nonBlocking = do
-   let
+sysFileLock (Handle fd) mode nonBlocking =
+   syscall @"flock" fd (mode' .|. nb :: Int64)
+      ||> toErrorCodeVoid
+   where
       mode' = case mode of
          SharedLock     -> 1
          ExclusiveLock  -> 2
          RemoveLock     -> 8
-
       nb = if nonBlocking then 4 else 0
 
-   onSuccess (syscall @"flock" fd (mode' .|. nb :: Int64)) (const ())
-
-
 sysFileSync :: Handle -> IOErr ()
-sysFileSync (Handle fd) = onSuccess (syscall @"fsync" fd) (const ())
+sysFileSync (Handle fd) = syscall @"fsync" fd
+   ||> toErrorCodeVoid
 
 sysFileDataSync :: Handle -> IOErr ()
-sysFileDataSync (Handle fd) = onSuccess (syscall @"fdatasync" fd) (const ())
+sysFileDataSync (Handle fd) = syscall @"fdatasync" fd
+   ||> toErrorCodeVoid
 
 sysTruncatePath :: FilePath -> Word64 -> IOErr ()
 sysTruncatePath path size = withCString path $ \path' ->
-   onSuccess (syscall @"truncate" path' size) (const ())
+   syscall @"truncate" path' size
+      ||> toErrorCodeVoid
 
 sysTruncate :: Handle -> Word64 -> IOErr ()
 sysTruncate (Handle fd) size =
-   onSuccess (syscall @"ftruncate" fd size) (const ())
+   syscall @"ftruncate" fd size
+      ||> toErrorCodeVoid
 
 sysLink :: FilePath -> FilePath -> IOErr ()
 sysLink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         onSuccess (syscall @"link" src' dest') (const ())
+         syscall @"link" src' dest'
+            ||> toErrorCodeVoid
 
 sysUnlink :: FilePath -> IOErr ()
 sysUnlink path = withCString path $ \path' ->
-   onSuccess (syscall @"unlink" path') (const ())
+   syscall @"unlink" path'
+      ||> toErrorCodeVoid
 
 sysUnlinkAt :: Handle -> FilePath -> Bool -> IOErr ()
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
-   onSuccess (syscall @"unlinkat" fd path' (if rmdir then 0x200 else 0)) (const ())
-
+   syscall @"unlinkat" fd path' (if rmdir then 0x200 else 0)
+      ||> toErrorCodeVoid
 
 
 sysChangePermissionPath :: FilePath -> FilePermissions -> IOErr ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   onSuccess (syscall @"chmod" path' (BitSet.toBits mode)) (const ())
+   syscall @"chmod" path' (BitSet.toBits mode)
+      ||> toErrorCodeVoid
 
 sysChangePermission :: Handle -> FilePermissions -> IOErr ()
 sysChangePermission (Handle fd) mode = 
-   onSuccess (syscall @"fchmod" fd (BitSet.toBits mode)) (const ())
+   syscall @"fchmod" fd (BitSet.toBits mode)
+      ||> toErrorCodeVoid
 
 
 -- | Avoid duplication in *chown syscalls
 chownEx :: (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> IOErr ()
-chownEx sc a uid gid = onSuccess (sc a uid' gid') (const ())
+chownEx sc a uid gid = sc a uid' gid' ||> toErrorCodeVoid
    where
       fuid (UserID x) = x
       fgid (GroupID x) = x
@@ -259,7 +274,8 @@ sysChangeOwnership (Handle fd) = chownEx (syscall @"fchown") fd
 -- | umask
 sysSetProcessUMask :: FilePermissions -> IOErr FilePermissions
 sysSetProcessUMask mode =
-   onSuccess (syscall @"umask" (BitSet.toBits mode)) (fromBits . fromIntegral)
+   syscall @"umask" (BitSet.toBits mode)
+      ||> toErrorCodePure (fromBits . fromIntegral)
 
 -- | File type
 data FileType
@@ -396,20 +412,26 @@ sysFileStat path followLink = do
             -- select between stat and lstat syscalls
             sc = if followLink then syscall @"stat" else syscall @"lstat"
          in
-         onSuccessIO (sc path' (castPtr s)) (const (toStat <$> peek s))
+         sc path' (castPtr s)
+            ||>   toErrorCode
+            >.~.> (const (toStat <$> peek s))
 
 -- | Stat on file descriptor
 sysHandleStat :: Handle -> IOErr Stat
 sysHandleStat (Handle fd) =
    allocaBytes (sizeOfT' @StatStruct) $ \s ->
-      onSuccessIO (syscall @"fstat" fd (castPtr s)) (const (toStat <$> peek s))
+      syscall @"fstat" fd (castPtr s)
+         ||>   toErrorCode
+         >.~.> (const (toStat <$> peek s))
 
 
 sysSync :: IOErr ()
-sysSync = onSuccess (syscall @"sync") (const ())
+sysSync = syscall @"sync"
+   ||> toErrorCodeVoid
 
 sysSyncFS :: Handle -> IOErr ()
-sysSyncFS (Handle fd) = onSuccess (syscall @"syncfs" fd) (const ())
+sysSyncFS (Handle fd) = syscall @"syncfs" fd
+   ||> toErrorCodeVoid
 
 -- | Create a special file
 --
@@ -425,7 +447,8 @@ sysCreateSpecialFile hdl path typ perm dev = do
                   Nothing         -> (-1)
    withCString path $ \path' ->
       withDeviceID dev' $ \dev'' ->
-         onSuccessVoid (syscall @"mknodat" fd path' mode dev'')
+         syscall @"mknodat" fd path' mode dev''
+            ||> toErrorCodeVoid
 
 -- | Device identifier
 data DeviceID = DeviceID

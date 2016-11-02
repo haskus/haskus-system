@@ -13,6 +13,7 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.String (withCString)
 import ViperVM.Format.Binary.Ptr (nullPtr)
 import ViperVM.Format.Binary.Word (Word64)
+import ViperVM.Utils.Flow
 
 -- =============================================================
 --    From linux/include/uapi/linux/reboot.h
@@ -47,7 +48,8 @@ sysPower cmd = case cmd of
       PowerRestartCommand cmdPath -> withCString cmdPath f
       _                           -> f nullPtr
    where
-      f path = onSuccessVoid (syscall @"reboot" magic1 magic2 cmd' path)
+      f path = syscall @"reboot" magic1 magic2 cmd' path
+                  ||> toErrorCodeVoid
       magic1 = 0xfee1dead :: Word64
       magic2 = 0x28121969 :: Word64
       cmd'   = fromPowerCommand cmd

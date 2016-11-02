@@ -54,8 +54,9 @@ sysGetCPU :: IOErr (Word,Word)
 sysGetCPU =
    alloca $ \cpu ->
       alloca $ \node ->
-         onSuccessIO (syscall @"getcpu" (cpu :: Ptr Word) (node :: Ptr Word) nullPtr)
-            (const ((,) <$> peek cpu <*> peek node))
+         syscall @"getcpu" (cpu :: Ptr Word) (node :: Ptr Word) nullPtr
+            ||>   toErrorCode
+            >.~.> (const ((,) <$> peek cpu <*> peek node))
 
 -- | Return process ID
 sysGetProcessID :: IO ProcessID
@@ -79,8 +80,8 @@ sysGetEffectiveUserID = UserID . fromIntegral <$> syscall @"geteuid"
 
 -- | Set effective user ID of the calling process
 sysSetEffectiveUserID :: UserID -> IOErr ()
-sysSetEffectiveUserID (UserID uid) =
-   onSuccess (syscall @"setuid" uid) (const ())
+sysSetEffectiveUserID (UserID uid) = syscall @"setuid" uid
+   ||> toErrorCodeVoid
 
 -- | Get real group ID of the calling process
 sysGetRealGroupID :: IO GroupID
@@ -92,18 +93,20 @@ sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall @"getegid"
 
 -- | Set effective group ID of the calling process
 sysSetEffectiveGroupID :: GroupID -> IOErr ()
-sysSetEffectiveGroupID (GroupID gid) =
-   onSuccess (syscall @"setgid" gid) (const ())
+sysSetEffectiveGroupID (GroupID gid) = syscall @"setgid" gid
+   ||> toErrorCodeVoid
 
 -- | Create a child process
 sysFork :: IOErr ProcessID
-sysFork = onSuccess (syscall @"fork") (ProcessID . fromIntegral)
+sysFork = syscall @"fork"
+   ||> toErrorCodePure (ProcessID . fromIntegral)
 
 -- | Create a child process and block parent
 sysVFork :: IOErr ProcessID
-sysVFork = onSuccess (syscall @"vfork") (ProcessID . fromIntegral)
+sysVFork = syscall @"vfork"
+   ||> toErrorCodePure (ProcessID . fromIntegral)
 
 -- | Yield the processor
 sysSchedulerYield :: IOErr ()
-sysSchedulerYield = onSuccess (syscall @"sched_yield") (const ())
+sysSchedulerYield = syscall @"sched_yield" ||> toErrorCodeVoid
 

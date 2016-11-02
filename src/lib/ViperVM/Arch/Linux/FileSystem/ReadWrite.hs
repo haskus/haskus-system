@@ -46,12 +46,14 @@ data IOVec = IOVec
 -- Returns the number of bytes read or 0 if end of file
 sysRead :: Handle -> Ptr () -> Word64 -> IOErr Word64
 sysRead (Handle fd) ptr count =
-   onSuccess (syscall @"read" fd ptr count) fromIntegral
+   syscall @"read" fd ptr count
+      ||> toErrorCodePure fromIntegral
 
 -- | Read a file descriptor at a given position
 sysReadWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> IOErr Word64
 sysReadWithOffset (Handle fd) offset ptr count =
-   onSuccess (syscall @"pread64" fd ptr count offset) fromIntegral
+   syscall @"pread64" fd ptr count offset
+      ||> toErrorCodePure fromIntegral
 
 -- | Read "count" bytes from a handle (starting at optional "offset") and put
 -- them at "ptr" (allocated memory should be large enough).  Returns the number
@@ -79,7 +81,8 @@ sysReadMany (Handle fd) bufs =
       count = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      onSuccess (syscall @"readv" fd (castPtr bufs') count) fromIntegral
+      syscall @"readv" fd (castPtr bufs') count
+         ||> toErrorCodePure fromIntegral
 
 -- | Like readMany, with additional offset in file
 sysReadManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> IOErr Word64
@@ -92,18 +95,21 @@ sysReadManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      onSuccess (syscall @"preadv" fd (castPtr bufs') count ol oh) fromIntegral
+      syscall @"preadv" fd (castPtr bufs') count ol oh
+         ||> toErrorCodePure fromIntegral
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
 sysWrite :: Handle -> Ptr a -> Word64 -> IOErr Word64
 sysWrite (Handle fd) buf count =
-   onSuccess (syscall @"write" fd (castPtr buf) count) fromIntegral
+   syscall @"write" fd (castPtr buf) count
+      ||> toErrorCodePure fromIntegral
 
 -- | Write a file descriptor at a given position
 sysWriteWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> IOErr Word64
 sysWriteWithOffset (Handle fd) offset buf count =
-   onSuccess (syscall @"pwrite64" fd buf count offset) fromIntegral
+   syscall @"pwrite64" fd buf count offset
+      ||> toErrorCodePure fromIntegral
 
 
 -- | Like write but uses several buffers
@@ -114,7 +120,8 @@ sysWriteMany (Handle fd) bufs =
       count = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      onSuccess (syscall @"writev" fd (castPtr bufs') count) fromIntegral
+      syscall @"writev" fd (castPtr bufs') count
+         ||> toErrorCodePure fromIntegral
 
 -- | Like writeMany, with additional offset in file
 sysWriteManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> IOErr Word64
@@ -127,7 +134,8 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      onSuccess (syscall @"pwritev" fd (castPtr bufs') count ol oh) fromIntegral
+      syscall @"pwritev" fd (castPtr bufs') count ol oh
+         ||> toErrorCodePure fromIntegral
 
 -- | Write a buffer
 writeBuffer :: Handle -> Buffer -> IOErr ()
