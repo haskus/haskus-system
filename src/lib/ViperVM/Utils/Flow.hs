@@ -172,8 +172,6 @@ import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 
 import Control.Monad
-import Data.Traversable
-import Data.Foldable
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)
@@ -566,7 +564,6 @@ infixl 0 >.~~.>
 (.~~+>) :: forall (k :: Nat) m l l2 a.
    ( KnownNat k
    , k ~ Length l2
-   , a ~ TypeAt 0 (a ': l)
    , Monad m )
    => Variant (a ': l) -> Flow m l2 -> Flow m (Concat l2 l)
 (.~~+>) v f = v .~+> const f

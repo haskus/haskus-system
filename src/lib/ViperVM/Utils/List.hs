@@ -11,4 +11,4 @@ checkLength :: Word -> [a] -> Bool
 checkLength 0 []     = True
 checkLength 0 _      = False
 checkLength _ []     = False
-checkLength i (x:xs) = checkLength (i-1) xs
+checkLength i (_:xs) = checkLength (i-1) xs

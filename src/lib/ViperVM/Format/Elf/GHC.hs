@@ -128,9 +128,9 @@ decode_num_esc :: Char -> String -> Maybe String
 decode_num_esc d = go (digitToInt d)
   where
     go n (c : rest)
-      | isHexDigit c    = go (16*n + digitToInt c) rest
-    go n ('U' : rest)   = (chr n :) <$> decodeZString rest
-    go n other          = Nothing
+      | isHexDigit c  = go (16*n + digitToInt c) rest
+    go n ('U' : rest) = (chr n :) <$> decodeZString rest
+    go _ _            = Nothing
 
 decode_tuple :: Char -> String -> Maybe String
 decode_tuple d = go (digitToInt d)
@@ -151,5 +151,5 @@ decode_tuple d = go (digitToInt d)
     go n ('H':rest)  = do
       r <- decodeZString rest
       return ('(' : '#' : replicate (n-1) ',' ++ "#)" ++ r)
-    go n other       = Nothing
+    go _ _           = Nothing
 
