@@ -67,7 +67,6 @@ library
 
     ViperVM.Arch.Linux.Internals.FileSystem
     ViperVM.Arch.Linux.Internals.Input
-    ViperVM.Arch.Linux.Internals.Input.Keys
     ViperVM.Arch.Linux.Internals.Sound
     ViperVM.Arch.Linux.Internals.Graphics
     ViperVM.Arch.Linux.Internals.Reboot
@@ -75,6 +74,7 @@ library
     ViperVM.Arch.Linux.Internals.Fcntl
     ViperVM.Arch.Linux.Internals.Handle
     ViperVM.Arch.Linux.Internals.Arg
+    ViperVM.Arch.Linux.Internals.Tables
 
     ViperVM.Arch.Linux.Devices
     ViperVM.Arch.Linux.Error
@@ -336,6 +336,7 @@ test-suite tests
       ,  ViperVM.Tests.Arch
       ,  ViperVM.Tests.Arch.Linux
       ,  ViperVM.Tests.Arch.Linux.Input
+      ,  ViperVM.Tests.Arch.Linux.ErrorCode
 
    build-depends:    
          base

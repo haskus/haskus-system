@@ -11,7 +11,7 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 
 testsInput :: Test
-testsInput = testGroup "Device tree"
+testsInput = testGroup "Input"
    [ testProperty "Key's enum" 
       (toCEnum (0x270 :: Word16) == NextFavorite)
    ]

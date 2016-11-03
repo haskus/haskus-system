@@ -88,7 +88,7 @@ import ViperVM.Arch.Linux.Time (TimeVal,Clock)
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Arch.Linux.Internals.Input.Keys
+import ViperVM.Arch.Linux.Internals.Tables
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
 import ViperVM.Utils.Embed
@@ -752,11 +752,14 @@ data Key
 keyTablePtr :: Ptr Word16
 keyTablePtr = Ptr $(embedBytes keyTable)
 
+peekKeyTable :: Integral a => a -> Word16
+peekKeyTable = unsafePerformIO . peekElemOff keyTablePtr . fromIntegral
+
 instance CEnum Key where
    toCEnum x
-      | x <= 0x2ff = makeEnumWithCustom @Key
-                        (unsafePerformIO (peekElemOff keyTablePtr (fromIntegral x)))
-      | otherwise  = CustomKey (fromIntegral x)
+      | x <= fromIntegral keyTableMax
+      , Just r <- makeEnumMaybe @Key (peekKeyTable x) = r
+      | otherwise = CustomKey (fromIntegral x)
 
    fromCEnum = error "fromCEnumm not implemented for Key" --TODO
 

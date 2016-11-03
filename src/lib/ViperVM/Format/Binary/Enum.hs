@@ -10,6 +10,7 @@ module ViperVM.Format.Binary.Enum
    , fromEnumField
    , toEnumField
    , makeEnum
+   , makeEnumMaybe
    , makeEnumWithCustom
    )
 where
@@ -79,7 +80,6 @@ class CEnum a where
    default toCEnum :: (Enum a, Integral b) => b -> a
    toCEnum         = toEnum . fromIntegral
 
---
 -- | Make an enum with the last constructor taking a parameter for the rest of
 -- the range
 --
@@ -99,6 +99,26 @@ makeEnumWithCustom x =
                (indexConstr t m)
    where
       m   = maxConstrIndex t
+      x'  = fromIntegral x + 1
+      t   = dataTypeOf (undefined :: a)
+
+-- | Make an enum with the last constructor taking a parameter for the rest of
+-- the range, but don't build the last constructor
+--
+-- E.g., data T = A | B | C | D Word8
+-- makeEnumMaybe :: Int -> T
+-- makeEnumMaybe x = case x of
+--    0 -> Just A
+--    1 -> Just B
+--    2 -> Just C
+--    n -> Nothing
+makeEnumMaybe :: forall a i. (Data a,Integral i) => i -> Maybe a
+{-# INLINE makeEnumMaybe #-}
+makeEnumMaybe x =
+   if x' < maxConstrIndex t
+      then Just (fromConstr (indexConstr t x'))
+      else Nothing
+   where
       x'  = fromIntegral x + 1
       t   = dataTypeOf (undefined :: a)
 
