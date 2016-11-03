@@ -6,7 +6,6 @@
 -- | Sys monad
 module ViperVM.System.Sys
    ( Sys
-   , SysV
    , runSys
    , runSys'
    , forkSys
@@ -39,7 +38,6 @@ import Control.Monad.State
 import Control.Concurrent.STM
 
 import ViperVM.Utils.STM.Future
-import ViperVM.Utils.Variant
 import ViperVM.Format.Text as Text
 
 ------------------------------------------------
@@ -51,8 +49,6 @@ import ViperVM.Format.Text as Text
 -- The monad that permits fun system programming:
 --  * includes an optional logger
 newtype Sys a = Sys (StateT SysState IO a) deriving (Monad,Applicative,Functor,MonadState SysState, MonadIO)
-
-type SysV l = Sys (Variant l)
 
 data SysState = SysState
    { sysLogRoot    :: Log                    -- ^ Root of the log

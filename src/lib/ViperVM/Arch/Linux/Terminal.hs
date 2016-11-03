@@ -16,7 +16,6 @@ module ViperVM.Arch.Linux.Terminal
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Error
 import ViperVM.Utils.Flow
 import ViperVM.Format.Text
 import ViperVM.Format.String

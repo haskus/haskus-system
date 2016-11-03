@@ -38,7 +38,7 @@ withOpenAt ::
    ( Liftable '[ErrorCode] zs
    , Liftable xs zs
    , zs ~ Union xs '[ErrorCode]
-   ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> SysV zs
+   ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> Flow Sys zs
 withOpenAt fd path flags perm act =
    sysIO (sysOpenAt fd path flags perm)
       >.~|> \fd1 -> do
@@ -54,7 +54,7 @@ withOpenAt fd path flags perm act =
 atomicReadBuffer :: Handle -> FilePath -> Flow Sys (Buffer ': ReadErrors')
 atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 2000)
    where
-      go :: Word64 -> Handle -> SysV (Buffer ': ReadErrors')
+      go :: Word64 -> Handle -> Flow Sys (Buffer ': ReadErrors')
       go sz fd =
          -- use 0 offset to read from the beginning
          sysIO (handleReadBuffer fd (Just 0) sz)

@@ -261,7 +261,7 @@ initDeviceManager sysfs devfs = do
       -- recursively from it. The current directory is already opened and the
       -- handle is passed (alongside the name and fullname).
       -- Return Nothing if it fails for any reason.
-      readSysfsDir :: Text -> Handle -> SysV '[()]
+      readSysfsDir :: Text -> Handle -> Flow Sys '[()]
       readSysfsDir path hdl = do
          
          unless (Text.null path) $
@@ -623,7 +623,7 @@ newKernelEventReader = do
 
 
 -- | Get device handle by name (i.e., sysfs path)
-getDeviceHandleByName :: DeviceManager -> String -> SysV '[Handle,DeviceNotFound,ErrorCode]
+getDeviceHandleByName :: DeviceManager -> String -> Flow Sys '[Handle,DeviceNotFound,ErrorCode]
 getDeviceHandleByName dm path = do
    dev <- deviceLookup dm (Text.pack path)
    case dev >>= deviceDevice of
@@ -636,7 +636,7 @@ getDeviceHandleByName dm path = do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: DeviceManager -> Device -> SysV '[Handle,ErrorCode]
+getDeviceHandle :: DeviceManager -> Device -> Flow Sys '[Handle,ErrorCode]
 getDeviceHandle dm dev = do
 
    -- get a fresh device number

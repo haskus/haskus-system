@@ -13,6 +13,7 @@
 module ViperVM.Utils.Flow
    ( Flow
    , IOV
+   , MonadIO (..)
    -- * Flow utils
    , flowRes
    , flowSingle
@@ -172,6 +173,7 @@ import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 
 import Control.Monad
+import Control.Monad.IO.Class
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)

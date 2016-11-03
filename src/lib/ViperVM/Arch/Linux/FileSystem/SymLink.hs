@@ -32,7 +32,7 @@ readSymbolicLink ::
              , OutOfKernelMemory
              , InvalidPathComponent
              ]
-   ) => Maybe Handle -> FilePath -> SysV (String ': errs)
+   ) => Maybe Handle -> FilePath -> Flow Sys (String ': errs)
 readSymbolicLink hdl path = do
    sysIO (sysReadLinkAt hdl path)
       >%~^> \case

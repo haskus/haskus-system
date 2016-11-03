@@ -47,13 +47,22 @@ data IOVec = IOVec
    , iovecSize :: Word64
    } deriving (Generic,Storable)
 
-type ReadErrors = '[RetryLater, InvalidHandle, MemoryError, Interrupted, InvalidParam, FileSystemIOError, InvalidIsDirectory, ErrorCode]
+type ReadErrors
+   = '[ RetryLater
+      , InvalidHandle
+      , MemoryError
+      , Interrupted
+      , InvalidParam
+      , FileSystemIOError
+      , InvalidIsDirectory
+      , ErrorCode
+      ]
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
-sysRead :: Handle -> Ptr () -> Word64 -> Flow IO (Word64 ': ReadErrors)
+sysRead :: MonadIO m => Handle -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors)
 sysRead h@(Handle fd) ptr count =
-   syscall @"read" fd ptr count
+   liftIO (syscall @"read" fd ptr count)
       ||> toErrorCodePure fromIntegral
       >..%~^> \case
          EAGAIN -> flowSet RetryLater
@@ -67,12 +76,23 @@ sysRead h@(Handle fd) ptr count =
          EISDIR -> flowSet InvalidIsDirectory
          err    -> flowSet err -- other errors may occur, depending on fd
 
-type ReadErrors' = '[RetryLater, InvalidHandle, MemoryError, Interrupted, InvalidParam, FileSystemIOError, InvalidIsDirectory, ErrorCode, InvalidRange, Overflow]
+type ReadErrors'
+   = '[ RetryLater
+      , InvalidHandle
+      , MemoryError
+      , Interrupted
+      , InvalidParam
+      , FileSystemIOError
+      , InvalidIsDirectory
+      , ErrorCode
+      , InvalidRange
+      , Overflow
+      ]
 
 -- | Read a file descriptor at a given position
-sysReadWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> Flow IO (Word64 ': ReadErrors')
+sysReadWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors')
 sysReadWithOffset h@(Handle fd) offset ptr count =
-   syscall @"pread64" fd ptr count offset
+   liftIO (syscall @"pread64" fd ptr count offset)
       ||> toErrorCodePure fromIntegral
       >..%~^> \case
          EAGAIN    -> flowSet RetryLater
