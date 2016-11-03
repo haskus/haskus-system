@@ -34,8 +34,6 @@ module ViperVM.Arch.Linux.FileSystem
    , sysGetCurrentDirectory
    , sysRename
    , sysFileLock
-   , sysFileSync
-   , sysFileDataSync
    , sysTruncate
    , sysTruncatePath
    , sysLink
@@ -49,9 +47,11 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSetProcessUMask
    , sysFileStat
    , sysHandleStat
-   , sysSync
-   , sysSyncFS
    , sysCreateSpecialFile
+   -- ** Synchronization
+   , syncAll
+   , syncAllByHandle
+   , syncHandle
    -- * Device
    , DeviceID (..)
    , withDeviceID
@@ -71,6 +71,7 @@ import ViperVM.Utils.Types.Generics (Generic)
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Time (TimeSpec)
 import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
@@ -201,14 +202,6 @@ sysFileLock (Handle fd) mode nonBlocking =
          ExclusiveLock  -> 2
          RemoveLock     -> 8
       nb = if nonBlocking then 4 else 0
-
-sysFileSync :: Handle -> IOErr ()
-sysFileSync (Handle fd) = syscall @"fsync" fd
-   ||> toErrorCodeVoid
-
-sysFileDataSync :: Handle -> IOErr ()
-sysFileDataSync (Handle fd) = syscall @"fdatasync" fd
-   ||> toErrorCodeVoid
 
 sysTruncatePath :: FilePath -> Word64 -> IOErr ()
 sysTruncatePath path size = withCString path $ \path' ->
@@ -425,14 +418,6 @@ sysHandleStat (Handle fd) =
          >.~.> (const (toStat <$> peek s))
 
 
-sysSync :: IOErr ()
-sysSync = syscall @"sync"
-   ||> toErrorCodeVoid
-
-sysSyncFS :: Handle -> IOErr ()
-sysSyncFS (Handle fd) = syscall @"syncfs" fd
-   ||> toErrorCodeVoid
-
 -- | Create a special file
 --
 -- mknodat syscall. 
@@ -449,6 +434,56 @@ sysCreateSpecialFile hdl path typ perm dev = do
       withDeviceID dev' $ \dev'' ->
          syscall @"mknodat" fd path' mode dev''
             ||> toErrorCodeVoid
+
+-----------------------------------------------------------------------
+-- Synchronization
+-----------------------------------------------------------------------
+
+-- | Causes all pending modifications to file system metadata and cached file
+-- data to be written to the underlying filesystems
+syncAll :: MonadIO m => m ()
+syncAll = liftIO (syscall @"sync")
+   ||> toErrorCodeVoid
+   >..~!!> unhdlErr "syncAll"
+
+-- | Causes all pending modifications to file system metadata and cached file
+-- data to be written to the underlying filesystem containg the open handle `fd`
+syncAllByHandle :: MonadIO m => Handle -> Flow m '[(),InvalidHandle]
+syncAllByHandle h@(Handle fd) = liftIO (syscall @"syncfs" fd)
+   ||> toErrorCodeVoid
+   >..%~^> \case
+      EBADF -> flowSet (InvalidHandle h)
+      err   -> unhdlErr "syncAllByHandle" err
+
+-- | Flushes all modified in-core of the file referred by the handle to the disk
+-- device.
+--
+-- It does not necessarily ensure that the entry in the directory containing the
+-- file has also reached disk. For that an explicit `syncHandle` on a handle for
+-- the directory is also needed.
+--
+-- If the `flushMetadata` is False, only the contents of the file and the
+-- metadata required to retrieve it (e.g., the file size) are flushed on disk.
+-- Otherwise, all the metadata are flushed.
+syncHandle :: MonadIO m => Bool -> Handle -> Flow m '[(),InvalidHandle,FileSystemIOError, InvalidParam]
+syncHandle flushMetadata h@(Handle fd) =
+      call
+         ||> toErrorCodeVoid
+         >..%~^> \case
+            EBADF  -> flowSet (InvalidHandle h)
+            EIO    -> flowSet FileSystemIOError
+            EROFS  -> flowSet InvalidParam
+            EINVAL -> flowSet InvalidParam
+            err    -> unhdlErr "syncHandle" err
+   where
+      call = if flushMetadata
+               then liftIO (syscall @"fsync" fd)
+               else liftIO (syscall @"fdatasync" fd)
+
+
+-----------------------------------------------------------------------
+-- Device
+-----------------------------------------------------------------------
 
 -- | Device identifier
 data DeviceID = DeviceID
