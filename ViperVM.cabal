@@ -29,14 +29,7 @@ description:
    deal with binary formats on top of Data.Binary that are used internally. It
    supports some compression algorithms and containers (Deflate, GZip, etc.)
    used in other file formats.
-   .
-   Finally, as ViperVM started as a runtime system for heterogeneous
-   architectures (GPGPU, etc.), it provides modules to dynamically load and use
-   OpenCL libraries. \Platform\ modules are an attempt to abstract over
-   memories and processors of heterogeneous architectures to automatically
-   handle computations and data transfers. The ultimate goal is to provide an
-   execution model using parallel functional programming, but we are not there
-   yet.
+
 
 source-repository head
   type: git
@@ -126,22 +119,6 @@ library
     ViperVM.Arch.Linux.Graphics.Plane
     ViperVM.Arch.Linux.Graphics.Property
     ViperVM.Arch.Linux.Graphics.Helper
-
-    ViperVM.Arch.OpenCL.All
-    ViperVM.Arch.OpenCL.CommandQueue
-    ViperVM.Arch.OpenCL.Context
-    ViperVM.Arch.OpenCL.Device
-    ViperVM.Arch.OpenCL.Entity
-    ViperVM.Arch.OpenCL.Error
-    ViperVM.Arch.OpenCL.Event
-    ViperVM.Arch.OpenCL.ImageFormat
-    ViperVM.Arch.OpenCL.Kernel
-    ViperVM.Arch.OpenCL.Library
-    ViperVM.Arch.OpenCL.Mem
-    ViperVM.Arch.OpenCL.Platform
-    ViperVM.Arch.OpenCL.Program
-    ViperVM.Arch.OpenCL.Sampler
-    ViperVM.Arch.OpenCL.Types
 
     ViperVM.Arch.Posix.Malloc
 
@@ -241,31 +218,6 @@ library
     ViperVM.Apps.CPIO
     ViperVM.Apps.Disassembler
 
-    ViperVM.Platform.Drivers
-    ViperVM.Platform.Drivers.OpenCL
-    ViperVM.Platform.Drivers.Host
-
-    ViperVM.Platform.Types
-    ViperVM.Platform.Host
-    ViperVM.Platform.PlatformInfo
-    ViperVM.Platform.Topology
-    ViperVM.Platform.Memory
-    ViperVM.Platform.Loading
-    ViperVM.Platform.Config
-    ViperVM.Platform.Transfer
-    ViperVM.Platform.TransferResult
-    ViperVM.Platform.TransferBench
-
-    ViperVM.Platform.Memory.Region
-    ViperVM.Platform.Memory.Layout
-    ViperVM.Platform.Memory.Data
-    ViperVM.Platform.Memory.Object
-
-    ViperVM.Platform.Data.Matrix
-    ViperVM.Platform.Data.Vector
-
-    ViperVM.Platform.Processing.Kernel
-
   other-modules:
 
   c-sources: 
@@ -293,10 +245,8 @@ library
       ,  vector                    >= 0.11
       ,  directory                 >= 1.2
       ,  megaparsec                >= 5.0
-      ,  dynamic-linker-template   >= 0.1
       ,  transformers              >= 0.4
       ,  unix                      >= 2.7
-      ,  criterion                 >= 1.1
       ,  pqueue                    >= 1.3
       ,  mtl                       >= 2.2
       ,  template-haskell          >= 2.10
@@ -358,38 +308,6 @@ Benchmark bench-BitReverse
          base
       ,  ViperVM
       ,  criterion
-
-executable MemoryTest
-   main-is:             MemoryTest.hs
-   hs-source-dirs:      src/apps
-   ghc-options:         -Wall -threaded -O3
-   default-language:    Haskell2010
-   build-depends: 
-         base
-      ,  ViperVM
-      ,  stm
-      ,  containers
-
-executable PlatformWeb
-   main-is:             Main.hs
-   hs-source-dirs:      src/apps/PlatformWeb
-   other-modules:
-         Paths_ViperVM
-      ,  CmdLine
-   ghc-options:         -Wall -threaded -O3
-   default-language:    Haskell2010
-   build-depends: 
-         base
-      ,  ViperVM
-      ,  stm
-      ,  containers
-      ,  happstack-server     >= 7.4
-      ,  blaze-html           >= 0.8
-      ,  blaze-markup         >= 0.7
-      ,  transformers         >= 0.4
-      ,  network              >= 2.6
-      ,  bytestring           >= 0.10
-      ,  optparse-applicative >= 0.12
 
 executable X86Web
    main-is:             Main.hs

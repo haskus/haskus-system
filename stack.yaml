@@ -1,9 +1,7 @@
 resolver: lts-7.3
 packages:
 - '.'
-- '../dynamic-linker-template/'
 extra-deps:
-- dynamic-linker-template-0.1.1.0
 - stm-linkedlist-0.1.0.0
 - cabal-test-quickcheck-0.1.7
 - diagrams-1.3.0.1

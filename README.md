@@ -66,21 +66,6 @@ ViperVM provides modules to interact with the system: input devices, display dev
 
 * ViperVM.System
 
-## Runtime system
-
-Historically, ViperVM started as a runtime system for heterogeneous
-architectures (GPGPU, etc.). Hence it still provides modules to dynamically load
-and use OpenCL libraries as well as some modules to manage distributed memory
-(data transfers, etc.). The ultimate goal was to provide an execution
-environment using parallel functional programming on heterogeneous
-architectures, hence the "VM" (standing for Virtual Machine) in the name of the
-project. In its current state, it is far from being useful but maybe this part
-of the project could be resurrected in the future.
-
-* ViperVM.Arch.OpenCL: OpenCL related modules
-* ViperVM.Platform: abstraction over distributed memory
-
-
 # Programs
 
 Several programs are bundled with ViperVM:
@@ -121,15 +106,3 @@ Dump kernel system events (i.e. changes into the system tree) on standard output
 $ stack exec udev
 $ # try plugging or unplugging a device (USB stick, etc.)
 ```
-
-#### Platform Web
-
-PlatformWeb gives basic information about the platform (memories, processors,
-networks). It can also be used to perform basic operations (e.g. memory
-allocation/release) for test purpose.
-
-```bash
-$ stack exec -- PlatformWeb -p 8020 &
-$ firefox http://localhost:8020
-```
-
