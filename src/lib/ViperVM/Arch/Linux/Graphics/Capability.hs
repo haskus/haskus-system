@@ -11,7 +11,7 @@ where
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.System.Sys

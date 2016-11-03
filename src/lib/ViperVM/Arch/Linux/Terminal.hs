@@ -1,3 +1,6 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+
 -- | This module provides some functions to use Linux
 -- terminals
 module ViperVM.Arch.Linux.Terminal
@@ -13,6 +16,7 @@ module ViperVM.Arch.Linux.Terminal
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Error
 import ViperVM.Utils.Flow
 import ViperVM.Format.Text
 import ViperVM.Format.String
@@ -43,6 +47,6 @@ writeStrLn fd = writeBuffer fd . stringEncodeUtf8 . (++ "\n")
 --
 -- Warning: only the first byte of multi-byte characters (e.g. utf8) will be
 -- read
-readChar :: Handle -> IOErr Char
+readChar :: Handle -> Flow IO (Char ': ReadErrors')
 readChar fd = handleReadBuffer fd Nothing 1
    >.-.> (castCCharToChar . bufferPeekStorable)

@@ -17,7 +17,7 @@ import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.Network
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Network.SendReceive
-import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.System.Sys
 
 import Data.Map (Map)

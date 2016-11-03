@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | System
 module ViperVM.System.System
@@ -21,10 +22,11 @@ where
 
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
+import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.FileSystem.Mount
 import ViperVM.Arch.Linux.Process.MemoryMap
 
@@ -91,7 +93,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       }
 
 -- | Get process memory mappings
-getProcessMemoryMap :: System -> SysV '[[MemoryMapEntry],ErrorCode]
+getProcessMemoryMap :: System -> Flow Sys ([MemoryMapEntry] ': ReadErrors')
 getProcessMemoryMap sys =
    atomicReadBuffer (systemProcFS sys) "self/maps"
    >.-.> parseMemoryMap

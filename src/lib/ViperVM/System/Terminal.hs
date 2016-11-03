@@ -21,12 +21,12 @@ import ViperVM.System.Sys
 import ViperVM.System.Process
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
-import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
 import ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
-import ViperVM.Utils.Flow (void,when,forever)
+import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
@@ -116,8 +116,12 @@ inputThread s = forever $ do
                then retry
                else return (after,fromIntegral size,ptr)
                         
-   readBytes <- runSys $ sysCallAssertQuiet ("Read bytes from "++show hdl) $ 
-      sysRead hdl ptr sz
+   readBytes <- runSys $ do
+      sysIO (sysRead hdl ptr sz)
+         >..~!!> (\err -> do
+            let text = "Read bytes from " ++ show hdl
+            let msg = printf "%s (failed with %s)" text (show err)
+            sysError msg)
 
    -- TODO: if readBytes is zero, it's the end of file, etc.
    runSys' $ sysAssert "readBytes /= 0" (readBytes /= 0)

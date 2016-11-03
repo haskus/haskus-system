@@ -39,6 +39,7 @@ import ViperVM.Utils.Maybe
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Internals.Graphics

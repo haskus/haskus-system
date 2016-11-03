@@ -5,7 +5,7 @@ where
 
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.FileSystem (sysSync)
-import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.Syscalls
 
 -- | Flush all buffered modifications to file metadata and data to the
 -- underlying filesystems

@@ -17,14 +17,11 @@ where
 import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Internals.Handle
 import ViperVM.Arch.Linux.Internals.Fcntl
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Utils.Flow
-
-
--- | Invalid handle error
-data InvalidHandle = InvalidHandle Handle deriving (Show,Eq)
 
 
 -- | Get descriptor flags

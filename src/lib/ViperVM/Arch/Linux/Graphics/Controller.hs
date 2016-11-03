@@ -27,6 +27,7 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.Word

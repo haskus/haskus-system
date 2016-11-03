@@ -55,6 +55,7 @@ import qualified ViperVM.Format.Text as Text
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Devices
+import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory

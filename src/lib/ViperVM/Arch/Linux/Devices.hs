@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Linux device handling
 --
@@ -99,7 +100,7 @@ parseDevFile = do
 
 
 -- | Read device major and minor in "dev" file
-sysfsReadDevFile' :: Handle -> SysV '[DeviceID,ErrorCode]
+sysfsReadDevFile' :: Handle -> Flow Sys (DeviceID ': ReadErrors')
 sysfsReadDevFile' devfd =
    -- 16 bytes should be enough
    sysIO (handleReadBuffer devfd Nothing 16)
