@@ -1,6 +1,6 @@
 # ViperVM
 
-ViperVM is a framework *written in Haskell* that can be used for system programming. The long-term aim is to provide a full Haskell user-space environment on top of the Linux kernel.
+ViperVM is a framework written in Haskell that can be used for system programming. The long-term aim is to provide a full Haskell user-space environment on top of the Linux kernel.
 
 Website: http://www.vipervm.org
 
