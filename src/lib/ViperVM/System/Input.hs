@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Manage input devices
 module ViperVM.System.Input
@@ -113,7 +114,7 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
    flowForFilter devs' $ \(devpath,dev) -> do
       getDeviceHandle dm dev
          -- try to read infos and return InputDevice
-         >.~$> (\hdl -> do
+         >.~|> (\hdl -> do
                   eventChannel  <- newEventReader hdl
                   bundleChannel <- newInputEventHandler eventChannel
                   InputDevice devpath dev hdl

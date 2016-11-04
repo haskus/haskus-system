@@ -34,6 +34,7 @@ import ViperVM.System.Sys
 import ViperVM.System.FileSystem
 import ViperVM.System.Devices
 import ViperVM.Utils.Flow
+import ViperVM.Utils.Types.List
 
 import System.FilePath
 
@@ -72,17 +73,20 @@ systemInit path = sysLogSequence "Initialize the system" $ do
    -- mount sysfs
    sysCallAssert "Create sysfs directory" $ createDir sysfsPath
    sysCallAssert "Mount sysfs" $ mountSysFS sysMount sysfsPath
-   sysfd <- sysCallAssert "Open sysfs directory" $ sysOpen sysfsPath BitSet.empty BitSet.empty
+   sysfd <- open Nothing sysfsPath BitSet.empty BitSet.empty
+            >..~!!> assertShow "open sysfs directory"
 
    -- mount procfs
    sysCallAssert "Create procfs directory" $ createDir procfsPath
    sysCallAssert "Mount procfs" $ mountProcFS sysMount procfsPath
-   procfd <- sysCallAssert "Open procfs directory" $ sysOpen procfsPath BitSet.empty BitSet.empty
+   procfd <- open Nothing procfsPath BitSet.empty BitSet.empty
+             >..~!!> assertShow "open procfs directory"
 
    -- create device directory
    sysCallAssert "Create device directory" $ createDir devicePath
    sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount devicePath
-   devfd <- sysCallAssert "Open device directory" $ sysOpen devicePath BitSet.empty BitSet.empty
+   devfd <- open Nothing devicePath BitSet.empty BitSet.empty
+            >..~!!> assertShow "open device directory"
 
    -- init device manager
    dm <- initDeviceManager sysfd devfd
@@ -93,7 +97,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       }
 
 -- | Get process memory mappings
-getProcessMemoryMap :: System -> Flow Sys ([MemoryMapEntry] ': ReadErrors')
+getProcessMemoryMap :: System -> Flow Sys ([MemoryMapEntry] ': Union ReadErrors' OpenErrors)
 getProcessMemoryMap sys =
    atomicReadBuffer (systemProcFS sys) "self/maps"
    >.-.> parseMemoryMap

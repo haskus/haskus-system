@@ -18,8 +18,6 @@ where
 
 
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Format.Binary.Buffer
@@ -34,16 +32,17 @@ import ViperVM.Utils.Types.List
 import Text.Printf
 
 -- | Open at
-withOpenAt :: 
-   ( Liftable '[ErrorCode] zs
+withOpenAt :: forall xs zs m.
+   ( Liftable OpenErrors zs
    , Liftable xs zs
-   , zs ~ Union xs '[ErrorCode]
-   ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow Sys xs) -> Flow Sys zs
+   , zs ~ Union xs OpenErrors
+   , MonadIO m
+   ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow m xs) -> Flow m zs
 withOpenAt fd path flags perm act =
-   sysIO (sysOpenAt fd path flags perm)
+   open (Just fd) path flags perm
       >.~|> \fd1 -> do
          res <- act fd1
-         sysCallAssertQuiet "Close file" $ sysClose fd1
+         void (close fd1)
          return res
 
 -- | Read a file with a single "read"
@@ -51,7 +50,7 @@ withOpenAt fd path flags perm act =
 -- Some files (e.g., in procfs) need to be read atomically to ensure that their
 -- contents is valid. In this function, we increase the buffer size until we can
 -- read the whole file in it with a single "read" call.
-atomicReadBuffer :: Handle -> FilePath -> Flow Sys (Buffer ': ReadErrors')
+atomicReadBuffer :: Handle -> FilePath -> Flow Sys (Buffer ': Union ReadErrors' OpenErrors)
 atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 2000)
    where
       go :: Word64 -> Handle -> Flow Sys (Buffer ': ReadErrors')

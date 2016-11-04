@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
@@ -32,12 +33,18 @@ check v = case headVariant v of
    Right a  -> a
    Left err -> error ("syscall error code " ++ show err)
 
+check' :: Show a => String -> a -> IO ()
+check' text v = do
+   let msg = printf "%s (failed with %s)" text (show v)
+   error msg
+
 main :: IO ()
 main = do
    
    let writeDummyFile = do
          putStrLn "Opening dummy.result file"
-         fd <- check <$> sysOpen "dummy.result" [HandleWriteOnly,HandleCreate] [PermUserWrite,PermUserRead]
+         fd <- open Nothing "dummy.result" [HandleWriteOnly,HandleCreate] [PermUserWrite,PermUserRead]
+               >..~!!> check' "open dummy.result file"
 
          let str = "Hello Linux!"
          putStrLn (printf "Writing \"%s\" in it" str)
@@ -47,7 +54,7 @@ main = do
                error "The full string has not been written"
          
          putStrLn "Closing file"
-         check <$> sysClose fd
+         close fd >..~!!> check' "close"
 
    putStrLn "Checking for access to dummy.result file"
    fExist <- sysAccess "dummy.result" BitSet.empty
@@ -159,10 +166,11 @@ main = do
    traverse_ printClock (clocks :: [Clock])
 
    putStrLn "Listing /etc directory:"
-   etcfd <- check <$> sysOpen "/etc" [] BitSet.empty
+   etcfd <- open Nothing "/etc" [] BitSet.empty
+            >..~!!> check' "open"
    entries <- check <$> listDirectory etcfd
    entries2 <- check <$> listDirectory etcfd
-   check <$> sysClose etcfd
+   close etcfd >..~!!> check' "close"
    print entries
    print entries2
 
@@ -179,7 +187,8 @@ main = do
       >.~!> (const (putStrLn $ "Sleeping succeeded"))
 
    putStrLn "Get device info"
-   dev <- check <$> sysOpen "/dev/input/event0" [] [PermUserRead]
+   dev <- open Nothing "/dev/input/event0" [] [PermUserRead]
+          >..~!!> check' "open"
 
    driverVersion <- getVersion dev
    putStrLn $ "Driver version: " ++ show driverVersion

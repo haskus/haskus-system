@@ -20,10 +20,6 @@ module ViperVM.Arch.Linux.FileSystem
    , AccessModes
    , FileLock(..)
    , Stat(..)
-   , sysOpen
-   , sysOpenAt
-   , sysCreate
-   , sysClose
    , sysSeek
    , sysSeek'
    , sysAccess
@@ -48,6 +44,10 @@ module ViperVM.Arch.Linux.FileSystem
    , sysFileStat
    , sysHandleStat
    , sysCreateSpecialFile
+   -- ** Open/Close
+   , OpenErrors
+   , open
+   , close
    -- ** Synchronization
    , syncAll
    , syncAllByHandle
@@ -76,34 +76,6 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Time (TimeSpec)
 import ViperVM.Arch.Linux.Process (UserID(..), GroupID(..))
 import ViperVM.Arch.Linux.Internals.FileSystem
-
--- | Open a file
-sysOpen :: FilePath -> HandleFlags -> FilePermissions -> IOErr Handle
-sysOpen path flags mode = 
-   withCString path $ \path' -> 
-      syscall @"open" path' (BitSet.toBits flags) (BitSet.toBits mode)
-         ||> toErrorCodePure (Handle . fromIntegral)
-
--- | Open a file
-sysOpenAt :: Handle -> FilePath -> HandleFlags -> FilePermissions -> IOErr Handle
-sysOpenAt (Handle fd) path flags mode = 
-   withCString path $ \path' -> 
-      syscall @"openat" fd path' (BitSet.toBits flags) (BitSet.toBits mode)
-         ||> toErrorCodePure (Handle . fromIntegral)
-
-sysCreateCString :: CString -> FilePermissions -> IOErr Handle
-sysCreateCString path mode = 
-   syscall @"creat" path (BitSet.toBits mode)
-      ||> toErrorCodePure (Handle . fromIntegral)
-
-sysCreate :: String -> FilePermissions -> IOErr Handle
-sysCreate path mode = withCString path $ \path' -> sysCreateCString path' mode
-
--- | Close a file descriptor
-sysClose :: Handle -> IOErr ()
-sysClose (Handle fd) = syscall @"close" fd
-   ||> toErrorCodeVoid
-
 
 -- | File permissions
 data FilePermission
@@ -434,6 +406,85 @@ sysCreateSpecialFile hdl path typ perm dev = do
       withDeviceID dev' $ \dev'' ->
          syscall @"mknodat" fd path' mode dev''
             ||> toErrorCodeVoid
+
+-----------------------------------------------------------------------
+-- Open / Close
+-----------------------------------------------------------------------
+
+type OpenErrors
+   = '[ NotAllowed
+      , ExhaustedQuota
+      , FileAlreadyExists
+      , MemoryError
+      , Overflow
+      , Interrupted
+      , InvalidParam
+      , InvalidIsDirectory
+      , SymbolicLinkLoop
+      , TooManyProcessHandles
+      , TooManySystemHandles
+      , TooLongPathName
+      , DeviceNotFound
+      , OutOfKernelMemory
+      , OutOfSpace
+      , NotADirectory
+      , FileSystemIOError
+      , TempFileNotSupported
+      , ReadOnlyFileSystem
+      , CannotWriteExecutedImage
+      , RetryLater
+      , InvalidHandle
+      , InvalidPathComponent
+      ]
+
+-- | Open and possibly create a file
+open :: MonadIO m => Maybe Handle -> FilePath -> HandleFlags -> FilePermissions -> Flow m (Handle ': OpenErrors)
+open mhdl path flags mode = do
+   let call = case mhdl of
+                  Nothing          -> syscall @"open"
+                  Just (Handle fd) -> syscall @"openat" fd
+   liftIO (withCString path $ \path' -> 
+      call path' (BitSet.toBits flags) (BitSet.toBits mode))
+         ||> toErrorCodePure (Handle . fromIntegral)
+         >..%~^> \case
+            EACCES                  -> flowSet NotAllowed
+            EDQUOT                  -> flowSet ExhaustedQuota
+            EEXIST                  -> flowSet FileAlreadyExists
+            EFAULT                  -> flowSet MemoryError
+            EFBIG                   -> flowSet Overflow
+            EINTR                   -> flowSet Interrupted
+            EINVAL                  -> flowSet InvalidParam
+            EISDIR                  -> flowSet InvalidIsDirectory
+            ELOOP                   -> flowSet SymbolicLinkLoop
+            EMFILE                  -> flowSet TooManyProcessHandles
+            ENAMETOOLONG            -> flowSet TooLongPathName
+            ENFILE                  -> flowSet TooManySystemHandles
+            ENODEV                  -> flowSet DeviceNotFound
+            ENOENT                  -> flowSet InvalidPathComponent
+            ENOMEM                  -> flowSet OutOfKernelMemory
+            ENOSPC                  -> flowSet OutOfSpace
+            ENOTDIR                 -> flowSet NotADirectory
+            ENXIO                   -> flowSet FileSystemIOError
+            EOPNOTSUPP              -> flowSet TempFileNotSupported
+            EPERM                   -> flowSet NotAllowed
+            EROFS                   -> flowSet ReadOnlyFileSystem
+            ETXTBSY                 -> flowSet CannotWriteExecutedImage
+            EAGAIN                  -> flowSet RetryLater
+            EBADF | Just h <- mhdl  -> flowSet (InvalidHandle h)
+            err                     -> unhdlErr "open" err
+
+
+-- | Close a file descriptor
+close :: MonadIO m => Handle -> Flow m '[(),InvalidHandle,Interrupted,FileSystemIOError]
+close h@(Handle fd) =
+   liftIO (syscall @"close" fd)
+      ||> toErrorCodeVoid
+      >..%~^> \case
+         EBADF -> flowSet (InvalidHandle h)
+         EINTR -> flowSet Interrupted
+         EIO   -> flowSet FileSystemIOError
+         err   -> unhdlErr "close" err
+
 
 -----------------------------------------------------------------------
 -- Synchronization

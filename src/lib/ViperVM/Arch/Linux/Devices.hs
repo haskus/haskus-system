@@ -80,8 +80,8 @@ data DeviceType
    deriving (Show,Eq,Ord)
 
 -- | Create a device special file
-createDeviceFile :: Maybe Handle -> FilePath -> Device -> FilePermissions -> IOErr ()
-createDeviceFile hdl path dev perm = sysCreateSpecialFile hdl path typ perm (Just devid)
+createDeviceFile :: MonadIO m => Maybe Handle -> FilePath -> Device -> FilePermissions -> Flow m '[(),ErrorCode]
+createDeviceFile hdl path dev perm = liftIO $ sysCreateSpecialFile hdl path typ perm (Just devid)
    where
       devid = deviceID dev
       typ   = case deviceType dev of

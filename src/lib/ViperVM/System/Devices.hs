@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Devices management
 --
@@ -52,10 +53,9 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Text (Text)
 import qualified ViperVM.Format.Text as Text
-import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
+import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Devices
-import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
@@ -64,7 +64,6 @@ import ViperVM.System.Sys
 import ViperVM.System.FileSystem
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
-import ViperVM.Utils.Variant
 import ViperVM.Utils.Maybe
 
 import Control.Arrow (second)
@@ -288,8 +287,8 @@ initDeviceManager sysfs devfs = do
 
    -- list devices in /devices
    void (withDevDir sysfs "devices" (readSysfsDir Text.empty)
-            >..%~!!> (\err -> sysError ("Cannot read /devices in sysfs: " 
-                                    ++ show (err :: ErrorCode)))
+            >..~!!> (\err -> sysError ("Cannot read /devices in sysfs: " 
+                             ++ show err))
         )
    
 
@@ -623,11 +622,11 @@ newKernelEventReader = do
 
 
 -- | Get device handle by name (i.e., sysfs path)
-getDeviceHandleByName :: DeviceManager -> String -> Flow Sys '[Handle,DeviceNotFound,ErrorCode]
+getDeviceHandleByName :: DeviceManager -> String -> Flow Sys (Handle ': ErrorCode ': OpenErrors)
 getDeviceHandleByName dm path = do
    dev <- deviceLookup dm (Text.pack path)
    case dev >>= deviceDevice of
-      Just d  -> getDeviceHandle dm d ||> liftVariant
+      Just d  -> getDeviceHandle dm d
       Nothing -> flowSet DeviceNotFound
 
 -- | Get a handle on a device
@@ -636,7 +635,7 @@ getDeviceHandleByName dm path = do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: DeviceManager -> Device -> Flow Sys '[Handle,ErrorCode]
+getDeviceHandle :: DeviceManager -> Device -> Flow Sys (Handle ': ErrorCode ': OpenErrors)
 getDeviceHandle dm dev = do
 
    -- get a fresh device number
@@ -655,10 +654,11 @@ getDeviceHandle dm dev = do
 
    sysLogSequence logS $ do
       -- create special file in device fs
-      sysIO (createDeviceFile (Just devfd) devname dev BitSet.empty)
-         >.~~|> do
+      createDeviceFile (Just devfd) devname dev BitSet.empty
+         >.~~^^> do
             -- on success, try to open it
-            hdl <- sysIO (sysOpenAt devfd devname (BitSet.fromList [HandleReadWrite,HandleNonBlocking]) BitSet.empty)
+            let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
+            hdl <- open (Just devfd) devname flgs BitSet.empty
             -- then remove it
             sysIO (sysUnlinkAt devfd devname False)
                >..~!> sysWarningShow "Unlinking special device file failed"
@@ -666,12 +666,14 @@ getDeviceHandle dm dev = do
 
 -- | Release a device handle
 releaseDeviceHandle :: Handle -> Sys ()
-releaseDeviceHandle fd = do
-   sysCallAssertQuiet "Close device" $ sysClose fd
+releaseDeviceHandle fd = close fd
+   >..~!!> \err -> do
+      let msg = Text.printf "close (failed with %s)" (show err)
+      sysLog LogWarning msg
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: DeviceManager -> Device -> IOErr Handle
-openDeviceDir dm dev = sysOpenAt (dmDevFS dm) path (BitSet.fromList [HandleDirectory]) BitSet.empty
+openDeviceDir :: DeviceManager -> Device -> Flow Sys (Handle ': OpenErrors)
+openDeviceDir dm dev = open (Just (dmDevFS dm)) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids
       typ' = case deviceType dev of

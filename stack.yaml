@@ -14,7 +14,7 @@ flags:
 extra-package-dbs: []
 
 ghc-options:
-   "*": -fobject-code -freduction-depth=0 -Wno-redundant-constraints -Werror
+   "*": -fobject-code -freduction-depth=0 -Wno-redundant-constraints
    # -fobject-code       -- GHCI needs it because of the foreign primops
    # -freduction-depth=0 -- used to allow compilation of large type-level Syscalls table
    # -Wno-redundant-constraints -- disable this warning that is in -Wall in GHC 8.0.1

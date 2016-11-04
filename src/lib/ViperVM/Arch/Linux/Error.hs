@@ -4,8 +4,11 @@ module ViperVM.Arch.Linux.Error
    ( RetryLater (..)
    , Overflow (..)
    , InvalidHandle (..)
+   , TooManyProcessHandles (..)
+   , TooManySystemHandles (..)
    , Interrupted (..)
    , NotAllowed (..)
+   , ExhaustedQuota (..)
    , InvalidRestartCommand (..)
    , MemoryError (..)
    , InvalidParam (..)
@@ -14,13 +17,19 @@ module ViperVM.Arch.Linux.Error
    , InvalidRange (..)
    , FileSystemIOError (..)
    , OutOfKernelMemory (..)
+   , OutOfSpace (..)
+   , TempFileNotSupported (..)
+   , ReadOnlyFileSystem (..)
+   , CannotWriteExecutedImage (..)
    -- ** Path errors
    , SymbolicLinkLoop (..)
    , NotSymbolicLink (..)
    , TooLongPathName (..)
    , InvalidPathComponent (..)
    , FileNotFound (..)
+   , FileAlreadyExists (..)
    , InvalidIsDirectory (..)
+   , NotADirectory (..)
    )
 where
 
@@ -33,6 +42,11 @@ import ViperVM.Arch.Linux.Internals.Handle (Handle)
 -- | Not allowed
 data NotAllowed
    = NotAllowed
+   deriving (Show,Eq)
+
+-- | Quota exhausted
+data ExhaustedQuota
+   = ExhaustedQuota
    deriving (Show,Eq)
 
 -- | Overflow
@@ -48,6 +62,16 @@ data Interrupted
 -- | Invalid handle error
 data InvalidHandle
    = InvalidHandle Handle
+   deriving (Show,Eq)
+
+-- | Too many open handles in the process
+data TooManyProcessHandles
+   = TooManyProcessHandles
+   deriving (Show,Eq)
+
+-- | Too many open handles in the system
+data TooManySystemHandles
+   = TooManySystemHandles
    deriving (Show,Eq)
 
 -- | Invalid restart commmand
@@ -75,9 +99,19 @@ data FileNotFound
    = FileNotFound
    deriving (Show,Eq)
 
+-- | File already exists
+data FileAlreadyExists
+   = FileAlreadyExists
+   deriving (Show,Eq)
+
 -- | Invalid directory handle
 data InvalidIsDirectory
    = InvalidIsDirectory
+   deriving (Show,Eq)
+
+-- | Invalid: not a directory handle
+data NotADirectory
+   = NotADirectory
    deriving (Show,Eq)
 
 -- | Device not found
@@ -118,6 +152,26 @@ data TooLongPathName
 -- | Kernel memory error
 data OutOfKernelMemory
    = OutOfKernelMemory
+   deriving (Show,Eq)
+
+-- | Out of space
+data OutOfSpace
+   = OutOfSpace
+   deriving (Show,Eq)
+
+-- | Filesystem does not support temporary files
+data TempFileNotSupported
+   = TempFileNotSupported
+   deriving (Show,Eq)
+
+-- | Cannot write into an image being executed
+data CannotWriteExecutedImage
+   = CannotWriteExecutedImage
+   deriving (Show,Eq)
+
+-- | Read-only filesystem
+data ReadOnlyFileSystem
+   = ReadOnlyFileSystem
    deriving (Show,Eq)
 
 -- | A component of a path is not a directory

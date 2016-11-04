@@ -13,6 +13,7 @@ module ViperVM.Arch.Linux.Syscalls
    , sysCallWarn
    , sysCallWarnQuiet
    , sysLogPrint
+   , assertShow
    )
 where
 
@@ -59,6 +60,11 @@ sysCallAssert' text r =
          let msg = printf "%s (success)" text
          sysLog LogInfo msg
          return v
+
+assertShow :: Show a => String -> a -> Sys ()
+assertShow text v = do
+   let msg = printf "%s (failed with %s)" text (show v)
+   sysError msg
 
 -- | Assert that the given action doesn't fail, log only on error
 sysCallAssertQuiet :: String -> IOErr a -> Sys a

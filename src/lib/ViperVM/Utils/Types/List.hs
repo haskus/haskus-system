@@ -144,7 +144,9 @@ type family IsSubset l1 l2 :: Bool where
 -- | Helper for IsSubset
 type family IsSubsetEx l1 l2 i :: Bool where
    IsSubsetEx '[] l2 i = 'True
-   IsSubsetEx l1 '[] i = 'False
+   IsSubsetEx l1 '[] i = TypeError (     'ShowType l1
+                                   ':$$: 'Text "is not a subset of"
+                                   ':$$: 'ShowType i)
    IsSubsetEx (x ': xs) (x ': ys) i = IsSubsetEx xs i i
    IsSubsetEx (x ': xs) (y ': ys) i = IsSubsetEx (x ': xs) ys i
 
