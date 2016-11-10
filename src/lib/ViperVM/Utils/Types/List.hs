@@ -23,6 +23,7 @@ module ViperVM.Utils.Types.List
    , RemoveAt
    , Concat
    , Length
+   , Replicate
    , MapMaybe
    , Generate
    , IsMember
@@ -95,6 +96,11 @@ type family Concat (xs :: [*]) (ys :: [*]) where
 type family Length xs where
    Length '[]       = 0
    Length (x ': xs) = 1 + Length xs
+
+-- | Replicate
+type family Replicate n s where
+   Replicate 0 s = '[]
+   Replicate n s = s ': Replicate (n-1) s
 
 -- | replace l[n] with l2 (folded)
 type family ReplaceAt (n :: Nat) l l2 where

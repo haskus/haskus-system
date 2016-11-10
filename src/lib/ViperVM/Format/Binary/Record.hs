@@ -190,19 +190,19 @@ instance forall fs typ name rec b l2 i r.
          (rec, HCons (symbolValue @name, recordField (Proxy :: Proxy name) rec) xs)
 
 -- | Convert a record into a HList
-recordToList :: forall fs l.
-   ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList l)
-   ) => Record fs -> HList l
+recordToList :: forall fs.
+   ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList fs)
+   ) => Record fs -> HList fs
 recordToList rec = snd res
    where
-      res :: (Record fs, HList l)
+      res :: (Record fs, HList fs)
       res = hFoldr' Extract ((rec,HNil) :: (Record fs, HList '[])) (undefined :: HList fs)
 
 
-instance forall fs l.
-      ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList l)
-      , Show (HList l)
+instance forall fs.
+      ( HFoldr' Extract (Record fs, HList '[]) fs (Record fs, HList fs)
+      , Show (HList fs)
       )
       => Show (Record fs)
    where
-      show rec = show (recordToList rec :: HList l)
+      show rec = show (recordToList rec :: HList fs)

@@ -84,6 +84,7 @@ import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.HList
 import ViperVM.Utils.Types
+import ViperVM.Utils.Types.List
 
 -- | Bit fields on a base type b
 newtype BitFields b (f :: [*]) = BitFields b deriving (Storable)
@@ -121,6 +122,9 @@ type family WholeSize fs :: Nat where
    WholeSize '[]                        = 0
    WholeSize (BitField n name s ': xs)  = n + WholeSize xs
 
+type family BitFieldTypes xs where
+   BitFieldTypes '[]                       = '[]
+   BitFieldTypes (BitField n name s ': xs) = s ': BitFieldTypes xs
 
 class Field f where
    fromField :: Integral b => f -> b
@@ -334,11 +338,12 @@ matchNamedFields' bs = hZipList names values
       values = fieldValues bs
 
 -- | Get field names and values in a tuple
-instance forall lt lv ln lnv w bs.
+instance forall lt ln lnv w bs.
    ( bs ~ BitFields w lt
-   , HFoldr' Extract (bs, HList '[]) lt (bs, HList lv)
+   , ln ~ Replicate (Length lt) String
+   , HFoldr' Extract (bs, HList '[]) lt (bs, HList (BitFieldTypes lt))
    , HFoldr' Name (HList '[]) lt (HList ln)
-   , HZipList ln lv lnv
+   , HZipList ln (BitFieldTypes lt) lnv
    , Show (HList lnv)
    ) => Show (BitFields w lt) where
       show bs = show (matchNamedFields' bs :: HList lnv)
@@ -348,6 +353,7 @@ instance forall lt lt2 w bs.
    ( bs ~ BitFields w lt
    , HFoldr' Extract (bs, HList '[]) lt (bs, HList lt2)
    , Eq (HList lt2)
+   , lt2 ~ BitFieldTypes lt
    ) => Eq (BitFields w lt) where
    (==) x y = x' == y'
       where
