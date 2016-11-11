@@ -52,7 +52,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
       getCount = gpr (StructGetPlaneRes 0 0)
          >.-.> gprsCountPlanes
          >..%~^> \case
-            EINVAL -> flowSet (InvalidHandle hdl)
+            EINVAL -> flowSet InvalidHandle
             e      -> unhdlErr "getPlaneResources" e
    
       -- get the plane IDs (invariant for a given device)
@@ -62,7 +62,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
          let p' = fromIntegral (ptrToWordPtr p)
          gpr (StructGetPlaneRes p' n)
             >..%~^> \case
-               EINVAL -> flowSet (InvalidHandle hdl)
+               EINVAL -> flowSet InvalidHandle
                e      -> unhdlErr "getPlaneResources" e
             >.~.> \_ -> fmap PlaneID <$> sysIO (peekArray (fromIntegral n) p)
 
@@ -85,7 +85,7 @@ getPlane hdl pid = getCount >.~^> getInfo
       gpr :: StructGetPlane -> Flow Sys '[StructGetPlane,InvalidHandle,InvalidPlane]
       gpr s = sysIO (ioctlGetPlane s hdl)
          >..%~^> \case
-            EINVAL -> flowSet (InvalidHandle hdl)
+            EINVAL -> flowSet InvalidHandle
             ENOENT -> flowSet (InvalidPlane (PlaneID (gpPlaneId s)))
             e      -> unhdlErr "getPlane" e
 

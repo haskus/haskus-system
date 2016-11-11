@@ -206,7 +206,7 @@ graphicCardPlanes card = do
       >.~^> flowTraverse (getPlane hdl)
       -- shouldn't happen, except if we unplug the graphic card or unload the
       -- driver
-      >..%~!!> (\(InvalidHandle _) -> error "Invalid handle")
+      >..%~!!> (\InvalidHandle -> error "Invalid handle")
       -- shouldn't happen, planes are invariant
       >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )
       -- return the result

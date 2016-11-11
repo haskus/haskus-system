@@ -57,7 +57,7 @@ getEncoderFromID :: Handle -> Resources -> EncoderID -> Flow Sys '[Encoder,Entry
 getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl)
       >.-.> fromStructGetEncoder res hdl
       >%~^> \case
-         EINVAL -> flowSet (InvalidHandle hdl)
+         EINVAL -> flowSet InvalidHandle
          ENOENT -> flowSet EntryNotFound
          e      -> unhdlErr "getEncoder" e
    where

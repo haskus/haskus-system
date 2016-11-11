@@ -30,7 +30,7 @@ getHandleFlags hdl =
    sysFlow (sysFcntl hdl FcntlGetFlags (0 :: Int))
       >.-.> (BitSet.fromBits . fromIntegral)
       >..%~^> \case
-         EBADF -> flowSet (InvalidHandle hdl)
+         EBADF -> flowSet InvalidHandle
          e     -> unhdlErr "getHandleFlags" e
 
 -- | Set descriptor flags
@@ -38,7 +38,7 @@ setHandleFlags :: Handle -> HandleFlags -> Flow Sys '[(),InvalidHandle]
 setHandleFlags hdl flgs =
    sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
       >%~^> \case
-         EBADF -> flowSet (InvalidHandle hdl)
+         EBADF -> flowSet InvalidHandle
          e     -> unhdlErr "setHandleFlags" e
 
 -- | Handle flags 

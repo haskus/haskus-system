@@ -25,15 +25,17 @@ module ViperVM.Arch.Linux.Error
    , SymbolicLinkLoop (..)
    , NotSymbolicLink (..)
    , TooLongPathName (..)
+   , TooManyLinks (..)
    , InvalidPathComponent (..)
    , FileNotFound (..)
    , FileAlreadyExists (..)
    , InvalidIsDirectory (..)
    , NotADirectory (..)
+   , BusyDirectory (..)
+   , NotEmptyDirectory (..)
+   , NotTheSameFileSystem (..)
    )
 where
-
-import ViperVM.Arch.Linux.Internals.Handle (Handle)
 
 ------------------------------------------------
 -- Errors
@@ -61,7 +63,7 @@ data Interrupted
 
 -- | Invalid handle error
 data InvalidHandle
-   = InvalidHandle Handle
+   = InvalidHandle
    deriving (Show,Eq)
 
 -- | Too many open handles in the process
@@ -114,6 +116,21 @@ data NotADirectory
    = NotADirectory
    deriving (Show,Eq)
 
+-- | Invalid: busy directory
+data BusyDirectory
+   = BusyDirectory
+   deriving (Show,Eq)
+
+-- | Invalid: directory not empty
+data NotEmptyDirectory
+   = NotEmptyDirectory
+   deriving (Show,Eq)
+
+-- | Invalid: not the same filesystem
+data NotTheSameFileSystem
+   = NotTheSameFileSystem
+   deriving (Show,Eq)
+
 -- | Device not found
 data DeviceNotFound
    = DeviceNotFound
@@ -147,6 +164,11 @@ data SymbolicLinkLoop
 -- | A pathname, or a component of a athname, is too long
 data TooLongPathName
    = TooLongPathName
+   deriving (Show,Eq)
+
+-- | Too many links (EMLINK)
+data TooManyLinks
+   = TooManyLinks
    deriving (Show,Eq)
 
 -- | Kernel memory error

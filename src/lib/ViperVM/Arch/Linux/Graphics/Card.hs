@@ -61,7 +61,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
       getRes :: StructCardRes -> Flow Sys '[StructCardRes,InvalidHandle]
       getRes r = sysIO (ioctlGetResources r hdl) >..%~^> \case
-         EINVAL -> flowSet (InvalidHandle hdl)
+         EINVAL -> flowSet InvalidHandle
          e      -> unhdlErr "getResources" e
 
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
@@ -119,7 +119,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 getEntities :: (Resources -> [a]) -> (Handle -> a -> Sys (Either x b)) -> Handle -> Sys [b]
 getEntities getIDs getEntityFromID hdl = do
    res <- getResources hdl
-          >..%~!!> (\(InvalidHandle _) -> error "getEntities: invalid handle")
+          >..%~!!> (\InvalidHandle -> error "getEntities: invalid handle")
           |> flowRes
    let 
       f (Left _)  xs = xs

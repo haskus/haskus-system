@@ -28,7 +28,6 @@ module ViperVM.Arch.Linux.FileSystem
    , sysSetCurrentDirectory
    , sysSetCurrentDirectoryPath
    , sysGetCurrentDirectory
-   , sysRename
    , sysFileLock
    , sysTruncate
    , sysTruncatePath
@@ -52,6 +51,9 @@ module ViperVM.Arch.Linux.FileSystem
    , syncAll
    , syncAllByHandle
    , syncHandle
+   -- ** Rename
+   , RenameErrors
+   , rename
    -- * Device
    , DeviceID (..)
    , withDeviceID
@@ -151,13 +153,6 @@ sysGetCurrentDirectory = go 128
             >%~^> \case
                ERANGE -> go (2 * n)
                e      -> flowSet e
-
-sysRename :: FilePath -> FilePath -> IOErr ()
-sysRename oldPath newPath =
-   withCString oldPath $ \old' ->
-      withCString newPath $ \new' ->
-         syscall @"rename" old' new'
-            ||> toErrorCodeVoid
 
 data FileLock =
      SharedLock
@@ -447,40 +442,40 @@ open mhdl path flags mode = do
       call path' (BitSet.toBits flags) (BitSet.toBits mode))
          ||> toErrorCodePure (Handle . fromIntegral)
          >..%~^> \case
-            EACCES                  -> flowSet NotAllowed
-            EDQUOT                  -> flowSet ExhaustedQuota
-            EEXIST                  -> flowSet FileAlreadyExists
-            EFAULT                  -> flowSet MemoryError
-            EFBIG                   -> flowSet Overflow
-            EINTR                   -> flowSet Interrupted
-            EINVAL                  -> flowSet InvalidParam
-            EISDIR                  -> flowSet InvalidIsDirectory
-            ELOOP                   -> flowSet SymbolicLinkLoop
-            EMFILE                  -> flowSet TooManyProcessHandles
-            ENAMETOOLONG            -> flowSet TooLongPathName
-            ENFILE                  -> flowSet TooManySystemHandles
-            ENODEV                  -> flowSet DeviceNotFound
-            ENOENT                  -> flowSet InvalidPathComponent
-            ENOMEM                  -> flowSet OutOfKernelMemory
-            ENOSPC                  -> flowSet OutOfSpace
-            ENOTDIR                 -> flowSet NotADirectory
-            ENXIO                   -> flowSet FileSystemIOError
-            EOPNOTSUPP              -> flowSet TempFileNotSupported
-            EPERM                   -> flowSet NotAllowed
-            EROFS                   -> flowSet ReadOnlyFileSystem
-            ETXTBSY                 -> flowSet CannotWriteExecutedImage
-            EAGAIN                  -> flowSet RetryLater
-            EBADF | Just h <- mhdl  -> flowSet (InvalidHandle h)
-            err                     -> unhdlErr "open" err
+            EACCES       -> flowSet NotAllowed
+            EDQUOT       -> flowSet ExhaustedQuota
+            EEXIST       -> flowSet FileAlreadyExists
+            EFAULT       -> flowSet MemoryError
+            EFBIG        -> flowSet Overflow
+            EINTR        -> flowSet Interrupted
+            EINVAL       -> flowSet InvalidParam
+            EISDIR       -> flowSet InvalidIsDirectory
+            ELOOP        -> flowSet SymbolicLinkLoop
+            EMFILE       -> flowSet TooManyProcessHandles
+            ENAMETOOLONG -> flowSet TooLongPathName
+            ENFILE       -> flowSet TooManySystemHandles
+            ENODEV       -> flowSet DeviceNotFound
+            ENOENT       -> flowSet InvalidPathComponent
+            ENOMEM       -> flowSet OutOfKernelMemory
+            ENOSPC       -> flowSet OutOfSpace
+            ENOTDIR      -> flowSet NotADirectory
+            ENXIO        -> flowSet FileSystemIOError
+            EOPNOTSUPP   -> flowSet TempFileNotSupported
+            EPERM        -> flowSet NotAllowed
+            EROFS        -> flowSet ReadOnlyFileSystem
+            ETXTBSY      -> flowSet CannotWriteExecutedImage
+            EAGAIN       -> flowSet RetryLater
+            EBADF        -> flowSet InvalidHandle
+            err          -> unhdlErr "open" err
 
 
 -- | Close a file descriptor
 close :: MonadIO m => Handle -> Flow m '[(),InvalidHandle,Interrupted,FileSystemIOError]
-close h@(Handle fd) =
+close (Handle fd) =
    liftIO (syscall @"close" fd)
       ||> toErrorCodeVoid
       >..%~^> \case
-         EBADF -> flowSet (InvalidHandle h)
+         EBADF -> flowSet InvalidHandle
          EINTR -> flowSet Interrupted
          EIO   -> flowSet FileSystemIOError
          err   -> unhdlErr "close" err
@@ -500,10 +495,10 @@ syncAll = liftIO (syscall @"sync")
 -- | Causes all pending modifications to file system metadata and cached file
 -- data to be written to the underlying filesystem containg the open handle `fd`
 syncAllByHandle :: MonadIO m => Handle -> Flow m '[(),InvalidHandle]
-syncAllByHandle h@(Handle fd) = liftIO (syscall @"syncfs" fd)
+syncAllByHandle (Handle fd) = liftIO (syscall @"syncfs" fd)
    ||> toErrorCodeVoid
    >..%~^> \case
-      EBADF -> flowSet (InvalidHandle h)
+      EBADF -> flowSet InvalidHandle
       err   -> unhdlErr "syncAllByHandle" err
 
 -- | Flushes all modified in-core of the file referred by the handle to the disk
@@ -517,11 +512,11 @@ syncAllByHandle h@(Handle fd) = liftIO (syscall @"syncfs" fd)
 -- metadata required to retrieve it (e.g., the file size) are flushed on disk.
 -- Otherwise, all the metadata are flushed.
 syncHandle :: MonadIO m => Bool -> Handle -> Flow m '[(),InvalidHandle,FileSystemIOError, InvalidParam]
-syncHandle flushMetadata h@(Handle fd) =
+syncHandle flushMetadata (Handle fd) =
       call
          ||> toErrorCodeVoid
          >..%~^> \case
-            EBADF  -> flowSet (InvalidHandle h)
+            EBADF  -> flowSet InvalidHandle
             EIO    -> flowSet FileSystemIOError
             EROFS  -> flowSet InvalidParam
             EINVAL -> flowSet InvalidParam
@@ -530,6 +525,69 @@ syncHandle flushMetadata h@(Handle fd) =
       call = if flushMetadata
                then liftIO (syscall @"fsync" fd)
                else liftIO (syscall @"fdatasync" fd)
+
+-----------------------------------------------------------------------
+-- Rename/move
+-----------------------------------------------------------------------
+
+type RenameErrors
+   = '[ NotAllowed
+      , BusyDirectory
+      , ExhaustedQuota
+      , InvalidParam
+      , InvalidIsDirectory
+      , SymbolicLinkLoop
+      , TooManyLinks
+      , TooLongPathName
+      , InvalidPathComponent
+      , OutOfKernelMemory
+      , OutOfSpace
+      , NotADirectory
+      , NotEmptyDirectory
+      , ReadOnlyFileSystem
+      , NotTheSameFileSystem
+      , InvalidHandle
+      , FileAlreadyExists
+      ]
+
+
+-- | Change or exchange the name or location of a file
+rename :: MonadIO m => Maybe Handle -> FilePath -> Maybe Handle -> FilePath -> [RenameFlag] -> Flow m (() ': RenameErrors)
+rename mohdl oldPath mnhdl newPath flags = do
+   let
+      flags'              = BitSet.fromList flags
+      fromHdl (Handle fd) = fd
+      mohdl'              = fromMaybe 0xFFFFFFFF (fmap fromHdl mohdl)
+      mnhdl'              = fromMaybe 0xFFFFFFFF (fmap fromHdl mnhdl)
+      noreplace           = BitSet.member flags' RenameNoReplace
+   liftIO $ withCString oldPath $ \old' ->
+      liftIO $ withCString newPath $ \new' ->
+         liftIO (syscall @"renameat2" mohdl' old' mnhdl' new'
+                                      (BitSet.toBits flags'))
+            ||> toErrorCodeVoid
+            >..%~^> \case
+               EACCES                   -> flowSet NotAllowed
+               EBUSY                    -> flowSet BusyDirectory
+               EDQUOT                   -> flowSet ExhaustedQuota
+               EINVAL                   -> flowSet InvalidParam
+               EISDIR                   -> flowSet InvalidIsDirectory
+               ELOOP                    -> flowSet SymbolicLinkLoop
+               EMLINK                   -> flowSet TooManyLinks
+               ENAMETOOLONG             -> flowSet TooLongPathName
+               ENOENT                   -> flowSet InvalidPathComponent
+               ENOMEM                   -> flowSet OutOfKernelMemory
+               ENOSPC                   -> flowSet OutOfSpace
+               ENOTDIR                  -> flowSet NotADirectory
+               ENOTEMPTY                -> flowSet NotEmptyDirectory
+               EEXIST | noreplace       -> flowSet FileAlreadyExists
+                      | otherwise       -> flowSet NotEmptyDirectory
+               EPERM                    -> flowSet NotAllowed
+               EROFS                    -> flowSet ReadOnlyFileSystem
+               EXDEV                    -> flowSet NotTheSameFileSystem
+               EBADF                    -> flowSet InvalidHandle
+               err                      -> unhdlErr "rename" err
+
+
 
 
 -----------------------------------------------------------------------

@@ -61,12 +61,12 @@ type ReadErrors
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
 sysRead :: MonadIO m => Handle -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors)
-sysRead h@(Handle fd) ptr count =
+sysRead (Handle fd) ptr count =
    liftIO (syscall @"read" fd ptr count)
       ||> toErrorCodePure fromIntegral
       >..%~^> \case
          EAGAIN -> flowSet RetryLater
-         EBADF  -> flowSet (InvalidHandle h)
+         EBADF  -> flowSet InvalidHandle
          EFAULT -> flowSet MemoryError
          -- We shouldn't use blocking calls with the primop "read" syscall,
          -- hence we shouldn't be interrupted
@@ -91,13 +91,13 @@ type ReadErrors'
 
 -- | Read a file descriptor at a given position
 sysReadWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors')
-sysReadWithOffset h@(Handle fd) offset ptr count =
+sysReadWithOffset (Handle fd) offset ptr count =
    liftIO (syscall @"pread64" fd ptr count offset)
       ||> toErrorCodePure fromIntegral
       >..%~^> \case
          EAGAIN    -> flowSet RetryLater
-         EBADF     -> flowSet (InvalidHandle h)
-         ESPIPE    -> flowSet (InvalidHandle h)
+         EBADF     -> flowSet InvalidHandle
+         ESPIPE    -> flowSet InvalidHandle
          EFAULT    -> flowSet MemoryError
          -- We shouldn't use blocking calls with the primop "read" syscall,
          -- hence we shouldn't be interrupted

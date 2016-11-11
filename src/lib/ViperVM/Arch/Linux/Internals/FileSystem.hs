@@ -59,9 +59,15 @@ module ViperVM.Arch.Linux.Internals.FileSystem
    , ioctlSetVersion32
    , ioctlGetXAttr
    , ioctlSetXAttr
+   , FSCryptPolicy (..)
+   , ioctlSetEncryptionPolicy
+   , ioctlGetEncryptionPWSalt
+   , ioctlGetEncryptionPolicy
    , InodeFlag (..)
    , inodeUserVisibleFlags
    , inodeUserModifiableFlags
+   , SyncFileRangeFlag (..)
+   , RWF (..)
    )
 where
 
@@ -502,7 +508,31 @@ ioctlGetXAttr = ioctlRead 88 31
 ioctlSetXAttr :: FsxAttr -> Handle -> IOErr ()
 ioctlSetXAttr = ioctlWrite 88 32
 
+---------------------------------
+-- File system encryption support
+---------------------------------
 
+-- | File system encryption policy (provided via an ioctl on the topmost
+-- directoy)
+data FSCryptPolicy = FSCryptPolicy
+   { cryptVersion                 :: Word8
+   , cryptContentsEncryptionMode  :: Word8
+   , cryptFileNamesEncryptionMode :: Word8
+   , cryptFlags                   :: Word8
+   , cryptMasterKeyDesc           :: Vector 8 Word8
+   } deriving (Show,Generic,Storable)
+
+-- | FS_IOC_SET_ENCRYPTION_POLICY
+ioctlSetEncryptionPolicy :: FSCryptPolicy -> Handle -> IOErr ()
+ioctlSetEncryptionPolicy = ioctlWriteCmd (ioctlCommand Read 102 19 (sizeOfT' @FSCryptPolicy))
+
+-- | FS_IOC_GET_ENCRYPTION_PWSALT
+ioctlGetEncryptionPWSalt :: Handle -> IOErr (Vector 16 Word8)
+ioctlGetEncryptionPWSalt = ioctlReadCmd (ioctlCommand Write 102 20 16)
+
+-- | FS_IOC_GET_ENCRYPTION_POLICY
+ioctlGetEncryptionPolicy :: Handle -> IOErr FSCryptPolicy
+ioctlGetEncryptionPolicy = ioctlReadCmd (ioctlCommand Write 102 21 (sizeOfT' @FSCryptPolicy))
 
 -- | Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
 data InodeFlag
@@ -605,4 +635,11 @@ data SyncFileRangeFlag
    = SyncFileRangeWaitBefore
    | SyncFileRangeWrite
    | SyncFileRangeWaitAfter
+   deriving (Show,Eq,Enum,CBitSet)
+
+-- | Flags for preadv2/pwritev2
+data RWF
+   = RWFHiPri  -- ^ High priority request, poll if possible
+   | RWFDSync  -- ^ per-IO O_DSYNC
+   | RWFSync   -- ^ per-IO O_SYNC
    deriving (Show,Eq,Enum,CBitSet)

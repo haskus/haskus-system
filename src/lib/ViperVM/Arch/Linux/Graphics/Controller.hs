@@ -73,7 +73,7 @@ getControllerFromID :: Handle -> ControllerID -> Flow Sys '[Controller,EntryNotF
 getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl)
       >.-.> fromStructController hdl
       >%~^> \case
-         EINVAL -> flowSet (InvalidHandle hdl)
+         EINVAL -> flowSet InvalidHandle
          ENOENT -> flowSet EntryNotFound
          e      -> unhdlErr "getController" e
    where
