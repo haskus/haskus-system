@@ -10,6 +10,7 @@ module ViperVM.Utils.STM
    , S.writeTVar
    , S.readTVar
    , S.newTVar
+   , S.swapTVar
    , S.modifyTVar
    , S.modifyTVar'
    -- ** TMVar
