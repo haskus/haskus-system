@@ -54,7 +54,7 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
 
 -- | Get an encoder from its ID
 getEncoderFromID :: Handle -> Resources -> EncoderID -> Flow Sys '[Encoder,EntryNotFound,InvalidHandle]
-getEncoderFromID hdl res (EncoderID encId) = sysIO (ioctlGetEncoder enc hdl)
+getEncoderFromID hdl res (EncoderID encId) = liftIO (ioctlGetEncoder enc hdl)
       >.-.> fromStructGetEncoder res hdl
       >%~^> \case
          EINVAL -> flowSet InvalidHandle

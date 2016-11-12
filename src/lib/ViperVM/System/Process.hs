@@ -22,10 +22,10 @@ threadDelayMilliSec = threadDelayMicroSec . (*1000)
 
 -- | Delay the thread (microseconds)
 threadDelayMicroSec :: Word -> Sys ()
-threadDelayMicroSec = sysIO . threadDelay . fromIntegral
+threadDelayMicroSec = liftIO . threadDelay . fromIntegral
 
 -- | Fork a thread
 sysFork :: String -> Sys () -> Sys ()
 sysFork name f = do
    act <- forkSys name f
-   void $ sysIO $ forkIO act
+   void $ liftIO $ forkIO act

@@ -107,8 +107,8 @@ newEventWaiterThread fd@(Handle lowfd) = do
       bufsz = 1000 -- buffer size
       rfd = Fd (fromIntegral lowfd)
 
-   ch <- sysIO $ newBroadcastTChanIO
-   sysFork "Graphics event reader" $ sysIO $ allocaBytes bufsz $ \ptr -> forever $ do
+   ch <- liftIO $ newBroadcastTChanIO
+   sysFork "Graphics event reader" $ liftIO $ allocaBytes bufsz $ \ptr -> forever $ do
       threadWaitRead rfd
       sysRead fd ptr (fromIntegral bufsz)
          >.~!> \sz2 -> do
@@ -267,20 +267,20 @@ initRenderingEngine card ctrl mode nfb flags draw
       bufs <- forM [1..nfb] (const (initGenericFrameBuffer card mode fmt))
 
       -- page flip
-      fbState <- sysIO $ newTVarIO (BufferingState
+      fbState <- liftIO $ newTVarIO (BufferingState
                   { fbShown    = head bufs
                   , fbPending  = Nothing
                   , fbDrawn    = Nothing
                   , fbDrawable = tail bufs
                   })
 
-      fps <- sysIO $ newTVarIO (0 :: Word)
+      fps <- liftIO $ newTVarIO (0 :: Word)
 
       -- on page flip complete
       -- FIXME: how do we know which controller has flipped?
       onEvent (graphicCardChan card) $ \case
          VBlankEvent FlipComplete _ ->
-            sysIO $ atomically $ do
+            liftIO $ atomically $ do
                s <- readTVar fbState
                case fbPending s of
                   Nothing -> return ()
@@ -296,7 +296,7 @@ initRenderingEngine card ctrl mode nfb flags draw
 
       -- on drawn frame
       sysFork "Multi-buffering manager" $ forever $ do
-         gfb <- sysIO $ atomically $ do
+         gfb <- liftIO $ atomically $ do
             s <- readTVar fbState
             -- check that the previous frame is flipped
             -- and that we have a frame to draw
@@ -322,7 +322,7 @@ initRenderingEngine card ctrl mode nfb flags draw
          drawNext :: BitSet Word FrameWait -> (GenericFrame -> Sys ()) -> Sys ()
          drawNext wait f = do
             -- reserve next frame
-            gfb <- sysIO $ atomically $ do
+            gfb <- liftIO $ atomically $ do
                      s <- readTVar fbState
                      when (BitSet.member wait WaitPending && isJust (fbPending s)) retry
                      when (BitSet.member wait WaitDrawn   && isJust (fbDrawn   s)) retry
@@ -335,7 +335,7 @@ initRenderingEngine card ctrl mode nfb flags draw
             -- draw it
             f gfb
             -- indicate it is drawn
-            sysIO $ atomically $ do
+            liftIO $ atomically $ do
                s <- readTVar fbState
                case fbDrawn s of
                   Nothing -> writeTVar fbState (s { fbDrawn = Just gfb })
@@ -346,7 +346,7 @@ initRenderingEngine card ctrl mode nfb flags draw
                         , fbDrawable = d : fbDrawable s
                         }
             -- switch to another thread
-            sysIO yield
+            liftIO yield
 
       -- set mode and connectors
       -- setController ctrl (SetFB fb1) [conn] (Just mode)

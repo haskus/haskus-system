@@ -22,7 +22,7 @@ import ViperVM.Utils.Flow
 
 -- | sysPower lifted in Sys
 sysPower' :: PowerCommand -> Flow Sys '[(),ErrorCode]
-sysPower' = sysIO . sysPower
+sysPower' = liftIO . sysPower
 
 -- | Ctrl-Alt-Del sequence sends SIGINT to init task.
 disableRebootKeys :: Flow Sys '[(),NotAllowed]

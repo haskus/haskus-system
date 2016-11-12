@@ -103,7 +103,7 @@ parseDevFile = do
 sysfsReadDevFile' :: Handle -> Flow Sys (DeviceID ': ReadErrors')
 sysfsReadDevFile' devfd =
    -- 16 bytes should be enough
-   sysIO (handleReadBuffer devfd Nothing 16)
+   liftIO (handleReadBuffer devfd Nothing 16)
       >.-.> (\content -> do
          case parse parseDevFile "" (Text.bufferDecodeUtf8 content) of
             Right x -> x

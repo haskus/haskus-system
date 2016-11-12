@@ -60,7 +60,7 @@ getResources :: Handle -> Flow Sys '[Resources,InvalidHandle]
 getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
       getRes :: StructCardRes -> Flow Sys '[StructCardRes,InvalidHandle]
-      getRes r = sysIO (ioctlGetResources r hdl) >..%~^> \case
+      getRes r = liftIO (ioctlGetResources r hdl) >..%~^> \case
          EINVAL -> flowSet InvalidHandle
          e      -> unhdlErr "getResources" e
 
@@ -103,7 +103,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
             as' = fmap (wordPtrToPtr . fromIntegral) as
             arraySizes = extractSize r
-         [fbs,ctrls,conns,encs] <- sysIO (peekArrays arraySizes as')
+         [fbs,ctrls,conns,encs] <- liftIO (peekArrays arraySizes as')
          flowSetN @0 $ Resources
                (fmap FrameBufferID fbs)
                (fmap ControllerID  ctrls)

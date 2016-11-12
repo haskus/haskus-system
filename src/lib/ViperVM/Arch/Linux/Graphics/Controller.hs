@@ -70,7 +70,7 @@ fromStructController hdl StructController{..} =
       
 -- | Get Controller
 getControllerFromID :: Handle -> ControllerID -> Flow Sys '[Controller,EntryNotFound, InvalidHandle]
-getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl)
+getControllerFromID hdl crtcid = liftIO (ioctlGetController crtc hdl)
       >.-.> fromStructController hdl
       >%~^> \case
          EINVAL -> flowSet InvalidHandle

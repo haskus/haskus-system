@@ -56,7 +56,7 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
       go :: Word64 -> Handle -> Flow Sys (Buffer ': ReadErrors')
       go sz fd =
          -- use 0 offset to read from the beginning
-         sysIO (handleReadBuffer fd (Just 0) sz)
+         liftIO (handleReadBuffer fd (Just 0) sz)
             >..~=> (\err -> do
                let msg = "Atomic read file (failed with %s)"
                sysLog LogWarning (printf msg (show err)))
@@ -68,7 +68,7 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
 
 -- | Read into a buffer
 readBuffer :: Handle -> Maybe Word64 -> Word64 -> Flow Sys (Buffer ': ReadErrors')
-readBuffer hdl moffset size = sysIO (handleReadBuffer hdl moffset size)
+readBuffer hdl moffset size = liftIO (handleReadBuffer hdl moffset size)
 
 -- | Read a storable
 readStorable :: forall a. Storable a => Proxy a -> Handle -> Maybe Word64 -> Flow Sys (a ': ReadErrors')

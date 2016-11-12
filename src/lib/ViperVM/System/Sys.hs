@@ -9,7 +9,6 @@ module ViperVM.System.Sys
    , runSys
    , runSys'
    , forkSys
-   , sysIO
    , sysIO'
    , sysRun
    , sysRun'
@@ -77,11 +76,11 @@ runSys (Sys act) = do
 -- | Fork the log in the Sys monad
 forkSys :: String -> Sys a -> Sys (IO a)
 forkSys name act = do
-   (status,statusSrc) <- sysIO newFutureIO
-   (log,logSrc)       <- sysIO newFutureIO
+   (status,statusSrc) <- liftIO newFutureIO
+   (log,logSrc)       <- liftIO newFutureIO
 
-   (status2,statusSrc2) <- sysIO newFutureIO
-   (log2,logSrc2)       <- sysIO newFutureIO
+   (status2,statusSrc2) <- liftIO newFutureIO
+   (log2,logSrc2)       <- liftIO newFutureIO
 
    mainState <- get
 
@@ -97,7 +96,7 @@ forkSys name act = do
 
    -- link with previous entry
    c <- gets sysLogCurrent
-   sysIO $ atomically (setFuture e c)
+   liftIO $ atomically (setFuture e c)
 
    -- set main state
    put $ mainState
@@ -119,10 +118,6 @@ runSys' = void . runSys
 -- | Execute an IO action that may use the state
 sysIO' :: (SysState -> IO (a,SysState)) -> Sys a
 sysIO' = Sys . StateT
-
--- | Execute an IO action
-sysIO :: IO a -> Sys a
-sysIO = Sys . liftIO
 
 instance MonadInIO Sys where
    liftWith  = sysWith
@@ -197,18 +192,18 @@ data LogType
 setLogStatus :: LogStatus -> Sys ()
 setLogStatus s = do
    st <- gets sysLogStatus
-   sysIO (setFutureIO s st)
+   liftIO (setFutureIO s st)
 
 -- | Add a log entry
 sysLogAdd :: (LogNext -> Log) -> Sys ()
 sysLogAdd f = do
-   (status,statusSrc) <- sysIO newFutureIO
-   (log,logSrc)       <- sysIO newFutureIO
+   (status,statusSrc) <- liftIO newFutureIO
+   (log,logSrc)       <- liftIO newFutureIO
    let e = f (LogNext status log)
 
    -- link with previous entry
    c <- gets sysLogCurrent
-   sysIO $ atomically (setFuture e c)
+   liftIO $ atomically (setFuture e c)
 
    -- update state
    modify' $ \s -> s
@@ -232,7 +227,7 @@ sysLogSequence text act = do
 -- | Start a new log sequence
 sysLogBegin :: String -> Sys ()
 sysLogBegin text = do
-   (log,logSrc) <- sysIO newFutureIO
+   (log,logSrc) <- liftIO newFutureIO
    sysLogAdd (LogGroup (Text.pack text) log)
 
    -- add the group to the list
@@ -249,6 +244,7 @@ sysLogEnd =
       }
 
 -- | Print the log on the standard output
+-- FIXME: use System.Terminal
 sysLogPrint :: Sys ()
 sysLogPrint = do
       -- print the log

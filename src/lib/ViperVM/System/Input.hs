@@ -118,8 +118,8 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
                   eventChannel  <- newEventReader hdl
                   bundleChannel <- newInputEventHandler eventChannel
                   InputDevice devpath dev hdl
-                     <$< sysIO (Input.getDeviceName hdl)
-                     <*< sysIO (Input.getDeviceInfo hdl)
+                     <$< liftIO (Input.getDeviceName hdl)
+                     <*< liftIO (Input.getDeviceInfo hdl)
                      <|< flowSingle eventChannel
                      <|< flowSingle bundleChannel
                )
@@ -139,7 +139,7 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
 -- events, leading the kernel to drop events)
 newInputEventHandler :: TChan Input.Event -> Sys (TChan InputEventBundle)
 newInputEventHandler eventChannel = do
-   bundleChannel <- sysIO newBroadcastTChanIO
+   bundleChannel <- liftIO newBroadcastTChanIO
    onEventWithData [] eventChannel $ \xs ev' -> do
       let ev = makeInputEvent ev'
       case inputEventType ev of
@@ -149,7 +149,7 @@ newInputEventHandler eventChannel = do
          -- On synchronization, commit the bundle (without the sync event)
          InputSyncEvent SyncReport 0 -> do
             let bundle = InputEventBundle (reverse xs)
-            sysIO $ atomically $ writeTChan bundleChannel bundle
+            liftIO $ atomically $ writeTChan bundleChannel bundle
             return []
          -- otherwise append the event
          _                     -> return (ev:xs)

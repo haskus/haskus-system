@@ -72,7 +72,7 @@ getPropertyMeta fd pid = do
                (fromCStringBuffer (gpsName g))
    where
       getProperty' :: StructGetProperty -> Flow Sys '[StructGetProperty,InvalidParam,InvalidProperty]
-      getProperty' r = sysIO (ioctlGetProperty r fd) >%~^> \case
+      getProperty' r = liftIO (ioctlGetProperty r fd) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet InvalidProperty
          e      -> unhdlErr "getPropertyMeta" e
@@ -92,7 +92,7 @@ getPropertyMeta fd pid = do
       allocaArray' n f = allocaArray (fromIntegral n) f
 
       getBlobStruct :: StructGetBlob -> Flow Sys '[StructGetBlob,InvalidParam,InvalidProperty]
-      getBlobStruct r = sysIO (ioctlGetBlob r fd) >%~^> \case
+      getBlobStruct r = liftIO (ioctlGetBlob r fd) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet InvalidProperty
          e      -> unhdlErr "getBlobStruct" e
@@ -107,12 +107,12 @@ getPropertyMeta fd pid = do
                      }
 
          getBlobStruct gb >.~^> \gb' -> do
-            ptr <- sysIO . mallocBytes . fromIntegral . gbLength $ gb'
+            ptr <- liftIO . mallocBytes . fromIntegral . gbLength $ gb'
             getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
                -- free ptr on error
-               >..~=> const (sysIO (free ptr))
+               >..~=> const (liftIO (free ptr))
                -- otherwise return a bytestring
-               >.~.> const (sysIO (bufferPackPtr (fromIntegral (gbLength gb')) ptr))
+               >.~.> const (liftIO (bufferPackPtr (fromIntegral (gbLength gb')) ptr))
 
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow Sys '[c,InvalidParam,InvalidProperty]) -> Flow Sys '[c,InvalidParam,InvalidProperty]
@@ -133,12 +133,12 @@ getPropertyMeta fd pid = do
                f valuePtr blobPtr
 
       withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr Word) ->
-         f =<< sysIO (peekArray (fromIntegral n) ptr)
+         f =<< liftIO (peekArray (fromIntegral n) ptr)
       withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr Word) ptr ->
-         f =<< sysIO (peekArray (fromIntegral n) ptr)
+         f =<< liftIO (peekArray (fromIntegral n) ptr)
       withBuffers' n m f = withBuffers n m $ \p1 p2 -> do
-         vs <- sysIO (peekArray (fromIntegral n) p1)
-         bs <- sysIO (peekArray (fromIntegral m) p2)
+         vs <- liftIO (peekArray (fromIntegral n) p1)
+         bs <- liftIO (peekArray (fromIntegral m) p2)
          f vs bs
          
       getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow Sys '[PropertyType,InvalidParam,InvalidProperty]

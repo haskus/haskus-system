@@ -34,7 +34,7 @@ readSymbolicLink ::
              ]
    ) => Maybe Handle -> FilePath -> Flow Sys (String ': errs)
 readSymbolicLink hdl path = do
-   sysIO (sysReadLinkAt hdl path)
+   liftIO (sysReadLinkAt hdl path)
       >%~^> \case
          EACCES       -> flowSet NotAllowed
          EINVAL       -> flowSet NotSymbolicLink

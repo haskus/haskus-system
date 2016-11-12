@@ -30,8 +30,8 @@ newEventReader fd@(Handle lowfd) = do
       rfd = Fd (fromIntegral lowfd)
       nb  = 50 -- number of events read at once
 
-   ch <- sysIO newBroadcastTChanIO
-   sysFork "Event reader" $ sysIO $ allocaArray nb $ \ptr -> forever $ do
+   ch <- liftIO newBroadcastTChanIO
+   sysFork "Event reader" $ liftIO $ allocaArray nb $ \ptr -> forever $ do
       threadWaitRead rfd
       sysRead fd (castPtr ptr) (fromIntegral sz * fromIntegral nb)
          >.~!> \sz2 -> do
@@ -49,11 +49,11 @@ onEventWithData :: a -> TChan e -> (a -> e -> Sys a) -> Sys ()
 onEventWithData x bch f = do
    sysLog LogInfo "Creating event listener"
 
-   ch <- sysIO $ atomically $ dupTChan bch
+   ch <- liftIO $ atomically $ dupTChan bch
    sysFork "TChan event listener" $ do
       let
          go a = do
-            e  <- sysIO (atomically (readTChan ch))
+            e  <- liftIO (atomically (readTChan ch))
             a' <- f a e
             go a'
       go x

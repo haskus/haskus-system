@@ -104,7 +104,7 @@ instance Object Plane where
 -- | Get object's number of properties
 getObjectPropertyCount :: Object o => Handle -> o -> Flow Sys '[Word32, ErrorCode]
 getObjectPropertyCount hdl o = do
-      sysIO (ioctlGetObjectProperties s hdl)
+      liftIO (ioctlGetObjectProperties s hdl)
          >.-.> gopCountProps
    where
       s = StructGetObjectProperties 0 0 0
@@ -142,7 +142,7 @@ getObjectProperties hdl o =
                >.~.> extractProperties
 
       getObjectProperties' :: StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidParam,ObjectNotFound]
-      getObjectProperties' s = sysIO (ioctlGetObjectProperties s hdl) >%~^> \case
+      getObjectProperties' s = liftIO (ioctlGetObjectProperties s hdl) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet ObjectNotFound
          e      -> unhdlErr "getObjectProperties" e
@@ -154,8 +154,8 @@ getObjectProperties hdl o =
              propsPtr = wordPtrToPtr (fromIntegral (gopPropsPtr s))
              valsPtr :: Ptr Word64
              valsPtr  = wordPtrToPtr (fromIntegral (gopValuesPtr s))
-         ps <- sysIO (peekArray n propsPtr)
-         vs <- sysIO (peekArray n valsPtr)
+         ps <- liftIO (peekArray n propsPtr)
+         vs <- liftIO (peekArray n valsPtr)
          return (zipWith RawProperty ps vs)
 
       -- check that we have allocated enough entries to store the properties

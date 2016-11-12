@@ -33,7 +33,7 @@ import ViperVM.Format.Binary.Word
 
 -- | Convert a syscall into a flow
 sysFlow :: IO Int64 -> Flow Sys '[Int64,ErrorCode]
-sysFlow f = sysIO (f ||> toErrorCode)
+sysFlow f = liftIO (f ||> toErrorCode)
 
 -- | Convert a syscall result into a flow
 sysOnSuccess :: IO Int64 -> (Int64 -> a) -> Flow Sys '[a,ErrorCode]

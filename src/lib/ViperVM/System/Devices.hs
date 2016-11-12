@@ -222,14 +222,14 @@ initDeviceManager sysfs devfs = do
    -- open Netlink socket and then duplicate the kernel event channel so that
    -- events start accumulating until we launch the handling thread
    bch <- newKernelEventReader
-   ch <- sysIO $ atomically $ dupTChan bch
+   ch <- liftIO $ atomically $ dupTChan bch
 
    -- create empty device manager
-   root      <- sysIO $ deviceTreeCreate Nothing Nothing Map.empty
-   devNum    <- sysIO (newTVarIO 0)          -- device node counter
-   subIndex' <- sysIO (newTVarIO Map.empty)
-   tree'     <- sysIO (newTVarIO root)
-   sadd      <- sysIO newBroadcastTChanIO
+   root      <- liftIO $ deviceTreeCreate Nothing Nothing Map.empty
+   devNum    <- liftIO (newTVarIO 0)          -- device node counter
+   subIndex' <- liftIO (newTVarIO Map.empty)
+   tree'     <- liftIO (newTVarIO root)
+   sadd      <- liftIO newBroadcastTChanIO
    let dm = DeviceManager
                { dmDevices        = tree'
                , dmSubsystems     = subIndex'
@@ -267,7 +267,7 @@ initDeviceManager sysfs devfs = do
             deviceAdd dm path Nothing
 
          -- list directories (sub-devices) that are *not* symlinks
-         dirs <- sysIO (listDirectory hdl)
+         dirs <- liftIO (listDirectory hdl)
                  -- filter to keep only directories (sysfs fills the type field)
                  >.-.> filter (\entry -> entryType entry == TypeDirectory)
                  -- only keep the directory name
@@ -302,7 +302,7 @@ eventThread :: TChan KernelEvent -> DeviceManager -> Sys ()
 eventThread ch dm = do
    forever $ do
       -- read kernel event
-      ev <- sysIO $ atomically (readTChan ch)
+      ev <- liftIO $ atomically (readTChan ch)
 
 
       case Text.unpack (fst (bkPath (kernelEventDevPath ev))) of
@@ -317,7 +317,7 @@ eventThread ch dm = do
                path = Text.drop 8 (kernelEventDevPath ev)
 
                signalEvent f = do
-                  notFound <- sysIO $ atomically $ do
+                  notFound <- liftIO $ atomically $ do
                      tree <- readTVar (dmDevices dm)
                      case deviceTreeLookup path tree of
                         Just node -> do
@@ -358,7 +358,7 @@ eventThread ch dm = do
 
 -- | Lookup a device by name
 deviceLookup :: DeviceManager -> DevicePath -> Sys (Maybe DeviceTree)
-deviceLookup dm path = deviceTreeLookup path <$> sysIO (readTVarIO (dmDevices dm))
+deviceLookup dm path = deviceTreeLookup path <$> liftIO (readTVarIO (dmDevices dm))
 
 -- | Add a device
 deviceAdd :: DeviceManager -> DevicePath -> Maybe KernelEvent -> Sys ()
@@ -379,9 +379,9 @@ deviceAdd dm path mev = do
                return (sub, (`sysfsMakeDev` DeviceID ma mi) <$> sub)
             _                  -> sysfsReadDev (dmSysFS dm) rpath
 
-   node <- sysIO (deviceTreeCreate msubsystem mdev Map.empty)
+   node <- liftIO (deviceTreeCreate msubsystem mdev Map.empty)
 
-   sysIO $ atomically $ do
+   liftIO $ atomically $ do
       -- update the tree
       tree  <- readTVar (dmDevices dm)
       tree' <- deviceTreeInsert path node tree
@@ -419,7 +419,7 @@ deviceAdd dm path mev = do
 -- | Remove a device
 deviceRemove :: DeviceManager -> DevicePath -> KernelEvent -> Sys ()
 deviceRemove dm path ev = do
-   notFound <- sysIO $ atomically $ do
+   notFound <- liftIO $ atomically $ do
       tree <- readTVar (dmDevices dm)
       case deviceTreeLookup path tree of
          Just node  -> do
@@ -458,7 +458,7 @@ deviceMove dm path ev = do
       Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
       Just x  -> return (Text.drop 8 x) -- remove "/devices"
 
-   notFound <- sysIO $ atomically $ do
+   notFound <- liftIO $ atomically $ do
       -- move the device in the tree
       tree <- readTVar (dmDevices dm)
       case deviceTreeLookup oldPath tree of
@@ -608,11 +608,11 @@ deviceTreeInsert path node root = do
 newKernelEventReader :: Sys (TChan KernelEvent)
 newKernelEventReader = do
    fd <- createKernelEventSocket
-   ch <- sysIO newBroadcastTChanIO
+   ch <- liftIO newBroadcastTChanIO
    let
       Handle lowfd = fd
       rfd = Fd (fromIntegral lowfd)
-      go  = sysIO $ forever $ do
+      go  = liftIO $ forever $ do
                threadWaitRead rfd
                ev <- runSys $ receiveKernelEvent fd
                atomically $ writeTChan ch ev
@@ -639,7 +639,7 @@ getDeviceHandle :: DeviceManager -> Device -> Flow Sys (Handle ': ErrorCode ': O
 getDeviceHandle dm dev = do
 
    -- get a fresh device number
-   num <- sysIO $ atomically $ do
+   num <- liftIO $ atomically $ do
             n <- readTVar (dmDevNum dm)
             writeTVar (dmDevNum dm) (n+1)
             return n
@@ -660,7 +660,7 @@ getDeviceHandle dm dev = do
             let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
             hdl <- open (Just devfd) devname flgs BitSet.empty
             -- then remove it
-            sysIO (sysUnlinkAt devfd devname False)
+            liftIO (sysUnlinkAt devfd devname False)
                >..~!> sysWarningShow "Unlinking special device file failed"
             return hdl
 
@@ -683,7 +683,7 @@ openDeviceDir dm dev = open (Just (dmDevFS dm)) path (BitSet.fromList [HandleDir
 
 -- | List devices
 listDevices :: DeviceManager -> Sys [Text]
-listDevices dm = sysIO (atomically (listDevices' dm))
+listDevices dm = liftIO (atomically (listDevices' dm))
 
 -- | List devices
 listDevices' :: DeviceManager -> STM [Text]
@@ -697,13 +697,13 @@ listDevices' dm = go Text.empty <$> readTVar (dmDevices dm)
 
 -- | List devices classes
 listDeviceClasses :: DeviceManager -> Sys [Text]
-listDeviceClasses dm = sysIO (atomically (Map.keys <$> readTVar (dmSubsystems dm)))
+listDeviceClasses dm = liftIO (atomically (Map.keys <$> readTVar (dmSubsystems dm)))
 
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
 listDevicesWithClass :: DeviceManager -> String -> Sys [(DevicePath,DeviceTree)]
-listDevicesWithClass dm cls = sysIO $ atomically $ do
+listDevicesWithClass dm cls = liftIO $ atomically $ do
    subs <- readTVar (dmSubsystems dm)
    devs <- readTVar (dmDevices dm)
    ds <- listDevices' dm

@@ -45,7 +45,7 @@ newtype PlaneID = PlaneID Word32 deriving (Show,Eq)
 getPlaneResources :: Handle -> Flow Sys '[[PlaneID], InvalidHandle]
 getPlaneResources hdl = getCount >.~^> getIDs
    where
-      gpr s = sysIO (ioctlGetPlaneResources s hdl)
+      gpr s = liftIO (ioctlGetPlaneResources s hdl)
 
       -- get the number of planes (invariant for a given device)
       getCount :: Flow Sys '[Word32,InvalidHandle]
@@ -64,7 +64,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
             >..%~^> \case
                EINVAL -> flowSet InvalidHandle
                e      -> unhdlErr "getPlaneResources" e
-            >.~.> \_ -> fmap PlaneID <$> sysIO (peekArray (fromIntegral n) p)
+            >.~.> \_ -> fmap PlaneID <$> liftIO (peekArray (fromIntegral n) p)
 
 -- | A plane
 data Plane = Plane
@@ -83,7 +83,7 @@ getPlane hdl pid = getCount >.~^> getInfo
    where
 
       gpr :: StructGetPlane -> Flow Sys '[StructGetPlane,InvalidHandle,InvalidPlane]
-      gpr s = sysIO (ioctlGetPlane s hdl)
+      gpr s = liftIO (ioctlGetPlane s hdl)
          >..%~^> \case
             EINVAL -> flowSet InvalidHandle
             ENOENT -> flowSet (InvalidPlane (PlaneID (gpPlaneId s)))
@@ -109,7 +109,7 @@ getPlane hdl pid = getCount >.~^> getInfo
             >.~^> \StructGetPlane{..} -> getResources hdl >.~^> \res -> do
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid getResources
-               fmts <- fmap (PixelFormat . BitFields) <$> sysIO (peekArray (fromIntegral n) p)
+               fmts <- fmap (PixelFormat . BitFields) <$> liftIO (peekArray (fromIntegral n) p)
                flowSet Plane
                   { planeID                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
@@ -171,7 +171,7 @@ setPlane hdl (PlaneID pid) opts = do
                   destX destY destWidth destHeight
                   srcX srcY srcHeight srcWidth
 
-   sysIO (ioctlSetPlane s hdl)
+   liftIO (ioctlSetPlane s hdl)
       >.-.>   const ()
       >..%~^> \case
          EINVAL -> flowSet InvalidParam

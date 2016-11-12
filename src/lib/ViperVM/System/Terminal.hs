@@ -76,10 +76,10 @@ inputThread s = forever $ do
    
    let hdl@(Handle fd) = inputHandle s
 
-   sysIO $ threadWaitRead (Fd (fromIntegral fd))
+   liftIO $ threadWaitRead (Fd (fromIntegral fd))
 
    -- data are ready to be read
-   (after, sz, ptr) <- sysIO $ atomically $ do
+   (after, sz, ptr) <- liftIO $ atomically $ do
       e <- TList.last (inputRequests s)
       case e of
          -- if a request is pending, use its buffer
@@ -122,7 +122,7 @@ inputThread s = forever $ do
    -- TODO: if readBytes is zero, it's the end of file, etc.
    sysAssert "readBytes /= 0" (readBytes /= 0)
 
-   sysIO $ atomically $ after readBytes
+   liftIO $ atomically $ after readBytes
 
 
 readFromHandle :: InputState -> Word64 -> Ptr () -> Sys (Future ())
@@ -183,7 +183,7 @@ outputThread :: OutputState -> Sys ()
 outputThread s = forever $ do
    let hdl@(Handle fd) = outputHandle s
 
-   (buf,semsrc) <- sysIO $ atomically $ do
+   (buf,semsrc) <- liftIO $ atomically $ do
       e <- TList.last (outputBuffers s)
       case e of
          Nothing -> retry
@@ -191,13 +191,13 @@ outputThread s = forever $ do
             TList.delete e' 
             return (TList.value e')
 
-   sysIO $ threadWaitWrite (Fd (fromIntegral fd))
+   liftIO $ threadWaitWrite (Fd (fromIntegral fd))
 
    -- try to write as much as possible
    n <- sysWrite hdl (iobufferPtr buf) (iobufferSize buf)
          |> flowAssertQuiet ("Write bytes to "++show hdl)
 
-   sysIO $ atomically $ if n == iobufferSize buf
+   liftIO $ atomically $ if n == iobufferSize buf
       then setFuture () semsrc
       else do
          let buf' = IOBuffer (iobufferSize buf - n)
@@ -223,11 +223,11 @@ defaultTerminal = do
    -- TODO: set terminal buffering mode?
 
    -- input
-   inState <- sysIO $ newInputState (16 * 1024) stdin
+   inState <- liftIO $ newInputState (16 * 1024) stdin
    sysFork "Terminal input handler"$ inputThread inState
 
    -- output
-   outState <- sysIO $ newOutputState stdout
+   outState <- liftIO $ newOutputState stdout
    sysFork "Terminal output handler" $ outputThread outState
 
    return $ Terminal outState inState

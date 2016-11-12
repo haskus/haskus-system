@@ -42,7 +42,7 @@ setAtomic hdl flags objProps = do
       vals   = fmap snd (concat pvs) -- [Val]
 
 
-   sysIO $ withArray objs $ \pobjs ->
+   liftIO $ withArray objs $ \pobjs ->
       withArray nprops $ \pnprops ->
          withArray props $ \pprops ->
             withArray vals $ \pvals -> do

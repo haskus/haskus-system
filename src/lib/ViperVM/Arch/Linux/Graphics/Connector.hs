@@ -64,7 +64,7 @@ data Connector = Connector
    } deriving (Show)
 
 getConnector' :: Handle -> StructGetConnector -> Flow Sys '[StructGetConnector,InvalidParam,EntryNotFound]
-getConnector' hdl r = sysIO (ioctlGetConnector r hdl) >%~^> \case
+getConnector' hdl r = liftIO (ioctlGetConnector r hdl) >%~^> \case
    EINVAL -> flowSet InvalidParam
    ENOENT -> flowSet EntryNotFound
    e      -> unhdlErr "getModeConnector" e
@@ -124,7 +124,7 @@ parseRes hdl res2 res4 = do
       wrapZero x = Just x
 
       peekArray' :: (Storable a, Integral c) => c -> Ptr a -> Sys [a]
-      peekArray' n ptr = sysIO (peekArray (fromIntegral n) ptr)
+      peekArray' n ptr = liftIO (peekArray (fromIntegral n) ptr)
 
    state <- case connConnection_ res4 of
       1 -> do
