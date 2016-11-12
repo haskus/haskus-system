@@ -9,7 +9,6 @@ module ViperVM.System.Sys
    , runSys
    , runSys'
    , forkSys
-   , sysIO'
    , sysRun
    , sysRun'
    , sysExec
@@ -115,10 +114,6 @@ forkSys name act = do
 runSys' :: Sys a -> IO ()
 runSys' = void . runSys
 
--- | Execute an IO action that may use the state
-sysIO' :: (SysState -> IO (a,SysState)) -> Sys a
-sysIO' = Sys . StateT
-
 instance MonadInIO Sys where
    liftWith  = sysWith
    liftWith2 = sysWith2
@@ -126,14 +121,14 @@ instance MonadInIO Sys where
 -- | Lift with* and alloca* functions
 sysWith :: (forall c. (a -> IO c) -> IO c) -> (a -> Sys b) -> Sys b
 sysWith wth f =
-   sysIO' $ \s ->
+   Sys . StateT $ \s ->
       wth $ \a ->
          sysRun s (f a)
 
 -- | Lift with* and alloca* functions
 sysWith2 :: (forall c. (a -> b -> IO c) -> IO c) -> (a -> b -> Sys e) -> Sys e
 sysWith2 wth f =
-   sysIO' $ \s ->
+   Sys . StateT $ \s ->
       wth $ \a b ->
          sysRun s (f a b)
 

@@ -19,9 +19,8 @@ import ViperVM.Utils.Flow
 
 -- | Copy memory
 memCopy :: MonadIO m => Ptr a -> Ptr b -> Word64 -> m ()
-memCopy dest src size = liftIO (void (memcpy dest src size))
-
 {-# INLINE memCopy #-}
+memCopy dest src size = liftIO (void (memcpy dest src size))
 
 -- | memcpy
 foreign import ccall unsafe memcpy  :: Ptr a -> Ptr b -> Word64 -> IO (Ptr c)
@@ -30,35 +29,34 @@ foreign import ccall unsafe memcpy  :: Ptr a -> Ptr b -> Word64 -> IO (Ptr c)
 
 -- | Set memory
 memSet :: MonadIO m => Ptr a -> Word64 -> Word8 -> m ()
-memSet dest size fill = liftIO (void (memset dest fill size))
-
 {-# INLINE memSet #-}
+memSet dest size fill = liftIO (void (memset dest fill size))
 
 -- | memset
 foreign import ccall unsafe memset  :: Ptr a -> Word8 -> Word64 -> IO (Ptr c)
 
 
 -- | Allocate several arrays
-allocaArrays :: (Storable s, Integral a) => [a] -> ([Ptr s] -> IO b) -> IO b
+allocaArrays :: (MonadInIO m, Storable s, Integral a) => [a] -> ([Ptr s] -> m b) -> m b
 allocaArrays sizes f = go [] sizes
    where
       go as []     = f (reverse as)
       go as (x:xs) = allocaArray (fromIntegral x) $ \a -> go (a:as) xs
 
 -- | Peek several arrays
-peekArrays :: (Storable s, Integral a) => [a] -> [Ptr s] -> IO [[s]]
+peekArrays :: (MonadIO m, Storable s, Integral a) => [a] -> [Ptr s] -> m [[s]]
 peekArrays szs ptrs = mapM f (szs `zip` ptrs)
    where
       f (sz,p) = peekArray (fromIntegral sz) p
 
 -- | Poke several arrays
-pokeArrays :: (Storable s) => [Ptr s] -> [[s]] -> IO ()
+pokeArrays :: (MonadIO m, Storable s) => [Ptr s] -> [[s]] -> m ()
 pokeArrays ptrs vs = mapM_ f (ptrs `zip` vs)
    where
       f = uncurry pokeArray
 
 -- | Allocate several arrays
-withArrays :: (Storable s) => [[s]] -> ([Ptr s] -> IO b) -> IO b
+withArrays :: (MonadInIO m, Storable s) => [[s]] -> ([Ptr s] -> m b) -> m b
 withArrays vs f = go [] vs
    where
       go as []     = f (reverse as)

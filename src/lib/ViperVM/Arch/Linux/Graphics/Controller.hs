@@ -139,14 +139,13 @@ getControllerGamma c = do
       sz                 = controllerGammaTableSize c
       s                  = StructControllerLut cid sz
 
-   sysIO' $ \state ->
-      allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
-         let f = fromIntegral . ptrToWordPtr
-         state2 <- sysExec state
-            <| flowAssertQuiet "Get controller gamma look-up table"
-            <| liftIO (ioctlGetGamma (s (f r) (f g) (f b)) hdl)
-         [rs,gs,bs] <- peekArrays [sz,sz,sz] as
-         return ((rs,gs,bs),state2)
+   allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
+      let f = fromIntegral . ptrToWordPtr
+      liftIO (ioctlGetGamma (s (f r) (f g) (f b)) hdl)
+         |> flowAssertQuiet "Get controller gamma look-up table"
+         |> void
+      [rs,gs,bs] <- peekArrays [sz,sz,sz] as
+      return (rs,gs,bs)
 
 -- | Set controller gama look-up table
 setControllerGamma :: Controller -> ([Word16],[Word16],[Word16]) -> Sys ()
@@ -159,9 +158,8 @@ setControllerGamma c (rs,gs,bs) = do
       s                  = StructControllerLut cid sz'
       ss                 = [take sz rs,take sz gs, take sz bs]
 
-   sysIO' $ \state ->
-      withArrays ss $ \[r,g,b] -> do
-         let f = fromIntegral . ptrToWordPtr
-         sysRun' state
-            <| flowAssertQuiet "Set controller gamma look-up table"
-            <| liftIO (ioctlSetGamma (s (f r) (f g) (f b)) hdl)
+   withArrays ss $ \[r,g,b] -> do
+      let f = fromIntegral . ptrToWordPtr
+      liftIO (ioctlSetGamma (s (f r) (f g) (f b)) hdl)
+         |> flowAssertQuiet "Set controller gamma look-up table"
+         |> void
