@@ -20,7 +20,6 @@ module ViperVM.Arch.Linux.Graphics.Plane
    )
 where
 
-import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
@@ -42,13 +41,13 @@ data InvalidPlane = InvalidPlane PlaneID deriving (Show)
 newtype PlaneID = PlaneID Word32 deriving (Show,Eq)
 
 -- | Get the IDs of the supported planes
-getPlaneResources :: Handle -> Flow Sys '[[PlaneID], InvalidHandle]
+getPlaneResources :: forall m. MonadInIO m => Handle -> Flow m '[[PlaneID], InvalidHandle]
 getPlaneResources hdl = getCount >.~^> getIDs
    where
       gpr s = liftIO (ioctlGetPlaneResources s hdl)
 
       -- get the number of planes (invariant for a given device)
-      getCount :: Flow Sys '[Word32,InvalidHandle]
+      getCount :: Flow m '[Word32,InvalidHandle]
       getCount = gpr (StructGetPlaneRes 0 0)
          >.-.> gprsCountPlanes
          >..%~^> \case
@@ -56,7 +55,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
             e      -> unhdlErr "getPlaneResources" e
    
       -- get the plane IDs (invariant for a given device)
-      getIDs :: Word32 -> Flow Sys '[[PlaneID],InvalidHandle]
+      getIDs :: Word32 -> Flow m '[[PlaneID],InvalidHandle]
       getIDs 0 = flowSetN @0 []
       getIDs n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
@@ -78,11 +77,11 @@ data Plane = Plane
    deriving (Show)
 
 -- | Get plane information
-getPlane :: Handle -> PlaneID -> Flow Sys '[Plane,InvalidHandle,InvalidPlane]
+getPlane :: forall m. MonadInIO m => Handle -> PlaneID -> Flow m '[Plane,InvalidHandle,InvalidPlane]
 getPlane hdl pid = getCount >.~^> getInfo
    where
 
-      gpr :: StructGetPlane -> Flow Sys '[StructGetPlane,InvalidHandle,InvalidPlane]
+      gpr :: StructGetPlane -> Flow m '[StructGetPlane,InvalidHandle,InvalidPlane]
       gpr s = liftIO (ioctlGetPlane s hdl)
          >..%~^> \case
             EINVAL -> flowSet InvalidHandle
@@ -95,12 +94,12 @@ getPlane hdl pid = getCount >.~^> getInfo
       toMaybe f x = Just (f x)
 
       -- get the number of formats (invariant for a given plane)
-      getCount :: Flow Sys '[Word32,InvalidHandle,InvalidPlane]
+      getCount :: Flow m '[Word32,InvalidHandle,InvalidPlane]
       getCount = gpr (StructGetPlane pid' 0 0 BitSet.empty 0 0 0)
          >.-.> gpCountFmtTypes 
 
       -- get the plane info (invariant for a given plane)
-      getInfo :: Word32 -> Flow Sys '[Plane,InvalidHandle,InvalidPlane]
+      getInfo :: Word32 -> Flow m '[Plane,InvalidHandle,InvalidPlane]
       getInfo n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
@@ -152,7 +151,7 @@ data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 --
 -- The fractional part in SrcRect is for devices supporting sub-pixel plane
 -- coordinates.
-setPlane :: Handle -> PlaneID -> Maybe (ControllerID, FrameBufferID, SrcRect, DestRect) -> Flow Sys '[(),InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect]
+setPlane :: MonadIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameBufferID, SrcRect, DestRect) -> Flow m '[(),InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect]
 setPlane hdl (PlaneID pid) opts = do
 
    let 
@@ -181,7 +180,7 @@ setPlane hdl (PlaneID pid) opts = do
          e      -> unhdlErr "setPlane" e
 
 -- | Disable a plane
-disablePlane :: Handle -> PlaneID -> Flow Sys '[(),InvalidParam,EntryNotFound]
+disablePlane :: MonadIO m => Handle -> PlaneID -> Flow m '[(),InvalidParam,EntryNotFound]
 disablePlane hdl p = setPlane hdl p Nothing
    -- these errors should not be triggered when we disable a plane
    >..%~!!> (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)

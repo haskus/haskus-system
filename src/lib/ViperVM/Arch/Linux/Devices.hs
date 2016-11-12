@@ -44,7 +44,6 @@ import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Text as Text
 import ViperVM.Format.Binary.Word
 import ViperVM.Utils.Flow
-import ViperVM.System.Sys
 import ViperVM.System.FileSystem
 
 import System.FilePath
@@ -98,19 +97,19 @@ parseDevFile = do
    void eol
    return (DeviceID major minor)
 
-
 -- | Read device major and minor in "dev" file
-sysfsReadDevFile' :: Handle -> Flow Sys (DeviceID ': ReadErrors')
+sysfsReadDevFile' :: MonadIO m => Handle -> Flow m (DeviceID ': ReadErrors')
 sysfsReadDevFile' devfd =
    -- 16 bytes should be enough
-   liftIO (handleReadBuffer devfd Nothing 16)
+   handleReadBuffer devfd Nothing 16
       >.-.> (\content -> do
          case parse parseDevFile "" (Text.bufferDecodeUtf8 content) of
             Right x -> x
+            --FIXME: return a ParseError instead
             Left _  -> error "Invalid dev file format")
 
 -- | Read device major and minor from device path
-sysfsReadDevFile :: Handle -> FilePath -> Sys (Maybe DeviceID)
+sysfsReadDevFile :: MonadIO m => Handle -> FilePath -> m (Maybe DeviceID)
 sysfsReadDevFile hdl path = do
    withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty sysfsReadDevFile'
       >.-.> Just
@@ -118,7 +117,7 @@ sysfsReadDevFile hdl path = do
       |> flowRes
 
 -- | Read subsystem link
-sysfsReadSubsystem :: Handle -> FilePath -> Sys (Maybe Text)
+sysfsReadSubsystem :: MonadIO m => Handle -> FilePath -> m (Maybe Text)
 sysfsReadSubsystem hdl path = do
    readSymbolicLink (Just hdl) (path </> "subsystem")
       -- on success, only keep the basename as it is the subsystem name
@@ -134,7 +133,7 @@ sysfsMakeDev subsystem devid = case Text.unpack subsystem of
    _       -> Device CharDevice  devid
 
 -- | Read device and subsystem
-sysfsReadDev :: Handle -> FilePath -> Sys (Maybe Text, Maybe Device)
+sysfsReadDev :: MonadIO m => Handle -> FilePath -> m (Maybe Text, Maybe Device)
 sysfsReadDev hdl path = do
    subsystem <- sysfsReadSubsystem hdl path
    case subsystem of

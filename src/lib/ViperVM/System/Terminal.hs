@@ -21,7 +21,6 @@ import ViperVM.System.Sys
 import ViperVM.System.Process
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
-import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
 import ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.Future

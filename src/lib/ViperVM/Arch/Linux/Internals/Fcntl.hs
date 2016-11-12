@@ -1,19 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
 
 -- | File control (fcntl)
 module ViperVM.Arch.Linux.Internals.Fcntl
-   ( sysFcntl
-   , FcntlCommand (..)
+   ( FcntlCommand (..)
    )
 where
 
-import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Arch.Linux.Internals.Handle
-import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Format.Binary.Enum
-import ViperVM.Format.Binary.Word
 
 -- =============================================================
 --    From linux/include/uapi/asm-generic/fcntl.h
@@ -40,7 +33,3 @@ data FcntlCommand
    | FcntlGetSocketOwnerEx
    | FcntlGetOwnerUIDs
    deriving (Show,Eq,Enum,CEnum)
-
--- | Fcntl syscall
-sysFcntl :: Arg a => Handle -> FcntlCommand -> a -> IO Int64
-sysFcntl (Handle fd) cmd arg = syscall @"fcntl" fd (fromCEnum cmd) (toArg arg)

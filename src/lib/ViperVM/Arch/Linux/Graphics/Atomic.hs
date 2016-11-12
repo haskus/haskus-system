@@ -8,7 +8,6 @@ module ViperVM.Arch.Linux.Graphics.Atomic
 where
 
 import ViperVM.Arch.Linux.Internals.Graphics
-import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
@@ -30,7 +29,7 @@ type PropID    = Word32
 type PropValue = Word64
 
 -- | Set object properties atomically
-setAtomic :: Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Flow Sys '[(),InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound]
+setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Flow m '[(),InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound]
 setAtomic hdl flags objProps = do
 
    let
@@ -42,7 +41,7 @@ setAtomic hdl flags objProps = do
       vals   = fmap snd (concat pvs) -- [Val]
 
 
-   liftIO $ withArray objs $ \pobjs ->
+   withArray objs $ \pobjs ->
       withArray nprops $ \pnprops ->
          withArray props $ \pprops ->
             withArray vals $ \pvals -> do
@@ -58,7 +57,7 @@ setAtomic hdl flags objProps = do
                      , atomReserved      = 0 -- must be zero
                      , atomUserData      = 0 -- used for event generation
                      }
-               ioctlAtomic s hdl
+               liftIO (ioctlAtomic s hdl)
                   >.-.> const ()
                   >..%~^> \case
                      EBADF  -> flowSet InvalidHandle

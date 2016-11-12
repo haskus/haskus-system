@@ -21,6 +21,8 @@ module ViperVM.System.Graphics
    , BufferingState (..)
    , FrameWait (..)
    , initRenderingEngine
+   -- * Capability
+   , setClientCapabilityWarn
    )
 where
 
@@ -366,3 +368,8 @@ initRenderingEngine card ctrl mode nfb flags draw
 
       return rdr
 
+-- | Set a client capability
+setClientCapabilityWarn :: Handle -> ClientCapability -> Bool -> Sys ()
+setClientCapabilityWarn hdl cap b =
+   setClientCapability hdl cap b
+      |> warningShow ("Set client capability " ++ show cap)

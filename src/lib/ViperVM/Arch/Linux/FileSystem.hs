@@ -94,7 +94,6 @@ data FilePermission
 
 type FilePermissions = BitSet Word FilePermission
 
-
 -- | Reposition read/write file offset, return the new position
 sysSeek :: MonadIO m => Handle -> Int64 -> SeekWhence -> Flow m '[Int64,ErrorCode]
 sysSeek (Handle fd) off whence =
@@ -631,4 +630,3 @@ fromKernelDevice y = DeviceID
 -- | Use a DeviceID as a Word64 suitable for the kernel
 withDeviceID :: DeviceID -> (Word64 -> a) -> a
 withDeviceID dev f = f (toKernelDevice dev)
-

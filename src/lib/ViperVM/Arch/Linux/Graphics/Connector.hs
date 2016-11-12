@@ -31,7 +31,6 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
-import ViperVM.System.Sys
 
 import Control.Monad (liftM2)
 
@@ -63,21 +62,21 @@ data Connector = Connector
    , connectorHandle             :: Handle               -- ^ Graphic card
    } deriving (Show)
 
-getConnector' :: Handle -> StructGetConnector -> Flow Sys '[StructGetConnector,InvalidParam,EntryNotFound]
+getConnector' :: MonadIO m => Handle -> StructGetConnector -> Flow m '[StructGetConnector,InvalidParam,EntryNotFound]
 getConnector' hdl r = liftIO (ioctlGetConnector r hdl) >%~^> \case
    EINVAL -> flowSet InvalidParam
    ENOENT -> flowSet EntryNotFound
    e      -> unhdlErr "getModeConnector" e
 
 -- | Get connector
-getConnectorFromID :: Handle -> ConnectorID -> Flow Sys '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
+getConnectorFromID :: forall m. MonadInIO m => Handle -> ConnectorID -> Flow m '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
 getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~^> getValues
    where
       res = StructGetConnector 0 0 0 0 0 0 0 0 cid
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
                (toEnumField SubPixelNone)
 
-      getValues :: StructGetConnector -> Flow Sys '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
+      getValues :: StructGetConnector -> Flow m '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
       getValues res2 = do
             rawGet hdl res2 >.~^> \(rawRes,conn) ->
                -- we need to check that the number of resources is still the same (as
@@ -90,11 +89,11 @@ getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~^> ge
                   then getConnectorFromID hdl connId
                   else flowSetN @0 conn
 
-rawGet :: Handle -> StructGetConnector -> Flow Sys '[(StructGetConnector,Connector),InvalidParam,InvalidProperty,EntryNotFound]
+rawGet :: forall m. MonadInIO m => Handle -> StructGetConnector -> Flow m '[(StructGetConnector,Connector),InvalidParam,InvalidProperty,EntryNotFound]
 rawGet hdl res2 = do
 
    let
-      allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> Sys b) -> Sys b
+      allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> m b) -> m b
       allocaArray' n = allocaArray (fromIntegral n)
 
 
@@ -115,7 +114,7 @@ rawGet hdl res2 = do
                      parseRes hdl res2 res4 >.-.> (res4,)
 
 
-parseRes :: Handle -> StructGetConnector -> StructGetConnector -> Flow Sys '[Connector,InvalidParam,InvalidProperty]
+parseRes :: forall m. MonadInIO m => Handle -> StructGetConnector -> StructGetConnector -> Flow m '[Connector,InvalidParam,InvalidProperty]
 parseRes hdl res2 res4 = do
    let
       cv = wordPtrToPtr . fromIntegral
@@ -123,7 +122,7 @@ parseRes hdl res2 res4 = do
       wrapZero 0 = Nothing
       wrapZero x = Just x
 
-      peekArray' :: (Storable a, Integral c) => c -> Ptr a -> Sys [a]
+      peekArray' :: (Storable a, Integral c) => c -> Ptr a -> m [a]
       peekArray' n ptr = liftIO (peekArray (fromIntegral n) ptr)
 
    state <- case connConnection_ res4 of
@@ -161,14 +160,14 @@ parseRes hdl res2 res4 = do
 
 
 -- | Get connectors
-getConnectors :: Handle -> Flow Sys '[[Connector],InvalidParam,EntryNotFound,InvalidProperty,InvalidHandle]
+getConnectors :: MonadInIO m => Handle -> Flow m '[[Connector],InvalidParam,EntryNotFound,InvalidProperty,InvalidHandle]
 getConnectors hdl = getResources hdl
    >.-.> resConnectorIDs
    >.~^^> flowTraverse (getConnectorFromID hdl)
 
 
 -- | Encoder attached to the connector, if any
-connectorEncoder :: Connector -> Flow Sys '[Maybe Encoder,EntryNotFound,InvalidHandle]
+connectorEncoder :: MonadInIO m => Connector -> Flow m '[Maybe Encoder,EntryNotFound,InvalidHandle]
 connectorEncoder conn = case connectorEncoderID conn of
    Nothing    -> flowSetN @0 Nothing
    Just encId -> 
@@ -176,7 +175,7 @@ connectorEncoder conn = case connectorEncoderID conn of
          getEncoderFromID (connectorHandle conn) res encId >.-.> Just
 
 -- | Retrieve Controller (and encoder) controling a connector (if any)
-connectorController :: Connector -> Flow Sys '[(Maybe Controller, Maybe Encoder),EntryNotFound,InvalidHandle]
+connectorController :: MonadInIO m => Connector -> Flow m '[(Maybe Controller, Maybe Encoder),EntryNotFound,InvalidHandle]
 connectorController conn =
    connectorEncoder conn >.~^> \enc ->
       case enc of

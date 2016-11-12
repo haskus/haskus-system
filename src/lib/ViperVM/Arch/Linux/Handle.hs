@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Kernel object handle
 --
@@ -11,32 +12,42 @@ module ViperVM.Arch.Linux.Handle
    , getHandleFlags
    , setHandleFlags
    , InvalidHandle (..)
+   , sysFcntl
    )
 where
 
-import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Arch.Linux.Internals.Arg
 import ViperVM.Arch.Linux.Internals.Handle
 import ViperVM.Arch.Linux.Internals.Fcntl
 import ViperVM.Format.Binary.BitSet as BitSet
+import ViperVM.Format.Binary.Word
+import ViperVM.Format.Binary.Enum
 import ViperVM.Utils.Flow
+
+-- | Fcntl syscall
+sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> Flow m '[Int64,ErrorCode]
+sysFcntl (Handle fd) cmd arg =
+   liftIO (syscall @"fcntl" fd (fromCEnum cmd) (toArg arg))
+      ||> toErrorCode
 
 
 -- | Get descriptor flags
-getHandleFlags :: Handle -> Flow Sys '[HandleFlags,InvalidHandle]
+getHandleFlags :: MonadIO m => Handle -> Flow m '[HandleFlags,InvalidHandle]
 getHandleFlags hdl =
-   sysFlow (sysFcntl hdl FcntlGetFlags (0 :: Int))
+   sysFcntl hdl FcntlGetFlags (0 :: Int)
       >.-.> (BitSet.fromBits . fromIntegral)
       >..%~^> \case
          EBADF -> flowSet InvalidHandle
          e     -> unhdlErr "getHandleFlags" e
 
 -- | Set descriptor flags
-setHandleFlags :: Handle -> HandleFlags -> Flow Sys '[(),InvalidHandle]
+setHandleFlags :: MonadIO m => Handle -> HandleFlags -> Flow m '[(),InvalidHandle]
 setHandleFlags hdl flgs =
-   sysOnSuccessVoid (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
+   sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs)
+      >.-.> const ()
       >%~^> \case
          EBADF -> flowSet InvalidHandle
          e     -> unhdlErr "setHandleFlags" e

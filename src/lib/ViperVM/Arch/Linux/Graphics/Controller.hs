@@ -20,14 +20,12 @@ module ViperVM.Arch.Linux.Graphics.Controller
    )
 where
 
-import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Utils.Memory (peekArrays,allocaArrays,withArrays)
 import ViperVM.Utils.Flow
 import ViperVM.Format.Binary.Word
@@ -69,7 +67,7 @@ fromStructController hdl StructController{..} =
 
       
 -- | Get Controller
-getControllerFromID :: Handle -> ControllerID -> Flow Sys '[Controller,EntryNotFound, InvalidHandle]
+getControllerFromID :: MonadIO m => Handle -> ControllerID -> Flow m '[Controller,EntryNotFound, InvalidHandle]
 getControllerFromID hdl crtcid = liftIO (ioctlGetController crtc hdl)
       >.-.> fromStructController hdl
       >%~^> \case
@@ -125,13 +123,13 @@ switchFrameBuffer' hdl crtcid fb flags = do
    liftIO (ioctlPageFlip s hdl) >.-.> const ()
 
 -- | Get controllers
-getControllers :: Handle -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
+getControllers :: MonadInIO m => Handle -> Flow m '[[Controller],EntryNotFound,InvalidHandle]
 getControllers hdl = getResources hdl
    >.-.> resControllerIDs
    >.~^> flowTraverse (getControllerFromID hdl)
 
 -- | Get controller gama look-up table
-getControllerGamma :: Controller -> Sys ([Word16],[Word16],[Word16])
+getControllerGamma :: MonadInIO m => Controller -> Flow m '[([Word16],[Word16],[Word16]),ErrorCode]
 getControllerGamma c = do
    let 
       hdl                = controllerHandle c
@@ -142,13 +140,12 @@ getControllerGamma c = do
    allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
       let f = fromIntegral . ptrToWordPtr
       liftIO (ioctlGetGamma (s (f r) (f g) (f b)) hdl)
-         |> flowAssertQuiet "Get controller gamma look-up table"
-         |> void
-      [rs,gs,bs] <- peekArrays [sz,sz,sz] as
-      return (rs,gs,bs)
+         >.~.> (const $ do
+            [rs,gs,bs] <- peekArrays [sz,sz,sz] as
+            return (rs,gs,bs))
 
 -- | Set controller gama look-up table
-setControllerGamma :: Controller -> ([Word16],[Word16],[Word16]) -> Sys ()
+setControllerGamma :: MonadInIO m => Controller -> ([Word16],[Word16],[Word16]) -> Flow m '[(),ErrorCode]
 setControllerGamma c (rs,gs,bs) = do
    let 
       hdl                = controllerHandle c
@@ -161,5 +158,4 @@ setControllerGamma c (rs,gs,bs) = do
    withArrays ss $ \[r,g,b] -> do
       let f = fromIntegral . ptrToWordPtr
       liftIO (ioctlSetGamma (s (f r) (f g) (f b)) hdl)
-         |> flowAssertQuiet "Set controller gamma look-up table"
-         |> void
+         >.-.> const ()

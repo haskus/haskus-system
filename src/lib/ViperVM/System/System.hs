@@ -23,7 +23,6 @@ where
 import qualified ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Arch.Linux.FileSystem.Directory
 import ViperVM.Arch.Linux.FileSystem.ReadWrite

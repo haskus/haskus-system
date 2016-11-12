@@ -14,7 +14,6 @@ module ViperVM.Arch.Linux.Graphics.Property
    )
 where
 
-import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Internals.Graphics
@@ -61,7 +60,7 @@ type PropertyMetaID = Word32
 data InvalidProperty = InvalidProperty deriving (Show,Eq)
 
 -- | Return meta-information from a property type ID
-getPropertyMeta :: Handle -> PropertyMetaID -> Flow Sys '[PropertyMeta,InvalidParam,InvalidProperty]
+getPropertyMeta :: forall m. MonadInIO m => Handle -> PropertyMetaID -> Flow m '[PropertyMeta,InvalidParam,InvalidProperty]
 getPropertyMeta fd pid = do
       -- get value size/number of elements/etc.
       getProperty' gp >.~^> \g -> do
@@ -71,7 +70,7 @@ getPropertyMeta fd pid = do
                (isPending g)
                (fromCStringBuffer (gpsName g))
    where
-      getProperty' :: StructGetProperty -> Flow Sys '[StructGetProperty,InvalidParam,InvalidProperty]
+      getProperty' :: StructGetProperty -> Flow m '[StructGetProperty,InvalidParam,InvalidProperty]
       getProperty' r = liftIO (ioctlGetProperty r fd) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet InvalidProperty
@@ -91,14 +90,14 @@ getPropertyMeta fd pid = do
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      getBlobStruct :: StructGetBlob -> Flow Sys '[StructGetBlob,InvalidParam,InvalidProperty]
+      getBlobStruct :: StructGetBlob -> Flow m '[StructGetBlob,InvalidParam,InvalidProperty]
       getBlobStruct r = liftIO (ioctlGetBlob r fd) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet InvalidProperty
          e      -> unhdlErr "getBlobStruct" e
 
       -- | Get a blob
-      getBlob :: Word32 -> Flow Sys '[Buffer,InvalidParam,InvalidProperty]
+      getBlob :: Word32 -> Flow m '[Buffer,InvalidParam,InvalidProperty]
       getBlob bid = do
          let gb = StructGetBlob
                      { gbBlobId = bid
@@ -115,7 +114,7 @@ getPropertyMeta fd pid = do
                >.~.> const (liftIO (bufferPackPtr (fromIntegral (gbLength gb')) ptr))
 
 
-      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow Sys '[c,InvalidParam,InvalidProperty]) -> Flow Sys '[c,InvalidParam,InvalidProperty]
+      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow m '[c,InvalidParam,InvalidProperty]) -> Flow m '[c,InvalidParam,InvalidProperty]
       withBuffers valueCount blobCount f =
          liftWith (allocaArray' valueCount) $ \valuePtr ->
             liftWith (allocaArray' blobCount) $ \blobPtr -> do
@@ -141,7 +140,7 @@ getPropertyMeta fd pid = do
          bs <- liftIO (peekArray (fromIntegral m) p2)
          f vs bs
          
-      getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow Sys '[PropertyType,InvalidParam,InvalidProperty]
+      getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow m '[PropertyType,InvalidParam,InvalidProperty]
       getValues nval nblob ttype = case ttype of
          PropTypeObject      -> flowSet PropObject
          PropTypeRange       -> withValueBuffer nval (flowSet . PropRange)

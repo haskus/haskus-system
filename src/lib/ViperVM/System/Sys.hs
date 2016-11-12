@@ -2,6 +2,11 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 
 -- | Sys monad
 module ViperVM.System.Sys
@@ -26,16 +31,24 @@ module ViperVM.System.Sys
    , sysErrorShow
    , sysWarningShow
    , sysLogInfoShow
+   -- ** Flow helpers
+   , flowAssertQuiet
+   , flowAssert
+   , assertShow
+   , warningShow
    )
 where
 
 import Prelude hiding (log)
 import Data.String (fromString)
 import Control.Monad.State
+import Text.Printf
 
-import ViperVM.Utils.STM
 import ViperVM.Utils.Monad
+import ViperVM.Utils.STM
 import ViperVM.Utils.STM.Future
+import ViperVM.Utils.Flow
+import ViperVM.Utils.Variant
 import ViperVM.Format.Text as Text
 
 ------------------------------------------------
@@ -327,3 +340,28 @@ sysWarningShow text a = sysWarning (text ++ ": " ++ show a)
 -- | Log Info in Sys
 sysLogInfoShow :: Show a => String -> a -> Sys ()
 sysLogInfoShow text a = sysLogInfo (text ++ ": " ++ show a)
+
+----------------------
+-- Flow helpers
+----------------------
+
+-- | Assert a successful result, and log the error otherwise
+flowAssertQuiet :: (Show (Variant xs)) => String -> Flow Sys (a ': xs) -> Sys a
+flowAssertQuiet text v = 
+   v >..~!!> (\a -> sysError (printf "%s (failed with %s)" text (show a)))
+
+-- | Assert a successful result, log on error and on success
+flowAssert :: (Show a, Show (Variant xs)) => String -> Flow Sys (a ': xs) -> Sys a
+flowAssert text v = 
+   v  >.~=>   (\a -> sysLog LogInfo (printf "%s (succeeded with %s)" text (show a)))
+      >..~!!> (\xs -> sysError (printf "%s (failed with %s)" text (show xs)))
+     
+assertShow :: Show a => String -> a -> Sys ()
+assertShow text v = do
+   let msg = printf "%s (failed with %s)" text (show v)
+   sysError msg
+
+warningShow :: Show (Variant xs) => String -> Flow Sys (a ': xs) -> Sys ()
+warningShow text f = do
+   f >..~!> (\v ->
+      sysWarning (printf "%s (failed with %s)" text (show v)))

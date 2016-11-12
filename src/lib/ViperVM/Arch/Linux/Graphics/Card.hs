@@ -20,7 +20,6 @@ module ViperVM.Arch.Linux.Graphics.Card
    )
 where
 
-import ViperVM.System.Sys
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
@@ -56,17 +55,17 @@ newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable)
 newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable)
 
 -- | Get graphic card resources
-getResources :: Handle -> Flow Sys '[Resources,InvalidHandle]
+getResources :: forall m. MonadInIO m => Handle -> Flow m '[Resources,InvalidHandle]
 getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
-      getRes :: StructCardRes -> Flow Sys '[StructCardRes,InvalidHandle]
+      getRes :: StructCardRes -> Flow m '[StructCardRes,InvalidHandle]
       getRes r = liftIO (ioctlGetResources r hdl) >..%~^> \case
          EINVAL -> flowSet InvalidHandle
          e      -> unhdlErr "getResources" e
 
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
-      getValues :: [Word32] -> Flow Sys '[Resources,InvalidHandle]
+      getValues :: [Word32] -> Flow m '[Resources,InvalidHandle]
       getValues arraySizes = liftWith (allocaArrays arraySizes) $ 
          \([fs,crs,cs,es] :: [Ptr Word32]) -> do
             let 
@@ -97,7 +96,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                   else getValues (extractSize r)
 
 
-      extractValues :: StructCardRes -> Flow Sys '[Resources]
+      extractValues :: StructCardRes -> Flow m '[Resources]
       extractValues r = do
          let 
             as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
@@ -116,7 +115,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 
 
 -- | Internal function to retreive card entities from their identifiers
-getEntities :: (Resources -> [a]) -> (Handle -> a -> Sys (Either x b)) -> Handle -> Sys [b]
+getEntities :: MonadInIO m => (Resources -> [a]) -> (Handle -> a -> m (Either x b)) -> Handle -> m [b]
 getEntities getIDs getEntityFromID hdl = do
    res <- getResources hdl
           >..%~!!> (\InvalidHandle -> error "getEntities: invalid handle")

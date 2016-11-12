@@ -19,7 +19,6 @@ module ViperVM.Arch.Linux.Graphics.Encoder
    )
 where
 
-import ViperVM.System.Sys
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.ErrorCode
@@ -53,7 +52,7 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
          hdl
 
 -- | Get an encoder from its ID
-getEncoderFromID :: Handle -> Resources -> EncoderID -> Flow Sys '[Encoder,EntryNotFound,InvalidHandle]
+getEncoderFromID :: MonadIO m => Handle -> Resources -> EncoderID -> Flow m '[Encoder,EntryNotFound,InvalidHandle]
 getEncoderFromID hdl res (EncoderID encId) = liftIO (ioctlGetEncoder enc hdl)
       >.-.> fromStructGetEncoder res hdl
       >%~^> \case
@@ -65,12 +64,12 @@ getEncoderFromID hdl res (EncoderID encId) = liftIO (ioctlGetEncoder enc hdl)
                0 BitSet.empty BitSet.empty
 
 -- | Controller attached to the encoder, if any
-encoderController :: Encoder -> Flow Sys '[Maybe Controller ,EntryNotFound,InvalidHandle]
+encoderController :: MonadIO m => Encoder -> Flow m '[Maybe Controller ,EntryNotFound,InvalidHandle]
 encoderController enc = case encoderControllerID enc of
    Nothing     -> flowSetN @0 Nothing
    Just contId -> getControllerFromID (encoderHandle enc) contId >.-.> Just
 
 -- | Get encoders (discard errors)
-getEncoders :: Handle -> Flow Sys '[[Encoder],EntryNotFound,InvalidHandle]
+getEncoders :: MonadInIO m => Handle -> Flow m '[[Encoder],EntryNotFound,InvalidHandle]
 getEncoders hdl = getResources hdl >.~^> \res ->
    flowTraverse (getEncoderFromID hdl res) (resEncoderIDs res)

@@ -30,7 +30,6 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Enum
 import ViperVM.Utils.Flow
-import ViperVM.System.Sys
 
 
 data ObjectType
@@ -102,7 +101,7 @@ instance Object Plane where
 
 
 -- | Get object's number of properties
-getObjectPropertyCount :: Object o => Handle -> o -> Flow Sys '[Word32, ErrorCode]
+getObjectPropertyCount :: (MonadIO m, Object o) => Handle -> o -> Flow m '[Word32, ErrorCode]
 getObjectPropertyCount hdl o = do
       liftIO (ioctlGetObjectProperties s hdl)
          >.-.> gopCountProps
@@ -115,7 +114,7 @@ data InvalidCount = InvalidCount Int
 data ObjectNotFound = ObjectNotFound deriving (Show,Eq)
 
 -- | Return object properties
-getObjectProperties :: Object o => Handle -> o -> Flow Sys '[[RawProperty],ObjectNotFound,InvalidParam]
+getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Flow m '[[RawProperty],ObjectNotFound,InvalidParam]
 getObjectProperties hdl o =
        -- we assume 20 entries is usually enough and we adapt if it isn't. By
        -- using an initial value we avoid a syscall in most cases.
@@ -126,7 +125,7 @@ getObjectProperties hdl o =
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      go :: Int -> Flow Sys '[[RawProperty],InvalidCount,InvalidParam,ObjectNotFound]
+      go :: Int -> Flow m '[[RawProperty],InvalidCount,InvalidParam,ObjectNotFound]
       go n =
          allocaArray' n $ \(propsPtr :: Ptr Word32) ->
          allocaArray' n $ \(valsPtr :: Ptr Word64) -> do
@@ -141,13 +140,13 @@ getObjectProperties hdl o =
                >.~|> checkCount n
                >.~.> extractProperties
 
-      getObjectProperties' :: StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidParam,ObjectNotFound]
+      getObjectProperties' :: StructGetObjectProperties -> Flow m '[StructGetObjectProperties,InvalidParam,ObjectNotFound]
       getObjectProperties' s = liftIO (ioctlGetObjectProperties s hdl) >%~^> \case
          EINVAL -> flowSet InvalidParam
          ENOENT -> flowSet ObjectNotFound
          e      -> unhdlErr "getObjectProperties" e
 
-      extractProperties :: StructGetObjectProperties -> Sys [RawProperty]
+      extractProperties :: StructGetObjectProperties -> m [RawProperty]
       extractProperties s = do
          let n        = fromIntegral (gopCountProps s)
              propsPtr :: Ptr Word32
@@ -159,7 +158,7 @@ getObjectProperties hdl o =
          return (zipWith RawProperty ps vs)
 
       -- check that we have allocated enough entries to store the properties
-      checkCount :: Int -> StructGetObjectProperties -> Flow Sys '[StructGetObjectProperties,InvalidCount]
+      checkCount :: Int -> StructGetObjectProperties -> Flow m '[StructGetObjectProperties,InvalidCount]
       checkCount n s = do
          let n' = fromIntegral (gopCountProps s)
          if n' > n

@@ -112,19 +112,19 @@ sysReadWithOffset (Handle fd) offset ptr count =
 -- | Read "count" bytes from a handle (starting at optional "offset") and put
 -- them at "ptr" (allocated memory should be large enough).  Returns the number
 -- of bytes read or 0 if end of file
-handleRead :: Handle -> Maybe Word64 -> Ptr () -> Word64 -> Flow IO (Word64 ': ReadErrors')
+handleRead :: MonadIO m => Handle -> Maybe Word64 -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors')
 handleRead hdl Nothing ptr sz       = flowLift (sysRead hdl ptr sz)
 handleRead hdl (Just offset) ptr sz = sysReadWithOffset hdl offset ptr sz
 
 -- | Read n bytes in a buffer
-handleReadBuffer :: Handle -> Maybe Word64 -> Word64 -> Flow IO (Buffer ': ReadErrors')
+handleReadBuffer :: MonadIO m => Handle -> Maybe Word64 -> Word64 -> Flow m (Buffer ': ReadErrors')
 handleReadBuffer hdl offset size = do
    b <- mallocBytes (fromIntegral size)
    handleRead hdl offset b (fromIntegral size)
       -- free the pointer on error
       >..~=> const (free b)
       -- otherwise return the buffer
-      >.~.> \sz -> bufferUnsafePackPtr (fromIntegral sz) (castPtr b)
+      >.~.> \sz -> liftIO (bufferUnsafePackPtr (fromIntegral sz) (castPtr b))
 
 
 -- | Like read but uses several buffers

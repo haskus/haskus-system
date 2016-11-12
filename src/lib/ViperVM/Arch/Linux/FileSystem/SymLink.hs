@@ -8,6 +8,7 @@
 -- | Symbolic links
 module ViperVM.Arch.Linux.FileSystem.SymLink
    ( sysSymlink
+   , ReadSymLinkErrors
    , readSymbolicLink
    )
 where
@@ -19,22 +20,22 @@ import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Format.String
 import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
-import ViperVM.System.Sys
+
+type ReadSymLinkErrors
+   = '[ NotAllowed
+      , NotSymbolicLink
+      , FileSystemIOError
+      , SymbolicLinkLoop
+      , TooLongPathName
+      , FileNotFound
+      , OutOfKernelMemory
+      , InvalidPathComponent
+      ]
 
 -- | Read the path in a symbolic link
-readSymbolicLink :: 
-   ( errs ~ '[ NotAllowed
-             , NotSymbolicLink
-             , FileSystemIOError
-             , SymbolicLinkLoop
-             , TooLongPathName
-             , FileNotFound
-             , OutOfKernelMemory
-             , InvalidPathComponent
-             ]
-   ) => Maybe Handle -> FilePath -> Flow Sys (String ': errs)
+readSymbolicLink :: MonadIO m => Maybe Handle -> FilePath -> Flow m (String ': ReadSymLinkErrors)
 readSymbolicLink hdl path = do
-   liftIO (sysReadLinkAt hdl path)
+   sysReadLinkAt hdl path
       >%~^> \case
          EACCES       -> flowSet NotAllowed
          EINVAL       -> flowSet NotSymbolicLink

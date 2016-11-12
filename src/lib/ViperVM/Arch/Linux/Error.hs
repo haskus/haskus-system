@@ -34,8 +34,12 @@ module ViperVM.Arch.Linux.Error
    , BusyDirectory (..)
    , NotEmptyDirectory (..)
    , NotTheSameFileSystem (..)
+   -- ** Low-level errors
+   , ErrorCode (..)
    )
 where
+
+import ViperVM.Arch.Linux.Internals.Error
 
 ------------------------------------------------
 -- Errors
