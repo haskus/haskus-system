@@ -11,7 +11,6 @@ module ViperVM.System.Sys
    , forkSys
    , sysIO
    , sysIO'
-   , sysWith
    , sysRun
    , sysRun'
    , sysExec
@@ -37,6 +36,7 @@ import Data.String (fromString)
 import Control.Monad.State
 import Control.Concurrent.STM
 
+import ViperVM.Utils.Monad
 import ViperVM.Utils.STM.Future
 import ViperVM.Format.Text as Text
 
@@ -124,12 +124,23 @@ sysIO' = Sys . StateT
 sysIO :: IO a -> Sys a
 sysIO = Sys . liftIO
 
+instance MonadInIO Sys where
+   liftWith  = sysWith
+   liftWith2 = sysWith2
+
 -- | Lift with* and alloca* functions
 sysWith :: (forall c. (a -> IO c) -> IO c) -> (a -> Sys b) -> Sys b
 sysWith wth f =
    sysIO' $ \s ->
       wth $ \a ->
          sysRun s (f a)
+
+-- | Lift with* and alloca* functions
+sysWith2 :: (forall c. (a -> b -> IO c) -> IO c) -> (a -> b -> Sys e) -> Sys e
+sysWith2 wth f =
+   sysIO' $ \s ->
+      wth $ \a b ->
+         sysRun s (f a b)
 
 -- | Run with an explicit state
 sysRun :: SysState -> Sys a -> IO (a, SysState)

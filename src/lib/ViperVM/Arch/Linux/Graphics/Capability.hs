@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 -- | Graphic card capabilities
 module ViperVM.Arch.Linux.Graphics.Capability
    ( getCapability
@@ -18,14 +20,14 @@ import ViperVM.System.Sys
 import ViperVM.Utils.Flow
 
 -- | Get a capability
-getCapability :: Handle -> Capability -> IOErr Word64
+getCapability :: MonadIO m => Handle -> Capability -> Flow m '[Word64,ErrorCode]
 getCapability hdl cap = do
    let s = StructGetCap (toEnumField cap) 0
-   ioctlGetCapabilities s hdl
+   liftIO (ioctlGetCapabilities s hdl)
       >.-.> gcValue
 
 -- | Indicate if a capability is supported
-supports :: Handle -> Capability -> IOErr Bool
+supports :: MonadIO m => Handle -> Capability -> Flow m '[Bool,ErrorCode]
 supports hdl cap = getCapability hdl cap
    >.-.> (/= 0)
 
@@ -36,4 +38,5 @@ setClientCapability hdl cap b = do
       v = if b then 1 else 0
       s = StructSetClientCap (toEnumField cap) v
       m = "Set client capability " ++ show cap
-   void $ sysCallWarn m (ioctlSetClientCapability s hdl)
+   liftIO (ioctlSetClientCapability s hdl)
+      |> warningShow m

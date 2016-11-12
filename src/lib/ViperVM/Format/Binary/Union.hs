@@ -118,14 +118,14 @@ instance forall fs.
       type SizeOf (Union fs)    = Max (MapSizeOf fs)
       type Alignment (Union fs) = Max (MapAlignment fs)
 
-      staticPeek ptr = do
+      staticPeekIO ptr = do
          let sz = natValue @(SizeOf (Union fs))
          fp <- mallocForeignPtrBytes sz
          withForeignPtr fp $ \p -> 
             memCopy p (castPtr ptr) (fromIntegral sz)
          return (Union fp)
 
-      staticPoke ptr (Union fp) = do
+      staticPokeIO ptr (Union fp) = do
          withForeignPtr fp $ \p ->
             memCopy (castPtr ptr) p (natValue @(SizeOf (Union fs)))
 
@@ -159,14 +159,14 @@ instance
    ( HFoldr' FoldSizeOf Word l Word
    , HFoldr' FoldAlignment Word l Word
    ) => Storable (Union l) where
-   sizeOf             = unionSize
-   alignment          = unionAlignment
-   peek ptr = do
+   sizeOf     = unionSize
+   alignment  = unionAlignment
+   peekIO ptr = do
       let sz = sizeOfT' @(Union l)
       fp <- mallocForeignPtrBytes sz
       withForeignPtr fp $ \p -> 
          memCopy p (castPtr ptr) (fromIntegral sz)
       return (Union fp)
 
-   poke ptr (Union fp) = withForeignPtr fp $ \p ->
+   pokeIO ptr (Union fp) = withForeignPtr fp $ \p ->
       memCopy (castPtr ptr) p (sizeOfT' @(Union l))

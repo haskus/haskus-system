@@ -1,5 +1,7 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- | Linux syscalls
 module ViperVM.Arch.Linux.Syscalls
@@ -7,13 +9,11 @@ module ViperVM.Arch.Linux.Syscalls
    , sysFlow
    , sysOnSuccess
    , sysOnSuccessVoid
-   , sysCallAssert
-   , sysCallAssert'
-   , sysCallAssertQuiet
-   , sysCallWarn
-   , sysCallWarnQuiet
    , sysLogPrint
+   , flowAssertQuiet
+   , flowAssert
    , assertShow
+   , warningShow
    )
 where
 
@@ -43,59 +43,23 @@ sysOnSuccess a f = sysFlow a >.-.> f
 sysOnSuccessVoid :: IO Int64 -> Flow Sys '[(),ErrorCode]
 sysOnSuccessVoid a = sysFlow a >.-.> const ()
 
--- | Assert that the given action doesn't fail
-sysCallAssert :: String -> IOErr a -> Sys a
-sysCallAssert text act = do
-   r <- sysIO act
-   sysCallAssert' text r
+-- | Assert a successful result, and log the error otherwise
+flowAssertQuiet :: (Show (Variant xs)) => String -> Flow Sys (a ': xs) -> Sys a
+flowAssertQuiet text v = 
+   v >..~!!> (\a -> sysError (printf "%s (failed with %s)" text (show a)))
 
--- | Assert that the given action doesn't fail
-sysCallAssert' :: String -> Variant '[a,ErrorCode] -> Sys a
-sysCallAssert' text r =
-   case toEither r of
-      Left err -> do
-         let msg = printf "%s (failed with %s)" text (show err)
-         sysError msg
-      Right v  -> do
-         let msg = printf "%s (success)" text
-         sysLog LogInfo msg
-         return v
-
+-- | Assert a successful result, log on error and on success
+flowAssert :: (Show a, Show (Variant xs)) => String -> Flow Sys (a ': xs) -> Sys a
+flowAssert text v = 
+   v  >.~=>   (\a -> sysLog LogInfo (printf "%s (succeeded with %s)" text (show a)))
+      >..~!!> (\xs -> sysError (printf "%s (failed with %s)" text (show xs)))
+     
 assertShow :: Show a => String -> a -> Sys ()
 assertShow text v = do
    let msg = printf "%s (failed with %s)" text (show v)
    sysError msg
 
--- | Assert that the given action doesn't fail, log only on error
-sysCallAssertQuiet :: String -> IOErr a -> Sys a
-sysCallAssertQuiet text act = do
-   r <- sysIO act
-   case toEither r of
-      Left err -> do
-         let msg = printf "%s (failed with %s)" text (show err)
-         sysError msg
-      Right v  -> return v
-
--- | Log a warning if the given action fails, otherwise log success
-sysCallWarn :: String -> IOErr a -> Flow Sys '[a,ErrorCode]
-sysCallWarn text act = do
-   r <- sysIO act
-   case toEither r of
-      Right _ -> do
-         let msg = printf "%s (success)" text
-         sysLog LogInfo msg
-      Left err -> do
-         let msg = printf "%s (failed with %s)" text (show err)
-         sysLog LogWarning msg
-   return r
-
--- | Log a warning only if the given action fails
-sysCallWarnQuiet :: String -> IOErr a -> Flow Sys '[a,ErrorCode]
-sysCallWarnQuiet text act = do
-   r <- sysIO act
-   case toEither r of
-      Right v -> flowSetN @0 v
-      Left err -> do
-         let msg = printf "%s (failed with %s)" text (show err)
-         sysLog LogWarning msg
-         flowSetN @1 err
+warningShow :: Show (Variant xs) => String -> Flow Sys (a ': xs) -> Sys ()
+warningShow text f = do
+   f >..~!> (\v ->
+      sysWarning (printf "%s (failed with %s)" text (show v)))

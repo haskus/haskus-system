@@ -117,8 +117,8 @@ getPropertyMeta fd pid = do
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow Sys '[c,InvalidParam,InvalidProperty]) -> Flow Sys '[c,InvalidParam,InvalidProperty]
       withBuffers valueCount blobCount f =
-         sysWith (allocaArray' valueCount) $ \valuePtr ->
-            sysWith (allocaArray' blobCount) $ \blobPtr -> do
+         liftWith (allocaArray' valueCount) $ \valuePtr ->
+            liftWith (allocaArray' blobCount) $ \blobPtr -> do
                let gp' = StructGetProperty
                            { gpsValuesPtr   = fromIntegral (ptrToWordPtr valuePtr)
                            , gpsEnumBlobPtr = fromIntegral (ptrToWordPtr blobPtr)

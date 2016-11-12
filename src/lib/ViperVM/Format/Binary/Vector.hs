@@ -62,10 +62,10 @@ instance forall a n.
    type SizeOf (Vector n a)    = SizeOf a * n
    type Alignment (Vector n a) = Alignment a
 
-   staticPeek ptr =
+   staticPeekIO ptr =
       Vector <$> bufferPackPtr (natValue @(SizeOf a * n)) (castPtr ptr)
 
-   staticPoke ptr (Vector b) = bufferPoke ptr b
+   staticPokeIO ptr (Vector b) = bufferPoke ptr b
 
 instance forall a n.
    ( KnownNat n
@@ -73,10 +73,10 @@ instance forall a n.
    ) => Storable (Vector n a) where
    sizeOf _    = natValue @n * sizeOfT @a
    alignment _ = alignmentT @a
-   peek ptr    = do
+   peekIO ptr  = 
       Vector <$> bufferPackPtr (sizeOfT' @(Vector n a)) (castPtr ptr)
 
-   poke ptr (Vector b) = bufferPoke ptr b
+   pokeIO ptr (Vector b) = bufferPoke ptr b
 
 -- | Yield the first n elements
 take :: forall n m a.

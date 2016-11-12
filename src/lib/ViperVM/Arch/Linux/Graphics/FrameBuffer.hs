@@ -69,23 +69,25 @@ toFrameBuffer StructFrameBufferCommand{..} = s
 
 
 -- | Create a framebuffer
-addFrameBuffer :: Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Surface] -> IOErr FrameBuffer
+addFrameBuffer :: MonadIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Surface] -> Flow m '[FrameBuffer,ErrorCode]
 addFrameBuffer hdl width height fmt flags buffers = do
    
    let s = FrameBuffer (FrameBufferID 0) width height
                fmt flags buffers
 
-   ioctlAddFrameBuffer (fromFrameBuffer s) hdl >.-.> toFrameBuffer
+   liftIO (ioctlAddFrameBuffer (fromFrameBuffer s) hdl)
+      >.-.> toFrameBuffer
 
 -- | Release a frame buffer
-removeFrameBuffer :: Handle -> FrameBuffer -> IOErr ()
+removeFrameBuffer :: MonadIO m => Handle -> FrameBuffer -> Flow m '[(),ErrorCode]
 removeFrameBuffer hdl fb = do
    let FrameBufferID fbid = fbID fb
-   ioctlRemoveFrameBuffer fbid hdl >.-.> const ()
+   liftIO (ioctlRemoveFrameBuffer fbid hdl)
+      >.-.> const ()
 
 
 -- | Indicate dirty parts of a framebuffer
-dirtyFrameBuffer :: Handle -> FrameBuffer -> DirtyAnnotation -> IOErr ()
+dirtyFrameBuffer :: MonadInIO m => Handle -> FrameBuffer -> DirtyAnnotation -> Flow m '[(),ErrorCode]
 dirtyFrameBuffer hdl fb mode = do
    let
       (color,flags,clips) = case mode of
@@ -102,6 +104,6 @@ dirtyFrameBuffer hdl fb mode = do
                , fdNumClips = fromIntegral (length clips)
                , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
                }
-      ioctlDirtyFrameBuffer s hdl >.-.> const ()
+      liftIO (ioctlDirtyFrameBuffer s hdl) >.-.> const ()
 
 

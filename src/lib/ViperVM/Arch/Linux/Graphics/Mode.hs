@@ -51,8 +51,8 @@ data Mode = Mode
 instance Storable Mode where
    sizeOf _    = sizeOfT     @StructMode
    alignment _ = alignmentT  @StructMode
-   peek v      = fromStructMode <$> peek (castPtr v)
-   poke p v    = poke (castPtr p) (toStructMode v)
+   peekIO v    = fromStructMode <$> peekIO (castPtr v)
+   pokeIO p v  = pokeIO (castPtr p) (toStructMode v)
 
 
 fromStructMode :: StructMode -> Mode

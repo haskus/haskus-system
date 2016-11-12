@@ -143,13 +143,13 @@ initGenericFrameBuffer card mode pixfmt = do
       flags  = 0
 
    mappedPlanes <- forM bpps $ \bpp -> do
-      buf <- sysCallAssert "Create a generic buffer" $
-         createGenericBuffer hdl width height bpp flags
+      buf <- createGenericBuffer hdl width height bpp flags
+               |> flowAssert "Create a generic buffer"
 
-      bufKerMap <- sysCallAssert "Map generic buffer" $
-         mapGenericBuffer hdl buf
+      bufKerMap <- mapGenericBuffer hdl buf
+                     |> flowAssert "Map generic buffer"
 
-      addr <- sysCallAssert "Map generic buffer in user space" $ 
+      addr <- flowAssert "Map generic buffer in user space" <|
          sysMemMap Nothing
             (cdSize buf)
             (BitSet.fromList [ProtRead,ProtWrite])
@@ -163,7 +163,8 @@ initGenericFrameBuffer card mode pixfmt = do
    
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
-   fb <- sysCallAssert "Add frame buffer" $ addFrameBuffer hdl width height pixfmt BitSet.empty planes
+   fb <- addFrameBuffer hdl width height pixfmt BitSet.empty planes
+         |> flowAssert "Add frame buffer"
 
    return $ GenericFrame fb mappedPlanes
 
@@ -175,15 +176,15 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
    forM_ mappedBufs $ \(MappedSurface buf _ addr _) -> do
       -- unmap generic buffer from user-space
-      sysCallAssert "Unmap generic buffer from user space" $ 
-         sysMemUnmap addr (cdSize buf)
+      sysMemUnmap addr (cdSize buf)
+         |> flowAssert "Unmap generic buffer from user space"
 
       -- destroy the generic buffer
-      sysCallAssert "Destroy generic buffer" $ destroyGenericBuffer hdl buf
+      flowAssert "Destroy generic buffer" <| destroyGenericBuffer hdl buf
 
 
    -- remove the framebuffer
-   sysCallAssert "Remove framebuffer" $ removeFrameBuffer hdl fb
+   flowAssert "Remove framebuffer" <| removeFrameBuffer hdl fb
 
 
 -- | Retreive graphic card connectors
@@ -255,7 +256,8 @@ initRenderingEngine card ctrl mode nfb flags draw
       -- Check support for generic buffers
       let fd    = graphicCardHandle card
       sysLogSequence "Load graphic card" $ do
-         cap  <- sysCallAssert "Get GenericBuffer capability" (fd `supports` CapGenericBuffer)
+         cap  <- (fd `supports` CapGenericBuffer)
+                  |> flowAssert "Get GenericBuffer capability" 
          sysAssert "Generic buffer capability supported" cap
 
       -- TODO: support other formats
@@ -311,8 +313,8 @@ initRenderingEngine card ctrl mode nfb flags draw
 
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
-         sysCallAssertQuiet "Switch framebuffer" $
-            switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent])
+         switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent])
+            |> flowAssertQuiet "Switch framebuffer"
             
 
       let
@@ -347,12 +349,12 @@ initRenderingEngine card ctrl mode nfb flags draw
             sysIO yield
 
       -- set mode and connectors
-      -- sysCallAssertQuiet "Set controller" $
-      --    setController ctrl (SetFB fb1) [conn] (Just mode)
+      -- setController ctrl (SetFB fb1) [conn] (Just mode)
+      --    |> flowAssertQuiet "Set controller"
 
       -- Force the generation of the first page-flip event
-      sysCallAssertQuiet "Switch framebuffer" $
-         switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent])
+      switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent])
+         |> flowAssertQuiet "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
          draw mode gfb

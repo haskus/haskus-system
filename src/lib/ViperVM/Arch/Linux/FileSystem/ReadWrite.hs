@@ -128,18 +128,18 @@ handleReadBuffer hdl offset size = do
 
 
 -- | Like read but uses several buffers
-sysReadMany :: Handle -> [(Ptr a, Word64)] -> IOErr Word64
+sysReadMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> Flow m '[Word64,ErrorCode]
 sysReadMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
       count = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      syscall @"readv" fd (castPtr bufs') count
+      liftIO (syscall @"readv" fd (castPtr bufs') count)
          ||> toErrorCodePure fromIntegral
 
 -- | Like readMany, with additional offset in file
-sysReadManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> IOErr Word64
+sysReadManyWithOffset :: MonadInIO m => Handle -> Word64 -> [(Ptr a, Word64)] -> Flow m '[Word64,ErrorCode]
 sysReadManyWithOffset (Handle fd) offset bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -149,36 +149,36 @@ sysReadManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      syscall @"preadv" fd (castPtr bufs') count ol oh
+      liftIO (syscall @"preadv" fd (castPtr bufs') count ol oh)
          ||> toErrorCodePure fromIntegral
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
-sysWrite :: Handle -> Ptr a -> Word64 -> IOErr Word64
+sysWrite :: MonadIO m => Handle -> Ptr a -> Word64 -> Flow m '[Word64,ErrorCode]
 sysWrite (Handle fd) buf count =
-   syscall @"write" fd (castPtr buf) count
+   liftIO (syscall @"write" fd (castPtr buf) count)
       ||> toErrorCodePure fromIntegral
 
 -- | Write a file descriptor at a given position
-sysWriteWithOffset :: Handle -> Word64 -> Ptr () -> Word64 -> IOErr Word64
+sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow m '[Word64,ErrorCode]
 sysWriteWithOffset (Handle fd) offset buf count =
-   syscall @"pwrite64" fd buf count offset
+   liftIO (syscall @"pwrite64" fd buf count offset)
       ||> toErrorCodePure fromIntegral
 
 
 -- | Like write but uses several buffers
-sysWriteMany :: Handle -> [(Ptr a, Word64)] -> IOErr Word64
+sysWriteMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> Flow m '[Word64,ErrorCode]
 sysWriteMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
       count = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      syscall @"writev" fd (castPtr bufs') count
+      liftIO (syscall @"writev" fd (castPtr bufs') count)
          ||> toErrorCodePure fromIntegral
 
 -- | Like writeMany, with additional offset in file
-sysWriteManyWithOffset :: Handle -> Word64 -> [(Ptr a, Word64)] -> IOErr Word64
+sysWriteManyWithOffset :: MonadInIO m => Handle -> Word64 -> [(Ptr a, Word64)] -> Flow m '[Word64,ErrorCode]
 sysWriteManyWithOffset (Handle fd) offset bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -188,12 +188,12 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      syscall @"pwritev" fd (castPtr bufs') count ol oh
+      liftIO (syscall @"pwritev" fd (castPtr bufs') count ol oh)
          ||> toErrorCodePure fromIntegral
 
 -- | Write a buffer
-writeBuffer :: Handle -> Buffer -> IOErr ()
-writeBuffer fd bs = bufferUnsafeUsePtr bs go
+writeBuffer :: MonadIO m => Handle -> Buffer -> Flow m '[(),ErrorCode]
+writeBuffer fd bs = liftIO (bufferUnsafeUsePtr bs go)
    where
       go _ 0     = flowSetN @0 ()
       go ptr len = sysWrite fd ptr (fromIntegral len)

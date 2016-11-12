@@ -39,9 +39,9 @@ data UnmountFlag
 type UnmountFlags = BitSet Word64 UnmountFlag
 
 -- | Mount a file system
-sysMount :: String -> String -> String -> MountFlags -> Ptr () -> IOErr ()
+sysMount :: MonadIO m => String -> String -> String -> MountFlags -> Ptr () -> Flow m '[(),ErrorCode]
 sysMount source target fstype flags dat =
-   withCString source $ \source' ->
+   liftIO $ withCString source $ \source' ->
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->
             syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat
@@ -49,27 +49,27 @@ sysMount source target fstype flags dat =
 
 
 -- | Unmount a file system
-sysUnmount :: String -> UnmountFlags -> IOErr ()
+sysUnmount :: MonadIO m => String -> UnmountFlags -> Flow m '[(),ErrorCode]
 sysUnmount target flags =
-   withCString target $ \target' ->
+   liftIO $ withCString target $ \target' ->
       syscall @"umount2" target' (BitSet.toBits flags)
          ||> toErrorCodeVoid
 
 -- | Type of the low-level Linux "mount" function
-type MountCall = String -> String -> String -> MountFlags -> Ptr () -> IOErr ()
+type MountCall m = String -> String -> String -> MountFlags -> Ptr () -> Flow m '[(),ErrorCode]
 
 -- | Mount SysFS at the given location
-mountSysFS :: MountCall -> FilePath -> IOErr ()
+mountSysFS :: MonadIO m => MountCall m -> FilePath -> Flow m '[(),ErrorCode]
 mountSysFS mount path = mount "none" path "sysfs" BitSet.empty nullPtr
 
 -- | Mount DevFS at the given location
-mountDevFS :: MountCall -> FilePath -> IOErr ()
+mountDevFS :: MonadIO m => MountCall m -> FilePath -> Flow m '[(),ErrorCode]
 mountDevFS mount path = mount "none" path "devtmpfs" BitSet.empty nullPtr
 
 -- | Mount ProcFS at the given location
-mountProcFS :: MountCall -> FilePath -> IOErr ()
+mountProcFS :: MonadIO m => MountCall m -> FilePath -> Flow m '[(),ErrorCode]
 mountProcFS mount path = mount "none" path "proc" BitSet.empty nullPtr
 
 -- | Mount TmpFS at the given location
-mountTmpFS :: MountCall -> FilePath -> IOErr ()
+mountTmpFS :: MonadIO m => MountCall m -> FilePath -> Flow m '[(),ErrorCode]
 mountTmpFS mount path = mount "none" path "tmpfs" BitSet.empty nullPtr

@@ -161,14 +161,14 @@ instance forall fs s.
       type SizeOf (Record fs)    = FullRecordSize fs
       type Alignment (Record fs) = RecordAlignment fs 1
 
-      staticPeek ptr = do
+      staticPeekIO ptr = do
          let sz = recordSize (undefined :: Record fs)
-         fp <- mallocForeignPtrBytes (fromIntegral sz)
+         fp <- mallocForeignPtrBytes sz
          withForeignPtr fp $ \p ->
             memCopy p ptr (fromIntegral sz)
          return (Record fp)
 
-      staticPoke ptr (Record fp) = do
+      staticPokeIO ptr (Record fp) = do
          let sz = recordSize (undefined :: Record fs)
          withForeignPtr fp $ \p ->
             memCopy ptr p (fromIntegral sz)

@@ -50,11 +50,11 @@ sysExit :: Int64 -> IO ()
 sysExit n = void (syscall @"exit" n)
 
 -- | Get CPU and NUMA node executing the current process
-sysGetCPU :: IOErr (Word,Word)
+sysGetCPU :: MonadInIO m => Flow m '[(Word,Word),ErrorCode]
 sysGetCPU =
    alloca $ \cpu ->
       alloca $ \node ->
-         syscall @"getcpu" (cpu :: Ptr Word) (node :: Ptr Word) nullPtr
+         liftIO (syscall @"getcpu" (cpu :: Ptr Word) (node :: Ptr Word) nullPtr)
             ||>   toErrorCode
             >.~.> (const ((,) <$> peek cpu <*> peek node))
 
@@ -79,8 +79,8 @@ sysGetEffectiveUserID :: IO UserID
 sysGetEffectiveUserID = UserID . fromIntegral <$> syscall @"geteuid"
 
 -- | Set effective user ID of the calling process
-sysSetEffectiveUserID :: UserID -> IOErr ()
-sysSetEffectiveUserID (UserID uid) = syscall @"setuid" uid
+sysSetEffectiveUserID :: MonadIO m => UserID -> Flow m '[(),ErrorCode]
+sysSetEffectiveUserID (UserID uid) = liftIO (syscall @"setuid" uid)
    ||> toErrorCodeVoid
 
 -- | Get real group ID of the calling process
@@ -92,21 +92,21 @@ sysGetEffectiveGroupID :: IO GroupID
 sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall @"getegid"
 
 -- | Set effective group ID of the calling process
-sysSetEffectiveGroupID :: GroupID -> IOErr ()
-sysSetEffectiveGroupID (GroupID gid) = syscall @"setgid" gid
+sysSetEffectiveGroupID :: MonadIO m => GroupID -> Flow m '[(),ErrorCode]
+sysSetEffectiveGroupID (GroupID gid) = liftIO (syscall @"setgid" gid)
    ||> toErrorCodeVoid
 
 -- | Create a child process
-sysFork :: IOErr ProcessID
-sysFork = syscall @"fork"
+sysFork :: MonadIO m => Flow m '[ProcessID,ErrorCode]
+sysFork = liftIO (syscall @"fork")
    ||> toErrorCodePure (ProcessID . fromIntegral)
 
 -- | Create a child process and block parent
-sysVFork :: IOErr ProcessID
-sysVFork = syscall @"vfork"
+sysVFork :: MonadIO m => Flow m '[ProcessID,ErrorCode]
+sysVFork = liftIO (syscall @"vfork")
    ||> toErrorCodePure (ProcessID . fromIntegral)
 
 -- | Yield the processor
-sysSchedulerYield :: IOErr ()
-sysSchedulerYield = syscall @"sched_yield" ||> toErrorCodeVoid
+sysSchedulerYield :: MonadIO m => Flow m '[(),ErrorCode]
+sysSchedulerYield = liftIO (syscall @"sched_yield") ||> toErrorCodeVoid
 

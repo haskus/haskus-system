@@ -11,6 +11,8 @@
 -- | Storable class
 module ViperVM.Format.Binary.Storable
    ( StaticStorable (..)
+   , staticPeek
+   , staticPoke
    , RequiredPadding
    , Padding
    , PaddingEx
@@ -19,6 +21,8 @@ module ViperVM.Format.Binary.Storable
    , wordBytes
    -- * Storable
    , Storable (..)
+   , peek
+   , poke
    , sizeOf'
    , sizeOfT
    , sizeOfT'
@@ -46,13 +50,14 @@ where
 
 import qualified Foreign.Storable as FS
 import Foreign.C.Types (CSize,CChar,CULong,CLong,CUInt,CInt,CUShort,CShort)
-import Foreign.Marshal.Alloc (allocaBytes,allocaBytesAligned)
+import qualified Foreign.Marshal.Alloc as P
 import System.IO.Unsafe
 
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.Generics
+import ViperVM.Utils.Flow
 
 -- | A storable data in constant space whose size is known at compile time
 class StaticStorable a where
@@ -63,10 +68,18 @@ class StaticStorable a where
    type Alignment a :: Nat
 
    -- | Peek (read) a value from a memory address
-   staticPeek :: Ptr a -> IO a
+   staticPeekIO :: Ptr a -> IO a
 
    -- | Poke (write) a value at the given memory address
-   staticPoke :: Ptr a -> a -> IO ()
+   staticPokeIO :: Ptr a -> a -> IO ()
+
+-- | Peek (read) a value from a memory address
+staticPeek :: (StaticStorable a, MonadIO m) => Ptr a -> m a
+staticPeek p = liftIO (staticPeekIO p)
+
+-- | Poke (write) a value at the given memory address
+staticPoke :: (StaticStorable a, MonadIO m) => Ptr a -> a -> m ()
+staticPoke p a = liftIO (staticPokeIO p a)
 
 
 -- | Compute the required padding between a and b to respect b's alignment
@@ -114,13 +127,13 @@ wordBytes x = unsafePerformIO $
 -- DefaultSignatures (i.e., the Storable instance can be automatically derived
 -- from a Generic instance).
 class Storable a where
-  peek              :: Ptr a -> IO a
-  default peek      :: (Generic a, GStorable (Rep a)) => Ptr a -> IO a
-  peek p            = fmap to $ gcPeek 0 (castPtr p)
+  peekIO            :: Ptr a -> IO a
+  default peekIO    :: (Generic a, GStorable (Rep a)) => Ptr a -> IO a
+  peekIO p          = fmap to $ gcPeek 0 (castPtr p)
 
-  poke              :: Ptr a -> a -> IO ()
-  default poke      :: (Generic a, GStorable (Rep a)) => Ptr a -> a -> IO ()
-  poke p x          = gcPoke 0 (castPtr p) $ from x
+  pokeIO            :: Ptr a -> a -> IO ()
+  default pokeIO    :: (Generic a, GStorable (Rep a)) => Ptr a -> a -> IO ()
+  pokeIO p x        = gcPoke 0 (castPtr p) $ from x
 
   alignment         :: a -> Word
   default alignment :: (Generic a, GStorable (Rep a)) => a -> Word
@@ -129,6 +142,14 @@ class Storable a where
   sizeOf            :: a -> Word
   default sizeOf    :: (Generic a, GStorable (Rep a)) => a -> Word
   sizeOf            = gcSizeOf 0 . from
+
+-- | Peek a value from a pointer
+peek :: (Storable a, MonadIO m) => Ptr a -> m a
+peek p = liftIO (peekIO p)
+
+-- | Poke a value to a pointer
+poke :: (Storable a, MonadIO m) => Ptr a -> a -> m ()
+poke p v = liftIO (pokeIO p v)
 
 -- | Generalized 'sizeOf'
 sizeOf' :: (Integral b, Storable a) => a -> b
@@ -171,13 +192,20 @@ pokeByteOff :: Storable a => Ptr a -> Int -> a -> IO ()
 pokeByteOff ptr off = poke (ptr `indexPtr` off)
 
 -- | Peek with element size offset
-peekElemOff :: forall a. Storable a => Ptr a -> Int -> IO a
-peekElemOff ptr off = peekByteOff ptr (off * sizeOfT' @a)
+peekElemOff :: forall a m. (MonadIO m, Storable a) => Ptr a -> Int -> m a
+peekElemOff ptr off = liftIO (peekByteOff ptr (off * sizeOfT' @a))
 
 -- | Poke with element size offset
-pokeElemOff :: Storable a => Ptr a -> Int -> a -> IO ()
-pokeElemOff ptr off val = pokeByteOff ptr (off * sizeOf' val) val
+pokeElemOff :: (MonadIO m, Storable a) => Ptr a -> Int -> a -> m ()
+pokeElemOff ptr off val = liftIO (pokeByteOff ptr (off * sizeOf' val) val)
 
+-- | Allocate some bytes
+allocaBytes :: MonadInIO m => Word -> (Ptr a -> m b) -> m b
+allocaBytes sz = liftWith (P.allocaBytes (fromIntegral sz))
+
+-- | Allocate some aligned bytes
+allocaBytesAligned :: MonadInIO m => Word -> Word -> (Ptr a -> m b) -> m b
+allocaBytesAligned sz align = liftWith (P.allocaBytesAligned (fromIntegral sz) (fromIntegral align))
 
 -- | @'alloca' f@ executes the computation @f@, passing as argument
 -- a pointer to a temporarily allocated block of memory sufficient to
@@ -186,7 +214,7 @@ pokeElemOff ptr off val = pokeByteOff ptr (off * sizeOf' val) val
 -- The memory is freed when @f@ terminates (either normally or via an
 -- exception), so the pointer passed to @f@ must /not/ be used after this.
 --
-alloca :: forall a b. Storable a => (Ptr a -> IO b) -> IO b
+alloca :: forall a b m. (MonadInIO m, Storable a) => (Ptr a -> m b) -> m b
 {-# INLINE alloca #-}
 alloca = allocaBytesAligned (sizeOfT' @a) (alignmentT' @a)
 
@@ -196,9 +224,9 @@ alloca = allocaBytesAligned (sizeOfT' @a) (alignmentT' @a)
 --
 -- The memory may be deallocated using 'free' or 'finalizerFree' when
 -- no longer required.
-malloc :: forall a. Storable a => IO (Ptr a)
+malloc :: forall a m. (MonadIO m, Storable a) => m (Ptr a)
 {-# INLINE malloc #-}
-malloc = mallocBytes (sizeOfT @a)
+malloc = liftIO (mallocBytes (sizeOfT @a))
 
 -- | @'with' val f@ executes the computation @f@, passing as argument
 -- a pointer to a temporarily allocated block of memory into which
@@ -206,7 +234,7 @@ malloc = mallocBytes (sizeOfT @a)
 --
 -- The memory is freed when @f@ terminates (either normally or via an
 -- exception), so the pointer passed to @f@ must /not/ be used after this.
-with :: Storable a => a -> (Ptr a -> IO b) -> IO b
+with :: (MonadInIO m, Storable a) => a -> (Ptr a -> m b) -> m b
 {-# INLINE with #-}
 with val f =
    alloca $ \ptr -> do
@@ -215,44 +243,44 @@ with val f =
 
 -- | Temporarily allocate space for the given number of elements
 -- (like 'alloca', but for multiple elements).
-allocaArray :: forall a b. Storable a => Int -> (Ptr a -> IO b) -> IO b
-allocaArray size = allocaBytesAligned (size * sizeOfT' @a) (alignmentT' @a)
+allocaArray :: forall a b m. (MonadInIO m, Storable a) => Word -> (Ptr a -> m b) -> m b
+allocaArray size = liftWith (allocaBytesAligned (size * sizeOfT' @a) (alignmentT' @a))
 
 -- | Allocate space for the given number of elements
 -- (like 'malloc', but for multiple elements).
-mallocArray :: forall a. Storable a => Word -> IO (Ptr a)
+mallocArray :: forall a m. (MonadIO m, Storable a) => Word -> m (Ptr a)
 mallocArray size = mallocBytes (size * sizeOfT @a)
 
 -- | Convert an array of given length into a Haskell list.  The implementation
 -- is tail-recursive and so uses constant stack space.
-peekArray :: Storable a => Int -> Ptr a -> IO [a]
+peekArray :: (MonadIO m, Storable a) => Word -> Ptr a -> m [a]
 peekArray size ptr
    | size <= 0 = return []
    | otherwise = f (size-1) []
   where
     f 0 acc = (:acc) <$> peekElemOff ptr 0
-    f n acc = f (n-1) =<< ((:acc) <$> peekElemOff ptr n)
+    f n acc = f (n-1) =<< ((:acc) <$> peekElemOff ptr (fromIntegral n))
 
 -- | Write the list elements consecutive into memory
-pokeArray :: Storable a => Ptr a -> [a] -> IO ()
+pokeArray :: (MonadIO m, Storable a) => Ptr a -> [a] -> m ()
 pokeArray ptr vals0 = go vals0 0
   where go [] _         = return ()
         go (val:vals) n = do pokeElemOff ptr n val; go vals (n+1)
 
 -- | Temporarily store a list of storable values in memory
 -- (like 'with', but for multiple elements).
-withArray :: Storable a => [a] -> (Ptr a -> IO b) -> IO b
+withArray :: (MonadInIO m, Storable a) => [a] -> (Ptr a -> m b) -> m b
 withArray vals = withArrayLen vals . const
 
 -- | Like 'withArray', but the action gets the number of values
 -- as an additional parameter
-withArrayLen :: Storable a => [a] -> (Int -> Ptr a -> IO b) -> IO b
+withArrayLen :: (MonadInIO m, Storable a) => [a] -> (Word -> Ptr a -> m b) -> m b
 withArrayLen vals f  =
   allocaArray len $ \ptr -> do
       pokeArray ptr vals
       f len ptr
   where
-    len = length vals
+    len = fromIntegral (length vals)
 
 -- | Replicates a @withXXX@ combinator over a list of objects, yielding a list of
 -- marshalled objects
@@ -314,189 +342,197 @@ instance (Storable a) => GStorable (K1 i a) where
   gcSizeOf off (K1 x)    = gcPadding off (undefined :: K1 i a x) + sizeOf x
 
 
+-- | Generalize FS.peek
+fsPeek :: (FS.Storable a, MonadIO m) => Ptr a -> m a
+fsPeek = liftIO . FS.peek
+
+-- | Generalize FS.poke
+fsPoke :: (FS.Storable a, MonadIO m) => Ptr a -> a -> m ()
+fsPoke ptr a = liftIO (FS.poke ptr a)
+
 instance StaticStorable Word8 where
    type SizeOf    Word8 = 1
    type Alignment Word8 = 1
-   staticPeek           = FS.peek
-   staticPoke           = FS.poke
+   staticPeekIO         = fsPeek
+   staticPokeIO         = fsPoke
 
 instance StaticStorable Word16 where
    type SizeOf    Word16 = 2
    type Alignment Word16 = 2
-   staticPeek            = FS.peek
-   staticPoke            = FS.poke
+   staticPeekIO          = fsPeek
+   staticPokeIO          = fsPoke
 
 instance StaticStorable Word32 where
    type SizeOf    Word32 = 4
    type Alignment Word32 = 4
-   staticPeek            = FS.peek
-   staticPoke            = FS.poke
+   staticPeekIO          = fsPeek
+   staticPokeIO          = fsPoke
 
 instance StaticStorable Word64 where
    type SizeOf    Word64 = 8
    type Alignment Word64 = 8
-   staticPeek            = FS.peek
-   staticPoke            = FS.poke
+   staticPeekIO          = fsPeek
+   staticPokeIO          = fsPoke
 
 instance StaticStorable Int8 where
    type SizeOf    Int8 = 1
    type Alignment Int8 = 1
-   staticPeek          = FS.peek
-   staticPoke          = FS.poke
+   staticPeekIO        = fsPeek
+   staticPokeIO        = fsPoke
 
 instance StaticStorable Int16 where
    type SizeOf    Int16 = 2
    type Alignment Int16 = 2
-   staticPeek           = FS.peek
-   staticPoke           = FS.poke
+   staticPeekIO         = fsPeek
+   staticPokeIO         = fsPoke
 
 instance StaticStorable Int32 where
    type SizeOf    Int32 = 4
    type Alignment Int32 = 4
-   staticPeek           = FS.peek
-   staticPoke           = FS.poke
+   staticPeekIO         = fsPeek
+   staticPokeIO         = fsPoke
 
 instance StaticStorable Int64 where
    type SizeOf    Int64 = 8
    type Alignment Int64 = 8
-   staticPeek           = FS.peek
-   staticPoke           = FS.poke
+   staticPeekIO         = fsPeek
+   staticPokeIO         = fsPoke
 
 
 instance Storable Word8 where
    sizeOf    _ = 1
    alignment _ = 1
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Word16 where
    sizeOf    _ = 2
    alignment _ = 2
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Word32 where
    sizeOf    _ = 4
    alignment _ = 4
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Word64 where
    sizeOf    _ = 8
    alignment _ = 8
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Int8 where
    sizeOf    _ = 1
    alignment _ = 1
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Int16 where
    sizeOf    _ = 2
    alignment _ = 2
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Int32 where
    sizeOf    _ = 4
    alignment _ = 4
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Int64 where
    sizeOf    _ = 8
    alignment _ = 8
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Float where
    sizeOf    _ = 4
    alignment _ = 4
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Double where
    sizeOf    _ = 8
    alignment _ = 8
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Char where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Word where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable Int where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable (Ptr a) where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CSize where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CChar where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CULong where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CLong where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CUInt where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CInt where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CUShort where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable CShort where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke
 
 instance Storable WordPtr where
    sizeOf      = fromIntegral . FS.sizeOf
    alignment   = fromIntegral . FS.alignment
-   peek        = FS.peek
-   poke        = FS.poke
+   peekIO      = fsPeek
+   pokeIO      = fsPoke

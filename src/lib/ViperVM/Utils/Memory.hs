@@ -18,8 +18,8 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 
 -- | Copy memory
-memCopy :: Ptr a -> Ptr b -> Word64 -> IO ()
-memCopy dest src size = void (memcpy dest src size)
+memCopy :: MonadIO m => Ptr a -> Ptr b -> Word64 -> m ()
+memCopy dest src size = liftIO (void (memcpy dest src size))
 
 {-# INLINE memCopy #-}
 
@@ -29,8 +29,8 @@ foreign import ccall unsafe memcpy  :: Ptr a -> Ptr b -> Word64 -> IO (Ptr c)
 
 
 -- | Set memory
-memSet :: Ptr a -> Word64 -> Word8 -> IO ()
-memSet dest size fill = void (memset dest fill size)
+memSet :: MonadIO m => Ptr a -> Word64 -> Word8 -> m ()
+memSet dest size fill = liftIO (void (memset dest fill size))
 
 {-# INLINE memSet #-}
 
@@ -65,7 +65,10 @@ withArrays vs f = go [] vs
       go as (x:xs) = withArray x $ \a -> go (a:as) xs
 
 -- | Execute f with a pointer to 'a' or NULL
-withMaybeOrNull :: Storable a => Maybe a -> (Ptr a -> IO b) -> IO b
+withMaybeOrNull ::
+   ( Storable a
+   , MonadInIO m
+   ) => Maybe a -> (Ptr a -> m b) -> m b
 withMaybeOrNull s f = case s of
    Nothing -> f nullPtr
    Just x  -> with x f

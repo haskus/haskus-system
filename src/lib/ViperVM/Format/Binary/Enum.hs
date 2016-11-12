@@ -33,10 +33,10 @@ instance
       , CEnum a
       ) => Storable (EnumField b a)
    where
-      sizeOf _             = sizeOfT    @b
-      alignment _          = alignmentT @b
-      peek p               = (EnumField . toCEnum) <$> peek (castPtr p :: Ptr b)
-      poke p (EnumField v) = poke (castPtr p :: Ptr b) (fromCEnum v)
+      sizeOf _               = sizeOfT    @b
+      alignment _            = alignmentT @b
+      peekIO p               = (EnumField . toCEnum) <$> peek (castPtr p :: Ptr b)
+      pokeIO p (EnumField v) = poke (castPtr p :: Ptr b) (fromCEnum v)
 
 instance
       ( Integral b
@@ -46,8 +46,8 @@ instance
    where
       type SizeOf (EnumField b a)    = SizeOf b
       type Alignment (EnumField b a) = Alignment b
-      staticPeek p                   = (EnumField . toCEnum) <$> staticPeek (castPtr p :: Ptr b)
-      staticPoke p (EnumField v)     = staticPoke (castPtr p :: Ptr b) (fromCEnum v)
+      staticPeekIO p                 = (EnumField . toCEnum) <$> staticPeek (castPtr p :: Ptr b)
+      staticPokeIO p (EnumField v)   = staticPoke (castPtr p :: Ptr b) (fromCEnum v)
 
 -- | Read an enum field
 fromEnumField :: EnumField b a -> a

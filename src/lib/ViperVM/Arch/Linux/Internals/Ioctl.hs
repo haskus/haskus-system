@@ -64,7 +64,7 @@ data Direction
 instance CEnum Direction
 
 -- | Encode a command (similar to _IO, _IOR, ... macros)
-ioctlCommand :: Direction -> Word8 -> Word8 -> Int -> Command
+ioctlCommand :: Direction -> Word8 -> Word8 -> Word -> Command
 ioctlCommand dir typ nb sz = Command
    $ updateField (Proxy :: Proxy "direction") (toEnumField dir)
    $ updateField (Proxy :: Proxy "size")      (fromIntegral sz)

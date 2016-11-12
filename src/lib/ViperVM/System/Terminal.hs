@@ -71,15 +71,15 @@ data IOBuffer = IOBuffer
    , iobufferPtr  :: Ptr ()
    }
 
-inputThread :: InputState -> IO ()
+inputThread :: InputState -> Sys ()
 inputThread s = forever $ do
    
    let hdl@(Handle fd) = inputHandle s
 
-   threadWaitRead (Fd (fromIntegral fd))
+   sysIO $ threadWaitRead (Fd (fromIntegral fd))
 
    -- data are ready to be read
-   (after, sz, ptr) <- atomically $ do
+   (after, sz, ptr) <- sysIO $ atomically $ do
       e <- TList.last (inputRequests s)
       case e of
          -- if a request is pending, use its buffer
@@ -116,21 +116,17 @@ inputThread s = forever $ do
                then retry
                else return (after,fromIntegral size,ptr)
                         
-   readBytes <- runSys $ do
-      sysIO (sysRead hdl ptr sz)
-         >..~!!> (\err -> do
-            let text = "Read bytes from " ++ show hdl
-            let msg = printf "%s (failed with %s)" text (show err)
-            sysError msg)
+   readBytes <- sysRead hdl ptr sz
+                  |> flowAssert ("Read bytes from "++show hdl)
 
    -- TODO: if readBytes is zero, it's the end of file, etc.
-   runSys' $ sysAssert "readBytes /= 0" (readBytes /= 0)
+   sysAssert "readBytes /= 0" (readBytes /= 0)
 
-   atomically $ after readBytes
+   sysIO $ atomically $ after readBytes
 
 
-readFromHandle :: InputState -> Word64 -> Ptr () -> IO (Future ())
-readFromHandle s sz ptr = do
+readFromHandle :: InputState -> Word64 -> Ptr () -> Sys (Future ())
+readFromHandle s sz ptr = liftIO $ do
    (after,bsz,bptr) <- atomically $ do
       -- read bytes from the buffer if any
       b <- takeTMVar (inputBuffer s)
@@ -183,11 +179,11 @@ data OutputState = OutputState
    , outputHandle  :: Handle
    }
 
-outputThread :: OutputState -> IO ()
+outputThread :: OutputState -> Sys ()
 outputThread s = forever $ do
    let hdl@(Handle fd) = outputHandle s
 
-   (buf,semsrc) <- atomically $ do
+   (buf,semsrc) <- sysIO $ atomically $ do
       e <- TList.last (outputBuffers s)
       case e of
          Nothing -> retry
@@ -195,13 +191,13 @@ outputThread s = forever $ do
             TList.delete e' 
             return (TList.value e')
 
-   threadWaitWrite (Fd (fromIntegral fd))
+   sysIO $ threadWaitWrite (Fd (fromIntegral fd))
 
    -- try to write as much as possible
-   n <- runSys $ sysCallAssertQuiet ("Write bytes to "++show hdl) $ 
-      sysWrite hdl (iobufferPtr buf) (iobufferSize buf)
+   n <- sysWrite hdl (iobufferPtr buf) (iobufferSize buf)
+         |> flowAssertQuiet ("Write bytes to "++show hdl)
 
-   atomically $ if n == iobufferSize buf
+   sysIO $ atomically $ if n == iobufferSize buf
       then setFuture () semsrc
       else do
          let buf' = IOBuffer (iobufferSize buf - n)
@@ -228,48 +224,48 @@ defaultTerminal = do
 
    -- input
    inState <- sysIO $ newInputState (16 * 1024) stdin
-   sysFork "Terminal input handler"$ sysIO $ inputThread inState
+   sysFork "Terminal input handler"$ inputThread inState
 
    -- output
    outState <- sysIO $ newOutputState stdout
-   sysFork "Terminal output handler" $ sysIO $ outputThread outState
+   sysFork "Terminal output handler" $ outputThread outState
 
    return $ Terminal outState inState
 
-writeToHandle :: OutputState -> Word64 -> Ptr () -> IO (Future ())
-writeToHandle s sz ptr = atomically $ do
+writeToHandle :: OutputState -> Word64 -> Ptr () -> Sys (Future ())
+writeToHandle s sz ptr = liftIO $ atomically $ do
    (sem,semsrc) <- newFuture
    TList.prepend_ (IOBuffer sz ptr, semsrc) (outputBuffers s)
    return sem
 
 -- | Write bytes
-writeTermBytes :: Terminal -> Word64 -> Ptr a -> IO (Future ())
+writeTermBytes :: Terminal -> Word64 -> Ptr a -> Sys (Future ())
 writeTermBytes term sz ptr = writeToHandle (termOut term) sz (castPtr ptr)
 
 -- | Write a string
 writeStrLn :: Terminal -> String -> Sys ()
 writeStrLn term s =
-   sysIO $ withCStringLen s $ \(ptr,len) ->
+   withCStringLen s $ \ptr len ->
       with '\n' $ \ptr2 -> do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         atomically (waitFuture sem)
+         liftIO (atomically (waitFuture sem))
 
 -- | Write a buffer
 writeBuffer :: Terminal -> Buffer -> Sys ()
 writeBuffer term b =
-   sysIO $ bufferUnsafeUsePtr b $ \ptr len -> do
+   bufferUnsafeUsePtr b $ \ptr len -> do
       sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-      atomically (waitFuture sem)
+      liftIO (atomically (waitFuture sem))
 
 -- | Write a buffer
 writeBufferLn :: Terminal -> Buffer -> Sys ()
 writeBufferLn term b =
-   sysIO $ bufferUnsafeUsePtr b $ \ptr len ->
+   bufferUnsafeUsePtr b $ \ptr len ->
       with '\n' $ \ptr2 -> do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         atomically (waitFuture sem)
+         liftIO (atomically (waitFuture sem))
 
 -- | Write a text using UTF8 encoding
 writeText :: Terminal -> Text -> Sys ()
@@ -280,15 +276,15 @@ writeTextLn :: Terminal -> Text -> Sys ()
 writeTextLn term = writeBufferLn term . textEncodeUtf8
 
 -- | Read bytes (asynchronous)
-readTermBytes :: Terminal -> Word64 -> Ptr a -> IO (Future ())
+readTermBytes :: Terminal -> Word64 -> Ptr a -> Sys (Future ())
 readTermBytes term sz ptr = readFromHandle (termIn term) sz (castPtr ptr)
 
 -- | Read a Storable (synchronous)
 readTerm :: Storable a => Terminal -> Sys a
-readTerm term = sysIO $
+readTerm term =
    alloca $ \(ptr :: Ptr a) -> do
       sem <- readTermBytes term (sizeOfT' @a) ptr
-      atomically $ waitFuture sem
+      liftIO (atomically $ waitFuture sem)
       peek ptr
 
 -- | Wait for a key to pressed

@@ -34,13 +34,13 @@ stderr :: Handle
 stderr = Handle 2
 
 -- | Write a String in the given file descriptor
-writeStr :: Handle -> String -> IOErr ()
-writeStr fd = writeBuffer fd . stringEncodeUtf8
+writeStr :: MonadIO m => Handle -> String -> Flow m '[(),ErrorCode]
+writeStr fd = liftIO . writeBuffer fd . stringEncodeUtf8
 
 -- | Write a String with a newline character in the given
 -- file descriptor
-writeStrLn :: Handle -> String -> IOErr ()
-writeStrLn fd = writeBuffer fd . stringEncodeUtf8 . (++ "\n")
+writeStrLn :: MonadIO m => Handle -> String -> Flow m '[(),ErrorCode]
+writeStrLn fd = liftIO . writeBuffer fd . stringEncodeUtf8 . (++ "\n")
 
 -- | Read a single character
 --

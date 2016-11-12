@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ViperVM.Arch.Linux.Network.SendReceive
    ( SendReceiveFlag(..)
@@ -91,23 +92,22 @@ type SendReceiveFlags = BitSet Word64 SendReceiveFlag
 -- | Receive data from a socket
 --
 -- recvfrom syscall
-sysReceive :: Storable a => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> IOErr Word64
+sysReceive :: (MonadIO m, Storable a) => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> Flow m '[Word64,ErrorCode]
 sysReceive (Handle fd) ptr size flags addr = do
    let
-      call :: Ptr a -> Ptr Word64 -> IOErr Word64
-      call add len = syscall @"recvfrom" fd ptr size (BitSet.toBits flags) (castPtr add) len
+      call add len = liftIO (syscall @"recvfrom" fd ptr size (BitSet.toBits flags) (castPtr add) len)
                         ||> toErrorCodePure fromIntegral
 
    case addr of
       Nothing -> call nullPtr nullPtr
-      Just a  -> with a $ \a' -> 
+      Just a  -> liftIO $ with a $ \a' -> 
          with (sizeOf' a) $ \sptr -> call a' sptr
 
-receiveBuffer :: Handle -> Int -> SendReceiveFlags -> IOErr Buffer
+receiveBuffer :: MonadIO m => Handle -> Int -> SendReceiveFlags -> Flow m '[Buffer,ErrorCode]
 receiveBuffer fd size flags = do
-   b <- mallocBytes (fromIntegral size)
+   b <- liftIO $ mallocBytes (fromIntegral size)
    sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
       -- free the buffer on error
       >..~=> const (free b)
       -- otherwise make a bytestring
-      >.~.> \sz -> bufferPackPtr (fromIntegral sz) (castPtr b)
+      >.~.> (\sz -> liftIO (bufferPackPtr (fromIntegral sz) (castPtr b)))

@@ -16,10 +16,10 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 
 -- | Create a pipe
-createPipe :: IOErr (Handle, Handle)
+createPipe :: MonadInIO m => Flow m '[(Handle, Handle),ErrorCode]
 createPipe =
    allocaArray 2 $ \(ptr :: Ptr Word) ->
-      syscall @"pipe" (castPtr ptr)
+      liftIO (syscall @"pipe" (castPtr ptr))
          ||> toErrorCode
          >.~.> (const ((,)
             <$> (Handle <$> peekElemOff ptr 0)

@@ -32,36 +32,36 @@ import ViperVM.Utils.Memory
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
-sysPause :: IOErr ()
-sysPause = syscall @"pause" ||> toErrorCodeVoid
+sysPause :: MonadIO m => Flow m '[(),ErrorCode]
+sysPause = liftIO (syscall @"pause") ||> toErrorCodeVoid
 
 -- | Alarm
-sysAlarm :: Word-> IOErr Word
-sysAlarm seconds = syscall @"alarm" seconds
+sysAlarm :: MonadIO m => Word-> Flow m '[Word,ErrorCode]
+sysAlarm seconds = liftIO (syscall @"alarm" seconds)
    ||> toErrorCodePure fromIntegral
 
 -- | Kill syscall
-sysSendSignal :: ProcessID -> Int -> IOErr ()
+sysSendSignal :: MonadIO m => ProcessID -> Int -> Flow m '[(),ErrorCode]
 sysSendSignal (ProcessID pid) sig =
-   syscall @"kill" (fromIntegral pid) sig
+   liftIO (syscall @"kill" (fromIntegral pid) sig)
       ||> toErrorCodeVoid
 
 -- | Send a signal to every process in the process group of the calling process
-sysSendSignalGroup :: Int -> IOErr ()
+sysSendSignalGroup :: MonadIO m => Int -> Flow m '[(),ErrorCode]
 sysSendSignalGroup sig =
-   syscall @"kill" 0 sig
+   liftIO (syscall @"kill" 0 sig)
       ||> toErrorCodeVoid
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
-sysSendSignalAll :: Int -> IOErr ()
+sysSendSignalAll :: MonadIO m => Int -> Flow m '[(),ErrorCode]
 sysSendSignalAll sig =
-   syscall @"kill" (-1) sig
+   liftIO (syscall @"kill" (-1) sig)
       ||> toErrorCodeVoid
 
 -- | Check if a given process or process group exists
 --
 -- Send signal "0" the given process
-sysCheckProcess :: ProcessID -> IOErr Bool
+sysCheckProcess :: MonadIO m => ProcessID -> Flow m '[Bool,ErrorCode]
 sysCheckProcess pid = sysSendSignal pid 0
    >.-.> const True
    >%~$> \case
@@ -76,10 +76,10 @@ data ChangeSignals
    deriving (Show,Eq,Enum)
 
 -- | Change signal mask
-sysChangeSignalMask :: ChangeSignals -> Maybe SignalSet -> IOErr SignalSet
+sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> Flow m '[SignalSet,ErrorCode]
 sysChangeSignalMask act set =
    withMaybeOrNull set $ \x ->
       alloca $ \(ret :: Ptr SignalSet) ->
-         syscall @"rt_sigprocmask" (fromEnum act) (castPtr x) (castPtr ret)
+         liftIO (syscall @"rt_sigprocmask" (fromEnum act) (castPtr x) (castPtr ret))
             ||>   toErrorCode
             >.~.> (const $ peek ret)

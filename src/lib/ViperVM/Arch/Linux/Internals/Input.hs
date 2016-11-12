@@ -42,7 +42,7 @@ module ViperVM.Arch.Linux.Internals.Input
    , getDeviceLEDs
    , getDeviceSoundStatus
    , getDeviceSwitchStatus
-   , getDeviceBits
+   , ioctlGetDeviceBits
    , getDeviceAbsoluteInfo
    , setDeviceAbsoluteInfo
    , sendForceFeedback
@@ -1079,7 +1079,7 @@ getDeviceProperties = ioctlReadVariableBuffer 0x45 0x09 (const peekCString) 256
 -- ABS_MT code.
 -- 
 -- If the request code is not an ABS_MT value, -EINVAL is returned.
-getDeviceMultiTouchSlots :: Word32 -> Int -> Handle -> IOErr [Int32]
+getDeviceMultiTouchSlots :: Word32 -> Word -> Handle -> IOErr [Int32]
 getDeviceMultiTouchSlots code nSlots fd = do
    let sz = 4 * (nSlots + 1)
    allocaBytes (fromIntegral sz) $ \ptr -> do
@@ -1090,25 +1090,25 @@ getDeviceMultiTouchSlots code nSlots fd = do
 -- | Get global key state (one bit per pressed key)
 --
 -- EVIOCGKEY
-getDeviceKeys :: Int -> Handle -> IOErr Buffer
+getDeviceKeys :: Word -> Handle -> IOErr Buffer
 getDeviceKeys n fd = ioctlReadBuffer 0x45 0x18 ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get all leds (one bit per led)
 --
 -- EVIOCGLED
-getDeviceLEDs :: Int -> Handle -> IOErr Buffer
+getDeviceLEDs :: Word -> Handle -> IOErr Buffer
 getDeviceLEDs n fd = ioctlReadBuffer 0x45 0x19 ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get sound status (one bit per sound)
 --
 -- EVIOCGSND
-getDeviceSoundStatus :: Int -> Handle -> IOErr Buffer
+getDeviceSoundStatus :: Word -> Handle -> IOErr Buffer
 getDeviceSoundStatus n fd = ioctlReadBuffer 0x45 0x1a ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Get switch status (one bit per switch)
 --
 -- EVIOCGSW
-getDeviceSwitchStatus :: Int -> Handle -> IOErr Buffer
+getDeviceSwitchStatus :: Word -> Handle -> IOErr Buffer
 getDeviceSwitchStatus n fd = ioctlReadBuffer 0x45 0x1b ((n `div` 8) + 1) fd >.-.> snd
 
 -- | Return a bitset of the supported event codes for the given event type.
@@ -1118,8 +1118,8 @@ getDeviceSwitchStatus n fd = ioctlReadBuffer 0x45 0x1b ((n `div` 8) + 1) fd >.-.
 -- Return the size of the written *bytes*
 --
 -- EVIOCGBIT
-getDeviceBits :: Maybe EventType -> Int -> Handle -> IOErr (Int64, Buffer)
-getDeviceBits ev n fd = do
+ioctlGetDeviceBits :: Maybe EventType -> Word -> Handle -> IOErr (Int64, Buffer)
+ioctlGetDeviceBits ev n fd = do
    let code = fromMaybe 0 (fromCEnum <$> ev )
    ioctlReadBuffer 0x45 (0x20 + code) ((n `div` 8) + 1) fd
 

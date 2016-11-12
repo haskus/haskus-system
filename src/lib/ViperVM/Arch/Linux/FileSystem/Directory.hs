@@ -34,7 +34,7 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types.Generics (Generic)
 
-sysCreateDirectory :: Maybe Handle -> FilePath -> FilePermissions -> Bool -> IOErr ()
+sysCreateDirectory :: MonadIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> Flow m '[(),ErrorCode]
 sysCreateDirectory fd path perm sticky = do
    let
       opt        = if sticky
@@ -45,11 +45,11 @@ sysCreateDirectory fd path perm sticky = do
          Nothing           -> syscall @"mkdir" path' mode
          Just (Handle fd') -> syscall @"mkdirat" fd' path' mode
 
-   withCString path call ||> toErrorCodeVoid
+   liftIO (withCString path call) ||> toErrorCodeVoid
 
 
-sysRemoveDirectory :: FilePath -> IOErr ()
-sysRemoveDirectory path = withCString path $ \path' ->
+sysRemoveDirectory :: MonadIO m => FilePath -> Flow m '[(),ErrorCode]
+sysRemoveDirectory path = liftIO $ withCString path $ \path' ->
    syscall @"rmdir" path'
       ||> toErrorCodeVoid
 
@@ -113,7 +113,7 @@ instance CEnum DirectoryEntryType where
 --
 -- TODO: propose a "pgetdents64" syscall for Linux with an additional offset
 -- (like pread, pwrite)
-sysGetDirectoryEntries :: Handle -> Int -> IOErr [DirectoryEntry]
+sysGetDirectoryEntries :: MonadInIO m => Handle -> Word -> Flow m '[[DirectoryEntry],ErrorCode]
 sysGetDirectoryEntries (Handle fd) buffersize = do
 
    let
@@ -136,15 +136,15 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                   else return xs
 
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
-      syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize)
+      liftIO (syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize))
          ||> toErrorCode
-         >.~.> (\nread -> readEntries (castPtr ptr) (fromIntegral nread))
+         >.~.> (\nread -> liftIO (readEntries (castPtr ptr) (fromIntegral nread)))
 
 -- | Return the content of a directory
 --
 -- Warning: reading concurrently the same file descriptor returns mixed up
 -- results because of the stateful kernel interface
-listDirectory :: Handle -> IOErr [DirectoryEntry]
+listDirectory :: MonadInIO m => Handle -> Flow m '[[DirectoryEntry],ErrorCode]
 listDirectory fd = do
       -- Return at the beginning of the directory
       sysSeek' fd 0 SeekSet
@@ -160,7 +160,6 @@ listDirectory fd = do
       filtr x = nam /= "." && nam /= ".."
          where nam = entryName x
 
-      rec :: [DirectoryEntry] -> IOErr [DirectoryEntry]
       rec xs = sysGetDirectoryEntries fd bufferSize
          >.~$> \case
             [] -> flowSetN @0 xs

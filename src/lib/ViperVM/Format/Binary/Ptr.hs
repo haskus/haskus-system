@@ -29,14 +29,14 @@ module ViperVM.Format.Binary.Ptr
    , indexPtr'
    -- * Pointer
    , Ptr (..)
-   , Ptr.free
+   , free
    -- * Finalized pointer
    , FinalizedPtr (..)
    , withFinalizedPtr
    -- * Foreign pointer
    , ForeignPtr
-   , FP.withForeignPtr
-   , FP.mallocForeignPtrBytes
+   , withForeignPtr
+   , mallocForeignPtrBytes
    , nullForeignPtr
    -- * Function pointer
    , Ptr.FunPtr
@@ -62,6 +62,7 @@ import System.IO.Unsafe
 
 import ViperVM.Format.Binary.Layout
 import ViperVM.Utils.Types
+import ViperVM.Utils.Monad
 
 
 -- | A finalized pointer
@@ -112,7 +113,7 @@ class PtrLike (p :: * -> *) where
    withPtr :: p a -> (Ptr a -> IO b) -> IO b
 
    -- | Malloc the given number of bytes
-   mallocBytes :: Word -> IO (p a)
+   mallocBytes :: MonadIO m => Word -> m (p a)
 
    -- | Add offset to the given layout field
    indexField :: forall path l.
@@ -162,7 +163,7 @@ instance PtrLike Ptr where
    withPtr p f = f p
 
    {-# INLINE mallocBytes #-}
-   mallocBytes = Ptr.mallocBytes . fromIntegral
+   mallocBytes = liftIO . Ptr.mallocBytes . fromIntegral
 
 
 instance PtrLike FinalizedPtr where
@@ -187,5 +188,17 @@ instance PtrLike FinalizedPtr where
 
    {-# INLINE mallocBytes #-}
    mallocBytes n = do
-      fp <- FP.mallocForeignPtrBytes (fromIntegral n)
+      fp <- mallocForeignPtrBytes (fromIntegral n)
       return (FinalizedPtr fp 0)
+
+-- | Malloc a foreign pointer
+mallocForeignPtrBytes :: MonadIO m => Word -> m (ForeignPtr a)
+mallocForeignPtrBytes = liftIO . FP.mallocForeignPtrBytes . fromIntegral
+
+-- | Use a foreign pointer
+withForeignPtr :: (MonadInIO m) => ForeignPtr a -> (Ptr a -> m b) -> m b
+withForeignPtr p = liftWith (FP.withForeignPtr p)
+
+-- | Free a malloced memory
+free :: MonadIO m => Ptr a -> m ()
+free = liftIO . Ptr.free

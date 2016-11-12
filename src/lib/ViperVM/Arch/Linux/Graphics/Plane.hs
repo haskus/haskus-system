@@ -58,7 +58,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
       -- get the plane IDs (invariant for a given device)
       getIDs :: Word32 -> Flow Sys '[[PlaneID],InvalidHandle]
       getIDs 0 = flowSetN @0 []
-      getIDs n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
+      getIDs n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
          gpr (StructGetPlaneRes p' n)
             >..%~^> \case
@@ -101,7 +101,7 @@ getPlane hdl pid = getCount >.~^> getInfo
 
       -- get the plane info (invariant for a given plane)
       getInfo :: Word32 -> Flow Sys '[Plane,InvalidHandle,InvalidPlane]
-      getInfo n = sysWith (allocaArray (fromIntegral n)) $ \(p :: Ptr Word32) -> do
+      getInfo n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
             si = StructGetPlane pid' 0 0 BitSet.empty 0 n p'

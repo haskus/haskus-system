@@ -128,8 +128,8 @@ getObjectProperties hdl o =
 
       go :: Int -> Flow Sys '[[RawProperty],InvalidCount,InvalidParam,ObjectNotFound]
       go n =
-         sysWith (allocaArray' n) $ \(propsPtr :: Ptr Word32) ->
-         sysWith (allocaArray' n) $ \(valsPtr :: Ptr Word64) -> do
+         allocaArray' n $ \(propsPtr :: Ptr Word32) ->
+         allocaArray' n $ \(valsPtr :: Ptr Word64) -> do
             let
                s = StructGetObjectProperties 
                      (fromIntegral (ptrToWordPtr propsPtr))

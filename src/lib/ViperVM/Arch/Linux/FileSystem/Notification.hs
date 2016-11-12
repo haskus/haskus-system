@@ -95,7 +95,7 @@ data PollResult
 -- | Poll a set of file descriptors
 --
 -- Timeout in milliseconds
-sysPoll :: [PollEntry] -> Bool -> Maybe Int64 -> IOErr PollResult
+sysPoll :: MonadInIO m => [PollEntry] -> Bool -> Maybe Int64 -> Flow m '[PollResult,ErrorCode]
 sysPoll entries blocking timeout = do
    
    let 
@@ -117,11 +117,11 @@ sysPoll entries blocking timeout = do
             Just x  -> abs x
    
    withArray fds $ \fds' -> do
-      syscall @"poll" (castPtr fds') nfds timeout'
+      liftIO (syscall @"poll" (castPtr fds') nfds timeout')
          ||> toErrorCode
          >.~.> (\case
             0 -> return PollTimeOut
             _ -> do
-               retfds <- peekArray (length fds) fds'
+               retfds <- peekArray (fromIntegral (length fds)) fds'
                return (PollEvents $ mapMaybe fromPollStruct retfds))
 

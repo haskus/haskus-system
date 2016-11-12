@@ -67,10 +67,10 @@ data DateTime = DateTime
    } deriving (Show,Generic,Storable)
 
 instance (ByteReversable w, Storable w) => Storable (BothEndian w) where
-   sizeOf _              = 2 * sizeOfT @w
-   alignment _           = alignmentT @w
-   peek p                = (BothEndian . littleEndianToHost) <$> peek (castPtr p)
-   poke p (BothEndian v) = do
+   sizeOf _                = 2 * sizeOfT @w
+   alignment _             = alignmentT @w
+   peekIO p                = (BothEndian . littleEndianToHost) <$> peek (castPtr p)
+   pokeIO p (BothEndian v) = do
       let s = sizeOfT' @w
       pokeByteOff (castPtr p) 0 (hostToLittleEndian v)
       pokeByteOff (castPtr p) s (hostToBigEndian v)

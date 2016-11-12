@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | System info (uname)
 module ViperVM.Arch.Linux.Info
@@ -12,7 +13,6 @@ where
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Syscalls
-import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.String
@@ -29,10 +29,7 @@ data SystemInfo = SystemInfo
    } deriving (Show,Generic,Storable)
 
 -- | "uname" syscall
-systemInfo :: IOErr SystemInfo
-systemInfo = alloca $ \ptr -> uname ptr
+systemInfo :: MonadInIO m => Flow m '[SystemInfo,ErrorCode]
+systemInfo = alloca $ \(ptr :: Ptr SystemInfo) -> liftIO (syscall @"uname" (castPtr ptr))
       ||>   toErrorCode
       >.~.> (const (peek ptr))
-   where
-      uname :: Ptr SystemInfo -> IO Int64
-      uname = syscall @"uname" . castPtr

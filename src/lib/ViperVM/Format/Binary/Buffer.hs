@@ -337,8 +337,10 @@ bufferUnsafeMapMemory sz ptr =
    Buffer <$> BS.unsafePackCStringLen (castPtr ptr, fromIntegral sz)
 
 -- | Use buffer pointer
-bufferUnsafeUsePtr :: Buffer -> (Ptr () -> Word -> IO a) -> IO a
-bufferUnsafeUsePtr bu@(Buffer b) f = BS.unsafeUseAsCString b $ \p -> f (castPtr p) (bufferSize bu)
+bufferUnsafeUsePtr :: MonadInIO m => Buffer -> (Ptr () -> Word -> m a) -> m a
+bufferUnsafeUsePtr bu@(Buffer b) f =
+   liftWith (BS.unsafeUseAsCString b) $ \p ->
+      f (castPtr p) (bufferSize bu)
 
 -- | Read file
 bufferReadFile :: FilePath -> IO Buffer

@@ -95,7 +95,7 @@ rawGet hdl res2 = do
 
    let
       allocaArray' :: (Integral c, Storable a) => c -> (Ptr a -> Sys b) -> Sys b
-      allocaArray' n = sysWith (allocaArray (fromIntegral n))
+      allocaArray' n = allocaArray (fromIntegral n)
 
 
    allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->

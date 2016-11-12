@@ -43,16 +43,16 @@ import ViperVM.Arch.Linux.Syscalls
 -- inferior to the end of the data segment, mmaped regions already existing in the
 -- region we allocate, etc.  
 -- On success, the returned value is the new program break address (i.e. the given parameter).
-sysBrk :: Word64 -> IO Word64
-sysBrk addr = fromIntegral <$> syscall @"brk" addr
+sysBrk :: MonadIO m => Word64 -> m Word64
+sysBrk addr = fromIntegral <$> liftIO (syscall @"brk" addr)
 
 -- | Return current program break
 -- We call sysBrk with an invalid value
-sysBrkGet :: IO Word64
+sysBrkGet :: MonadIO m => m Word64
 sysBrkGet = sysBrk 0
 
 -- | Try to set program break and returns True on success
-sysBrkSet :: Word64 -> IO Bool
+sysBrkSet :: MonadIO m => Word64 -> m Bool
 sysBrkSet addr = (==addr) <$> sysBrk addr
 
 data MemProtectFlag
@@ -143,7 +143,7 @@ type MapFlags = BitSet Word32 MapFlag
 -- | Map files or devices into memory
 --
 -- Optional `hugepagesize` is in Log2 and on 6 bits
-sysMemMap :: Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (Handle, Word64) -> IOErr (Ptr ())
+sysMemMap :: MonadIO m => Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (Handle, Word64) -> Flow m '[Ptr (), ErrorCode]
 sysMemMap addr len prot flags hugepagesize source = do
    let 
       (fd,off) = fromMaybe (-1,0) ((\(Handle fd', x) -> (fd',x)) <$> source)
@@ -158,19 +158,19 @@ sysMemMap addr len prot flags hugepagesize source = do
       prot'    = BitSet.toBits prot
       addr'    = fromMaybe nullPtr addr
    
-   syscall @"mmap" addr' len prot' fld' fd off
+   liftIO (syscall @"mmap" addr' len prot' fld' fd off)
       ||> toErrorCodePure (wordPtrToPtr . fromIntegral)
 
 -- | Unmap memory
-sysMemUnmap :: Ptr () -> Word64 -> IOErr ()
-sysMemUnmap addr len = syscall @"munmap" addr len
+sysMemUnmap :: MonadIO m => Ptr () -> Word64 -> Flow m '[(),ErrorCode]
+sysMemUnmap addr len = liftIO (syscall @"munmap" addr len)
    ||> toErrorCodeVoid
 
 -- | Set protection of a region of memory
-sysMemProtect :: Ptr () -> Word64 -> MemProtectFlags -> IOErr ()
+sysMemProtect :: MonadIO m => Ptr () -> Word64 -> MemProtectFlags -> Flow m '[(),ErrorCode]
 sysMemProtect addr len prot = do
    let prot' = BitSet.toBits prot
-   syscall @"mprotect" addr len prot'
+   liftIO (syscall @"mprotect" addr len prot')
       ||> toErrorCodeVoid
 
 
@@ -232,9 +232,9 @@ instance Enum MemAdvice where
       _   -> error "Unknown mem advice code"
 
 
-sysMemAdvise :: Ptr () -> Word64 -> MemAdvice -> IOErr ()
+sysMemAdvise :: MonadIO m => Ptr () -> Word64 -> MemAdvice -> Flow m '[(),ErrorCode]
 sysMemAdvise addr len adv = 
-   syscall @"madvise" addr len (fromEnum adv)
+   liftIO (syscall @"madvise" addr len (fromEnum adv))
       ||> toErrorCodeVoid
 
 data MemSync
@@ -245,27 +245,27 @@ data MemSync
 
 type MemSyncFlags = BitSet Word32 MemSync
 
-sysMemSync :: Ptr () -> Word64 -> MemSyncFlags -> IOErr ()
+sysMemSync :: MonadIO m => Ptr () -> Word64 -> MemSyncFlags -> Flow m '[(),ErrorCode]
 sysMemSync addr len flag = 
-   syscall @"msync" addr len (fromIntegral (BitSet.toBits flag))
+   liftIO (syscall @"msync" addr len (fromIntegral (BitSet.toBits flag)))
       ||> toErrorCodeVoid
 
-sysMemInCore :: Ptr () -> Word64 -> IOErr [Bool]
+sysMemInCore :: MonadInIO m => Ptr () -> Word64 -> Flow m '[[Bool],ErrorCode]
 sysMemInCore addr len = do
    -- On x86-64, page size is at least 4k
    let n = fromIntegral $ (len + 4095) `div` 4096
    allocaArray n $ \arr ->
-      syscall @"mincore" addr len (arr :: Ptr Word8)
+      liftIO (syscall @"mincore" addr len (arr :: Ptr Word8))
          ||>   toErrorCode
          >.~.> (const (fmap (\x -> x .&. 1 == 1) <$> peekArray n arr))
 
 
-sysMemLock :: Ptr () -> Word64 -> IOErr ()
-sysMemLock addr len = syscall @"mlock" addr len
+sysMemLock :: MonadIO m => Ptr () -> Word64 -> Flow m '[(),ErrorCode]
+sysMemLock addr len = liftIO (syscall @"mlock" addr len)
    ||> toErrorCodeVoid
 
-sysMemUnlock :: Ptr () -> Word64 -> IOErr ()
-sysMemUnlock addr len = syscall @"munlock" addr len
+sysMemUnlock :: MonadIO m => Ptr () -> Word64 -> Flow m '[(),ErrorCode]
+sysMemUnlock addr len = liftIO (syscall @"munlock" addr len)
    ||> toErrorCodeVoid
 
 data MemLockFlag
@@ -275,10 +275,10 @@ data MemLockFlag
 
 type MemLockFlags = BitSet Word64 MemLockFlag
 
-sysMemLockAll :: MemLockFlags -> IOErr ()
-sysMemLockAll flags = syscall @"mlockall" (BitSet.toBits flags)
+sysMemLockAll :: MonadIO m => MemLockFlags -> Flow m '[(),ErrorCode]
+sysMemLockAll flags = liftIO (syscall @"mlockall" (BitSet.toBits flags))
    ||> toErrorCodeVoid
 
-sysMemUnlockAll :: IOErr ()
-sysMemUnlockAll = syscall @"munlockall"
+sysMemUnlockAll :: MonadIO m => Flow m '[(),ErrorCode]
+sysMemUnlockAll = liftIO (syscall @"munlockall")
    ||> toErrorCodeVoid

@@ -67,7 +67,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
       getValues :: [Word32] -> Flow Sys '[Resources,InvalidHandle]
-      getValues arraySizes = sysWith (allocaArrays arraySizes) $ 
+      getValues arraySizes = liftWith (allocaArrays arraySizes) $ 
          \([fs,crs,cs,es] :: [Ptr Word32]) -> do
             let 
                [nfb,nct,nco,nen] = arraySizes

@@ -191,27 +191,27 @@ instance (ByteReversable a, StaticStorable a) => StaticStorable (AsBigEndian a) 
    type SizeOf (AsBigEndian a)    = SizeOf a
    type Alignment (AsBigEndian a) = Alignment a
 
-   staticPeek ptr                 = AsBigEndian . bigEndianToHost <$> staticPeek (castPtr ptr)
-   staticPoke ptr (AsBigEndian v) = staticPoke (castPtr ptr) (hostToBigEndian v)
+   staticPeekIO ptr                 = AsBigEndian . bigEndianToHost <$> staticPeek (castPtr ptr)
+   staticPokeIO ptr (AsBigEndian v) = staticPoke (castPtr ptr) (hostToBigEndian v)
 
 
 instance (ByteReversable a, Storable a) => Storable (AsBigEndian a) where
    sizeOf _    = sizeOfT    @a
    alignment _ = alignmentT @a
 
-   peek ptr                 = AsBigEndian . bigEndianToHost <$> peek (castPtr ptr)
-   poke ptr (AsBigEndian v) = poke (castPtr ptr) (hostToBigEndian v)
+   peekIO ptr                 = AsBigEndian . bigEndianToHost <$> peek (castPtr ptr)
+   pokeIO ptr (AsBigEndian v) = poke (castPtr ptr) (hostToBigEndian v)
 
 instance (ByteReversable a, StaticStorable a) => StaticStorable (AsLittleEndian a) where
    type SizeOf (AsLittleEndian a)    = SizeOf a
    type Alignment (AsLittleEndian a) = Alignment a
 
-   staticPeek ptr                    = AsLittleEndian . bigEndianToHost <$> staticPeek (castPtr ptr)
-   staticPoke ptr (AsLittleEndian v) = staticPoke (castPtr ptr) (hostToLittleEndian v)
+   staticPeekIO ptr                    = AsLittleEndian . bigEndianToHost <$> staticPeekIO (castPtr ptr)
+   staticPokeIO ptr (AsLittleEndian v) = staticPokeIO (castPtr ptr) (hostToLittleEndian v)
 
 instance (ByteReversable a, Storable a) => Storable (AsLittleEndian a) where
    sizeOf _    = sizeOfT    @a
    alignment _ = alignmentT @a
 
-   peek ptr                    = AsLittleEndian . bigEndianToHost <$> peek (castPtr ptr)
-   poke ptr (AsLittleEndian v) = poke (castPtr ptr) (hostToLittleEndian v)
+   peekIO ptr                    = AsLittleEndian . bigEndianToHost <$> peek (castPtr ptr)
+   pokeIO ptr (AsLittleEndian v) = poke (castPtr ptr) (hostToLittleEndian v)

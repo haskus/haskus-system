@@ -96,13 +96,13 @@ type FilePermissions = BitSet Word FilePermission
 
 
 -- | Reposition read/write file offset, return the new position
-sysSeek :: Handle -> Int64 -> SeekWhence -> IOErr Int64
+sysSeek :: MonadIO m => Handle -> Int64 -> SeekWhence -> Flow m '[Int64,ErrorCode]
 sysSeek (Handle fd) off whence =
-   syscall @"lseek" fd off (fromEnum whence)
+   liftIO (syscall @"lseek" fd off (fromEnum whence))
       ||> toErrorCode
 
 -- | Reposition read/write file offset
-sysSeek' :: Handle -> Int64 -> SeekWhence -> IOErr ()
+sysSeek' :: MonadIO m => Handle -> Int64 -> SeekWhence -> Flow m '[(),ErrorCode]
 sysSeek' fd off whence = sysSeek fd off whence >.-.> const ()
 
 
@@ -143,11 +143,11 @@ sysSetCurrentDirectory (Handle fd) =
    syscall @"fchdir" fd
       ||> toErrorCodeVoid
 
-sysGetCurrentDirectory :: IOErr FilePath
+sysGetCurrentDirectory :: MonadInIO m => Flow m '[FilePath,ErrorCode]
 sysGetCurrentDirectory = go 128
    where
       go n = allocaArray n $ \ptr -> do
-         syscall @"getcwd" ptr (fromIntegral n)
+         liftIO (syscall @"getcwd" ptr (fromIntegral n))
             ||>   toErrorCode
             >.~.> const (peekCString ptr)
             >%~^> \case
@@ -601,10 +601,10 @@ data DeviceID = DeviceID
    } deriving (Show,Eq,Ord)
 
 instance Storable DeviceID where
-   sizeOf _    = 8
-   alignment _ = alignmentT @Word64
-   peek x      = fromKernelDevice <$> peek (castPtr x :: Ptr Word64)
-   poke ptr x  = poke (castPtr ptr :: Ptr Word64) (toKernelDevice x)
+   sizeOf _     = 8
+   alignment _  = alignmentT @Word64
+   peekIO x     = fromKernelDevice <$> peek (castPtr x :: Ptr Word64)
+   pokeIO ptr x = poke (castPtr ptr :: Ptr Word64) (toKernelDevice x)
 
 -- | Convert a DeviceID into a Word64 suitable for the kernel
 toKernelDevice :: DeviceID -> Word64

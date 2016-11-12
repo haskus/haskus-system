@@ -14,6 +14,7 @@ module ViperVM.Utils.Flow
    ( Flow
    , IOV
    , MonadIO (..)
+   , MonadInIO (..)
    -- * Flow utils
    , flowRes
    , flowSingle
@@ -116,6 +117,8 @@ module ViperVM.Utils.Flow
    , (>..%~^>)
    , (..%~^^>)
    , (>..%~^^>)
+   , (..%~$>)
+   , (>..%~$>)
    , (..~=>)
    , (>..~=>)
    , (..~!>)
@@ -171,9 +174,7 @@ where
 import ViperVM.Utils.Variant
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
-
-import Control.Monad
-import Control.Monad.IO.Class
+import ViperVM.Utils.Monad
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)
@@ -847,6 +848,29 @@ infixl 0 ..%~^^>
 (>..%~^^>) = liftm (..%~^^>)
 
 infixl 0 >..%~^^>
+
+-- | Match in the tail, keep the same types
+(..%~$>) ::
+   ( Monad m
+   , Catchable a xs
+   , Liftable (Filter a xs) (x ': xs)
+   ) => Variant (x ': xs) -> (a -> Flow m (x ': xs)) -> Flow m (x ': xs)
+(..%~$>) v f = case headVariant v of
+   Right _ -> return v
+   Left xs -> xs %~^> f
+
+infixl 0 ..%~$>
+
+-- | Match in the tail, keep the same types
+(>..%~$>) ::
+   ( Monad m
+   , Catchable a xs
+   , Liftable (Filter a xs) (x ': xs)
+   ) => Flow m (x ': xs) -> (a -> Flow m (x ': xs)) -> Flow m (x ': xs)
+(>..%~$>) = liftm (..%~$>)
+
+infixl 0 >..%~$>
+
 
 -- | Extract the tail and perform an effect. Passthrough the input value
 (..~=>) ::

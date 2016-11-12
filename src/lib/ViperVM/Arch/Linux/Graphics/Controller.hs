@@ -81,7 +81,7 @@ getControllerFromID hdl crtcid = sysIO (ioctlGetController crtc hdl)
       crtc             = emptyStructController { contID = cid }
 
 
-setController' :: Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> IOErr ()
+setController' :: MonadInIO m => Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> Flow m '[(),ErrorCode]
 setController' hdl crtcid fb conns mode = do
    let
       ControllerID cid = crtcid
@@ -109,20 +109,20 @@ setController' hdl crtcid fb conns mode = do
             , contGammaSize = 0
             }
 
-      ioctlSetController crtc hdl >.-.> const ()
+      liftIO (ioctlSetController crtc hdl) >.-.> const ()
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> IOErr ()
+switchFrameBuffer' :: MonadIO m => Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> Flow m '[(),ErrorCode]
 switchFrameBuffer' hdl crtcid fb flags = do
    let
       ControllerID cid = crtcid
       FrameBufferID fid = fb
       s = StructPageFlip cid fid flags 0 0
 
-   ioctlPageFlip s hdl >.-.> const ()
+   liftIO (ioctlPageFlip s hdl) >.-.> const ()
 
 -- | Get controllers
 getControllers :: Handle -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
@@ -142,9 +142,9 @@ getControllerGamma c = do
    sysIO' $ \state ->
       allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
          let f = fromIntegral . ptrToWordPtr
-         state2 <- sysExec state $
-            sysCallAssert "Get controller gamma look-up table" $
-               ioctlGetGamma (s (f r) (f g) (f b)) hdl
+         state2 <- sysExec state
+            <| flowAssertQuiet "Get controller gamma look-up table"
+            <| liftIO (ioctlGetGamma (s (f r) (f g) (f b)) hdl)
          [rs,gs,bs] <- peekArrays [sz,sz,sz] as
          return ((rs,gs,bs),state2)
 
@@ -162,6 +162,6 @@ setControllerGamma c (rs,gs,bs) = do
    sysIO' $ \state ->
       withArrays ss $ \[r,g,b] -> do
          let f = fromIntegral . ptrToWordPtr
-         sysRun' state $
-            sysCallAssert "Set controller gamma look-up table" $
-               ioctlSetGamma (s (f r) (f g) (f b)) hdl
+         sysRun' state
+            <| flowAssertQuiet "Set controller gamma look-up table"
+            <| liftIO (ioctlSetGamma (s (f r) (f g) (f b)) hdl)

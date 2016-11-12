@@ -62,31 +62,31 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       devicePath = path </> "dev"
 
    -- create root path (allowed to fail if it already exists)
-   sysCallAssert "Create root directory" $ do
-      createDir path >%~^> \case
+   flowAssert "Create root directory" <| do
+      createDir path >..%~$> \case
          EEXIST -> flowSetN @0 ()
          e      -> flowSet e
 
    -- mount a tmpfs in root path
-   sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount path
+   flowAssert "Mount tmpfs" <| mountTmpFS sysMount path
 
    -- mount sysfs
-   sysCallAssert "Create sysfs directory" $ createDir sysfsPath
-   sysCallAssert "Mount sysfs" $ mountSysFS sysMount sysfsPath
+   flowAssert "Create sysfs directory" <| createDir sysfsPath
+   flowAssert "Mount sysfs" <| mountSysFS sysMount sysfsPath
    sysfd <- open Nothing sysfsPath BitSet.empty BitSet.empty
-            >..~!!> assertShow "open sysfs directory"
+            |> flowAssert "open sysfs directory"
 
    -- mount procfs
-   sysCallAssert "Create procfs directory" $ createDir procfsPath
-   sysCallAssert "Mount procfs" $ mountProcFS sysMount procfsPath
+   flowAssert "Create procfs directory" <| createDir procfsPath
+   flowAssert "Mount procfs" <| mountProcFS sysMount procfsPath
    procfd <- open Nothing procfsPath BitSet.empty BitSet.empty
-             >..~!!> assertShow "open procfs directory"
+             |> flowAssert "open procfs directory"
 
    -- create device directory
-   sysCallAssert "Create device directory" $ createDir devicePath
-   sysCallAssert "Mount tmpfs" $ mountTmpFS sysMount devicePath
+   flowAssert "Create device directory" <| createDir devicePath
+   flowAssert "Mount tmpfs" <| mountTmpFS sysMount devicePath
    devfd <- open Nothing devicePath BitSet.empty BitSet.empty
-            >..~!!> assertShow "open device directory"
+            |> flowAssert "open device directory"
 
    -- init device manager
    dm <- initDeviceManager sysfd devfd

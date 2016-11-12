@@ -285,7 +285,7 @@ instance CBitSet XFlag where
       _   -> error "Unknown extended flag"
 
 
-csize :: Int
+csize :: Word
 csize = sizeOfT' @CSize
 
 -- blkIoctl :: Word8 -> Int64 -> Handle -> IOErr Int64
