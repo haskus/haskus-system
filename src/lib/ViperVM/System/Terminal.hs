@@ -35,9 +35,6 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Text
 import ViperVM.Format.String (withCStringLen)
 
-import Control.Concurrent
-import System.Posix.Types (Fd(..))
-
 -- | Terminal (input and output, no error output)
 data Terminal = Terminal
    { termOut :: OutputState
@@ -73,9 +70,8 @@ data IOBuffer = IOBuffer
 inputThread :: InputState -> Sys ()
 inputThread s = forever $ do
    
-   let hdl@(Handle fd) = inputHandle s
-
-   liftIO $ threadWaitRead (Fd (fromIntegral fd))
+   let h = inputHandle s
+   threadWaitRead h
 
    -- data are ready to be read
    (after, sz, ptr) <- atomically $ do
@@ -115,8 +111,8 @@ inputThread s = forever $ do
                then retry
                else return (after,fromIntegral size,ptr)
                         
-   readBytes <- sysRead hdl ptr sz
-                  |> flowAssert ("Read bytes from "++show hdl)
+   readBytes <- sysRead h ptr sz
+                  |> flowAssert ("Read bytes from "++show h)
 
    -- TODO: if readBytes is zero, it's the end of file, etc.
    sysAssert "readBytes /= 0" (readBytes /= 0)
@@ -125,7 +121,7 @@ inputThread s = forever $ do
 
 
 readFromHandle :: InputState -> Word64 -> Ptr () -> Sys (Future ())
-readFromHandle s sz ptr = liftIO $ do
+readFromHandle s sz ptr = do
    (after,bsz,bptr) <- atomically $ do
       -- read bytes from the buffer if any
       b <- takeTMVar (inputBuffer s)
@@ -165,7 +161,7 @@ readFromHandle s sz ptr = liftIO $ do
       
             
 -- | New buffered input with given buffer size
-newInputState :: Word64 -> Handle -> IO InputState
+newInputState :: MonadIO m => Word64 -> Handle -> m InputState
 newInputState size fd = do
    ptr <- mallocBytes (fromIntegral size)
    req <- atomically TList.empty
@@ -180,7 +176,7 @@ data OutputState = OutputState
 
 outputThread :: OutputState -> Sys ()
 outputThread s = forever $ do
-   let hdl@(Handle fd) = outputHandle s
+   let h = outputHandle s
 
    (buf,semsrc) <- atomically $ do
       e <- TList.last (outputBuffers s)
@@ -190,11 +186,11 @@ outputThread s = forever $ do
             TList.delete e' 
             return (TList.value e')
 
-   liftIO $ threadWaitWrite (Fd (fromIntegral fd))
+   threadWaitWrite h
 
    -- try to write as much as possible
-   n <- sysWrite hdl (iobufferPtr buf) (iobufferSize buf)
-         |> flowAssertQuiet ("Write bytes to "++show hdl)
+   n <- sysWrite h (iobufferPtr buf) (iobufferSize buf)
+         |> flowAssertQuiet ("Write bytes to "++show h)
 
    atomically $ if n == iobufferSize buf
       then setFuture () semsrc
@@ -204,7 +200,7 @@ outputThread s = forever $ do
                            
          TList.append_ (buf',semsrc) (outputBuffers s)
    
-newOutputState :: Handle -> IO OutputState
+newOutputState :: MonadIO m => Handle -> m OutputState
 newOutputState fd = do
    req <- atomically TList.empty
    return $ OutputState req fd
@@ -222,11 +218,11 @@ defaultTerminal = do
    -- TODO: set terminal buffering mode?
 
    -- input
-   inState <- liftIO $ newInputState (16 * 1024) stdin
+   inState <- newInputState (16 * 1024) stdin
    sysFork "Terminal input handler"$ inputThread inState
 
    -- output
-   outState <- liftIO $ newOutputState stdout
+   outState <- newOutputState stdout
    sysFork "Terminal output handler" $ outputThread outState
 
    return $ Terminal outState inState

@@ -34,7 +34,7 @@ import ViperVM.Arch.Linux.FileSystem
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types.Generics (Generic)
 
-sysCreateDirectory :: MonadIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> Flow m '[(),ErrorCode]
+sysCreateDirectory :: MonadInIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> Flow m '[(),ErrorCode]
 sysCreateDirectory fd path perm sticky = do
    let
       opt        = if sticky
@@ -42,15 +42,15 @@ sysCreateDirectory fd path perm sticky = do
                      else BitSet.empty
       mode       = makeMode FileTypeDirectory perm opt
       call path' = case fd of
-         Nothing           -> syscall @"mkdir" path' mode
-         Just (Handle fd') -> syscall @"mkdirat" fd' path' mode
+         Nothing           -> liftIO $ syscall @"mkdir" path' mode
+         Just (Handle fd') -> liftIO $ syscall @"mkdirat" fd' path' mode
 
-   liftIO (withCString path call) ||> toErrorCodeVoid
+   withCString path call ||> toErrorCodeVoid
 
 
-sysRemoveDirectory :: MonadIO m => FilePath -> Flow m '[(),ErrorCode]
-sysRemoveDirectory path = liftIO $ withCString path $ \path' ->
-   syscall @"rmdir" path'
+sysRemoveDirectory :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
+sysRemoveDirectory path = withCString path $ \path' ->
+   liftIO (syscall @"rmdir" path')
       ||> toErrorCodeVoid
 
 
@@ -138,7 +138,7 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
       liftIO (syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize))
          ||> toErrorCode
-         >.~.> (\nread -> liftIO (readEntries (castPtr ptr) (fromIntegral nread)))
+         >.~.> (\nread -> readEntries (castPtr ptr) (fromIntegral nread))
 
 -- | Return the content of a directory
 --

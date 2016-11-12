@@ -68,12 +68,10 @@ import ViperVM.Utils.Maybe
 import ViperVM.Utils.STM
 
 import Control.Arrow (second)
-import System.Posix.Types (Fd(..))
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (Set)
-import Control.Concurrent
 
 -- Note [sysfs]
 -- ~~~~~~~~~~~~
@@ -225,11 +223,11 @@ initDeviceManager sysfs devfs = do
    ch <- atomically $ dupTChan bch
 
    -- create empty device manager
-   root      <- liftIO $ deviceTreeCreate Nothing Nothing Map.empty
-   devNum    <- liftIO (newTVarIO 0)          -- device node counter
-   subIndex' <- liftIO (newTVarIO Map.empty)
-   tree'     <- liftIO (newTVarIO root)
-   sadd      <- liftIO newBroadcastTChanIO
+   root      <- deviceTreeCreate Nothing Nothing Map.empty
+   devNum    <- newTVarIO 0          -- device node counter
+   subIndex' <- newTVarIO Map.empty
+   tree'     <- newTVarIO root
+   sadd      <- newBroadcastTChanIO
    let dm = DeviceManager
                { dmDevices        = tree'
                , dmSubsystems     = subIndex'
@@ -267,7 +265,7 @@ initDeviceManager sysfs devfs = do
             deviceAdd dm path Nothing
 
          -- list directories (sub-devices) that are *not* symlinks
-         dirs <- liftIO (listDirectory hdl)
+         dirs <- listDirectory hdl
                  -- filter to keep only directories (sysfs fills the type field)
                  >.-.> filter (\entry -> entryType entry == TypeDirectory)
                  -- only keep the directory name
@@ -358,7 +356,7 @@ eventThread ch dm = do
 
 -- | Lookup a device by name
 deviceLookup :: DeviceManager -> DevicePath -> Sys (Maybe DeviceTree)
-deviceLookup dm path = deviceTreeLookup path <$> liftIO (readTVarIO (dmDevices dm))
+deviceLookup dm path = deviceTreeLookup path <$> readTVarIO (dmDevices dm)
 
 -- | Add a device
 deviceAdd :: DeviceManager -> DevicePath -> Maybe KernelEvent -> Sys ()
@@ -379,7 +377,7 @@ deviceAdd dm path mev = do
                return (sub, (`sysfsMakeDev` DeviceID ma mi) <$> sub)
             _                  -> sysfsReadDev (dmSysFS dm) rpath
 
-   node <- liftIO (deviceTreeCreate msubsystem mdev Map.empty)
+   node <- deviceTreeCreate msubsystem mdev Map.empty
 
    atomically $ do
       -- update the tree
@@ -524,7 +522,7 @@ bkPath p = second f (Text.breakOn (Text.pack "/") p')
          | otherwise    = Text.tail xs
 
 -- | Create a device tree
-deviceTreeCreate :: Maybe Text -> Maybe Device -> Map Text DeviceTree -> IO DeviceTree
+deviceTreeCreate :: MonadIO m => Maybe Text -> Maybe Device -> Map Text DeviceTree -> m DeviceTree
 deviceTreeCreate subsystem dev children = atomically (deviceTreeCreate' subsystem dev children)
 
 -- | Create a device tree
@@ -607,14 +605,12 @@ deviceTreeInsert path node root = do
 -- | Create a new thread reading kernel events and putting them in a TChan
 newKernelEventReader :: Sys (TChan KernelEvent)
 newKernelEventReader = do
-   fd <- createKernelEventSocket
-   ch <- liftIO newBroadcastTChanIO
+   h  <- createKernelEventSocket
+   ch <- newBroadcastTChanIO
    let
-      Handle lowfd = fd
-      rfd = Fd (fromIntegral lowfd)
-      go  = forever $ do
-               liftIO $ threadWaitRead rfd
-               ev <- receiveKernelEvent fd
+      go = forever $ do
+               threadWaitRead h
+               ev <- receiveKernelEvent h
                atomically $ writeTChan ch ev
 
    sysFork "Kernel sysfs event reader" go
@@ -660,7 +656,7 @@ getDeviceHandle dm dev = do
             let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
             hdl <- open (Just devfd) devname flgs BitSet.empty
             -- then remove it
-            liftIO (sysUnlinkAt devfd devname False)
+            sysUnlinkAt devfd devname False
                >..~!> sysWarningShow "Unlinking special device file failed"
             return hdl
 

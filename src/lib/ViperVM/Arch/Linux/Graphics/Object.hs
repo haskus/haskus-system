@@ -153,8 +153,8 @@ getObjectProperties hdl o =
              propsPtr = wordPtrToPtr (fromIntegral (gopPropsPtr s))
              valsPtr :: Ptr Word64
              valsPtr  = wordPtrToPtr (fromIntegral (gopValuesPtr s))
-         ps <- liftIO (peekArray n propsPtr)
-         vs <- liftIO (peekArray n valsPtr)
+         ps <- peekArray n propsPtr
+         vs <- peekArray n valsPtr
          return (zipWith RawProperty ps vs)
 
       -- check that we have allocated enough entries to store the properties

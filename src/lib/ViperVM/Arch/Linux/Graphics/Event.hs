@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | Graphics events
 module ViperVM.Arch.Linux.Graphics.Event
    ( Event(..)
@@ -12,6 +14,7 @@ import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Storable
 import ViperVM.Arch.Linux.Internals.Graphics
+import ViperVM.Utils.Monad
 
 -- | Graphics events
 data Event
@@ -20,7 +23,7 @@ data Event
    deriving (Show)
 
 -- | Peek events
-peekEvents :: Ptr () -> Word32 -> IO [Event]
+peekEvents :: forall m. MonadIO m => Ptr () -> Word32 -> m [Event]
 peekEvents = go
    where
       go _ 0 = return []
@@ -29,7 +32,7 @@ peekEvents = go
          evs <- go (p `indexPtr` fromIntegral len) (r - len)
          return (ev:evs)
 
-      peekEvent :: Ptr () -> IO (Event,Word32)
+      peekEvent :: Ptr () -> m (Event,Word32)
       peekEvent ptr = do
          e <- peek (castPtr ptr)
          v <- case toEventType (eventType e) of

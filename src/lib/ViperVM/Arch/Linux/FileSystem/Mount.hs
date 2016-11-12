@@ -39,20 +39,20 @@ data UnmountFlag
 type UnmountFlags = BitSet Word64 UnmountFlag
 
 -- | Mount a file system
-sysMount :: MonadIO m => String -> String -> String -> MountFlags -> Ptr () -> Flow m '[(),ErrorCode]
+sysMount :: MonadInIO m => String -> String -> String -> MountFlags -> Ptr () -> Flow m '[(),ErrorCode]
 sysMount source target fstype flags dat =
-   liftIO $ withCString source $ \source' ->
+   withCString source $ \source' ->
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->
-            syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat
+            liftIO (syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat)
                ||> toErrorCodeVoid
 
 
 -- | Unmount a file system
-sysUnmount :: MonadIO m => String -> UnmountFlags -> Flow m '[(),ErrorCode]
+sysUnmount :: MonadInIO m => String -> UnmountFlags -> Flow m '[(),ErrorCode]
 sysUnmount target flags =
-   liftIO $ withCString target $ \target' ->
-      syscall @"umount2" target' (BitSet.toBits flags)
+   withCString target $ \target' ->
+      liftIO (syscall @"umount2" target' (BitSet.toBits flags))
          ||> toErrorCodeVoid
 
 -- | Type of the low-level Linux "mount" function

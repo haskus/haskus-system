@@ -9,9 +9,7 @@ module ViperVM.System.Event
    )
 where
 
-import Control.Concurrent
 import Prelude hiding (init,tail)
-import System.Posix.Types (Fd(..))
 
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
@@ -24,16 +22,15 @@ import ViperVM.Format.Binary.Storable
 
 -- | Create a new thread reading events and putting them in a TChan
 newEventReader :: forall a. Storable a => Handle -> Sys (TChan a)
-newEventReader fd@(Handle lowfd) = do
+newEventReader h = do
    let
       sz  = sizeOfT @a
-      rfd = Fd (fromIntegral lowfd)
       nb  = 50 -- number of events read at once
 
-   ch <- liftIO newBroadcastTChanIO
-   sysFork "Event reader" $ liftIO $ allocaArray nb $ \ptr -> forever $ do
-      threadWaitRead rfd
-      sysRead fd (castPtr ptr) (fromIntegral sz * fromIntegral nb)
+   ch <- newBroadcastTChanIO
+   sysFork "Event reader" $ allocaArray nb $ \ptr -> forever $ do
+      threadWaitRead h
+      sysRead h (castPtr ptr) (fromIntegral sz * fromIntegral nb)
          >.~!> \sz2 -> do
             -- FIXME: we should somehow signal that an error occured
             evs <- peekArray (fromIntegral sz2 `div` fromIntegral sz) ptr

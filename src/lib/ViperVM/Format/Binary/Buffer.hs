@@ -292,16 +292,16 @@ bufferPackStorableList xs = Buffer $ unsafePerformIO $ do
    BS.unsafePackMallocCStringLen (castPtr p, sizeOfT' @a * lxs)
 
 -- | Pack from a pointer (copy)
-bufferPackPtr :: Word -> Ptr () -> IO Buffer
+bufferPackPtr :: MonadIO m => Word -> Ptr () -> m Buffer
 bufferPackPtr sz ptr = do
    p <- mallocBytes (fromIntegral sz)
    memCopy p ptr (fromIntegral sz)
    bufferUnsafePackPtr sz p
 
 -- | Pack from a pointer (add finalizer)
-bufferUnsafePackPtr :: Word -> Ptr a -> IO Buffer
+bufferUnsafePackPtr :: MonadIO m => Word -> Ptr a -> m Buffer
 bufferUnsafePackPtr sz p =
-   Buffer <$> BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz)
+   Buffer <$> liftIO (BS.unsafePackMallocCStringLen (castPtr p, fromIntegral sz))
 
 -- | Unsafe drop (don't check the size)
 bufferUnsafeDrop :: Word -> Buffer -> Buffer
@@ -332,9 +332,9 @@ bufferUnsafeIndex :: Buffer -> Word -> Word8
 bufferUnsafeIndex (Buffer bs) n = BS.unsafeIndex bs (fromIntegral n)
 
 -- | Map memory
-bufferUnsafeMapMemory :: Word -> Ptr () -> IO Buffer
+bufferUnsafeMapMemory :: MonadIO m => Word -> Ptr () -> m Buffer
 bufferUnsafeMapMemory sz ptr =
-   Buffer <$> BS.unsafePackCStringLen (castPtr ptr, fromIntegral sz)
+   Buffer <$> liftIO (BS.unsafePackCStringLen (castPtr ptr, fromIntegral sz))
 
 -- | Use buffer pointer
 bufferUnsafeUsePtr :: MonadInIO m => Buffer -> (Ptr () -> Word -> m a) -> m a
@@ -343,9 +343,9 @@ bufferUnsafeUsePtr bu@(Buffer b) f =
       f (castPtr p) (bufferSize bu)
 
 -- | Read file
-bufferReadFile :: FilePath -> IO Buffer
-bufferReadFile path = Buffer <$> BS.readFile path
+bufferReadFile :: MonadIO m => FilePath -> m Buffer
+bufferReadFile path = Buffer <$> liftIO (BS.readFile path)
 
 -- | Write file
-bufferWriteFile :: FilePath -> Buffer -> IO ()
-bufferWriteFile path (Buffer bs) = BS.writeFile path bs
+bufferWriteFile :: MonadIO m => FilePath -> Buffer -> m ()
+bufferWriteFile path (Buffer bs) = liftIO (BS.writeFile path bs)

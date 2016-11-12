@@ -36,7 +36,7 @@ withOpenAt :: forall xs zs m.
    ( Liftable OpenErrors zs
    , Liftable xs zs
    , zs ~ Union xs OpenErrors
-   , MonadIO m
+   , MonadInIO m
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Flow m xs) -> Flow m zs
 withOpenAt fd path flags perm act =
    open (Just fd) path flags perm
@@ -56,7 +56,7 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
       go :: Word64 -> Handle -> Flow Sys (Buffer ': ReadErrors')
       go sz fd =
          -- use 0 offset to read from the beginning
-         liftIO (handleReadBuffer fd (Just 0) sz)
+         handleReadBuffer fd (Just 0) sz
             >..~=> (\err -> do
                let msg = "Atomic read file (failed with %s)"
                sysLog LogWarning (printf msg (show err)))
@@ -68,7 +68,7 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
 
 -- | Read into a buffer
 readBuffer :: Handle -> Maybe Word64 -> Word64 -> Flow Sys (Buffer ': ReadErrors')
-readBuffer hdl moffset size = liftIO (handleReadBuffer hdl moffset size)
+readBuffer hdl moffset size = handleReadBuffer hdl moffset size
 
 -- | Read a storable
 readStorable :: forall a. Storable a => Proxy a -> Handle -> Maybe Word64 -> Flow Sys (a ': ReadErrors')

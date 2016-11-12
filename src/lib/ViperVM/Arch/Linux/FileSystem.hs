@@ -432,40 +432,40 @@ type OpenErrors
       ]
 
 -- | Open and possibly create a file
-open :: MonadIO m => Maybe Handle -> FilePath -> HandleFlags -> FilePermissions -> Flow m (Handle ': OpenErrors)
+open :: MonadInIO m => Maybe Handle -> FilePath -> HandleFlags -> FilePermissions -> Flow m (Handle ': OpenErrors)
 open mhdl path flags mode = do
    let call = case mhdl of
                   Nothing          -> syscall @"open"
                   Just (Handle fd) -> syscall @"openat" fd
-   liftIO (withCString path $ \path' -> 
-      call path' (BitSet.toBits flags) (BitSet.toBits mode))
-         ||> toErrorCodePure (Handle . fromIntegral)
-         >..%~^> \case
-            EACCES       -> flowSet NotAllowed
-            EDQUOT       -> flowSet ExhaustedQuota
-            EEXIST       -> flowSet FileAlreadyExists
-            EFAULT       -> flowSet MemoryError
-            EFBIG        -> flowSet Overflow
-            EINTR        -> flowSet Interrupted
-            EINVAL       -> flowSet InvalidParam
-            EISDIR       -> flowSet InvalidIsDirectory
-            ELOOP        -> flowSet SymbolicLinkLoop
-            EMFILE       -> flowSet TooManyProcessHandles
-            ENAMETOOLONG -> flowSet TooLongPathName
-            ENFILE       -> flowSet TooManySystemHandles
-            ENODEV       -> flowSet DeviceNotFound
-            ENOENT       -> flowSet InvalidPathComponent
-            ENOMEM       -> flowSet OutOfKernelMemory
-            ENOSPC       -> flowSet OutOfSpace
-            ENOTDIR      -> flowSet NotADirectory
-            ENXIO        -> flowSet FileSystemIOError
-            EOPNOTSUPP   -> flowSet TempFileNotSupported
-            EPERM        -> flowSet NotAllowed
-            EROFS        -> flowSet ReadOnlyFileSystem
-            ETXTBSY      -> flowSet CannotWriteExecutedImage
-            EAGAIN       -> flowSet RetryLater
-            EBADF        -> flowSet InvalidHandle
-            err          -> unhdlErr "open" err
+   withCString path
+      (\path' -> liftIO (call path' (BitSet.toBits flags) (BitSet.toBits mode)))
+      ||> toErrorCodePure (Handle . fromIntegral)
+      >..%~^> \case
+         EACCES       -> flowSet NotAllowed
+         EDQUOT       -> flowSet ExhaustedQuota
+         EEXIST       -> flowSet FileAlreadyExists
+         EFAULT       -> flowSet MemoryError
+         EFBIG        -> flowSet Overflow
+         EINTR        -> flowSet Interrupted
+         EINVAL       -> flowSet InvalidParam
+         EISDIR       -> flowSet InvalidIsDirectory
+         ELOOP        -> flowSet SymbolicLinkLoop
+         EMFILE       -> flowSet TooManyProcessHandles
+         ENAMETOOLONG -> flowSet TooLongPathName
+         ENFILE       -> flowSet TooManySystemHandles
+         ENODEV       -> flowSet DeviceNotFound
+         ENOENT       -> flowSet InvalidPathComponent
+         ENOMEM       -> flowSet OutOfKernelMemory
+         ENOSPC       -> flowSet OutOfSpace
+         ENOTDIR      -> flowSet NotADirectory
+         ENXIO        -> flowSet FileSystemIOError
+         EOPNOTSUPP   -> flowSet TempFileNotSupported
+         EPERM        -> flowSet NotAllowed
+         EROFS        -> flowSet ReadOnlyFileSystem
+         ETXTBSY      -> flowSet CannotWriteExecutedImage
+         EAGAIN       -> flowSet RetryLater
+         EBADF        -> flowSet InvalidHandle
+         err          -> unhdlErr "open" err
 
 
 -- | Close a file descriptor
@@ -551,7 +551,7 @@ type RenameErrors
 
 
 -- | Change or exchange the name or location of a file
-rename :: MonadIO m => Maybe Handle -> FilePath -> Maybe Handle -> FilePath -> [RenameFlag] -> Flow m (() ': RenameErrors)
+rename :: MonadInIO m => Maybe Handle -> FilePath -> Maybe Handle -> FilePath -> [RenameFlag] -> Flow m (() ': RenameErrors)
 rename mohdl oldPath mnhdl newPath flags = do
    let
       flags'              = BitSet.fromList flags
@@ -559,8 +559,8 @@ rename mohdl oldPath mnhdl newPath flags = do
       mohdl'              = fromMaybe 0xFFFFFFFF (fmap fromHdl mohdl)
       mnhdl'              = fromMaybe 0xFFFFFFFF (fmap fromHdl mnhdl)
       noreplace           = BitSet.member flags' RenameNoReplace
-   liftIO $ withCString oldPath $ \old' ->
-      liftIO $ withCString newPath $ \new' ->
+   withCString oldPath $ \old' ->
+      withCString newPath $ \new' ->
          liftIO (syscall @"renameat2" mohdl' old' mnhdl' new'
                                       (BitSet.toBits flags'))
             ||> toErrorCodeVoid

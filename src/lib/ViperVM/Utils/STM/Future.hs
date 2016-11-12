@@ -29,7 +29,7 @@ newFuture = do
    return (Future m, FutureSource m)
 
 -- | `newFuture` in `IO`
-newFutureIO :: IO (Future a, FutureSource a)
+newFutureIO :: MonadIO m => m (Future a, FutureSource a)
 newFutureIO = atomically newFuture
 
 -- | Set a future
@@ -37,7 +37,7 @@ setFuture :: a -> FutureSource a -> STM ()
 setFuture a m = void (setFuture' a m)
 
 -- | Set a future in IO
-setFutureIO :: a -> FutureSource a -> IO ()
+setFutureIO :: MonadIO m => a -> FutureSource a -> m ()
 setFutureIO a m = atomically (setFuture a m)
 
 -- | Set a future
@@ -55,5 +55,5 @@ pollFuture :: Future a -> STM (Maybe a)
 pollFuture (Future m) = tryReadTMVar m
 
 -- | `pollFuture` in `IO`
-pollFutureIO :: Future a -> IO (Maybe a)
+pollFutureIO :: MonadIO m => Future a -> m (Maybe a)
 pollFutureIO = atomically . pollFuture

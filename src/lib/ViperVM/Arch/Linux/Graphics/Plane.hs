@@ -63,7 +63,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
             >..%~^> \case
                EINVAL -> flowSet InvalidHandle
                e      -> unhdlErr "getPlaneResources" e
-            >.~.> \_ -> fmap PlaneID <$> liftIO (peekArray (fromIntegral n) p)
+            >.~.> \_ -> fmap PlaneID <$> peekArray (fromIntegral n) p
 
 -- | A plane
 data Plane = Plane
@@ -108,7 +108,7 @@ getPlane hdl pid = getCount >.~^> getInfo
             >.~^> \StructGetPlane{..} -> getResources hdl >.~^> \res -> do
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid getResources
-               fmts <- fmap (PixelFormat . BitFields) <$> liftIO (peekArray (fromIntegral n) p)
+               fmts <- fmap (PixelFormat . BitFields) <$> peekArray (fromIntegral n) p
                flowSet Plane
                   { planeID                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId

@@ -42,7 +42,6 @@ import ViperVM.Utils.STM
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
-import ViperVM.Arch.Linux.Syscalls
 import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Internals.Graphics
@@ -59,8 +58,6 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Concurrent
-import System.Posix.Types (Fd(..))
 import System.FilePath (takeBaseName)
 
 -- | Graphic card
@@ -93,9 +90,9 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
       getDeviceHandle dm dev
          >.~.> (\hdl -> do
             -- We support these capabilities
-            setClientCapability hdl ClientCapStereo3D        True
-            setClientCapability hdl ClientCapUniversalPlanes True
-            setClientCapability hdl ClientCapAtomic          True
+            setClientCapabilityWarn hdl ClientCapStereo3D        True
+            setClientCapabilityWarn hdl ClientCapUniversalPlanes True
+            setClientCapabilityWarn hdl ClientCapAtomic          True
             -- Create the DRM event reader thread
             GraphicCard devpath dev cardID hdl
                <$> newEventWaiterThread hdl
@@ -104,20 +101,19 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
 
 -- | Create a new thread reading input events and putting them in a TChan
 newEventWaiterThread :: Handle -> Sys (TChan Graphics.Event)
-newEventWaiterThread fd@(Handle lowfd) = do
+newEventWaiterThread h = do
    let
       bufsz = 1000 -- buffer size
-      rfd = Fd (fromIntegral lowfd)
 
    ch <- newBroadcastTChanIO
    sysFork "Graphics event reader" $ 
       allocaBytes bufsz $ \ptr -> forever $ do
-         liftIO $ threadWaitRead rfd
-         sysRead fd ptr (fromIntegral bufsz)
+         threadWaitRead h
+         sysRead h ptr (fromIntegral bufsz)
             >.~!> \sz2 -> do
             -- FIXME: we should somehow signal that an error occured and
             -- that we won't report future events (if any)
-            evs <- liftIO (peekEvents ptr (fromIntegral sz2))
+            evs <- peekEvents ptr (fromIntegral sz2)
             atomically $ mapM_ (writeTChan ch) evs
    return ch
 
@@ -270,14 +266,14 @@ initRenderingEngine card ctrl mode nfb flags draw
       bufs <- forM [1..nfb] (const (initGenericFrameBuffer card mode fmt))
 
       -- page flip
-      fbState <- liftIO $ newTVarIO (BufferingState
+      fbState <- newTVarIO (BufferingState
                   { fbShown    = head bufs
                   , fbPending  = Nothing
                   , fbDrawn    = Nothing
                   , fbDrawable = tail bufs
                   })
 
-      fps <- liftIO $ newTVarIO (0 :: Word)
+      fps <- newTVarIO (0 :: Word)
 
       -- on page flip complete
       -- FIXME: how do we know which controller has flipped?
@@ -349,7 +345,7 @@ initRenderingEngine card ctrl mode nfb flags draw
                         , fbDrawable = d : fbDrawable s
                         }
             -- switch to another thread
-            liftIO yield
+            yield
 
       -- set mode and connectors
       -- setController ctrl (SetFB fb1) [conn] (Just mode)

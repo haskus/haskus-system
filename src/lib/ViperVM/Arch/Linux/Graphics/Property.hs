@@ -106,12 +106,12 @@ getPropertyMeta fd pid = do
                      }
 
          getBlobStruct gb >.~^> \gb' -> do
-            ptr <- liftIO . mallocBytes . fromIntegral . gbLength $ gb'
+            ptr <- mallocBytes . fromIntegral . gbLength $ gb'
             getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) })
                -- free ptr on error
-               >..~=> const (liftIO (free ptr))
+               >..~=> const (free ptr)
                -- otherwise return a bytestring
-               >.~.> const (liftIO (bufferPackPtr (fromIntegral (gbLength gb')) ptr))
+               >.~.> const (bufferPackPtr (fromIntegral (gbLength gb')) ptr)
 
 
       withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow m '[c,InvalidParam,InvalidProperty]) -> Flow m '[c,InvalidParam,InvalidProperty]
@@ -132,12 +132,12 @@ getPropertyMeta fd pid = do
                f valuePtr blobPtr
 
       withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr Word) ->
-         f =<< liftIO (peekArray (fromIntegral n) ptr)
+         f =<< peekArray (fromIntegral n) ptr
       withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr Word) ptr ->
-         f =<< liftIO (peekArray (fromIntegral n) ptr)
+         f =<< peekArray (fromIntegral n) ptr
       withBuffers' n m f = withBuffers n m $ \p1 p2 -> do
-         vs <- liftIO (peekArray (fromIntegral n) p1)
-         bs <- liftIO (peekArray (fromIntegral m) p2)
+         vs <- peekArray (fromIntegral n) p1
+         bs <- peekArray (fromIntegral m) p2
          f vs bs
          
       getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow m '[PropertyType,InvalidParam,InvalidProperty]

@@ -139,7 +139,7 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
 -- events, leading the kernel to drop events)
 newInputEventHandler :: TChan Input.Event -> Sys (TChan InputEventBundle)
 newInputEventHandler eventChannel = do
-   bundleChannel <- liftIO newBroadcastTChanIO
+   bundleChannel <- newBroadcastTChanIO
    onEventWithData [] eventChannel $ \xs ev' -> do
       let ev = makeInputEvent ev'
       case inputEventType ev of

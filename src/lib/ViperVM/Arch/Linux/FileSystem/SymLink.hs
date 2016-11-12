@@ -33,7 +33,7 @@ type ReadSymLinkErrors
       ]
 
 -- | Read the path in a symbolic link
-readSymbolicLink :: MonadIO m => Maybe Handle -> FilePath -> Flow m (String ': ReadSymLinkErrors)
+readSymbolicLink :: MonadInIO m => Maybe Handle -> FilePath -> Flow m (String ': ReadSymLinkErrors)
 readSymbolicLink hdl path = do
    sysReadLinkAt hdl path
       >%~^> \case
@@ -51,7 +51,7 @@ readSymbolicLink hdl path = do
 
 
 -- | Wrapper for readlinkat syscall
-sysReadLinkAt :: MonadIO m => Maybe Handle -> FilePath -> Flow m '[String,ErrorCode]
+sysReadLinkAt :: MonadInIO m => Maybe Handle -> FilePath -> Flow m '[String,ErrorCode]
 sysReadLinkAt hdl path = go' 2048
    where
       -- if no handle is passed, we assume the path is absolute and we give a
@@ -66,9 +66,9 @@ sysReadLinkAt hdl path = go' 2048
                   Just s  -> flowSetN @0 s
 
       go size =
-         liftIO $ allocaBytes size $ \ptr ->
+         allocaBytes size $ \ptr ->
             withCString path $ \path' ->
-               syscall @"readlinkat" fd path' ptr (fromIntegral size)
+               liftIO (syscall @"readlinkat" fd path' ptr (fromIntegral size))
                   ||> toErrorCode
                   >.~.> (\n ->
                      if fromIntegral n == size

@@ -168,9 +168,9 @@ sysSocket' typ protocol subprotocol opts =
 -- | Create a socket pair (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocketPair' :: MonadIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
+sysSocketPair' :: MonadInIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
 sysSocketPair' typ protocol subprotocol opts =
-   liftIO $ allocaArray 2 $ \ptr ->
+   allocaArray 2 $ \ptr ->
       liftIO (syscall @"socketpair" (fromEnum protocol) typ' subprotocol (castPtr ptr))
          ||>   toErrorCode
          >.~.> (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
@@ -272,7 +272,7 @@ sysSocket typ opts =
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Create a socket pair
-sysSocketPair :: MonadIO m => SocketType -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
+sysSocketPair :: MonadInIO m => SocketType -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
 sysSocketPair typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocketPair' SockRawTypeStream SockProtIPv4 0 opts
@@ -282,10 +282,10 @@ sysSocketPair typ opts =
       SockTypeNetlink nt -> sysSocketPair' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Bind a socket
-sysBind :: (MonadIO m, Storable a) => Handle -> a -> Flow m '[(),ErrorCode]
+sysBind :: (MonadInIO m, Storable a) => Handle -> a -> Flow m '[(),ErrorCode]
 sysBind (Handle fd) addr =
-   liftIO $ with addr $ \addr' ->
-      syscall @"bind" fd (castPtr addr') (sizeOf' addr)
+   with addr $ \addr' ->
+      liftIO (syscall @"bind" fd (castPtr addr') (sizeOf' addr))
          ||> toErrorCodeVoid
 
 -- | Connect a socket
@@ -327,7 +327,7 @@ data NetlinkSocket
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
-sysBindNetlink :: MonadIO m => Handle -> Word32 -> Word32 -> Flow m '[(),ErrorCode]
+sysBindNetlink :: MonadInIO m => Handle -> Word32 -> Word32 -> Flow m '[(),ErrorCode]
 sysBindNetlink fd portID groups = sysBind fd s
    where
       s = NetlinkSocket p portID groups

@@ -182,22 +182,22 @@ alignmentT' :: forall a b. (Storable a, Integral b) => b
 alignmentT' = alignment' (undefined :: a)
 
 -- | Peek with byte offset
-peekByteOff :: Storable a => Ptr a -> Int -> IO a
+peekByteOff :: (MonadIO m, Storable a) => Ptr a -> Int -> m a
 {-# INLINE peekByteOff #-}
 peekByteOff ptr off = peek (ptr `indexPtr` off)
 
 -- | Poke with byte offset
-pokeByteOff :: Storable a => Ptr a -> Int -> a -> IO ()
+pokeByteOff :: (MonadIO m, Storable a) => Ptr a -> Int -> a -> m ()
 {-# INLINE pokeByteOff #-}
 pokeByteOff ptr off = poke (ptr `indexPtr` off)
 
 -- | Peek with element size offset
 peekElemOff :: forall a m. (MonadIO m, Storable a) => Ptr a -> Int -> m a
-peekElemOff ptr off = liftIO (peekByteOff ptr (off * sizeOfT' @a))
+peekElemOff ptr off = peekByteOff ptr (off * sizeOfT' @a)
 
 -- | Poke with element size offset
 pokeElemOff :: (MonadIO m, Storable a) => Ptr a -> Int -> a -> m ()
-pokeElemOff ptr off val = liftIO (pokeByteOff ptr (off * sizeOf' val) val)
+pokeElemOff ptr off val = pokeByteOff ptr (off * sizeOf' val) val
 
 -- | Allocate some bytes
 allocaBytes :: MonadInIO m => Word -> (Ptr a -> m b) -> m b

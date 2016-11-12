@@ -123,7 +123,7 @@ parseRes hdl res2 res4 = do
       wrapZero x = Just x
 
       peekArray' :: (Storable a, Integral c) => c -> Ptr a -> m [a]
-      peekArray' n ptr = liftIO (peekArray (fromIntegral n) ptr)
+      peekArray' n ptr = peekArray (fromIntegral n) ptr
 
    state <- case connConnection_ res4 of
       1 -> do

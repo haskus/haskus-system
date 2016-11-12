@@ -124,7 +124,7 @@ handleReadBuffer hdl offset size = do
       -- free the pointer on error
       >..~=> const (free b)
       -- otherwise return the buffer
-      >.~.> \sz -> liftIO (bufferUnsafePackPtr (fromIntegral sz) (castPtr b))
+      >.~.> \sz -> bufferUnsafePackPtr (fromIntegral sz) (castPtr b)
 
 
 -- | Like read but uses several buffers
@@ -192,8 +192,8 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
          ||> toErrorCodePure fromIntegral
 
 -- | Write a buffer
-writeBuffer :: MonadIO m => Handle -> Buffer -> Flow m '[(),ErrorCode]
-writeBuffer fd bs = liftIO (bufferUnsafeUsePtr bs go)
+writeBuffer :: MonadInIO m => Handle -> Buffer -> Flow m '[(),ErrorCode]
+writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
       go _ 0     = flowSetN @0 ()
       go ptr len = sysWrite fd ptr (fromIntegral len)

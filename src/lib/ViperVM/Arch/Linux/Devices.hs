@@ -109,7 +109,7 @@ sysfsReadDevFile' devfd =
             Left _  -> error "Invalid dev file format")
 
 -- | Read device major and minor from device path
-sysfsReadDevFile :: MonadIO m => Handle -> FilePath -> m (Maybe DeviceID)
+sysfsReadDevFile :: MonadInIO m => Handle -> FilePath -> m (Maybe DeviceID)
 sysfsReadDevFile hdl path = do
    withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty sysfsReadDevFile'
       >.-.> Just
@@ -117,7 +117,7 @@ sysfsReadDevFile hdl path = do
       |> flowRes
 
 -- | Read subsystem link
-sysfsReadSubsystem :: MonadIO m => Handle -> FilePath -> m (Maybe Text)
+sysfsReadSubsystem :: MonadInIO m => Handle -> FilePath -> m (Maybe Text)
 sysfsReadSubsystem hdl path = do
    readSymbolicLink (Just hdl) (path </> "subsystem")
       -- on success, only keep the basename as it is the subsystem name
@@ -133,7 +133,7 @@ sysfsMakeDev subsystem devid = case Text.unpack subsystem of
    _       -> Device CharDevice  devid
 
 -- | Read device and subsystem
-sysfsReadDev :: MonadIO m => Handle -> FilePath -> m (Maybe Text, Maybe Device)
+sysfsReadDev :: MonadInIO m => Handle -> FilePath -> m (Maybe Text, Maybe Device)
 sysfsReadDev hdl path = do
    subsystem <- sysfsReadSubsystem hdl path
    case subsystem of

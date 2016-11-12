@@ -102,7 +102,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
             as' = fmap (wordPtrToPtr . fromIntegral) as
             arraySizes = extractSize r
-         [fbs,ctrls,conns,encs] <- liftIO (peekArrays arraySizes as')
+         [fbs,ctrls,conns,encs] <- peekArrays arraySizes as'
          flowSetN @0 $ Resources
                (fmap FrameBufferID fbs)
                (fmap ControllerID  ctrls)
