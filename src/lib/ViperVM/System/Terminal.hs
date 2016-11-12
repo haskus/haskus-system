@@ -1,5 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Terminal helpers
 module ViperVM.System.Terminal
@@ -20,6 +23,7 @@ where
 import ViperVM.System.Sys
 import ViperVM.System.Process
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
 import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
 import ViperVM.Utils.STM.TList as TList
@@ -176,8 +180,6 @@ data OutputState = OutputState
 
 outputThread :: OutputState -> Sys ()
 outputThread s = forever $ do
-   let h = outputHandle s
-
    (buf,semsrc) <- atomically $ do
       e <- TList.last (outputBuffers s)
       case e of
@@ -186,19 +188,20 @@ outputThread s = forever $ do
             TList.delete e' 
             return (TList.value e')
 
-   threadWaitWrite h
+   let h     = outputHandle s
+       go sz = do
+         threadWaitWrite h
+         sysWrite h (iobufferPtr buf `indexPtr` fromIntegral sz) (iobufferSize buf - sz)
+            >.~$> (\n -> if sz + n == iobufferSize buf
+                           then flowSetN @0 ()
+                           else go (sz+n))
+            >..%~$> \case
+               EAGAIN -> go sz
+               err    -> flowSet err
 
-   -- try to write as much as possible
-   n <- sysWrite h (iobufferPtr buf) (iobufferSize buf)
-         |> flowAssertQuiet ("Write bytes to "++show h)
+   go 0 >..~!!> assertShow ("Write bytes to "++show h)
 
-   atomically $ if n == iobufferSize buf
-      then setFuture () semsrc
-      else do
-         let buf' = IOBuffer (iobufferSize buf - n)
-                             (iobufferPtr buf `indexPtr` fromIntegral n)
-                           
-         TList.append_ (buf',semsrc) (outputBuffers s)
+   atomically $ setFuture () semsrc
    
 newOutputState :: MonadIO m => Handle -> m OutputState
 newOutputState fd = do
