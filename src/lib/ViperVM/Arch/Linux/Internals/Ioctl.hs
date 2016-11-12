@@ -72,4 +72,3 @@ ioctlCommand dir typ nb sz = Command
    $ updateField (Proxy :: Proxy "number")    nb
    $ BitFields 0
 {-# INLINE ioctlCommand #-}
-

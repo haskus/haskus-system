@@ -65,6 +65,7 @@ import ViperVM.System.FileSystem
 import ViperVM.System.Process
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
+import ViperVM.Utils.STM
 
 import Control.Arrow (second)
 import System.Posix.Types (Fd(..))
@@ -73,7 +74,6 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (Set)
 import Control.Concurrent
-import Control.Concurrent.STM
 
 -- Note [sysfs]
 -- ~~~~~~~~~~~~
@@ -222,7 +222,7 @@ initDeviceManager sysfs devfs = do
    -- open Netlink socket and then duplicate the kernel event channel so that
    -- events start accumulating until we launch the handling thread
    bch <- newKernelEventReader
-   ch <- liftIO $ atomically $ dupTChan bch
+   ch <- atomically $ dupTChan bch
 
    -- create empty device manager
    root      <- liftIO $ deviceTreeCreate Nothing Nothing Map.empty
@@ -302,7 +302,7 @@ eventThread :: TChan KernelEvent -> DeviceManager -> Sys ()
 eventThread ch dm = do
    forever $ do
       -- read kernel event
-      ev <- liftIO $ atomically (readTChan ch)
+      ev <- atomically (readTChan ch)
 
 
       case Text.unpack (fst (bkPath (kernelEventDevPath ev))) of
@@ -317,7 +317,7 @@ eventThread ch dm = do
                path = Text.drop 8 (kernelEventDevPath ev)
 
                signalEvent f = do
-                  notFound <- liftIO $ atomically $ do
+                  notFound <- atomically $ do
                      tree <- readTVar (dmDevices dm)
                      case deviceTreeLookup path tree of
                         Just node -> do
@@ -381,7 +381,7 @@ deviceAdd dm path mev = do
 
    node <- liftIO (deviceTreeCreate msubsystem mdev Map.empty)
 
-   liftIO $ atomically $ do
+   atomically $ do
       -- update the tree
       tree  <- readTVar (dmDevices dm)
       tree' <- deviceTreeInsert path node tree
@@ -419,7 +419,7 @@ deviceAdd dm path mev = do
 -- | Remove a device
 deviceRemove :: DeviceManager -> DevicePath -> KernelEvent -> Sys ()
 deviceRemove dm path ev = do
-   notFound <- liftIO $ atomically $ do
+   notFound <- atomically $ do
       tree <- readTVar (dmDevices dm)
       case deviceTreeLookup path tree of
          Just node  -> do
@@ -458,7 +458,7 @@ deviceMove dm path ev = do
       Nothing -> sysError "Cannot find DEVPATH_OLD entry for device move kernel event"
       Just x  -> return (Text.drop 8 x) -- remove "/devices"
 
-   notFound <- liftIO $ atomically $ do
+   notFound <- atomically $ do
       -- move the device in the tree
       tree <- readTVar (dmDevices dm)
       case deviceTreeLookup oldPath tree of
@@ -612,9 +612,9 @@ newKernelEventReader = do
    let
       Handle lowfd = fd
       rfd = Fd (fromIntegral lowfd)
-      go  = liftIO $ forever $ do
-               threadWaitRead rfd
-               ev <- runSys $ receiveKernelEvent fd
+      go  = forever $ do
+               liftIO $ threadWaitRead rfd
+               ev <- receiveKernelEvent fd
                atomically $ writeTChan ch ev
 
    sysFork "Kernel sysfs event reader" go
@@ -639,7 +639,7 @@ getDeviceHandle :: DeviceManager -> Device -> Flow Sys (Handle ': ErrorCode ': O
 getDeviceHandle dm dev = do
 
    -- get a fresh device number
-   num <- liftIO $ atomically $ do
+   num <- atomically $ do
             n <- readTVar (dmDevNum dm)
             writeTVar (dmDevNum dm) (n+1)
             return n
@@ -683,7 +683,7 @@ openDeviceDir dm dev = open (Just (dmDevFS dm)) path (BitSet.fromList [HandleDir
 
 -- | List devices
 listDevices :: DeviceManager -> Sys [Text]
-listDevices dm = liftIO (atomically (listDevices' dm))
+listDevices dm = atomically (listDevices' dm)
 
 -- | List devices
 listDevices' :: DeviceManager -> STM [Text]
@@ -697,13 +697,13 @@ listDevices' dm = go Text.empty <$> readTVar (dmDevices dm)
 
 -- | List devices classes
 listDeviceClasses :: DeviceManager -> Sys [Text]
-listDeviceClasses dm = liftIO (atomically (Map.keys <$> readTVar (dmSubsystems dm)))
+listDeviceClasses dm = atomically (Map.keys <$> readTVar (dmSubsystems dm))
 
 -- | List devices with the given class
 --
 -- TODO: support dynamic asynchronous device adding/removal
 listDevicesWithClass :: DeviceManager -> String -> Sys [(DevicePath,DeviceTree)]
-listDevicesWithClass dm cls = liftIO $ atomically $ do
+listDevicesWithClass dm cls = atomically $ do
    subs <- readTVar (dmSubsystems dm)
    devs <- readTVar (dmDevices dm)
    ds <- listDevices' dm

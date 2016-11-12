@@ -72,8 +72,8 @@ module ViperVM.Arch.Linux.Internals.FileSystem
 where
 
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Internals.Handle
+import ViperVM.Arch.Linux.Internals.Error
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Enum

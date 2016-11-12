@@ -29,9 +29,9 @@ where
 
 import Prelude hiding (null,length,last,filter)
 
-import Control.Concurrent.STM
 import qualified Data.STM.LinkedList as LL
 
+import ViperVM.Utils.STM
 import ViperVM.Utils.Flow
 
 -- | A transactional list

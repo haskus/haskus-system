@@ -117,30 +117,30 @@ data AccessMode
 
 type AccessModes = BitSet Word64 AccessMode
 
-sysAccess :: FilePath -> AccessModes -> IOErr ()
+sysAccess :: MonadInIO m => FilePath -> AccessModes -> Flow m '[(),ErrorCode]
 sysAccess path mode = withCString path $ \path' ->
-   syscall @"access" path' (BitSet.toBits mode)
+   liftIO (syscall @"access" path' (BitSet.toBits mode))
       ||> toErrorCodeVoid
 
 
-sysDup :: Handle -> IOErr Handle
+sysDup :: MonadIO m => Handle -> Flow m '[Handle,ErrorCode]
 sysDup (Handle oldfd) = 
-   syscall @"dup" oldfd
+   liftIO (syscall @"dup" oldfd)
       ||> toErrorCodePure (Handle . fromIntegral)
 
-sysDup2 :: Handle -> Handle -> IOErr Handle
+sysDup2 :: MonadIO m => Handle -> Handle -> Flow m '[Handle,ErrorCode]
 sysDup2 (Handle oldfd) (Handle newfd) = 
-   syscall @"dup2" oldfd newfd
+   liftIO (syscall @"dup2" oldfd newfd)
       ||> toErrorCodePure (Handle . fromIntegral)
 
-sysSetCurrentDirectoryPath :: FilePath -> IOErr ()
+sysSetCurrentDirectoryPath :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
 sysSetCurrentDirectoryPath path = withCString path $ \path' ->
-   syscall @"chdir" path'
+   liftIO (syscall @"chdir" path')
       ||> toErrorCodeVoid
 
-sysSetCurrentDirectory :: Handle -> IOErr ()
+sysSetCurrentDirectory :: MonadIO m => Handle -> Flow m '[(),ErrorCode]
 sysSetCurrentDirectory (Handle fd) = 
-   syscall @"fchdir" fd
+   liftIO (syscall @"fchdir" fd)
       ||> toErrorCodeVoid
 
 sysGetCurrentDirectory :: MonadInIO m => Flow m '[FilePath,ErrorCode]
@@ -159,9 +159,9 @@ data FileLock =
    | ExclusiveLock
    | RemoveLock
 
-sysFileLock :: Handle -> FileLock -> Bool -> IOErr ()
+sysFileLock :: MonadIO m => Handle -> FileLock -> Bool -> Flow m '[(),ErrorCode]
 sysFileLock (Handle fd) mode nonBlocking =
-   syscall @"flock" fd (mode' .|. nb :: Int64)
+   liftIO (syscall @"flock" fd (mode' .|. nb :: Int64))
       ||> toErrorCodeVoid
    where
       mode' = case mode of
@@ -170,48 +170,48 @@ sysFileLock (Handle fd) mode nonBlocking =
          RemoveLock     -> 8
       nb = if nonBlocking then 4 else 0
 
-sysTruncatePath :: FilePath -> Word64 -> IOErr ()
+sysTruncatePath :: MonadInIO m => FilePath -> Word64 -> Flow m '[(),ErrorCode]
 sysTruncatePath path size = withCString path $ \path' ->
-   syscall @"truncate" path' size
+   liftIO (syscall @"truncate" path' size)
       ||> toErrorCodeVoid
 
-sysTruncate :: Handle -> Word64 -> IOErr ()
+sysTruncate :: MonadIO m => Handle -> Word64 -> Flow m '[(),ErrorCode]
 sysTruncate (Handle fd) size =
-   syscall @"ftruncate" fd size
+   liftIO (syscall @"ftruncate" fd size)
       ||> toErrorCodeVoid
 
-sysLink :: FilePath -> FilePath -> IOErr ()
+sysLink :: MonadInIO m => FilePath -> FilePath -> Flow m '[(),ErrorCode]
 sysLink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         syscall @"link" src' dest'
+         liftIO (syscall @"link" src' dest')
             ||> toErrorCodeVoid
 
-sysUnlink :: FilePath -> IOErr ()
+sysUnlink :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
 sysUnlink path = withCString path $ \path' ->
-   syscall @"unlink" path'
+   liftIO (syscall @"unlink" path')
       ||> toErrorCodeVoid
 
-sysUnlinkAt :: Handle -> FilePath -> Bool -> IOErr ()
+sysUnlinkAt :: MonadInIO m => Handle -> FilePath -> Bool -> Flow m '[(),ErrorCode]
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
-   syscall @"unlinkat" fd path' (if rmdir then 0x200 else 0)
+   liftIO (syscall @"unlinkat" fd path' (if rmdir then 0x200 else 0))
       ||> toErrorCodeVoid
 
 
-sysChangePermissionPath :: FilePath -> FilePermissions -> IOErr ()
+sysChangePermissionPath :: MonadInIO m => FilePath -> FilePermissions -> Flow m '[(),ErrorCode]
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   syscall @"chmod" path' (BitSet.toBits mode)
+   liftIO (syscall @"chmod" path' (BitSet.toBits mode))
       ||> toErrorCodeVoid
 
-sysChangePermission :: Handle -> FilePermissions -> IOErr ()
+sysChangePermission :: MonadIO m => Handle -> FilePermissions -> Flow m '[(),ErrorCode]
 sysChangePermission (Handle fd) mode = 
-   syscall @"fchmod" fd (BitSet.toBits mode)
+   liftIO (syscall @"fchmod" fd (BitSet.toBits mode))
       ||> toErrorCodeVoid
 
 
 -- | Avoid duplication in *chown syscalls
-chownEx :: (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> IOErr ()
-chownEx sc a uid gid = sc a uid' gid' ||> toErrorCodeVoid
+chownEx :: MonadInIO m => (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
+chownEx sc a uid gid = liftIO (sc a uid' gid') ||> toErrorCodeVoid
    where
       fuid (UserID x) = x
       fgid (GroupID x) = x
@@ -220,21 +220,21 @@ chownEx sc a uid gid = sc a uid' gid' ||> toErrorCodeVoid
 
 
 -- | chown
-sysChangeOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> IOErr ()
+sysChangeOwnershipPath :: MonadInIO m => FilePath -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
 sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx (syscall @"chown") p uid gid)
 
 -- | lchown
-sysChangeLinkOwnershipPath :: FilePath -> Maybe UserID -> Maybe GroupID -> IOErr ()
+sysChangeLinkOwnershipPath :: MonadInIO m => FilePath -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
 sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx (syscall @"lchown") p uid gid)
 
 -- | fchown
-sysChangeOwnership :: Handle -> Maybe UserID -> Maybe GroupID -> IOErr ()
+sysChangeOwnership :: MonadInIO m => Handle -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
 sysChangeOwnership (Handle fd) = chownEx (syscall @"fchown") fd
 
 -- | umask
-sysSetProcessUMask :: FilePermissions -> IOErr FilePermissions
+sysSetProcessUMask :: MonadIO m => FilePermissions -> Flow m '[FilePermissions,ErrorCode]
 sysSetProcessUMask mode =
-   syscall @"umask" (BitSet.toBits mode)
+   liftIO (syscall @"umask" (BitSet.toBits mode))
       ||> toErrorCodePure (fromBits . fromIntegral)
 
 -- | File type
@@ -364,7 +364,7 @@ toStat (StatStruct {..}) = Stat
 --
 -- If the path targets a symbolic link and followLink is false, then returned
 -- information are about the link itself
-sysFileStat :: FilePath -> Bool -> IOErr Stat
+sysFileStat :: MonadInIO m => FilePath -> Bool -> Flow m '[Stat,ErrorCode]
 sysFileStat path followLink = do
    withCString path $ \path' ->
       allocaBytes (sizeOfT' @StatStruct) $ \s ->
@@ -372,15 +372,15 @@ sysFileStat path followLink = do
             -- select between stat and lstat syscalls
             sc = if followLink then syscall @"stat" else syscall @"lstat"
          in
-         sc path' (castPtr s)
+         liftIO (sc path' (castPtr s))
             ||>   toErrorCode
             >.~.> (const (toStat <$> peek s))
 
 -- | Stat on file descriptor
-sysHandleStat :: Handle -> IOErr Stat
+sysHandleStat :: MonadInIO m => Handle -> Flow m '[Stat,ErrorCode]
 sysHandleStat (Handle fd) =
    allocaBytes (sizeOfT' @StatStruct) $ \s ->
-      syscall @"fstat" fd (castPtr s)
+      liftIO (syscall @"fstat" fd (castPtr s))
          ||>   toErrorCode
          >.~.> (const (toStat <$> peek s))
 
@@ -388,7 +388,7 @@ sysHandleStat (Handle fd) =
 -- | Create a special file
 --
 -- mknodat syscall. 
-sysCreateSpecialFile :: Maybe Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> IOErr ()
+sysCreateSpecialFile :: MonadInIO m => Maybe Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> Flow m '[(),ErrorCode]
 sysCreateSpecialFile hdl path typ perm dev = do
    let 
       mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
@@ -399,7 +399,7 @@ sysCreateSpecialFile hdl path typ perm dev = do
                   Nothing         -> (-1)
    withCString path $ \path' ->
       withDeviceID dev' $ \dev'' ->
-         syscall @"mknodat" fd path' mode dev''
+         liftIO (syscall @"mknodat" fd path' mode dev'')
             ||> toErrorCodeVoid
 
 -----------------------------------------------------------------------

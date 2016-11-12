@@ -13,8 +13,8 @@ module ViperVM.Utils.STM.Future
    )
 where
 
-import Control.Concurrent.STM
-import Control.Monad (void)
+import ViperVM.Utils.STM
+import ViperVM.Utils.Flow
 
 -- | Future value of type a
 newtype Future a       = Future (TMVar a)

@@ -13,8 +13,7 @@ where
 import qualified ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.TList (TList)
 import ViperVM.Utils.STM.TEq
-
-import Control.Concurrent.STM
+import ViperVM.Utils.STM
 
 -- | A STM mutable tree
 data TTree k v = TTree

@@ -4,7 +4,7 @@ module ViperVM.Utils.STM.TEq
    )
 where
 
-import Control.Concurrent.STM
+import ViperVM.Utils.STM
 
 class TEq a where
    teq :: a -> a -> STM Bool

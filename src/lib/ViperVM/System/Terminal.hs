@@ -27,6 +27,7 @@ import ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
 import ViperVM.Utils.Flow
+import ViperVM.Utils.STM
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Buffer
@@ -36,7 +37,6 @@ import ViperVM.Format.Text
 import ViperVM.Format.String (withCStringLen)
 
 import Control.Concurrent
-import Control.Concurrent.STM
 import System.Posix.Types (Fd(..))
 
 -- | Terminal (input and output, no error output)
@@ -79,7 +79,7 @@ inputThread s = forever $ do
    liftIO $ threadWaitRead (Fd (fromIntegral fd))
 
    -- data are ready to be read
-   (after, sz, ptr) <- liftIO $ atomically $ do
+   (after, sz, ptr) <- atomically $ do
       e <- TList.last (inputRequests s)
       case e of
          -- if a request is pending, use its buffer
@@ -122,7 +122,7 @@ inputThread s = forever $ do
    -- TODO: if readBytes is zero, it's the end of file, etc.
    sysAssert "readBytes /= 0" (readBytes /= 0)
 
-   liftIO $ atomically $ after readBytes
+   atomically $ after readBytes
 
 
 readFromHandle :: InputState -> Word64 -> Ptr () -> Sys (Future ())
@@ -183,7 +183,7 @@ outputThread :: OutputState -> Sys ()
 outputThread s = forever $ do
    let hdl@(Handle fd) = outputHandle s
 
-   (buf,semsrc) <- liftIO $ atomically $ do
+   (buf,semsrc) <- atomically $ do
       e <- TList.last (outputBuffers s)
       case e of
          Nothing -> retry
@@ -197,7 +197,7 @@ outputThread s = forever $ do
    n <- sysWrite hdl (iobufferPtr buf) (iobufferSize buf)
          |> flowAssertQuiet ("Write bytes to "++show hdl)
 
-   liftIO $ atomically $ if n == iobufferSize buf
+   atomically $ if n == iobufferSize buf
       then setFuture () semsrc
       else do
          let buf' = IOBuffer (iobufferSize buf - n)
@@ -233,7 +233,7 @@ defaultTerminal = do
    return $ Terminal outState inState
 
 writeToHandle :: OutputState -> Word64 -> Ptr () -> Sys (Future ())
-writeToHandle s sz ptr = liftIO $ atomically $ do
+writeToHandle s sz ptr = atomically $ do
    (sem,semsrc) <- newFuture
    TList.prepend_ (IOBuffer sz ptr, semsrc) (outputBuffers s)
    return sem
@@ -249,14 +249,14 @@ writeStrLn term s =
       with '\n' $ \ptr2 -> do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         liftIO (atomically (waitFuture sem))
+         atomically (waitFuture sem)
 
 -- | Write a buffer
 writeBuffer :: Terminal -> Buffer -> Sys ()
 writeBuffer term b =
    bufferUnsafeUsePtr b $ \ptr len -> do
       sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-      liftIO (atomically (waitFuture sem))
+      atomically (waitFuture sem)
 
 -- | Write a buffer
 writeBufferLn :: Terminal -> Buffer -> Sys ()
@@ -265,7 +265,7 @@ writeBufferLn term b =
       with '\n' $ \ptr2 -> do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         liftIO (atomically (waitFuture sem))
+         atomically (waitFuture sem)
 
 -- | Write a text using UTF8 encoding
 writeText :: Terminal -> Text -> Sys ()
@@ -284,7 +284,7 @@ readTerm :: Storable a => Terminal -> Sys a
 readTerm term =
    alloca $ \(ptr :: Ptr a) -> do
       sem <- readTermBytes term (sizeOfT' @a) ptr
-      liftIO (atomically $ waitFuture sem)
+      atomically $ waitFuture sem
       peek ptr
 
 -- | Wait for a key to pressed

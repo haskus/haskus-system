@@ -134,8 +134,8 @@ module ViperVM.Arch.Linux.Internals.Graphics
 where
 
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
+import ViperVM.Arch.Linux.Internals.Error
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
 import ViperVM.Format.Binary.BitSet as BitSet

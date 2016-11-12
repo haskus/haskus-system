@@ -58,6 +58,7 @@ library
     ViperVM.Arch.X86_64.ISA.Encoding
     ViperVM.Arch.X86_64.Disassembler
 
+    ViperVM.Arch.Linux.Internals.Error
     ViperVM.Arch.Linux.Internals.FileSystem
     ViperVM.Arch.Linux.Internals.Input
     ViperVM.Arch.Linux.Internals.Sound
@@ -151,6 +152,7 @@ library
     ViperVM.Utils.Types
     ViperVM.Utils.Types.List
     ViperVM.Utils.Types.Generics
+    ViperVM.Utils.STM
     ViperVM.Utils.STM.TEq
     ViperVM.Utils.STM.TMap
     ViperVM.Utils.STM.TSet

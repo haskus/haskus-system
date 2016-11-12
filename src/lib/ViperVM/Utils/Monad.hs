@@ -19,5 +19,8 @@ class MonadIO m => MonadInIO m where
    liftWith2 :: (forall c. (a -> b -> IO c) -> IO c) -> (a -> b -> m e) -> m e
 
 instance MonadInIO IO where
+   {-# INLINE liftWith #-}
    liftWith = id
+
+   {-# INLINE liftWith2 #-}
    liftWith2 = id

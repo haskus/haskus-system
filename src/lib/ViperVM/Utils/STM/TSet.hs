@@ -22,7 +22,7 @@ where
 
 import Prelude hiding (lookup,null,map)
 
-import Control.Concurrent.STM
+import ViperVM.Utils.STM
 import qualified STMContainers.Set as SSET
 import STMContainers.Set (Element)
 import ListT (ListT, fold)

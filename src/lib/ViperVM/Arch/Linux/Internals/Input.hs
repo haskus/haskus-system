@@ -84,11 +84,11 @@ import ViperVM.Format.Binary.Buffer
 import ViperVM.Format.Binary.Ptr
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String (peekCString)
-import ViperVM.Arch.Linux.Time (TimeVal,Clock)
-import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Arch.Linux.Internals.Tables
+import ViperVM.Arch.Linux.Internals.Error
+import ViperVM.Arch.Linux.Internals.Handle
+import ViperVM.Arch.Linux.Time (TimeVal,Clock)
+import ViperVM.Arch.Linux.Ioctl
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Maybe
 import ViperVM.Utils.Embed

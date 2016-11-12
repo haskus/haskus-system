@@ -36,6 +36,7 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Flow
 import ViperVM.Utils.List (isPrefixOf)
 import ViperVM.Utils.Maybe
+import ViperVM.Utils.STM
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Arch.Linux.Error
@@ -56,7 +57,6 @@ import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Graphics.Event as Graphics
 
-import Control.Concurrent.STM
 import Control.Concurrent
 import System.Posix.Types (Fd(..))
 import System.FilePath (takeBaseName)
@@ -107,15 +107,16 @@ newEventWaiterThread fd@(Handle lowfd) = do
       bufsz = 1000 -- buffer size
       rfd = Fd (fromIntegral lowfd)
 
-   ch <- liftIO $ newBroadcastTChanIO
-   sysFork "Graphics event reader" $ liftIO $ allocaBytes bufsz $ \ptr -> forever $ do
-      threadWaitRead rfd
-      sysRead fd ptr (fromIntegral bufsz)
-         >.~!> \sz2 -> do
-         -- FIXME: we should somehow signal that an error occured and
-         -- that we won't report future events (if any)
-         evs <- peekEvents ptr (fromIntegral sz2)
-         atomically $ mapM_ (writeTChan ch) evs
+   ch <- newBroadcastTChanIO
+   sysFork "Graphics event reader" $ 
+      allocaBytes bufsz $ \ptr -> forever $ do
+         liftIO $ threadWaitRead rfd
+         sysRead fd ptr (fromIntegral bufsz)
+            >.~!> \sz2 -> do
+            -- FIXME: we should somehow signal that an error occured and
+            -- that we won't report future events (if any)
+            evs <- liftIO (peekEvents ptr (fromIntegral sz2))
+            atomically $ mapM_ (writeTChan ch) evs
    return ch
 
 
@@ -280,7 +281,7 @@ initRenderingEngine card ctrl mode nfb flags draw
       -- FIXME: how do we know which controller has flipped?
       onEvent (graphicCardChan card) $ \case
          VBlankEvent FlipComplete _ ->
-            liftIO $ atomically $ do
+            atomically $ do
                s <- readTVar fbState
                case fbPending s of
                   Nothing -> return ()
@@ -296,7 +297,7 @@ initRenderingEngine card ctrl mode nfb flags draw
 
       -- on drawn frame
       sysFork "Multi-buffering manager" $ forever $ do
-         gfb <- liftIO $ atomically $ do
+         gfb <- atomically $ do
             s <- readTVar fbState
             -- check that the previous frame is flipped
             -- and that we have a frame to draw
@@ -322,7 +323,7 @@ initRenderingEngine card ctrl mode nfb flags draw
          drawNext :: BitSet Word FrameWait -> (GenericFrame -> Sys ()) -> Sys ()
          drawNext wait f = do
             -- reserve next frame
-            gfb <- liftIO $ atomically $ do
+            gfb <- atomically $ do
                      s <- readTVar fbState
                      when (BitSet.member wait WaitPending && isJust (fbPending s)) retry
                      when (BitSet.member wait WaitDrawn   && isJust (fbDrawn   s)) retry
@@ -335,7 +336,7 @@ initRenderingEngine card ctrl mode nfb flags draw
             -- draw it
             f gfb
             -- indicate it is drawn
-            liftIO $ atomically $ do
+            atomically $ do
                s <- readTVar fbState
                case fbDrawn s of
                   Nothing -> writeTVar fbState (s { fbDrawn = Just gfb })

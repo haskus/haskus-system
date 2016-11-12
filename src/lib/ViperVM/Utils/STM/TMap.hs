@@ -21,7 +21,7 @@ where
 
 import Prelude hiding (lookup,null)
 
-import Control.Concurrent.STM
+import ViperVM.Utils.STM
 import qualified STMContainers.Map as SMAP
 import STMContainers.Map (Key)
 import ListT (fold)

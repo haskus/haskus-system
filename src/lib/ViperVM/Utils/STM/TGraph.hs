@@ -9,8 +9,8 @@ module ViperVM.Utils.STM.TGraph
 where
 
 import qualified Data.Set as Set
-import Control.Concurrent.STM
 
+import ViperVM.Utils.STM
 import ViperVM.Utils.Flow
 import ViperVM.Utils.STM.TList (TList)
 import qualified ViperVM.Utils.STM.TList as TList

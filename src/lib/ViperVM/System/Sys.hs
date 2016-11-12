@@ -32,8 +32,8 @@ where
 import Prelude hiding (log)
 import Data.String (fromString)
 import Control.Monad.State
-import Control.Concurrent.STM
 
+import ViperVM.Utils.STM
 import ViperVM.Utils.Monad
 import ViperVM.Utils.STM.Future
 import ViperVM.Format.Text as Text
@@ -95,7 +95,7 @@ forkSys name act = do
 
    -- link with previous entry
    c <- gets sysLogCurrent
-   liftIO $ atomically (setFuture e c)
+   atomically (setFuture e c)
 
    -- set main state
    put $ mainState
@@ -115,7 +115,10 @@ runSys' :: Sys a -> IO ()
 runSys' = void . runSys
 
 instance MonadInIO Sys where
+   {-# INLINE liftWith #-}
    liftWith  = sysWith
+
+   {-# INLINE liftWith2 #-}
    liftWith2 = sysWith2
 
 -- | Lift with* and alloca* functions
@@ -198,7 +201,7 @@ sysLogAdd f = do
 
    -- link with previous entry
    c <- gets sysLogCurrent
-   liftIO $ atomically (setFuture e c)
+   atomically (setFuture e c)
 
    -- update state
    modify' $ \s -> s

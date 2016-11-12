@@ -9,7 +9,6 @@ module ViperVM.System.Event
    )
 where
 
-import Control.Concurrent.STM
 import Control.Concurrent
 import Prelude hiding (init,tail)
 import System.Posix.Types (Fd(..))
@@ -17,6 +16,7 @@ import System.Posix.Types (Fd(..))
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
 import ViperVM.Utils.Flow
+import ViperVM.Utils.STM
 import ViperVM.System.Sys
 import ViperVM.System.Process
 import ViperVM.Format.Binary.Ptr
@@ -49,11 +49,11 @@ onEventWithData :: a -> TChan e -> (a -> e -> Sys a) -> Sys ()
 onEventWithData x bch f = do
    sysLog LogInfo "Creating event listener"
 
-   ch <- liftIO $ atomically $ dupTChan bch
+   ch <- atomically $ dupTChan bch
    sysFork "TChan event listener" $ do
       let
          go a = do
-            e  <- liftIO (atomically (readTChan ch))
+            e  <- atomically (readTChan ch)
             a' <- f a e
             go a'
       go x

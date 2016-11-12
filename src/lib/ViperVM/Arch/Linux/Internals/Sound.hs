@@ -182,8 +182,8 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Bits
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
+import ViperVM.Arch.Linux.Internals.Error
 import ViperVM.Arch.Linux.Ioctl
-import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Time
 import ViperVM.Arch.Linux.Process (ProcessID)

@@ -35,8 +35,8 @@ import ViperVM.Format.Binary.Word
 import qualified ViperVM.Format.Text as Text
 import ViperVM.Utils.List (isPrefixOf)
 import ViperVM.Utils.Maybe (mapMaybe)
+import ViperVM.Utils.STM
 
-import Control.Concurrent.STM
 import Prelude hiding (init,tail)
 import System.FilePath (takeBaseName)
 
@@ -149,7 +149,7 @@ newInputEventHandler eventChannel = do
          -- On synchronization, commit the bundle (without the sync event)
          InputSyncEvent SyncReport 0 -> do
             let bundle = InputEventBundle (reverse xs)
-            liftIO $ atomically $ writeTChan bundleChannel bundle
+            atomically $ writeTChan bundleChannel bundle
             return []
          -- otherwise append the event
          _                     -> return (ev:xs)

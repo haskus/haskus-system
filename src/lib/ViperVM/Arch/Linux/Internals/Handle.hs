@@ -10,4 +10,3 @@ where
 --
 -- (file descriptor in original terminology)
 newtype Handle = Handle Word deriving (Show,Eq)
-
