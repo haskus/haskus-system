@@ -716,17 +716,17 @@ infixl 0 >..~.>
 -- | Extract the tail, set the first value (pure function)
 (..-.>) ::
    ( Monad m
-   ) => Variant (a ': l) -> (Variant l -> a) -> Flow m '[a]
+   ) => Variant (a ': l) -> (Variant l -> a) -> m a
 (..-.>) v f = case headVariant v of
-   Right u -> flowSetN @0 u
-   Left  l -> flowSetN @0 (f l)
+   Right u -> return u
+   Left  l -> return (f l)
 
 infixl 0 ..-.>
 
 -- | Extract the tail, set the first value (pure function)
 (>..-.>) ::
    ( Monad m
-   ) => Flow m (a ': l) -> (Variant l -> a) -> Flow m '[a]
+   ) => Flow m (a ': l) -> (Variant l -> a) -> m a
 (>..-.>) = liftm (..-.>)
 
 infixl 0 >..-.>

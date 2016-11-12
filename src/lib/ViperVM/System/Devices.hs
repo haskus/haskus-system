@@ -272,8 +272,6 @@ initDeviceManager sysfs devfs = do
                  >.-.> fmap entryName
                  -- return an empty directory list on error
                  >..-.> const []
-                 -- extract the result
-                 |> flowRes
 
          -- recursively try to create a tree for each sub-dir
          void $ flowFor dirs $ \dir -> do

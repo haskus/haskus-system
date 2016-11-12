@@ -114,7 +114,6 @@ sysfsReadDevFile hdl path = do
    withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty sysfsReadDevFile'
       >.-.> Just
       >..-.> const Nothing
-      |> flowRes
 
 -- | Read subsystem link
 sysfsReadSubsystem :: MonadInIO m => Handle -> FilePath -> m (Maybe Text)
@@ -124,7 +123,6 @@ sysfsReadSubsystem hdl path = do
       >.-.> Just . Text.pack . takeBaseName
       -- otherwise
       >..-.> const Nothing
-      |> flowRes
 
 -- | Make a Device from a subsystem and a DeviceID
 sysfsMakeDev :: Text -> DeviceID -> Device
