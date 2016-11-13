@@ -1,40 +1,24 @@
 name:                ViperVM
-version:             0.5.0.0
+version:             0.6.0.0
 synopsis:            System programming framework
 license:             BSD3
 license-file:        LICENSE
-author:              Sylvain HENRY
+author:              Sylvain Henry
 maintainer:          sylvain@haskus.fr
 homepage:            http://www.vipervm.org
-copyright:           Sylvain HENRY 2016
+copyright:           Sylvain Henry 2016
 category:            System
 build-type:          Simple
 cabal-version:       >=1.20
 
 description:
-   This package provides a panel of tools for system programming, mostly on
-   x86-64 architecture for now.
-   .
-   It provides direct access to Linux system calls (\syscalls\) on x86-64
-   architecture without going through the libc and without going through the
-   GHC FFI mechanism by default (so be careful not to use blocking system calls).
-   .
-   On top of that, it gives access to Linux subsystems. For now:
-       * input: events from keyboard, mouse, touchscreen, sound card (when a
-         connector is plugged in/plugged out), etc.
-       * graphics: manage monitors and what is displayed on them
-   .
-   It provides support for some file formats used in system programming such as
-   ELF (with DWARF debug information), CPIO, etc. It provides a few modules to
-   deal with binary formats on top of Data.Binary that are used internally. It
-   supports some compression algorithms and containers (Deflate, GZip, etc.)
-   used in other file formats.
-
+   ViperVM is a framework written in Haskell that can be used for system
+   programming. The long-term aim is to provide a full Haskell user-space
+   environment on top of the Linux kernel.
 
 source-repository head
   type: git
   location: git://github.com/hsyl20/ViperVM.git
-
 
 library
   exposed-modules:

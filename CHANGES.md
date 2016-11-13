@@ -1,15 +1,51 @@
-## Version 0.6 (next)
+## Version 0.7 (next)
 
+## Version 0.6 (2016-11-13)
+
+* Switch to GHC 8.0.1
+   * Use TypeApplications a lot
+* Switch to BSD-3-clause license
+* New website
 * Linux
    * (Devices) Device manager with device index (by subsystem) and notifications
    * (Graphics) Object property support (get only for now)
+   * (Graphics) Add simple rendering engine suporting multi-buffering
+   * (Graphics) Use Rasterific text renderer (+ upstream patch to embed fonts)
    * (System) Make logging in Sys monad support fork
-   * (syscalls) readlink(at)
+   * (Input) Support bundles of input events (separated with sync events)
+   * (Input) Better event type
+   * (Input) List supported events
+   * (syscalls) use a type-level table
+   * (syscalls) support all x86-64 syscalls
+   * (syscalls) support both PrimOp and FFI safe methods
+   * Device data type: major + minor + char/block
+* Format
+   * (ELF) Decode GHC Z-String symbol names
 * Binary
-   * Preliminary support for Unums 2.0
+   * (Unums) Preliminary support for Unums 2.0
+   * (Ptr) Use a PtrLike class
+   * (Buffer) Enhance primitives
+   * (Enum) Build enums generically with 0(1) convertion using statically
+     computed tables (cf Embed bytes)
+   * (Storable) Use our own Storable class (with default signatures)
+* System
+   * Support EAGAIN in output thread
 * Apps
    * (x86 instructions viewer) Better HTML rendering for the operands
-* New website
+* Utils
+   * STM Tree data structure
+   * New flow operators: const variants
+   * Add Tuple, List, Maybe, etc. modules
+   * (Embed) Embed bytes
+   * (Monad) Use MonadIO and MonadInIO to support both Sys and IO monads
+* Remove dependency on:
+   * HList
+   * c-storable-deriving
+   * criterion
+   * dynamic-linker-template
+* Remove legacy modules: OpenCL and Platform
+* Many minor fixes
+* Some tests added
 
 ## Version 0.5 (2016-08-23)
 
@@ -55,7 +91,6 @@
 * ViperVM.Utils
     * Variant: type-safe open sum type
     * Flow: generic function composition combinators based on Variants
-
 
 ## Version 0.3 (2014-11-18)
 
