@@ -6,6 +6,7 @@
 
 import ViperVM.Utils.ContFlow
 import ViperVM.Utils.Monad
+import Data.Char
 
 -- | Explicit CPS
 sample1 :: (Int -> IO r) -> (Float -> IO r) -> (String -> IO r) -> IO r
@@ -118,21 +119,12 @@ sample13 = do
       , \(x :: Char)   -> putStrLn ("Char: " ++ show x)
       )
 
-
 parseDigit :: String -> ContFlow '[(Int,String), String, ()] r
 parseDigit s = fdo
    case s of
       ""       -> freturn ()
-      ('0':xs) -> freturn (0 :: Int,xs)
-      ('1':xs) -> freturn (1 :: Int,xs)
-      ('2':xs) -> freturn (2 :: Int,xs)
-      ('3':xs) -> freturn (3 :: Int,xs)
-      ('4':xs) -> freturn (4 :: Int,xs)
-      ('5':xs) -> freturn (5 :: Int,xs)
-      ('6':xs) -> freturn (6 :: Int,xs)
-      ('7':xs) -> freturn (7 :: Int,xs)
-      ('8':xs) -> freturn (8 :: Int,xs)
-      ('9':xs) -> freturn (9 :: Int,xs)
+      (x:xs) | o <- ord x, o >= ord '0' && o <= ord '9'
+               -> freturn (o - ord '0',xs)
       _        -> freturn s
 
 parseDigits :: String -> [Int]
@@ -159,9 +151,13 @@ data Token = TokenInt Int | TokenString String deriving (Show)
 parseTokens :: String -> [Token]
 parseTokens str = go str ""
    where
-      go s lb = parseNum s >::>
+      go s lb = parseNum s >:~:> -- support wrong order
          ( \(x,xs) -> if lb /= "" then TokenString (reverse lb) : TokenInt x : go xs ""
                                   else TokenInt x : go xs ""
-         , \(x:xs) -> go xs (x:lb)
          , \()     -> if lb /= "" then [TokenString (reverse lb)] else []
+         , \(x:xs) -> go xs (x:lb)
          )
+
+main :: IO ()
+main = do
+   print (parseTokens "123adsf456sfds789")
