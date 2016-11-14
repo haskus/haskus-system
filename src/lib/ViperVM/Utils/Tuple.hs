@@ -3,6 +3,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Tuple helpers
@@ -15,6 +16,7 @@ module ViperVM.Utils.Tuple
    , TupleToList
    , ListToTuple
    , ExtractTuple (..)
+   , ReorderTuple (..)
    )
 where
 
@@ -251,3 +253,164 @@ instance ExtractTuple 6 (e0, e1, e2, e3, e4, e5, e6, e7) e6 where
 instance ExtractTuple 7 (e0, e1, e2, e3, e4, e5, e6, e7) e7 where
    {-# INLINE tupleN #-}
    tupleN (_,_,_,_,_,_,_,t) = t
+
+
+-- | Reorder tuple elements
+class ReorderTuple t1 t2 where
+   -- | Reorder tuple elements
+   tupleReorder :: t1 -> t2
+
+
+instance ReorderTuple (Single a) (Single a) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b) (a,b) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c) (a,b,c) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d) (a,b,c,d) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d,e) (a,b,c,d,e) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d,e,f) (a,b,c,d,e,f) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d,e,f,g) (a,b,c,d,e,f,g) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d,e,f,g,h) (a,b,c,d,e,f,g,h) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d,e,f,g,h,i) (a,b,c,d,e,f,g,h,i) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+instance ReorderTuple (a,b,c,d,e,f,g,h,i,j) (a,b,c,d,e,f,g,h,i,j) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder = id
+
+
+instance ReorderTuple (a,b) (b,a) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b) = (b,a)
+
+instance ReorderTuple (a,b,c) (a,c,b) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c) = (a,c,b)
+
+instance ReorderTuple (a,b,c) (b,a,c) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c) = (b,a,c)
+
+instance ReorderTuple (a,b,c) (b,c,a) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c) = (b,c,a)
+
+instance ReorderTuple (a,b,c) (c,a,b) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c) = (c,a,b)
+
+instance ReorderTuple (a,b,c) (c,b,a) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c) = (c,b,a)
+
+instance ReorderTuple (b,c,d) (x,y,z) => ReorderTuple (a,b,c,d) (a,x,y,z) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d) = let (x,y,z) = tupleReorder (b,c,d) in (a,x,y,z)
+
+instance ReorderTuple (a,c,d) (x,y,z) => ReorderTuple (a,b,c,d) (x,b,y,z) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d) = let (x,y,z) = tupleReorder (a,c,d) in (x,b,y,z)
+
+instance ReorderTuple (a,b,d) (x,y,z) => ReorderTuple (a,b,c,d) (x,y,c,z) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d) = let (x,y,z) = tupleReorder (a,b,d) in (x,y,c,z)
+
+instance ReorderTuple (a,b,c) (x,y,z) => ReorderTuple (a,b,c,d) (x,y,z,d) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d) = let (x,y,z) = tupleReorder (a,b,c) in (x,y,z,d)
+
+instance ReorderTuple (b,c,d,e) (x,y,z,w) => ReorderTuple (a,b,c,d,e) (a,x,y,z,w) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e) = let (x,y,z,w) = tupleReorder (b,c,d,e) in (a,x,y,z,w)
+
+instance ReorderTuple (a,c,d,e) (x,y,z,w) => ReorderTuple (a,b,c,d,e) (x,b,y,z,w) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e) = let (x,y,z,w) = tupleReorder (a,c,d,e) in (x,b,y,z,w)
+
+instance ReorderTuple (a,b,d,e) (x,y,z,w) => ReorderTuple (a,b,c,d,e) (x,y,c,z,w) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e) = let (x,y,z,w) = tupleReorder (a,b,d,e) in (x,y,c,z,w)
+
+instance ReorderTuple (a,b,c,e) (x,y,z,w) => ReorderTuple (a,b,c,d,e) (x,y,z,d,w) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e) = let (x,y,z,w) = tupleReorder (a,b,c,e) in (x,y,z,d,w)
+
+instance ReorderTuple (a,b,c,d) (x,y,z,w) => ReorderTuple (a,b,c,d,e) (x,y,z,w,e) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e) = let (x,y,z,w) = tupleReorder (a,b,c,d) in (x,y,z,w,e)
+
+instance ReorderTuple (b,c,d,e,f) (x,y,z,w,v) => ReorderTuple (a,b,c,d,e,f) (a,x,y,z,w,v) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f) = let (x,y,z,w,v) = tupleReorder (b,c,d,e,f) in (a,x,y,z,w,v)
+
+instance ReorderTuple (a,c,d,e,f) (x,y,z,w,v) => ReorderTuple (a,b,c,d,e,f) (x,b,y,z,w,v) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f) = let (x,y,z,w,v) = tupleReorder (a,c,d,e,f) in (x,b,y,z,w,v)
+
+instance ReorderTuple (a,b,d,e,f) (x,y,z,w,v) => ReorderTuple (a,b,c,d,e,f) (x,y,c,z,w,v) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f) = let (x,y,z,w,v) = tupleReorder (a,b,d,e,f) in (x,y,c,z,w,v)
+
+instance ReorderTuple (a,b,c,e,f) (x,y,z,w,v) => ReorderTuple (a,b,c,d,e,f) (x,y,z,d,w,v) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f) = let (x,y,z,w,v) = tupleReorder (a,b,c,e,f) in (x,y,z,d,w,v)
+
+instance ReorderTuple (a,b,c,d,f) (x,y,z,w,v) => ReorderTuple (a,b,c,d,e,f) (x,y,z,w,e,v) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f) = let (x,y,z,w,v) = tupleReorder (a,b,c,d,f) in (x,y,z,w,e,v)
+
+instance ReorderTuple (a,b,c,d,e) (x,y,z,w,v) => ReorderTuple (a,b,c,d,e,f) (x,y,z,w,v,f) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f) = let (x,y,z,w,v) = tupleReorder (a,b,c,d,e) in (x,y,z,w,v,f)
+
+
+instance ReorderTuple (b,c,d,e,f,g) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (a,x,y,z,w,v,u) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (b,c,d,e,f,g) in (a,x,y,z,w,v,u)
+
+instance ReorderTuple (a,c,d,e,f,g) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (x,b,y,z,w,v,u) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (a,c,d,e,f,g) in (x,b,y,z,w,v,u)
+
+instance ReorderTuple (a,b,d,e,f,g) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (x,y,c,z,w,v,u) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (a,b,d,e,f,g) in (x,y,c,z,w,v,u)
+
+instance ReorderTuple (a,b,c,e,f,g) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (x,y,z,d,w,v,u) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (a,b,c,e,f,g) in (x,y,z,d,w,v,u)
+
+instance ReorderTuple (a,b,c,d,f,g) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (x,y,z,w,e,v,u) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (a,b,c,d,f,g) in (x,y,z,w,e,v,u)
+
+instance ReorderTuple (a,b,c,d,e,g) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (x,y,z,w,v,f,u) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (a,b,c,d,e,g) in (x,y,z,w,v,f,u)
+
+instance ReorderTuple (a,b,c,d,e,f) (x,y,z,w,v,u) => ReorderTuple (a,b,c,d,e,f,g) (x,y,z,w,v,u,g) where
+   {-# INLINE tupleReorder #-}
+   tupleReorder (a,b,c,d,e,f,g) = let (x,y,z,w,v,u) = tupleReorder (a,b,c,d,e,f) in (x,y,z,w,v,u,g)
