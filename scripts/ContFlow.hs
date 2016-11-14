@@ -117,3 +117,51 @@ sample13 = do
       ( \(x :: Double) -> putStrLn ("Double: " ++ show x)
       , \(x :: Char)   -> putStrLn ("Char: " ++ show x)
       )
+
+
+parseDigit :: String -> ContFlow '[(Int,String), String, ()] r
+parseDigit s = fdo
+   case s of
+      ""       -> freturn ()
+      ('0':xs) -> freturn (0 :: Int,xs)
+      ('1':xs) -> freturn (1 :: Int,xs)
+      ('2':xs) -> freturn (2 :: Int,xs)
+      ('3':xs) -> freturn (3 :: Int,xs)
+      ('4':xs) -> freturn (4 :: Int,xs)
+      ('5':xs) -> freturn (5 :: Int,xs)
+      ('6':xs) -> freturn (6 :: Int,xs)
+      ('7':xs) -> freturn (7 :: Int,xs)
+      ('8':xs) -> freturn (8 :: Int,xs)
+      ('9':xs) -> freturn (9 :: Int,xs)
+      _        -> freturn s
+
+parseDigits :: String -> [Int]
+parseDigits s = parseDigit s >::>
+   ( \(x,xs) -> x : parseDigits xs
+   , \(x:xs) -> parseDigits xs
+   , \()     -> []
+   )
+
+parseNum :: forall r. String -> ContFlow '[(Int,String), String, ()] r
+parseNum str = fdo
+   let
+      go :: Bool -> Int -> String -> r
+      go b i s = parseDigit s >::>
+            ( \(x,xs) -> go True (i*10+x) xs
+            , \xs     -> if b then freturn (i,xs) else freturn xs
+            , \()     -> if b then freturn (i,"") else freturn ()
+            )
+
+   go False 0 str
+
+data Token = TokenInt Int | TokenString String deriving (Show)
+
+parseTokens :: String -> [Token]
+parseTokens str = go str ""
+   where
+      go s lb = parseNum s >::>
+         ( \(x,xs) -> if lb /= "" then TokenString (reverse lb) : TokenInt x : go xs ""
+                                  else TokenInt x : go xs ""
+         , \(x:xs) -> go xs (x:lb)
+         , \()     -> if lb /= "" then [TokenString (reverse lb)] else []
+         )
