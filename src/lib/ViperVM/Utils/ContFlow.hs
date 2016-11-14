@@ -1,0 +1,90 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ImplicitParams #-}
+
+-- | Continuation based control-flow
+module ViperVM.Utils.ContFlow
+   ( ContFlow (..)
+   , (>::>)
+   , fret
+   , freturn
+   , frec
+   , ContListToTuple
+   , ContTupleToList
+   )
+where
+
+import ViperVM.Utils.Tuple
+import ViperVM.Utils.Types
+import ViperVM.Utils.Types.List
+
+-- | A continuation based control-flow
+newtype ContFlow (xs :: [*]) r = ContFlow (ContListToTuple xs r -> r)
+
+-- | Convert a list of types into the actual data type representing the
+-- continuations.
+type family ContListToTuple (xs :: [*]) r where
+   ContListToTuple xs r = ListToTuple (AddR xs r)
+
+-- | Convert a tuple of continuations into a list of types
+type family ContTupleToList t r :: [*] where
+   ContTupleToList t r = StripR (TupleToList t) r
+
+type family AddR f r where
+   AddR '[] r       = '[]
+   AddR (x ': xs) r = (x -> r) ': AddR xs r
+
+type family StripR f r where
+   StripR '[] r              = '[]
+   StripR ((x -> r) ': xs) r = x ': StripR xs r
+   StripR ((x -> w) ': xs) r =
+      TypeError ( 'Text "Invalid continuation return type `"
+                  ':<>: 'ShowType w ':<>: 'Text "', expecting `"
+                  ':<>: 'ShowType r ':<>: 'Text "'")
+
+-- | Bind a flow to a tuple of continuations
+-- TODO: reorder fields if necessary
+(>::>) :: ContFlow xs r -> ContListToTuple xs r -> r
+(>::>) (ContFlow f) cs = f cs
+
+-- | Call the type-indexed continuation from the tuple passed as first parameter
+fret :: forall x r t n xs.
+   ( ExtractTuple n t (x -> r)
+   , xs ~ ContTupleToList t r
+   , Member x xs
+   , n ~ IndexOf x xs
+   , KnownNat n
+   , CheckNub xs
+   ) => t -> (x -> r)
+fret = tupleN @n @t @(x -> r)
+
+-- | Implicitly call the type-indexed continuation in the context
+freturn :: forall x r t n xs.
+   ( ExtractTuple n t (x -> r)
+   , xs ~ ContTupleToList t r
+   , Member x xs
+   , n ~ IndexOf x xs
+   , KnownNat n
+   , CheckNub xs
+   , ?__cs :: t
+   ) => x -> r
+freturn = fret ?__cs
+
+-- | Recursive call
+frec :: forall r xs.
+   ( ?__cs :: ContListToTuple xs r
+   ) => ContFlow xs r -> r
+frec f = f >::> ?__cs
+
+-- this define has to be defined in each module using ContFlow for now
+#define fdo ContFlow $ \__cs -> let ?__cs = __cs in do

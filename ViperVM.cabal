@@ -122,6 +122,7 @@ library
     ViperVM.System.Event
     ViperVM.System.Network
 
+    ViperVM.Utils.ContFlow
     ViperVM.Utils.Variant
     ViperVM.Utils.Monad
     ViperVM.Utils.Parser
