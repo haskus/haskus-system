@@ -21,6 +21,8 @@ module ViperVM.Utils.ContFlow
    , frec
    , ContListToTuple
    , ContTupleToList
+   , StripR
+   , AddR
    )
 where
 
