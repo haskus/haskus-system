@@ -39,6 +39,7 @@ module ViperVM.Utils.Types.List
    , TypeAt
    , Union
    , Member
+   , CheckNub
    )
 where
 
@@ -139,8 +140,18 @@ type family Generate (n :: Nat) (m :: Nat) where
 
 -- | Check that a type is member of a type list
 type family IsMember a l :: Bool where
-   IsMember a (a ': l) = 'True
-   IsMember a (b ': l) = IsMember a l
+   IsMember a l = IsMemberEx a l l
+
+-- | Check that a type is member of a type list
+type family IsMemberEx a l (i :: [*]) :: Bool where
+   IsMemberEx a (a ': l) i = 'True
+   IsMemberEx a (b ': l) i = IsMemberEx a l i
+   IsMemberEx a '[]      i = TypeError ( 'Text "`"
+                                   ':<>: 'ShowType a
+                                   ':<>: 'Text "'"
+                                   ':<>: 'Text " is not a member of "
+                                   ':<>: 'ShowType i)
+
 
 -- | Check that a list is a subset of another
 type family IsSubset l1 l2 :: Bool where
@@ -189,9 +200,19 @@ type family NubHead (l :: [*]) where
    NubHead (x ': xs) = x ': Filter x xs
 
 -- | Get the first index of a type
-type family IndexOf a (l :: [*]) where
-   IndexOf x (x ': xs) = 0
-   IndexOf y (x ': xs) = 1 + IndexOf y xs
+type family IndexOf a (l :: [*]) :: Nat where
+   IndexOf x xs = IndexOfEx x xs xs
+
+-- | Get the first index of a type
+type family IndexOfEx a (l :: [*]) (l2 :: [*]) :: Nat where
+   IndexOfEx x (x ': xs) l2 = 0
+   IndexOfEx y (x ': xs) l2 = 1 + IndexOfEx y xs l2
+   IndexOfEx y '[]       l2 = TypeError ( 'Text "`"
+                                    ':<>: 'ShowType y
+                                    ':<>: 'Text "'"
+                                    ':<>: 'Text " is not a member of "
+                                    ':<>: 'ShowType l2)
+
 
 -- | Get the first index (starting from 1) of a type or 0 if none
 type family MaybeIndexOf a (l :: [*]) where
@@ -222,4 +243,17 @@ type Member x xs =
    , x ~ TypeAt (IndexOf x xs) xs
    , KnownNat (IndexOf x xs)
    )
+
+-- | Check that a list only contain a value of each type
+type CheckNub (l :: [*]) =
+   ( CheckNubEx l (Nub l) ~ 'True
+   )
+
+type family CheckNubEx (l1 :: [*]) (l2 :: [*]) where
+   CheckNubEx l l   = 'True
+   CheckNubEx l1 l2 = TypeError
+      ( 'Text "Type-list contains unallowed redundant types."
+      ':$$: 'Text "Got: "      ':<>: 'ShowType l1
+      ':$$: 'Text "Expected: " ':<>: 'ShowType l2
+      )
 
