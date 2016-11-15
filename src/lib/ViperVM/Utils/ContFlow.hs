@@ -22,7 +22,7 @@ module ViperVM.Utils.ContFlow
    , freturn
    , freturnN
    , frec
-   , ContMapR
+   , ContListToTuple
    , ContTupleToList
    , StripR
    , AddR
@@ -34,11 +34,12 @@ import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 
 -- | A continuation based control-flow
-newtype ContFlow t r = ContFlow (ContMapR t r -> r)
+newtype ContFlow (xs :: [*]) r = ContFlow (ContListToTuple xs r -> r)
 
--- | Convert a tuple (a,b,...) into (a -> r, b -> r, ...)
-type family ContMapR t r where
-   ContMapR t r = ListToTuple (AddR (TupleToList t) r)
+-- | Convert a list of types into the actual data type representing the
+-- continuations.
+type family ContListToTuple (xs :: [*]) r where
+   ContListToTuple xs r = ListToTuple (AddR xs r)
 
 -- | Convert a tuple of continuations into a list of types
 type family ContTupleToList t r :: [*] where
@@ -57,15 +58,15 @@ type family StripR f r where
                   ':<>: 'ShowType r ':<>: 'Text "'")
 
 -- | Bind a flow to a tuple of continuations
-(>::>) :: ContFlow t r -> ContMapR t r -> r
+(>::>) :: ContFlow xs r -> ContListToTuple xs r -> r
 {-# INLINE (>::>) #-}
 (>::>) (ContFlow f) cs = f cs
 
 -- | Bind a flow to a tuple of continuations and
 -- reorder fields if necessary
-(>:~:>) :: forall ts t r.
-   ( ReorderTuple ts (ContMapR t r)
-   ) => ContFlow t r -> ts -> r
+(>:~:>) :: forall ts xs r.
+   ( ReorderTuple ts (ContListToTuple xs r)
+   ) => ContFlow xs r -> ts -> r
 {-# INLINE (>:~:>) #-}
 (>:~:>) (ContFlow f) cs = f (tupleReorder cs)
 
@@ -118,9 +119,9 @@ freturnN = fretN @n ?__cs
 
 
 -- | Recursive call
-frec :: forall r t.
-   ( ?__cs :: ContMapR t r
-   ) => ContFlow t r -> r
+frec :: forall r xs.
+   ( ?__cs :: ContListToTuple xs r
+   ) => ContFlow xs r -> r
 frec f = f >::> ?__cs
 
 -- this define has to be defined in each module using ContFlow for now
