@@ -79,6 +79,15 @@ sample9 = ContFlow $ \cs -> do
       , \(x :: String) -> fret cs 'b'
       )
 
+sample9' :: ContFlow '[Float,Char] (IO r)
+sample9' = ContFlow $ \cs -> do
+   putStrLn "Forcing an IO monad"
+   sample7 >::>
+      ( \(x :: Int)    -> fret cs 'a'
+      , fret cs -- direct transfer of the result
+      , \(x :: String) -> fret cs 'b'
+      )
+
 sample10 :: IO ()
 sample10 = do
    putStrLn "Test test test!"
@@ -104,7 +113,7 @@ sample12 :: MonadIO m => Int -> ContFlow '[Double,Char] (m r)
 sample12 n = fdo
    liftIO $ putStrLn "Forcing an IO monad"
    sample7 >::>
-      ( \(x :: Int)    -> freturn 'a'
+      ( \(x :: Int)    -> freturnN @1 'a' -- indexed return
       , \(x :: Float)  -> freturn (2.0 :: Double)
       , \(x :: String) -> if n < 10 
                               then frec (sample12 (n+1)) -- recursive call
@@ -157,6 +166,24 @@ parseTokens str = go str ""
          , \()     -> if lb /= "" then [TokenString (reverse lb)] else []
          , \(x:xs) -> go xs (x:lb)
          )
+
+data Then = Then
+data Else = Else
+
+iff :: Bool -> ContFlow '[Then,Else] r
+{-# INLINE iff #-}
+iff b = fdo
+   case b of
+      True  -> freturn Then
+      False -> freturn Else
+
+testIf :: Bool -> IO ()
+testIf b = do
+   iff b >:~:>
+      ( \Else -> putStrLn "No!"
+      , \Then -> putStrLn "Yes!"
+      )
+
 
 main :: IO ()
 main = do
