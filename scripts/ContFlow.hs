@@ -48,14 +48,14 @@ sample5 cs =
       else fret cs "Pif"
 
 -- | Put in a generic tuple
-sample6 :: ContListToTuple '[Int,Float,String] r -> r
+sample6 :: ContMapR (Int,Float,String) r -> r
 sample6 cs =
    if (10 :: Int) > 20
       then fret cs (10 :: Int)
       else fret cs "Pif"
 
 -- | Wrap in a newtype
-sample7 :: ContFlow '[Int,Float,String] r
+sample7 :: ContFlow (Int,Float,String) r
 sample7 = ContFlow $ \cs -> 
    if (10 :: Int) > 20
       then fret cs (10 :: Int)
@@ -70,7 +70,7 @@ sample8 = sample7 >::>
    )
 
 -- | Example of combined flows
-sample9 :: ContFlow '[Double,Char] (IO r)
+sample9 :: ContFlow (Double,Char) (IO r)
 sample9 = ContFlow $ \cs -> do
    putStrLn "Forcing an IO monad"
    sample7 >::>
@@ -79,7 +79,7 @@ sample9 = ContFlow $ \cs -> do
       , \(x :: String) -> fret cs 'b'
       )
 
-sample9' :: ContFlow '[Float,Char] (IO r)
+sample9' :: ContFlow (Float,Char) (IO r)
 sample9' = ContFlow $ \cs -> do
    putStrLn "Forcing an IO monad"
    sample7 >::>
@@ -109,7 +109,7 @@ sample10 = do
 #define fdo ContFlow $ \__cs -> let ?__cs = __cs in do
 
 -- | Implicit parameters
-sample12 :: MonadIO m => Int -> ContFlow '[Double,Char] (m r)
+sample12 :: MonadIO m => Int -> ContFlow (Double,Char) (m r)
 sample12 n = fdo
    liftIO $ putStrLn "Forcing an IO monad"
    sample7 >::>
@@ -128,7 +128,7 @@ sample13 = do
       , \(x :: Char)   -> putStrLn ("Char: " ++ show x)
       )
 
-parseDigit :: String -> ContFlow '[(Int,String), String, ()] r
+parseDigit :: String -> ContFlow ((Int,String), String, ()) r
 parseDigit s = fdo
    case s of
       ""       -> freturn ()
@@ -143,7 +143,7 @@ parseDigits s = parseDigit s >::>
    , \()     -> []
    )
 
-parseNum :: forall r. String -> ContFlow '[(Int,String), String, ()] r
+parseNum :: forall r. String -> ContFlow ((Int,String), String, ()) r
 parseNum str = fdo
    let
       go :: Bool -> Int -> String -> r
@@ -170,7 +170,7 @@ parseTokens str = go str ""
 data Then = Then
 data Else = Else
 
-iff :: Bool -> ContFlow '[Then,Else] r
+iff :: Bool -> ContFlow (Then,Else) r
 {-# INLINE iff #-}
 iff b = fdo
    case b of
