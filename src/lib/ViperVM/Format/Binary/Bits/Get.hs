@@ -101,10 +101,10 @@ getBits nbits (BitGetState bs off bo) = rec zeroBits 0 bs off nbits
 --
 -- Check that the number of bits to read is not greater than the first parameter
 getBitsChecked :: (Integral a, FiniteBits a, BitReversable a) => Word -> Word -> BitGetState -> a
+{-# INLINE getBitsChecked #-}
 getBitsChecked m n s
    | n > m     = error $ "Tried to read more than " ++ show m ++ " bits (" ++ show n ++")"
    | otherwise = getBits n s
-{-# INLINE getBitsChecked #-}
 
 -- | Read the given number of Word8 and return them in a Buffer
 --

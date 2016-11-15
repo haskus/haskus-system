@@ -51,15 +51,14 @@ instance
 
 -- | Read an enum field
 fromEnumField :: EnumField b a -> a
-fromEnumField (EnumField a) = a
-
 {-# INLINE fromEnumField #-}
+fromEnumField (EnumField a) = a
 
 -- | Create an enum field
 toEnumField :: a -> EnumField b a
+{-# INLINE toEnumField #-}
 toEnumField = EnumField
 
-{-# INLINE toEnumField #-}
 
 -----------------------------------------------------------------------------
 -- Extended Enum

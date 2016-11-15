@@ -126,11 +126,11 @@ reverseBitsObvious x = rec x (x `shiftR` 1) (finiteBitSize x - 1)
 
 -- | Reverse bits in a Word8 (3 64-bit operations, modulus division)
 reverseBits3Ops :: Word8 -> Word8
+{-# INLINE reverseBits3Ops #-}
 reverseBits3Ops x = fromIntegral x'
    where
       !x' = ((fromIntegral x * 0x0202020202 :: Word64) .&. 0x010884422010) `mod` 1023
 
-{-# INLINE reverseBits3Ops #-}
 
 -- Reverse the bits in a byte with 4 operations (64-bit multiply, no division) 
 -- ===========================================================================
@@ -176,20 +176,20 @@ reverseBits3Ops x = fromIntegral x'
 
 -- | Reverse bits in a Word8 (4 64-bit operations, no division)
 reverseBits4Ops :: Word8 -> Word8
+{-# INLINE reverseBits4Ops #-}
 reverseBits4Ops x = fromIntegral x'
    where
       !x' = (((fromIntegral x * 0x80200802 :: Word64) .&. 0x0884422110) * 0x0101010101) `shiftR` 32
 
-{-# INLINE reverseBits4Ops #-}
 
 -- Reverse bits using a lookup table
 -- =================================
 
 -- | Reverse bits using a lookup table
 reverseBitsTable :: Word8 -> Word8
+{-# INLINE reverseBitsTable #-}
 reverseBitsTable x = bitsTable `bufferIndex` (fromIntegral x)
 
-{-# INLINE reverseBitsTable #-}
 
 -- fill the table by using another method
 bitsTable :: Buffer
@@ -207,12 +207,12 @@ bitsTable = bufferPackByteList $ fmap reverseBits4Ops [0..255]
 
 -- | Reverse bits in a Word8 (7 no 64-bit operations, no division)
 reverseBits7Ops :: Word8 -> Word8
+{-# INLINE reverseBits7Ops #-}
 reverseBits7Ops b' = fromIntegral x'
    where
       b   = fromIntegral b' :: Word32
       !x' = ((((b * 0x0802) .&. 0x22110) .|. ((b * 0x8020) .&. 0x88440)) * 0x10101) `shiftR` 16
 
-{-# INLINE reverseBits7Ops #-}
 
 -- Reverse an N-bit quantity in parallel in 5 * lg(N) operations
 -- =============================================================

@@ -44,18 +44,18 @@ makeMask n = x' `shiftR` (finiteBitSize x - fromIntegral n)
 
 -- | Keep only the n least-significant bits of the given value
 maskLeastBits :: (FiniteBits a) => Word -> a -> a
-maskLeastBits n v = v .&. makeMask n
 {-# INLINE maskLeastBits #-}
+maskLeastBits n v = v .&. makeMask n
 
 -- | Compute bit offset (equivalent to x `mod` 8 but faster)
 bitOffset :: Word -> Word
-bitOffset n = makeMask 3 .&. n
 {-# INLINE bitOffset #-}
+bitOffset n = makeMask 3 .&. n
 
 -- | Compute byte offset (equivalent to x `div` 8 but faster)
 byteOffset :: Word -> Word
-byteOffset n = n `shiftR` 3
 {-# INLINE byteOffset #-}
+byteOffset n = n `shiftR` 3
 
 -- | Reverse the @n@ least important bits of the given value. The higher bits
 -- are set to 0.
@@ -81,6 +81,7 @@ bitsFromString xs = foldl' b zeroBits (reverse xs `zip` [0..])
 -- | Take n bits at offset o and put them in the least-significant
 -- bits of the result
 getBitRange :: (BitReversable b, FiniteBits b) => BitOrder -> Word -> Word -> b -> b
+{-# INLINE getBitRange #-}
 getBitRange bo o n c = case bo of
       BB -> maskLeastBits n $ c             `shiftR` d
       BL -> maskLeastBits n $ reverseBits c `shiftR` o'
@@ -90,4 +91,3 @@ getBitRange bo o n c = case bo of
       o' = fromIntegral o
       d  = finiteBitSize c - fromIntegral n - fromIntegral o
 
-{-# INLINE getBitRange #-}

@@ -252,13 +252,13 @@ unumEncode :: forall i x u.
    , Num (BackingWord u)
    , Bits (BackingWord u)
    ) => Proxy u -> Proxy x -> UBit -> U u
+{-# INLINE unumEncode #-}
 unumEncode _ _ b = case b of
       ExactNumber  -> U w
       OpenInterval -> U (setBit w 0)
    where
       w = natValue @i `shiftL` 1
 
-{-# INLINE unumEncode #-}
 
 -- | Negate a number
 unumNegate :: forall u.
@@ -266,11 +266,11 @@ unumNegate :: forall u.
    , Num (BackingWord u)
    , KnownNat (UnumSize u)
    ) => U u -> U u
+{-# INLINE unumNegate #-}
 unumNegate (U w) = U (maskLeastBits s (complement w + 1))
    where
       s = unumSize (Proxy :: Proxy u)
 
-{-# INLINE unumNegate #-}
 
 -- | Reciprocate a number
 unumReciprocate :: forall u.
@@ -278,12 +278,12 @@ unumReciprocate :: forall u.
    , Num (BackingWord u)
    , KnownNat (UnumSize u)
    ) => U u -> U u
+{-# INLINE unumReciprocate #-}
 unumReciprocate (U w) = U (w `xor` m + 1)
    where
       s = unumSize (Proxy :: Proxy u)
       m = makeMask (s-1)
 
-{-# INLINE unumReciprocate #-}
 
 data Sign
    = Positive

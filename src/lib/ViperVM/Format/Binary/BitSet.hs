@@ -83,34 +83,32 @@ instance (Show a, CBitSet a, FiniteBits b) => Show (BitSet b a) where
 
 -- | Indicate if the set is empty
 null :: (FiniteBits b) => BitSet b a -> Bool
+{-# INLINE null #-}
 null (BitSet b) = b == zeroBits
 
-{-# INLINE null #-}
 
 -- | Empty bitset
 empty :: (FiniteBits b) => BitSet b a
+{-# INLINE empty #-}
 empty = BitSet zeroBits
 
-{-# INLINE empty #-}
 
 -- | Create a BitSet from a single element
 singleton :: (Bits b, CBitSet a) => a -> BitSet b a
+{-# INLINE singleton #-}
 singleton e = BitSet $ setBit zeroBits (toBitOffset e)
 
-{-# INLINE singleton #-}
 
 -- | Insert an element in the set
 insert :: (Bits b, CBitSet a) => BitSet b a -> a -> BitSet b a
-insert (BitSet b) e = BitSet $ setBit b (toBitOffset e)
-
 {-# INLINE insert #-}
+insert (BitSet b) e = BitSet $ setBit b (toBitOffset e)
 
 
 -- | Remove an element from the set
 delete :: (Bits b, CBitSet a) => BitSet b a -> a -> BitSet b a
-delete (BitSet b) e = BitSet $ clearBit b (toBitOffset e)
-
 {-# INLINE delete #-}
+delete (BitSet b) e = BitSet $ clearBit b (toBitOffset e)
 
 
 -- | Unwrap the bitset
@@ -123,21 +121,20 @@ fromBits = BitSet
 
 -- | Test if an element is in the set
 member :: (CBitSet a, FiniteBits b) => BitSet b a -> a -> Bool
+{-# INLINE member #-}
 member (BitSet b) e = testBit b (toBitOffset e)
 
-{-# INLINE member #-}
 
 -- | Test if an element is in the set
 elem :: (CBitSet a, FiniteBits b) => a -> BitSet b a -> Bool
+{-# INLINE elem #-}
 elem e (BitSet b) = testBit b (toBitOffset e)
 
-{-# INLINE elem #-}
 
 -- | Test if an element is not in the set
 notMember :: (CBitSet a, FiniteBits b) => BitSet b a -> a -> Bool
-notMember b e = not (member b e)
-
 {-# INLINE notMember #-}
+notMember b e = not (member b e)
 
 
 -- | Retrieve elements in the set
@@ -150,21 +147,21 @@ elems (BitSet b) = go b
 
 -- | Intersection of two sets
 intersection :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
+{-# INLINE intersection #-}
 intersection (BitSet b1) (BitSet b2) = BitSet (b1 .&. b2)
 
-{-# INLINE intersection #-}
 
 -- | Intersection of two sets
 union :: FiniteBits b => BitSet b a -> BitSet b a -> BitSet b a
+{-# INLINE union #-}
 union (BitSet b1) (BitSet b2) = BitSet (b1 .|. b2)
 
-{-# INLINE union #-}
 
 -- | Intersection of several sets
 unions :: FiniteBits b => [BitSet b a] -> BitSet b a
+{-# INLINE unions #-}
 unions = foldl' union empty
 
-{-# INLINE unions #-}
 
 -- | Bit set indexed with a
 class CBitSet a where

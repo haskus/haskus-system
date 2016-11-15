@@ -131,10 +131,8 @@ getHostEndianness = do
 
 -- | Detected host endianness
 hostEndianness :: Endianness
-hostEndianness = unsafePerformIO getHostEndianness
-
 {-# NOINLINE hostEndianness #-}
-
+hostEndianness = unsafePerformIO getHostEndianness
 
 -- | Reverse bytes in a word
 class ByteReversable w where

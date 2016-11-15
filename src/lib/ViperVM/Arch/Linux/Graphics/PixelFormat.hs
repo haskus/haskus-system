@@ -40,24 +40,24 @@ instance Show PixelFormat where
 
 -- | Create a pixel format
 makePixelFormat :: Format -> Endianness -> PixelFormat
+{-# INLINE makePixelFormat #-}
 makePixelFormat fmt end = PixelFormat
    $ updateField (Proxy :: Proxy "endianness") (toEnumField end)
    $ updateField (Proxy :: Proxy "format")     (toEnumField fmt)
    $ BitFields 0
 
-{-# INLINE makePixelFormat #-}
 
 -- | Get pixel format endianness
 formatEndianness :: PixelFormat -> Endianness
+{-# INLINE formatEndianness #-}
 formatEndianness (PixelFormat fmt) =
    fromEnumField (extractField (Proxy :: Proxy "endianness") fmt)
-{-# INLINE formatEndianness #-}
 
 -- | Get pixel format logical format
 formatFormat :: PixelFormat -> Format
+{-# INLINE formatFormat #-}
 formatFormat (PixelFormat fmt) = 
    fromEnumField (extractField (Proxy :: Proxy "format") fmt)
-{-# INLINE formatFormat #-}
 
 type CFormat = BitFields Word32
   '[ BitField 8 "d" Int
@@ -68,6 +68,7 @@ type CFormat = BitFields Word32
 
 -- | Convert a format string (as in the original .h file) into a code
 toFormat :: String -> Word32
+{-# INLINE toFormat #-}
 toFormat [a,b,c,d] = bitFieldsBits
    $ updateField (Proxy :: Proxy "a") (ord a)
    $ updateField (Proxy :: Proxy "b") (ord b)
@@ -75,7 +76,6 @@ toFormat [a,b,c,d] = bitFieldsBits
    $ updateField (Proxy :: Proxy "d") (ord d)
    $ (BitFields 0 :: CFormat)
 toFormat _ = undefined
-{-# INLINE toFormat #-}
 
 
 fmt2bits :: Map Format Word32

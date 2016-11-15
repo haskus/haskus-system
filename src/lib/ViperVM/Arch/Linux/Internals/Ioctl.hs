@@ -65,10 +65,10 @@ instance CEnum Direction
 
 -- | Encode a command (similar to _IO, _IOR, ... macros)
 ioctlCommand :: Direction -> Word8 -> Word8 -> Word -> Command
+{-# INLINE ioctlCommand #-}
 ioctlCommand dir typ nb sz = Command
    $ updateField (Proxy :: Proxy "direction") (toEnumField dir)
    $ updateField (Proxy :: Proxy "size")      (fromIntegral sz)
    $ updateField (Proxy :: Proxy "type")      typ
    $ updateField (Proxy :: Proxy "number")    nb
    $ BitFields 0
-{-# INLINE ioctlCommand #-}
