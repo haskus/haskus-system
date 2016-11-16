@@ -28,12 +28,19 @@ module ViperVM.Utils.ContFlow
    , ContTupleToList
    , StripR
    , AddR
+   -- * Control-flow
+   , fIf
+   , Then (..)
+   , Else (..)
    )
 where
 
 import ViperVM.Utils.Tuple
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
+
+-- this define has to be defined in each module using ContFlow for now
+#define fdo ContFlow $ \__cs -> let ?__cs = __cs in do
 
 -- | A continuation based control-flow
 newtype ContFlow (xs :: [*]) r = ContFlow (ContListToTuple xs r -> r)
@@ -132,5 +139,16 @@ frec :: forall r xs.
    ) => ContFlow xs r -> r
 frec f = f >::> ?__cs
 
--- this define has to be defined in each module using ContFlow for now
-#define fdo ContFlow $ \__cs -> let ?__cs = __cs in do
+
+----------------------------------------
+-- Control-flow
+
+data Then = Then
+data Else = Else
+
+fIf :: Bool -> ContFlow '[Then,Else] r
+{-# INLINE fIf #-}
+fIf b = fdo
+   case b of
+      True  -> freturn Then
+      False -> freturn Else
