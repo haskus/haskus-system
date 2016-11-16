@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | Terminal helpers
 module ViperVM.System.Terminal
@@ -45,31 +46,64 @@ data Terminal = Terminal
    , termIn  :: InputState
    }
 
+-- | Initialize a default terminal (using stdin, stdout)
+defaultTerminal :: Sys Terminal
+defaultTerminal = do
+   -- switch to non-blocking modes
+   let flgs = BitSet.fromList [ HandleNonBlocking
+                              , HandleCloseOnExec
+                              ]
+   _ <- setHandleFlags stdin  flgs
+   _ <- setHandleFlags stdout flgs
+
+   -- TODO: set terminal buffering mode?
+
+   -- input
+   inState <- newInputState (16 * 1024) stdin
+   sysFork "Terminal input handler" $ inputThread inState
+
+   -- output
+   outState <- newOutputState stdout
+   sysFork "Terminal output handler" $ outputThread outState
+
+   return $ Terminal outState inState
+
 
 -- | Bufferized input
 --
 -- Read an input stream and copy the data:
 --  * in the supplied requester buffer (zero-copy)
---  * in a buffer if there are no request pending
+--  * in a ring buffer if there are no pending requests (buffer size is
+--  configurable)
 data InputState = InputState
    { inputRequests :: TList (IOBuffer, FutureSource ())
-   , inputBuffer   :: TMVar InputBuffer
-   , inputHandle   :: Handle
+   , ringBuffer    :: TMVar RingBuffer
+   , inputHandle   :: !Handle
    }
 
--- | Input buffer
-data InputBuffer = InputBuffer
-   { inputBufferPtr   :: Ptr () -- ^ Buffer pointer
-   , inputBufferSize  :: Word64 -- ^ Buffer size
-   , inputBufferStart :: Word64 -- ^ Start offset of the input values
-   , inputBufferStop  :: Word64 -- ^ End offset of the input values
+-- | Bufferized output
+--
+-- Write to an output stream when it is ready
+--  * garanty ordering
+data OutputState = OutputState
+   { outputBuffers :: TList (IOBuffer, FutureSource ())
+   , outputHandle  :: !Handle
+   }
+
+-- | Ring buffer
+data RingBuffer = RingBuffer
+   { ringBufferPtr   :: !(Ptr ()) -- ^ Buffer pointer
+   , ringBufferSize  :: !Word64   -- ^ Buffer size
+   , ringBufferStart :: !Word64   -- ^ Start offset of the input values
+   , ringBufferStop  :: !Word64   -- ^ End offset of the input values
    }
 
 -- | Buffer
 data IOBuffer = IOBuffer
-   { iobufferSize :: Word64
-   , iobufferPtr  :: Ptr ()
+   { iobufferPtr  :: !(Ptr ())
+   , iobufferSize :: !Word64
    }
+
 
 inputThread :: InputState -> Sys ()
 inputThread s = forever $ do
@@ -95,20 +129,21 @@ inputThread s = forever $ do
                      then setFuture () semsrc
                      -- we update the remaining number of bytes to read
                      else do
-                        let buf' = IOBuffer (size-size') (ptr `indexPtr` fromIntegral size')
+                        let buf' = IOBuffer (ptr `indexPtr` fromIntegral size')
+                                            (size-size')
                         TList.append_ (buf',semsrc) (inputRequests s)
             return (after,size,ptr)
 
          -- otherwise, use the remaining space in the input buffer
          Nothing -> do
-            b <- takeTMVar (inputBuffer s)
+            b <- takeTMVar (ringBuffer s)
             let
-               size = inputBufferSize b - inputBufferStop b
-               ptr  = inputBufferPtr b `indexPtr` fromIntegral (inputBufferStop b)
+               size = ringBufferSize b - ringBufferStop b
+               ptr  = ringBufferPtr b `indexPtr` fromIntegral (ringBufferStop b)
                after size' = do
                   let
-                     b' = b { inputBufferStop = inputBufferStop b + size' }
-                  putTMVar (inputBuffer s) b'
+                     b' = b { ringBufferStop = ringBufferStop b + size' }
+                  putTMVar (ringBuffer s) b'
 
             -- if there is no room left, we retry
             if size == 0
@@ -128,22 +163,22 @@ readFromHandle :: InputState -> Word64 -> Ptr () -> Sys (Future ())
 readFromHandle s sz ptr = do
    (after,bsz,bptr) <- atomically $ do
       -- read bytes from the buffer if any
-      b <- takeTMVar (inputBuffer s)
+      b <- takeTMVar (ringBuffer s)
       let 
-         size   = inputBufferStop b - inputBufferStart b
+         size   = ringBufferStop b - ringBufferStart b
          size'  = min (fromIntegral size) sz -- number of bytes taken from the buffer
-         start' = inputBufferStart b + size'
-         b'     = if start' == inputBufferStop b
+         start' = ringBufferStart b + size'
+         b'     = if start' == ringBufferStop b
                      -- if we read all the bytes, we reset start and stop
-                     then InputBuffer 
-                              { inputBufferPtr   = inputBufferPtr b
-                              , inputBufferSize  = inputBufferSize b
-                              , inputBufferStart = 0
-                              , inputBufferStop  = 0
+                     then RingBuffer
+                              { ringBufferPtr   = ringBufferPtr b
+                              , ringBufferSize  = ringBufferSize b
+                              , ringBufferStart = 0
+                              , ringBufferStop  = 0
                               }
-                     else b { inputBufferStart = start' }
-         after  = putTMVar (inputBuffer s) b'
-      return (after, size', inputBufferPtr b `indexPtr` fromIntegral (inputBufferStart b))
+                     else b { ringBufferStart = start' }
+         after  = putTMVar (ringBuffer s) b'
+      return (after, size', ringBufferPtr b `indexPtr` fromIntegral (ringBufferStart b))
 
    when (bsz /= 0) $
       memCopy ptr bptr (fromIntegral bsz)
@@ -158,7 +193,7 @@ readFromHandle s sz ptr = do
          then setFuture () semsrc
          else do
             -- if we haven't read everything, register
-            let b = IOBuffer (sz - bsz) (ptr `indexPtr` fromIntegral bsz)
+            let b = IOBuffer (ptr `indexPtr` fromIntegral bsz) (sz - bsz)
             TList.prepend_ (b,semsrc) (inputRequests s)
       return sem
 
@@ -169,19 +204,14 @@ newInputState :: MonadIO m => Word64 -> Handle -> m InputState
 newInputState size fd = do
    ptr <- mallocBytes (fromIntegral size)
    req <- atomically TList.empty
-   mv  <- newTMVarIO (InputBuffer ptr size 0 0)
+   mv  <- newTMVarIO (RingBuffer ptr size 0 0)
    return $ InputState req mv fd
       
-
-data OutputState = OutputState
-   { outputBuffers :: TList (IOBuffer, FutureSource ())
-   , outputHandle  :: Handle
-   }
 
 outputThread :: OutputState -> Sys ()
 outputThread s = forever $ do
    (buf,semsrc) <- atomically $ do
-      e <- TList.last (outputBuffers s)
+      e <- TList.first (outputBuffers s)
       case e of
          Nothing -> retry
          Just e' -> do
@@ -208,62 +238,40 @@ newOutputState fd = do
    req <- atomically TList.empty
    return $ OutputState req fd
 
--- | Initialize a default terminal (using stdin, stdout)
-defaultTerminal :: Sys Terminal
-defaultTerminal = do
-   -- switch to non-blocking modes
-   let flgs = BitSet.fromList [ HandleNonBlocking
-                              , HandleCloseOnExec
-                              ]
-   _ <- setHandleFlags stdin  flgs
-   _ <- setHandleFlags stdout flgs
-
-   -- TODO: set terminal buffering mode?
-
-   -- input
-   inState <- newInputState (16 * 1024) stdin
-   sysFork "Terminal input handler"$ inputThread inState
-
-   -- output
-   outState <- newOutputState stdout
-   sysFork "Terminal output handler" $ outputThread outState
-
-   return $ Terminal outState inState
-
-writeToHandle :: OutputState -> Word64 -> Ptr () -> Sys (Future ())
-writeToHandle s sz ptr = atomically $ do
+writeToHandle :: OutputState -> Word64 -> Ptr () -> STM (Future ())
+writeToHandle s sz ptr = do
    (sem,semsrc) <- newFuture
-   TList.prepend_ (IOBuffer sz ptr, semsrc) (outputBuffers s)
+   TList.prepend_ (IOBuffer ptr sz, semsrc) (outputBuffers s)
    return sem
 
 -- | Write bytes
-writeTermBytes :: Terminal -> Word64 -> Ptr a -> Sys (Future ())
+writeTermBytes :: Terminal -> Word64 -> Ptr a -> STM (Future ())
 writeTermBytes term sz ptr = writeToHandle (termOut term) sz (castPtr ptr)
 
 -- | Write a string
 writeStrLn :: Terminal -> String -> Sys ()
 writeStrLn term s =
    withCStringLen s $ \ptr len ->
-      with '\n' $ \ptr2 -> do
+      with '\n' $ \ptr2 -> atomically $ do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         atomically (waitFuture sem)
+         waitFuture sem
 
 -- | Write a buffer
 writeBuffer :: Terminal -> Buffer -> Sys ()
 writeBuffer term b =
-   bufferUnsafeUsePtr b $ \ptr len -> do
+   bufferUnsafeUsePtr b $ \ptr len -> atomically $ do
       sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-      atomically (waitFuture sem)
+      waitFuture sem
 
 -- | Write a buffer
 writeBufferLn :: Terminal -> Buffer -> Sys ()
 writeBufferLn term b =
    bufferUnsafeUsePtr b $ \ptr len ->
-      with '\n' $ \ptr2 -> do
+      with '\n' $ \ptr2 -> atomically $ do
          _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
          sem <- writeTermBytes term 1 (castPtr ptr2)
-         atomically (waitFuture sem)
+         waitFuture sem
 
 -- | Write a text using UTF8 encoding
 writeText :: Terminal -> Text -> Sys ()
