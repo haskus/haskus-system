@@ -73,6 +73,6 @@ treeFollowPath :: TEq k => TTree k v -> TTreePath k -> STM (Maybe (TTree k v))
 treeFollowPath p (TTreePath [])     = return (Just p)
 treeFollowPath p (TTreePath (x:xs)) = do
    child <- TList.find (\y -> x `teq` treeKey y) (treeChildren p)
-   case child of
+   case TList.value <$> child of
       Just c  -> treeFollowPath c (TTreePath xs)
       Nothing -> return Nothing
