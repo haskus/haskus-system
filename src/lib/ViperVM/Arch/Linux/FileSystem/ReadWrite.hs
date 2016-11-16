@@ -10,6 +10,7 @@
 -- | Read/write
 module ViperVM.Arch.Linux.FileSystem.ReadWrite
    ( IOVec(..)
+   , maxIOVec
    -- * Read
    , ReadErrors
    , ReadErrors'
@@ -37,15 +38,8 @@ import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Syscalls
+import ViperVM.Arch.Linux.Internals.FileSystem (IOVec (..), maxIOVec)
 import ViperVM.Utils.Flow
-import ViperVM.Utils.Types.Generics (Generic)
-
-
--- | Entry for vectors of buffers
-data IOVec = IOVec
-   { iovecPtr  :: Ptr ()
-   , iovecSize :: Word64
-   } deriving (Generic,Storable)
 
 type ReadErrors
    = '[ RetryLater
@@ -171,7 +165,7 @@ sysWriteMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> Flow m '[Word64,Er
 sysWriteMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
-      count = length bufs
+      count       = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
       liftIO (syscall @"writev" fd (castPtr bufs') count)

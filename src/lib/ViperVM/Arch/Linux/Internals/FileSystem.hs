@@ -2,10 +2,13 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | Linux FS internals
 module ViperVM.Arch.Linux.Internals.FileSystem
-   ( SeekWhence (..)
+   ( IOVec (..)
+   , maxIOVec
+   , SeekWhence (..)
    , RenameFlag (..)
    , FileCloneRange (..)
    , TrimRange (..)
@@ -79,8 +82,25 @@ import ViperVM.Format.Binary.Vector as Vector
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
+import ViperVM.Format.Binary.Ptr
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Types.Generics (Generic)
+
+-- =============================================================
+--    From linux/include/uapi/linux/uio.h
+-- =============================================================
+
+-- | Entry for vectors of buffers
+data IOVec = IOVec
+   { iovecPtr  :: !(Ptr ())
+   , iovecSize :: !Word64
+   } deriving (Generic,Storable)
+
+-- | Maximum number of IOVec for writev/readv
+-- Also called UIO_MAXIOV or IOV_MAX
+maxIOVec :: Word
+maxIOVec = 1024
+
 
 -- =============================================================
 --    From linux/include/uapi/linux/fs.h
