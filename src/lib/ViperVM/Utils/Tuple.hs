@@ -16,6 +16,9 @@ module ViperVM.Utils.Tuple
    , TupleToList
    , ListToTuple
    , ExtractTuple (..)
+   , TupleHead (..)
+   , TupleTail (..)
+   , TupleCons (..)
    , ReorderTuple (..)
    )
 where
@@ -253,6 +256,83 @@ instance ExtractTuple 6 (e0, e1, e2, e3, e4, e5, e6, e7) e6 where
 instance ExtractTuple 7 (e0, e1, e2, e3, e4, e5, e6, e7) e7 where
    {-# INLINE tupleN #-}
    tupleN (_,_,_,_,_,_,_,t) = t
+
+
+class TupleHead ts ts' | ts -> ts' where
+   tupleHead :: ts -> ts'
+
+instance TupleHead (Single a) a where
+   {-# INLINE tupleHead #-}
+   tupleHead (Single a) = a
+
+instance TupleHead (a,b) a where
+   {-# INLINE tupleHead #-}
+   tupleHead (a,_) = a
+
+instance TupleHead (a,b,c) a where
+   {-# INLINE tupleHead #-}
+   tupleHead (a,_,_) = a
+
+instance TupleHead (a,b,c,d) a where
+   {-# INLINE tupleHead #-}
+   tupleHead (a,_,_,_) = a
+
+instance TupleHead (a,b,c,d,e) a where
+   {-# INLINE tupleHead #-}
+   tupleHead (a,_,_,_,_) = a
+
+instance TupleHead (a,b,c,d,e,f) a where
+   {-# INLINE tupleHead #-}
+   tupleHead (a,_,_,_,_,_) = a
+
+
+class TupleTail ts ts' | ts -> ts' where
+   tupleTail :: ts -> ts'
+
+instance TupleTail (a,b) (Single b) where
+   {-# INLINE tupleTail #-}
+   tupleTail (_,b) = Single b
+
+instance TupleTail (a,b,c) (b,c) where
+   {-# INLINE tupleTail #-}
+   tupleTail (_,b,c) = (b,c)
+
+instance TupleTail (a,b,c,d) (b,c,d) where
+   {-# INLINE tupleTail #-}
+   tupleTail (_,b,c,d) = (b,c,d)
+
+instance TupleTail (a,b,c,d,e) (b,c,d,e) where
+   {-# INLINE tupleTail #-}
+   tupleTail (_,b,c,d,e) = (b,c,d,e)
+
+instance TupleTail (a,b,c,d,e,f) (b,c,d,e,f) where
+   {-# INLINE tupleTail #-}
+   tupleTail (_,b,c,d,e,f) = (b,c,d,e,f)
+
+
+
+class TupleCons t ts ts' | t ts -> ts' where
+   tupleCons :: t -> ts -> ts'
+
+instance TupleCons a (Single b) (a,b) where
+   {-# INLINE tupleCons #-}
+   tupleCons a (Single b) = (a,b)
+
+instance TupleCons a (b,c) (a,b,c) where
+   {-# INLINE tupleCons #-}
+   tupleCons a (b,c) = (a,b,c)
+
+instance TupleCons a (b,c,d) (a,b,c,d) where
+   {-# INLINE tupleCons #-}
+   tupleCons a (b,c,d) = (a,b,c,d)
+
+instance TupleCons a (b,c,d,e) (a,b,c,d,e) where
+   {-# INLINE tupleCons #-}
+   tupleCons a (b,c,d,e) = (a,b,c,d,e)
+
+instance TupleCons a (b,c,d,e,f) (a,b,c,d,e,f) where
+   {-# INLINE tupleCons #-}
+   tupleCons a (b,c,d,e,f) = (a,b,c,d,e,f)
 
 
 -- | Reorder tuple elements
