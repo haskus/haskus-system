@@ -11,11 +11,13 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | Continuation based control-flow
 module ViperVM.Utils.ContFlow
    ( ContFlow (..)
    , (>::>)
+   , (>:-:>)
    , (>:~:>)
    , fret
    , fretN
@@ -60,7 +62,13 @@ type family StripR f r where
 -- | Bind a flow to a tuple of continuations
 (>::>) :: ContFlow xs r -> ContListToTuple xs r -> r
 {-# INLINE (>::>) #-}
-(>::>) (ContFlow f) cs = f cs
+(>::>) (ContFlow f) !cs = f cs
+
+-- | Bind a flow to a 1-tuple of continuations
+(>:-:>) :: ContFlow '[a] r -> (a -> r) -> r
+{-# INLINE (>:-:>) #-}
+(>:-:>) (ContFlow f) c = f (Single c)
+
 
 -- | Bind a flow to a tuple of continuations and
 -- reorder fields if necessary
@@ -68,7 +76,7 @@ type family StripR f r where
    ( ReorderTuple ts (ContListToTuple xs r)
    ) => ContFlow xs r -> ts -> r
 {-# INLINE (>:~:>) #-}
-(>:~:>) (ContFlow f) cs = f (tupleReorder cs)
+(>:~:>) (ContFlow f) !cs = f (tupleReorder cs)
 
 -- | Call the type-indexed continuation from the tuple passed as first parameter
 fret :: forall x r t n xs.

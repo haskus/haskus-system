@@ -3,9 +3,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE BangPatterns #-}
+
+module TestCont where
 
 import ViperVM.Utils.ContFlow
 import ViperVM.Utils.Monad
+import ViperVM.Utils.Tuple
 import Data.Char
 
 -- | Explicit CPS
@@ -184,7 +188,30 @@ testIf b = do
       , \Then -> putStrLn "Yes!"
       )
 
+{-# NOINLINE testWhile #-}
+testWhile :: ContFlow '[()] (IO r)
+testWhile = fdo
+   c <- getChar
+   if c == 'e'
+      then do
+         putStrLn "Loop ended"
+         freturn ()
+      else do
+         putStrLn "Looping!"
+         frec testWhile
 
-main :: IO ()
-main = do
-   print (parseTokens "123adsf456sfds789")
+ffor :: forall m a r. Monad m => (a -> Bool) -> (a -> a) -> (a -> m r) -> a -> ContFlow '[a] (m r)
+ffor test inc f !v = fdo
+   let forLoop !x = if test x
+                     then freturn x
+                     else do
+                        f x
+                        forLoop (inc x)
+   forLoop v
+
+{-# NOINLINE testFor #-}
+testFor :: IO ()
+testFor = ffor (== (10 :: Int)) (+1) (putStrLn . show) 0 >:-:> const (putStrLn "Ended")
+
+testParse :: IO ()
+testParse = print (parseTokens "123adsf456sfds789")
