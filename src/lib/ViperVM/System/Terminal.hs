@@ -26,7 +26,7 @@ import ViperVM.System.Process
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Terminal (stdin,stdout)
-import ViperVM.Arch.Linux.FileSystem.ReadWrite (sysRead,sysWrite)
+import ViperVM.Arch.Linux.FileSystem.ReadWrite hiding (writeBuffer)
 import ViperVM.Utils.STM.TList as TList
 import ViperVM.Utils.STM.Future
 import ViperVM.Utils.Memory
@@ -209,30 +209,64 @@ newInputState size fd = do
       
 
 outputThread :: OutputState -> Sys ()
-outputThread s = forever $ do
-   (buf,semsrc) <- atomically $ do
-      e <- TList.first (outputBuffers s)
-      case e of
-         Nothing -> retry
-         Just e' -> do
-            TList.delete e' 
-            return (TList.value e')
+outputThread s = go [] 0 0
+   where
+      h = outputHandle s
 
-   let h     = outputHandle s
-       go sz = do
+      -- writeMany handling EAGAIN
+      wrt :: [(Ptr a, Word64)] -> Flow Sys '[Word64,ErrorCode]
+      wrt ps = sysWriteMany h ps
+                  >..%~$> \case
+                     -- TODO: we should retry without having to rebuild the
+                     -- parameter array (i.e. do it in sysWriteMany)
+                     EAGAIN -> threadWaitWrite h >> wrt ps
+                     err    -> flowSet err
+
+
+      go :: [(IOBuffer, FutureSource ())] -> Word -> Word -> Sys ()
+      go bufs nbufs off = do
+         -- wait for the handle to be ready
          threadWaitWrite h
-         sysWrite h (iobufferPtr buf `indexPtr` fromIntegral sz) (iobufferSize buf - sz)
-            >.~$> (\n -> if sz + n == iobufferSize buf
-                           then flowSetN @0 ()
-                           else go (sz+n))
-            >..%~$> \case
-               EAGAIN -> go sz
-               err    -> flowSet err
 
-   go 0 >..~!!> assertShow ("Write bytes to "++show h)
+         -- take as many output buffers as we can from the queue
+         -- (Linux imposes a limit: maxIOVec)
+         bufs' <- atomically $ do
+            TList.take (maxIOVec - nbufs) (outputBuffers s) >>= \case
+               [] -> retry
+               xs -> return xs
 
-   atomically $ setFuture () semsrc
-   
+         let
+            -- total number of buffers
+            ntot = nbufs + fromIntegral (Prelude.length bufs')
+            -- all buffers
+            bs = bufs ++ bufs'
+            -- build a list of [(Ptr, Size)] from the buffers. The first buffer
+            -- uses the offset "off", the others are fully considered.
+            ps = case fmap fst bs of
+               []                   -> []
+               (IOBuffer p sz : xs) -> (p `indexPtr` fromIntegral off, sz - fromIntegral off) : fmap f xs
+                  where
+                     f (IOBuffer ptr siz) = (ptr,siz)
+
+         -- write the buffers
+         size <- wrt ps
+                  >..~!!> assertShow ("Write bytes to " ++ show h)
+
+         let
+            sig xs nb 0 = go xs nb 0
+            sig [] _ n = error ("Write: too many bytes written!? (" ++ show n ++ ")")
+            sig ((IOBuffer _ sz, fut) : xs) nb n
+               | n >= sz = do
+                  -- signal that the buffer has been written
+                  atomically $ setFuture () fut
+                  -- continue with the next buffer
+                  sig xs (nb-1) (n-sz)
+            sig xs nb n = go xs nb (fromIntegral n)
+
+         -- signal the written buffers
+         sig bs ntot size
+
+
 newOutputState :: MonadIO m => Handle -> m OutputState
 newOutputState fd = do
    req <- atomically TList.empty
@@ -252,26 +286,29 @@ writeTermBytes term sz ptr = writeToHandle (termOut term) sz (castPtr ptr)
 writeStrLn :: Terminal -> String -> Sys ()
 writeStrLn term s =
    withCStringLen s $ \ptr len ->
-      with '\n' $ \ptr2 -> atomically $ do
-         _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-         sem <- writeTermBytes term 1 (castPtr ptr2)
-         waitFuture sem
+      with '\n' $ \ptr2 -> do
+         sem <- atomically $ do
+            _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
+            writeTermBytes term 1 (castPtr ptr2)
+         atomically (waitFuture sem)
 
 -- | Write a buffer
 writeBuffer :: Terminal -> Buffer -> Sys ()
 writeBuffer term b =
-   bufferUnsafeUsePtr b $ \ptr len -> atomically $ do
-      sem <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-      waitFuture sem
+   bufferUnsafeUsePtr b $ \ptr len -> do
+      sem <- atomically $
+         writeTermBytes term (fromIntegral len) (castPtr ptr)
+      atomically $ waitFuture sem
 
 -- | Write a buffer
 writeBufferLn :: Terminal -> Buffer -> Sys ()
 writeBufferLn term b =
    bufferUnsafeUsePtr b $ \ptr len ->
-      with '\n' $ \ptr2 -> atomically $ do
-         _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
-         sem <- writeTermBytes term 1 (castPtr ptr2)
-         waitFuture sem
+      with '\n' $ \ptr2 -> do
+         sem <- atomically $ do
+            _   <- writeTermBytes term (fromIntegral len) (castPtr ptr)
+            writeTermBytes term 1 (castPtr ptr2)
+         atomically $ waitFuture sem
 
 -- | Write a text using UTF8 encoding
 writeText :: Terminal -> Text -> Sys ()
