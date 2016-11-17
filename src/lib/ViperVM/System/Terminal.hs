@@ -232,8 +232,9 @@ outputThread s = go [] 0 0
          -- (Linux imposes a limit: maxIOVec)
          bufs' <- atomically $ do
             TList.take (maxIOVec - nbufs) (outputBuffers s) >>= \case
-               [] -> retry
-               xs -> return xs
+               -- block if there is no pending buffer to write
+               [] | Prelude.null bufs -> retry
+               xs                     -> return xs
 
          let
             -- total number of buffers
