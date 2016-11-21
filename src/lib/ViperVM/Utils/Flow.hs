@@ -189,7 +189,7 @@ type IOV l = Flow IO l
 flowSetN :: forall (n :: Nat) xs m.
    ( Monad m
    , KnownNat n
-   ) => TypeAt n xs -> Flow m xs
+   ) => Index n xs -> Flow m xs
 flowSetN = return . setVariantN @n
 
 -- | Return in the first well-typed element
@@ -732,12 +732,12 @@ infixl 0 ..-.>
 infixl 0 >..-.>
 
 -- | Extract the tail, set the tail
-(..-..>) ::
+(..-..>) :: forall a l xs m.
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> Variant xs) -> Flow m (a ': xs)
 (..-..>) v f = case headVariant v of
    Right u -> flowSetN @0 u
-   Left  l -> return (prependVariant (Proxy :: Proxy '[a]) (f l))
+   Left  l -> return (prependVariant @'[a] (f l))
 
 infixl 0 ..-..>
 
@@ -750,12 +750,12 @@ infixl 0 ..-..>
 infixl 0 >..-..>
 
 -- | Extract the tail, set the tail
-(..~..>) ::
+(..~..>) :: forall a l xs m.
    ( Monad m
    ) => Variant (a ': l) -> (Variant l -> Flow m xs) -> Flow m (a ': xs)
 (..~..>) v f = case headVariant v of
    Right u -> flowSetN @0 u
-   Left  l -> prependVariant (Proxy :: Proxy '[a]) <$> f l
+   Left  l -> prependVariant @'[a] <$> f l
 
 infixl 0 ..~..>
 
@@ -969,14 +969,14 @@ infixl 0 >..%~!>
 ----------------------------------------------------------
 
 -- | Catch element, set the first value
-(%~.>) ::
+(%~.>) :: forall x xs y ys m.
    ( ys ~ Filter x xs
    , Monad m
    , Catchable x xs
    ) => Variant xs -> (x -> m y) -> Flow m (y ': ys)
 (%~.>) v f = case catchVariant v of
    Right x -> flowSetN @0 =<< f x
-   Left ys -> prependVariant (Proxy :: Proxy '[y]) <$> return ys
+   Left ys -> prependVariant @'[y] <$> return ys
 
 infixl 0 %~.>
 
@@ -997,8 +997,8 @@ infixl 0 >%~.>
    , KnownNat (Length ys)
    ) => Variant xs -> (x -> Flow m ys) -> Flow m (Concat ys (Filter x xs))
 (%~+>) v f = case catchVariant v of
-   Right x -> appendVariant  (Proxy :: Proxy (Filter x xs)) <$> f x
-   Left ys -> prependVariant (Proxy :: Proxy ys)            <$> return ys
+   Right x -> appendVariant  @(Filter x xs) <$> f x
+   Left ys -> prependVariant @ys            <$> return ys
 
 infixl 0 %~+>
 
@@ -1237,15 +1237,16 @@ applyF f = f . singleVariant
 combineFirst :: forall x xs. Either (Variant xs) (Variant '[x]) -> Variant (x ': xs)
 {-# INLINE combineFirst #-}
 combineFirst = \case
-   Right x -> appendVariant (Proxy :: Proxy xs) x
-   Left xs -> prependVariant (Proxy :: Proxy '[x]) xs
+   Right x -> appendVariant  @xs x
+   Left xs -> prependVariant @'[x] xs
 
 -- | Set the first value, keep the same tail type 
-combineSameTail :: Either (Variant xs) (Variant (x ': xs)) -> Variant (x ': xs)
+combineSameTail :: forall x xs.
+   Either (Variant xs) (Variant (x ': xs)) -> Variant (x ': xs)
 {-# INLINE combineSameTail #-}
 combineSameTail = \case
    Right x -> x
-   Left xs -> prependVariant (Proxy :: Proxy '[x]) xs
+   Left xs -> prependVariant @'[x] xs
 
 -- | Return the valid variant unmodified
 combineEither :: Either (Variant xs) (Variant xs) -> Variant xs
@@ -1260,8 +1261,8 @@ combineConcat :: forall xs ys.
    ) => Either (Variant ys) (Variant xs) -> Variant (Concat xs ys)
 {-# INLINE combineConcat #-}
 combineConcat = \case
-   Right xs -> appendVariant (Proxy :: Proxy ys) xs
-   Left ys  -> prependVariant (Proxy :: Proxy xs) ys
+   Right xs -> appendVariant  @ys xs
+   Left ys  -> prependVariant @xs ys
 
 -- | Union
 combineUnion ::

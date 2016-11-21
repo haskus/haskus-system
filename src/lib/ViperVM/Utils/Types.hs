@@ -37,14 +37,17 @@ import Data.Proxy
 
 -- | Get a Nat value
 natValue :: forall (n :: Nat) a. (KnownNat n, Num a) => a
+{-# INLINE natValue #-}
 natValue = fromIntegral (natVal (Proxy :: Proxy n))
 
 -- | Get a Nat value
 natValue' :: forall (n :: Nat). KnownNat n => Word
+{-# INLINE natValue' #-}
 natValue' = natValue @n
 
 -- | Get a Symbol value
 symbolValue :: forall (s :: Symbol). (KnownSymbol s) => String
+{-# INLINE symbolValue #-}
 symbolValue = symbolVal (Proxy :: Proxy s)
 
 -- | If-then-else

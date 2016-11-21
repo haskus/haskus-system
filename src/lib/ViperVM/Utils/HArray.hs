@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Heterogeneous array: like a HList but indexed in O(1)
 module ViperVM.Utils.HArray
@@ -55,7 +56,7 @@ singleHArray = HArray . V.singleton
 -- | The type `t` with index `n` is indexable in the array
 type HArrayIndex (n :: Nat) t (ts :: [*]) =
    ( KnownNat n
-   , t ~ TypeAt n ts
+   , t ~ Index n ts
    , KnownNat (Length ts)
    , CmpNat n (Length ts) ~ 'LT
    )
@@ -74,34 +75,34 @@ type HArrayTryIndexT t (ts :: [*]) =
 
 -- | Get an element by index
 getHArrayN :: forall (n :: Nat) (ts :: [*]) t.
-   (HArrayIndex n t ts) => Proxy n -> HArray ts -> t
-getHArrayN _ (HArray as) = unsafeCoerce (as ! natValue @n)
+   ( HArrayIndex n t ts) => HArray ts -> t
+getHArrayN (HArray as) = unsafeCoerce (as ! natValue @n)
 
 -- | Get first element
 getHArray0 :: (HArrayIndex 0 t ts) => HArray ts -> t
-getHArray0 = getHArrayN (Proxy :: Proxy 0)
+getHArray0 = getHArrayN @0
 
 -- | Set an element by index
 setHArrayN :: forall (n :: Nat) (ts :: [*]) t.
-   (HArrayIndex n t ts) => Proxy n -> t -> HArray ts -> HArray ts
-setHArrayN _ a (HArray as) = HArray (as V.// [(natValue @n,unsafeCoerce a)])
+   (HArrayIndex n t ts) => t -> HArray ts -> HArray ts
+setHArrayN a (HArray as) = HArray (as V.// [(natValue @n,unsafeCoerce a)])
 
 -- | Get an element by type (select the first one with this type)
 getHArrayT :: forall t ts.
    (HArrayIndexT t ts) => HArray ts -> t
-getHArrayT = getHArrayN (Proxy :: Proxy (IndexOf t ts))
+getHArrayT = getHArrayN @(IndexOf t ts)
 
 -- | Set an element by type (select the first one with this type)
 setHArrayT :: forall t ts.
    (HArrayIndexT t ts) => t -> HArray ts -> HArray ts
-setHArrayT = setHArrayN (Proxy :: Proxy (IndexOf t ts))
+setHArrayT = setHArrayN @(IndexOf t ts)
 
 -- | Get an element by type (select the first one with this type)
 tryGetHArrayT :: forall t ts.
    (HArrayTryIndexT t ts) => HArray ts -> Maybe t
 tryGetHArrayT as = if n == 0
       then Nothing
-      else Just $ getHArrayN (Proxy :: Proxy (MaybeIndexOf t ts)) as'
+      else Just $ getHArrayN @(MaybeIndexOf t ts) as'
    where
       n   = natValue' @(MaybeIndexOf t ts)
       as' :: HArray (t ': ts)

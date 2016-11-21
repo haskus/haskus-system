@@ -36,7 +36,7 @@ module ViperVM.Utils.Types.List
    , NubHead
    , IndexOf
    , MaybeIndexOf
-   , TypeAt
+   , Index
    , Union
    , Member
    , CheckNub
@@ -134,9 +134,9 @@ type family MapMaybe l where
    MapMaybe (x ': xs) = Maybe x ': MapMaybe xs
 
 -- | Generate a list of Nat [n..m-1]
-type family Generate (n :: Nat) (m :: Nat) where
+type family Generate (n :: Nat) (m :: Nat) :: [Nat] where
    Generate n n = '[]
-   Generate n m = Proxy n ': Generate (n+1) m
+   Generate n m = n ': Generate (n+1) m
 
 -- | Check that a type is member of a type list
 type family IsMember a l :: Bool where
@@ -169,7 +169,11 @@ type family IsSubsetEx l1 l2 i :: Bool where
 
 -- | Get list indexes
 type family Indexes (l :: [*]) where
-   Indexes l = Generate 0 (Length l)
+   Indexes xs      = IndexesFrom 0 xs
+
+type family IndexesFrom (n :: Nat) (xs :: [*]) where
+   IndexesFrom n '[]       = '[]
+   IndexesFrom n (x ': xs) = Proxy n ': IndexesFrom (n+1) xs
 
 -- | Map to 1 if type equality, 0 otherwise
 type family MapTest a (l :: [*]) where
@@ -225,9 +229,9 @@ type family MaybeIndexOf' (n :: Nat) a (l :: [*]) where
    MaybeIndexOf' n x (y ': xs) = MaybeIndexOf' (n+1) x xs
 
 -- | Indexed access into the list
-type family TypeAt (n :: Nat) (l :: [*]) where
-   TypeAt 0 (x ': xs) = x
-   TypeAt n (x ': xs) = TypeAt (n-1) xs
+type family Index (n :: Nat) (l :: [*]) where
+   Index 0 (x ': xs) = x
+   Index n (x ': xs) = Index (n-1) xs
 
 -- | Union two lists
 type family Union (xs :: [*]) (ys :: [*]) where
@@ -240,7 +244,7 @@ type family Union (xs :: [*]) (ys :: [*]) where
 -- | Constraint: x member of xs
 type Member x xs =
    ( IsMember x xs ~ 'True
-   , x ~ TypeAt (IndexOf x xs) xs
+   , x ~ Index (IndexOf x xs) xs
    , KnownNat (IndexOf x xs)
    )
 

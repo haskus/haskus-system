@@ -7,12 +7,11 @@ module ViperVM.Tests.Format.Binary.Vector
 where
 
 import Prelude hiding (concat, replicate, take, drop)
-import Data.Proxy
-import Data.Maybe (fromJust)
 
 import Distribution.TestSuite (Test,testGroup)
 import Distribution.TestSuite.QuickCheck (testProperty)
 
+import ViperVM.Utils.Maybe
 import ViperVM.Utils.HList
 import ViperVM.Format.Binary.Vector
 import ViperVM.Format.Binary.Word
@@ -50,19 +49,19 @@ testsVector = testGroup "Vector" $
          toList (fromFilledListZ 5 [1,2,3,4] :: Vector 4 Word32) == [1,2,3,5]
 
    , testProperty "take less" $
-         toList (take (Proxy :: Proxy 2) v1234) == [1,2]
+         toList (take @2 v1234) == [1,2]
 
    , testProperty "take equal" $
-         toList (take (Proxy :: Proxy 4) v1234) == [1,2,3,4]
+         toList (take @4 v1234) == [1,2,3,4]
 
    , testProperty "drop less" $
-         toList (drop (Proxy :: Proxy 2) v1234) == [3,4]
+         toList (drop @2 v1234) == [3,4]
 
    , testProperty "drop equal" $
-         toList (drop (Proxy :: Proxy 4) v1234) == []
+         toList (drop @4 v1234) == []
 
    , testProperty "index" $
-         index (Proxy :: Proxy 2) v1234 == 3
+         index @2 v1234 == 3
 
    , testProperty "replicate" $
          toList (replicate 5 :: Vector 4 Word32) == [5,5,5,5]

@@ -26,7 +26,6 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.System.Sys
 import ViperVM.Utils.Flow
-import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 
 import Text.Printf
@@ -71,6 +70,6 @@ readBuffer :: Handle -> Maybe Word64 -> Word64 -> Flow Sys (Buffer ': ReadErrors
 readBuffer hdl moffset size = handleReadBuffer hdl moffset size
 
 -- | Read a storable
-readStorable :: forall a. Storable a => Proxy a -> Handle -> Maybe Word64 -> Flow Sys (a ': ReadErrors')
-readStorable _ hdl moffset = readBuffer hdl moffset (sizeOfT' @a)
+readStorable :: forall a. Storable a => Handle -> Maybe Word64 -> Flow Sys (a ': ReadErrors')
+readStorable hdl moffset = readBuffer hdl moffset (sizeOfT' @a)
    >.-.> bufferPeekStorable

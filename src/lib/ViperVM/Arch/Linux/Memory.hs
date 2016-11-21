@@ -30,7 +30,6 @@ import ViperVM.Format.Binary.BitSet as BitSet
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Bits ((.&.))
-import ViperVM.Utils.Types
 import ViperVM.Utils.Maybe (fromMaybe)
 import ViperVM.Utils.Flow
 import ViperVM.Arch.Linux.ErrorCode
@@ -151,8 +150,8 @@ sysMemMap addr len prot flags hugepagesize source = do
                   Nothing -> flags
                   Just _  -> BitSet.union flags (BitSet.fromList [MapHugeTLB])
       fld      :: MapFlagField
-      fld      = updateField (Proxy :: Proxy "MapFlags") flags'
-               $ updateField (Proxy :: Proxy "HugeTLBSize") (fromMaybe 0 hugepagesize)
+      fld      = updateField @"MapFlags" flags'
+               $ updateField @"HugeTLBSize" (fromMaybe 0 hugepagesize)
                $ BitFields 0
       fld'     = fromIntegral (bitFieldsBits fld)
       prot'    = BitSet.toBits prot

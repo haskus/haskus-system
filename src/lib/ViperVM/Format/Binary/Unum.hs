@@ -9,6 +9,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ViperVM.Format.Binary.Unum
    ( Unum
@@ -160,8 +161,8 @@ instance  forall a r.
 unumLabels :: forall u v.
    ( HFoldr' GetLabel [String] v [String]
    , v ~ UnumMembers u
-   ) => Proxy u -> [String]
-unumLabels _ = hFoldr' GetLabel ([] :: [String]) (undefined :: HList v)
+   ) => [String]
+unumLabels = hFoldr' GetLabel ([] :: [String]) (undefined :: HList v)
 
 -- | Compute the number of bits required
 type family UnumSize x where
@@ -170,8 +171,8 @@ type family UnumSize x where
 -- | Size of an unum in bits
 unumSize :: forall u.
    ( KnownNat (UnumSize u)
-   ) => Proxy u -> Word
-unumSize _ = natValue @(UnumSize u)
+   ) => Word
+unumSize = natValue @(UnumSize u)
 
 -- | Zero
 unumZero :: forall u.
@@ -179,7 +180,7 @@ unumZero :: forall u.
    , Bits (BackingWord u)
    , Encodable (I 0) u
    ) => U u
-unumZero = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy (I 0)) ExactNumber
+unumZero = unumEncode @u @(I 0) ExactNumber
 
 -- | Infinite
 unumInfinite :: forall u.
@@ -187,7 +188,7 @@ unumInfinite :: forall u.
    , Bits (BackingWord u)
    , Encodable Infinite u
    ) => U u
-unumInfinite = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) ExactNumber
+unumInfinite = unumEncode @u @Infinite ExactNumber
 
 type family Div2 n where
   Div2 0 = 0
@@ -227,13 +228,13 @@ instance forall u v.
    , v ~ UnumMembers u
    , Integral (BackingWord u)
    ) => Show (U u) where
-   show (U w) = unumLabels (Proxy :: Proxy u) !! fromIntegral w
+   show (U w) = unumLabels @u !! fromIntegral w
 
 unumBits :: forall u.
    ( FiniteBits (BackingWord u)
    , KnownNat (UnumSize u)
    ) => U u -> String
-unumBits (U w) = drop (finiteBitSize w - fromIntegral (unumSize (Proxy :: Proxy u))) (bitsToString w)
+unumBits (U w) = drop (finiteBitSize w - fromIntegral (unumSize @u)) (bitsToString w)
 
 type Encodable x u =
    ( KnownNat (IndexOf (Simplify x) (UnumIndexables u)))
@@ -246,14 +247,14 @@ data UBit
    deriving (Show,Eq)
 
 -- | Encode a number
-unumEncode :: forall i x u.
+unumEncode :: forall u x i.
    ( i ~ IndexOf (Simplify x) (UnumIndexables u)
    , KnownNat i
    , Num (BackingWord u)
    , Bits (BackingWord u)
-   ) => Proxy u -> Proxy x -> UBit -> U u
+   ) => UBit -> U u
 {-# INLINE unumEncode #-}
-unumEncode _ _ b = case b of
+unumEncode b = case b of
       ExactNumber  -> U w
       OpenInterval -> U (setBit w 0)
    where
@@ -269,7 +270,7 @@ unumNegate :: forall u.
 {-# INLINE unumNegate #-}
 unumNegate (U w) = U (maskLeastBits s (complement w + 1))
    where
-      s = unumSize (Proxy :: Proxy u)
+      s = unumSize @u
 
 
 -- | Reciprocate a number
@@ -281,7 +282,7 @@ unumReciprocate :: forall u.
 {-# INLINE unumReciprocate #-}
 unumReciprocate (U w) = U (w `xor` m + 1)
    where
-      s = unumSize (Proxy :: Proxy u)
+      s = unumSize @u
       m = makeMask (s-1)
 
 
@@ -303,7 +304,7 @@ unumSign (U w) =
             then Negative 
             else Positive
    where
-      n = fromIntegral (unumSize (Proxy :: Proxy u) - 1)
+      n = fromIntegral (unumSize @u - 1)
 
 
 
@@ -356,8 +357,8 @@ sornBits (SORN w) = drop (finiteBitSize w - natValue @s) (bitsToString w)
 sornSize :: forall u s.
    ( s ~ SORNSize u
    , KnownNat s
-   ) => Proxy u -> Word
-sornSize _ = natValue @s
+   ) => Word
+sornSize = natValue @s
 
 -- | Empty SORN
 sornEmpty :: (Bits (SORNBackingWord u)) => SORN u
@@ -370,10 +371,10 @@ sornFull :: forall u.
    ) => SORN u
 sornFull = SORN (maskLeastBits s (complement zeroBits))
    where
-      s = sornSize (Proxy :: Proxy u)
+      s = sornSize @u
 
 -- | Full SORN without infinite
-sornNonInfinite ::
+sornNonInfinite :: forall u.
    ( Bits (SORNBackingWord u)
    , Integral (BackingWord u)
    , Bits (BackingWord u)
@@ -381,7 +382,7 @@ sornNonInfinite ::
    ) => SORN u
 sornNonInfinite = sornRemove (SORN (complement zeroBits)) inf
    where
-      inf = unumEncode (Proxy :: Proxy u) (Proxy :: Proxy Infinite) ExactNumber
+      inf = unumEncode @u @Infinite ExactNumber
 
 -- | Full SORN without infinite
 sornNonZero ::
@@ -483,7 +484,7 @@ sornFromTo (U a) (U b) = go sornEmpty a
          | x == b    = sornInsert w (U x)
          | otherwise = go (sornInsert w (U x)) (mask (x+1))
       mask = maskLeastBits s
-      s = unumSize (Proxy :: Proxy u)
+      s = unumSize @u
 
 
 class SornAdd u where
@@ -598,7 +599,7 @@ csornStart' :: forall u.
    , Bits (CSORNBackingWord u)
    , Field (BackingWord u)
    ) => CSORN u -> BackingWord u
-csornStart' (CSORN c) = extractField' (Proxy :: Proxy "start") c
+csornStart' (CSORN c) = extractField' @"start" c
 
 csornCount ::
    ( Integral (BackingWord u)
@@ -607,7 +608,7 @@ csornCount ::
    , Bits (CSORNBackingWord u)
    , Field (BackingWord u)
    ) => CSORN u -> BackingWord u
-csornCount (CSORN c) = extractField' (Proxy :: Proxy "count") c
+csornCount (CSORN c) = extractField' @"count" c
 
 instance forall u v.
    ( KnownNat (SORNSize u)
@@ -647,14 +648,14 @@ csornToSorn c =
    where
       start = csornStart' c
       x'    = maskLeastBits s (start + csornCount c - 1)
-      s     = unumSize (Proxy :: Proxy u)
+      s     = unumSize @u
 
 -- | Size of a contiguous SORN in bits
 csornSize :: forall u s.
    ( s ~ CSORNSize u
    , KnownNat s
-   ) => Proxy u -> Word
-csornSize _ = natValue @s
+   ) => Word
+csornSize = natValue @s
 
 -- | Show contiguous SORN bits
 csornBits :: forall u s.
@@ -692,17 +693,17 @@ csornFromTo :: forall u.
    , Integral (BackingWord u)
    ) => U u -> U u -> CSORN u
 csornFromTo start stop =
-      if fromIntegral count == unumSize (Proxy :: Proxy u)
+      if fromIntegral count == unumSize @u
          then csornFull
          else CSORN b
    where
       U x   = start
       U y   = stop
-      s     = unumSize (Proxy :: Proxy u)
+      s     = unumSize @u
       count = maskLeastBits s (y-x+1)
       b     = BitFields 0
-              |> updateField' (Proxy :: Proxy "start") x
-              |> updateField' (Proxy :: Proxy "count") count
+              |> updateField' @"start" x
+              |> updateField' @"count" count
 
 
 -- | Full contiguous SORN
@@ -714,8 +715,8 @@ csornFull :: forall u.
    , Field (BackingWord u)
    ) => CSORN u
 csornFull = CSORN (BitFields zeroBits
-  |> updateField' (Proxy :: Proxy "start") 1 -- dummy /= 0
-  |> updateField' (Proxy :: Proxy "count") 0)
+  |> updateField' @"start" 1 -- dummy /= 0
+  |> updateField' @"count" 0)
 
 
 -- | Contiguous SORN singleton
@@ -727,6 +728,6 @@ csornSingle :: forall u.
    , Field (BackingWord u)
    ) => U u -> CSORN u
 csornSingle (U u) = CSORN (BitFields zeroBits
-  |> updateField' (Proxy :: Proxy "start") u
-  |> updateField' (Proxy :: Proxy "count") 1)
+  |> updateField' @"start" u
+  |> updateField' @"count" 1)
 

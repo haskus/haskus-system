@@ -3,9 +3,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Tools to write parsers using Flows
 module ViperVM.Utils.Parser
@@ -26,7 +28,6 @@ where
 
 import Prelude hiding (min,max)
 import ViperVM.Utils.HList
-import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 import ViperVM.Utils.Flow
 import ViperVM.Utils.Variant
@@ -69,16 +70,16 @@ choice :: forall m fs zs.
    ( Monad m
    , HFoldl (Choice ParseError) (Flow m '[ParseError]) fs (Flow m zs)
    ) => HList fs -> Flow m zs
-choice = choice' (Proxy :: Proxy ParseError)
+choice = choice' @ParseError
 
 -- | Try to apply the actions in the list in order, until one of them succeeds.
 -- Returns the value of the succeeding action, or the value of the last one.
 -- Failures are detected with values of type "a".
-choice' :: forall m fs zs a.
+choice' :: forall a m fs zs.
    ( Monad m
    , HFoldl (Choice a) (Flow m '[a]) fs (Flow m zs)
-   ) => Proxy a -> HList fs -> Flow m zs
-choice' _ = hFoldl (Choice :: Choice a) (flowSingle undefined :: Flow m '[a])
+   ) => HList fs -> Flow m zs
+choice' = hFoldl (Choice :: Choice a) (flowSingle undefined :: Flow m '[a])
 
 -- | Apply the action zero or more times (until a ParseError result is
 -- returned)

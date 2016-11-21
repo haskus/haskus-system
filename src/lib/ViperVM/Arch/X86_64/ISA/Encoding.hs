@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE BinaryLiterals #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Instruction encoding
 module ViperVM.Arch.X86_64.ISA.Encoding
@@ -95,7 +96,6 @@ module ViperVM.Arch.X86_64.ISA.Encoding
    )
 where
 
-import ViperVM.Utils.Types
 import ViperVM.Utils.Maybe
 import ViperVM.Utils.List (nub)
 import ViperVM.Format.Binary.Bits
@@ -561,23 +561,23 @@ newModRM md rm reg
    | rm  > 7 = error "Invalid value for rm field (> 7)"
    | reg > 7 = error "Invalid value for reg field (> 7)"
    | otherwise = ModRM
-         $ updateField (Proxy :: Proxy "mode") md
-         $ updateField (Proxy :: Proxy "reg")  reg
-         $ updateField (Proxy :: Proxy "rm")   rm
+         $ updateField @"mode" md
+         $ updateField @"reg"  reg
+         $ updateField @"rm"   rm
          $ BitFields 0
 
 
 -- | Get r/m field in ModRM
 rmField :: ModRM -> Word8
-rmField (ModRM x) = extractField (Proxy :: Proxy "rm") x
+rmField (ModRM x) = extractField @"rm" x
 
 -- | Get reg field in ModRM
 regField :: ModRM -> Word8
-regField (ModRM x) = extractField (Proxy :: Proxy "reg") x
+regField (ModRM x) = extractField @"reg" x
 
 -- | Get mod field in ModRM
 modField :: ModRM -> Word8
-modField (ModRM x) = extractField (Proxy :: Proxy "mode") x
+modField (ModRM x) = extractField @"mode" x
 
 
 -- | Mode for pattern matching

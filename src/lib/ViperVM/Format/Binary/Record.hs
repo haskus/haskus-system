@@ -84,17 +84,17 @@ type family RecordAlignment (fs :: [*]) a where
          (IfNat (a <=? Alignment typ) (Alignment typ) a)
 
 -- | Return offset from a field path
-type family FieldPathOffset (fs :: [*]) (path :: [*]) (off :: Nat) where
-   FieldPathOffset fs '[Proxy p] off = off + FieldOffset p fs 0
-   FieldPathOffset fs (Proxy p ': ps) off
+type family FieldPathOffset (fs :: [*]) (path :: [Symbol]) (off :: Nat) where
+   FieldPathOffset fs '[p] off = off + FieldOffset p fs 0
+   FieldPathOffset fs (p ': ps) off
       = FieldPathOffset (ExtractRecord (FieldType p fs))
             ps (off + FieldOffset p fs 0)
 
 -- | Return type from a field path
-type family FieldPathType (fs :: [*]) (path :: [*]) where
-   FieldPathType fs '[Proxy p] = FieldType p fs
+type family FieldPathType (fs :: [*]) (path :: [Symbol]) where
+   FieldPathType fs '[p] = FieldType p fs
 
-   FieldPathType fs (Proxy p ': ps)
+   FieldPathType fs (p ': ps)
       = FieldPathType (ExtractRecord (FieldType p fs)) ps
    
 type family ExtractRecord x where
@@ -113,23 +113,23 @@ recordAlignment :: forall fs.
 recordAlignment _ = natValue' @(RecordAlignment fs 1)
 
 -- | Get a field offset
-recordFieldOffset :: forall name fs.
+recordFieldOffset :: forall (name :: Symbol) fs.
    ( KnownNat (FieldOffset name fs 0)
-   ) => Proxy (name :: Symbol) -> Record fs -> Int
-recordFieldOffset _ _ = natValue @(FieldOffset name fs 0)
+   ) => Record fs -> Int
+recordFieldOffset _ = natValue @(FieldOffset name fs 0)
 
 -- | Get a field
-recordField :: forall name a fs.
+recordField :: forall (name :: Symbol) a fs.
    ( KnownNat (FieldOffset name fs 0)
    , a ~ FieldType name fs
    , StaticStorable a
-   ) => Proxy (name :: Symbol) -> Record fs -> a
-recordField p r@(Record fp) = unsafePerformIO $
+   ) => Record fs -> a
+recordField r@(Record fp) = unsafePerformIO $
    withForeignPtr fp $ \ptr ->do
-      let ptr' = ptr `indexPtr` recordFieldOffset p r
+      let ptr' = ptr `indexPtr` recordFieldOffset @name r
       staticPeek (castPtr ptr')
 
-data Path (fs :: [*])
+data Path (fs :: [Symbol])
 
 -- | Get a field offset from its path
 recordFieldPathOffset :: forall path fs o.
@@ -187,7 +187,7 @@ instance forall fs typ name rec b l2 i r.
    , r ~ (rec, HList ((String,typ) ': l2))  -- result type
    ) => Apply Extract (b, i) r where
       apply _ (_, (rec,xs)) =
-         (rec, HCons (symbolValue @name, recordField (Proxy :: Proxy name) rec) xs)
+         (rec, HCons (symbolValue @name, recordField @name rec) xs)
 
 -- | Convert a record into a HList
 recordToList :: forall fs.

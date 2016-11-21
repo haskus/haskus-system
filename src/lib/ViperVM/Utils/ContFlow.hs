@@ -114,7 +114,7 @@ freturn = fret ?__cs
 fretN :: forall n x r t xs.
    ( ExtractTuple n t (x -> r)
    , xs ~ ContTupleToList t r
-   , x ~ TypeAt n xs
+   , x ~ Index n xs
    , KnownNat n
    ) => t -> (x -> r)
 {-# INLINE fretN #-}
@@ -125,7 +125,7 @@ fretN = tupleN @n @t @(x -> r)
 freturnN :: forall n x r t xs.
    ( ExtractTuple n t (x -> r)
    , xs ~ ContTupleToList t r
-   , x ~ TypeAt n xs
+   , x ~ Index n xs
    , KnownNat n
    , ?__cs :: t
    ) => x -> r

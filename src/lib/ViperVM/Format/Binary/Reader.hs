@@ -78,7 +78,11 @@ type ReaderM r s =
    ( HArrayIndexT (Reader r) s)
 
 -- | Read an element from the specified reader
-binReadT :: forall r m s a. (Monad m, ReaderM r s, Storable a) => Proxy r -> MStateT s m a
+binReadT :: forall r m s a.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   ) => MStateT s m a
 binReadT _ = do
    Reader b <- mGet :: MStateT s m (Reader r)
    let (b',a) = bufferRead b
@@ -87,10 +91,14 @@ binReadT _ = do
 
 -- | Read an element from a predefined `Reader ()`
 binRead :: forall m s a. (Monad m, ReaderM () s, Storable a) => MStateT s m a
-binRead = binReadT (Proxy :: Proxy ()) 
+binRead = binReadT @()
 
 -- | Peek an element from the specified reader
-binPeekT :: forall r m s a. (Monad m, ReaderM r s, Storable a) => Proxy r -> MStateT s m a
+binPeekT :: forall r m s a.
+   ( Monad m
+   , ReaderM r s
+   , Storable a
+   ) => MStateT s m a
 binPeekT _ = do
    Reader b <- mGet :: MStateT s m (Reader r)
    let (_,a) = bufferRead b
@@ -98,11 +106,14 @@ binPeekT _ = do
 
 -- | Peek an element from a predefined `Reader ()`
 binPeek :: forall m s a. (Monad m, ReaderM () s, Storable a) => MStateT s m a
-binPeek = binPeekT (Proxy :: Proxy ()) 
+binPeek = binPeekT @()
 
 
 -- | Skip the specified number of bytes
-binSkipT :: forall r m s. (Monad m, ReaderM r s) => Proxy r -> Word64 -> MStateT s m ()
+binSkipT :: forall r m s.
+   ( Monad m
+   , ReaderM r s
+   ) => Word64 -> MStateT s m ()
 binSkipT _ n = do
    Reader b <- mGet :: MStateT s m (Reader r)
    let b' = bufferDrop n b
@@ -110,26 +121,29 @@ binSkipT _ n = do
 
 -- | Skip the specified number of bytes
 binSkip :: forall m s. (Monad m, ReaderM () s) => Word64 -> MStateT s m ()
-binSkip = binSkipT (Proxy :: Proxy ())
+binSkip = binSkipT @()
 
 -- | Get the remaining number of bytes
-binRemainingT :: forall r m s. (Monad m, ReaderM r s) => Proxy r -> MStateT s m Word64
+binRemainingT :: forall r m s.
+   ( Monad m
+   , ReaderM r s
+   ) => MStateT s m Word64
 binRemainingT _ = do
    Reader b <- mGet :: MStateT s m (Reader r)
    return (bufferSize b)
 
 -- | Get the remaining number of bytes
 binRemaining :: forall m s. (Monad m, ReaderM () s) => MStateT s m Word64
-binRemaining = binRemainingT (Proxy :: Proxy ())
+binRemaining = binRemainingT @()
 
 -- | Try to read if there are enough bytes
 binTryReadT :: forall r m s a.
    ( Monad m
    , ReaderM r s
-   , Storable a) => Proxy r -> MStateT s m (Maybe a)
-binTryReadT _ = binRemainingT (Proxy :: Proxy r) >>= \sz ->
+   , Storable a) => MStateT s m (Maybe a)
+binTryReadT _ = binRemainingT @r >>= \sz ->
    if sz >= sizeOfT' @a
-      then Just <$> binReadT (Proxy :: Proxy r)
+      then Just <$> binReadT @r
       else return Nothing
 
 -- | Try to read if there are enough bytes
@@ -137,15 +151,15 @@ binTryRead :: forall m s a.
    ( Monad m
    , ReaderM () s
    , Storable a) => MStateT s m (Maybe a)
-binTryRead = binTryReadT (Proxy :: Proxy ())
+binTryRead = binTryReadT @()
 
 -- | Try to read if there are enough bytes and if the condition is met
 binTryReadIfT :: forall r m s a.
    ( Monad m
    , ReaderM r s
-   , Storable a) => Proxy r -> (a -> Bool) -> MStateT s m (Maybe a)
-binTryReadIfT r cond = binTryPeekT r >>= \case
-   Just w | cond w -> binSkipT r (sizeOf' w) >> return (Just w)
+   , Storable a) => (a -> Bool) -> MStateT s m (Maybe a)
+binTryReadIfT cond = binTryPeekT @r >>= \case
+   Just w | cond w -> binSkipT @r (sizeOf' w) >> return (Just w)
    _               -> return Nothing
 
 -- | Try to read if there are enough bytes and if the condition is met
@@ -153,16 +167,16 @@ binTryReadIf :: forall m s a.
    ( Monad m
    , ReaderM () s
    , Storable a) => (a -> Bool) -> MStateT s m (Maybe a)
-binTryReadIf = binTryReadIfT (Proxy :: Proxy ())
+binTryReadIf = binTryReadIfT @()
 
 -- | Try to peek if there are enough bytes
 binTryPeekT :: forall r m s a.
    ( Monad m
    , ReaderM r s
-   , Storable a) => Proxy r -> MStateT s m (Maybe a)
-binTryPeekT _ = binRemainingT (Proxy :: Proxy r) >>= \sz ->
+   , Storable a) => MStateT s m (Maybe a)
+binTryPeekT = binRemainingT @r >>= \sz ->
    if sz >= sizeOfT' @a
-      then Just <$> binPeekT (Proxy :: Proxy r)
+      then Just <$> binPeekT @r
       else return Nothing
 
 -- | Try to peek if there are enough bytes
@@ -170,7 +184,7 @@ binTryPeek :: forall m s a.
    ( Monad m
    , ReaderM () s
    , Storable a) => MStateT s m (Maybe a)
-binTryPeek = binTryPeekT (Proxy :: Proxy ())
+binTryPeek = binTryPeekT @()
 
 -- | Reader with backtracking
 --
@@ -179,13 +193,13 @@ binTryPeek = binTryPeekT (Proxy :: Proxy ())
 binWithIfT :: forall r m s a b.
    ( Monad m
    , ReaderM r s
-   , Storable a) => Proxy r -> (a -> Bool) -> (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
-binWithIfT r cond f = do
+   , Storable a) => (a -> Bool) -> (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
+binWithIfT cond f = do
    -- save the reader
    rdr <- mGet :: MStateT s m (Reader r)
 
    -- try to read and apply the function
-   res <- binTryReadIfT r cond >>= \case
+   res <- binTryReadIfT @r cond >>= \case
       Nothing -> return Nothing
       Just a  -> f a
 
@@ -202,7 +216,7 @@ binWithIf :: forall m s a b.
    ( Monad m
    , ReaderM () s
    , Storable a) => (a -> Bool) -> (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
-binWithIf = binWithIfT (Proxy :: Proxy ())
+binWithIf = binWithIfT @()
 
 -- | Reader with backtracking
 --
@@ -211,8 +225,8 @@ binWithIf = binWithIfT (Proxy :: Proxy ())
 binWithT :: forall r m s a b.
    ( Monad m
    , ReaderM r s
-   , Storable a) => Proxy r -> (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
-binWithT r = binWithIfT r (const True)
+   , Storable a) => (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
+binWithT = binWithIfT @r (const True)
 
 -- | Reader with backtracking
 --
@@ -222,7 +236,7 @@ binWith :: forall m s a b.
    ( Monad m
    , ReaderM () s
    , Storable a) => (a -> MStateT s m (Maybe b)) -> MStateT s m (Maybe b)
-binWith = binWithT (Proxy :: Proxy ())
+binWith = binWithT @()
 
 
 -- | Try to read something
@@ -234,13 +248,13 @@ binReadWithT :: forall r m s a xs.
    , Storable a
    , Catchable ParseError xs
    , Member ParseError xs
-   ) => Proxy r -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWithT p f = do
+   ) => (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithT f = do
    -- get the reader
    Reader buf <- mGet :: MStateT s m (Reader r)
 
    -- check the size
-   sz <- binRemainingT p
+   sz <- binRemainingT @r
    if sz < sizeOfT' @a
       then flowSet EndOfInput
       else do
@@ -263,7 +277,7 @@ binReadWith :: forall m s a xs.
    , Catchable ParseError xs
    , Member ParseError xs
    ) => (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWith = binReadWithT (Proxy :: Proxy ())
+binReadWith = binReadWithT @()
 
 
 -- | Try to read something
@@ -276,8 +290,8 @@ binReadWithT' :: forall r m s a xs.
    , Catchable ParseError xs
    , Member ParseError xs
    , xs ~ '[a,ParseError]
-   ) => Proxy r -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWithT' = binReadWithT
+   ) => (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithT' = binReadWithT @r
 
 
 -- | Try to read something
@@ -303,9 +317,9 @@ binReadWithIfT :: forall r m s a xs.
    , Storable a
    , Catchable ParseError xs
    , Member ParseError xs
-   ) => Proxy r -> (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWithIfT p c f =
-   binReadWithT p $ \a -> if c a
+   ) => (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithIfT c f =
+   binReadWithT @r $ \a -> if c a
       then f a
       else flowSet SyntaxError
 
@@ -320,7 +334,7 @@ binReadWithIf :: forall m s a xs.
    , Catchable ParseError xs
    , Member ParseError xs
    ) => (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWithIf = binReadWithIfT (Proxy :: Proxy ())
+binReadWithIf = binReadWithIfT @()
 
 
 -- | Try to read something
@@ -333,9 +347,9 @@ binReadWithIfT' :: forall r m s a xs.
    , Catchable ParseError xs
    , Member ParseError xs
    , xs ~ '[a,ParseError]
-   ) => Proxy r -> (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWithIfT' p c f =
-   binReadWithT p $ \a -> if c a
+   ) => (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
+binReadWithIfT' c f =
+   binReadWithT @r $ \a -> if c a
       then f a
       else flowSet SyntaxError
 
@@ -351,7 +365,7 @@ binReadWithIf' :: forall m s a xs.
    , Member ParseError xs
    , xs ~ '[a,ParseError]
    ) => (a -> Bool) -> (a -> MStateT s m (Variant xs)) -> MStateT s m (Variant xs)
-binReadWithIf' = binReadWithIfT (Proxy :: Proxy ())
+binReadWithIf' = binReadWithIfT @()
 
 
 -- | Try to read something
@@ -364,9 +378,9 @@ binReadIfT :: forall r m s a xs.
    , Catchable ParseError xs
    , Member ParseError xs
    , Member (Maybe a) xs
-   ) => Proxy r -> (a -> Bool) -> MStateT s m (Variant xs)
-binReadIfT p c =
-   binReadWithT p $ \a -> if c a
+   ) => (a -> Bool) -> MStateT s m (Variant xs)
+binReadIfT c =
+   binReadWithT @r $ \a -> if c a
       then flowSet (Just a)
       else flowSet (Nothing :: Maybe a)
 
@@ -382,7 +396,7 @@ binReadIf :: forall m s a xs.
    , Member ParseError xs
    , Member (Maybe a) xs
    ) => (a -> Bool) -> MStateT s m (Variant xs)
-binReadIf = binReadIfT (Proxy :: Proxy ())
+binReadIf = binReadIfT @()
 
 -- | Try to read something
 --
@@ -395,9 +409,9 @@ binReadIfT' :: forall r m s a xs.
    , Member ParseError xs
    , Member (Maybe a) xs
    , xs ~ '[Maybe a, ParseError]
-   ) => Proxy r -> (a -> Bool) -> MStateT s m (Variant '[Maybe a, ParseError])
-binReadIfT' p c =
-   binReadWithT p $ \a -> if c a
+   ) => (a -> Bool) -> MStateT s m (Variant '[Maybe a, ParseError])
+binReadIfT' c =
+   binReadWithT @r $ \a -> if c a
       then flowSet (Just a)
       else flowSet (Nothing :: Maybe a)
 
@@ -414,14 +428,14 @@ binReadIf' :: forall m s a xs.
    , Member (Maybe a) xs
    , xs ~ '[Maybe a, ParseError]
    ) => (a -> Bool) -> MStateT s m (Variant '[Maybe a, ParseError])
-binReadIf' = binReadIfT (Proxy :: Proxy ())
+binReadIf' = binReadIfT @()
 
 -- | Look-ahead. Only backtrack the reader, not the other parts of the state
 binLookAheadT :: forall r m s xs.
    ( Monad m
    , ReaderM r s
-   ) => Proxy r -> MStateT s m (Variant xs) -> MStateT s m (Variant xs)
-binLookAheadT _ f = do
+   ) => MStateT s m (Variant xs) -> MStateT s m (Variant xs)
+binLookAheadT f = do
    -- get the reader
    Reader buf <- mGet :: MStateT s m (Reader r)
 
@@ -438,7 +452,7 @@ binLookAhead :: forall m s xs.
    ( Monad m
    , ReaderM () s
    ) => MStateT s m (Variant xs) -> MStateT s m (Variant xs)
-binLookAhead = binLookAheadT (Proxy :: Proxy ())
+binLookAhead = binLookAheadT @()
 
 
 -- | Look-ahead test. Only backtrack the reader, not the other parts of the state
@@ -446,10 +460,10 @@ binLookAheadTestT :: forall r m s a.
    ( Monad m
    , ReaderM r s
    , Storable a
-   ) => Proxy r -> (a -> Bool) -> MStateT s m Bool
-binLookAheadTestT p c = singleVariant <$> f
+   ) => (a -> Bool) -> MStateT s m Bool
+binLookAheadTestT c = singleVariant <$> f
    where
-      f = binLookAheadT p (binReadIfT' p c) 
+      f = binLookAheadT @r (binReadIfT' @r c) 
             >.-.> isJust
             >%~#> \(_ :: ParseError) -> flowSet False
 
@@ -459,7 +473,7 @@ binLookAheadTest :: forall m s a.
    , ReaderM () s
    , Storable a
    ) => (a -> Bool) -> MStateT s m Bool
-binLookAheadTest = binLookAheadTestT (Proxy :: Proxy ())
+binLookAheadTest = binLookAheadTestT @()
 
 data ReadTuple r = ReadTuple
 
@@ -469,19 +483,19 @@ instance forall z x z' m s r.
    , Monad m
    , Storable x
    ) => ApplyAB (ReadTuple r) (HList z,x) z' where
-      applyAB _ (z,_) = binReadWithT (Proxy :: Proxy r) $ \(x :: x) ->
+      applyAB _ (z,_) = binReadWithT @r $ \(x :: x) ->
          flowSet (x `HCons` z) :: z'
 
 -- | Read a tuple
-binReadTupleT :: forall v (v2 :: [*]) t r s m z.
+binReadTupleT :: forall r v (v2 :: [*]) t s m z.
    ( HTuple' v t
    , HFoldl' (ReadTuple r) (HList '[]) v z
    , z ~  MStateT s m (Variant '[HList v2,ParseError])
    , Monad m
    , HReverse v2 v
    , ReaderM r s
-   ) => Proxy r -> MStateT s m (Variant '[t,ParseError])
-binReadTupleT _ = do
+   ) => MStateT s m (Variant '[t,ParseError])
+binReadTupleT = do
    let v = hFromTuple' (undefined :: t) :: HList v
    (hFoldl' (ReadTuple :: ReadTuple r) (HNil :: HList '[]) v :: z)
       >.-.> \(v' :: HList v2) -> hToTuple' (hReverse v' :: HList v)
@@ -496,4 +510,4 @@ binReadTuple :: forall v v2 t s m z.
    , HReverse v2 v
    , ReaderM () s
    ) => MStateT s m (Variant '[t,ParseError])
-binReadTuple = binReadTupleT (Proxy :: Proxy ())
+binReadTuple = binReadTupleT @()

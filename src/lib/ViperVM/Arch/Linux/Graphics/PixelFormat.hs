@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Pixel formats
 module ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -18,7 +19,6 @@ import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
-import ViperVM.Utils.Types
 import ViperVM.Utils.Tuple (swap)
 
 import Data.Char (ord)
@@ -42,8 +42,8 @@ instance Show PixelFormat where
 makePixelFormat :: Format -> Endianness -> PixelFormat
 {-# INLINE makePixelFormat #-}
 makePixelFormat fmt end = PixelFormat
-   $ updateField (Proxy :: Proxy "endianness") (toEnumField end)
-   $ updateField (Proxy :: Proxy "format")     (toEnumField fmt)
+   $ updateField @"endianness" (toEnumField end)
+   $ updateField @"format"     (toEnumField fmt)
    $ BitFields 0
 
 
@@ -51,13 +51,13 @@ makePixelFormat fmt end = PixelFormat
 formatEndianness :: PixelFormat -> Endianness
 {-# INLINE formatEndianness #-}
 formatEndianness (PixelFormat fmt) =
-   fromEnumField (extractField (Proxy :: Proxy "endianness") fmt)
+   fromEnumField (extractField @"endianness" fmt)
 
 -- | Get pixel format logical format
 formatFormat :: PixelFormat -> Format
 {-# INLINE formatFormat #-}
 formatFormat (PixelFormat fmt) = 
-   fromEnumField (extractField (Proxy :: Proxy "format") fmt)
+   fromEnumField (extractField @"format" fmt)
 
 type CFormat = BitFields Word32
   '[ BitField 8 "d" Int
@@ -70,10 +70,10 @@ type CFormat = BitFields Word32
 toFormat :: String -> Word32
 {-# INLINE toFormat #-}
 toFormat [a,b,c,d] = bitFieldsBits
-   $ updateField (Proxy :: Proxy "a") (ord a)
-   $ updateField (Proxy :: Proxy "b") (ord b)
-   $ updateField (Proxy :: Proxy "c") (ord c)
-   $ updateField (Proxy :: Proxy "d") (ord d)
+   $ updateField @"a" (ord a)
+   $ updateField @"b" (ord b)
+   $ updateField @"c" (ord c)
+   $ updateField @"d" (ord d)
    $ (BitFields 0 :: CFormat)
 toFormat _ = undefined
 

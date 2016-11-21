@@ -21,8 +21,6 @@ import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Ptr (castPtr)
 import ViperVM.Format.Binary.Storable
 import ViperVM.Format.String
-import ViperVM.Utils.Types
-
 import ViperVM.Arch.Linux.Internals.Graphics
 
 -- | Display mode
@@ -58,8 +56,8 @@ instance Storable Mode where
 fromStructMode :: StructMode -> Mode
 fromStructMode StructMode {..} =
    let
-      flgs  = extractField (Proxy :: Proxy "flags") miFlags
-      flg3d = fromEnumField $ extractField (Proxy :: Proxy "stereo3d") miFlags
+      flgs  = extractField @"flags" miFlags
+      flg3d = fromEnumField $ extractField @"stereo3d" miFlags
    in Mode
       { modeClock               = miClock
       , modeHorizontalDisplay   = miHDisplay
@@ -82,8 +80,8 @@ fromStructMode StructMode {..} =
 toStructMode :: Mode -> StructMode
 toStructMode Mode {..} =
    let
-      flgs = updateField (Proxy :: Proxy "flags") modeFlags
-           $ updateField (Proxy :: Proxy "stereo3d") (toEnumField modeStereo3D)
+      flgs = updateField @"flags" modeFlags
+           $ updateField @"stereo3d" (toEnumField modeStereo3D)
            $ BitFields 0
 
    in StructMode

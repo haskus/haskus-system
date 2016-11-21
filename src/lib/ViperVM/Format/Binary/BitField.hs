@@ -42,9 +42,9 @@
 -- You can extract and update the value of a field by its name:
 --
 -- @
--- x = extractField (Proxy :: Proxy "X") w
--- z = extractField (Proxy :: Proxy "Z") w
--- w' = updateField (Proxy :: Proxy "Y") 0x16 w
+-- x = extractField @"X" w
+-- z = extractField @"Z" w
+-- w' = updateField @"Y" 0x16 w
 -- @
 --
 -- Fields can also be 'BitSet' or 'EnumField':
@@ -185,25 +185,25 @@ instance CEnum a => Field (EnumField b a) where
    toField   = toEnumField . toCEnum
 
 -- | Get the value of a field
-extractField :: forall name fields b .
+extractField :: forall (name :: Symbol) fields b .
    ( KnownNat (Offset name fields)
    , KnownNat (Size name fields)
    , WholeSize fields ~ BitSize b
    , Bits b, Integral b
    , Field (Output name fields)
-   ) => Proxy name -> BitFields b fields -> Output name fields
+   ) => BitFields b fields -> Output name fields
 {-# INLINE extractField #-}
-extractField = extractField' 
+extractField = extractField' @name
 
 -- | Get the value of a field (without checking sizes)
-extractField' :: forall name fields b .
+extractField' :: forall (name :: Symbol) fields b .
    ( KnownNat (Offset name fields)
    , KnownNat (Size name fields)
    , Bits b, Integral b
    , Field (Output name fields)
-   ) => Proxy name -> BitFields b fields -> Output name fields
+   ) => BitFields b fields -> Output name fields
 {-# INLINE extractField' #-}
-extractField' _ (BitFields w) = toField ((w `shiftR` off) .&. ((1 `shiftL` sz) - 1))
+extractField' (BitFields w) = toField ((w `shiftR` off) .&. ((1 `shiftL` sz) - 1))
    where
       off = natValue @(Offset name fields)
       sz  = natValue @(Size name fields)
@@ -216,9 +216,9 @@ updateField :: forall name fields b .
    , WholeSize fields ~ BitSize b
    , Bits b, Integral b
    , Field (Output name fields)
-   ) => Proxy name -> Output name fields -> BitFields b fields -> BitFields b fields
+   ) => Output name fields -> BitFields b fields -> BitFields b fields
 {-# INLINE updateField #-}
-updateField = updateField'
+updateField = updateField' @name
 
 -- | Set the value of a field (without checking sizes)
 updateField' :: forall name fields b .
@@ -226,9 +226,9 @@ updateField' :: forall name fields b .
    , KnownNat (Size name fields)
    , Bits b, Integral b
    , Field (Output name fields)
-   ) => Proxy name -> Output name fields -> BitFields b fields -> BitFields b fields
+   ) => Output name fields -> BitFields b fields -> BitFields b fields
 {-# INLINE updateField' #-}
-updateField' _ value (BitFields w) = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
+updateField' value (BitFields w) = BitFields $ ((fromField value `shiftL` off) .&. mask) .|. (w .&. complement mask)
    where
       off  = natValue @(Offset name fields)
       sz   = natValue @(Size name fields)
@@ -243,22 +243,22 @@ withField :: forall name fields b f .
    , Bits b, Integral b
    , f ~ Output name fields
    , Field f
-   ) => Proxy name -> (f -> f) -> BitFields b fields -> BitFields b fields
+   ) => (f -> f) -> BitFields b fields -> BitFields b fields
 {-# INLINE withField #-}
-withField = withField'
+withField = withField' @name
 
 -- | Modify the value of a field (without checking sizes)
-withField' :: forall name fields b f .
+withField' :: forall (name :: Symbol) fields b f .
    ( KnownNat (Offset name fields)
    , KnownNat (Size name fields)
    , Bits b, Integral b
    , f ~ Output name fields
    , Field f
-   ) => Proxy name -> (f -> f) -> BitFields b fields -> BitFields b fields
+   ) => (f -> f) -> BitFields b fields -> BitFields b fields
 {-# INLINE withField' #-}
-withField' name f bs = updateField' name (f v) bs
+withField' f bs = updateField' @name (f v) bs
    where
-      v = extractField' name bs
+      v = extractField' @name bs
 
 
 -------------------------------------------------------------------------------------
@@ -280,7 +280,7 @@ instance forall name bs b l l2 i (n :: Nat) s r w .
    , Field (Output name l)
    ) => Apply Extract (b, i) r where
       apply _ (_, (bs,xs)) =
-         (bs, HCons (extractField (Proxy :: Proxy name) bs) xs)
+         (bs, HCons (extractField @name bs) xs)
 
 instance forall name bs b l l2 i (n :: Nat) s r w .
    ( bs ~ BitFields w l       -- the bitfields

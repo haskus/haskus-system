@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | IOCTL
 module ViperVM.Arch.Linux.Internals.Ioctl
@@ -17,7 +18,6 @@ import ViperVM.Format.Binary.BitField
 import ViperVM.Format.Binary.Enum
 import ViperVM.Format.Binary.Word
 import ViperVM.Format.Binary.Storable
-import ViperVM.Utils.Types
 
 
 -- =============================================================
@@ -67,8 +67,8 @@ instance CEnum Direction
 ioctlCommand :: Direction -> Word8 -> Word8 -> Word -> Command
 {-# INLINE ioctlCommand #-}
 ioctlCommand dir typ nb sz = Command
-   $ updateField (Proxy :: Proxy "direction") (toEnumField dir)
-   $ updateField (Proxy :: Proxy "size")      (fromIntegral sz)
-   $ updateField (Proxy :: Proxy "type")      typ
-   $ updateField (Proxy :: Proxy "number")    nb
+   $ updateField @"direction" (toEnumField dir)
+   $ updateField @"size"      (fromIntegral sz)
+   $ updateField @"type"      typ
+   $ updateField @"number"    nb
    $ BitFields 0

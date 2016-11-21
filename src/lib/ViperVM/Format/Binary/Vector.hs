@@ -81,24 +81,24 @@ instance forall a n.
 -- | Yield the first n elements
 take :: forall n m a.
    ( KnownNat (SizeOf a * n)
-   ) => Proxy n -> Vector (m+n) a -> Vector n a
+   ) => Vector (m+n) a -> Vector n a
 {-# INLINE take #-}
-take _ (Vector b) = Vector (bufferTake (natValue @(SizeOf a * n)) b)
+take (Vector b) = Vector (bufferTake (natValue @(SizeOf a * n)) b)
 
 -- | Drop the first n elements
 drop :: forall n m a.
    ( KnownNat (SizeOf a * n)
-   ) => Proxy n -> Vector (m+n) a -> Vector m a
+   ) => Vector (m+n) a -> Vector m a
 {-# INLINE drop #-}
-drop _ (Vector b) = Vector (bufferDrop (natValue @(SizeOf a * n)) b)
+drop (Vector b) = Vector (bufferDrop (natValue @(SizeOf a * n)) b)
 
 -- | /O(1)/ Index safely into the vector using a type level index.
-index :: forall a i n.
+index :: forall i a n.
    ( KnownNat (ElemOffset a i n)
    , Storable a
-   ) => Proxy i -> Vector n a -> a
+   ) => Vector n a -> a
 {-# INLINE index #-}
-index _ (Vector b) = bufferPeekStorableAt b (natValue @(ElemOffset a i n))
+index (Vector b) = bufferPeekStorableAt b (natValue @(ElemOffset a i n))
 
 -- | Convert a list into a vector if the number of elements matches
 fromList :: forall a (n :: Nat) .
