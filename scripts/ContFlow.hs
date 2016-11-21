@@ -9,7 +9,6 @@ module TestCont where
 
 import ViperVM.Utils.ContFlow
 import ViperVM.Utils.Monad
-import ViperVM.Utils.Tuple
 import ViperVM.Utils.Variant
 import Data.Char
 
@@ -212,8 +211,11 @@ v :: Variant '[Int,String,Double]
 v = setVariant "Hi!"
 
 testVariant :: IO ()
-testVariant = contVariant v >::>
-   ( \i -> putStrLn ("Int: " ++ show i)
-   , \s -> putStrLn ("String: " ++ show s)
-   , \d -> putStrLn ("Double: " ++ show d)
-   )
+testVariant = do
+   variantToCont v >::>
+      ( \i -> putStrLn ("Int: " ++ show i)
+      , \s -> putStrLn ("String: " ++ show s)
+      , \d -> putStrLn ("Double: " ++ show d)
+      )
+   r <- contToVariantM (sample12 5)
+   print r
