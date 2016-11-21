@@ -201,7 +201,7 @@ type MaybeCatchable a xs =
 
 -- | Extract a type from a variant. Return either the value of this type or the
 -- remaining variant
-catchVariant :: forall l a.
+catchVariant :: forall a l.
    ( MaybeCatchable a l
    ) => Variant l -> Either (Variant (Filter a l)) a
 catchVariant v = case res of
