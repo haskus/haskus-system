@@ -19,6 +19,7 @@ module ViperVM.Utils.Types.List
    , Snoc
    , ReplaceAt
    , Replace
+   , ReplaceN
    , Reverse
    , RemoveAt
    , Concat
@@ -113,6 +114,11 @@ type family Replace t1 t2 l where
    Replace t1 t2 '[]        = '[]
    Replace t1 t2 (t1 ': xs) = t2 ': (Replace t1 t2 xs)
    Replace t1 t2 (x ': xs)  = x ': (Replace t1 t2 xs)
+
+-- | replace a type at offset n in l
+type family ReplaceN n t l where
+   ReplaceN 0 t (x ': xs)  = (t ': xs)
+   ReplaceN n t (x ': xs)  = x ': ReplaceN (n-1) t xs
 
 -- | Reverse a list
 type family Reverse (l :: [*]) where

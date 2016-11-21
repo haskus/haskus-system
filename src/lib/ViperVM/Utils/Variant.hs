@@ -21,6 +21,7 @@ module ViperVM.Utils.Variant
    , updateVariantN
    , setVariant
    , getVariant
+   , updateVariant
    , updateVariantM
    , updateVariantFold
    , updateVariantFoldM
@@ -59,22 +60,37 @@ import ViperVM.Utils.Types.List
 
 -- | A variant contains a value whose type is at the given position in the type
 -- list
-data Variant (l :: [*]) = forall a . Variant Word a
+data Variant (l :: [*]) = forall a. Variant {-# UNPACK #-} !Word a
 
 -- | Make GHC consider `l` as a representational parameter to make coercions
 -- between Variant values unsafe
 type role Variant representational
 
+instance Eq (Variant '[]) where
+   (==) _ _ = True
+
+instance
+   ( Eq (Variant xs)
+   , Eq x
+   ) => Eq (Variant (x ': xs))
+   where
+      (==) v1 v2 = case (pickVariant @0 v1, pickVariant @0 v2) of
+         (Right a, Right b) -> a == b
+         (Left as, Left bs) -> as == bs
+         _                  -> False
+
 -- | Set the value with the given indexed type
 setVariantN :: forall (n :: Nat) (l :: [*]).
    ( KnownNat n
    ) => Index n l -> Variant l
+{-# INLINE setVariantN #-}
 setVariantN = Variant (natValue @n)
 
 -- | Get the value if it has the indexed type
 getVariantN :: forall (n :: Nat) (l :: [*]).
    ( KnownNat n
    ) => Variant l -> Maybe (Index n l)
+{-# INLINE getVariantN #-}
 getVariantN (Variant t a) = do
    guard (t == natValue @n)
    return (unsafeCoerce a) -- we know it is the effective type
@@ -89,9 +105,10 @@ liftEitherM :: (Monad m) => m (Either a b) -> m (Variant '[b,a])
 liftEitherM = fmap liftEither
 
 -- | Update a variant value
-updateVariantN :: forall (n :: Nat) l l2 .
+updateVariantN :: forall (n :: Nat) a b l.
    ( KnownNat n
-   ) => (Index n l -> Index n l2) -> Variant l -> Variant l2
+   , a ~ Index n l
+   ) => (a -> b) -> Variant l -> Variant (ReplaceN n b l)
 {-# INLINE updateVariantN #-}
 updateVariantN f v@(Variant t a) =
    case getVariantN @n v of
@@ -328,6 +345,14 @@ getVariant :: forall a l.
    ) => Variant l -> Maybe a
 {-# INLINE getVariant #-}
 getVariant = getVariantN @(IndexOf a l)
+
+-- | Update a variant value
+updateVariant :: forall a b n l.
+   ( Member a l
+   , n ~ IndexOf a l
+   ) => (a -> b) -> Variant l -> Variant (ReplaceN n b l)
+{-# INLINE updateVariant #-}
+updateVariant f v = updateVariantN @n f v
 
 
 -- | xs is liftable in ys

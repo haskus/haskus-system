@@ -131,6 +131,7 @@ getPropertyMeta fd pid = do
                _ <- getProperty' gp'
                f valuePtr blobPtr
 
+      withValueBuffer :: Storable a => Word32 -> ([a] -> Flow m '[c,InvalidParam,InvalidProperty]) -> Flow m '[c,InvalidParam,InvalidProperty]
       withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr Word) ->
          f =<< peekArray (fromIntegral n) ptr
       withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr Word) ptr ->

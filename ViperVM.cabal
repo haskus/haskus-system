@@ -267,6 +267,7 @@ test-suite tests
       ,  ViperVM.Tests.Format.Binary.GetPut
       ,  ViperVM.Tests.Format.Binary.Vector
       ,  ViperVM.Tests.Utils.HArray
+      ,  ViperVM.Tests.Utils.Variant
       ,  ViperVM.Tests.Utils
       ,  ViperVM.Tests.System
       ,  ViperVM.Tests.System.Devices

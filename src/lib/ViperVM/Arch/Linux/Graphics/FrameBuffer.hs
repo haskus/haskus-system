@@ -50,11 +50,12 @@ fromFrameBuffer :: FrameBuffer -> StructFrameBufferCommand
 fromFrameBuffer FrameBuffer{..} = s
    where
       FrameBufferID fbid = fbID
-      g f  = Vector.fromFilledList 0 (fmap f fbSurfaces)
-      s = StructFrameBufferCommand fbid
-            fbWidth fbHeight fbPixelFormat fbFlags
-            (g surfaceHandle) (g surfacePitch)
-            (g surfaceOffset) (g surfaceModifiers)
+      g :: (Num a,Storable a) => (Surface -> a) -> Vector 4 a
+      g f = Vector.fromFilledList 0 (fmap f fbSurfaces)
+      s   = StructFrameBufferCommand fbid
+               fbWidth fbHeight fbPixelFormat fbFlags
+               (g surfaceHandle) (g surfacePitch)
+               (g surfaceOffset) (g surfaceModifiers)
 
 toFrameBuffer :: StructFrameBufferCommand -> FrameBuffer
 toFrameBuffer StructFrameBufferCommand{..} = s
