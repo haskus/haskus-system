@@ -43,6 +43,7 @@ module ViperVM.Utils.Variant
    , fusionVariant
    , liftVariant
    , toEither
+   , contVariant
    )
 where
 
@@ -51,7 +52,9 @@ import Unsafe.Coerce
 import ViperVM.Utils.Monad
 import ViperVM.Utils.Maybe
 import ViperVM.Utils.Types
+import ViperVM.Utils.Tuple
 import ViperVM.Utils.HList
+import ViperVM.Utils.ContFlow
 import ViperVM.Utils.Types.List
 
 -- | A variant contains a value whose type is at the given position in the type
@@ -385,3 +388,145 @@ toEither v = case catchVariant v1 of
       v2 :: Variant '[a, Either b a]
       v2 = updateVariantN @1 Left v
    
+
+
+class ContVariant xs where
+   -- | Convert a variant into a multi-continuation
+   contVariant :: Variant xs -> ContFlow xs r
+
+instance ContVariant '[a] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant _ a) = ContFlow $ \(Single f) ->
+      f (unsafeCoerce a)
+
+instance ContVariant '[a,b] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         _ -> f2 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         _ -> f3 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         _ -> f4 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         _ -> f5 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         _ -> f6 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f,g] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         5 -> f6 (unsafeCoerce a)
+         _ -> f7 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f,g,h] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         5 -> f6 (unsafeCoerce a)
+         6 -> f7 (unsafeCoerce a)
+         _ -> f8 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f,g,h,i] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         5 -> f6 (unsafeCoerce a)
+         6 -> f7 (unsafeCoerce a)
+         7 -> f8 (unsafeCoerce a)
+         _ -> f9 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f,g,h,i,j] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10) ->
+      case t of
+         0 -> f1  (unsafeCoerce a)
+         1 -> f2  (unsafeCoerce a)
+         2 -> f3  (unsafeCoerce a)
+         3 -> f4  (unsafeCoerce a)
+         4 -> f5  (unsafeCoerce a)
+         5 -> f6  (unsafeCoerce a)
+         6 -> f7  (unsafeCoerce a)
+         7 -> f8  (unsafeCoerce a)
+         8 -> f9  (unsafeCoerce a)
+         _ -> f10 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f,g,h,i,j,k] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11) ->
+      case t of
+         0 -> f1  (unsafeCoerce a)
+         1 -> f2  (unsafeCoerce a)
+         2 -> f3  (unsafeCoerce a)
+         3 -> f4  (unsafeCoerce a)
+         4 -> f5  (unsafeCoerce a)
+         5 -> f6  (unsafeCoerce a)
+         6 -> f7  (unsafeCoerce a)
+         7 -> f8  (unsafeCoerce a)
+         8 -> f9  (unsafeCoerce a)
+         9 -> f10 (unsafeCoerce a)
+         _ -> f11 (unsafeCoerce a)
+
+instance ContVariant '[a,b,c,d,e,f,g,h,i,j,k,l] where
+   {-# INLINE contVariant #-}
+   contVariant (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12) ->
+      case t of
+         0  -> f1  (unsafeCoerce a)
+         1  -> f2  (unsafeCoerce a)
+         2  -> f3  (unsafeCoerce a)
+         3  -> f4  (unsafeCoerce a)
+         4  -> f5  (unsafeCoerce a)
+         5  -> f6  (unsafeCoerce a)
+         6  -> f7  (unsafeCoerce a)
+         7  -> f8  (unsafeCoerce a)
+         8  -> f9  (unsafeCoerce a)
+         9  -> f10 (unsafeCoerce a)
+         10 -> f11 (unsafeCoerce a)
+         _  -> f12 (unsafeCoerce a)

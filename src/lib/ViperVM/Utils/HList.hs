@@ -23,7 +23,6 @@ module ViperVM.Utils.HList
    , HFoldr' (..)
    , HFoldl' (..)
    , HTuple' (..)
-   , Single (..)
    , Apply (..)
    , HZipList
    , hZipList
@@ -35,6 +34,7 @@ module ViperVM.Utils.HList
    )
 where
 
+import ViperVM.Utils.Tuple
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 
@@ -210,9 +210,6 @@ class HTuple' v t | v -> t, t -> v where
 instance HTuple' '[] () where
     hToTuple' HNil = ()
     hFromTuple' () = HNil
-
--- | Tuple of a single element
-data Single a = Single a deriving (Show,Eq)
 
 instance HTuple' '[a] (Single a) where
     hToTuple' (a `HCons` HNil) = Single a

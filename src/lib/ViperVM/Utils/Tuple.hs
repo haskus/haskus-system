@@ -45,7 +45,7 @@ fromTuple4 :: (a,a,a,a) -> [a]
 fromTuple4 (a,b,c,d) = [a,b,c,d]
 
 -- | Singleton type
-newtype Single a = Single a 
+newtype Single a = Single a deriving (Show,Eq)
 
 
 type family TupleToList t where

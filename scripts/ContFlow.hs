@@ -10,6 +10,7 @@ module TestCont where
 import ViperVM.Utils.ContFlow
 import ViperVM.Utils.Monad
 import ViperVM.Utils.Tuple
+import ViperVM.Utils.Variant
 import Data.Char
 
 -- | Explicit CPS
@@ -171,19 +172,9 @@ parseTokens str = go str ""
          , \(x:xs) -> go xs (x:lb)
          )
 
-data Then = Then
-data Else = Else
-
-iff :: Bool -> ContFlow '[Then,Else] r
-{-# INLINE iff #-}
-iff b = fdo
-   case b of
-      True  -> freturn Then
-      False -> freturn Else
-
 testIf :: Bool -> IO ()
 testIf b = do
-   iff b >:~:>
+   fIf b >:~:>
       ( \Else -> putStrLn "No!"
       , \Then -> putStrLn "Yes!"
       )
@@ -215,3 +206,14 @@ testFor = ffor (== (10 :: Int)) (+1) (putStrLn . show) 0 >:-:> const (putStrLn "
 
 testParse :: IO ()
 testParse = print (parseTokens "123adsf456sfds789")
+
+
+v :: Variant '[Int,String,Double]
+v = setVariant "Hi!"
+
+testVariant :: IO ()
+testVariant = contVariant v >::>
+   ( \i -> putStrLn ("Int: " ++ show i)
+   , \s -> putStrLn ("String: " ++ show s)
+   , \d -> putStrLn ("Double: " ++ show d)
+   )
