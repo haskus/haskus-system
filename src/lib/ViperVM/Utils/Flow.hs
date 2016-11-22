@@ -74,6 +74,8 @@ module ViperVM.Utils.Flow
    , (>.~=>)
    , (.~!>)
    , (>.~!>)
+   , (.~!!>)
+   , (>.~!!>)
    -- * First element, pure variant
    , (.-.>)
    , (>.-.>)
@@ -471,6 +473,24 @@ infixl 0 .~!>
 (>.~!>) = liftm (.~!>)
 
 infixl 0 >.~!>
+
+-- | Extract the first value and perform effect.
+(.~!!>) ::
+   ( Monad m
+   ) => Variant (a ': l) -> (a -> m ()) -> m (Variant l)
+(.~!!>) v f = case headVariant v of
+   Right u -> f u >> error ".~!!> error"
+   Left  l -> return l
+
+infixl 0 .~!!>
+
+-- | Extract the first value and perform effect.
+(>.~!!>) ::
+   ( Monad m
+   ) => Flow m (a ': l) -> (a -> m ()) -> m (Variant l)
+(>.~!!>) = liftm (.~!!>)
+
+infixl 0 >.~!!>
 
 ----------------------------------------------------------
 -- First element, pure variant
