@@ -41,7 +41,6 @@ module ViperVM.Utils.Variant
    , singleVariant
    , appendVariant
    , prependVariant
-   , fusionVariant
    , liftVariant
    , toEither
    , ContVariant (..)
@@ -327,11 +326,6 @@ prependVariant (Variant t a) = Variant (n+t) a
    where
       n = natValue @(Length ys)
 
--- | Fusion variant values of the same type
-fusionVariant :: Liftable l (Nub l) => Variant l -> Variant (Nub l)
-{-# INLINE fusionVariant #-}
-fusionVariant = liftVariant
-
 -- | Set the first matching type of a Variant
 setVariant :: forall a l.
    ( Member a l
@@ -404,15 +398,8 @@ liftVariant v = s
 
 -- | Convert a variant of two values in a Either
 toEither :: forall a b. Variant '[a,b] -> Either b a
-toEither v = case catchVariant v1 of
-      Right x -> x
-      Left _  -> undefined
-   where
-      v1 :: Variant '[Either b a, Either b a]
-      v1 = updateVariantN @0 Right v2
-      v2 :: Variant '[a, Either b a]
-      v2 = updateVariantN @1 Left v
-   
+toEither (Variant 0 a) = Right (unsafeCoerce a)
+toEither (Variant _ a) = Left (unsafeCoerce a)
 
 
 class ContVariant xs where

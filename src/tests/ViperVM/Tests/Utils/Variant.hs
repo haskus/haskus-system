@@ -10,6 +10,7 @@ where
 
 import Distribution.TestSuite (Test,testGroup)
 import Distribution.TestSuite.QuickCheck (testProperty)
+import Data.Either
 
 import ViperVM.Utils.Variant
 
@@ -77,4 +78,27 @@ testsVariant = testGroup "Variant" $
          (liftEither (Left A :: Either A B) == setVariant A)
    , testProperty "Lift Either: Right"
          (liftEither (Right B :: Either A B) == setVariant B)
+
+   , testProperty "To Either: Left"
+         (toEither (setVariant B :: Variant '[A,B]) == Left B)
+   , testProperty "To Either: Right"
+         (toEither (setVariant A :: Variant '[A,B]) == Right A)
+
+   , testProperty "headVariant (match)"
+         (headVariant (setVariant A :: ABC) == Right A)
+   , testProperty "headVariant (don't match)"
+         (isLeft (headVariant b))
+
+   , testProperty "pickVariant (match)"
+         (pickVariant @1 b == Right B)
+   , testProperty "pickVariant (don't match)"
+         (isLeft (pickVariant @2 b))
+
+   , testProperty "prependVariant"
+         (getVariantN @4 (prependVariant @'[D,E,F] b) == Just B)
+   , testProperty "appendVariant"
+         (getVariantN @1 (appendVariant @'[D,E,F] b)  == Just B)
+
+   , testProperty "liftVariant"
+         (getVariant (liftVariant b :: Variant '[D,A,E,B,F,C])  == Just B)
    ]
