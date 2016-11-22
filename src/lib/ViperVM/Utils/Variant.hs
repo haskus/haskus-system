@@ -29,6 +29,7 @@ module ViperVM.Utils.Variant
    , variantToTuple
    , liftEither
    , liftEitherM
+   , variantRemoveType
    , Member
    , Catchable
    , MaybeCatchable
@@ -177,7 +178,6 @@ updateVariantFoldM f v@(Variant t a) =
       n   = natValue @n
       nl2 = natValue @(Length l2)
 
-data RemoveType  = RemoveType
 
 class VariantToHList xs where
    -- | Convert a variant into a HList of Maybes
@@ -196,62 +196,55 @@ instance
             v' :: Variant xs
             v' = Variant (t-1) a
 
-   
-data Found
-   = FoundSame
-   | FoundDifferent
+
+class VariantRemoveType a xs where
+   -- | Remove a type from a variant
+   variantRemoveType' :: Word -> Word -> Variant xs -> Either Word a
+
+instance VariantRemoveType a '[] where
+   variantRemoveType' _ _ = undefined
 
 
-instance forall (n :: Nat) l l2 r i a (same :: Nat).
-   ( i ~ (Variant l, Word, Maybe Found) -- input
-   , r ~ (Variant l, Word, Maybe Found) -- result
-   , l2 ~ Filter a l
-   , KnownNat n
-   , KnownNat same
-   ) => Apply RemoveType ((Proxy n,Proxy same),i) r where
-      apply _ (_, (v,shift,r)) =
-            case r of
-               -- we already have a result: we update the shift
-               Just _  -> (v, shift + same, r)
-               -- we look for a result
-               Nothing -> case getVariantN @n v of
-                  Nothing -> (v,shift,r)
-                  Just _  -> if same == 0
-                     then (v, shift, Just FoundDifferent)
-                     else (v, shift, Just FoundSame)
+instance forall a x xs.
+      ( VariantRemoveType a xs
+      , KnownNat (Same a x)
+      ) => VariantRemoveType a (x ': xs)
+   where
+      variantRemoveType' shift idx (Variant t a)
+         = case (idx == t, natValue' @(Same a x)) of
+            (True , 1) -> Right (unsafeCoerce a)
+            (False, 1) -> variantRemoveType' @a (shift+1) (idx+1) v'
+            (True , _) -> Left (t-shift)
+            (False, _) -> variantRemoveType' @a shift (idx+1) v'
          where
-            -- if (a /= Index n l), same == 0, else same == 1
-            same = natValue @same
+            v' :: Variant xs
+            v' = Variant t a
+
+-- | Remove a type from a variant
+variantRemoveType :: forall a xs.
+   ( VariantRemoveType a xs
+   ) => Variant xs -> Either (Variant (Filter a xs)) a
+variantRemoveType v@(Variant _ a) = case variantRemoveType' 0 0 v of
+   Left t  -> Left (Variant t a)
+   Right x -> Right x
 
 -- | a is catchable in xs
 type Catchable a xs =
    ( IsMember a xs ~ 'True
-   , HFoldr' RemoveType (Variant xs, Word, Maybe Found)
-         (Zip (Indexes xs) (MapTest a xs))
-         (Variant xs, Word, Maybe Found)
+   , VariantRemoveType a xs
    )
 
 -- | a may be catchable in xs
 type MaybeCatchable a xs =
-   ( HFoldr' RemoveType (Variant xs, Word, Maybe Found)
-         (Zip (Indexes xs) (MapTest a xs))
-         (Variant xs, Word, Maybe Found)
+   ( VariantRemoveType a xs
    )
 
 -- | Extract a type from a variant. Return either the value of this type or the
 -- remaining variant
-catchVariant :: forall a l.
-   ( MaybeCatchable a l
-   ) => Variant l -> Either (Variant (Filter a l)) a
-catchVariant v = case res of
-      (Variant _ a, _,     Just FoundSame)      -> Right (unsafeCoerce a)
-      (Variant t a, shift, Just FoundDifferent) -> Left (Variant (t-shift) a)
-      _ -> error "catchVariant error" -- shouldn't happen
-   where
-      res :: (Variant l, Word, Maybe Found)
-      res = hFoldr' RemoveType
-               ((v,0,Nothing) :: (Variant l, Word, Maybe Found))
-               (undefined :: HList (Zip (Indexes l) (MapTest a l)))
+catchVariant :: forall a xs.
+   ( MaybeCatchable a xs
+   ) => Variant xs -> Either (Variant (Filter a xs)) a
+catchVariant v = variantRemoveType @a v
 
 -- | Pick a variant value
 pickVariant :: forall (n :: Nat) l. 

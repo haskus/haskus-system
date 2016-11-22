@@ -26,6 +26,7 @@ module ViperVM.Utils.Types
    , If
    , IfNat
    , Modulo
+   , Same
    , Proxy (..)
    , TypeError
    , ErrorMessage (..)
@@ -69,3 +70,7 @@ type family Modulo' c a b where
    Modulo' 'True  a b = a
    Modulo' 'False a b = Modulo' ((a-b) <=? b) (a-b) b
 
+-- | Type equality to Nat
+type family Same a b :: Nat where
+   Same a a = 1
+   Same a b = 0
