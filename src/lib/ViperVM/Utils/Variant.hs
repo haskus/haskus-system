@@ -73,7 +73,7 @@ instance
    ) => Eq (Variant (x ': xs))
    where
       {-# INLINE (==) #-}
-      (==) v1 v2 = case (pickVariant @0 v1, pickVariant @0 v2) of
+      (==) v1 v2 = case (headVariant v1, headVariant v2) of
          (Right a, Right b) -> a == b
          (Left as, Left bs) -> as == bs
          _                  -> False
@@ -86,7 +86,7 @@ instance
    , Show x
    ) => Show (Variant (x ': xs))
    where
-      show v = case pickVariant @0 v of
+      show v = case headVariant v of
          Right x -> show x
          Left xs -> show xs
 
@@ -317,49 +317,35 @@ updateVariant f v = updateVariantN @n f v
 -- | xs is liftable in ys
 type Liftable xs ys =
    ( IsSubset xs ys ~ 'True
-   , HFoldr' VariantLift (Variant xs, Maybe (Variant ys))
-         (Indexes xs) (Variant xs, Maybe (Variant ys))
+   , VariantLift xs ys
    )
 
-data VariantLift = VariantLift
 
+class VariantLift xs ys where
+   liftVariant' :: Variant xs -> Variant ys
 
--- | Merge a variant into another
-instance forall (n :: Nat) (m :: Nat) xs ys i r x.
-   ( x ~ Index n xs
-   , IsMember x ys ~ 'True
-   , i ~ (Variant xs, Maybe (Variant ys)) -- input
-   , r ~ (Variant xs, Maybe (Variant ys)) -- output
-   , x ~ Index m ys
-   , m ~ IndexOf x ys
-   , KnownNat m
-   , KnownNat n
-   ) => Apply VariantLift (Proxy n,i) r where
-      apply _ (_, i) = case i of
-         (_, Just _)  -> i
-         (v, Nothing) -> case getVariantN @n v of
-               Nothing -> (v, Nothing)
-               Just a  -> (v, Just (setVariant a))
+instance VariantLift '[] ys where
+   liftVariant' = error "Lifting empty variant"
 
+instance forall x xs ys.
+      ( VariantLift xs ys
+      , KnownNat (IndexOf x ys)
+      ) => VariantLift (x ': xs) ys
+   where
+      {-# INLINE liftVariant' #-}
+      liftVariant' v = case headVariant v of
+         Right a  -> Variant (natValue @(IndexOf x ys)) a
+         Left  v' -> liftVariant' v'
 
 
 -- | Lift a variant into another
 --
--- Set values to the first correspond type tag
-liftVariant :: forall xs ys i r.
-   ( IsSubset xs ys ~ 'True
-   , i ~ (Variant xs, Maybe (Variant ys))
-   , r ~ (Variant xs, Maybe (Variant ys))
-   , HFoldr' VariantLift i (Indexes xs) r
+-- Set values to the first matching type
+liftVariant :: forall xs ys.
+   ( Liftable xs ys
    ) => Variant xs -> Variant ys
-liftVariant v = s
-   where
-      res :: r
-      res = hFoldr' VariantLift
-               ((v,Nothing) :: i)
-               (undefined :: HList (Indexes xs))
-
-      Just s = snd res
+{-# INLINE liftVariant #-}
+liftVariant = liftVariant'
 
 -- | Convert a variant of two values in a Either
 toEither :: forall a b. Variant '[a,b] -> Either b a
