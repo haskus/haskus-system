@@ -33,8 +33,6 @@ module ViperVM.Utils.Variant
    , Catchable
    , MaybeCatchable
    , Liftable
-   , Matchable
-   , MatchableH
    , catchVariant
    , pickVariant
    , headVariant
@@ -179,17 +177,26 @@ updateVariantFoldM f v@(Variant t a) =
       n   = natValue @n
       nl2 = natValue @(Length l2)
 
-data GetValue    = GetValue
 data RemoveType  = RemoveType
 
-instance forall (n :: Nat) l l2 i r .
-   ( i ~ (Variant l, HList l2)                         -- input
-   , r ~ (Variant l, HList (Maybe (Index n l) ': l2)) -- result
-   , KnownNat n
-   ) => Apply GetValue (Proxy n,i) r where
-      apply _ (_, (v,xs)) = (v, getVariantN @n v `HCons` xs)
+class VariantToHList xs where
+   -- | Convert a variant into a HList of Maybes
+   variantToHList :: Variant xs -> HList (MapMaybe xs)
 
+instance VariantToHList '[] where
+   variantToHList _ = HNil
 
+instance
+   ( VariantToHList xs
+   ) => VariantToHList (x ': xs)
+   where
+      variantToHList v@(Variant t a) =
+            getVariantN @0 v `HCons` variantToHList v'
+         where
+            v' :: Variant xs
+            v' = Variant (t-1) a
+
+   
 data Found
    = FoundSame
    | FoundDifferent
@@ -265,31 +272,11 @@ headVariant v@(Variant t a) = case getVariantN @0 v of
    Nothing -> Left $ Variant (t-1) a
 
 
--- | Matchable as a HList
-type MatchableH l =
-   ( HFoldr' GetValue (Variant l, HList '[])
-         (Indexes l) (Variant l, HList (MapMaybe l))
-   , KnownNat (Length l)
-   )
-
--- | Matchable as a tuple
-type Matchable l t =
-   ( MatchableH l
-   , HTuple' (MapMaybe l) t
-   )
-
--- | Get variant possible values in a HList of Maybe types
-variantToHList :: forall l.  (MatchableH l)
-   => Variant l -> HList (MapMaybe l)
-variantToHList v = snd res
-   where
-      res :: (Variant l, HList (MapMaybe l))
-      res = hFoldr' GetValue
-               ((v, HNil) :: (Variant l, HList '[]))
-               (undefined :: HList (Indexes l))
-
 -- | Get variant possible values in a tuple of Maybe types
-variantToTuple :: forall l t.  (Matchable l t) => Variant l -> t
+variantToTuple :: forall l t.
+   ( VariantToHList l
+   , HTuple' (MapMaybe l) t
+   ) => Variant l -> t
 variantToTuple = hToTuple' . variantToHList
 
 -- | Retreive the last v
