@@ -73,10 +73,23 @@ instance
    , Eq x
    ) => Eq (Variant (x ': xs))
    where
+      {-# INLINE (==) #-}
       (==) v1 v2 = case (pickVariant @0 v1, pickVariant @0 v2) of
          (Right a, Right b) -> a == b
          (Left as, Left bs) -> as == bs
          _                  -> False
+
+instance Show (Variant '[]) where
+   show _ = "Empty variant"
+
+instance
+   ( Show (Variant xs)
+   , Show x
+   ) => Show (Variant (x ': xs))
+   where
+      show v = case pickVariant @0 v of
+         Right x -> show x
+         Left xs -> show xs
 
 -- | Set the value with the given indexed type
 setVariantN :: forall (n :: Nat) (l :: [*]).
@@ -96,6 +109,7 @@ getVariantN (Variant t a) = do
 
 -- | Lift an Either into a Variant (reversed order by convention)
 liftEither :: Either a b -> Variant '[b,a]
+{-# INLINE liftEither #-}
 liftEither (Left a)  = setVariantN @1 a
 liftEither (Right b) = setVariantN @0 b
 
@@ -167,7 +181,6 @@ updateVariantFoldM f v@(Variant t a) =
 
 data GetValue    = GetValue
 data RemoveType  = RemoveType
-data VariantShow = VariantShow
 
 instance forall (n :: Nat) l l2 i r .
    ( i ~ (Variant l, HList l2)                         -- input
@@ -283,34 +296,6 @@ variantToTuple = hToTuple' . variantToHList
 singleVariant :: Variant '[a] -> a
 singleVariant = fromJust . getVariantN @0
 
-
--- | Showing a variant value
-instance forall (n :: Nat) l i r .
-   ( i ~ (Variant l, Maybe String) -- input
-   , r ~ (Variant l, Maybe String) -- result
-   , Show (Index n l)
-   , KnownNat n
-   ) => Apply VariantShow (Proxy n,i) r where
-      apply _ (_, i) = case i of
-         (_, Just _)  -> i
-         (v, Nothing) -> case getVariantN @n v of
-               Nothing -> (v, Nothing)
-               Just a  -> (v, Just s)
-                  where
-                     s = show a
-
-instance 
-   ( HFoldr' VariantShow (Variant l, Maybe String) (Indexes l) (Variant l, Maybe String)
-   )
-   => Show (Variant l) where
-   show v = s
-      where
-         res :: (Variant l, Maybe String)
-         res = hFoldr' VariantShow
-                  ((v,Nothing) :: (Variant l, Maybe String))
-                  (undefined :: HList (Indexes l))
-
-         Just s = snd res
 
 -- | Extend a variant by appending other possible values
 appendVariant :: forall (ys :: [*]) (xs :: [*]). Variant xs -> Variant (Concat xs ys)
