@@ -96,6 +96,8 @@ testsVariant = testGroup "Variant" $
 
    , testProperty "catchVariant (match)"
          (catchVariant @D (setVariantN @4 D :: Variant '[A,B,C,B,D,E,D]) == Right D)
+   , testProperty "catchVariant (match)"
+         (catchVariant @D (setVariantN @6 D :: Variant '[A,B,C,B,D,E,D]) == Right D)
    , testProperty "catchVariant (don't match)"
          (catchVariant @B (setVariantN @4 D :: Variant '[A,B,C,B,D,E,D]) == Left (setVariantN @2 D))
 

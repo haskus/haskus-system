@@ -22,6 +22,7 @@ module ViperVM.Utils.Types.List
    , ReplaceN
    , Reverse
    , RemoveAt
+   , RemoveAt1
    , Concat
    , Length
    , Replicate
@@ -133,6 +134,12 @@ type family ReverseEx (l :: [*]) (l2 :: [*]) where
 type family RemoveAt (n :: Nat) l where
    RemoveAt 0 (x ': xs) = xs
    RemoveAt n (x ': xs) = x ': RemoveAt (n-1) xs
+
+-- | Remove a type at index (0 == don't remove)
+type family RemoveAt1 (n :: Nat) l where
+   RemoveAt1 0 xs        = xs
+   RemoveAt1 1 (x ': xs) = xs
+   RemoveAt1 n (x ': xs) = x ': RemoveAt1 (n-1) xs
 
 -- | Apply Maybe to all the elements of the list
 type family MapMaybe l where

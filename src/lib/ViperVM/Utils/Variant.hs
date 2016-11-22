@@ -199,34 +199,27 @@ instance
 
 class VariantRemoveType a xs where
    -- | Remove a type from a variant
-   variantRemoveType' :: Word -> Word -> Variant xs -> Either Word a
+   variantRemoveType :: Variant xs -> Either (Variant (Filter a xs)) a
 
 instance VariantRemoveType a '[] where
-   variantRemoveType' _ _ = undefined
+   variantRemoveType _ = undefined
 
-
-instance forall a x xs.
-      ( VariantRemoveType a xs
-      , KnownNat (Same a x)
-      ) => VariantRemoveType a (x ': xs)
+instance forall a xs n xs' y ys.
+      ( VariantRemoveType a xs'
+      , n ~ MaybeIndexOf a xs
+      , xs' ~ RemoveAt1 n xs
+      , Filter a xs' ~ Filter a xs
+      , KnownNat n
+      , xs ~ (y ': ys)
+      ) => VariantRemoveType a (y ': ys)
    where
-      variantRemoveType' shift idx (Variant t a)
-         = case (idx == t, natValue' @(Same a x)) of
-            (True , 1) -> Right (unsafeCoerce a)
-            (False, 1) -> variantRemoveType' @a (shift+1) (idx+1) v'
-            (True , _) -> Left (t-shift)
-            (False, _) -> variantRemoveType' @a shift (idx+1) v'
-         where
-            v' :: Variant xs
-            v' = Variant t a
-
--- | Remove a type from a variant
-variantRemoveType :: forall a xs.
-   ( VariantRemoveType a xs
-   ) => Variant xs -> Either (Variant (Filter a xs)) a
-variantRemoveType v@(Variant _ a) = case variantRemoveType' 0 0 v of
-   Left t  -> Left (Variant t a)
-   Right x -> Right x
+      {-# INLINE variantRemoveType #-}
+      variantRemoveType (Variant t a)
+         = case natValue' @n of
+            0             -> Left (Variant t a) -- no 'a' left in xs
+            n | n-1 == t  -> Right (unsafeCoerce a)
+              | n-1 < t   -> variantRemoveType @a @xs' (Variant (t-1) a)
+              | otherwise -> Left (Variant t a)
 
 -- | a is catchable in xs
 type Catchable a xs =
