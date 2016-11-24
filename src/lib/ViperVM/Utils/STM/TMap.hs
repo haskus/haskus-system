@@ -3,6 +3,7 @@
 -- | STm hashmap
 module ViperVM.Utils.STM.TMap
    ( TMap
+   , Key
    , null
    , size
    , lookup
