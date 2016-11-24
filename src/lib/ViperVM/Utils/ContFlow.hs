@@ -18,7 +18,7 @@ module ViperVM.Utils.ContFlow
    ( ContFlow (..)
    , (>::>)
    , (>:-:>)
-   , (>:~:>)
+   , (>:%:>)
    , fret
    , fretN
    , freturn
@@ -82,13 +82,13 @@ infixl 0 >:-:>
 
 -- | Bind a flow to a tuple of continuations and
 -- reorder fields if necessary
-(>:~:>) :: forall ts xs r.
+(>:%:>) :: forall ts xs r.
    ( ReorderTuple ts (ContListToTuple xs r)
    ) => ContFlow xs r -> ts -> r
-{-# INLINE (>:~:>) #-}
-(>:~:>) (ContFlow f) !cs = f (tupleReorder cs)
+{-# INLINE (>:%:>) #-}
+(>:%:>) (ContFlow f) !cs = f (tupleReorder cs)
 
-infixl 0 >:~:>
+infixl 0 >:%:>
 
 -- | Call the type-indexed continuation from the tuple passed as first parameter
 fret :: forall x r t n xs.
