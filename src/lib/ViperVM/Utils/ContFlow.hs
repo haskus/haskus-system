@@ -71,11 +71,14 @@ type family StripR f r where
 {-# INLINE (>::>) #-}
 (>::>) (ContFlow f) !cs = f cs
 
+infixl 0 >::>
+
 -- | Bind a flow to a 1-tuple of continuations
 (>:-:>) :: ContFlow '[a] r -> (a -> r) -> r
 {-# INLINE (>:-:>) #-}
 (>:-:>) (ContFlow f) c = f (Single c)
 
+infixl 0 >:-:>
 
 -- | Bind a flow to a tuple of continuations and
 -- reorder fields if necessary
@@ -84,6 +87,8 @@ type family StripR f r where
    ) => ContFlow xs r -> ts -> r
 {-# INLINE (>:~:>) #-}
 (>:~:>) (ContFlow f) !cs = f (tupleReorder cs)
+
+infixl 0 >:~:>
 
 -- | Call the type-indexed continuation from the tuple passed as first parameter
 fret :: forall x r t n xs.
