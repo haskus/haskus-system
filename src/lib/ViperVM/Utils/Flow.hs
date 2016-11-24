@@ -21,6 +21,7 @@ module ViperVM.Utils.Flow
    , flowSetN
    , flowSet
    , flowLift
+   , flowToCont
    , flowTraverse
    , flowFor
    , flowTraverseFilter
@@ -207,6 +208,7 @@ import ViperVM.Utils.Variant
 import ViperVM.Utils.Types
 import ViperVM.Utils.Types.List
 import ViperVM.Utils.Monad
+import ViperVM.Utils.ContFlow
 
 -- | Control-flow
 type Flow m (l :: [*]) = m (Variant l)
@@ -235,6 +237,10 @@ flowSingle = flowSetN @0
 -- | Lift a flow into another
 flowLift :: (Liftable xs ys , Monad m) => Flow m xs -> Flow m ys
 flowLift = fmap liftVariant
+
+-- | Lift a flow into a ContFlow
+flowToCont :: (ContVariant xs, Monad m) => Flow m xs -> ContFlow xs (m r)
+flowToCont = variantToContM
 
 -- | Traverse a list and stop on first error
 flowTraverse :: forall m a b xs.

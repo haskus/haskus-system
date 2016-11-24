@@ -350,6 +350,9 @@ class ContVariant xs where
    -- | Convert a variant into a multi-continuation
    variantToCont :: Variant xs -> ContFlow xs r
 
+   -- | Convert a variant into a multi-continuation
+   variantToContM :: Monad m => m (Variant xs) -> ContFlow xs (m r)
+
    -- | Convert a multi-continuation into a Variant
    contToVariant :: ContFlow xs (Variant xs) -> Variant xs
 
@@ -359,6 +362,11 @@ class ContVariant xs where
 instance ContVariant '[a] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant _ a) = ContFlow $ \(Single f) ->
+      f (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(Single f) -> do
+      Variant _ a <- act
       f (unsafeCoerce a)
 
    {-# INLINE contToVariant #-}
@@ -372,6 +380,13 @@ instance ContVariant '[a] where
 instance ContVariant '[a,b] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant t a) = ContFlow $ \(f1,f2) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         _ -> f2 (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2) -> do
+      Variant t a <- act
       case t of
          0 -> f1 (unsafeCoerce a)
          _ -> f2 (unsafeCoerce a)
@@ -396,6 +411,14 @@ instance ContVariant '[a,b,c] where
          1 -> f2 (unsafeCoerce a)
          _ -> f3 (unsafeCoerce a)
 
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3) -> do
+      Variant t a <- act
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         _ -> f3 (unsafeCoerce a)
+
    {-# INLINE contToVariant #-}
    contToVariant c = c >::>
       ( setVariantN @0
@@ -413,6 +436,15 @@ instance ContVariant '[a,b,c] where
 instance ContVariant '[a,b,c,d] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant t a) = ContFlow $ \(f1,f2,f3,f4) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         _ -> f4 (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4) -> do
+      Variant t a <- act
       case t of
          0 -> f1 (unsafeCoerce a)
          1 -> f2 (unsafeCoerce a)
@@ -445,6 +477,16 @@ instance ContVariant '[a,b,c,d,e] where
          3 -> f4 (unsafeCoerce a)
          _ -> f5 (unsafeCoerce a)
 
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5) -> do
+      Variant t a <- act
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         _ -> f5 (unsafeCoerce a)
+
    {-# INLINE contToVariant #-}
    contToVariant c = c >::>
       ( setVariantN @0
@@ -466,6 +508,17 @@ instance ContVariant '[a,b,c,d,e] where
 instance ContVariant '[a,b,c,d,e,f] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         _ -> f6 (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6) -> do
+      Variant t a <- act
       case t of
          0 -> f1 (unsafeCoerce a)
          1 -> f2 (unsafeCoerce a)
@@ -506,6 +559,18 @@ instance ContVariant '[a,b,c,d,e,f,g] where
          5 -> f6 (unsafeCoerce a)
          _ -> f7 (unsafeCoerce a)
 
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7) -> do
+      Variant t a <- act
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         5 -> f6 (unsafeCoerce a)
+         _ -> f7 (unsafeCoerce a)
+
    {-# INLINE contToVariant #-}
    contToVariant c = c >::>
       ( setVariantN @0
@@ -531,6 +596,19 @@ instance ContVariant '[a,b,c,d,e,f,g] where
 instance ContVariant '[a,b,c,d,e,f,g,h] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8) ->
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         5 -> f6 (unsafeCoerce a)
+         6 -> f7 (unsafeCoerce a)
+         _ -> f8 (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8) -> do
+      Variant t a <- act
       case t of
          0 -> f1 (unsafeCoerce a)
          1 -> f2 (unsafeCoerce a)
@@ -579,6 +657,20 @@ instance ContVariant '[a,b,c,d,e,f,g,h,i] where
          7 -> f8 (unsafeCoerce a)
          _ -> f9 (unsafeCoerce a)
 
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9) -> do
+      Variant t a <- act
+      case t of
+         0 -> f1 (unsafeCoerce a)
+         1 -> f2 (unsafeCoerce a)
+         2 -> f3 (unsafeCoerce a)
+         3 -> f4 (unsafeCoerce a)
+         4 -> f5 (unsafeCoerce a)
+         5 -> f6 (unsafeCoerce a)
+         6 -> f7 (unsafeCoerce a)
+         7 -> f8 (unsafeCoerce a)
+         _ -> f9 (unsafeCoerce a)
+
    {-# INLINE contToVariant #-}
    contToVariant c = c >::>
       ( setVariantN @0
@@ -608,6 +700,21 @@ instance ContVariant '[a,b,c,d,e,f,g,h,i] where
 instance ContVariant '[a,b,c,d,e,f,g,h,i,j] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10) ->
+      case t of
+         0 -> f1  (unsafeCoerce a)
+         1 -> f2  (unsafeCoerce a)
+         2 -> f3  (unsafeCoerce a)
+         3 -> f4  (unsafeCoerce a)
+         4 -> f5  (unsafeCoerce a)
+         5 -> f6  (unsafeCoerce a)
+         6 -> f7  (unsafeCoerce a)
+         7 -> f8  (unsafeCoerce a)
+         8 -> f9  (unsafeCoerce a)
+         _ -> f10 (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10) -> do
+      Variant t a <- act
       case t of
          0 -> f1  (unsafeCoerce a)
          1 -> f2  (unsafeCoerce a)
@@ -664,6 +771,22 @@ instance ContVariant '[a,b,c,d,e,f,g,h,i,j,k] where
          9 -> f10 (unsafeCoerce a)
          _ -> f11 (unsafeCoerce a)
 
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11) -> do
+      Variant t a <- act
+      case t of
+         0 -> f1  (unsafeCoerce a)
+         1 -> f2  (unsafeCoerce a)
+         2 -> f3  (unsafeCoerce a)
+         3 -> f4  (unsafeCoerce a)
+         4 -> f5  (unsafeCoerce a)
+         5 -> f6  (unsafeCoerce a)
+         6 -> f7  (unsafeCoerce a)
+         7 -> f8  (unsafeCoerce a)
+         8 -> f9  (unsafeCoerce a)
+         9 -> f10 (unsafeCoerce a)
+         _ -> f11 (unsafeCoerce a)
+
    {-# INLINE contToVariant #-}
    contToVariant c = c >::>
       ( setVariantN @0
@@ -697,6 +820,23 @@ instance ContVariant '[a,b,c,d,e,f,g,h,i,j,k] where
 instance ContVariant '[a,b,c,d,e,f,g,h,i,j,k,l] where
    {-# INLINE variantToCont #-}
    variantToCont (Variant t a) = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12) ->
+      case t of
+         0  -> f1  (unsafeCoerce a)
+         1  -> f2  (unsafeCoerce a)
+         2  -> f3  (unsafeCoerce a)
+         3  -> f4  (unsafeCoerce a)
+         4  -> f5  (unsafeCoerce a)
+         5  -> f6  (unsafeCoerce a)
+         6  -> f7  (unsafeCoerce a)
+         7  -> f8  (unsafeCoerce a)
+         8  -> f9  (unsafeCoerce a)
+         9  -> f10 (unsafeCoerce a)
+         10 -> f11 (unsafeCoerce a)
+         _  -> f12 (unsafeCoerce a)
+
+   {-# INLINE variantToContM #-}
+   variantToContM act = ContFlow $ \(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12) -> do
+      Variant t a <- act
       case t of
          0  -> f1  (unsafeCoerce a)
          1  -> f2  (unsafeCoerce a)
