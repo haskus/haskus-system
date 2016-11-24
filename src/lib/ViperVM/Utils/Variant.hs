@@ -65,7 +65,7 @@ data Variant (l :: [*]) = forall a. Variant {-# UNPACK #-} !Word a
 type role Variant representational
 
 instance Eq (Variant '[]) where
-   (==) _ _ = True
+   (==) = error "Empty variant"
 
 instance
    ( Eq (Variant xs)
@@ -73,13 +73,29 @@ instance
    ) => Eq (Variant (x ': xs))
    where
       {-# INLINE (==) #-}
-      (==) v1 v2 = case (headVariant v1, headVariant v2) of
-         (Right a, Right b) -> a == b
-         (Left as, Left bs) -> as == bs
-         _                  -> False
+      (==) v1@(Variant t1 _) v2@(Variant t2 _)
+         | t1 /= t2  = False
+         | otherwise = case (headVariant v1, headVariant v2) of
+            (Right a, Right b) -> a == b
+            (Left as, Left bs) -> as == bs
+            _                  -> False
+
+instance Ord (Variant '[]) where
+   compare = error "Empty variant"
+
+instance
+   ( Ord (Variant xs)
+   , Ord x
+   ) => Ord (Variant (x ': xs))
+   where
+      compare v1 v2 = case (headVariant v1, headVariant v2) of
+         (Right a, Right b) -> compare a b
+         (Left as, Left bs) -> compare as bs
+         (Right _, Left _)  -> LT
+         (Left _, Right _)  -> GT
 
 instance Show (Variant '[]) where
-   show _ = "Empty variant"
+   show = error "Empty variant"
 
 instance
    ( Show (Variant xs)
