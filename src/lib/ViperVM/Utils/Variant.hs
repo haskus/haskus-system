@@ -47,6 +47,7 @@ module ViperVM.Utils.Variant
 where
 
 import Unsafe.Coerce
+import GHC.Exts (Any)
 
 import ViperVM.Utils.Monad
 import ViperVM.Utils.Maybe
@@ -58,7 +59,7 @@ import ViperVM.Utils.Types.List
 
 -- | A variant contains a value whose type is at the given position in the type
 -- list
-data Variant (l :: [*]) = forall a. Variant {-# UNPACK #-} !Word a
+data Variant (l :: [*]) = Variant {-# UNPACK #-} !Word Any
 
 -- | Make GHC consider `l` as a representational parameter to make coercions
 -- between Variant values unsafe
@@ -111,7 +112,7 @@ setVariantN :: forall (n :: Nat) (l :: [*]).
    ( KnownNat n
    ) => Index n l -> Variant l
 {-# INLINE setVariantN #-}
-setVariantN = Variant (natValue @n)
+setVariantN a = Variant (natValue @n) (unsafeCoerce a)
 
 -- | Get the value if it has the indexed type
 getVariantN :: forall (n :: Nat) (l :: [*]).
@@ -141,7 +142,7 @@ updateVariantN :: forall (n :: Nat) a b l.
 updateVariantN f v@(Variant t a) =
    case getVariantN @n v of
       Nothing -> Variant t a
-      Just x  -> Variant t (f x)
+      Just x  -> Variant t (unsafeCoerce (f x))
 
 -- | Update a variant value in a Monad
 updateVariantM :: forall (n :: Nat) l l2 m .
@@ -151,7 +152,7 @@ updateVariantM :: forall (n :: Nat) l l2 m .
 updateVariantM f v@(Variant t a) =
    case getVariantN @n v of
       Nothing -> return (Variant t a)
-      Just x  -> Variant t <$> f x
+      Just x  -> Variant t <$> unsafeCoerce (f x)
 
 -- | Update a variant value with a variant and fold the result
 updateVariantFold :: forall (n :: Nat) l l2 .
@@ -343,7 +344,7 @@ instance forall x xs ys.
    where
       {-# INLINE liftVariant' #-}
       liftVariant' v = case headVariant v of
-         Right a  -> Variant (natValue @(IndexOf x ys)) a
+         Right a  -> Variant (natValue @(IndexOf x ys)) (unsafeCoerce a)
          Left  v' -> liftVariant' v'
 
 
