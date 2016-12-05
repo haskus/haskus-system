@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeApplications #-}
@@ -50,7 +49,6 @@ import Unsafe.Coerce
 import GHC.Exts (Any)
 
 import ViperVM.Utils.Monad
-import ViperVM.Utils.Maybe
 import ViperVM.Utils.Types
 import ViperVM.Utils.Tuple
 import ViperVM.Utils.HList
@@ -284,7 +282,8 @@ variantToTuple = hToTuple' . variantToHList
 
 -- | Retreive the last v
 singleVariant :: Variant '[a] -> a
-singleVariant = fromJust . getVariantN @0
+{-# INLINE singleVariant #-}
+singleVariant (Variant _ a) = unsafeCoerce a
 
 
 -- | Extend a variant by appending other possible values
