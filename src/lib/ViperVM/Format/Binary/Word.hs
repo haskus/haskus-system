@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MagicHash #-}
 
 -- | Unsigned and signed words
 module ViperVM.Format.Binary.Word
@@ -20,7 +21,25 @@ module ViperVM.Format.Binary.Word
    , CInt
    , CULong
    , CLong
+   -- * Unlifted
    , module GHC.Word
+   , Word#
+   , Int#
+   , plusWord#
+   , minusWord#
+   , (+#)
+   , (-#)
+   , (==#)
+   , (>#)
+   , (<#)
+   , (>=#)
+   , (<=#)
+   , ltWord#
+   , leWord#
+   , gtWord#
+   , geWord#
+   , eqWord#
+   , isTrue#
    )
 where
 
@@ -28,6 +47,7 @@ import Data.Word
 import Data.Int
 import Foreign.C.Types
 import GHC.Word
+import GHC.Exts
 
 import ViperVM.Utils.Types
 
