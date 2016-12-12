@@ -23,6 +23,7 @@ module ViperVM.Utils.Variant
    , updateVariant
    , updateVariantM
    , updateVariantFold
+   , updateVariantFoldN
    , updateVariantFoldM
    , variantToHList
    , variantToTuple
@@ -153,11 +154,11 @@ updateVariantM f v@(Variant t a) =
       Just x  -> Variant t <$> unsafeCoerce (f x)
 
 -- | Update a variant value with a variant and fold the result
-updateVariantFold :: forall (n :: Nat) l l2 .
+updateVariantFoldN :: forall (n :: Nat) l l2 .
    ( KnownNat n
    , KnownNat (Length l2)
    ) => (Index n l -> Variant l2) -> Variant l -> Variant (ReplaceAt n l l2)
-updateVariantFold f v@(Variant t a) =
+updateVariantFoldN f v@(Variant t a) =
    case getVariantN @n v of
       Nothing ->
          -- we need to adapt the tag if new valid tags (from l2) are added before
@@ -170,6 +171,15 @@ updateVariantFold f v@(Variant t a) =
    where
       n   = natValue @n
       nl2 = natValue @(Length l2)
+
+-- | Update a variant value with a variant and fold the result
+updateVariantFold :: forall a (n :: Nat) l l2 .
+   ( KnownNat n
+   , KnownNat (Length l2)
+   , n ~ IndexOf a l
+   , a ~ Index n l
+   ) => (a -> Variant l2) -> Variant l -> Variant (ReplaceAt n l l2)
+updateVariantFold f v = updateVariantFoldN @n f v
 
 -- | Update a variant value with a variant and fold the result
 updateVariantFoldM :: forall (n :: Nat) m l l2.
