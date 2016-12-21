@@ -6,6 +6,7 @@ module ViperVM.System.Graphics.Diagrams
    , VDiagram
    , VDiagram'
    , module Diagrams
+   , module Diagrams.Prelude
    , text'
    , text
    )
@@ -15,6 +16,7 @@ where
 -- We might use Diagrams queries to handle mouse clicks, etc.
 -- http://projects.haskell.org/diagrams/blog/2015-04-30-GTK-coordinates.html
 
+import Diagrams.Prelude hiding ((|>),(<|),text)
 import Diagrams hiding (text)
 import Diagrams.TwoD.Text (FontSlant(..),FontWeight(..),Text(..))
 import Diagrams.Backend.Rasterific
