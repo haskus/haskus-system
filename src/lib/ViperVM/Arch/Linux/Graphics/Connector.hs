@@ -14,6 +14,7 @@ module ViperVM.Arch.Linux.Graphics.Connector
    , connectorEncoder
    , connectorController
    , getConnectors
+   , getConnectorFromID
    )
 where
 
@@ -66,7 +67,7 @@ getConnector' :: MonadIO m => Handle -> StructGetConnector -> Flow m '[StructGet
 getConnector' hdl r = liftIO (ioctlGetConnector r hdl) >%~^> \case
    EINVAL -> flowSet InvalidParam
    ENOENT -> flowSet EntryNotFound
-   e      -> unhdlErr "getModeConnector" e
+   e      -> unhdlErr "getConnector" e
 
 -- | Get connector
 getConnectorFromID :: forall m. MonadInIO m => Handle -> ConnectorID -> Flow m '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
