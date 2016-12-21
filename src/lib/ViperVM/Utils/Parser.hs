@@ -147,7 +147,7 @@ manyTill f g = go []
             Right EndOfInput  -> flowSet EndOfInput
             Right SyntaxError -> do
                u <- f
-               case catchVariant u of
+               case catchVariantMaybe u of
                   Right (e :: ParseError) -> flowSet e
                   Left x                  -> go (x:xs)
             Left x            -> flowSet (reverse xs,x)
@@ -176,7 +176,7 @@ manyBounded _ (Just 0) _   = flowSet ([] :: [Variant zs])
 manyBounded (Just 0) max f = manyBounded Nothing max f
 manyBounded min max f      = do
    v <- f
-   case catchVariant v of
+   case catchVariantMaybe v of
       Right (e :: ParseError) -> case min of
          Just n | n > 0 -> flowSet e
          _              -> flowSet ([] :: [Variant zs])

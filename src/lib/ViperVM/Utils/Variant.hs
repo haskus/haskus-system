@@ -35,12 +35,14 @@ module ViperVM.Utils.Variant
    , MaybeCatchable
    , Liftable
    , catchVariant
+   , catchVariantMaybe
    , pickVariant
    , headVariant
    , singleVariant
    , appendVariant
    , prependVariant
    , liftVariant
+   , liftVariantM
    , toEither
    , ContVariant (..)
    )
@@ -260,9 +262,16 @@ type MaybeCatchable a xs =
 -- | Extract a type from a variant. Return either the value of this type or the
 -- remaining variant
 catchVariant :: forall a xs.
-   ( MaybeCatchable a xs
+   ( Catchable a xs
    ) => Variant xs -> Either (Variant (Filter a xs)) a
 catchVariant v = variantRemoveType @a v
+
+-- | Extract a type from a variant. Return either the value of this type or the
+-- remaining variant
+catchVariantMaybe :: forall a xs.
+   ( MaybeCatchable a xs
+   ) => Variant xs -> Either (Variant (Filter a xs)) a
+catchVariantMaybe v = variantRemoveType @a v
 
 -- | Pick a variant value
 pickVariant :: forall (n :: Nat) l. 
@@ -365,6 +374,14 @@ liftVariant :: forall xs ys.
    ) => Variant xs -> Variant ys
 {-# INLINE liftVariant #-}
 liftVariant = liftVariant'
+
+liftVariantM ::
+   ( Liftable xs ys
+   , Monad m
+   ) => Variant xs -> m (Variant ys)
+{-# INLINE liftVariantM #-}
+liftVariantM = return . liftVariant
+
 
 -- | Convert a variant of two values in a Either
 toEither :: forall a b. Variant '[a,b] -> Either b a

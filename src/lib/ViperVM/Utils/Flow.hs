@@ -1226,7 +1226,7 @@ infixl 0 >..%~!>
    , MaybeCatchable x xs
    ) => Variant xs -> (x -> m y) -> Flow m (y ': ys)
 {-# INLINE (?~.>) #-}
-(?~.>) v f = case catchVariant v of
+(?~.>) v f = case catchVariantMaybe v of
    Right x -> flowSetN @0 =<< f x
    Left ys -> prependVariant @'[y] <$> return ys
 
@@ -1272,7 +1272,7 @@ infixl 0 >%~.>
    , KnownNat (Length ys)
    ) => Variant xs -> (x -> Flow m ys) -> Flow m (Concat ys (Filter x xs))
 {-# INLINE (?~+>) #-}
-(?~+>) v f = case catchVariant v of
+(?~+>) v f = case catchVariantMaybe v of
    Right x -> appendVariant  @(Filter x xs) <$> f x
    Left ys -> prependVariant @ys            <$> return ys
 
@@ -1319,7 +1319,7 @@ infixl 0 >%~+>
    , Liftable ys zs
    ) => Variant xs -> (x -> Flow m ys) -> Flow m zs
 {-# INLINE (?~^^>) #-}
-(?~^^>) v f = case catchVariant v of
+(?~^^>) v f = case catchVariantMaybe v of
    Right x -> liftVariant <$> f x
    Left ys -> liftVariant <$> return ys
 
@@ -1368,7 +1368,7 @@ infixl 0 >%~^^>
    , Liftable (Filter x xs) zs
    ) => Variant xs -> (x -> Flow m zs) -> Flow m zs
 {-# INLINE (?~^>) #-}
-(?~^>) v f = case catchVariant v of
+(?~^>) v f = case catchVariantMaybe v of
    Right x -> f x
    Left ys -> return (liftVariant ys)
 
@@ -1413,7 +1413,7 @@ infixl 0 >%~^>
    , MaybeCatchable x xs
    ) => Variant xs -> (x -> Flow m xs) -> Flow m xs
 {-# INLINE (?~$>) #-}
-(?~$>) v f = case catchVariant v of
+(?~$>) v f = case catchVariantMaybe v of
    Right x -> f x
    Left _  -> return v
 
@@ -1458,7 +1458,7 @@ infixl 0 >%~$>
    , zs ~ Union (Filter x xs) ys
    ) => Variant xs -> (x -> Flow m ys) -> Flow m zs
 {-# INLINE (?~|>) #-}
-(?~|>) v f = case catchVariant v of
+(?~|>) v f = case catchVariantMaybe v of
    Right x -> liftVariant <$> f x
    Left ys -> return (liftVariant ys)
 
@@ -1509,7 +1509,7 @@ infixl 0 >%~|>
    , MaybeCatchable x xs
    ) => Variant xs -> (x -> m ()) -> Flow m xs
 {-# INLINE (?~=>) #-}
-(?~=>) v f = case catchVariant v of
+(?~=>) v f = case catchVariantMaybe v of
    Right x -> f x >> return v
    Left _  -> return v
 
@@ -1551,7 +1551,7 @@ infixl 0 >%~=>
    , MaybeCatchable x xs
    ) => Variant xs -> (x -> m ()) -> m ()
 {-# INLINE (?~!>) #-}
-(?~!>) v f = case catchVariant v of
+(?~!>) v f = case catchVariantMaybe v of
    Right x -> f x
    Left _  -> return ()
 
@@ -1593,7 +1593,7 @@ infixl 0 >%~!>
    , MaybeCatchable x xs
    ) => Variant xs -> (x -> m ()) -> Flow m (Filter x xs)
 {-# INLINE (?~!!>) #-}
-(?~!!>) v f = case catchVariant v of
+(?~!!>) v f = case catchVariantMaybe v of
    Right x -> f x >> error "?~!!> error"
    Left u  -> return u
 
