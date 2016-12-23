@@ -14,7 +14,6 @@ module ViperVM.Arch.Linux.Graphics.Object
 where
 
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
-import ViperVM.Arch.Linux.Graphics.Plane
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.State
 import ViperVM.Arch.Linux.Graphics.Property

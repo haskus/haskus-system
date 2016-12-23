@@ -12,10 +12,6 @@ module ViperVM.System.Graphics
    , GenericFrame (..)
    , initGenericFrameBuffer
    , freeGenericFrameBuffer
-   , graphicCardConnectors
-   , graphicCardControllers
-   , graphicCardEncoders
-   , graphicCardPlanes
    -- * Multi-buffering
    , RenderingEngine (..)
    , BufferingState (..)
@@ -41,7 +37,6 @@ import ViperVM.Utils.Maybe
 import ViperVM.Utils.STM
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.FileSystem.ReadWrite
-import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Internals.Graphics
@@ -49,8 +44,6 @@ import ViperVM.Arch.Linux.Graphics.State
 import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
 import ViperVM.Arch.Linux.Graphics.Helper
-import ViperVM.Arch.Linux.Graphics.Plane
-import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Graphics.Mode
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.PixelFormat
@@ -182,33 +175,6 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
    -- remove the framebuffer
    flowAssert "Remove framebuffer" <| removeFrameBuffer hdl fb
-
-
--- | Retreive graphic card connectors
-graphicCardConnectors :: GraphicCard -> Flow Sys '[[Connector],InvalidParam,EntryNotFound,InvalidProperty,InvalidHandle]
-graphicCardConnectors = getConnectors . graphicCardHandle
-
--- | Retrieve graphic card controllers
-graphicCardControllers :: GraphicCard -> Flow Sys '[[Controller],EntryNotFound,InvalidHandle]
-graphicCardControllers = getControllers . graphicCardHandle
-
--- | Retrieve graphic card encoders
-graphicCardEncoders :: GraphicCard -> Flow Sys '[[Encoder],EntryNotFound,InvalidHandle]
-graphicCardEncoders = getEncoders . graphicCardHandle
-
--- | Retrieve graphic card planes
-graphicCardPlanes :: GraphicCard -> Sys [Plane]
-graphicCardPlanes card = do
-   let hdl = graphicCardHandle card
-   getPlaneResources hdl
-      >.~^> flowTraverse (getPlane hdl)
-      -- shouldn't happen, except if we unplug the graphic card or unload the
-      -- driver
-      >..%~!!> (\InvalidHandle -> error "Invalid handle")
-      -- shouldn't happen, planes are invariant
-      >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )
-      -- return the result
-      |> flowRes
 
 
 -----------------------------------------------------------------------

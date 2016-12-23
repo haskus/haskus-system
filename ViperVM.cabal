@@ -96,7 +96,6 @@ library
     ViperVM.Arch.Linux.Graphics.Mode
     ViperVM.Arch.Linux.Graphics.Object
     ViperVM.Arch.Linux.Graphics.PixelFormat
-    ViperVM.Arch.Linux.Graphics.Plane
     ViperVM.Arch.Linux.Graphics.Property
     ViperVM.Arch.Linux.Graphics.Helper
     ViperVM.Arch.Linux.Graphics.State
