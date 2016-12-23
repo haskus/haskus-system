@@ -90,10 +90,6 @@ library
 
     ViperVM.Arch.Linux.Graphics.Atomic
     ViperVM.Arch.Linux.Graphics.Capability
-    ViperVM.Arch.Linux.Graphics.Card
-    ViperVM.Arch.Linux.Graphics.Connector
-    ViperVM.Arch.Linux.Graphics.Controller
-    ViperVM.Arch.Linux.Graphics.Encoder
     ViperVM.Arch.Linux.Graphics.Event
     ViperVM.Arch.Linux.Graphics.FrameBuffer
     ViperVM.Arch.Linux.Graphics.GenericBuffer
@@ -103,6 +99,7 @@ library
     ViperVM.Arch.Linux.Graphics.Plane
     ViperVM.Arch.Linux.Graphics.Property
     ViperVM.Arch.Linux.Graphics.Helper
+    ViperVM.Arch.Linux.Graphics.State
 
     ViperVM.Arch.Posix.Malloc
 

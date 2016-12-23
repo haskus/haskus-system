@@ -8,10 +8,8 @@ module ViperVM.Arch.Linux.Graphics.Helper
    )
 where
 
-import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.State
 import ViperVM.Arch.Linux.Graphics.Mode
-import ViperVM.Arch.Linux.Graphics.Controller
-import ViperVM.Arch.Linux.Graphics.Connector
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Utils.Flow

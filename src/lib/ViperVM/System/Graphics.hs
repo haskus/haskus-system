@@ -45,11 +45,9 @@ import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.Memory
 
 import ViperVM.Arch.Linux.Internals.Graphics
+import ViperVM.Arch.Linux.Graphics.State
 import ViperVM.Arch.Linux.Graphics.Capability
 import ViperVM.Arch.Linux.Graphics.GenericBuffer
-import ViperVM.Arch.Linux.Graphics.Connector
-import ViperVM.Arch.Linux.Graphics.Controller
-import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.Helper
 import ViperVM.Arch.Linux.Graphics.Plane
 import ViperVM.Arch.Linux.Graphics.Property

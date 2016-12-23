@@ -13,13 +13,10 @@ module ViperVM.Arch.Linux.Graphics.Object
    )
 where
 
-import ViperVM.Arch.Linux.Graphics.Controller
-import ViperVM.Arch.Linux.Graphics.Connector
-import ViperVM.Arch.Linux.Graphics.Encoder
 import ViperVM.Arch.Linux.Graphics.FrameBuffer
 import ViperVM.Arch.Linux.Graphics.Plane
 import ViperVM.Arch.Linux.Graphics.Mode
-import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.State
 import ViperVM.Arch.Linux.Graphics.Property
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.ErrorCode

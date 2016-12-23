@@ -1,10 +1,12 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Frame buffer management
 module ViperVM.Arch.Linux.Graphics.FrameBuffer
    ( Surface(..)
    , FrameBuffer(..)
+   , FrameBufferID(..)
    , addFrameBuffer
    , removeFrameBuffer
    , dirtyFrameBuffer
@@ -17,7 +19,6 @@ where
 
 import ViperVM.Arch.Linux.ErrorCode
 import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.Graphics.Card
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Format.Binary.Vector as Vector
@@ -27,6 +28,9 @@ import ViperVM.Format.Binary.Storable
 import ViperVM.Utils.Tuple
 import ViperVM.Utils.Flow
 import ViperVM.Utils.List (zip4)
+
+-- | Framebuffer ID
+newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable,Ord)
 
 -- | Surface
 data Surface = Surface

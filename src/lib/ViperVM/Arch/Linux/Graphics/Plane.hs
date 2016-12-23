@@ -31,7 +31,7 @@ import ViperVM.Arch.Linux.Internals.Graphics
 import ViperVM.Arch.Linux.Handle
 import ViperVM.Arch.Linux.Error
 import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Graphics.Card
+import ViperVM.Arch.Linux.Graphics.State
 import ViperVM.Arch.Linux.Graphics.PixelFormat
 
 -- | Error invalid plane ID
