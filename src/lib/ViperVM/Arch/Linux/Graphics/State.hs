@@ -171,6 +171,17 @@ data Connector = Connector
    , connectorHandle             :: Handle          -- ^ Graphic card
    } deriving (Show)
 
+-- | A plane
+data Plane = Plane
+   { planeID                  :: PlaneID              -- ^ Plane identifier
+   , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
+   , planeFrameBufferId       :: Maybe FrameBufferID  -- ^ Connected framebuffer
+   , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
+   , planeGammaSize           :: Word32               -- ^ Size of the gamma table
+   , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
+   }
+   deriving (Show)
+
 
 -- | Get the current graphics state from the kernel
 readGraphicsState :: MonadInIO m => Handle -> Flow m '[GraphicsState,InvalidHandle]
@@ -567,17 +578,6 @@ getPlaneResources hdl = getCount >.~^> getIDs
                EINVAL -> flowSet InvalidHandle
                e      -> unhdlErr "getPlaneResources" e
             >.~.> \_ -> fmap PlaneID <$> peekArray (fromIntegral n) p
-
--- | A plane
-data Plane = Plane
-   { planeID                  :: PlaneID              -- ^ Plane identifier
-   , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
-   , planeFrameBufferId       :: Maybe FrameBufferID  -- ^ Connected framebuffer
-   , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
-   , planeGammaSize           :: Word32               -- ^ Size of the gamma table
-   , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
-   }
-   deriving (Show)
 
 -- | Get plane information
 getPlane :: forall m. MonadInIO m => Handle -> PlaneID -> Flow m '[Plane,InvalidHandle,InvalidPlane]
