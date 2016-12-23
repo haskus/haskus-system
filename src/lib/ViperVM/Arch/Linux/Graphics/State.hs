@@ -80,10 +80,11 @@ import Data.Map (Map)
 
 -- | Graph of graphics entities
 data GraphicsState = GraphicsState
-   { graphicsConnectors  :: Map ConnectorID  Connector
-   , graphicsEncoders    :: Map EncoderID    Encoder
-   , graphicsControllers :: Map ControllerID Controller
-   , graphicsPlanes      :: Map PlaneID      Plane
+   { graphicsConnectors   :: Map ConnectorID   Connector
+   , graphicsEncoders     :: Map EncoderID     Encoder
+   , graphicsControllers  :: Map ControllerID  Controller
+   , graphicsPlanes       :: Map PlaneID       Plane
+   , graphicsFrameBuffers :: [FrameBufferID]
    }
 
 -- | Graphic card ressources
@@ -191,6 +192,7 @@ readGraphicsState hdl = do
    case catchVariant @Resources mres of
       Left xs   -> liftVariantM xs
       Right res -> do
+         let fbs = resFrameBufferIDs res
          -- read connectors, encoders and controllers
          mconns <- flowTraverse (getConnectorFromID hdl) (resConnectorIDs res)
          mencs  <- flowTraverse (getEncoderFromID hdl res) (resEncoderIDs res)
@@ -203,15 +205,15 @@ readGraphicsState hdl = do
 
          case (catchVariant mconns, catchVariant mencs, catchVariant mctrls, catchVariant mplanes) of
             (Right conns, Right encs, Right ctrls, Right planes) ->
-               flowSet (buildGraphicsState conns encs ctrls planes)
+               flowSet (buildGraphicsState conns encs ctrls planes fbs)
             -- on failure we restart the process
             -- TODO: check that we don't loop indefinitely
             _ -> readGraphicsState hdl   
 
 
 -- | Build GraphicsState
-buildGraphicsState :: [Connector] -> [Encoder] -> [Controller] -> [Plane] -> GraphicsState
-buildGraphicsState conns encs ctrls planes = GraphicsState conns' encs' ctrls' planes'
+buildGraphicsState :: [Connector] -> [Encoder] -> [Controller] -> [Plane] -> [FrameBufferID] -> GraphicsState
+buildGraphicsState conns encs ctrls planes fbs = GraphicsState conns' encs' ctrls' planes' fbs
    where
       encs'   = Map.fromList <| fmap (\e -> (encoderID e, e))    encs
       conns'  = Map.fromList <| fmap (\c -> (connectorID c, c))  conns
