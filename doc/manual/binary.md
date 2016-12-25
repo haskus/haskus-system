@@ -1,11 +1,11 @@
-# ViperVM: Binary
+# Haskus: Binary
 
-ViperVM has a set of modules dedicated to the manipulation of binary data. They
+Haskus has a set of modules dedicated to the manipulation of binary data. They
 provide data type mapping those of other languages such as C and even more.
 
-All these modules are in [ViperVM.Format.Binary](../../src/lib/ViperVM/Format/Binary).
+All these modules are in [Haskus.Format.Binary](../../src/lib/Haskus/Format/Binary).
 
-ViperVM does not rely on external tools such as C2HS to provide bindings to C
+Haskus does not rely on external tools such as C2HS to provide bindings to C
 libraries. There are several reasons for that:
 
 * We don't want to depend on .h files;
@@ -16,12 +16,12 @@ libraries. There are several reasons for that:
     * Very low-level (e.g. #define are not transformed into datatypes with Enum
       instances)
 
-Instead ViperVM lets you write bindings in pure Haskell code and provides many
+Instead Haskus lets you write bindings in pure Haskell code and provides many
 useful things to make this process easy.
 
 ## Word, Int
 
-The [Word module](../../src/lib/ViperVM/Format/Binary/Word.hs) contains data
+The [Word module](../../src/lib/Haskus/Format/Binary/Word.hs) contains data
 types representing unsigned words (Word8, Word16, Word32, etc.) and signed
 integers (Int8, Int16, Int32, etc.). It also contains some C types such as
 CSize, CShort, CUShort, CLong, CULong, etc.
@@ -30,7 +30,7 @@ CSize, CShort, CUShort, CLong, CULong, etc.
 
 Words and Ints are stored (i.e., read and written) using host endianness (byte
 ordering). `AsBigEndian` and `AsLittleEndian` data types in the
-[Endianness module](../../src/lib/ViperVM/Format/Binary/Endianness.hs)
+[Endianness module](../../src/lib/Haskus/Format/Binary/Endianness.hs)
 allow you to force a different endianness.
 
 The following example shows a data type containing a field for each endianness
@@ -57,12 +57,12 @@ depending on the host endianness.
 
 ## Bits
 
-The [Bits module](../../src/lib/ViperVM/Format/Binary/Bits.hs) allows you to
+The [Bits module](../../src/lib/Haskus/Format/Binary/Bits.hs) allows you to
 perform bitwise operations on data types supporting them.
 
 ## Buffer
 
-A [Buffer](../../src/lib/ViperVM/Format/Binary/Buffer.hs) is basically a strict
+A [Buffer](../../src/lib/Haskus/Format/Binary/Buffer.hs) is basically a strict
 ByteString with a better name and a better integration with Storable type class.
 
 ## Structures
@@ -73,8 +73,8 @@ You map C data structures with Haskell data type as follows:
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-import ViperVM.Format.Binary.Storable
-import ViperVM.Utils.Types.Generics (Generic)
+import Haskus.Format.Binary.Storable
+import Haskus.Utils.Types.Generics (Generic)
 
 data StructX = StructX
    { xField0 :: Word8
@@ -100,12 +100,12 @@ data StructY = StructY
 
 ### Arrays (or Vectors)
 
-ViperVM supports vectors: a fixed amount of Storable data correctly aligned. You
+Haskus supports vectors: a fixed amount of Storable data correctly aligned. You
 can define a vector as follows:
 ```haskell
 {-# LANGUAGE DataKinds #-}
 
-import ViperVM.Format.Binary.Vector as V
+import Haskus.Format.Binary.Vector as V
 
 v :: Vector 5 Word16
 ```
@@ -133,7 +133,7 @@ s = fromFilledListZ 0 (fmap castCharToCChar "too long string")
 
 You can concatenate several vectors into a single one:
 ```haskell
-import ViperVM.Utils.HList
+import Haskus.Utils.HList
 
 x = fromFilledList 0 [1,2,3,4] :: Vector 4 Int
 y = fromFilledList 0 [5,6]     :: Vector 2 Int
@@ -150,7 +150,7 @@ fromList [1,2,3,4,5,6,7,8,9]
 
 You can also safely `drop` or `take` elements in a vector. You can also `index` into a vector:
 ```haskell
-import ViperVM.Format.Binary.Vector as V
+import Haskus.Format.Binary.Vector as V
 
 v :: Vector 5 Int
 v = fromFilledList 0 [1,2,3,4,5,6]
@@ -182,7 +182,7 @@ starting from 0, you can do:
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 
-import ViperVM.Format.Binary.Enum
+import Haskus.Format.Binary.Enum
 
 data MyEnum
    = MyEnumX
@@ -230,13 +230,13 @@ We often use flags that are combined in a single word. Each flag is associated
 to a bit of the word: if the bit is set the flag is active, otherwise the flag
 isn't active.
 
-ViperVM uses the CBitSet class to get the bit offset of each flag. By default,
+Haskus uses the CBitSet class to get the bit offset of each flag. By default,
 it uses the Enum instance to get the bit offsets as in the following example:
 
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 
-import ViperVM.Format.Binary.BitSet
+import Haskus.Format.Binary.BitSet
 
 data Flag
    = FlagX  -- bit 0
@@ -286,13 +286,13 @@ have to choose a backing word that is large enough.
 ### Unions
 
 An union provides several ways to access the same buffer of memory. To use them
-with ViperVM, you need to give the list of available representations in a type
+with Haskus, you need to give the list of available representations in a type
 as follows:
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 
-import ViperVM.Format.Binary.Union
+import Haskus.Format.Binary.Union
 
 u :: Union '[Word8, Word64, Vector 5 Word16]
 ```
@@ -341,7 +341,7 @@ You define it as follows:
 ```haskell
 {-# LANGUAGE DataKinds #-}
 
-import ViperVM.Format.Binary.BitField
+import Haskus.Format.Binary.BitField
 import Data.Proxy
 
 w :: BitFields Word16 '[ BitField 5 "X" Word8 
@@ -375,9 +375,9 @@ Fields can also be 'BitSet' or 'EnumField':
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
-import ViperVM.Format.Binary.BitField
-import ViperVM.Format.Binary.Enum
-import ViperVM.Format.Binary.BitSet
+import Haskus.Format.Binary.BitField
+import Haskus.Format.Binary.Enum
+import Haskus.Format.Binary.BitSet
 
 data A = A0 | A1 | A2 | A3 deriving (Show,Enum,CEnum)
 

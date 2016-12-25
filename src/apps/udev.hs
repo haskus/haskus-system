@@ -1,6 +1,6 @@
-import ViperVM.System.Sys
-import ViperVM.System.Network
-import ViperVM.Utils.Flow
+import Haskus.System.Sys
+import Haskus.System.Network
+import Haskus.Utils.Flow
 
 main :: IO ()
 main = runSys' $ do

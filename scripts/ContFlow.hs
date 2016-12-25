@@ -7,9 +7,9 @@
 
 module TestCont where
 
-import ViperVM.Utils.ContFlow
-import ViperVM.Utils.Monad
-import ViperVM.Utils.Variant
+import Haskus.Utils.ContFlow
+import Haskus.Utils.Monad
+import Haskus.Utils.Variant
 import Data.Char
 
 -- | Explicit CPS

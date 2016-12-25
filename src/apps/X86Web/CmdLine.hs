@@ -27,4 +27,4 @@ getOptions = execParser opts
     opts = info (helper <*> options)
       ( fullDesc
      <> progDesc "Show X86 instructions"
-     <> header "ViperVM ASM" )
+     <> header "Haskus ASM" )

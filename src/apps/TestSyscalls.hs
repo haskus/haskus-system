@@ -6,21 +6,21 @@
 
 module Main where
 
-import ViperVM.Arch.Linux.Handle
-import ViperVM.Arch.Linux.FileSystem
-import ViperVM.Arch.Linux.FileSystem.ReadWrite
-import ViperVM.Arch.Linux.FileSystem.Directory
-import ViperVM.Arch.Linux.Process
-import ViperVM.Arch.Linux.Memory
-import ViperVM.Arch.Linux.Info
-import ViperVM.Arch.Linux.Time
---import ViperVM.Arch.X86_64.Linux.Futex
-import ViperVM.Arch.Linux.ErrorCode
-import ViperVM.Arch.Linux.Internals.Input
-import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.String (withCString)
-import ViperVM.Utils.Variant
-import ViperVM.Utils.Flow
+import Haskus.Arch.Linux.Handle
+import Haskus.Arch.Linux.FileSystem
+import Haskus.Arch.Linux.FileSystem.ReadWrite
+import Haskus.Arch.Linux.FileSystem.Directory
+import Haskus.Arch.Linux.Process
+import Haskus.Arch.Linux.Memory
+import Haskus.Arch.Linux.Info
+import Haskus.Arch.Linux.Time
+--import Haskus.Arch.X86_64.Linux.Futex
+import Haskus.Arch.Linux.ErrorCode
+import Haskus.Arch.Linux.Internals.Input
+import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Format.String (withCString)
+import Haskus.Utils.Variant
+import Haskus.Utils.Flow
 
 import Control.Monad (unless)
 import Data.Foldable (traverse_)

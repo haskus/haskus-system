@@ -4,34 +4,34 @@
 
 import CmdLine (Options(..), getOptions)
 
-import ViperVM.Format.Elf
-import ViperVM.Format.Elf.PreHeader
-import ViperVM.Format.Elf.Header
-import ViperVM.Format.Elf.Section
-import ViperVM.Format.Elf.Segment
-import ViperVM.Format.Elf.Intel
-import ViperVM.Format.Elf.Symbol
-import ViperVM.Format.Elf.Relocation
-import ViperVM.Format.Elf.Dynamic
-import ViperVM.Format.Elf.GHC
+import Haskus.Format.Elf
+import Haskus.Format.Elf.PreHeader
+import Haskus.Format.Elf.Header
+import Haskus.Format.Elf.Section
+import Haskus.Format.Elf.Segment
+import Haskus.Format.Elf.Intel
+import Haskus.Format.Elf.Symbol
+import Haskus.Format.Elf.Relocation
+import Haskus.Format.Elf.Dynamic
+import Haskus.Format.Elf.GHC
 
-import ViperVM.Format.Dwarf
+import Haskus.Format.Dwarf
 
-import ViperVM.Arch.X86_64.ISA.Mode
-import ViperVM.Arch.X86_64.ISA.Size
-import ViperVM.Arch.X86_64.ISA.Decoder
-import ViperVM.Arch.X86_64.ISA.Insn
-import ViperVM.Arch.X86_64.ISA.Encoding
-import ViperVM.Arch.X86_64.ISA.Registers
-import ViperVM.Arch.X86_64.Disassembler
+import Haskus.Arch.X86_64.ISA.Mode
+import Haskus.Arch.X86_64.ISA.Size
+import Haskus.Arch.X86_64.ISA.Decoder
+import Haskus.Arch.X86_64.ISA.Insn
+import Haskus.Arch.X86_64.ISA.Encoding
+import Haskus.Arch.X86_64.ISA.Registers
+import Haskus.Arch.X86_64.Disassembler
 
-import ViperVM.Format.Binary.Buffer
-import qualified ViperVM.Format.Text as Text
-import ViperVM.Format.Text (Text,textFormat,Only(..))
-import ViperVM.Format.Binary.BitSet (BitSet,CBitSet)
-import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Format.Binary.Word
-import ViperVM.Utils.Embed
+import Haskus.Format.Binary.Buffer
+import qualified Haskus.Format.Text as Text
+import Haskus.Format.Text (Text,textFormat,Only(..))
+import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
+import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Format.Binary.Word
+import Haskus.Utils.Embed
 
 import Control.Monad
 import Happstack.Server
@@ -851,7 +851,7 @@ showDynamicEntries es = do
 appTemplate :: Html () -> Html ()
 appTemplate doc = do
    head_ $ do
-      title_ "ViperVM Web Interface"
+      title_ "Haskus Web Interface"
       meta_ [ httpEquiv_ "Content-Type"
             , content_ "text/html;charset=utf-8"
             ]

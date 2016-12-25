@@ -3,13 +3,13 @@
 import System.Environment
 import Control.Monad (forM_)
 
-import ViperVM.Format.Binary.Buffer
-import qualified ViperVM.Format.Binary.BitSet as BitSet
-import ViperVM.Arch.X86_64.ISA.Mode
-import ViperVM.Arch.X86_64.ISA.Size
-import ViperVM.Arch.X86_64.ISA.Decoder
-import ViperVM.Arch.X86_64.ISA.Insn
-import ViperVM.Arch.X86_64.Disassembler
+import Haskus.Format.Binary.Buffer
+import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Arch.X86_64.ISA.Mode
+import Haskus.Arch.X86_64.ISA.Size
+import Haskus.Arch.X86_64.ISA.Decoder
+import Haskus.Arch.X86_64.ISA.Insn
+import Haskus.Arch.X86_64.Disassembler
 
 main :: IO ()
 main = do

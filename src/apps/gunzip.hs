@@ -4,9 +4,9 @@ import Options.Applicative
 import qualified Data.List as List
 import System.FilePath (replaceExtension)
 
-import qualified ViperVM.Format.Compression.GZip as GZip
-import ViperVM.Format.Binary.Buffer
-import qualified ViperVM.Format.Text as Text
+import qualified Haskus.Format.Compression.GZip as GZip
+import Haskus.Format.Binary.Buffer
+import qualified Haskus.Format.Text as Text
 
 main :: IO ()
 main = do

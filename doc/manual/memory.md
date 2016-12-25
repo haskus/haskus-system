@@ -14,13 +14,13 @@ Attributes can be defined for each page such as access protection, owner
 process, etc. In addition, virtual memory mechanism is often used by operating
 systems to allow pages to be moved to different memories such as hard disks
 (swap out) and brought back on-demand, hence providing a kind of "infinite
-memory" feeling on architectures supporting this. ViperVM aims to bypass this
+memory" feeling on architectures supporting this. Haskus aims to bypass this
 swap mechanism as it should know better than the OS how to manage data.
 
 ## Buffers
 
 Allocating memory consists in reserving a set of pages and considering them as
-consecutive when their cells are addressed. In ViperVM, a `Buffer` entity
+consecutive when their cells are addressed. In Haskus, a `Buffer` entity
 represents a memory allocation. It is only defined by its size (the sum of the
 sizes of the reserved pages) and the memory it is allocated in, other fields
 are architecture specific. 
@@ -34,7 +34,7 @@ another allocation.
 ## Regions
 
 Regions are sets of cells in a buffer. A region is defined by the offset of its
-first cell in the buffer and by a shape. ViperVM currently defines two shapes:
+first cell in the buffer and by a shape. Haskus currently defines two shapes:
 * Shape1D: a set of consecutive cells, hence only defined by the number of cells
 * Shape2D: a rectanguler set of cells. That is, several consecutive sets of
   cells all containing the same amount of cells, separated by a fixed number of

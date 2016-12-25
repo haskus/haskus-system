@@ -1,7 +1,7 @@
 import Text.Printf
 
-import ViperVM.Format.Compression.Algorithms.Huffman
-import ViperVM.Format.Binary.Buffer
+import Haskus.Format.Compression.Algorithms.Huffman
+import Haskus.Format.Binary.Buffer
 
 main :: IO ()
 main = do

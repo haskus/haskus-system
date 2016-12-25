@@ -52,7 +52,7 @@
 * X86-64 disassembler
    * Add new instructions (e.g., RET2)
    * Various fixes
-   * Support text output (ViperVM.Apps.Disassembler)
+   * Support text output (Haskus.Apps.Disassembler)
    * Add disassembler for code sections in ELF viewer app
 * Linux
    * (Graphics) Fix: correctly handle buffer pitch
@@ -69,26 +69,26 @@
 
 ## Version 0.4 (2016-06-10)
 
-* ViperVM.Format.Binary
+* Haskus.Format.Binary
     * Modules to write bindings and to manipulate binary data
-* ViperVM.Format
+* Haskus.Format
     * Support for several formats: CPIO, ELF, DWARF, GZIP
-* ViperVM.Arch.X86_64
+* Haskus.Arch.X86_64
     * instruction list
     * X86 disassembler
     * basic CPUID interface
-* ViperVM.Arch.X86_64.Linux
+* Haskus.Arch.X86_64.Linux
     * Low-level Linux syscall wrappers on X86-64
-* ViperVM.Arch.Linux.Internals
+* Haskus.Arch.Linux.Internals
     * Low-level interface to Linux's subsystems:
         * DRM/KMS
         * Alsa
         * Input
-* ViperVM.Arch.Linux
+* Haskus.Arch.Linux
     * interface with Linux common syscalls and subsystems
-* ViperVM.System
+* Haskus.System
     * High-level more generic system interface used by applications
-* ViperVM.Utils
+* Haskus.Utils
     * Variant: type-safe open sum type
     * Flow: generic function composition combinators based on Variants
 

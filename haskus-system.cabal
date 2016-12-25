@@ -1,0 +1,387 @@
+name:                haskus-system
+version:             0.6.0.0
+synopsis:            Haskus system programming framework
+license:             BSD3
+license-file:        LICENSE
+author:              Sylvain Henry
+maintainer:          sylvain@haskus.fr
+homepage:            http://www.haskus.org/system
+copyright:           Sylvain Henry 2017
+category:            System
+build-type:          Simple
+cabal-version:       >=1.20
+
+description:
+   Haskus system is a framework written in Haskell that can be used for system
+   programming. The long-term aim is to provide a full Haskell user-space
+   environment on top of the Linux kernel.
+
+source-repository head
+  type: git
+  location: git://github.com/haskus/haskus-system.git
+
+library
+  exposed-modules:
+
+    Haskus.Arch.Common.Errors
+
+    Haskus.Arch.X86_64.Cpuid
+
+    Haskus.Arch.X86_64.Linux.Syscall
+    Haskus.Arch.X86_64.Linux.Syscalls
+
+    Haskus.Arch.X86_64.ISA.MicroArch
+    Haskus.Arch.X86_64.ISA.Mode
+    Haskus.Arch.X86_64.ISA.Registers
+    Haskus.Arch.X86_64.ISA.RegisterFile
+    Haskus.Arch.X86_64.ISA.OpcodeMaps
+    Haskus.Arch.X86_64.ISA.Size
+    Haskus.Arch.X86_64.ISA.Decoder
+    Haskus.Arch.X86_64.ISA.Insns
+    Haskus.Arch.X86_64.ISA.Insn
+    Haskus.Arch.X86_64.ISA.Encoding
+    Haskus.Arch.X86_64.Disassembler
+
+    Haskus.Arch.Linux.Internals.Error
+    Haskus.Arch.Linux.Internals.FileSystem
+    Haskus.Arch.Linux.Internals.Input
+    Haskus.Arch.Linux.Internals.Sound
+    Haskus.Arch.Linux.Internals.Graphics
+    Haskus.Arch.Linux.Internals.Reboot
+    Haskus.Arch.Linux.Internals.Ioctl
+    Haskus.Arch.Linux.Internals.Fcntl
+    Haskus.Arch.Linux.Internals.Handle
+    Haskus.Arch.Linux.Internals.Arg
+    Haskus.Arch.Linux.Internals.Tables
+
+    Haskus.Arch.Linux.Devices
+    Haskus.Arch.Linux.Error
+    Haskus.Arch.Linux.ErrorCode
+    Haskus.Arch.Linux.EventPoll
+    Haskus.Arch.Linux.Handle
+    Haskus.Arch.Linux.FileSystem
+    Haskus.Arch.Linux.FileSystem.Directory
+    Haskus.Arch.Linux.FileSystem.Mount
+    Haskus.Arch.Linux.FileSystem.Notification
+    Haskus.Arch.Linux.FileSystem.ReadWrite
+    Haskus.Arch.Linux.FileSystem.SymLink
+    Haskus.Arch.Linux.Futex
+    Haskus.Arch.Linux.Info
+    Haskus.Arch.Linux.Input
+    Haskus.Arch.Linux.Ioctl
+    Haskus.Arch.Linux.KernelEvent
+    Haskus.Arch.Linux.Memory
+    Haskus.Arch.Linux.Modules
+    Haskus.Arch.Linux.Network
+    Haskus.Arch.Linux.Network.SendReceive
+    Haskus.Arch.Linux.Pipe
+    Haskus.Arch.Linux.Power
+    Haskus.Arch.Linux.Process
+    Haskus.Arch.Linux.Signal
+    Haskus.Arch.Linux.Syscalls
+    Haskus.Arch.Linux.Terminal
+    Haskus.Arch.Linux.Time
+    Haskus.Arch.Linux.Topology
+    Haskus.Arch.Linux.Trace
+
+    Haskus.Arch.Linux.Process.MemoryMap
+    Haskus.Arch.Linux.Process.ControlGroup
+    Haskus.Arch.Linux.Process.Auxiliary
+
+    Haskus.Arch.Linux.Graphics.Atomic
+    Haskus.Arch.Linux.Graphics.Capability
+    Haskus.Arch.Linux.Graphics.Event
+    Haskus.Arch.Linux.Graphics.FrameBuffer
+    Haskus.Arch.Linux.Graphics.GenericBuffer
+    Haskus.Arch.Linux.Graphics.Mode
+    Haskus.Arch.Linux.Graphics.Object
+    Haskus.Arch.Linux.Graphics.PixelFormat
+    Haskus.Arch.Linux.Graphics.Property
+    Haskus.Arch.Linux.Graphics.Helper
+    Haskus.Arch.Linux.Graphics.State
+
+    Haskus.Arch.Posix.Malloc
+
+    Haskus.System
+    Haskus.System.Sys
+    Haskus.System.System
+    Haskus.System.Devices
+    Haskus.System.Graphics
+    Haskus.System.Graphics.Drawing
+    Haskus.System.Graphics.Diagrams
+    Haskus.System.Graphics.Colour
+    Haskus.System.Input
+    Haskus.System.Terminal
+    Haskus.System.Process
+    Haskus.System.Power
+    Haskus.System.FileSystem
+    Haskus.System.Event
+    Haskus.System.Network
+
+    Haskus.Utils.ContFlow
+    Haskus.Utils.Variant
+    Haskus.Utils.Monad
+    Haskus.Utils.Parser
+    Haskus.Utils.HArray
+    Haskus.Utils.Flow
+    Haskus.Utils.MultiState
+    Haskus.Utils.HList
+    Haskus.Utils.Embed
+    Haskus.Utils.List
+    Haskus.Utils.Map
+    Haskus.Utils.Maybe
+    Haskus.Utils.Memory
+    Haskus.Utils.Types
+    Haskus.Utils.Types.List
+    Haskus.Utils.Types.Generics
+    Haskus.Utils.STM
+    Haskus.Utils.STM.TEq
+    Haskus.Utils.STM.TMap
+    Haskus.Utils.STM.TSet
+    Haskus.Utils.STM.TList
+    Haskus.Utils.STM.TTree
+    Haskus.Utils.STM.Future
+    Haskus.Utils.STM.TGraph
+    Haskus.Utils.Tuple
+
+    Haskus.Format.CPIO
+    Haskus.Format.Text
+    Haskus.Format.String
+
+    Haskus.Format.Elf
+    Haskus.Format.Elf.PreHeader
+    Haskus.Format.Elf.Header
+    Haskus.Format.Elf.Section
+    Haskus.Format.Elf.Segment
+    Haskus.Format.Elf.Symbol
+    Haskus.Format.Elf.Relocation
+    Haskus.Format.Elf.RelocationType
+    Haskus.Format.Elf.Dynamic
+    Haskus.Format.Elf.Version
+    Haskus.Format.Elf.Note
+    Haskus.Format.Elf.Move
+    Haskus.Format.Elf.Intel
+    Haskus.Format.Elf.GHC
+
+    Haskus.Format.Dwarf
+
+    Haskus.Format.Compression.Algorithms.Huffman
+    Haskus.Format.Compression.Algorithms.LZ77
+    Haskus.Format.Compression.Algorithms.Deflate
+    Haskus.Format.Compression.GZip
+
+    Haskus.Format.Binary.Bits
+    Haskus.Format.Binary.Bits.Basic
+    Haskus.Format.Binary.Bits.Reverse
+    Haskus.Format.Binary.Bits.Order
+    Haskus.Format.Binary.Bits.Get
+    Haskus.Format.Binary.Bits.Put
+
+    Haskus.Format.Binary.BitSet
+    Haskus.Format.Binary.BitField
+    Haskus.Format.Binary.Buffer
+    Haskus.Format.Binary.BufferList
+    Haskus.Format.Binary.BufferBuilder
+    Haskus.Format.Binary.Enum
+    Haskus.Format.Binary.Endianness
+    Haskus.Format.Binary.FixedPoint
+    Haskus.Format.Binary.Get
+    Haskus.Format.Binary.Put
+    Haskus.Format.Binary.VariableLength
+    Haskus.Format.Binary.Vector
+    Haskus.Format.Binary.Union
+    Haskus.Format.Binary.Unum
+    Haskus.Format.Binary.Record
+    Haskus.Format.Binary.Storable
+    Haskus.Format.Binary.Word
+    Haskus.Format.Binary.Ptr
+
+    Haskus.Format.Binary.Layout
+    Haskus.Format.FileSystem.ISO9660
+
+    Haskus.Apps.CPIO
+    Haskus.Apps.Disassembler
+
+  other-modules:
+
+  c-sources: 
+    src/lib/Haskus/Arch/X86_64/Linux/syscall.c
+    src/lib/Haskus/Arch/X86_64/cpuid.c
+
+  cc-options: -O3
+
+  build-depends:       
+         base                      >= 4.8
+      ,  containers                >= 0.5
+      ,  list-t                    >= 0.4
+      ,  stm                       >= 2.4
+      ,  stm-containers            >= 0.2
+      ,  cereal                    >= 0.5
+      ,  bytestring                >= 0.10
+      ,  system-fileio             >= 0.3
+      ,  system-filepath           >= 0.4
+      ,  pureMD5                   >= 2.1
+      ,  text                      >= 1.2
+      ,  filepath                  >= 1.4
+      ,  either                    >= 4.4
+      ,  vector                    >= 0.11
+      ,  directory                 >= 1.2
+      ,  megaparsec                >= 5.0
+      ,  transformers              >= 0.4
+      ,  unix                      >= 2.7
+      ,  pqueue                    >= 1.3
+      ,  mtl                       >= 2.2
+      ,  template-haskell          >= 2.10
+      ,  text-format               >= 0.3
+      ,  diagrams                  >= 1.3
+      ,  diagrams-lib              >= 1.3
+      ,  diagrams-core             >= 1.3
+      ,  diagrams-rasterific       >= 1.3
+      ,  JuicyPixels               >= 3.2
+      ,  loop                      >= 0.3
+      ,  Rasterific                >= 0.6
+      ,  colour                    >= 2.3
+      ,  file-embed                >= 0.0.10
+
+  build-tools: 
+  ghc-options:          -Wall -O2
+  default-language:     Haskell2010
+  hs-source-dirs:       src/lib
+
+test-suite tests
+   type:                detailed-0.9
+   test-module:         Haskus.Tests
+   hs-source-dirs:      src/tests
+   ghc-options:         -Wall -threaded
+   default-language:     Haskell2010
+   other-modules:
+         Haskus.Tests.Common
+      ,  Haskus.Tests.Format
+      ,  Haskus.Tests.Format.Binary
+      ,  Haskus.Tests.Format.Binary.Bits
+      ,  Haskus.Tests.Format.Binary.GetPut
+      ,  Haskus.Tests.Format.Binary.Vector
+      ,  Haskus.Tests.Utils.HArray
+      ,  Haskus.Tests.Utils.Variant
+      ,  Haskus.Tests.Utils
+      ,  Haskus.Tests.System
+      ,  Haskus.Tests.System.Devices
+      ,  Haskus.Tests.Arch
+      ,  Haskus.Tests.Arch.Linux
+      ,  Haskus.Tests.Arch.Linux.Input
+      ,  Haskus.Tests.Arch.Linux.ErrorCode
+
+   build-depends:    
+         base
+      ,  stm
+      ,  haskus-system
+      ,  Cabal
+      ,  cabal-test-quickcheck   >= 0.1
+      ,  QuickCheck              >= 2.8
+      ,  containers
+      ,  bytestring
+
+Benchmark bench-BitReverse
+   type:               exitcode-stdio-1.0
+   main-is:            BitReverse.hs
+   hs-source-dirs:     src/bench
+   ghc-options:         -Wall -threaded -O3
+   default-language:     Haskell2010
+   build-depends:
+         base
+      ,  haskus-system
+      ,  criterion
+
+executable X86Web
+   main-is:             Main.hs
+   hs-source-dirs:      src/apps/X86Web
+   other-modules:       
+         Paths_haskus_system
+      ,  CmdLine
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system
+      ,  happstack-server     >= 7.4
+      ,  blaze-html           >= 0.8
+      ,  blaze-markup         >= 0.7
+      ,  transformers         >= 0.4
+      ,  network              >= 2.6
+      ,  bytestring           >= 0.10
+      ,  optparse-applicative >= 0.12
+      ,  vector               >= 0.10
+      ,  HTTP                 >= 4000
+      ,  containers           >= 0.5
+
+
+executable ElfWeb
+   hs-source-dirs:      src/apps/Elf
+   main-is:             Main.hs
+   other-modules:       
+         CmdLine
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system
+      ,  happstack-server     >= 7.4
+      ,  bytestring           >= 0.10
+      ,  lucid                >= 2.9
+      ,  transformers         >= 0.4
+      ,  optparse-applicative >= 0.12
+      ,  text                 >= 1.2
+      ,  text-format          >= 0.3
+      ,  vector               >= 0.10
+      ,  containers           >= 0.5
+
+executable TestSyscalls
+   main-is:             TestSyscalls.hs
+   hs-source-dirs:      src/apps
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system
+
+executable huffman
+   main-is:             huffman.hs
+   hs-source-dirs:      src/apps
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system
+      ,  bytestring           >= 0.10
+
+executable gunzip
+   main-is:             gunzip.hs
+   hs-source-dirs:      src/apps
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system
+      ,  bytestring           >= 0.10
+      ,  optparse-applicative >= 0.12
+      ,  filepath             >= 1.4
+
+executable udev
+   main-is:             udev.hs
+   hs-source-dirs:      src/apps
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system
+      ,  either
+      ,  transformers
+
+executable Disass
+   main-is:             Disass.hs
+   hs-source-dirs:      src/apps
+   ghc-options:         -Wall -threaded -O3
+   default-language:    Haskell2010
+   build-depends: 
+         base
+      ,  haskus-system

@@ -1,7 +1,7 @@
 
 import Criterion.Main
-import ViperVM.Format.Binary.Bits.Reverse
-import ViperVM.Format.Binary.Word
+import Haskus.Format.Binary.Bits.Reverse
+import Haskus.Format.Binary.Word
 
 main :: IO ()
 main = do

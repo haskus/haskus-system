@@ -2,15 +2,15 @@
 
 import CmdLine (Options(..), getOptions)
 
-import qualified ViperVM.Arch.X86_64.ISA.Insn       as X86
-import qualified ViperVM.Arch.X86_64.ISA.Insns      as X86
-import qualified ViperVM.Arch.X86_64.ISA.OpcodeMaps as X86
-import qualified ViperVM.Arch.X86_64.ISA.Encoding   as X86
-import ViperVM.Format.Binary.Word
-import ViperVM.Format.Binary.Bits
-import ViperVM.Utils.Embed
+import qualified Haskus.Arch.X86_64.ISA.Insn       as X86
+import qualified Haskus.Arch.X86_64.ISA.Insns      as X86
+import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps as X86
+import qualified Haskus.Arch.X86_64.ISA.Encoding   as X86
+import Haskus.Format.Binary.Word
+import Haskus.Format.Binary.Bits
+import Haskus.Utils.Embed
 
-import Paths_ViperVM
+import Paths_Haskus
 import Data.Version
 import Control.Monad
 import Text.Printf
@@ -63,14 +63,14 @@ css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/X86We
 appTemplate :: String -> Html -> Html
 appTemplate title bdy = docTypeHtml $ do
    H.head $ do
-      H.title (toHtml "ViperVM X86 instructions")
+      H.title (toHtml "Haskus X86 instructions")
       H.meta ! A.httpEquiv (toValue "Content-Type")
              ! A.content   (toValue "text/html;charset=utf-8")
       H.link ! A.rel       (toValue "stylesheet") 
              ! A.type_     (toValue "text/css")
              ! A.href      (toValue "/css/style.css")
    H.body $ do
-      H.div (toHtml $ "ViperVM " ++ showVersion version ++ " / " ++ title)
+      H.div (toHtml $ "Haskus " ++ showVersion version ++ " / " ++ title)
          ! A.class_ (toValue "headtitle")
       bdy
 

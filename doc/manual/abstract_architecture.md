@@ -28,7 +28,7 @@ them can support interleaving of instructions from different flows
 
 ## Representation
 
-In ViperVM, this graph of memories is represented using shared transactional
+In Haskus, this graph of memories is represented using shared transactional
 memory so that nodes can be connected or disconnected. The basic data type is
 `Host` which contains a set of host memories. Each memory knows the networks it
 is connected to and the memory nodes accessible through it, hence it is possible

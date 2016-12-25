@@ -1,6 +1,6 @@
-# ViperVM
+# Haskus
 
-ViperVM stands for Very High PERformance Virtual Machine. Our aim with this
+Haskus stands for Very High PERformance Virtual Machine. Our aim with this
 project is to provide a fully integrated environment to exploit current
 architectures, especially high-performance ones (e.g. so called heterogeneous
 architectures with GPUs or other accelerators, NUMA architectures, etc.).

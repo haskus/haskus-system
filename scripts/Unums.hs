@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-import ViperVM.Format.Binary.Unum
+import Haskus.Format.Binary.Unum
 import Data.Proxy
 
 data PI
