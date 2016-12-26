@@ -10,7 +10,7 @@ import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
 import Haskus.Utils.Embed
 
-import Paths_Haskus
+import Paths_haskus_system
 import Data.Version
 import Control.Monad
 import Text.Printf
