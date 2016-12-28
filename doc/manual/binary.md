@@ -42,7 +42,7 @@ data Dummy = Dummy
    { fieldX :: Word32                -- ^ 32-byte unsigned word (host endianness)
    , fieldY :: AsBigEndian Word32    -- ^ 32-byte unsigned word (big-endian)
    , fieldZ :: AsLittleEndian Word32 -- ^ 32-byte unsigned word (little-endian)
-   } deriving (Generic,CStorable)
+   } deriving (Generic,Storable)
 ```
 
 We can also explicitly change the endianness with the following methods:
@@ -95,7 +95,7 @@ Data structures can be nested:
 data StructY = StructY
    { yField0 :: StructX
    , yField1 :: Word64
-   } deriving (Show,Generic,CStorable)
+   } deriving (Show,Generic,Storable)
 ```
 
 ### Arrays (or Vectors)
@@ -206,7 +206,7 @@ To use an Enum as a field in a structure, use EnumField:
 data StructZ = StructZ
    { zField0 :: StructX
    , zField1 :: EnumField Word32 MyEnum
-   } deriving (Show,Generic,CStorable)
+   } deriving (Show,Generic,Storable)
 ```
 
 The first type parameter of EnumField indicates the backing word type (i.e. the
@@ -260,7 +260,7 @@ To use a bit set as a field in a structure, use BitSet:
 data StructZ = StructZ
    { zField0 :: ...
    , zField1 :: BitSet Word32 Flag
-   } deriving (Show,Generic,CStorable)
+   } deriving (Show,Generic,Storable)
 ```
 
 The first type parameter of BitSet indicates the backing word type (i.e. the
