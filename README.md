@@ -1,8 +1,32 @@
 # Haskus system
 
 Haskus system is a framework written in Haskell that can be used for system
-programming. The long-term aim is to provide a full Haskell user-space
-environment on top of the Linux kernel.
+programming. Fundamentally it is an experiment into providing an integrated
+interface leveraging Haskell features (type-safety, STM, etc.) for the whole
+system: input, display, sound, network, etc.
+
+It is based directly and only on the Linux kernel:
+
+* it doesn't contain any kernel level code (device driver, etc.)
+* it doesn't rely on usual interfaces (e.g., libdrm, libinput, X11, wayland,
+  etc.) to communicate with the kernel
+
+Note that it still depends on GHC's RTS dependencies (libc, etc.).
+
+Some modules are quite orthogonal to the aim of the project and can be used
+independently. E.g.,
+
+* the [Variant](src/lib/Haskus/Utils/Variant.hs) type described
+  [here](http://hsyl20.fr/home/posts/2016-12-12-control-flow-in-haskell-part-2.html)
+* the [file formats](src/lib/Haskus/Format) modules
+* the [memory layout](src/lib/Haskus/Format/Binary) modules to [easily
+  match](doc/manual/binary.md) C  data types (struct, unions, bit fields, etc.)
+  from Haskell code
+* the basic [x86-64 disassembler](src/lib/Haskus/Arch/X86_64/Disassembler.hs)
+
+The low-level Linux interface is in
+[Haskus.Arch.Linux](src/lib/Haskus/Arch/Linux) and the fluctuating higher-level
+interface on top of it is in [Haskus.System](src/lib/Haskus/System).
 
 Website: http://www.haskus.org/system
 
@@ -87,7 +111,7 @@ custom monad with common features for system programming (logging, etc.).
 
 # Programs
 
-Several programs are bundled with Haskus:
+Several utility programs are bundled with Haskus:
 
 #### ELF Web
 
