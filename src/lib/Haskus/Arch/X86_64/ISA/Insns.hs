@@ -11745,7 +11745,7 @@ i_pcmpgtq = insn
 i_pcmpistri :: X86Insn
 i_pcmpistri = insn
    { insnDesc        = "Packed compare implicit length strings, return index"
-   , insnMnemonic    = "PCMPiSTRI"
+   , insnMnemonic    = "PCMPISTRI"
    , insnFlags       = [ Modified [CF, ZF, SF, OF]
                        , Unset [AF, PF]
                        ]
