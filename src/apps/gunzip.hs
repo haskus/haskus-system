@@ -1,9 +1,9 @@
-import Data.Foldable (forM_)
-import Control.Monad (when)
 import Options.Applicative
-import qualified Data.List as List
+import Data.Monoid
 import System.FilePath (replaceExtension)
 
+import Haskus.Utils.List (isSuffixOf)
+import Haskus.Utils.Flow (forM_,when)
 import qualified Haskus.Format.Compression.GZip as GZip
 import Haskus.Format.Binary.Buffer
 import qualified Haskus.Format.Text as Text
@@ -16,7 +16,7 @@ main = do
    let ms = GZip.decompress bs
    forM_ ms $ \m -> do
       let fname = case (Text.unpack (GZip.memberName m), optpath opts) of
-                     ("",p) | ".tgz" `List.isSuffixOf` p -> replaceExtension p ".tar"
+                     ("",p) | ".tgz" `isSuffixOf` p -> replaceExtension p ".tar"
                      (s,_)                          -> s
       putStrLn $ "File: " ++ fname
       when (fname /= "") $ do
