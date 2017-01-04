@@ -8,8 +8,8 @@ module Haskus.Tests.Common
    )
 where
 
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Gen (listOf,resize,choose)
+
+import Test.Tasty.QuickCheck as QC
 
 import qualified Data.ByteString as BS
 

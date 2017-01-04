@@ -1,10 +1,10 @@
 module Haskus.Tests.System where
 
-import Distribution.TestSuite (Test,testGroup)
+import Test.Tasty
 
 import Haskus.Tests.System.Devices
 
-testsSystem :: Test
+testsSystem :: TestTree
 testsSystem = testGroup "System"
    [ testsDevices
    ]

@@ -3,8 +3,8 @@ module Haskus.Tests.System.Devices
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 import Test.QuickCheck.Monadic
 
 import qualified Haskus.Format.Text as Text
@@ -24,7 +24,7 @@ treeXYZ = deviceTreeCreate (Just (Text.pack "XYZ")) Nothing Map.empty
 treeABC :: IO DeviceTree
 treeABC = deviceTreeCreate (Just (Text.pack "ABC")) Nothing Map.empty
 
-testsDevices :: Test
+testsDevices :: TestTree
 testsDevices = testGroup "Device tree"
    [ testProperty "Insert/lookup" $ monadicIO $ do
          let path = Text.pack "/devices/xyz"

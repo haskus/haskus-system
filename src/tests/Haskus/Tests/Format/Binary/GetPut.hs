@@ -3,15 +3,15 @@ module Haskus.Tests.Format.Binary.GetPut
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 import Haskus.Tests.Common
 
 import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Buffer
 
-testsGetPut :: Test
+testsGetPut :: TestTree
 testsGetPut = testGroup "Get/Put" $
    [ testGroup "getBufferNul"
       [ testProperty "Read two successives strings" getBufferNul_basic

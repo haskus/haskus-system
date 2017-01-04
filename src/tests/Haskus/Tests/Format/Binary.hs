@@ -1,12 +1,12 @@
 module Haskus.Tests.Format.Binary where
 
-import Distribution.TestSuite (Test,testGroup)
+import Test.Tasty
 
 import Haskus.Tests.Format.Binary.Bits
 import Haskus.Tests.Format.Binary.GetPut
 import Haskus.Tests.Format.Binary.Vector
 
-testsBinary :: Test
+testsBinary :: TestTree
 testsBinary = testGroup "Binary"
    [ testsBits
    , testsGetPut

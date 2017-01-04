@@ -9,8 +9,8 @@ where
 
 import Prelude hiding (concat, replicate, take, drop)
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 import Haskus.Utils.Maybe
 import Haskus.Utils.HList
@@ -23,7 +23,7 @@ v1234 = fromJust $ fromList [1,2,3,4]
 v567 :: Vector 3 Word32
 v567 = fromJust $ fromList [5,6,7]
 
-testsVector :: Test
+testsVector :: TestTree
 testsVector = testGroup "Vector" $
    [ testProperty "toList . fromList == id" $
          toList v1234 == [1,2,3,4]

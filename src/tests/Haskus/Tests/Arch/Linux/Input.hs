@@ -3,14 +3,14 @@ module Haskus.Tests.Arch.Linux.Input
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 import Haskus.Arch.Linux.Internals.Input
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
 
-testsInput :: Test
+testsInput :: TestTree
 testsInput = testGroup "Input"
    [ testProperty "Key's enum" 
       (toCEnum (0x270 :: Word16) == NextFavorite)

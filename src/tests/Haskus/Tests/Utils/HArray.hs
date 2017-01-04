@@ -10,12 +10,12 @@ module Haskus.Tests.Utils.HArray
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 import Haskus.Utils.HArray
 
-testsHArray :: Test
+testsHArray :: TestTree
 testsHArray = testGroup "HArray" $
    [ testGroup "Getters"
       [ testProperty "Get by index 0" (getHArrayN @0 arr1 == 10)

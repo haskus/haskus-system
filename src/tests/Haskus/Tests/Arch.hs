@@ -1,10 +1,10 @@
 module Haskus.Tests.Arch where
 
-import Distribution.TestSuite (Test,testGroup)
+import Test.Tasty
 
 import Haskus.Tests.Arch.Linux
 
-testsArch :: Test
+testsArch :: TestTree
 testsArch = testGroup "Arch"
    [ testsLinux
    ]

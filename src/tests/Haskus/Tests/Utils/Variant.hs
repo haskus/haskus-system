@@ -8,8 +8,8 @@ module Haskus.Tests.Utils.Variant
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 import Data.Either
 
 import Haskus.Utils.Variant
@@ -40,7 +40,7 @@ c2def :: C -> DEF
 c2def = const (setVariant E)
 
 
-testsVariant :: Test
+testsVariant :: TestTree
 testsVariant = testGroup "Variant" $
    [ testProperty "set/get by index (match)"
          (getVariantN @1 b == Just B)
@@ -65,9 +65,9 @@ testsVariant = testGroup "Variant" $
    , testProperty "update by type (don't match)"
          (updateVariant c2d b == setVariant B)
    , testProperty "update/fold by index (match)"
-         (updateVariantFold @1 b2def b == setVariant E)
+         (updateVariantFoldN @1 b2def b == setVariant E)
    , testProperty "update/fold by index (don't match)"
-         (updateVariantFold @2 c2def b == setVariant B)
+         (updateVariantFoldN @2 c2def b == setVariant B)
 
    , testProperty "Convert into tuple"
          (variantToTuple b == (Nothing, Just B, Nothing))

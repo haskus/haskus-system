@@ -3,14 +3,14 @@ module Haskus.Tests.Arch.Linux.ErrorCode
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 import Haskus.Arch.Linux.ErrorCode
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
 
-testsErrorCode :: Test
+testsErrorCode :: TestTree
 testsErrorCode = testGroup "Error codes"
    [ testProperty "ErrorCode's enum EBUSY" 
       (toCEnum (16  :: Word64) == EBUSY)

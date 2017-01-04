@@ -3,9 +3,8 @@ module Haskus.Tests.Format.Binary.Bits
    )
 where
 
-import Distribution.TestSuite (Test,testGroup)
-import Distribution.TestSuite.QuickCheck (testProperty)
-import Test.QuickCheck.Arbitrary
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 import Test.QuickCheck.Gen (elements,choose,vectorOf)
 
 import Haskus.Tests.Common
@@ -22,7 +21,7 @@ import Haskus.Format.Binary.Put
 import Haskus.Format.Binary.VariableLength
 import Haskus.Format.Binary.Word
 
-testsBits :: Test
+testsBits :: TestTree
 testsBits = testGroup "Binary bits" $
    [ testGroup "Bits to/from string"
       [ testProperty "Bits from string \"01010011\" (Word8)" (bitsFromString "01010011" == (83 :: Word8))
