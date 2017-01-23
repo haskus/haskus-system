@@ -1,0 +1,20 @@
+# we use the nightly resolver to get diagrams-rasterific 1.4 which now embeds
+# the fonts (our patch)
+resolver: nightly-2016-12-31
+
+flags: {}
+
+packages:
+- '.'
+- location:
+    #git: git@github.com:hsyl20/haskus-system
+    git: /home/hsyl20/travail/code/haskus-system
+    commit: 8241474c3017392318cbae084df74c17d4646694
+  extra-dep: true
+
+ghc-options:
+   "*": -freduction-depth=0 -Wno-redundant-constraints
+
+extra-deps:
+- JuicyPixels-3.2.7.1
+- pqueue-1.3.2

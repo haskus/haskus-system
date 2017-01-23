@@ -1,0 +1,6 @@
+.stack-work
+_build
+_downloads
+_shake
+_sources
+*.swp
