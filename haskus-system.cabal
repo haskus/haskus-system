@@ -88,7 +88,8 @@ library
     Haskus.Arch.Linux.Process.ControlGroup
     Haskus.Arch.Linux.Process.Auxiliary
 
-    Haskus.Arch.Linux.Graphics.Atomic
+    Haskus.Arch.Linux.Graphics.IDs
+    Haskus.Arch.Linux.Graphics.Config
     Haskus.Arch.Linux.Graphics.Capability
     Haskus.Arch.Linux.Graphics.Event
     Haskus.Arch.Linux.Graphics.FrameBuffer
@@ -242,6 +243,7 @@ library
       ,  Rasterific                >= 0.6
       ,  colour                    >= 2.3
       ,  file-embed                >= 0.0.10
+      ,  extra                     >= 1.4
 
   build-tools: 
   ghc-options:          -Wall -O2

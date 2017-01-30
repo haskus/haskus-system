@@ -2,6 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | Property
 module Haskus.Arch.Linux.Graphics.Property
@@ -9,8 +11,15 @@ module Haskus.Arch.Linux.Graphics.Property
    , PropertyType (..)
    , RawProperty (..)
    , Property (..)
-   , getPropertyMeta
    , InvalidProperty (..)
+   , getPropertyMeta
+   , PropValue
+   , ObjectID
+   , PropID
+   , PropertyMetaID
+   -- * Atomic properties
+   , setAtomic
+   , AtomicErrors
    )
 where
 
@@ -24,6 +33,8 @@ import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String 
+
+import Data.Map as Map
 
 -- | Property meta-information
 data PropertyMeta = PropertyMeta
@@ -55,9 +66,15 @@ data Property = Property
    } deriving (Show,Eq)
 
 
-type PropertyMetaID = Word32
-
 data InvalidProperty = InvalidProperty deriving (Show,Eq)
+
+type PropertyMetaID = Word32
+type ObjectID       = Word32
+type PropID         = Word32
+type PropValue      = Word64
+
+type AtomicErrors = '[InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound]
+
 
 -- | Return meta-information from a property type ID
 getPropertyMeta :: forall m. MonadInIO m => Handle -> PropertyMetaID -> Flow m '[PropertyMeta,InvalidParam,InvalidProperty]
@@ -154,3 +171,45 @@ getPropertyMeta fd pid = do
          PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
             flowTraverse getBlob bids
                >.-.> (PropBlob . (ids `zip`))
+
+
+-- | Set object properties atomically
+setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Flow m (() ': AtomicErrors)
+setAtomic hdl flags objProps = do
+
+   let
+      kvs    = Map.assocs objProps -- [(Obj,[(Prop,Val)])]
+      objs   = fmap fst    kvs     -- [Obj]
+      pvs    = fmap snd    kvs     -- [[(Prop,Val)]]
+      nprops = fmap length pvs
+      props  = fmap fst (concat pvs) -- [Prop]
+      vals   = fmap snd (concat pvs) -- [Val]
+
+
+   withArray objs $ \pobjs ->
+      withArray nprops $ \pnprops ->
+         withArray props $ \pprops ->
+            withArray vals $ \pvals -> do
+               let
+                  toPtr = fromIntegral . ptrToWordPtr
+                  s = StructAtomic
+                     { atomFlags         = flags
+                     , atomCountObjects  = fromIntegral (length (Map.keys objProps))
+                     , atomObjectsPtr    = toPtr pobjs
+                     , atomCountPropsPtr = toPtr pnprops
+                     , atomPropsPtr      = toPtr pprops
+                     , atomPropValuesPtr = toPtr pvals
+                     , atomReserved      = 0 -- must be zero
+                     , atomUserData      = 0 -- used for event generation
+                     }
+               liftIO (ioctlAtomic s hdl)
+                  >.-.> const ()
+                  >..%~^> \case
+                     EBADF  -> flowSet InvalidHandle
+                     EINVAL -> flowSet InvalidParam
+                     ENOMEM -> flowSet MemoryError
+                     ENOENT -> flowSet EntryNotFound
+                     ERANGE -> flowSet InvalidRange
+                     ENOSPC -> flowSet InvalidRange
+                     e      -> unhdlErr "setAtomic" e
+

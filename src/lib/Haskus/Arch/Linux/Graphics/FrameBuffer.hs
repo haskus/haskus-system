@@ -6,7 +6,6 @@
 module Haskus.Arch.Linux.Graphics.FrameBuffer
    ( Surface(..)
    , FrameBuffer(..)
-   , FrameBufferID(..)
    , addFrameBuffer
    , removeFrameBuffer
    , dirtyFrameBuffer
@@ -20,6 +19,7 @@ where
 import Haskus.Arch.Linux.ErrorCode
 import Haskus.Arch.Linux.Handle
 import Haskus.Arch.Linux.Graphics.PixelFormat
+import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.Internals.Graphics
 import Haskus.Format.Binary.Vector as Vector
 import Haskus.Format.Binary.Word
@@ -28,9 +28,6 @@ import Haskus.Format.Binary.Storable
 import Haskus.Utils.Tuple
 import Haskus.Utils.Flow
 import Haskus.Utils.List (zip4)
-
--- | Framebuffer ID
-newtype FrameBufferID = FrameBufferID Word32 deriving (Show,Eq,Storable,Ord)
 
 -- | Surface
 data Surface = Surface

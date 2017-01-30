@@ -22,12 +22,6 @@ module Haskus.Arch.Linux.Graphics.State
    , ConnectorType(..)
    , SubPixel(..)
    , Resources(..)
-   -- ** IDs
-   , FrameBufferID(..)
-   , ControllerID(..)
-   , ConnectorID(..)
-   , EncoderID(..)
-   , PlaneID (..)
    , setController'
    , switchFrameBuffer'
    , getControllers
@@ -55,6 +49,7 @@ module Haskus.Arch.Linux.Graphics.State
    )
 where
 
+import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.Graphics.Mode
 import Haskus.Arch.Linux.Graphics.Property
 import Haskus.Arch.Linux.Graphics.FrameBuffer
@@ -98,18 +93,6 @@ data Resources = Resources
    , resMinHeight       :: Word32            -- ^ Minimal height
    , resMaxHeight       :: Word32            -- ^ Maximal height
    } deriving (Show)
-
--- | Connector ID
-newtype ConnectorID   = ConnectorID Word32 deriving (Show,Eq,Storable,Ord)
-
--- | Controller ID
-newtype ControllerID  = ControllerID Word32 deriving (Show,Eq,Storable,Ord)
-
--- | Encoder ID
-newtype EncoderID     = EncoderID Word32 deriving (Show,Eq,Storable,Ord)
-
--- | Plane identifier
-newtype PlaneID = PlaneID Word32 deriving (Show,Eq,Storable,Ord)
 
 -- | An encoder
 --

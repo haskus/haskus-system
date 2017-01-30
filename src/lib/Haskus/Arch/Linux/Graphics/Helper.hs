@@ -11,6 +11,7 @@ where
 import Haskus.Arch.Linux.Graphics.State
 import Haskus.Arch.Linux.Graphics.Mode
 import Haskus.Arch.Linux.Graphics.FrameBuffer
+import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.ErrorCode
 import Haskus.Utils.Flow
 

@@ -59,7 +59,9 @@ import Haskus.Format.Text as Text
 --
 -- The monad that permits fun system programming:
 --  * includes an optional logger
-newtype Sys a = Sys (StateT SysState IO a) deriving (Monad,Applicative,Functor,MonadState SysState, MonadIO)
+newtype Sys a
+   = Sys (StateT SysState IO a)
+   deriving (Monad, Applicative, Functor, MonadState SysState, MonadIO, MonadInIO)
 
 data SysState = SysState
    { sysLogRoot    :: Log                    -- ^ Root of the log
@@ -126,27 +128,6 @@ forkSys name act = do
 -- | Run and return nothing
 runSys' :: Sys a -> IO ()
 runSys' = void . runSys
-
-instance MonadInIO Sys where
-   {-# INLINE liftWith #-}
-   liftWith  = sysWith
-
-   {-# INLINE liftWith2 #-}
-   liftWith2 = sysWith2
-
--- | Lift with* and alloca* functions
-sysWith :: (forall c. (a -> IO c) -> IO c) -> (a -> Sys b) -> Sys b
-sysWith wth f =
-   Sys . StateT $ \s ->
-      wth $ \a ->
-         sysRun s (f a)
-
--- | Lift with* and alloca* functions
-sysWith2 :: (forall c. (a -> b -> IO c) -> IO c) -> (a -> b -> Sys e) -> Sys e
-sysWith2 wth f =
-   Sys . StateT $ \s ->
-      wth $ \a b ->
-         sysRun s (f a b)
 
 -- | Run with an explicit state
 sysRun :: SysState -> Sys a -> IO (a, SysState)

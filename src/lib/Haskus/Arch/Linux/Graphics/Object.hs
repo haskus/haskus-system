@@ -8,6 +8,7 @@
 module Haskus.Arch.Linux.Graphics.Object
    ( Object(..)
    , ObjectType(..)
+   , ObjectNotFound
    , getObjectPropertyCount
    , getObjectProperties
    )
@@ -16,6 +17,7 @@ where
 import Haskus.Arch.Linux.Graphics.FrameBuffer
 import Haskus.Arch.Linux.Graphics.Mode
 import Haskus.Arch.Linux.Graphics.State
+import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.Graphics.Property
 import Haskus.Arch.Linux.Internals.Graphics
 import Haskus.Arch.Linux.ErrorCode
@@ -27,6 +29,8 @@ import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Enum
 import Haskus.Utils.Flow
 
+data InvalidCount   = InvalidCount Int
+data ObjectNotFound = ObjectNotFound deriving (Show,Eq)
 
 data ObjectType
    = ObjectController
@@ -105,9 +109,6 @@ getObjectPropertyCount hdl o = do
       s = StructGetObjectProperties 0 0 0
             (getObjectID o)
             (fromCEnum (getObjectType o))
-
-data InvalidCount = InvalidCount Int
-data ObjectNotFound = ObjectNotFound deriving (Show,Eq)
 
 -- | Return object properties
 getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Flow m '[[RawProperty],ObjectNotFound,InvalidParam]
