@@ -1,3 +1,2 @@
 #!/bin/sh
-stack build
-stack exec -- Build $@
+stack build && stack exec -- Build $@

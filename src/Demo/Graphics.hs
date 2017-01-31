@@ -8,6 +8,7 @@ where
 
 import Haskus.System.Graphics
 import Haskus.Arch.Linux.Graphics.State
+import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.Handle
 import Haskus.System.Graphics.Diagrams
 import Haskus.Utils.Flow

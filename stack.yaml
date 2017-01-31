@@ -7,9 +7,9 @@ flags: {}
 packages:
 - '.'
 - location:
-    #git: git@github.com:hsyl20/haskus-system
+    #git: git@github.com:haskus/haskus-system
     git: /home/hsyl20/travail/code/haskus-system
-    commit: 8241474c3017392318cbae084df74c17d4646694
+    commit: 512d7c0a0add6e5ac74d8d44c98e71dcfcedf223
   extra-dep: true
 
 ghc-options:

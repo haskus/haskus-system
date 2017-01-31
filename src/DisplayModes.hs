@@ -1,7 +1,6 @@
 import Haskus.System
 
 import Haskus.Arch.Linux.Graphics.Mode
-import Haskus.Arch.Linux.Graphics.State
 import Haskus.Arch.Linux.Graphics.Helper
 import Haskus.Arch.Linux.Graphics.State
 import Haskus.Arch.Linux.Graphics.PixelFormat
