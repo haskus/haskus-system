@@ -69,6 +69,7 @@ module Haskus.Arch.Linux.Internals.Graphics
    , PageFlipFlag (..)
    , PageFlipFlags
    , StructPageFlip (..)
+   , StructPageFlipTarget (..)
    -- * Generic (dumb) buffer
    , StructCreateDumb (..)
    , StructMapDumb (..)
@@ -695,6 +696,8 @@ data StructControllerLut = StructControllerLut
 data PageFlipFlag
    = PageFlipEvent
    | PageFlipAsync
+   | PageFlipTargetAbsolute
+   | PageFlipTargetRelative
    deriving (Show,Eq,Enum,CBitSet)
 
 type PageFlipFlags = BitSet Word32 PageFlipFlag
@@ -720,8 +723,7 @@ type PageFlipFlags = BitSet Word32 PageFlipFlag
 -- 'as soon as possible', meaning that it not delay waiting for vblank.
 -- This may cause tearing on the screen.
 -- 
--- The reserved field must be zero until we figure out something
--- clever to use it for.
+-- The reserved field must be zero.
 
 -- | drm_mode_crtc_page_flip
 data StructPageFlip = StructPageFlip
@@ -731,6 +733,34 @@ data StructPageFlip = StructPageFlip
    , pfReserved      :: !Word32
    , pfUserData      :: !Word64
    } deriving (Generic,Storable)
+
+--
+-- Request a page flip on the specified crtc.
+--
+-- Same as struct drm_mode_crtc_page_flip, but supports new flags and
+-- re-purposes the reserved field:
+--
+-- The sequence field must be zero unless either of the
+-- DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE/RELATIVE flags is specified. When
+-- the ABSOLUTE flag is specified, the sequence field denotes the absolute
+-- vblank sequence when the flip should take effect. When the RELATIVE
+-- flag is specified, the sequence field denotes the relative (to the
+-- current one when the ioctl is called) vblank sequence when the flip
+-- should take effect. NOTE: DRM_IOCTL_WAIT_VBLANK must still be used to
+-- make sure the vblank sequence before the target one has passed before
+-- calling this ioctl. The purpose of the
+-- DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE/RELATIVE flags is merely to clarify
+-- the target for when code dealing with a page flip runs during a
+-- vertical blank period.
+
+-- drm_mode_crtc_page_flip_target
+data StructPageFlipTarget = StructPageFlipTarget
+   { pftCrtcId   :: !Word32
+   , pftFbId     :: !Word32
+   , pftFlags    :: !Word32
+   , pftSequence :: !Word32
+   , pftUserData :: !Word64
+   } deriving (Show,Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- Generic buffer
@@ -852,6 +882,7 @@ data Capability
    | CapCursorWidth
    | CapCursorHeight
    | CapAddFrameBufferModifiers
+   | CapPageFlipTarget
    deriving (Show,Eq,Enum)
 
 -- Add 1 to the enum number to get the valid value
