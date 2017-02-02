@@ -13,10 +13,13 @@ import qualified Haskus.Format.Binary.Buffer as B
 import Haskus.Arch.Linux.Info
 import Haskus.Arch.Linux.Graphics.State
 import Haskus.Arch.Linux.Graphics.Mode
+import Haskus.Arch.Linux.Graphics.Property
+import Haskus.Arch.Linux.Graphics.Config
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed
 import Haskus.Utils.STM
+import Haskus.Utils.Monad
 import qualified Haskus.Utils.Map as Map
 
 import Codec.Picture.Types
@@ -31,7 +34,7 @@ data Page
    = PageNone
    | PageInfo
    | PageGraphics
-   | PageInput
+   | PageDPMS
    deriving (Show,Eq)
 
 main :: IO ()
@@ -59,6 +62,7 @@ main = runSys' <| do
       updateMouseAbsX v    = modifyTVar mousePos (\(_,y) -> (fromIntegral v * wf,y))
       updateMouseAbsY v    = modifyTVar mousePos (\(x,_) -> (x,fromIntegral v * hf))
 
+   dpmsState <- atomically $ newEmptyTMVar
 
    writeStrLn term "Loading input devices..."
    inputs <- loadInputDevices dm
@@ -72,12 +76,24 @@ main = runSys' <| do
          InputAbsoluteEvent AbsoluteY v -> updateMouseAbsY v
          InputKeyEvent KeyPress k       -> do
             writeTVar lastKey (Just k)
+            p <- readTVar page
             case k of
-               Esc -> writeTVar quitKey True
+               Esc -> case p of
+                  PageNone -> writeTVar quitKey True
+                  _        -> writeTVar page PageNone
                F1  -> writeTVar page PageInfo
                F2  -> writeTVar page PageGraphics
-               F3  -> writeTVar page PageInput
-               _   -> writeTVar page PageNone
+               F3  -> writeTVar page PageDPMS
+               x   -> case p of
+                  PageDPMS -> do
+                     void (tryTakeTMVar dpmsState)
+                     case x of
+                        Key0 -> putTMVar dpmsState 0
+                        Key1 -> putTMVar dpmsState 1
+                        Key2 -> putTMVar dpmsState 2
+                        Key3 -> putTMVar dpmsState 3
+                        _    -> return ()
+                  _        -> return ()
          _                              -> return ()
 
    cards <- loadGraphicCards dm
@@ -140,6 +156,27 @@ main = runSys' <| do
          makeInfoPage i = rasterizeDiagram (mkWidth (realToFrac width)) (infoPageDiag i)
          infoPage = makeInfoPage <$> info
 
+      dpmsProp <- graphicsConfig (graphicCardHandle card) <| do
+         getPropertyM conn
+            >.-.> filter (\p -> propertyName (propertyMeta p) == "DPMS")
+            >..-.> const []
+
+      let 
+         dpmsPage = rasterizeDiagram (mkWidth 200)
+            <| case dpmsProp of
+               []    -> customPage ["DPMS not found"]
+               (p:_) -> case propertyType (propertyMeta p) of
+                  PropEnum xs -> customPage
+                     <| fmap (\(n,lbl) -> show n ++ " - " ++ lbl) xs
+                  _           -> customPage ["Invalid DPMS property type"]
+
+      sysFork "DPMS state" <| forever <| do
+         s <- atomically $ takeTMVar dpmsState
+         graphicsConfig (graphicCardHandle card) <| do
+            forM_ dpmsProp $ \prop -> do
+               setPropertyM conn (propertyID (propertyMeta prop)) s
+            commitConfig NonAtomic Commit Synchronous AllowFullModeset
+               >..~!> (\err -> lift $ sysWarning <| "Cannot set DPMS: " ++ show err)
 
       oldState <- newTVarIO (0,0,PageNone)
          
@@ -160,24 +197,29 @@ main = runSys' <| do
             -- compare with old state, if nothing has changed, wait
             atomically $ do
                (mx,my) <- readTVar mousePos
-               page <- readTVar page
+               page' <- readTVar page
                (oldX,oldY,oldPage) <- readTVar oldState
-               when (oldX == mx && oldY == my && oldPage == page)
+               when (oldX == mx && oldY == my && oldPage == page')
                   retry
-               writeTVar oldState (mx,my,page)
+               writeTVar oldState (mx,my,page')
 
             (mx,my) <- readTVarIO mousePos
             liftIO <| fillFrame gfb bgColor
             readTVarIO page >>= \case
                PageNone -> liftIO <| blendImage gfb logo BlendAlpha (centerPos logo) (fullImg logo)
+
                PageInfo -> case infoPage of
                   Just d  -> liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
                   Nothing -> return ()
+
                PageGraphics -> do
                   graphicsPage card >.~!> \diag -> do
                      let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
                      liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
-               _ -> return ()
+
+               PageDPMS -> do
+                  liftIO <| blendImage gfb dpmsPage BlendAlpha (10,50) (fullImg dpmsPage)
+
             liftIO <| blendImage gfb ptr BlendAlpha (floor mx-ptrLen,floor my-ptrLen) (fullImg ptr)
             liftIO <| blendImage gfb topBarDiagram BlendAlpha (0,0) (fullImg topBarDiagram)
 

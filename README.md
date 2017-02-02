@@ -18,6 +18,7 @@ several times when the Linux kernel is configured. Finally it runs QEmu.
 You have to do once:
 
 ```bash
+./build.sh disk/PROGRAM
 sudo _sources/syslinux-*/bios/linux/syslinux -iam -d /boot/syslinux /dev/XXX 
 ```
 

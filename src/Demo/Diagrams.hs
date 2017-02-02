@@ -3,6 +3,7 @@
 module Demo.Diagrams
    ( topBarDiag
    , infoPageDiag
+   , customPage
    )
 where
 
@@ -16,7 +17,7 @@ topBarDiag :: Float -> Float -> VDiagram
 topBarDiag screenWidth _screenHeight = diag
    where
       diag    = mconcat [pbts, bgrect]
-      lbls    = ["Info","Display", "Input"]
+      lbls    = ["Info","Display", "DPMS"]
       bts     = [ lbl n t | (t,n) <- lbls `zip` [(1::Int)..]]
       pbts    = position (zip (map mkPoint [0..]) bts)
                    |> translateY 5.0
@@ -71,3 +72,11 @@ infoPageDiag info = d
       mt lbl f = ( text (lbl ++ ":")
                  , text (fromCStringBuffer (f info))
                  )
+
+customPage :: [String] -> VDiagram
+customPage strs = d
+   where
+      d    = position tss
+      tss  = [ (p2 (0,-2*y), lbl) | (lbl,y) <- ts `zip` [0..]]
+      ts   = fmap mk strs
+      mk x = text x

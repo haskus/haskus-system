@@ -20,11 +20,15 @@ main = runSys' <| do
       let
          showProps o =
             graphicsConfig (graphicCardHandle card) (getPropertyM o)
-            >.~!> (\props -> writeStrLn term ("Properties: " ++ show props))
+            >.~!> (\props -> writeStrLn term ("  * Properties: " ++ show props))
          
+      writeStrLn term "Connectors:"
       mapM_ showProps (Map.elems (graphicsConnectors state))
+      writeStrLn term "Encoders:"
       mapM_ showProps (Map.elems (graphicsEncoders state))
+      writeStrLn term "Controllers:"
       mapM_ showProps (Map.elems (graphicsControllers state))
+      writeStrLn term "Planes:"
       mapM_ showProps (Map.elems (graphicsPlanes state))
 
    sysLogPrint
