@@ -15,6 +15,7 @@
 -- | Typed Variant type (union)
 module Haskus.Utils.Variant
    ( Variant
+   , variantIndex
    , getVariantN
    , setVariantN
    , updateVariantN
@@ -65,6 +66,10 @@ data Variant (l :: [*]) = Variant {-# UNPACK #-} !Word Any
 -- | Make GHC consider `l` as a representational parameter to make coercions
 -- between Variant values unsafe
 type role Variant representational
+
+-- | Get Variant index
+variantIndex :: Variant a -> Word
+variantIndex (Variant n _) = n
 
 instance Eq (Variant '[]) where
    (==) = error "Empty variant"
