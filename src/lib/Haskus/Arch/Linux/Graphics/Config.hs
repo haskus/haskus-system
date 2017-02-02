@@ -18,11 +18,12 @@
 -- tuples.
 module Haskus.Arch.Linux.Graphics.Config
    ( ConfigM
+   , Atomic (..)
    , CommitOrTest (..)
    , AsyncMode (..)
    , ModesetMode (..)
    , graphicsConfig
-   , atomicCommit
+   , commitConfig
    , getPropertyMetaM
    , setPropertyM
    , getPropertyM
@@ -44,9 +45,9 @@ import Control.Monad.State
 
 -- | PropertyM state
 data ConfigState = ConfigState
-   { configHandle :: Handle                            -- ^ Card handle
-   , configProps  :: Map (ObjectID,PropID) PropValue   -- ^ Properties to set
-   , configMeta   :: Map PropertyMetaID PropertyMeta   -- ^ Property meta
+   { configHandle :: Handle                                     -- ^ Card handle
+   , configProps  :: Map (ObjectType,ObjectID,PropID) PropValue -- ^ Properties to set
+   , configMeta   :: Map PropertyMetaID PropertyMeta            -- ^ Property meta
    }
 
 -- | Configuration monad
@@ -60,6 +61,10 @@ deriving instance Monad m => MonadState ConfigState (ConfigM m)
 -- | Get config state
 getConfig :: (MonadState ConfigState (ConfigM m), Monad m) => ConfigM m ConfigState
 getConfig = ConfigM get
+
+data Atomic
+   = Atomic
+   | NonAtomic
 
 -- | Test the configuration or commit it
 data CommitOrTest
@@ -107,7 +112,9 @@ setPropertyM ::
    ) => o -> PropID -> PropValue -> ConfigM m ()
 setPropertyM obj prop val = ConfigM $ do
    modify (\s ->
-      let props = Map.insert (getObjectID obj,prop) val (configProps s)
+      let
+         key   = (getObjectType obj, getObjectID obj, prop)
+         props = Map.insert key val (configProps s)
       in s { configProps = props })
 
 
@@ -129,24 +136,34 @@ getPropertyM obj = do
 
 
 -- | Commit atomic state
-atomicCommit :: MonadInIO m => CommitOrTest -> AsyncMode -> ModesetMode -> ConfigM m (Variant (() ': AtomicErrors))
-atomicCommit testMode asyncMode modesetMode = ConfigM $ do
+commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> ConfigM m (Variant (() ': AtomicErrors))
+commitConfig atomic testMode asyncMode modesetMode = ConfigM $ do
    s <- get
-   let
-      !flags = BitSet.fromList <| concat <|
-         [ case testMode of
-            TestOnly            -> [AtomicFlagTestOnly]
-            Commit              -> []
-         , case asyncMode of
-            Synchronous         -> []
-            Asynchronous        -> [AtomicFlagNonBlock]
-         , case modesetMode of
-            AllowFullModeset    -> [AtomicFlagAllowModeset]
-            DisallowFullModeset -> []
-         ]
-    
-      props = Map.toList (configProps s)
-               ||> (\((a,b),c) -> (a,[(b,c)]))
-               |> Map.fromListWith (++)
 
-   liftIO <| setAtomic (configHandle s) flags props
+   let hdl = configHandle s
+
+   case atomic of
+      Atomic -> do
+         let
+            !flags = BitSet.fromList <| concat <|
+               [ case testMode of
+                  TestOnly            -> [AtomicFlagTestOnly]
+                  Commit              -> []
+               , case asyncMode of
+                  Synchronous         -> []
+                  Asynchronous        -> [AtomicFlagNonBlock]
+               , case modesetMode of
+                  AllowFullModeset    -> [AtomicFlagAllowModeset]
+                  DisallowFullModeset -> []
+               ]
+
+            props = Map.toList (configProps s)
+                     ||> (\((_objType,objId,propId),val) -> (objId,[(propId,val)]))
+                     |> Map.fromListWith (++)
+
+         liftIO <| setAtomic hdl flags props
+
+      NonAtomic -> do
+         forM_ (Map.toList (configProps s)) <| \((objType,objId,propId),val) -> do
+            void (setObjectProperty' hdl objId objType propId val)
+         flowSet ()

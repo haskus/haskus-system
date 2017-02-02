@@ -11,6 +11,8 @@ module Haskus.Arch.Linux.Graphics.Object
    , ObjectNotFound
    , getObjectPropertyCount
    , getObjectProperties
+   , setObjectProperty
+   , setObjectProperty'
    )
 where
 
@@ -41,7 +43,7 @@ data ObjectType
    | ObjectFrameBuffer
    | ObjectBlob
    | ObjectPlane
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Ord,Enum)
 
 instance CEnum ObjectType where
    toCEnum x = case x of
@@ -161,3 +163,24 @@ getObjectProperties hdl o =
          if n' > n
             then flowSet (InvalidCount n)
             else flowSet s
+
+-- | Set an object property
+setObjectProperty ::
+   ( Object o
+   , MonadInIO m
+   ) => Handle -> o -> PropID -> PropValue -> Flow m '[(),InvalidParam,ObjectNotFound]
+setObjectProperty hdl o prop val =
+   setObjectProperty' hdl (getObjectID o) (getObjectType o) prop val
+
+-- | Set an object property
+setObjectProperty' ::
+   ( MonadInIO m
+   ) => Handle -> ObjectID -> ObjectType -> PropID -> PropValue -> Flow m '[(),InvalidParam,ObjectNotFound]
+setObjectProperty' hdl oid otyp prop val = do
+   let s = StructSetObjectProperty val prop oid (fromCEnum otyp)
+   liftIO (ioctlSetObjectProperty s hdl)
+      >.-.> const ()
+      >%~^> \case
+         EINVAL -> flowSet InvalidParam
+         ENOENT -> flowSet ObjectNotFound
+         e      -> unhdlErr "setObjectProperty" e
