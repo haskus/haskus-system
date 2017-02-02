@@ -260,7 +260,9 @@ sysLogPrint :: Sys ()
 sysLogPrint = do
       -- print the log
       log <- gets sysLogRoot
-      liftIO $ printLog 0 log
+      liftIO $ do
+         Text.putStrLn (Text.pack "")
+         printLog 0 log
    where
       printLog i l = 
          case l of
