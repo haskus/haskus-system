@@ -16,12 +16,16 @@ module Haskus.Utils.STM
    -- ** TMVar
    , S.TMVar
    , newTMVarIO
+   , S.isEmptyTMVar
    , S.newEmptyTMVar
+   , S.newEmptyTMVarIO
    , S.readTMVar
-   , S.tryReadTMVar
-   , S.putTMVar
-   , S.tryPutTMVar
    , S.takeTMVar
+   , S.putTMVar
+   , S.swapTMVar
+   , S.tryReadTMVar
+   , S.tryPutTMVar
+   , S.tryTakeTMVar
    -- ** TChan
    , S.TChan
    , newBroadcastTChanIO
