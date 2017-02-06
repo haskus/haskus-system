@@ -4,7 +4,7 @@ import Data.List
 import System.Process
  
 linuxVersion,syslinuxVersion :: String
-linuxVersion   = "4.7"
+linuxVersion   = "4.9.8"
 syslinuxVersion = "6.03"
 
 main :: IO ()

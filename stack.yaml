@@ -1,6 +1,6 @@
 # we use the nightly resolver to get diagrams-rasterific 1.4 which now embeds
 # the fonts (our patch)
-resolver: nightly-2016-12-31
+resolver: nightly-2017-02-03
 
 flags: {}
 

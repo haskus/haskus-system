@@ -1,2 +1,2 @@
 #!/bin/sh
-stack build && stack exec -- Build $@
+stack build --install-ghc && stack exec -- Build $@
