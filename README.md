@@ -2,7 +2,7 @@
 
 This repository contains some examples using [Haskus System](http://haskus.org/system/).
 
-For instance, to build and execute the "Demo" program with QEmu, use:
+For instance, to build and execute the "Demo" program with `QEMU`, use:
 
 ```bash
 ./build.sh qemu2/Demo
