@@ -9,20 +9,21 @@ For instance, to build and execute the "Demo" program with QEmu, use:
 ```
 
 It will download and build `Linux`, `Syslinux` and the required Haskell packages
-(using `stack`) such as the Haskus System package. You may new to press "Enter"
-several times when the Linux kernel is configured. Finally it runs QEmu.
+(using `stack`) such as the Haskus System package. You may need to press "Enter"
+several times when the Linux kernel is configured. Finally it runs the selected
+system with `QEMU`.
 
 
 ## Building a bootable disk (/dev/XXX)
 
-You have to do once:
+You have to install the bootloader (`Syslinux`) once:
 
 ```bash
 ./build.sh disk/PROGRAM
 sudo _sources/syslinux-*/bios/linux/syslinux -iam -d /boot/syslinux /dev/XXX 
 ```
 
-And then to update
+And then to update:
 
 ```bash
 ./build.sh disk/PROGRAM
