@@ -17891,7 +17891,7 @@ i_sahf = insn
 i_shl :: X86Insn
 i_shl = insn
    { insnDesc        = "Shift left"
-   , insnMnemonic    = "SHL (SAL)"
+   , insnMnemonic    = "SHL/SAL"
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
