@@ -276,7 +276,7 @@ newOutputState fd = do
 writeToHandle :: OutputState -> Word64 -> Ptr () -> STM (Future ())
 writeToHandle s sz ptr = do
    (sem,semsrc) <- newFuture
-   TList.prepend_ (IOBuffer ptr sz, semsrc) (outputBuffers s)
+   TList.append_ (IOBuffer ptr sz, semsrc) (outputBuffers s)
    return sem
 
 -- | Write bytes
