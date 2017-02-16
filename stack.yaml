@@ -6,6 +6,7 @@ packages:
 - '.'
 - location:
     git: git@github.com:haskus/haskus-system
+    #git: /home/hsyl20/travail/code/haskus-system
     commit: 33ba0413f2adae33f66f78e51f7e9e52e63758f1
   extra-dep: true
 
