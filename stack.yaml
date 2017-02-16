@@ -1,15 +1,12 @@
-# we use the nightly resolver to get diagrams-rasterific 1.4 which now embeds
-# the fonts (our patch)
-resolver: nightly-2017-02-03
+resolver: lts-8.0
 
 flags: {}
 
 packages:
 - '.'
 - location:
-    #git: git@github.com:haskus/haskus-system
-    git: /home/hsyl20/travail/code/haskus-system
-    commit: 4cd6b1a801cb884f727d49ab5d064bc7f2723a3d
+    git: git@github.com:haskus/haskus-system
+    commit: 33ba0413f2adae33f66f78e51f7e9e52e63758f1
   extra-dep: true
 
 ghc-options:

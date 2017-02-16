@@ -4,7 +4,6 @@
 module Clock.Render where
 
 import Haskus.System.Graphics.Diagrams
-import Haskus.System.Graphics.Colour
 import Haskus.Utils.Flow
 
 -- | Clock drawn with Diagrams

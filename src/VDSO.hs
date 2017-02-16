@@ -1,33 +1,34 @@
-import Haskus.Utils.Flow
-import Haskus.Arch.Linux.Process.MemoryMap
---import Haskus.Arch.Linux.Process.Auxiliary
+import Haskus.System
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Ptr
-import Haskus.Format.Elf
---import Haskus.Format.Elf.Section
-import Haskus.Format.Elf.Symbol
-
 import qualified Haskus.Format.Text as Text
+import Haskus.Format.Elf
+import Haskus.Format.Elf.Symbol
+import Haskus.Utils.Maybe
+import Haskus.Apps.Disassembler
 
 main :: IO ()
-main = do
+main = runSys' <| do
+
+   sys  <- defaultSystemInit
+   term <- defaultTerminal
 
    -- get the list of memory mappings for our own process
-   maps <- readMemoryMap "/proc/self/maps"
+   maps <- getProcessMemoryMap sys
+            >..~!!> \xs -> sysError ("Cannot retrieve memory map: " ++ show xs)
 
    let 
       isVDSO x = case entryType x of
                      NamedMapping t -> t == Text.pack "[vdso]" 
                      _              -> False
 
-      -- look for the VDSO entry
-      vdsoEntry = case filter isVDSO maps of
-         [x] -> x
-         []  -> error "No VDSO entry"
-         _   -> error "Several VDSO entries"
+   -- look for the VDSO entry
+   vdsoEntry <- case listToMaybe (filter isVDSO maps) of
+      Just x  -> return x
+      Nothing -> sysError "No vDSO memory map entry"
 
    -- read the ELF file
-   vdso <- parseElf <$> memoryMapToBuffer vdsoEntry
+   vdso <- parseElf <$> liftIO (memoryMapToBuffer vdsoEntry)
 
    let 
       syms     = getAllSymbols vdso
@@ -36,17 +37,27 @@ main = do
       timePtr  = wordPtrToPtr (fromIntegral timeAddr)
       timeFun  = mkTime (castPtrToFunPtr timePtr)
 
-   print (fmap fst syms)
+   --print symbols
+   writeStrLn term (show (fmap fst syms))
+   writeStrLn term (show syms)
 
-   r <- timeFun nullPtr
-   putStrLn ("Time (UTC): Epoch + " ++ show r ++ " seconds")
+   -- disassemble some vDSO functions
+   let ff (Just symName,_) = Text.pack "__vdso_" `Text.isPrefixOf` symName
+       ff _                = False
+   forM_ (filter ff syms) <| \(Just name,sym) -> do
+      let symAddr = symbolValue sym + entryStartAddr vdsoEntry
 
-   --TODO: print symbols (gettimeofday, etc.)
-   -- TODO: disass
-   
-   -- TODO: test gettimeofday
+      symAsm  <- disassX86_64 (Just (fromIntegral symAddr)) <$> liftIO (getSymbolBuffer sym (entryStartAddr vdsoEntry))
+      writeText term name
+      writeStrLn term ":"
+      writeText term symAsm
+      writeStrLn term ""
 
-   return ()
+   -- test "time"
+   r <- liftIO (timeFun nullPtr)
+   writeStrLn term ("Time (UTC): Epoch + " ++ show r ++ " seconds")
+
+   powerOff
 
 
 type TimeFun = Ptr Word64 -> IO Word64
