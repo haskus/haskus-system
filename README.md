@@ -19,9 +19,8 @@ independently. E.g.,
 * the [Variant](src/lib/Haskus/Utils/Variant.hs) type described
   [here](http://hsyl20.fr/home/posts/2016-12-12-control-flow-in-haskell-part-2.html)
 * the [file formats](src/lib/Haskus/Format) modules
-* the [memory layout](src/lib/Haskus/Format/Binary) modules to [easily
-  match](doc/manual/binary.md) C  data types (struct, unions, bit fields, etc.)
-  from Haskell code
+* the [memory layout](src/lib/Haskus/Format/Binary) modules to easily match C
+  data types (struct, unions, bit fields, etc.) from Haskell code
 * an [x86-64 disassembler](src/lib/Haskus/Arch/X86_64/Disassembler.hs)
 
 The low-level Linux interface is in
