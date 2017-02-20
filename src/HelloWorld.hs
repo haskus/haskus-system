@@ -12,7 +12,5 @@ main = runSys <| do
    -- wait for a key to be pressed
    waitForKey term
 
-   sysLogPrint
-
    -- shutdown the computer
    void powerOff
