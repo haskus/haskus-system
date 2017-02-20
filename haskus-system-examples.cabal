@@ -21,7 +21,6 @@ executable HelloWorld
    hs-source-dirs: src
    build-depends:
       base >=4.8,
-      bytestring,
       haskus-system
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded

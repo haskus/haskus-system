@@ -4,7 +4,7 @@ import Data.List
 import System.Process
  
 linuxVersion,syslinuxVersion :: String
-linuxVersion   = "4.9.8"
+linuxVersion    = "4.9.8"
 syslinuxVersion = "6.03"
 
 main :: IO ()
@@ -212,12 +212,14 @@ main = do
                   "-usbdevice" "tablet"
                   "-cdrom" iso
                   -- "-append" ("\"rdinit=/" ++ name ++ " console=ttyS0 atkbd.softraw=0\"")
+
             -- create disk
             | "disk/" `isPrefixOf` s = Just $ do
                let
                   name  = drop 5 s
                   disk  = "_build/disks" </> name </> "boot" </> name <.> "img"
                need [disk]
+
             | otherwise = Nothing
 
       phonys customCommands

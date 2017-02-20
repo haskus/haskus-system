@@ -1,10 +1,9 @@
 import Haskus.System
 
 main :: IO ()
-main = runSys' <| do
+main = runSys <| do
 
    -- Initialize the terminal
-   --  * use non-blocking I/O
    term <- defaultTerminal
 
    -- print a string on the standard output
@@ -13,5 +12,7 @@ main = runSys' <| do
    -- wait for a key to be pressed
    waitForKey term
 
+   sysLogPrint
+
    -- shutdown the computer
-   powerOff
+   void powerOff
