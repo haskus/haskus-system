@@ -188,7 +188,9 @@ import Haskus.Arch.Linux.Handle
 import Haskus.Arch.Linux.Time
 import Haskus.Arch.Linux.Process (ProcessID)
 
--- From linux/include/uapi/sound/asound.h
+-- =============================================================
+--    From linux/include/uapi/sound/asound.h
+-- =============================================================
 
 -----------------------------------------------------------------------------
 -- Digit audio interface
@@ -249,26 +251,26 @@ data HwInterface
    deriving (Show,Eq)
 
 data HwInfo = HwInfo
-   { hwInfoDevice    :: Int              -- ^ WR: device number
-   , hwInfoCard      :: Int              -- ^ R: card number
+   { hwInfoDevice    :: Int32            -- ^ WR: device number
+   , hwInfoCard      :: Int32            -- ^ R: card number
    , hwInfoId        :: CStringBuffer 64 -- ^ ID (user selectable)
    , hwInfoName      :: CStringBuffer 80 -- ^ hwdep name
-   , hwInfoInterface :: Int              -- ^ hwdep interface
+   , hwInfoInterface :: Int32            -- ^ hwdep interface
    , hwInfoReserved  :: Vector 64 Word8  -- ^ reserved for future
    } deriving (Generic, Show, Storable)
 
 -- | Generic DSP loader
 data HwDspStatus = HwDspStatus
-   { hwDspVersion    :: Word             -- ^ R: driver-specific version
+   { hwDspVersion    :: Word32           -- ^ R: driver-specific version
    , hwDspId         :: CStringBuffer 32 -- ^ R: driver-specific ID string
-   , hwDspNumDsps    :: Word             -- ^ R: number of DSP images to transfer
-   , hwDspLoadedDsps :: Word             -- ^ R: bit flags indicating the loaded DSPs
-   , hwDspChipReady  :: Word             -- ^ R: 1 = initialization finished
+   , hwDspNumDsps    :: Word32           -- ^ R: number of DSP images to transfer
+   , hwDspLoadedDsps :: Word32           -- ^ R: bit flags indicating the loaded DSPs
+   , hwDspChipReady  :: Word32           -- ^ R: 1 = initialization finished
    , hwDspReserved   :: Vector 16 Word8  -- ^ reserved for future use
    } deriving (Generic, Show, Storable)
 
 data HwDspImage = HwDspImage
-   { hwDspImageIndex      :: Word             -- ^ W: DSP index
+   { hwDspImageIndex      :: Word32           -- ^ W: DSP index
    , hwDspImageName       :: CStringBuffer 64 -- ^ W: ID (e.g. file name)
    , hwDspImageBin        :: Ptr ()           -- ^ W: binary image
    , hwDspImageLength     :: CSize            -- ^ W: size of image in bytes
@@ -281,7 +283,7 @@ hwIoctlW = ioctlWrite 0x48
 hwIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 hwIoctlR = ioctlRead 0x48
 
-ioctlHwVersion :: Handle -> IOErr Int
+ioctlHwVersion :: Handle -> IOErr Int32
 ioctlHwVersion = hwIoctlR 0x00
 
 ioctlHwInfo :: Handle -> IOErr HwInfo
@@ -566,7 +568,7 @@ data PcmState
    | PcmStateDisconnected -- ^ hardware is disconnected
    deriving (Show,Eq,Enum,CEnum)
 
-type PcmStateField = EnumField Int PcmState
+type PcmStateField = EnumField Int32 PcmState
 
 data PcmMmapOffset
    = PcmMmapOffsetData
@@ -586,17 +588,17 @@ instance CEnum PcmMmapOffset where
       _          -> error "Unknown PCM map offset"
 
 data PcmInfo = PcmInfo
-   { pcmInfoDevice               :: Word             -- ^ RO/WR (control): device number
-   , pcmInfoSubDevice            :: Word             -- ^ RO/WR (control): subdevice number
-   , pcmInfoStream               :: Int              -- ^ RO/WR (control): stream direction
-   , pcmInfoCard                 :: Int              -- ^ R: card number
+   { pcmInfoDevice               :: Word32           -- ^ RO/WR (control): device number
+   , pcmInfoSubDevice            :: Word32           -- ^ RO/WR (control): subdevice number
+   , pcmInfoStream               :: Int32            -- ^ RO/WR (control): stream direction
+   , pcmInfoCard                 :: Int32            -- ^ R: card number
    , pcmInfoID                   :: CStringBuffer 64 -- ^ ID (user selectable)
    , pcmInfoName                 :: CStringBuffer 80 -- ^ name of this device
    , pcmInfoSubName              :: CStringBuffer 32 -- ^ subdevice name
-   , pcmInfoDevClass             :: Int              -- ^ SNDRV_PCM_CLASS_*
-   , pcmInfoDevSubClass          :: Int              -- ^ SNDRV_PCM_SUBCLASS_*
-   , pcmInfoSubDevicesCount      :: Word
-   , pcmInfoSubDevicesAvailabled :: Word
+   , pcmInfoDevClass             :: Int32            -- ^ SNDRV_PCM_CLASS_*
+   , pcmInfoDevSubClass          :: Int32            -- ^ SNDRV_PCM_SUBCLASS_*
+   , pcmInfoSubDevicesCount      :: Word32
+   , pcmInfoSubDevicesAvailabled :: Word32
    , pcmInfoSync                 :: Vector 16 Word8  -- ^ hardware synchronization ID
    , pcmInfoReserved             :: Vector 64 Word8  -- ^ reserved for future...
    } deriving (Generic, Show, Storable)
@@ -655,8 +657,8 @@ instance Enum PcmHwParam where
       _  -> error "Unknown PCM HW Param"
 
 data Interval = Interval
-   { intervalMin :: Word
-   , intervalMax :: Word
+   { intervalMin     :: Word32
+   , intervalMax     :: Word32
    , intervalOptions :: IntervalOptions
    } deriving (Show,Eq,Generic,Storable)
 
@@ -667,7 +669,7 @@ data IntervalOption
    | IntervalEmpty
    deriving (Show,Eq,Enum,CBitSet)
 
-type IntervalOptions = BitSet Word IntervalOption
+type IntervalOptions = BitSet Word32 IntervalOption
 
 data PcmHwParamsFlag
    = PcmHwParamsNoResample     -- ^ avoid rate resampling
@@ -675,7 +677,7 @@ data PcmHwParamsFlag
    | PcmHwParamsNoPeriodWakeUp -- ^ disable period wakeups
    deriving (Show,Eq,Enum,CBitSet)
 
-type PcmHwParamsFlags = BitSet Word PcmHwParamsFlag
+type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 
 data Mask = Mask
    { maskBits :: Vector 8 Word32
@@ -685,12 +687,12 @@ data PcmHwParams = PcmHwParams
    { pcmHwParamsFlags               :: PcmHwParamsFlags
    , pcmHwParamsMasks               :: Vector 8 Mask
    , pcmHwParamsIntervals           :: Vector 21 Interval
-   , pcmHwParamsRequestedMasks      :: Word               -- ^ W: requested masks
-   , pcmHwParamsChangedMasks        :: Word               -- ^ R: changed masks
-   , pcmHwParamsInfo                :: Word               -- ^ R: Info flags for returned setup
-   , pcmHwParamsMostSignificantBits :: Word               -- ^ R: used most significant bits
-   , pcmHwParamsRateNumerator       :: Word               -- ^ R: rate numerator
-   , pcmHwParamsRateDenominator     :: Word               -- ^ R: rate denominator
+   , pcmHwParamsRequestedMasks      :: Word32             -- ^ W: requested masks
+   , pcmHwParamsChangedMasks        :: Word32             -- ^ R: changed masks
+   , pcmHwParamsInfo                :: Word32             -- ^ R: Info flags for returned setup
+   , pcmHwParamsMostSignificantBits :: Word32             -- ^ R: used most significant bits
+   , pcmHwParamsRateNumerator       :: Word32             -- ^ R: rate numerator
+   , pcmHwParamsRateDenominator     :: Word32             -- ^ R: rate denominator
    , pcmHwParamsFifoSize            :: Word64             -- ^ R: chip FIFO size in frames
    , pcmHwParamsReserved            :: Vector 64 Word8    -- ^ reserved for future
    } deriving (Generic, Storable, Show)
@@ -701,9 +703,9 @@ data PcmTimeStampMode
    deriving (Show,Eq,Enum)
 
 data PcmSwParams = PcmSwParams
-   { pcmSwParamsTimeStamp        :: Int             -- ^ timestamp mode
-   , pcmSwParamsPeriodStep       :: Word
-   , pcmSwParamsSleepMin         :: Word            -- ^ min ticks to sleep
+   { pcmSwParamsTimeStamp        :: Int32           -- ^ timestamp mode
+   , pcmSwParamsPeriodStep       :: Word32
+   , pcmSwParamsSleepMin         :: Word32          -- ^ min ticks to sleep
    , pcmSwParamsAvailMin         :: Word64          -- ^ min avail frames for wakeup
    , pcmSwParamsXFerAlign        :: Word64          -- ^ obsolete: xfer size need to be a multiple
    , pcmSwParamsStartThreshold   :: Word64          -- ^ min hw_avail frames for automatic start
@@ -711,16 +713,16 @@ data PcmSwParams = PcmSwParams
    , pcmSwParamsSilenceThreshold :: Word64          -- ^ min distance from noise for silence filling
    , pcmSwParamsSilenceSize      :: Word64          -- ^ silence block size
    , pcmSwParamsBoundary         :: Word64          -- ^ pointers wrap point
-   , pcmSwParamsProtoVersion     :: Word            -- ^ protocol version
-   , pcmSwParamsTimeStampType    :: Word            -- ^ timestamp type (req. proto >= 2.0.12)
+   , pcmSwParamsProtoVersion     :: Word32          -- ^ protocol version
+   , pcmSwParamsTimeStampType    :: Word32          -- ^ timestamp type (req. proto >= 2.0.12)
    , pcmSwParamsReserved         :: Vector 56 Word8 -- ^ reserved for future
    } deriving (Generic, Storable, Show)
 
 data PcmChannelInfo = PcmChannelInfo
-   { pcmChannelInfoChannel :: Word
-   , pcmChannelInfoOffset  :: Int64 -- ^ mmap offset
-   , pcmChannelInfoFirst   :: Word  -- ^ offset to first sample in bits
-   , pcmChannelInfoStep    :: Word  -- ^ samples distance in bits
+   { pcmChannelInfoChannel :: Word32
+   , pcmChannelInfoOffset  :: Int64  -- ^ mmap offset
+   , pcmChannelInfoFirst   :: Word32 -- ^ offset to first sample in bits
+   , pcmChannelInfoStep    :: Word32 -- ^ samples distance in bits
    } deriving (Show,Generic,Storable)
 
 data PcmAudioTimeStamp
@@ -752,11 +754,11 @@ data PcmStatus = PcmStatus
 
 data PcmMmapStatus = PcmMmapStatus
    { pcmMmapStatusState          :: PcmStateField -- ^ RO: state - SNDRV_PCM_STATE_XXXX
-   , pcmMmapStatusPadding        :: Int      -- ^ Needed for 64 bit alignment
-   , pcmMmapStatusHwPtr          :: Word64   -- ^ RO: hw ptr (0...boundary-1)
-   , pcmMmapStatusTimeStamp      :: TimeSpec -- ^ Timestamp
+   , pcmMmapStatusPadding        :: Int32         -- ^ Needed for 64 bit alignment
+   , pcmMmapStatusHwPtr          :: Word64        -- ^ RO: hw ptr (0...boundary-1)
+   , pcmMmapStatusTimeStamp      :: TimeSpec      -- ^ Timestamp
    , pcmMmapStatusSuspendedState :: PcmStateField -- ^ RO: suspended stream state
-   , pcmMmapStatusAudioTimeStamp :: TimeSpec -- ^ from sample counter or wall clock
+   , pcmMmapStatusAudioTimeStamp :: TimeSpec      -- ^ from sample counter or wall clock
    } deriving (Show,Generic,Storable)
 
 data PcmMmapControl = PcmMmapControl
@@ -770,7 +772,7 @@ data PcmSyncFlag
    | PcmSyncFlagPtrAvailMin   -- ^ get avail_min from driver 
    deriving (Show,Eq,Enum,CBitSet)
 
-type PcmSyncFlags = BitSet Word PcmSyncFlag
+type PcmSyncFlags = BitSet Word32 PcmSyncFlag
 
 data PcmSyncPtr = PcmSyncPtr
    { pcmSyncPtrFlags   :: PcmSyncFlags
@@ -865,16 +867,16 @@ pcmIoctlW = ioctlWrite 0x41
 pcmIoctlR :: Storable a => Word8 -> Handle -> IOErr a
 pcmIoctlR = ioctlRead 0x41
 
-ioctlPcmVersion :: Handle -> IOErr Int
+ioctlPcmVersion :: Handle -> IOErr Int32
 ioctlPcmVersion = pcmIoctlR 0x00
 
 ioctlPcmInfo :: Handle -> IOErr PcmInfo
 ioctlPcmInfo = pcmIoctlR 0x01
 
-ioctlPcmTimeStamp :: Int -> Handle -> IOErr ()
+ioctlPcmTimeStamp :: Int32 -> Handle -> IOErr ()
 ioctlPcmTimeStamp = pcmIoctlW 0x02
 
-ioctlPcmTTimeStamp :: Int -> Handle -> IOErr ()
+ioctlPcmTTimeStamp :: Int32 -> Handle -> IOErr ()
 ioctlPcmTTimeStamp = pcmIoctlW 0x03
 
 ioctlPcmHwRefine :: PcmHwParams -> Handle -> IOErr PcmHwParams
@@ -922,7 +924,7 @@ ioctlPcmDrop = pcmIoctl 0x43
 ioctlPcmDrain :: Handle -> IOErr ()
 ioctlPcmDrain = pcmIoctl 0x44
 
-ioctlPcmPause :: Int -> Handle -> IOErr ()
+ioctlPcmPause :: Int32 -> Handle -> IOErr ()
 ioctlPcmPause = pcmIoctlW 0x45
 
 ioctlPcmRewind :: Word64 -> Handle -> IOErr ()
@@ -949,7 +951,7 @@ ioctlPcmWriteNFrames = pcmIoctlW 0x52
 ioctlPcmReadNFrames :: Handle -> IOErr XferN
 ioctlPcmReadNFrames = pcmIoctlR 0x53
 
-ioctlPcmLink :: Int -> Handle -> IOErr ()
+ioctlPcmLink :: Int32 -> Handle -> IOErr ()
 ioctlPcmLink = pcmIoctlW 0x60
 
 ioctlPcmUnlink :: Handle -> IOErr ()
@@ -975,32 +977,32 @@ data MidiFlag
    | MidiFlagDuplex
    deriving (Show,Eq,Enum,CBitSet)
 
-type MidiFlags = BitSet Word MidiFlag
+type MidiFlags = BitSet Word32 MidiFlag
 
 data MidiInfo = MidiInfo
-   { midiInfoDevice         :: Word             -- ^ RO/WR (control): device number
-   , midiInfoSubDevice      :: Word             -- ^ RO/WR (control): subdevice number
-   , midiInfoStream         :: Int              -- ^ WR: stream
-   , midiInfoCard           :: Int              -- ^ R: card number
+   { midiInfoDevice         :: Word32           -- ^ RO/WR (control): device number
+   , midiInfoSubDevice      :: Word32           -- ^ RO/WR (control): subdevice number
+   , midiInfoStream         :: Int32            -- ^ WR: stream
+   , midiInfoCard           :: Int32            -- ^ R: card number
    , midiInfoFlags          :: MidiFlags        -- ^ SNDRV_RAWMIDI_INFO_XXXX
    , midiInfoId             :: CStringBuffer 64 -- ^ ID (user selectable)
    , midiInfoName           :: CStringBuffer 80 -- ^ name of device
    , midiInfoSubName        :: CStringBuffer 32 -- ^ name of active or selected subdevice
-   , midiInfoSubDeviceCount :: Word
-   , midiInfoSubDeviceAvail :: Word
+   , midiInfoSubDeviceCount :: Word32
+   , midiInfoSubDeviceAvail :: Word32
    , midiInfoReserved       :: Vector 64 Word8  -- ^ reserved for future use
    } deriving (Show, Generic, Storable)
 
 data MidiParams = MidiParams
-   { midiParamsStream          :: Int
+   { midiParamsStream          :: Int32
    , midiParamsBufferSize      :: CSize           -- ^ queue size in bytes
    , midiParamsAvailMin        :: CSize           -- ^ minimum avail bytes for wakeup
-   , midiParamsNoActiveSensing :: Word            -- ^ do not send active sensing byte in close()
+   , midiParamsNoActiveSensing :: Word32          -- ^ do not send active sensing byte in close()
    , midiParamsReserved        :: Vector 16 Word8 -- ^ reserved for future use
    } deriving (Show, Generic, Storable)
 
 data MidiStatus = MidiStatus
-   { midiStatusStream    :: Int
+   { midiStatusStream    :: Int32
    , midiStatusTimeStamp :: TimeSpec        -- ^ Timestamp
    , midiStatusAvail     :: CSize           -- ^ available bytes
    , midiStatusXRuns     :: CSize           -- ^ count of overruns since last status (in bytes)
@@ -1017,7 +1019,7 @@ midiIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 midiIoctlWR = ioctlWriteRead 0x57
 
 
-ioctlMidiVersion :: Handle -> IOErr Int
+ioctlMidiVersion :: Handle -> IOErr Int32
 ioctlMidiVersion = midiIoctlR 0x00
 
 ioctlMidiInfo :: Handle -> IOErr MidiInfo
@@ -1029,10 +1031,10 @@ ioctlMidiParams = midiIoctlWR 0x10
 ioctlMidiStatus :: MidiStatus -> Handle -> IOErr MidiStatus
 ioctlMidiStatus = midiIoctlWR 0x20
 
-ioctlMidiDrop :: Int -> Handle -> IOErr ()
+ioctlMidiDrop :: Int32 -> Handle -> IOErr ()
 ioctlMidiDrop = midiIoctlW 0x30
 
-ioctlMidiDrain :: Int -> Handle -> IOErr ()
+ioctlMidiDrain :: Int32 -> Handle -> IOErr ()
 ioctlMidiDrain = midiIoctlW 0x31
 
 
@@ -1088,28 +1090,28 @@ data TimerFlag
    = TimerFlagSlave  -- ^ Cannot be controlled
    deriving (Show,Eq,Enum,CBitSet)
 
-type TimerFlags = BitSet Word TimerFlag
+type TimerFlags = BitSet Word32 TimerFlag
 
 
 data TimerId = TimerId
-   { timerIdDeviceClass    :: Int
-   , timerIdDeviceSubClass :: Int
-   , timerIdCard           :: Int
-   , timerIdDevice         :: Int
-   , timerIdSubDevice      :: Int
+   { timerIdDeviceClass    :: Int32
+   , timerIdDeviceSubClass :: Int32
+   , timerIdCard           :: Int32
+   , timerIdDevice         :: Int32
+   , timerIdSubDevice      :: Int32
    } deriving (Show,Generic,Storable)
 
 data TimerGInfo = TimerGInfo
    { timerGInfoTimerID       :: TimerId          -- ^ requested timer ID
    , timerGInfoFlags         :: TimerFlags       -- ^ timer flags
-   , timerGInfoCard          :: Int              -- ^ card number
+   , timerGInfoCard          :: Int32            -- ^ card number
    , timerGInfoId            :: CStringBuffer 64 -- ^ timer identification
    , timerGInfoName          :: CStringBuffer 80 -- ^ timer name
    , timerGInfoReserved      :: Word64           -- ^ reserved for future use
    , timerGInfoResolution    :: Word64           -- ^ average period resolution in ns
    , timerGInfoResolutionMin :: Word64           -- ^ minimal period resolution in ns
    , timerGInfoResolutionMax :: Word64           -- ^ maximal period resolution in ns
-   , timerGInfoClients       :: Word             -- ^ active timer clients
+   , timerGInfoClients       :: Word32           -- ^ active timer clients
    , timerGInfoReserved2     :: Vector 32 Word8
    } deriving (Show,Generic,Storable)
 
@@ -1135,7 +1137,7 @@ data TimerSelect = TimerSelect
 
 data TimerInfo = TimerInfo
    { timerInfoFlags      :: TimerFlags       -- ^ timer flags
-   , timerInfoCard       :: Int              -- ^ card number
+   , timerInfoCard       :: Int32            -- ^ card number
    , timerInfoId         :: CStringBuffer 64 -- ^ timer identification
    , timerInfoName       :: CStringBuffer 80 -- ^ timer name
    , timerInfoReserved   :: Word64           -- ^ reserved for future use
@@ -1149,23 +1151,23 @@ data TimerParamsFlag
    | TimerParamFlagEarlyEvent -- ^ write early event to the poll queue 
    deriving (Show,Eq,Enum,CBitSet)
 
-type TimerParamsFlags = BitSet Word TimerParamsFlag
+type TimerParamsFlags = BitSet Word32 TimerParamsFlag
 
 data TimerParams = TimerParams
    { timerParamsFlags     :: TimerParamsFlags -- ^ flags - SNDRV_MIXER_PSFLG_*
-   , timerParamsTicks     :: Word             -- ^ requested resolution in ticks
-   , timerParamsQueueSize :: Word             -- ^ total size of queue (32-1024)
-   , timerParamsReserved  :: Word             -- ^ reserved, was: failure locations
-   , timerParamsFilter    :: Word             -- ^ event filter (bitmask of SNDRV_TIMER_EVENT_*)
+   , timerParamsTicks     :: Word32           -- ^ requested resolution in ticks
+   , timerParamsQueueSize :: Word32           -- ^ total size of queue (32-1024)
+   , timerParamsReserved  :: Word32           -- ^ reserved, was: failure locations
+   , timerParamsFilter    :: Word32           -- ^ event filter (bitmask of SNDRV_TIMER_EVENT_*)
    , timerParamsReserved2 :: Vector 60 Word8  -- ^ reserved
    } deriving (Show,Generic,Storable)
 
 data TimerStatus = TimerStatus
    { timerStatusTimeStamp  :: TimeSpec        -- ^ Timestamp - last update
-   , timerStatusResolution :: Word            -- ^ current period resolution in ns
-   , timerStatusLost       :: Word            -- ^ counter of master tick lost
-   , timerStatusOverrun    :: Word            -- ^ count of read queue overruns
-   , timerStatusQueue      :: Word            -- ^ used queue size
+   , timerStatusResolution :: Word32          -- ^ current period resolution in ns
+   , timerStatusLost       :: Word32          -- ^ counter of master tick lost
+   , timerStatusOverrun    :: Word32          -- ^ count of read queue overruns
+   , timerStatusQueue      :: Word32          -- ^ used queue size
    , timerStatusReserved   :: Vector 64 Word8 -- ^ reserved
    } deriving (Show,Generic,Storable)
 
@@ -1181,13 +1183,13 @@ timerIoctlR = ioctlRead 0x54
 timerIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 timerIoctlWR = ioctlWriteRead 0x54
 
-ioctlTimerVersion :: Handle -> IOErr Int
+ioctlTimerVersion :: Handle -> IOErr Int32
 ioctlTimerVersion = timerIoctlR 0x00
 
 ioctlTimerNextDevice :: TimerId -> Handle -> IOErr TimerId
 ioctlTimerNextDevice = timerIoctlWR 0x01
 
-ioctlTimerTRead :: Int -> Handle -> IOErr ()
+ioctlTimerTRead :: Int32 -> Handle -> IOErr ()
 ioctlTimerTRead = timerIoctlW 0x02
 
 ioctlTimerGInfo :: TimerGInfo -> Handle -> IOErr TimerGInfo
@@ -1224,8 +1226,8 @@ ioctlTimerPause :: Handle -> IOErr ()
 ioctlTimerPause = timerIoctl 0xa3
 
 data TimerRead = TimerRead
-   { timerReadResolution :: Word
-   , timerReadTicks      :: Word
+   { timerReadResolution :: Word32
+   , timerReadTicks      :: Word32
    } deriving (Show,Generic,Storable)
 
 data TimerEvent
@@ -1283,9 +1285,9 @@ instance Enum TimerEvent where
       _  -> error "Unknown timer event"
 
 data TimerTRead = TimerTRead
-   { timerTReadEvent     :: Int
+   { timerTReadEvent     :: Int32
    , timerTReadTimeStamp :: TimeSpec
-   , timerTReadValue     :: Word
+   , timerTReadValue     :: Word32
    } deriving (Show,Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -1296,8 +1298,8 @@ controlVersion :: Word32
 controlVersion = 0x00020007
 
 data ControlCardInfo = ControlCardInfo
-   { controlCardInfoCard       :: Int               -- ^ card number
-   , controlCardInfoPad        :: Int               -- ^ reserved for future (was type)
+   { controlCardInfoCard       :: Int32             -- ^ card number
+   , controlCardInfoPad        :: Int32             -- ^ reserved for future (was type)
    , controlCardInfoId         :: CStringBuffer 16  -- ^ ID of card (user selectable)
    , controlCardInfoDriver     :: CStringBuffer 16  -- ^ Driver name
    , controlCardInfoName       :: CStringBuffer 32  -- ^ Short name of soundcard
@@ -1387,19 +1389,19 @@ instance Enum ControlPower where
       _      -> error "Unknown control power"
 
 data ControlElementId = ControlElementId
-   { controlElemIdNumId     :: Int              -- ^ numeric identifier, zero = invalid
-   , controlElemIdInterface :: Int              -- ^ interface identifier
-   , controlElemIdDevice    :: Word             -- ^ device/client number
-   , controlElemIdSubDevice :: Word             -- ^ subdevice (substream) number
+   { controlElemIdNumId     :: Int32            -- ^ numeric identifier, zero = invalid
+   , controlElemIdInterface :: Int32            -- ^ interface identifier
+   , controlElemIdDevice    :: Word32           -- ^ device/client number
+   , controlElemIdSubDevice :: Word32           -- ^ subdevice (substream) number
    , controlElemIdName      :: CStringBuffer 44 -- ^ ASCII name of item
-   , controlElemIdIndex     :: Word             -- ^ index of item
+   , controlElemIdIndex     :: Word32           -- ^ index of item
    } deriving (Show,Generic,Storable)
 
 data ControlElementList = ControlElementList
-   { controlElemListOffset   :: Word            -- ^ W: first element ID to get
-   , controlElemListSpace    :: Word            -- ^ W: count of element IDs to get
-   , controlElemListUsed     :: Word            -- ^ R: count of element IDs set
-   , controlElemListCount    :: Word            -- ^ R: count of all elements
+   { controlElemListOffset   :: Word32          -- ^ W: first element ID to get
+   , controlElemListSpace    :: Word32          -- ^ W: count of element IDs to get
+   , controlElemListUsed     :: Word32          -- ^ R: count of element IDs set
+   , controlElemListCount    :: Word32          -- ^ R: count of all elements
    , controlElemListPids     :: Ptr ()          -- ^ R: IDs
    , controlElemListReserved :: Vector 50 Word8
    } deriving (Show,Generic,Storable)
@@ -1417,18 +1419,18 @@ data Integer64Value = Integer64Value
    } deriving (Show,Generic,Storable)
 
 data EnumeratedValue = EnumeratedValue
-   { enumeratedCount       :: Word             -- ^ R: number of items
-   , enumeratedItem        :: Word             -- ^ W: item number
+   { enumeratedCount       :: Word32           -- ^ R: number of items
+   , enumeratedItem        :: Word32           -- ^ W: item number
    , enumeratedName        :: CStringBuffer 64 -- ^ R: value name
    , enumeratedNamesPtr    :: Word64           -- ^ W: names list (ELEM_ADD only)
-   , enumeratedNamesLength :: Word
+   , enumeratedNamesLength :: Word32
    } deriving (Show,Generic,Storable)
 
 data ControlElementInfo = ControlElementInfo
    { controlElemInfoId         :: ControlElementId
-   , controlElemInfoType       :: Int
-   , controlElemInfoAccess     :: Word
-   , controlElemInfoCount      :: Word
+   , controlElemInfoType       :: Int32
+   , controlElemInfoAccess     :: Word32
+   , controlElemInfoCount      :: Word32
    , controlElemInfoOwner      :: ProcessID
    , controlElemInfoValue      :: Union '[IntegerValue,Integer64Value,EnumeratedValue,Vector 128 Word8]
    , controlElemInfoDimensions :: Vector 4 Word16
@@ -1436,16 +1438,16 @@ data ControlElementInfo = ControlElementInfo
 
 data ControlElementValue = ControlElementValue
    { controlElemValueId        :: ControlElementId                    -- ^ W: element ID
-   , controlElemValueIndirect  :: Word                                -- ^ W: indirect access - obsoleted
+   , controlElemValueIndirect  :: Word32                              -- ^ W: indirect access - obsoleted
    , controlElemValueValue     :: Union '[Vector 512 Word8,AesIec958]
    , controlElemValueTimeStamp :: TimeSpec
    , controlElemValueReserved  :: Vector 112 Word8
    } deriving (Show,Generic,Storable)
 
 data ControlTLV = ControlTLV
-   { controlTlvNumId  :: Word          -- ^ control element numeric identification
-   , controlTlvLength :: Word          -- ^ in bytes aligned to 4
-   , controlTlvTlv    :: Vector 0 Word -- ^ first TLV
+   { controlTlvNumId  :: Word32          -- ^ control element numeric identification
+   , controlTlvLength :: Word32          -- ^ in bytes aligned to 4
+   , controlTlvTlv    :: Vector 0 Word32 -- ^ first TLV
    -- FIXME: the array is allocated "after" the struct...
    } deriving (Show,Generic,Storable)
 
@@ -1458,7 +1460,7 @@ controlIoctlR = ioctlRead 0x55
 controlIoctlWR :: Storable a => Word8 -> a -> Handle -> IOErr a
 controlIoctlWR = ioctlWriteRead 0x55
 
-ioctlControlVersion :: Handle -> IOErr Int
+ioctlControlVersion :: Handle -> IOErr Int32
 ioctlControlVersion = controlIoctlR 0x00
 
 ioctlControlCardInfo :: Handle -> IOErr ControlCardInfo
@@ -1482,7 +1484,7 @@ ioctlControlElemLock = controlIoctlW 0x14
 ioctlControlElemUnlock :: ControlElementId -> Handle -> IOErr ()
 ioctlControlElemUnlock = controlIoctlW 0x15
 
-ioctlControlSubscribeEvents :: Int -> Handle -> IOErr Int
+ioctlControlSubscribeEvents :: Int32 -> Handle -> IOErr Int32
 ioctlControlSubscribeEvents = controlIoctlWR 0x16
 
 ioctlControlElemAdd :: ControlElementInfo -> Handle -> IOErr ControlElementInfo
@@ -1503,34 +1505,34 @@ ioctlControlTLVWrite = controlIoctlWR 0x1b
 ioctlControlTLVCommand :: ControlTLV -> Handle -> IOErr ControlTLV
 ioctlControlTLVCommand = controlIoctlWR 0x1c
 
-ioctlControlHwDepNextDevice :: Int -> Handle -> IOErr Int
+ioctlControlHwDepNextDevice :: Int32 -> Handle -> IOErr Int32
 ioctlControlHwDepNextDevice = controlIoctlWR 0x20
 
 ioctlControlHwInfo :: Handle -> IOErr HwInfo
 ioctlControlHwInfo = controlIoctlR 0x21
 
-ioctlControlPcmNextDevice :: Handle -> IOErr Int
+ioctlControlPcmNextDevice :: Handle -> IOErr Int32
 ioctlControlPcmNextDevice = controlIoctlR 0x30
 
 ioctlControlPcmInfo :: PcmInfo -> Handle -> IOErr PcmInfo
 ioctlControlPcmInfo = controlIoctlWR 0x31
 
-ioctlControlPcmPreferSubdevice :: Int -> Handle -> IOErr ()
+ioctlControlPcmPreferSubdevice :: Int32 -> Handle -> IOErr ()
 ioctlControlPcmPreferSubdevice = controlIoctlW 0x32
 
-ioctlControlMidiNextDevice :: Int -> Handle -> IOErr Int
+ioctlControlMidiNextDevice :: Int32 -> Handle -> IOErr Int32
 ioctlControlMidiNextDevice = controlIoctlWR 0x40
 
 ioctlControlMidiInfo :: MidiInfo -> Handle -> IOErr MidiInfo
 ioctlControlMidiInfo = controlIoctlWR 0x41
 
-ioctlControlMidiPreferSubdevice :: Int -> Handle -> IOErr ()
+ioctlControlMidiPreferSubdevice :: Int32 -> Handle -> IOErr ()
 ioctlControlMidiPreferSubdevice = controlIoctlW 0x42
 
-ioctlControlPower :: Int -> Handle -> IOErr Int
+ioctlControlPower :: Int32 -> Handle -> IOErr Int32
 ioctlControlPower = controlIoctlWR 0xd0
 
-ioctlControlPowerState :: Handle -> IOErr Int
+ioctlControlPowerState :: Handle -> IOErr Int32
 ioctlControlPowerState = controlIoctlR 0xd1
 
 
@@ -1566,7 +1568,7 @@ instance Enum ControlEventMask where
       _                     -> error "Unknown event mask"
 
 data ControlEvent = ControlEvent
-   { controlEventType   :: Int
-   , controlEventMask   :: Word
+   { controlEventType   :: Int32
+   , controlEventMask   :: Word32
    , controlEventElemId :: ControlElementId
    } deriving (Show,Generic,Storable)
