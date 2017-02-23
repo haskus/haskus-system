@@ -7,11 +7,11 @@ packages:
 - location:
     git: git@github.com:haskus/haskus-system
     #git: /home/hsyl20/travail/code/haskus-system
-    commit: 33ba0413f2adae33f66f78e51f7e9e52e63758f1
+    commit: a5dc94144a44979d5afcd6ebf3194ab70bbbd305
   extra-dep: true
 
 ghc-options:
-   "*": -freduction-depth=0 -Wno-redundant-constraints
+   "haskus-system": -freduction-depth=0 -fobject-code
 
 extra-deps:
 - JuicyPixels-3.2.7.1

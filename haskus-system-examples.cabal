@@ -147,6 +147,18 @@ executable  DisplayProperties
    ld-options: -static -pthread
    extra-lib-dirs: ./usr/lib
 
+executable  DisplayState
+   main-is: DisplayState.hs
+   hs-source-dirs: src
+   build-depends:
+      base >=4.8,
+      haskus-system
+   default-language:    Haskell2010
+   ghc-options: -Wall -static -threaded
+   cc-options: -static
+   ld-options: -static -pthread
+   extra-lib-dirs: ./usr/lib
+
 executable  DisplayModes
    main-is: DisplayModes.hs
    hs-source-dirs: src
