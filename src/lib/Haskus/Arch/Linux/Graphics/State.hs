@@ -75,12 +75,12 @@ import Data.Map (Map)
 
 -- | Graph of graphics entities
 data GraphicsState = GraphicsState
-   { graphicsConnectors   :: Map ConnectorID   Connector
-   , graphicsEncoders     :: Map EncoderID     Encoder
-   , graphicsControllers  :: Map ControllerID  Controller
-   , graphicsPlanes       :: Map PlaneID       Plane
-   , graphicsFrameBuffers :: [FrameBufferID]
-   }
+   { graphicsConnectors   :: Map ConnectorID   Connector  -- ^ Connectors
+   , graphicsEncoders     :: Map EncoderID     Encoder    -- ^ Encoders
+   , graphicsControllers  :: Map ControllerID  Controller -- ^ Controllers
+   , graphicsPlanes       :: Map PlaneID       Plane      -- ^ Planes
+   , graphicsFrameBuffers :: [FrameBufferID]              -- ^ Framebuffers
+   } deriving (Show)
 
 -- | Graphic card ressources
 data Resources = Resources
