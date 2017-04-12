@@ -1,42 +1,20 @@
-# Haskus System examples
+# haskus-system examples
 
-This repository contains some examples using [Haskus System](http://haskus.org/system/).
+This repository contains some examples using [haskus-system](http://haskus.org/system/).
 
-For instance, to build and execute the "Demo" program with `QEMU`, use:
+Please read the [documentation](http://haskus.org/system/manual) to understand
+how to build and execute them.
+
+
+We provide a script that automatically performs some of the steps described in
+the documentation. For instance, to build and execute the "Demo" program with
+`QEMU`, use:
 
 ```bash
 ./build.sh qemu2/Demo
 ```
 
 It will download and build `Linux`, `Syslinux` and the required Haskell packages
-(using `stack`) such as the Haskus System package. You may need to press "Enter"
+(using `stack`) such as the haskus-system package. You may need to press "Enter"
 several times when the Linux kernel is configured. Finally it runs the selected
 system with `QEMU`.
-
-
-## Building a bootable disk (/dev/XXX)
-
-You have to install the bootloader (`Syslinux`) once:
-
-```bash
-./build.sh disk/PROGRAM
-sudo _sources/syslinux-*/bios/linux/syslinux -iam -d /boot/syslinux /dev/XXX 
-```
-
-And then to update:
-
-```bash
-./build.sh disk/PROGRAM
-sudo mount /dev/XXX /mnt/disk
-cp -rf _build/disk/PROGRAM/* /mnt/disk
-sudo umount /mnt/disk
-```
-
-
-## Building a bootable CD-ROM (iso)
-
-```bash
-./build.sh iso/PROGRAM
-dd bs=4M if=_build/isos/PROGRAM.iso of=/dev/XXX status=progress && sync
-```
-
