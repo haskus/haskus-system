@@ -158,6 +158,7 @@ import Haskus.Utils.Types.Generics (Generic)
 -- Mode
 -----------------------------------------------------------------------------
 
+-- | Mode type
 data ModeType
    = ModeTypeBuiltin
    | ModeTypeClockC
@@ -191,6 +192,7 @@ data ModeFlag
 
 type ModeFlags = BitSet Word32 ModeFlag
 
+-- | 3D mode
 data Stereo3D
    = Stereo3DNone
    | Stereo3DFramePacking
@@ -224,6 +226,7 @@ data ScalingMode
    | ScaleAspect       -- ^ Full screen, preserve aspect
    deriving (Show,Eq,Enum)
 
+-- | Aspect mode
 data AspectMode
    = AspectNone
    | Aspect4_3
