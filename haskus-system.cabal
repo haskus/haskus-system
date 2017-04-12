@@ -23,8 +23,6 @@ source-repository head
 library
   exposed-modules:
 
-    Haskus.Arch.Common.Errors
-
     Haskus.Arch.X86_64.Cpuid
 
     Haskus.Arch.X86_64.Linux.Syscall

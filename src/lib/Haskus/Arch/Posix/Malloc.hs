@@ -4,13 +4,19 @@
 module Haskus.Arch.Posix.Malloc
    ( malloc
    , free
+   , AllocError(..)
    )
 where
 
 import Haskus.Format.Binary.Ptr (Ptr, nullPtr)
 import Haskus.Format.Binary.Word
 
-import Haskus.Arch.Common.Errors
+
+-- | Buffer allocation error
+data AllocError
+   = AllocOutOfMemory
+   | AllocUnknownError
+   deriving (Show,Eq)
 
 foreign import ccall unsafe "stdlib.h malloc"  malloc_ :: CSize -> IO (Ptr a)
 
