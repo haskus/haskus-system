@@ -16,6 +16,13 @@ ghc-options:
    # -fobject-code       -- GHCI needs it because of the foreign primops
    # -freduction-depth=0 -- used to allow compilation of large type-level Syscalls table
 
+build:
+   haddock-arguments:
+      haddock-args:
+         - "--optghc=-freduction-depth=0"
+         - "--odir=./doc/haddock"
+
+
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
 #

@@ -1,6 +1,6 @@
 # Haskus system
 
-Haskus system is a framework written in Haskell that can be used for system
+Haskus system is a framework written in Haskell and designed for system
 programming. Fundamentally it is an experiment into providing an integrated
 interface leveraging Haskell features (type-safety, STM, etc.) for the whole
 system: input, display, sound, network, etc.
