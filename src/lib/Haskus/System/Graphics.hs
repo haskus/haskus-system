@@ -240,9 +240,9 @@ initRenderingEngine card ctrl mode nfb flags draw
       fps <- newTVarIO (0 :: Word)
 
       -- on page flip complete
-      -- FIXME: how do we know which controller has flipped?
+      -- FIXME: use user data to know which controller has flipped
       onEvent (graphicCardChan card) $ \case
-         VBlankEvent FlipComplete _ ->
+         Event PageFlipComplete _ ->
             atomically $ do
                s <- readTVar fbState
                case fbPending s of

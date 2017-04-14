@@ -121,10 +121,10 @@ module Haskus.Arch.Linux.Internals.Graphics
    , ioctlCreateBlob
    , ioctlDestroyBlob
    -- * Events
-   , StructEvent (..)
+   , DRMEventHeader (..)
    , EventType (..)
    , toEventType
-   , StructEventVBlank (..)
+   , DRMEvent (..)
    -- * Rotation/reflection
    , Rotation (..)
    , Reflection (..)
@@ -696,6 +696,7 @@ data StructControllerLut = StructControllerLut
 -- Page flipping
 -----------------------------------------------------------------------------
 
+-- | Page flip flags
 data PageFlipFlag
    = PageFlipEvent
    | PageFlipAsync
@@ -1057,34 +1058,34 @@ ioctlDestroyBlob = drmIoctl 0xBE
 -- up are chipset specific.
 
 -- | drm_event
-data StructEvent = StructEvent
-   { eventType   :: !Word32
-   , eventLength :: !Word32
+data DRMEventHeader = DRMEventHeader
+   { eventType     :: !Word32
+   , eventLength   :: !Word32
    } deriving (Generic,Storable)
 
+-- | Event type
 data EventType
-   = VBlank
-   | FlipComplete
+   = VBlank           -- ^ Beginning of the VBlank period
+   | PageFlipComplete -- ^ Page flipping complete
    deriving (Show)
 
 -- | Try to recognize the event type
 toEventType :: Word32 -> Maybe EventType
 toEventType v = case v of
    0x01 -> Just VBlank
-   0x02 -> Just FlipComplete
+   0x02 -> Just PageFlipComplete
    _    -> Nothing
 
 -- | drm_event_vblank
-data StructEventVBlank = StructEventVBlank
-   { vblankEventType         :: !Word32
-   , vblankEventSize         :: !Word32
-   , vblankEventUserData     :: !Word64
-   , vblankEventSeconds      :: !Word32
-   , vblankEventMicroseconds :: !Word32
-   , vblankEventSequence     :: !Word32
-   , vblankEventReserved     :: !Word32
-   } 
-   deriving (Show,Generic,Storable)
+data DRMEvent = DRMEvent
+   { drmEventType         :: !Word32
+   , drmEventSize         :: !Word32
+   , drmEventUserData     :: !Word64
+   , drmEventSeconds      :: !Word32
+   , drmEventMicroseconds :: !Word32
+   , drmEventSequence     :: !Word32
+   , drmEventReserved     :: !Word32
+   } deriving (Show,Generic,Storable)
 
 -- =============================================================
 --    From linux/include/uapi/drm/drm_crtc.h

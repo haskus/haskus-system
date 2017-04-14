@@ -5,7 +5,7 @@ module Haskus.Arch.Linux.Graphics.Event
    ( Event(..)
    , peekEvents
    , EventType (..)
-   , StructEventVBlank (..)
+   , DRMEvent (..)
    )
 where
 
@@ -18,8 +18,8 @@ import Haskus.Utils.Monad
 
 -- | Graphics events
 data Event
-   = VBlankEvent EventType StructEventVBlank   -- ^ VBlank event
-   | CustomEvent Word32 Buffer                 -- ^ Custom event
+   = Event EventType DRMEvent  -- ^ Builtin event
+   | CustomEvent Word32 Buffer -- ^ Custom event
    deriving (Show)
 
 -- | Peek events
@@ -36,7 +36,7 @@ peekEvents = go
       peekEvent ptr = do
          e <- peek (castPtr ptr)
          v <- case toEventType (eventType e) of
-            Just t  -> VBlankEvent t <$> peek (castPtr ptr)
+            Just t  -> Event t <$> peek (castPtr ptr)
             Nothing -> CustomEvent (eventType e) <$>
                bufferPackPtr (fromIntegral (eventLength e) - 8) (castPtr ptr `indexPtr` 8)
                                
