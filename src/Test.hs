@@ -154,7 +154,7 @@ main = runSys' <| do
          -- writeStrLn term (show ga)
 
          -- page flip
-         let setFb fb = switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent])
+         let setFb fb = switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent]) 0
                         |> flowAssertQuiet "Switch framebuffer"
 
          setFb fb1

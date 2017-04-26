@@ -80,7 +80,7 @@ main = runSys' <| do
 
          -- page flip
          let 
-            setFb fb = switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent])
+            setFb fb = switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent]) 0
                         |> flowAssertQuiet "Switch framebuffer"
 
             --clp        = Clip 0 0 (modeHorizontalDisplay mode - 1) (modeVerticalDisplay mode - 1)
