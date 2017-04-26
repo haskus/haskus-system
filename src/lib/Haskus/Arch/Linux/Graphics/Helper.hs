@@ -13,6 +13,7 @@ import Haskus.Arch.Linux.Graphics.Mode
 import Haskus.Arch.Linux.Graphics.FrameBuffer
 import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.ErrorCode
+import Haskus.Format.Binary.Word
 import Haskus.Utils.Flow
 
 data FBConfig
@@ -37,6 +38,6 @@ setController ctrl fbconf conns mode = do
 
 -- | Switch to another framebuffer for the given controller
 -- without doing a full mode change
-switchFrameBuffer :: MonadIO m => Controller -> FrameBuffer -> PageFlipFlags -> Flow m '[(),ErrorCode]
-switchFrameBuffer ctrl fb flags =
-   switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (fbID fb) flags
+switchFrameBuffer :: MonadIO m => Controller -> FrameBuffer -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
+switchFrameBuffer ctrl fb flags udata =
+   switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (fbID fb) flags udata

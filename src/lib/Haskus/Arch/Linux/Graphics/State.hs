@@ -297,12 +297,12 @@ setController' hdl crtcid fb conns mode = do
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: MonadIO m => Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> Flow m '[(),ErrorCode]
-switchFrameBuffer' hdl crtcid fb flags = do
+switchFrameBuffer' :: MonadIO m => Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
+switchFrameBuffer' hdl crtcid fb flags udata = do
    let
       ControllerID cid = crtcid
       FrameBufferID fid = fb
-      s = StructPageFlip cid fid flags 0 0
+      s = StructPageFlip cid fid flags 0 udata
 
    liftIO (ioctlPageFlip s hdl) >.-.> const ()
 

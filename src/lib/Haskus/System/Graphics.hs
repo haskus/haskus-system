@@ -45,6 +45,7 @@ import Haskus.Arch.Linux.Graphics.Capability
 import Haskus.Arch.Linux.Graphics.GenericBuffer
 import Haskus.Arch.Linux.Graphics.Helper
 import Haskus.Arch.Linux.Graphics.Mode
+import Haskus.Arch.Linux.Graphics.IDs
 import Haskus.Arch.Linux.Graphics.FrameBuffer
 import Haskus.Arch.Linux.Graphics.PixelFormat
 import Haskus.Arch.Linux.Graphics.Event as Graphics
@@ -64,7 +65,7 @@ data GraphicCard = GraphicCard
 -- | Return detected graphic cards
 --
 -- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
--- identifier. The this directory, the dev file contains device major/minor to
+-- identifier. In this directory, the dev file contains device major/minor to
 -- create appropriate device node.
 loadGraphicCards :: DeviceManager -> Sys [GraphicCard]
 loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
@@ -239,21 +240,29 @@ initRenderingEngine card ctrl mode nfb flags draw
 
       fps <- newTVarIO (0 :: Word)
 
+      -- get controller ID as Word64, used as user_data with the page flip event
+      let ControllerID ctrlId' = controllerID ctrl
+          ctrlId = fromIntegral ctrlId'
+
       -- on page flip complete
-      -- FIXME: use user data to know which controller has flipped
       onEvent (graphicCardChan card) $ \case
-         Event PageFlipComplete _ ->
-            atomically $ do
-               s <- readTVar fbState
-               case fbPending s of
-                  Nothing -> return ()
-                  Just p  -> do
-                     writeTVar fbState $ s
-                        { fbShown    = p
-                        , fbPending  = Nothing
-                        , fbDrawable = fbShown s : fbDrawable s
-                        }
-                     modifyTVar' fps (+1)
+         Event PageFlipComplete drmEvent
+            -- we use user data to know which controller has flipped
+            | drmEventUserData drmEvent == ctrlId ->
+               atomically $ do
+                  s <- readTVar fbState
+                  case fbPending s of
+                     -- no pending frame? weird. we do nothing
+                     Nothing -> return ()
+                     -- shown   --> drawable
+                     -- pending --> shown
+                     Just p  -> do
+                        writeTVar fbState $ s
+                           { fbShown    = p
+                           , fbPending  = Nothing
+                           , fbDrawable = fbShown s : fbDrawable s
+                           }
+                        modifyTVar' fps (+1)
          _                          -> return ()
 
 
@@ -276,7 +285,7 @@ initRenderingEngine card ctrl mode nfb flags draw
 
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
-         switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent])
+         switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent]) ctrlId
             |> flowAssertQuiet "Switch framebuffer"
             
 
@@ -316,7 +325,7 @@ initRenderingEngine card ctrl mode nfb flags draw
       --    |> flowAssertQuiet "Set controller"
 
       -- Force the generation of the first page-flip event
-      switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent])
+      switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) ctrlId
          |> flowAssertQuiet "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
