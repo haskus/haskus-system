@@ -30,17 +30,22 @@ import Demo.Graphics
 rawlogo :: B.Buffer
 rawlogo = B.Buffer $(embedFile "src/image/logo_transparent.png")
 
+rawabcd :: B.Buffer
+rawabcd = B.Buffer $(embedFile "src/image/abcd.png")
+
 data Page
    = PageNone
    | PageInfo
    | PageGraphics
    | PageDPMS
+   | PageTerminal
    deriving (Show,Eq)
 
 main :: IO ()
 main = runSys' <| do
 
    let logo = loadPng rawlogo
+   let abcd = loadPng rawabcd
 
    term <- defaultTerminal
    sys  <- defaultSystemInit
@@ -84,6 +89,7 @@ main = runSys' <| do
                F1  -> writeTVar page PageInfo
                F2  -> writeTVar page PageGraphics
                F3  -> writeTVar page PageDPMS
+               F4  -> writeTVar page PageTerminal
                x   -> case p of
                   PageDPMS -> do
                      void (tryTakeTMVar dpmsState)
@@ -220,8 +226,11 @@ main = runSys' <| do
                PageDPMS -> do
                   liftIO <| blendImage gfb dpmsPage BlendAlpha (10,50) (fullImg dpmsPage)
 
-            liftIO <| blendImage gfb ptr BlendAlpha (floor mx-ptrLen,floor my-ptrLen) (fullImg ptr)
+               PageTerminal -> do
+                  liftIO <| blendImage gfb abcd BlendAlpha (10,50) (fullImg abcd)
+
             liftIO <| blendImage gfb topBarDiagram BlendAlpha (0,0) (fullImg topBarDiagram)
+            liftIO <| blendImage gfb ptr BlendAlpha (floor mx-ptrLen,floor my-ptrLen) (fullImg ptr)
 
 
 

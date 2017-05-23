@@ -35,14 +35,16 @@ executable Demo
       Demo.Diagrams
       Demo.Graphics
    build-depends:
-      base >=4.8,
-      bytestring,
-      haskus-system,
-      transformers,
-      JuicyPixels,
-      diagrams-lib,
-      containers,
-      colour
+         base >=4.8
+      ,  bytestring
+      ,  haskus-system
+      ,  haskus-utils
+      ,  haskus-binary
+      ,  transformers
+      ,  JuicyPixels
+      ,  diagrams-lib
+      ,  containers
+      ,  colour
    default-language:    Haskell2010
    ghc-options: -Wall -O3 -static -threaded
    cc-options: -static -O3
@@ -53,14 +55,16 @@ executable Test
    main-is: Test.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      bytestring,
-      haskus-system,
-      transformers,
-      either,
-      JuicyPixels,
-      stm,
-      colour
+         base >=4.8
+      ,  bytestring
+      ,  haskus-system
+      ,  haskus-binary
+      ,  haskus-utils
+      ,  transformers
+      ,  either
+      ,  JuicyPixels
+      ,  stm
+      ,  colour
    default-language:    Haskell2010
    ghc-options: -Wall -O3 -static -threaded
    cc-options: -static -O3
@@ -72,12 +76,14 @@ executable Clock
    hs-source-dirs: src
    other-modules: Clock.Render
    build-depends:
-      base >=4.8,
-      bytestring,
-      haskus-system,
-      JuicyPixels,
-      stm,
-      lens
+         base           >=4.8
+      ,  bytestring
+      ,  haskus-system
+      ,  haskus-utils
+      ,  haskus-binary
+      ,  JuicyPixels
+      ,  stm
+      ,  lens
    default-language:    Haskell2010
    ghc-options: -Wall -O3 -static -threaded
    cc-options: -static -O3
@@ -88,10 +94,12 @@ executable VDSO
    main-is: VDSO.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      text,
-      vector,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
+      ,  haskus-binary
+      ,  haskus-utils
+      ,  text
+      ,  vector
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -102,8 +110,8 @@ executable KernelEvent
    main-is: KernelEvent.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -114,8 +122,9 @@ executable  OpenDevice
    main-is: OpenDevice.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
+      ,  haskus-binary
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -126,9 +135,9 @@ executable  ListDevices
    main-is: ListDevices.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      stm,
-      haskus-system
+         base >=4.8
+      ,  stm
+      ,  haskus-system
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -139,8 +148,9 @@ executable  DisplayProperties
    main-is: DisplayProperties.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
+      ,  haskus-utils
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -151,8 +161,8 @@ executable  DisplayState
    main-is: DisplayState.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -163,8 +173,9 @@ executable  DisplayModes
    main-is: DisplayModes.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
+      ,  haskus-utils
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
