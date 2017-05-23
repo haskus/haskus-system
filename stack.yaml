@@ -1,9 +1,11 @@
-resolver: lts-8.0
+resolver: lts-8.15
 packages:
 - '.'
+
 extra-deps:
 - diagrams-1.4
-- pqueue-1.3.2
+- haskus-binary-0.6.0.0
+- haskus-utils-0.6.0.0
 
 flags:
    diagrams:

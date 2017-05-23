@@ -29,7 +29,7 @@ import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow (forM_,when)
-import Haskus.Format.Text (Text)
+import Haskus.Format.Text (Text,getTextUtf8,putTextUtf8)
 import qualified Haskus.Format.Text as Text
 
 

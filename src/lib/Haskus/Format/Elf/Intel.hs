@@ -34,7 +34,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text)
+import Haskus.Format.Text (Text, getTextUtf8)
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Word

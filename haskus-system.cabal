@@ -117,32 +117,6 @@ library
     Haskus.System.Event
     Haskus.System.Network
 
-    Haskus.Utils.ContFlow
-    Haskus.Utils.Variant
-    Haskus.Utils.Monad
-    Haskus.Utils.Parser
-    Haskus.Utils.HArray
-    Haskus.Utils.Flow
-    Haskus.Utils.MultiState
-    Haskus.Utils.HList
-    Haskus.Utils.Embed
-    Haskus.Utils.List
-    Haskus.Utils.Map
-    Haskus.Utils.Maybe
-    Haskus.Utils.Memory
-    Haskus.Utils.Types
-    Haskus.Utils.Types.List
-    Haskus.Utils.Types.Generics
-    Haskus.Utils.STM
-    Haskus.Utils.STM.TEq
-    Haskus.Utils.STM.TMap
-    Haskus.Utils.STM.TSet
-    Haskus.Utils.STM.TList
-    Haskus.Utils.STM.TTree
-    Haskus.Utils.STM.Future
-    Haskus.Utils.STM.TGraph
-    Haskus.Utils.Tuple
-
     Haskus.Format.CPIO
     Haskus.Format.Text
     Haskus.Format.String
@@ -169,33 +143,6 @@ library
     Haskus.Format.Compression.Algorithms.Deflate
     Haskus.Format.Compression.GZip
 
-    Haskus.Format.Binary.Bits
-    Haskus.Format.Binary.Bits.Basic
-    Haskus.Format.Binary.Bits.Reverse
-    Haskus.Format.Binary.Bits.Order
-    Haskus.Format.Binary.Bits.Get
-    Haskus.Format.Binary.Bits.Put
-
-    Haskus.Format.Binary.BitSet
-    Haskus.Format.Binary.BitField
-    Haskus.Format.Binary.Buffer
-    Haskus.Format.Binary.BufferList
-    Haskus.Format.Binary.BufferBuilder
-    Haskus.Format.Binary.Enum
-    Haskus.Format.Binary.Endianness
-    Haskus.Format.Binary.FixedPoint
-    Haskus.Format.Binary.Get
-    Haskus.Format.Binary.Put
-    Haskus.Format.Binary.VariableLength
-    Haskus.Format.Binary.Vector
-    Haskus.Format.Binary.Union
-    Haskus.Format.Binary.Unum
-    Haskus.Format.Binary.Record
-    Haskus.Format.Binary.Storable
-    Haskus.Format.Binary.Word
-    Haskus.Format.Binary.Ptr
-
-    Haskus.Format.Binary.Layout
     Haskus.Format.FileSystem.ISO9660
 
     Haskus.Apps.CPIO
@@ -211,6 +158,8 @@ library
 
   build-depends:       
          base                      >= 4.8
+      ,  haskus-utils              >= 0.6
+      ,  haskus-binary             >= 0.6
       ,  containers                >= 0.5
       ,  list-t                    >= 0.4
       ,  stm                       >= 2.4
@@ -256,15 +205,6 @@ test-suite tests
    default-language:    Haskell2010
    other-modules:
          Haskus.Tests
-      ,  Haskus.Tests.Common
-      ,  Haskus.Tests.Format
-      ,  Haskus.Tests.Format.Binary
-      ,  Haskus.Tests.Format.Binary.Bits
-      ,  Haskus.Tests.Format.Binary.GetPut
-      ,  Haskus.Tests.Format.Binary.Vector
-      ,  Haskus.Tests.Utils.HArray
-      ,  Haskus.Tests.Utils.Variant
-      ,  Haskus.Tests.Utils
       ,  Haskus.Tests.System
       ,  Haskus.Tests.System.Devices
       ,  Haskus.Tests.Arch
@@ -282,17 +222,6 @@ test-suite tests
       ,  containers
       ,  bytestring
 
-Benchmark bench-BitReverse
-   type:               exitcode-stdio-1.0
-   main-is:            BitReverse.hs
-   hs-source-dirs:     src/bench
-   ghc-options:         -Wall -threaded -O3
-   default-language:     Haskell2010
-   build-depends:
-         base
-      ,  haskus-system
-      ,  criterion
-
 executable X86Web
    main-is:             Main.hs
    hs-source-dirs:      src/apps/X86Web
@@ -304,6 +233,8 @@ executable X86Web
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-binary
+      ,  haskus-utils
       ,  happstack-server     >= 7.4
       ,  blaze-html           >= 0.8
       ,  blaze-markup         >= 0.7
@@ -326,6 +257,8 @@ executable ElfWeb
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-binary
+      ,  haskus-utils
       ,  happstack-server     >= 7.4
       ,  bytestring           >= 0.10
       ,  lucid                >= 2.9
@@ -344,6 +277,8 @@ executable TestSyscalls
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-binary
+      ,  haskus-utils
 
 executable huffman
    main-is:             huffman.hs
@@ -353,6 +288,7 @@ executable huffman
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-binary
       ,  bytestring           >= 0.10
 
 executable gunzip
@@ -363,6 +299,8 @@ executable gunzip
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-binary
+      ,  haskus-utils
       ,  bytestring           >= 0.10
       ,  optparse-applicative >= 0.12
       ,  filepath             >= 1.4
@@ -375,6 +313,7 @@ executable udev
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-utils
       ,  either
       ,  transformers
 
@@ -386,3 +325,4 @@ executable Disass
    build-depends: 
          base
       ,  haskus-system
+      ,  haskus-binary
