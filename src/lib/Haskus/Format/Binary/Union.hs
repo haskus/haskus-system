@@ -18,7 +18,7 @@
 -- @
 -- {-# LANGUAGE DataKinds #-}
 --
--- getUnion :: IO (Union '[Word16 Word32 Word64])
+-- getUnion :: IO (Union '[Word16, Word32, Word64])
 -- getUnion = ...
 --
 -- test = do
