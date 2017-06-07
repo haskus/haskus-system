@@ -1,5 +1,6 @@
 module Haskus.Apps.System.Build.Ramdisk
    ( ramdiskMain
+   , ramdiskGetPath
    )
 where
 
@@ -14,13 +15,9 @@ import qualified Data.Text as Text
 
 ramdiskMain :: RamdiskConfig -> IO ()
 ramdiskMain config = do
-   workDir <- getWorkDir
+   rd <- ramdiskGetPath config
    let
-      rdDir  = workDir </> "ramdisk"
-      rd     = rdDir </> Text.unpack (ramdiskFileName config)
       rdinit = Text.unpack (ramdiskInit config)
-
-   createDirectoryIfMissing True rdDir
 
    binfp <- stackGetBinPath rdinit
 
@@ -34,3 +31,12 @@ ramdiskMain config = do
       shellInErr tmpfp
          ("(find . | cpio -o -H newc | gzip) > " ++ rd)
             $ failWith "Cannot build ramdisk"
+
+
+-- | Get ramdisk
+ramdiskGetPath :: RamdiskConfig -> IO FilePath
+ramdiskGetPath config = do
+   workDir <- getWorkDir
+   let rdDir  = workDir </> "ramdisk"
+   createDirectoryIfMissing True rdDir
+   return (rdDir </> Text.unpack (ramdiskFileName config))

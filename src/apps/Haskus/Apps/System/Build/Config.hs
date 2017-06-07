@@ -13,6 +13,7 @@ module Haskus.Apps.System.Build.Config
    , SyslinuxConfig (..)
    , syslinuxConfigHash
    , RamdiskConfig (..)
+   , QEMUConfig (..)
    )
 where
 
@@ -28,6 +29,7 @@ data SystemConfig = SystemConfig
    { linuxConfig    :: LinuxConfig     -- ^ Linux configuration
    , syslinuxConfig :: SyslinuxConfig  -- ^ Syslinux configuration
    , ramdiskConfig  :: RamdiskConfig   -- ^ Ramdisk configuration
+   , qemuConfig     :: QEMUConfig      -- ^ QEMU configuration
    }
    deriving (Show)
 
@@ -37,6 +39,7 @@ instance FromJSON SystemConfig where
          <$> (v .: "linux")
          <*> (v .:? "syslinux" .!= defaultSyslinuxConfig)
          <*> (v .: "ramdisk")
+         <*> (v .:? "qemu" .!= defaultQEMUConfig)
 
    parseJSON _ = fail "Invalid config file"
 
@@ -156,4 +159,28 @@ instance FromJSON RamdiskConfig where
          <*> rdinit
 
    parseJSON _ = fail "Invalid Ramdisk configuration"
+
+-------------------------------------------------------------
+-- QEMU
+-------------------------------------------------------------
+
+-- | QEMU configuration
+data QEMUConfig = QEMUConfig
+   { qemuProfile    :: Text -- ^ QEMU profile
+   , qemuOptions    :: Text -- ^ QEMU additional options
+   , qemuKernelArgs :: Text -- ^ kernel args (-append)
+   }
+   deriving (Show)
+
+defaultQEMUConfig :: QEMUConfig
+defaultQEMUConfig = QEMUConfig "default" "" ""
+
+instance FromJSON QEMUConfig where
+   parseJSON (Yaml.Object v) = do
+      QEMUConfig
+         <$> v .: "profile"      .!= "default"
+         <*> v .:? "options"     .!= ""
+         <*> v .:? "kernel-args" .!= ""
+
+   parseJSON _ = fail "Invalid QEMU configuration"
 

@@ -111,34 +111,6 @@ buildCommand = do
 testCommand :: IO ()
 testCommand = putStrLn "Test: TODO"
 
---    let
---       stackPath :: FilePath -> FilePath
---       stackPath x =
---          ".stack-work/install/x86_64-linux"
---             </> stackResolver
---             </> ghcVersion
---             </> "bin"
---             </> x
--- 
---    shakeArgs shakeOptions{shakeFiles="_build"} $ do
--- 
---       -- copy binary program
---       "_build/bin/*" %> \out -> do
---          let bin = stackPath (takeBaseName out)
---          need [bin]
---          cmd "cp" bin out
--- 
---       -- make init ramdisk
---       "_build/ramdisks/*.img" %> \out -> do
---          let
---             name   = dropExtension (takeBaseName out)
---             bin    = "_build/bin" </> name
---             imgdir = dropExtension out
---          need [bin]
---          unit $ cmd "mkdir" "-p" imgdir
---          unit $ cmd "cp" "-f" bin imgdir
---          unit $ cmd Shell $ "(cd "++imgdir++" ; find . | cpio -o -H newc | gzip) > " ++ out
--- 
 --       -- make disk
 --       "_build/disks/**/*.img" %> \out -> do
 --          let
