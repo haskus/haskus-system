@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, TemplateHaskell #-}
 
-import CmdLine (Options(..), getOptions)
+import Haskus.Apps.System.Info.CmdLine (Options(..), getOptions)
 
 import qualified Haskus.Arch.X86_64.ISA.Insn       as X86
 import qualified Haskus.Arch.X86_64.ISA.Insns      as X86
@@ -53,11 +53,11 @@ server conf = do
       , dir "insn" $ path $ \mnemo -> (ok . toResponse . appTemplate mnemo $ showInsnByMnemo mnemo)
 
         -- Show welcome screen
-      , nullDir >> (ok . toResponse . appTemplate "Welcome" $ showWelcome)
+      , nullDir >> (ok . toResponse . appTemplate "System info" $ showWelcome)
       ]
 
 css :: Response
-css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/X86Web/style.css"))
+css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/Haskus/Apps/System/Info/style.css"))
 
 -- | Template of all pages
 appTemplate :: String -> Html -> Html
@@ -77,7 +77,7 @@ appTemplate title bdy = docTypeHtml $ do
 -- | Welcoming screen
 showWelcome :: Html
 showWelcome = do
-   H.h2 (toHtml "Instructions")
+   H.h2 (toHtml "X86 Instructions")
    H.ul $ do
       H.li $ H.a (toHtml "List all") ! A.href (toValue "/all")
       H.li $ H.a (toHtml "Tables")   ! A.href (toValue "/maps")

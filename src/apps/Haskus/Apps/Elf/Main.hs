@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import CmdLine (Options(..), getOptions)
+import Haskus.Apps.Elf.CmdLine (Options(..), getOptions)
 
 import Haskus.Format.Elf
 import Haskus.Format.Elf.PreHeader
@@ -865,5 +865,5 @@ appTemplate doc = do
 css :: Response
 css = toResponseBS
    (C.pack "text/css")
-   (LBS.fromStrict $(embedFile "src/apps/Elf/style.css"))
+   (LBS.fromStrict $(embedFile "src/apps/Haskus/Apps/Elf/style.css"))
 

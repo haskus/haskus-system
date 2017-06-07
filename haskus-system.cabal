@@ -239,13 +239,13 @@ executable haskus-system-build
    default-language:    Haskell2010
    ghc-options:         -Wall -threaded
 
-executable X86Web
-   main-is:             Main.hs
-   hs-source-dirs:      src/apps/X86Web
+executable haskus-system-info
+   main-is:             Haskus/Apps/System/Info/Main.hs
+   hs-source-dirs:      src/apps
    other-modules:       
          Paths_haskus_system
-      ,  CmdLine
-   ghc-options:         -Wall -threaded -O3
+      ,  Haskus.Apps.System.Info.CmdLine
+   ghc-options:         -Wall -threaded -O2
    default-language:    Haskell2010
    build-depends: 
          base
@@ -264,11 +264,11 @@ executable X86Web
       ,  containers           >= 0.5
 
 
-executable ElfWeb
-   hs-source-dirs:      src/apps/Elf
-   main-is:             Main.hs
+executable haskus-elf
+   main-is:             Haskus/Apps/Elf/Main.hs
+   hs-source-dirs:      src/apps/
    other-modules:       
-         CmdLine
+         Haskus.Apps.Elf.CmdLine
    ghc-options:         -Wall -threaded -O3
    default-language:    Haskell2010
    build-depends: 
@@ -286,19 +286,8 @@ executable ElfWeb
       ,  vector               >= 0.10
       ,  containers           >= 0.5
 
-executable TestSyscalls
-   main-is:             TestSyscalls.hs
-   hs-source-dirs:      src/apps
-   ghc-options:         -Wall -threaded -O3
-   default-language:    Haskell2010
-   build-depends: 
-         base
-      ,  haskus-system
-      ,  haskus-binary
-      ,  haskus-utils
-
-executable huffman
-   main-is:             huffman.hs
+executable haskus-huffman
+   main-is:             Haskus/Apps/Huffman/Main.hs
    hs-source-dirs:      src/apps
    ghc-options:         -Wall -threaded -O3
    default-language:    Haskell2010
@@ -308,8 +297,8 @@ executable huffman
       ,  haskus-binary
       ,  bytestring           >= 0.10
 
-executable gunzip
-   main-is:             gunzip.hs
+executable haskus-gunzip
+   main-is:             Haskus/Apps/Gunzip/Main.hs
    hs-source-dirs:      src/apps
    ghc-options:         -Wall -threaded -O3
    default-language:    Haskell2010
@@ -322,8 +311,8 @@ executable gunzip
       ,  optparse-applicative >= 0.12
       ,  filepath             >= 1.4
 
-executable udev
-   main-is:             udev.hs
+executable haskus-udev
+   main-is:             Haskus/Apps/Udev/Main.hs
    hs-source-dirs:      src/apps
    ghc-options:         -Wall -threaded -O3
    default-language:    Haskell2010
@@ -334,8 +323,8 @@ executable udev
       ,  either
       ,  transformers
 
-executable Disass
-   main-is:             Disass.hs
+executable haskus-disassembler
+   main-is:             Haskus/Apps/Disassembler/Main.hs
    hs-source-dirs:      src/apps
    ghc-options:         -Wall -threaded -O3
    default-language:    Haskell2010
