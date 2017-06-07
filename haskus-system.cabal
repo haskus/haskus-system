@@ -242,6 +242,8 @@ executable haskus-system-build
       ,  optparse-applicative
       ,  temporary
       ,  directory
+      ,  simple-download
+      ,  filepath
 
    default-language:    Haskell2010
    ghc-options:         -Wall -threaded

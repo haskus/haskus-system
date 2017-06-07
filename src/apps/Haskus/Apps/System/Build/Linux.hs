@@ -2,15 +2,21 @@
 
 module Haskus.Apps.System.Build.Linux
    ( linuxBuild
+   , linuxDownloadTarball
+   , linuxCheckTarball
    )
 where
 
+import Data.Text (Text)
 import qualified Data.Text as Text
 import Control.Monad
+import System.FilePath
+import System.Directory
 
 import Haskus.Apps.System.Build.Config
 import Haskus.Apps.System.Build.Utils
 
+-- | Build Linux tree in the given directory
 linuxBuild :: LinuxConfig -> FilePath -> IO ()
 linuxBuild config path = do
    let shell' = shellInErr path
@@ -38,3 +44,32 @@ linuxBuild config path = do
    -- build
    shell' ("make " ++ Text.unpack (linuxMakeArgs config))
       $ fail "Unable to build Linux"
+
+-- | Make Linux archive name
+linuxMakeTarballName :: Text -> FilePath
+linuxMakeTarballName version = "linux-"++Text.unpack version++".tar.xz"
+
+
+-- | Download a Linux tarball from kernel.org
+linuxDownloadTarball :: Text -> IO ()
+linuxDownloadTarball version = do
+   let
+      src  = "https://cdn.kernel.org/pub/linux/kernel/v"
+               ++ Text.unpack (head (Text.splitOn (Text.pack ".") version))
+               ++ ".x/linux-"
+               ++ Text.unpack version
+               ++ ".tar.xz"
+   
+   -- download
+   showStep $ "Downloading Linux "++Text.unpack version++"..."
+   tgtDir <- getDownloadPath
+   download src (tgtDir </> linuxMakeTarballName version)
+
+   -- check signature
+   -- TODO
+
+-- | Check if we already have a tarball
+linuxCheckTarball :: Text -> IO Bool
+linuxCheckTarball version = do
+   tgtDir <- getDownloadPath
+   doesFileExist (tgtDir </> linuxMakeTarballName version)

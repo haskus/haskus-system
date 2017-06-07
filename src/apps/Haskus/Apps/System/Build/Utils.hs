@@ -6,11 +6,19 @@ module Haskus.Apps.System.Build.Utils
    , subTitle
    , showStep
    , failWith
+   , download
+   , getAppDir
+   , getDownloadPath
+   , unlessM
    )
 where
 
 import System.Process
 import System.Exit
+import System.Directory
+import System.FilePath
+import System.IO.Temp
+import qualified Network.HTTP.Client.Conduit.Download as D
 
 -- | Execute a command in the given directory
 shellIn :: FilePath -> String -> IO ExitCode 
@@ -37,3 +45,31 @@ showStep t = putStrLn $ "==> " ++ t
 -- | Print error message
 failWith :: String -> IO a
 failWith s = die $ "Error: " ++ s
+
+-- | Download a file
+download :: String -> FilePath -> IO ()
+download url tgt = do
+   withSystemTempDirectory "haskus-system-build" $ \fp -> do
+      let fp2 = fp </> "download.tmp"
+      D.download url fp2
+      copyFile fp2 tgt
+
+-- | Return app directory
+getAppDir :: IO FilePath
+getAppDir = do
+   fp <- getAppUserDataDirectory "haskus"
+   return (fp </> "system" </> "build")
+
+-- | Return download path
+getDownloadPath :: IO FilePath
+getDownloadPath = do
+   fp <- getAppDir
+   let d = fp </> "downloads"
+   createDirectoryIfMissing True d
+   return d
+
+-- | Unless with a monadic condition
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM f g = f >>= \case
+   False -> g
+   True  -> return ()
