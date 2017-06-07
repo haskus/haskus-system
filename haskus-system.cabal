@@ -233,7 +233,6 @@ executable haskus-system-build
    build-depends:
          base >=4.8
       ,  process
-      ,  shake
       ,  yaml
       ,  text
       ,  haskus-utils

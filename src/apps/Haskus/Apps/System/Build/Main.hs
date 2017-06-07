@@ -43,7 +43,6 @@ initCommand :: InitOptions -> IO ()
 initCommand opts = do
    let
       template = initOptTemplate opts
-   putStr $ subTitle $ "Initialize with template: " ++ template
 
    cd <- getCurrentDirectory
 
@@ -112,32 +111,6 @@ buildCommand = do
 -- 
 --    shakeArgs shakeOptions{shakeFiles="_build"} $ do
 --       want [ "_build/linux-"++linuxVersion'++".bin"]
--- 
---       -- build linux
---       "_build/linux-*.bin" %> \out -> do
---          let 
---             srcdir   = "_sources/linux-"++linuxVersion'
---             makefile = srcdir </> "Makefile"
---          need [makefile]
---          -- build Linux
---          liftIO $ linuxBuild (linuxConfig config) srcdir
---          -- copy resulting files
---          unit $ cmd "cp" (srcdir </> "arch/x86/boot/bzImage") out
--- 
---       -- unpack linux
---       "_sources/linux-*/Makefile" %> \_ -> do
---          let src = "_downloads/linux-"++linuxVersion'++".tar.xz"
---          need [src]
---          cmd (Cwd "_sources") "tar" "xf" (".." </> src)
--- 
---       -- download linux
---       "_downloads/linux-*.tar.xz" %> \_ -> do
---          let src = "https://cdn.kernel.org/pub/linux/kernel/v"
---                      ++ Text.unpack (head (Text.splitOn (Text.pack ".") linuxVersion))
---                      ++ ".x/linux-"
---                      ++ linuxVersion'
---                      ++ ".tar.xz"
---          cmd (Cwd "_downloads") "wget" src
 -- 
 --       -- download SysLinux
 --       "_downloads/syslinux-*.tar.xz" %> \_ -> do

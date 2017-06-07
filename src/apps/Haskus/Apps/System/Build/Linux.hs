@@ -31,7 +31,11 @@ linuxMain config = do
 
       LinuxTarball version -> do
          tgtfp <- linuxMakeReleasePath config
-         let tgtker = tgtfp </> "linux.img"
+         let
+            tgtker  = tgtfp </> "linux.img"
+            tgtmod  = tgtfp </> "modules"
+            tgtmod' = tgtfp </> "modules_tmp"
+            tgtfw   = tgtfp </> "firmwares"
 
          -- check if we already have the built kernel
          unlessM (doesFileExist tgtker) $ do
@@ -50,19 +54,40 @@ linuxMain config = do
 
             withSystemTempDirectory "haskus-system-build" $ \fp -> do
                -- untar
-               showStep "Uncompressing archive..."
+               showStep "Uncompressing Linux archive..."
                untar tarballPath fp
                let fp2 = fp </> ("linux-"++Text.unpack version)
 
+               -- configure
+               showStep "Configuring Linux..."
+               linuxConfigure config fp2
+
                -- build
+               showStep "Building Linux..."
                linuxBuild config fp2
 
-               -- copy the kernel
-               showStep "Copying kernel, modules and firmwares..."
+               createDirectoryIfMissing True tgtmod'
+               createDirectoryIfMissing True tgtfw
+
+               -- copy the kernel, modules and firmwares
+               showStep "Copying kernel..."
                copyFile (fp2 </> "arch" </> "x86" </> "boot" </> "bzImage") tgtker
 
-               -- copy modules/firmwares
-               -- TODO
+               showStep "Copying modules..."
+               shellInErr fp2 ("make modules_install INSTALL_MOD_PATH="++tgtmod') $
+                  failWith "Cannot copy Linux modules"
+               renameDirectory
+                  (tgtmod' </> "lib" </> "modules" </> Text.unpack version)
+                  tgtmod
+               removeDirectory (tgtmod' </> "lib" </> "modules")
+               removeDirectory (tgtmod' </> "lib")
+               removeDirectory tgtmod'
+               removeFile (tgtmod </> "source")
+               removeFile (tgtmod </> "build")
+
+               showStep "Copying firmwares..."
+               shellInErr fp2 ("make firmware_install INSTALL_FW_PATH="++tgtfw) $
+                  failWith "Cannot copy Linux firmwares"
 
 
 -- | Build Linux tree in the given directory
@@ -70,7 +95,13 @@ linuxBuild :: LinuxConfig -> FilePath -> IO ()
 linuxBuild config path = do
    let shell' = shellInErr path
 
-   showStep "Configuring Linux..."
+   shell' ("make " ++ Text.unpack (linuxMakeArgs config))
+      $ fail "Unable to build Linux"
+
+-- | Configure Linux tree in the given directory
+linuxConfigure :: LinuxConfig -> FilePath -> IO ()
+linuxConfigure config path = do
+   let shell' = shellInErr path
 
    -- make default configuration for the arch
    shell' "make x86_64_defconfig"
@@ -88,14 +119,10 @@ linuxBuild config path = do
       shell' ("./scripts/config -m "++ Text.unpack opt)
          $ fail $ "Unable to modularize Linux option: " ++ Text.unpack opt
 
-   -- fixup config (interactive)
-   shell' "make oldconfig"
+   -- fixup config
+   shell' "make olddefconfig"
       $ fail "Unable to adjust Linux configuration"
 
-   -- build
-   showStep "Building Linux..."
-   shell' ("make " ++ Text.unpack (linuxMakeArgs config))
-      $ fail "Unable to build Linux"
 
 -- | Make Linux archive name
 linuxMakeTarballName :: Text -> FilePath
