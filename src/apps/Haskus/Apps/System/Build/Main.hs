@@ -8,7 +8,9 @@ import Haskus.Apps.System.Build.Linux
 import Haskus.Apps.System.Build.Syslinux
 import Haskus.Apps.System.Build.CmdLine
 import Haskus.Apps.System.Build.Utils
+import Haskus.Apps.System.Build.Ramdisk
 import Haskus.Apps.System.Build.Stack
+import Haskus.Apps.System.Build.GMP
 
 import qualified Data.Text as Text
 import Haskus.Utils.Flow
@@ -101,7 +103,9 @@ buildCommand = do
 
    linuxMain (linuxConfig config)
    syslinuxMain (syslinuxConfig config)
+   gmpMain
    stackBuild
+   ramdiskMain (ramdiskConfig config)
 
 
 testCommand :: IO ()

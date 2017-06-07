@@ -11,6 +11,7 @@ module Haskus.Apps.System.Build.Utils
    , failWith
    , download
    , getAppDir
+   , getWorkDir
    , getDownloadPath
    , unlessM
    )
@@ -80,6 +81,14 @@ getAppDir :: IO FilePath
 getAppDir = do
    fp <- getAppUserDataDirectory "haskus"
    let d = fp </> "system" </> "build"
+   createDirectoryIfMissing True d
+   return d
+
+-- | Return work directory
+getWorkDir :: IO FilePath
+getWorkDir = do
+   fp <- getCurrentDirectory
+   let d = fp </> ".system-work"
    createDirectoryIfMissing True d
    return d
 
