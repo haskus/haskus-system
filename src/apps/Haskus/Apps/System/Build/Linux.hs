@@ -3,6 +3,7 @@
 module Haskus.Apps.System.Build.Linux
    ( linuxMain
    , linuxBuild
+   , linuxKernelFile
    , linuxDownloadTarball
    , linuxCheckTarball
    , linuxMakeTarballName
@@ -30,9 +31,9 @@ linuxMain config = do
          failWith "Building Linux from GIT is not supported for now"
 
       LinuxTarball version -> do
-         tgtfp <- linuxMakeReleasePath config
+         tgtfp  <- linuxMakeReleasePath config
+         tgtker <- linuxKernelFile config
          let
-            tgtker  = tgtfp </> "linux.img"
             tgtmod  = tgtfp </> "modules"
             tgtmod' = tgtfp </> "modules_tmp"
             tgtfw   = tgtfp </> "firmwares"
@@ -142,6 +143,11 @@ linuxMakeReleasePath config = do
    let d = p </> "linux" </> hash
    createDirectoryIfMissing True d
    return d
+
+linuxKernelFile :: LinuxConfig -> IO FilePath
+linuxKernelFile config = do
+   rp <- linuxMakeReleasePath config
+   return (rp </> "linux.bin")
 
 
 -- | Download a Linux tarball from kernel.org

@@ -11,6 +11,7 @@ import Haskus.Apps.System.Build.Utils
 import Haskus.Apps.System.Build.Ramdisk
 import Haskus.Apps.System.Build.Stack
 import Haskus.Apps.System.Build.GMP
+import Haskus.Apps.System.Build.QEMU
 
 import qualified Data.Text as Text
 import Haskus.Utils.Flow
@@ -106,6 +107,7 @@ buildCommand = do
    gmpMain
    stackBuild
    ramdiskMain (ramdiskConfig config)
+   qemuExecRamdisk config
 
 
 testCommand :: IO ()
