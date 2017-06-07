@@ -9,9 +9,9 @@ executable Build
    main-is: Build.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      process,
-      shake
+         base >=4.8
+      ,  process
+      ,  shake
 
    default-language:    Haskell2010
    ghc-options:         -Wall -threaded
@@ -20,8 +20,8 @@ executable HelloWorld
    main-is: HelloWorld.hs
    hs-source-dirs: src
    build-depends:
-      base >=4.8,
-      haskus-system
+         base >=4.8
+      ,  haskus-system
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
@@ -186,8 +186,8 @@ executable  Sound
    main-is: Sound.hs
    hs-source-dirs: src
    build-depends:
-      base,
-      haskus-system
+         base
+      ,  haskus-system
    default-language:    Haskell2010
    ghc-options: -Wall -static -threaded
    cc-options: -static
