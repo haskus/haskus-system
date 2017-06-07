@@ -9,3 +9,6 @@ linux:
          - CONFIG_DRM_VIRTIO
       disable:
          - VIRTIO_BALLOON
+
+ramdisk:
+   init: Demo

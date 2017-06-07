@@ -7,16 +7,20 @@ module Build.Config
    , LinuxSource (..)
    , LinuxOptions (..)
    , SyslinuxConfig (..)
+   , RamdiskConfig (..)
    )
 where
 
 import Data.Yaml as Yaml
 import Data.Text (Text)
+import qualified Data.Text as Text
+import Control.Applicative
 
 -- | System configuration
 data SystemConfig = SystemConfig
    { linuxConfig    :: LinuxConfig     -- ^ Linux configuration
    , syslinuxConfig :: SyslinuxConfig  -- ^ Syslinux configuration
+   , ramdiskConfig  :: RamdiskConfig   -- ^ Ramdisk configuration
    }
    deriving (Show)
 
@@ -25,6 +29,7 @@ instance FromJSON SystemConfig where
       SystemConfig
          <$> (v .: "linux")
          <*> (v .:? "syslinux" .!= defaultSyslinuxConfig)
+         <*> (v .: "ramdisk")
 
    parseJSON _ = fail "Invalid config file"
 
@@ -103,3 +108,29 @@ instance FromJSON SyslinuxConfig where
          <$> (v .:? "version" .!= "6.03")
 
    parseJSON _ = fail "Invalid Syslinux configuration"
+
+
+-------------------------------------------------------------
+-- Ramdisk
+-------------------------------------------------------------
+
+-- | Ramdisk configuration
+data RamdiskConfig = RamdiskConfig
+   { ramdiskFileName :: Text   -- ^ Name of the ramdisk file
+   , ramdiskInit     :: Text   -- ^ Init program
+   }
+   deriving (Show)
+
+instance FromJSON RamdiskConfig where
+   parseJSON (Yaml.Object v) = do
+      let
+         rdinit = v .: "init"
+         rdname = (v .: "name")
+                     <|> (Text.append ".img" <$> rdinit)
+
+      RamdiskConfig
+         <$> rdname
+         <*> rdinit
+
+   parseJSON _ = fail "Invalid Ramdisk configuration"
+

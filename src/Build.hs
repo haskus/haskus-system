@@ -156,7 +156,7 @@ main = do
                  \LABEL main\n\
                  \MENU LABEL MyOS\n\
                  \LINUX  /boot/" ++ takeBaseName ker ++ ".bin\n\
-                 \INITRD /boot/" ++ takeBaseName img ++ ".img\n\
+                 \INITRD /boot/" ++ name ++ ".img\n\
                  \APPEND rdinit=" ++ name ++ "\n"
          liftIO $ writeFile slconf syslinuxConf
 
