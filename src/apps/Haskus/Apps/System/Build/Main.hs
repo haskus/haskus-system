@@ -70,8 +70,8 @@ initCommand opts = do
          ("cp -i -r ./" ++ template ++ "/* " ++ cd) $
             failWith "Cannot copy the selected template"
 
-buildCommand :: IO ()
-buildCommand = do
+readConfig :: IO SystemConfig
+readConfig = do
    let configFile = "system.yaml"
    
    unlessM (doesFileExist configFile) $
@@ -79,10 +79,32 @@ buildCommand = do
 
    mconfig <- readSystemConfig configFile
 
-   config <- case mconfig of
+   case mconfig of
       Nothing -> failWith $ "Cannot parse \"" ++ configFile ++ "\""
       Just c  -> return c
 
+buildCommand :: IO ()
+buildCommand = do
+   config <- readConfig
+   showStatus config
+   gmpMain
+   linuxMain (linuxConfig config)
+   syslinuxMain (syslinuxConfig config)
+   stackBuild
+
+
+testCommand :: IO ()
+testCommand = do
+   config <- readConfig
+   showStatus config
+   gmpMain
+   linuxMain (linuxConfig config)
+   stackBuild
+   ramdiskMain (ramdiskConfig config)
+   qemuExecRamdisk config
+
+showStatus :: SystemConfig -> IO ()
+showStatus config = do
    let linuxVersion' = Text.unpack (linuxConfigVersion (linuxConfig config))
 
    let syslinuxVersion' = config
@@ -102,16 +124,6 @@ buildCommand = do
    putStrLn ("Syslinux version: " ++ syslinuxVersion')
    putStrLn "==================================================="
 
-   linuxMain (linuxConfig config)
-   syslinuxMain (syslinuxConfig config)
-   gmpMain
-   stackBuild
-   ramdiskMain (ramdiskConfig config)
-   qemuExecRamdisk config
-
-
-testCommand :: IO ()
-testCommand = putStrLn "Test: TODO"
 
 --       -- make disk
 --       "_build/disks/**/*.img" %> \out -> do

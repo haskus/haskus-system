@@ -54,12 +54,14 @@ $ stack bench
 
 Use ``haskus-system-build`` tool to build systems.
 
-In a new directory do:
+In a **new directory** do:
 ```bash
 $ haskus-system-build init
+$ haskus-system-build test
 ```
 
-See the documentation on http://www.haskus.org/system
+You may have to install missing programs (cpio, lzip, qemu, make, gcc, binutils,
+gzip, etc.) for these commands to succeed.
 
 # Other programs
 
