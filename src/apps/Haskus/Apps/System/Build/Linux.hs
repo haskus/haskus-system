@@ -5,20 +5,15 @@ module Haskus.Apps.System.Build.Linux
    )
 where
 
-import System.Process
-import System.Exit
 import qualified Data.Text as Text
 import Control.Monad
 
 import Haskus.Apps.System.Build.Config
+import Haskus.Apps.System.Build.Utils
 
 linuxBuild :: LinuxConfig -> FilePath -> IO ()
 linuxBuild config path = do
-   let shell' s err = do
-         (_,_,_,hdl) <- createProcess (shell s) { cwd = Just path }
-         waitForProcess hdl >>= \case
-            ExitSuccess   -> return ()
-            ExitFailure _ -> err
+   let shell' = shellInErr path
 
    -- make default configuration for the arch
    shell' "make x86_64_defconfig"

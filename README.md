@@ -56,8 +56,7 @@ Use ``haskus-system-build`` tool to build systems.
 
 In a new directory do:
 ```bash
-$ haskus-system-build --init
-$ haskus-system-build --test
+$ haskus-system-build init
 ```
 
 See the documentation on http://www.haskus.org/system

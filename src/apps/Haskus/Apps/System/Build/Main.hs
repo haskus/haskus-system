@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 import Development.Shake
 import Development.Shake.FilePath
 import Data.List
@@ -5,21 +7,72 @@ import System.Process
 
 import Haskus.Apps.System.Build.Config
 import Haskus.Apps.System.Build.Linux
+import Haskus.Apps.System.Build.CmdLine
+import Haskus.Apps.System.Build.Utils
 
 import qualified Data.Text as Text
 import Haskus.Utils.Flow
+import Options.Applicative.Simple
+import Paths_haskus_system
+import Data.Version
+import System.IO.Temp
+import System.Directory
  
+
 main :: IO ()
 main = do
 
+   -- read command-line options
+   (_,runCmd) <-
+      simpleOptions (showVersion version)
+                   "haskus-system-build"
+                   "This tool lets you build systems using haskus-system framework. It manages Linux/Syslinux (download and build), it builds ramdisk, it launches QEMU, etc."
+                   (pure ()) $ do
+         addCommand "init"
+                   "Create a new project from a template"
+                   initCommand
+                   initOptions
+         addCommand "build"
+                   "Build a project"
+                   (const buildCommand)
+                   (pure ())
+   runCmd
+
+initCommand :: InitOptions -> IO ()
+initCommand opts = do
+   let
+      template = initOptTemplate opts
+   putStr $ subTitle $ "Initialize with template: " ++ template
+
+   cd <- getCurrentDirectory
+
+   withSystemTempDirectory "haskus-system-build" $ \fp -> do
+      -- get latest templates
+      showStep "Retrieving templates..."
+      shellInErr fp "git clone --depth=1 https://github.com/haskus/haskus-system-templates.git" $
+         failWith "Cannot retrieve templates. Check that `git` is installed and that github is reachable using https."
+
+      let fp2 = fp </> "haskus-system-templates"
+      dirs <- listDirectory fp2
+      unless (any (== template) dirs) $
+         failWith $ "Cannot find template \"" ++ template ++"\""
+
+      -- copy template
+      showStep $ "Copying \"" ++ template ++ "\" template..."
+      shellInErr fp2
+         ("cp -i -r ./" ++ template ++ "/* " ++ cd) $
+            failWith "Cannot copy the selected template"
+
+buildCommand :: IO ()
+buildCommand = do
    mconfig <- readSystemConfig "system.yaml"
 
    config <- case mconfig of
-      Nothing -> fail "Cannot find \"system.yaml\""
+      Nothing -> failWith "Cannot find \"system.yaml\""
       Just c  -> return c
 
    linuxVersion <- case linuxSource (linuxConfig config) of
-      LinuxGit {}    -> fail "Building Linux from GIT is not supported for now"
+      LinuxGit {}    -> failWith "Building Linux from GIT is not supported for now"
       LinuxTarball x -> return x
 
    let linuxVersion' = Text.unpack linuxVersion

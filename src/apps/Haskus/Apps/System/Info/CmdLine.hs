@@ -27,5 +27,5 @@ getOptions = execParser opts
   where
     opts = info (helper <*> options)
       ( fullDesc
-     <> progDesc "Show X86 instructions"
-     <> header "Haskus ASM" )
+     <> progDesc "Haskus system info"
+     <> header "Haskus System Info" )

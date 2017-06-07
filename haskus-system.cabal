@@ -228,6 +228,8 @@ executable haskus-system-build
    other-modules:
       Haskus.Apps.System.Build.Config
       Haskus.Apps.System.Build.Linux
+      Haskus.Apps.System.Build.CmdLine
+      Haskus.Apps.System.Build.Utils
    build-depends:
          base >=4.8
       ,  process
@@ -235,6 +237,11 @@ executable haskus-system-build
       ,  yaml
       ,  text
       ,  haskus-utils
+      ,  haskus-system
+      ,  optparse-simple
+      ,  optparse-applicative
+      ,  temporary
+      ,  directory
 
    default-language:    Haskell2010
    ghc-options:         -Wall -threaded
