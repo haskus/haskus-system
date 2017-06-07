@@ -9,6 +9,7 @@ linux:
          - CONFIG_DRM_VIRTIO
       disable:
          - VIRTIO_BALLOON
+   make-args: "-j16"
 
 ramdisk:
    init: Demo

@@ -8,7 +8,9 @@ cabal-version:       >=1.10
 executable haskus-system-build
    main-is: Build.hs
    hs-source-dirs: src
-   other-modules: Build.Config
+   other-modules:
+      Build.Config
+      Build.Linux
    build-depends:
          base >=4.8
       ,  process

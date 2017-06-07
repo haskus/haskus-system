@@ -2,9 +2,9 @@ import Development.Shake
 import Development.Shake.FilePath
 import Data.List
 import System.Process
-import Control.Monad
 
 import Build.Config
+import Build.Linux
 
 import qualified Data.Text as Text
 import Haskus.Utils.Flow
@@ -62,19 +62,8 @@ main = do
             srcdir   = "_sources/linux-"++linuxVersion'
             makefile = srcdir </> "Makefile"
          need [makefile]
-         unit $ cmd (Cwd srcdir) "make" "x86_64_defconfig"
-         -- enable/disable/module options
-         let opts = linuxOptions (linuxConfig config)
-         forM_ (enableOptions opts) $ \opt ->
-            unit $ cmd (Cwd srcdir) "./scripts/config" "-e" (Text.unpack opt)
-         forM_ (disableOptions opts) $ \opt ->
-            unit $ cmd (Cwd srcdir) "./scripts/config" "-d" (Text.unpack opt)
-         forM_ (moduleOptions opts) $ \opt ->
-            unit $ cmd (Cwd srcdir) "./scripts/config" "-m" (Text.unpack opt)
-         -- fixup config (interactive)
-         unit $ cmd (Cwd srcdir) "make" "oldconfig"
-         -- build
-         unit $ cmd (Cwd srcdir) "make" "-j8"
+         -- build Linux
+         liftIO $ linuxBuild (linuxConfig config) srcdir
          -- copy resulting files
          unit $ cmd "cp" (srcdir </> "arch/x86/boot/bzImage") out
 

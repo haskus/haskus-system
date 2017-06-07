@@ -56,8 +56,9 @@ data LinuxOptions = LinuxOptions
 
 -- | Linux configuration
 data LinuxConfig = LinuxConfig
-   { linuxSource  :: LinuxSource  -- ^ How to retrieve Linux
-   , linuxOptions :: LinuxOptions -- ^ Configuration options
+   { linuxSource   :: LinuxSource  -- ^ How to retrieve Linux
+   , linuxOptions  :: LinuxOptions -- ^ Configuration options
+   , linuxMakeArgs :: Text         -- ^ Make arguments
    }
    deriving (Show)
 
@@ -68,6 +69,7 @@ instance FromJSON LinuxConfig where
       LinuxConfig
          <$> src
          <*> options
+         <*> (v .:? "make-args" .!= "-j8")
       where
          parseSource :: Text -> Parser LinuxSource
          parseSource s = case s of
