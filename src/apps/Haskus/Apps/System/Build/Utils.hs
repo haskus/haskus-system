@@ -64,8 +64,9 @@ download url tgt = do
 getAppDir :: IO FilePath
 getAppDir = do
    fp <- getAppUserDataDirectory "haskus"
-   createDirectoryIfMissing True fp
-   return (fp </> "system" </> "build")
+   let d = fp </> "system" </> "build"
+   createDirectoryIfMissing True d
+   return d
 
 -- | Return download path
 getDownloadPath :: IO FilePath

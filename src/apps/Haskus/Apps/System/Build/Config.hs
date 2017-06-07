@@ -11,6 +11,7 @@ module Haskus.Apps.System.Build.Config
    , LinuxSource (..)
    , LinuxOptions (..)
    , SyslinuxConfig (..)
+   , syslinuxConfigHash
    , RamdiskConfig (..)
    )
 where
@@ -114,7 +115,11 @@ instance FromJSON LinuxConfig where
 data SyslinuxConfig = SyslinuxConfig
    { syslinuxVersion  :: Text     -- ^ Syslinux version
    }
-   deriving (Show)
+   deriving (Show,Generic,Hashable)
+
+-- | Hash Syslinux config
+syslinuxConfigHash :: SyslinuxConfig -> Int
+syslinuxConfigHash = hash
 
 -- | Default Syslinux configuration
 defaultSyslinuxConfig :: SyslinuxConfig

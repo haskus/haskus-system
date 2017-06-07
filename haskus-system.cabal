@@ -228,6 +228,7 @@ executable haskus-system-build
    other-modules:
       Haskus.Apps.System.Build.Config
       Haskus.Apps.System.Build.Linux
+      Haskus.Apps.System.Build.Syslinux
       Haskus.Apps.System.Build.CmdLine
       Haskus.Apps.System.Build.Utils
    build-depends:

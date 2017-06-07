@@ -5,6 +5,7 @@
 
 import Haskus.Apps.System.Build.Config
 import Haskus.Apps.System.Build.Linux
+import Haskus.Apps.System.Build.Syslinux
 import Haskus.Apps.System.Build.CmdLine
 import Haskus.Apps.System.Build.Utils
 
@@ -99,6 +100,7 @@ buildCommand = do
    putStrLn "==================================================="
 
    linuxMain (linuxConfig config)
+   syslinuxMain (syslinuxConfig config)
 
 --    let
 --       stackPath :: FilePath -> FilePath
@@ -111,17 +113,6 @@ buildCommand = do
 -- 
 --    shakeArgs shakeOptions{shakeFiles="_build"} $ do
 --       want [ "_build/linux-"++linuxVersion'++".bin"]
--- 
---       -- download SysLinux
---       "_downloads/syslinux-*.tar.xz" %> \_ -> do
---          let src = "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"++syslinuxVersion'++".tar.xz"
---          cmd (Cwd "_downloads") "wget" src
--- 
---       -- unpack SysLinux
---       "_sources/syslinux-*/bios/core/isolinux.bin" %> \_ -> do
---          let src = "_downloads/syslinux-"++syslinuxVersion'++".tar.xz"
---          need [src]
---          cmd (Cwd "_sources") "tar" "xf" (".." </> src)
 -- 
 --       -- copy binary program
 --       "_build/bin/*" %> \out -> do

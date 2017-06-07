@@ -54,7 +54,7 @@ linuxMain config = do
 
             withSystemTempDirectory "haskus-system-build" $ \fp -> do
                -- untar
-               showStep "Uncompressing Linux archive..."
+               showStep "Unpacking Linux archive..."
                untar tarballPath fp
                let fp2 = fp </> ("linux-"++Text.unpack version)
 
