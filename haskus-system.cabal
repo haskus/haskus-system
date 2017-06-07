@@ -222,6 +222,23 @@ test-suite tests
       ,  containers
       ,  bytestring
 
+executable haskus-system-build
+   main-is: Haskus/Apps/System/Build/Main.hs
+   hs-source-dirs: src/apps
+   other-modules:
+      Haskus.Apps.System.Build.Config
+      Haskus.Apps.System.Build.Linux
+   build-depends:
+         base >=4.8
+      ,  process
+      ,  shake
+      ,  yaml
+      ,  text
+      ,  haskus-utils
+
+   default-language:    Haskell2010
+   ghc-options:         -Wall -threaded
+
 executable X86Web
    main-is:             Main.hs
    hs-source-dirs:      src/apps/X86Web
