@@ -25,13 +25,19 @@ interface on top of it is in [Haskus.System](src/lib/Haskus/System).
 
 Website: http://www.haskus.org/system
 
-# How to build
+# How to build and install
 
 Use stack commands to build Haskus system:
 
+Build:
 ```bash
 $ stack setup
 $ stack build
+```
+
+Install:
+```bash
+$ stack install
 ```
 
 Tests:
@@ -43,43 +49,56 @@ Benchmarks:
 ```bash
 $ stack bench
 ```
-# Programs
 
-Several utility programs are bundled with the framework:
+# Building systems
 
-#### ELF Web
+Use ``haskus-system-build`` tool to build systems.
 
-ElfWeb program can be used to navigate into a ELF binary file. Use your Web
-browser to see the result.
+In a new directory do:
+```bash
+$ haskus-system-build --init
+$ haskus-system-build --test
+```
+
+See the documentation on http://www.haskus.org/system
+
+# Other programs
+
+Several other utility programs are bundled with the framework:
+
+#### haskus-elf
+
+It can be used to navigate into a ELF binary file. Use your Web browser to see
+the result.
 
 ```bash
-$ stack exec -- ElfWeb -p 8020 ./mybinary &
+$ haskus-elf -p 8020 ./mybinary &
 $ firefox http://localhost:8020
 ```
 
-#### X86 Web
+#### haskus-system-info
 
-Show info about the x86 instructions recognized by Haskus system.
+Show info about the framework (e.g., supported x86 instructions).
 
 ```bash
-$ stack exec -- X86Web -p 8020 &
+$ haskus-system-info -p 8020 &
 $ firefox http://localhost:8020
 ```
 
-#### GUnzip
+#### haskus-gunzip
 
 Simple decompressor for the GZip format.
 
 ```bash
 $ tar czf test.tgz # some files...
-$ stack exec -- gunzip test.tgz
+$ haskus-gunzip test.tgz
 ```
 
-#### udev
+#### haskus-udev
 
 Dump kernel system events (i.e. changes into the system tree) on standard output.
 
 ```bash
-$ stack exec udev
+$ haskus-udev
 $ # try plugging or unplugging a device (USB stick, etc.)
 ```
