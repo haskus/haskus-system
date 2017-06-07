@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Haskus.Apps.System.Build.Utils
-   ( shellIn
+   ( shellWait
+   , shellWaitErr
+   , shellIn
    , shellInErr
    , untar
    , subTitle
@@ -20,6 +22,19 @@ import System.Directory
 import System.FilePath
 import System.IO.Temp
 import qualified Network.HTTP.Client.Conduit.Download as D
+
+-- | Execute a command
+shellWait :: String -> IO ExitCode 
+shellWait cmd = do
+   (_,_,_,hdl) <- createProcess (shell cmd)
+   waitForProcess hdl
+
+-- | Execute a command, call callback on error
+shellWaitErr :: String -> IO () -> IO () 
+shellWaitErr cmd err = do
+   shellWait cmd >>= \case
+      ExitSuccess   -> return ()
+      ExitFailure _ -> err
 
 -- | Execute a command in the given directory
 shellIn :: FilePath -> String -> IO ExitCode 

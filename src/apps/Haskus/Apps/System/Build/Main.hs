@@ -8,14 +8,13 @@ import Haskus.Apps.System.Build.Linux
 import Haskus.Apps.System.Build.Syslinux
 import Haskus.Apps.System.Build.CmdLine
 import Haskus.Apps.System.Build.Utils
+import Haskus.Apps.System.Build.Stack
 
-import Data.List
 import qualified Data.Text as Text
 import Haskus.Utils.Flow
 import Options.Applicative.Simple
 import Paths_haskus_system
 import Data.Version
-import System.Process
 import System.IO.Temp
 import System.Directory
 import System.FilePath
@@ -37,6 +36,10 @@ main = do
          addCommand "build"
                    "Build a project"
                    (const buildCommand)
+                   (pure ())
+         addCommand "test"
+                   "Test a project with QEMU"
+                   (const testCommand)
                    (pure ())
    runCmd
 
@@ -84,11 +87,8 @@ buildCommand = do
                            |> syslinuxVersion
                            |> Text.unpack
 
-   -- read GHC version
-   ghcVersion <- last . words <$> readProcess "stack" ["exec", "--", "ghc", "--version"] ""
-
-   -- read stack resolver
-   stackResolver <- last . words . head . filter ("resolver:" `isPrefixOf`) . lines <$> readFile "stack.yaml"
+   ghcVersion    <- stackGetGHCVersion
+   stackResolver <- stackGetResolver
 
    putStrLn "==================================================="
    putStrLn "       Haskus system - build config"
@@ -101,6 +101,11 @@ buildCommand = do
 
    linuxMain (linuxConfig config)
    syslinuxMain (syslinuxConfig config)
+   stackBuild
+
+
+testCommand :: IO ()
+testCommand = putStrLn "Test: TODO"
 
 --    let
 --       stackPath :: FilePath -> FilePath
@@ -112,7 +117,6 @@ buildCommand = do
 --             </> x
 -- 
 --    shakeArgs shakeOptions{shakeFiles="_build"} $ do
---       want [ "_build/linux-"++linuxVersion'++".bin"]
 -- 
 --       -- copy binary program
 --       "_build/bin/*" %> \out -> do
