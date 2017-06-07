@@ -2,13 +2,32 @@ import Development.Shake
 import Development.Shake.FilePath
 import Data.List
 import System.Process
- 
-linuxVersion,syslinuxVersion :: String
-linuxVersion    = "4.11.3"
-syslinuxVersion = "6.03"
+import Control.Monad
 
+import Build.Config
+
+import qualified Data.Text as Text
+import Haskus.Utils.Flow
+ 
 main :: IO ()
 main = do
+
+   mconfig <- readSystemConfig "system.yaml"
+
+   config <- case mconfig of
+      Nothing -> fail "Cannot find \"system.yaml\""
+      Just c  -> return c
+
+   linuxVersion <- case linuxSource (linuxConfig config) of
+      LinuxGit {}    -> fail "Building Linux from GIT is not supported for now"
+      LinuxTarball x -> return x
+
+   let linuxVersion' = Text.unpack linuxVersion
+
+   let syslinuxVersion' = config
+                           |> syslinuxConfig
+                           |> syslinuxVersion
+                           |> Text.unpack
 
    -- read GHC version
    ghcVersion <- last . words <$> readProcess "stack" ["exec", "--", "ghc", "--version"] ""
@@ -21,8 +40,8 @@ main = do
    putStrLn "---------------------------------------------------"
    putStrLn ("GHC version:      " ++ ghcVersion)
    putStrLn ("Stack resolver:   " ++ stackResolver)
-   putStrLn ("Linux version:    " ++ linuxVersion)
-   putStrLn ("Syslinux version: " ++ syslinuxVersion)
+   putStrLn ("Linux version:    " ++ linuxVersion')
+   putStrLn ("Syslinux version: " ++ syslinuxVersion')
    putStrLn "==================================================="
 
    let
@@ -35,51 +54,53 @@ main = do
             </> x
 
    shakeArgs shakeOptions{shakeFiles="_build"} $ do
-      want [ "_build/linux-"++linuxVersion++".bin"]
+      want [ "_build/linux-"++linuxVersion'++".bin"]
 
       -- build linux
       "_build/linux-*.bin" %> \out -> do
          let 
-            srcdir   = "_sources/linux-"++linuxVersion
+            srcdir   = "_sources/linux-"++linuxVersion'
             makefile = srcdir </> "Makefile"
          need [makefile]
          unit $ cmd (Cwd srcdir) "make" "x86_64_defconfig"
-         unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_DRM_BOCHS"
-         unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_DRM_RADEON"
-         unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_DRM_NOUVEAU"
-         unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_DRM_VIRTIO_GPU"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_VIRTIO"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_VIRTIO_BLK"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_VIRTIO_NET"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_VIRTIO_INPUT"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_VIRTIO_MMIO"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-d" "CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "CONFIG_VIRTIO_CONSOLE"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-e" "HW_RANDOM_VIRTIO"
-         -- unit $ cmd (Cwd srcdir) "./scripts/config" "-d" "VIRTIO_BALLOON"
+         -- enable/disable/module options
+         let opts = linuxOptions (linuxConfig config)
+         forM_ (enableOptions opts) $ \opt ->
+            unit $ cmd (Cwd srcdir) "./scripts/config" "-e" (Text.unpack opt)
+         forM_ (disableOptions opts) $ \opt ->
+            unit $ cmd (Cwd srcdir) "./scripts/config" "-d" (Text.unpack opt)
+         forM_ (moduleOptions opts) $ \opt ->
+            unit $ cmd (Cwd srcdir) "./scripts/config" "-m" (Text.unpack opt)
+         -- fixup config (interactive)
          unit $ cmd (Cwd srcdir) "make" "oldconfig"
+         -- build
          unit $ cmd (Cwd srcdir) "make" "-j8"
+         -- copy resulting files
          unit $ cmd "cp" (srcdir </> "arch/x86/boot/bzImage") out
 
       -- unpack linux
       "_sources/linux-*/Makefile" %> \_ -> do
-         let src = "_downloads/linux-"++linuxVersion++".tar.xz"
+         let src = "_downloads/linux-"++linuxVersion'++".tar.xz"
          need [src]
          cmd (Cwd "_sources") "tar" "xf" (".." </> src)
 
       -- download linux
       "_downloads/linux-*.tar.xz" %> \_ -> do
-         let src = "https://www.kernel.org/pub/linux/kernel/v4.x/linux-"++linuxVersion++".tar.xz"
+         let src = "https://cdn.kernel.org/pub/linux/kernel/v"
+                     ++ Text.unpack (head (Text.splitOn (Text.pack ".") linuxVersion))
+                     ++ ".x/linux-"
+                     ++ linuxVersion'
+                     ++ ".tar.xz"
          cmd (Cwd "_downloads") "wget" src
 
       -- download SysLinux
       "_downloads/syslinux-*.tar.xz" %> \_ -> do
-         let src = "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"++syslinuxVersion++".tar.xz"
+         let src = "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"++syslinuxVersion'++".tar.xz"
          cmd (Cwd "_downloads") "wget" src
 
       -- unpack SysLinux
       "_sources/syslinux-*/bios/core/isolinux.bin" %> \_ -> do
-         let src = "_downloads/syslinux-"++syslinuxVersion++".tar.xz"
+         let src = "_downloads/syslinux-"++syslinuxVersion'++".tar.xz"
          need [src]
          cmd (Cwd "_sources") "tar" "xf" (".." </> src)
 
@@ -104,9 +125,9 @@ main = do
       "_build/disks/**/*.img" %> \out -> do
          let
             name    = dropExtension (takeBaseName out)
-            ker     = "_build/linux-"++linuxVersion++".bin"
+            ker     = "_build/linux-"++linuxVersion'++".bin"
             img     = "_build/ramdisks" </> name <.> ".img"
-            slsrc   = "_sources/syslinux-" ++ syslinuxVersion 
+            slsrc   = "_sources/syslinux-" ++ syslinuxVersion'
             syslin  = slsrc </> "bios/core/isolinux.bin"
             outdir  = takeDirectory (takeDirectory out)
             bootdir = outdir </> "boot"
@@ -143,10 +164,10 @@ main = do
       "_build/isos/*.iso" %> \out -> do
          let
             name    = dropExtension (takeBaseName out)
-            ker     = "_build/linux-"++linuxVersion++".bin"
+            ker     = "_build/linux-"++linuxVersion'++".bin"
             img     = "_build/ramdisks" </> name <.> ".img"
             disk    = "_build/disks"    </> name
-            slsrc   = "_sources/syslinux-" ++ syslinuxVersion 
+            slsrc   = "_sources/syslinux-" ++ syslinuxVersion'
             syslin  = slsrc </> "bios/core/isolinux.bin"
          need [ker,img,syslin, disk </> "boot" </> name <.> "img"]
          -- create ISO
@@ -169,7 +190,7 @@ main = do
                let
                   name = drop 5 s
                   img  = "_build/ramdisks" </> (name ++ ".img")
-                  ker  = "_build/linux-"++linuxVersion++".bin"
+                  ker  = "_build/linux-"++linuxVersion'++".bin"
                need [ker, img]
                cmd Shell "qemu-system-x86_64" 
                   "-enable-kvm"
@@ -183,7 +204,7 @@ main = do
                let
                   name = drop 6 s
                   img  = "_build/ramdisks" </> name <.> "img"
-                  ker  = "_build/linux-"++linuxVersion++".bin"
+                  ker  = "_build/linux-"++linuxVersion'++".bin"
                need [ker, img]
                cmd Shell "qemu-system-x86_64" 
                   "-enable-kvm"
