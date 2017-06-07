@@ -2,6 +2,9 @@
 
 module Haskus.Apps.System.Build.QEMU
    ( qemuExecRamdisk
+   , qemuExecISO
+   , qemuGetProfileConfig
+   , qemuExec
    )
 where
 
@@ -17,24 +20,7 @@ import qualified Data.Text as Text
 qemuExecRamdisk :: SystemConfig -> IO ()
 qemuExecRamdisk config = do
    
-   let
-      qConfig = qemuConfig config
-
-   (args,kargs) <- case qemuProfile qConfig of
-         "vanilla" -> return ("", "")
-         "default" -> return $
-            (concat $ intersperse " "
-               [ "-enable-kvm"
-               , "-machine q35"
-               , "-soundhw hda"
-               , "-serial stdio"
-               , "-vga std"
-               --, "-show-cursor"
-               , "-usbdevice tablet"
-               ]
-            , "console=ttyS0 atkbd.softraw=0 quiet"
-            )
-         p         -> failWith $ "Invalid QEMU profile: " ++ Text.unpack p
+   (args,kargs) <- qemuGetProfileConfig (qemuConfig config)
 
    kernel  <- linuxKernelFile (linuxConfig config)
    ramdisk <- ramdiskGetPath (ramdiskConfig config)
@@ -46,9 +32,45 @@ qemuExecRamdisk config = do
          , "-append", ("\"rdinit=/" ++ rdinit ++ " " ++ kargs ++ "\"")
          ]
 
-   let cmd = "qemu-system-x86_64 " ++ args ++ " " ++ kerRdArgs
+   qemuExec (args ++ " " ++ kerRdArgs)
 
+-- | Execute ISO
+qemuExecISO :: SystemConfig -> FilePath -> IO ()
+qemuExecISO config isoPath = do
+   
+   (args,kargs) <- qemuGetProfileConfig (qemuConfig config)
+
+   let kerRdArgs = concat $ intersperse " "
+         [ "-cdrom", isoPath
+         , "-append", kargs
+         ]
+
+   qemuExec (args ++ " " ++ kerRdArgs)
+
+
+qemuExec :: String -> IO ()
+qemuExec args = do
+   let cmd = "qemu-system-x86_64 " ++ args
 
    showStep "Launching QEMU..."
    shellWaitErr cmd $ failWith "Cannot execute QEMU"
+
+
+qemuGetProfileConfig :: QEMUConfig -> IO (String,String)
+qemuGetProfileConfig config =
+   case qemuProfile config of
+      "vanilla" -> return ("", "")
+      "default" -> return $
+         (concat $ intersperse " "
+            [ "-enable-kvm"
+            , "-machine q35"
+            , "-soundhw hda"
+            , "-serial stdio"
+            , "-vga std"
+            --, "-show-cursor"
+            , "-usbdevice tablet"
+            ]
+         , "console=ttyS0 atkbd.softraw=0 quiet"
+         )
+      p         -> failWith $ "Invalid QEMU profile: " ++ Text.unpack p
 
