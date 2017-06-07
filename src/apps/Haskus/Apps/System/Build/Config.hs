@@ -149,7 +149,7 @@ instance FromJSON RamdiskConfig where
       let
          rdinit = v .: "init"
          rdname = (v .: "name")
-                     <|> (Text.append ".img" <$> rdinit)
+                     <|> (flip Text.append ".img" <$> rdinit)
 
       RamdiskConfig
          <$> rdname

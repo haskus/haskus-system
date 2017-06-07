@@ -16,8 +16,11 @@ ramdiskMain :: RamdiskConfig -> IO ()
 ramdiskMain config = do
    workDir <- getWorkDir
    let
-      rd = workDir </> Text.unpack (ramdiskFileName config)
+      rdDir  = workDir </> "ramdisk"
+      rd     = rdDir </> Text.unpack (ramdiskFileName config)
       rdinit = Text.unpack (ramdiskInit config)
+
+   createDirectoryIfMissing True rdDir
 
    binfp <- stackGetBinPath rdinit
 
@@ -27,7 +30,7 @@ ramdiskMain config = do
       copyFile binfp (tmpfp </> rdinit)
 
       -- create ramdisk
-      -- TODO: use our own `cpio`
+      -- TODO: use our own `cpio` and `gzip`
       shellInErr tmpfp
          ("(find . | cpio -o -H newc | gzip) > " ++ rd)
             $ failWith "Cannot build ramdisk"
