@@ -77,16 +77,7 @@ buildCommand = do
       Nothing -> failWith $ "Cannot parse \"" ++ configFile ++ "\""
       Just c  -> return c
 
-   linuxVersion <- case linuxSource (linuxConfig config) of
-      LinuxGit {}    -> failWith "Building Linux from GIT is not supported for now"
-      LinuxTarball x -> return x
-
-
-   linuxCheckTarball linuxVersion >>= \case
-      False -> linuxDownloadTarball linuxVersion
-      True  -> return ()
-
-   let linuxVersion' = Text.unpack linuxVersion
+   let linuxVersion' = Text.unpack (linuxConfigVersion (linuxConfig config))
 
    let syslinuxVersion' = config
                            |> syslinuxConfig
@@ -107,6 +98,8 @@ buildCommand = do
    putStrLn ("Linux version:    " ++ linuxVersion')
    putStrLn ("Syslinux version: " ++ syslinuxVersion')
    putStrLn "==================================================="
+
+   linuxMain (linuxConfig config)
 
 --    let
 --       stackPath :: FilePath -> FilePath

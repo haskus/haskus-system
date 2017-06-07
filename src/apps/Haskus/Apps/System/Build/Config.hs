@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Haskus.Apps.System.Build.Config
    ( readSystemConfig
    , SystemConfig (..)
    , LinuxConfig (..)
+   , linuxConfigHash
+   , linuxConfigVersion
    , LinuxSource (..)
    , LinuxOptions (..)
    , SyslinuxConfig (..)
@@ -15,6 +19,8 @@ import Data.Yaml as Yaml
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Control.Applicative
+import Data.Hashable
+import GHC.Generics
 
 -- | System configuration
 data SystemConfig = SystemConfig
@@ -45,14 +51,14 @@ readSystemConfig = Yaml.decodeFile
 data LinuxSource
    = LinuxTarball Text  -- ^ Linux x.y.z from kernel.org tarballs
    | LinuxGit Text Text -- ^ repository/commit hash
-   deriving (Show)
+   deriving (Show,Generic,Hashable)
 
 data LinuxOptions = LinuxOptions
    { enableOptions  :: [Text]
    , disableOptions :: [Text]
    , moduleOptions  :: [Text]
    }
-   deriving (Show)
+   deriving (Show,Generic,Hashable)
 
 -- | Linux configuration
 data LinuxConfig = LinuxConfig
@@ -60,7 +66,17 @@ data LinuxConfig = LinuxConfig
    , linuxOptions  :: LinuxOptions -- ^ Configuration options
    , linuxMakeArgs :: Text         -- ^ Make arguments
    }
-   deriving (Show)
+   deriving (Show,Generic,Hashable)
+
+-- | Hash Linux config
+linuxConfigHash :: LinuxConfig -> Int
+linuxConfigHash = hash
+
+-- | Linux version
+linuxConfigVersion :: LinuxConfig -> Text
+linuxConfigVersion config = case linuxSource config of
+   LinuxTarball t -> t
+   LinuxGit {}    -> "git"
 
 instance FromJSON LinuxConfig where
    parseJSON (Yaml.Object v) = do

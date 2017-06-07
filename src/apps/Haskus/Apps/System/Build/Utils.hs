@@ -3,6 +3,7 @@
 module Haskus.Apps.System.Build.Utils
    ( shellIn
    , shellInErr
+   , untar
    , subTitle
    , showStep
    , failWith
@@ -34,6 +35,11 @@ shellInErr fp cmd err = do
       ExitSuccess   -> return ()
       ExitFailure _ -> err
 
+-- | Uncompress an archive
+untar :: FilePath -> FilePath -> IO ()
+untar src tgt = shellInErr tgt ("tar xf " ++ src) $
+   failWith "Cannot uncompress archive"
+
 -- | Add a subline to a text
 subTitle :: String -> String
 subTitle t = t ++ "\n" ++ replicate (length t) '-' ++ "\n"
@@ -58,6 +64,7 @@ download url tgt = do
 getAppDir :: IO FilePath
 getAppDir = do
    fp <- getAppUserDataDirectory "haskus"
+   createDirectoryIfMissing True fp
    return (fp </> "system" </> "build")
 
 -- | Return download path
