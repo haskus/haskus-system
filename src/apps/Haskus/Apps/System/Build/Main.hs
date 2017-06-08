@@ -38,12 +38,12 @@ main = do
                    initOptions
          addCommand "build"
                    "Build a project"
-                   (const buildCommand)
-                   (pure ())
+                   buildCommand
+                   buildOptions
          addCommand "test"
                    "Test a project with QEMU"
-                   (const testCommand)
-                   (pure ())
+                   testCommand
+                   testOptions
    runCmd
 
 initCommand :: InitOptions -> IO ()
@@ -83,9 +83,20 @@ readConfig = do
       Nothing -> failWith $ "Cannot parse \"" ++ configFile ++ "\""
       Just c  -> return c
 
-buildCommand :: IO ()
-buildCommand = do
-   config <- readConfig
+buildCommand :: BuildOptions -> IO ()
+buildCommand opts = do
+   config' <- readConfig
+
+   -- override config
+   let config = if buildOptInit opts /= ""
+                  -- TODO: use lenses
+                  then config'
+                        { ramdiskConfig = (ramdiskConfig config')
+                           { ramdiskInit = Text.pack (buildOptInit opts)
+                           }
+                        }
+                  else config'
+
    showStatus config
    gmpMain
    linuxMain (linuxConfig config)
@@ -93,9 +104,20 @@ buildCommand = do
    stackBuild
 
 
-testCommand :: IO ()
-testCommand = do
-   config <- readConfig
+testCommand :: TestOptions -> IO ()
+testCommand opts = do
+   config' <- readConfig
+
+   -- override config
+   let config = if testOptInit opts /= ""
+                  -- TODO: use lenses
+                  then config'
+                        { ramdiskConfig = (ramdiskConfig config')
+                           { ramdiskInit = Text.pack (testOptInit opts)
+                           }
+                        }
+                  else config'
+
    showStatus config
    gmpMain
    linuxMain (linuxConfig config)
@@ -111,6 +133,10 @@ showStatus config = do
                            |> syslinuxConfig
                            |> syslinuxVersion
                            |> Text.unpack
+   let initProgram = config
+                           |> ramdiskConfig
+                           |> ramdiskInit
+                           |> Text.unpack
 
    ghcVersion    <- stackGetGHCVersion
    stackResolver <- stackGetResolver
@@ -122,6 +148,7 @@ showStatus config = do
    putStrLn ("Stack resolver:   " ++ stackResolver)
    putStrLn ("Linux version:    " ++ linuxVersion')
    putStrLn ("Syslinux version: " ++ syslinuxVersion')
+   putStrLn ("Init program:     " ++ initProgram)
    putStrLn "==================================================="
 
 

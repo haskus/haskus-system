@@ -19,8 +19,6 @@ where
 
 import Data.Yaml as Yaml
 import Data.Text (Text)
-import qualified Data.Text as Text
-import Control.Applicative
 import Data.Hashable
 import GHC.Generics
 
@@ -142,21 +140,14 @@ instance FromJSON SyslinuxConfig where
 
 -- | Ramdisk configuration
 data RamdiskConfig = RamdiskConfig
-   { ramdiskFileName :: Text   -- ^ Name of the ramdisk file
-   , ramdiskInit     :: Text   -- ^ Init program
+   { ramdiskInit     :: Text   -- ^ Init program
    }
    deriving (Show)
 
 instance FromJSON RamdiskConfig where
    parseJSON (Yaml.Object v) = do
-      let
-         rdinit = v .: "init"
-         rdname = (v .: "name")
-                     <|> (flip Text.append ".img" <$> rdinit)
-
       RamdiskConfig
-         <$> rdname
-         <*> rdinit
+         <$> v .: "init"
 
    parseJSON _ = fail "Invalid Ramdisk configuration"
 

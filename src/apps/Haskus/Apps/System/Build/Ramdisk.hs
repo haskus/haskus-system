@@ -39,4 +39,4 @@ ramdiskGetPath config = do
    workDir <- getWorkDir
    let rdDir  = workDir </> "ramdisk"
    createDirectoryIfMissing True rdDir
-   return (rdDir </> Text.unpack (ramdiskFileName config))
+   return (rdDir </> Text.unpack (ramdiskInit config) <.> "img")
