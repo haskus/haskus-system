@@ -7,8 +7,6 @@ linux:
          - CONFIG_DRM_RADEON
          - CONFIG_DRM_NOUVEAU
          - CONFIG_DRM_VIRTIO
-      disable:
-         - VIRTIO_BALLOON
    make-args: "-j16"
 
 ramdisk:

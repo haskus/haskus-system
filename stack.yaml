@@ -7,7 +7,7 @@ packages:
 - location:
     git: git@github.com:haskus/haskus-system
     #git: /home/hsyl20/travail/code/haskus-system
-    commit: a0b6deac7e8ef22af8e9c1ad820c0235d0d04c4f
+    commit: f611e5936f646db46a37cb2ad6ab57b8b373152b
   extra-dep: true
 
 ghc-options:
