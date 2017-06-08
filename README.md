@@ -52,7 +52,8 @@ $ stack bench
 
 # Building systems
 
-Use ``haskus-system-build`` tool to build systems.
+Use ``haskus-system-build`` tool to build systems (Stack installs programs into
+`~/.local/bin`, so you have to ensure that it is in your path).
 
 In a **new directory** do:
 ```bash
