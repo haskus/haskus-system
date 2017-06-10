@@ -52,9 +52,13 @@ main = do
                    (const testISOCommand)
                    (pure ())
          addCommand "make-disk"
-                   "Create a disk folder"
+                   "Create a disk directory"
                    makeDiskCommand
                    (makeDiskOptions)
+         addCommand "make-device"
+                   "Create a bootable device (WARNING: IT ERASES IT). You must be in the sudoers list"
+                   makeDeviceCommand
+                   (makeDeviceOptions)
    runCmd
 
 initCommand :: InitOptions -> IO ()
@@ -197,3 +201,14 @@ testISOCommand = do
    ramdiskMain (ramdiskConfig config)
    isoFile <- isoMake config
    qemuExecISO config isoFile
+
+makeDeviceCommand :: MakeDeviceOptions -> IO ()
+makeDeviceCommand opts = do
+   config <- readConfig
+
+   showStatus config
+   gmpMain
+   linuxMain (linuxConfig config)
+   stackBuild
+   ramdiskMain (ramdiskConfig config)
+   makeDevice config (deviceOptPath opts)

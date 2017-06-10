@@ -8,6 +8,7 @@ module Haskus.Apps.System.Build.Syslinux
    , syslinuxMakeTarballName
    , syslinuxMakeTarballPath
    , syslinuxConfigFile
+   , syslinuxInstall
    )
 where
 
@@ -113,3 +114,21 @@ syslinuxConfigFile config ker rd = mconcat $ List.intersperse "\n"
       -- TODO: support custom kernel-args
       ]
    ]
+
+
+syslinuxInstall :: SyslinuxConfig -> FilePath -> FilePath -> IO ()
+syslinuxInstall config dev mntDir = do
+   showStep $ "Installing Syslinux on "++dev++" device..."
+
+   syslinuxPath <- syslinuxMain config
+   let
+      -- TODO: allow MBR selection
+      -- TODO: support UEFI
+      mbr = syslinuxPath </> "bios" </> "mbr" </> "mbr.bin"
+      cmd = "sudo dd bs=440 if=" ++ mbr ++ " of=" ++ dev
+   shellWaitErr cmd $ failWith "Error while copying the MBR"
+
+   -- use syslinux installer
+   let installer = syslinuxPath </> "bios" </> "extlinux" </> "extlinux"
+   shellWaitErr ("sudo " ++ installer ++ " --install " ++ (mntDir </> "boot" </> "syslinux"))
+      $ failWith "Error while installing Syslinux"

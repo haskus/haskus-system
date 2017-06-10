@@ -3,10 +3,12 @@ module Haskus.Apps.System.Build.CmdLine
    , BuildOptions (..)
    , TestOptions (..)
    , MakeDiskOptions (..)
+   , MakeDeviceOptions (..)
    , initOptions
    , buildOptions
    , testOptions
    , makeDiskOptions
+   , makeDeviceOptions
    )
 where
 
@@ -66,7 +68,20 @@ makeDiskOptions =
       <$> strOption
          (  long "output"
          <> short 'o'
-         <> metavar "OUTPUT-DIRECTOY"
-         <> value ""
+         <> metavar "OUTPUT-DIRECTORY"
          <> help "Output disk directory"
+         )
+
+data MakeDeviceOptions = MakeDeviceOptions
+   { deviceOptPath :: String
+   }
+
+makeDeviceOptions :: Parser MakeDeviceOptions
+makeDeviceOptions =
+   MakeDeviceOptions
+      <$> strOption
+         (  long "device"
+         <> short 'd'
+         <> metavar "DEVICE"
+         <> help "Device path"
          )

@@ -1,6 +1,7 @@
 module Haskus.Apps.System.Build.Disk
    ( withDisk
    , makeDisk
+   , makeDevice
    )
 where
 
@@ -15,6 +16,7 @@ import System.FilePath
 import System.Directory
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import Control.Exception (finally)
 
 
 -- | Create a temp directory containing the system and call the callback
@@ -27,6 +29,28 @@ withDisk config callback = do
 
       -- call the callback
       callback tmpfp
+
+-- | Mount a device and install a system in it
+makeDevice :: SystemConfig -> FilePath -> IO ()
+makeDevice config dev = do
+   -- TODO: allow the selection of another boot partition
+   -- TODO: ensure that the partition is bootable
+   -- TODO: check filesystem 
+   let dev' = dev ++ "1"
+   showStep $ "Installing in partition " ++ dev' ++"..."
+   withDisk config $ \disk -> do
+      withSystemTempDirectory "haskus-system-build" $ \tmpfp -> do
+         shellWaitErr ("sudo mount "++dev'++" "++tmpfp++" -o rw")
+            $ failWith "Unable to mount device"
+         (do
+            shellWaitErr ("sudo cp -r " ++ disk ++"/* "++tmpfp)
+               (failWith "Cannot copy files on the mounted device")
+            syslinuxInstall (syslinuxConfig config) dev tmpfp
+            ) `finally`
+               shellWaitErr ("sudo umount "++tmpfp)
+                  (failWith "Unable to umount device")
+      
+
 
 -- | Create a disk in the given folder
 makeDisk :: SystemConfig -> FilePath -> IO ()
