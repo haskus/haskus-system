@@ -2,9 +2,11 @@ module Haskus.Apps.System.Build.CmdLine
    ( InitOptions(..)
    , BuildOptions (..)
    , TestOptions (..)
+   , MakeDiskOptions (..)
    , initOptions
    , buildOptions
    , testOptions
+   , makeDiskOptions
    )
 where
 
@@ -52,4 +54,19 @@ buildOptions =
          <> metavar "INIT-PROGRAM"
          <> value ""
          <> help "Init program to use"
+         )
+
+data MakeDiskOptions = MakeDiskOptions
+   { diskOptPath :: String
+   }
+
+makeDiskOptions :: Parser MakeDiskOptions
+makeDiskOptions =
+   MakeDiskOptions
+      <$> strOption
+         (  long "output"
+         <> short 'o'
+         <> metavar "OUTPUT-DIRECTOY"
+         <> value ""
+         <> help "Output disk directory"
          )

@@ -42,7 +42,7 @@ qemuExecISO config isoPath = do
 
    let kerRdArgs = concat $ intersperse " "
          [ "-cdrom", isoPath
-         , "-append", kargs
+         , "-append", "\""++kargs++"\""
          ]
 
    qemuExec (args ++ " " ++ kerRdArgs)

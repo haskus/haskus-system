@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Haskus.Apps.System.Build.Syslinux
    ( syslinuxMain
@@ -6,19 +7,23 @@ module Haskus.Apps.System.Build.Syslinux
    , syslinuxCheckTarball
    , syslinuxMakeTarballName
    , syslinuxMakeTarballPath
+   , syslinuxConfigFile
    )
 where
 
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.List as List
 import System.FilePath
 import System.Directory
 import System.IO.Temp
 
 import Haskus.Apps.System.Build.Config
 import Haskus.Apps.System.Build.Utils
+import Haskus.Apps.System.Build.Ramdisk
 
-syslinuxMain :: SyslinuxConfig -> IO ()
+-- | Download and unpack syslinux. Return its path.
+syslinuxMain :: SyslinuxConfig -> IO FilePath
 syslinuxMain config = do
    
    p <- getAppDir
@@ -56,6 +61,8 @@ syslinuxMain config = do
          let fp2 = fp </> ("syslinux-"++Text.unpack version)
          renameDirectory fp2 tgtfp
 
+   return tgtfp
+
 -- | Make Syslinux archive name
 syslinuxMakeTarballName :: Text -> FilePath
 syslinuxMakeTarballName version = "syslinux-"++Text.unpack version++".tar.xz"
@@ -88,3 +95,21 @@ syslinuxCheckTarball version = do
    doesFileExist (tgtDir </> syslinuxMakeTarballName version)
 
 
+syslinuxConfigFile :: SystemConfig -> Text -> Text -> Text
+syslinuxConfigFile config ker rd = mconcat $ List.intersperse "\n"
+   [ "DEFAULT main"
+   , "PROMPT 0"
+   , "TIMEOUT 50"
+   , "UI vesamenu.c32"
+   , ""
+   , "LABEL main"
+   , "MENU LABEL " `Text.append` ramdiskInit (ramdiskConfig (config))
+   , "LINUX /" `Text.append` ker
+   , "INITRD /" `Text.append` rd
+   , mconcat
+      [ "APPEND rdinit=\""
+      , ramdiskInitPath (ramdiskConfig config)
+      , "\""
+      -- TODO: support custom kernel-args
+      ]
+   ]

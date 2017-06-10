@@ -1,8 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
 
--- import Development.Shake
--- import Development.Shake.FilePath
-
 import Haskus.Apps.System.Build.Config
 import Haskus.Apps.System.Build.Linux
 import Haskus.Apps.System.Build.Syslinux
@@ -12,6 +9,8 @@ import Haskus.Apps.System.Build.Ramdisk
 import Haskus.Apps.System.Build.Stack
 import Haskus.Apps.System.Build.GMP
 import Haskus.Apps.System.Build.QEMU
+import Haskus.Apps.System.Build.ISO
+import Haskus.Apps.System.Build.Disk
 
 import qualified Data.Text as Text
 import Haskus.Utils.Flow
@@ -44,6 +43,18 @@ main = do
                    "Test a project with QEMU"
                    testCommand
                    testOptions
+         addCommand "make-iso"
+                   "Create an ISO image"
+                   (const makeISOCommand)
+                   (pure ())
+         addCommand "test-iso"
+                   "Test an ISO image"
+                   (const testISOCommand)
+                   (pure ())
+         addCommand "make-disk"
+                   "Create a disk folder"
+                   makeDiskCommand
+                   (makeDiskOptions)
    runCmd
 
 initCommand :: InitOptions -> IO ()
@@ -100,7 +111,7 @@ buildCommand opts = do
    showStatus config
    gmpMain
    linuxMain (linuxConfig config)
-   syslinuxMain (syslinuxConfig config)
+   _ <- syslinuxMain (syslinuxConfig config)
    stackBuild
 
 
@@ -152,64 +163,37 @@ showStatus config = do
    putStrLn "==================================================="
 
 
---       -- make disk
---       "_build/disks/**/*.img" %> \out -> do
---          let
---             name    = dropExtension (takeBaseName out)
---             ker     = "_build/linux-"++linuxVersion'++".bin"
---             img     = "_build/ramdisks" </> name <.> ".img"
---             slsrc   = "_sources/syslinux-" ++ syslinuxVersion'
---             syslin  = slsrc </> "bios/core/isolinux.bin"
---             outdir  = takeDirectory (takeDirectory out)
---             bootdir = outdir </> "boot"
---             sldir   = bootdir </> "syslinux"
---             slconf  = sldir </> "syslinux.cfg"
---          need [ker,img,syslin]
---          -- create boot directory
---          unit $ cmd "mkdir" "-p" bootdir
---          unit $ cmd "mkdir" "-p" sldir 
---          -- copy kernel and init disk image
---          unit $ cmd "cp" "-f" ker bootdir
---          unit $ cmd "cp" "-f" img bootdir
---          -- copy syslinux
---          unit $ cmd "find" (slsrc </> "bios")
---                   "-name" "*.c32"
---                   "-exec" "cp" "{}" sldir ";"
---          unit $ cmd "cp" "-f" syslin (sldir </> "isolinux.bin")
---          -- configure syslinux
---          let
---             syslinuxConf =
---                  "DEFAULT main\n\
---                  \PROMPT 0\n\
---                  \TIMEOUT 50\n\
---                  \UI vesamenu.c32\n\
---                  \\n\
---                  \LABEL main\n\
---                  \MENU LABEL MyOS\n\
---                  \LINUX  /boot/" ++ takeBaseName ker ++ ".bin\n\
---                  \INITRD /boot/" ++ name ++ ".img\n\
---                  \APPEND rdinit=" ++ name ++ "\n"
---          liftIO $ writeFile slconf syslinuxConf
--- 
---       -- make ISO image
---       "_build/isos/*.iso" %> \out -> do
---          let
---             name    = dropExtension (takeBaseName out)
---             ker     = "_build/linux-"++linuxVersion'++".bin"
---             img     = "_build/ramdisks" </> name <.> ".img"
---             disk    = "_build/disks"    </> name
---             slsrc   = "_sources/syslinux-" ++ syslinuxVersion'
---             syslin  = slsrc </> "bios/core/isolinux.bin"
---          need [ker,img,syslin, disk </> "boot" </> name <.> "img"]
---          -- create ISO
---          unit $ cmd "mkdir" "-p" "_build/isos"
---          unit $ cmd "xorriso" "-as" "mkisofs" 
---                   "-R" "-J"                         -- use Rock-Ridge/Joliet extensions
---                   "-o" out                          -- output ISO file
---                   "-c" "boot/syslinux/boot.cat"     -- create boot catalog
---                   "-b" "boot/syslinux/isolinux.bin" -- bootable binary file
---                   "-no-emul-boot"                   -- doesn't use legacy floppy emulation
---                   "-boot-info-table"                -- write additional Boot Info Table (required by SysLinux)
---                   "-boot-load-size" "4"
---                   "-isohybrid-mbr" (slsrc </> "bios/mbr/isohdpfx_c.bin")
---                   disk
+makeISOCommand :: IO ()
+makeISOCommand = do
+   config <- readConfig
+
+   showStatus config
+   gmpMain
+   linuxMain (linuxConfig config)
+   stackBuild
+   ramdiskMain (ramdiskConfig config)
+   _ <- isoMake config
+   return ()
+
+makeDiskCommand :: MakeDiskOptions -> IO ()
+makeDiskCommand opts = do
+   config <- readConfig
+
+   showStatus config
+   gmpMain
+   linuxMain (linuxConfig config)
+   stackBuild
+   ramdiskMain (ramdiskConfig config)
+   makeDisk config (diskOptPath opts)
+
+testISOCommand :: IO ()
+testISOCommand = do
+   config <- readConfig
+
+   showStatus config
+   gmpMain
+   linuxMain (linuxConfig config)
+   stackBuild
+   ramdiskMain (ramdiskConfig config)
+   isoFile <- isoMake config
+   qemuExecISO config isoFile

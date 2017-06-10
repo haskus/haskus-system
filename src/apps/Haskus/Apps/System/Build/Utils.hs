@@ -14,6 +14,7 @@ module Haskus.Apps.System.Build.Utils
    , getWorkDir
    , getDownloadPath
    , unlessM
+   , copyDirectory
    )
 where
 
@@ -23,6 +24,7 @@ import System.Directory
 import System.FilePath
 import System.IO.Temp
 import qualified Network.HTTP.Client.Conduit.Download as D
+import Haskus.Utils.Flow
 
 -- | Execute a command
 shellWait :: String -> IO ExitCode 
@@ -102,6 +104,36 @@ getDownloadPath = do
 
 -- | Unless with a monadic condition
 unlessM :: Monad m => m Bool -> m () -> m ()
-unlessM f g = f >>= \case
+unlessM b g = b >>= \case
    False -> g
    True  -> return ()
+
+-- | When with a monadic condition
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM b g = b >>= \case
+   True -> g
+   False  -> return ()
+
+-- | Copy a directory (optionally keeping the structure). Use a predicate to filter
+copyDirectory :: FilePath -> FilePath -> Bool -> (FilePath -> IO Bool) -> IO ()
+copyDirectory src dst flattenDirs filt = go src
+   where
+      go currentDir = do
+         fs <- listDirectory currentDir
+         forM_ fs $ \f -> do
+            let fileAbs = currentDir </> f
+            isDir <- doesDirectoryExist fileAbs
+            if isDir
+               then go (currentDir </> f)
+               else do
+                  -- filter
+                  whenM (filt fileAbs) $ do
+                     let
+                        fileRel = makeRelative src fileAbs
+                        dstAbs  = if flattenDirs
+                           then dst </> takeFileName (fileAbs)
+                           else dst </> fileRel
+                     createDirectoryIfMissing True (dropFileName dstAbs)
+                     copyFile fileAbs dstAbs
+
+

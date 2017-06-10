@@ -235,6 +235,8 @@ executable haskus-system-build
       Haskus.Apps.System.Build.Utils
       Haskus.Apps.System.Build.GMP
       Haskus.Apps.System.Build.QEMU
+      Haskus.Apps.System.Build.ISO
+      Haskus.Apps.System.Build.Disk
    build-depends:
          base >=4.8
       ,  process
