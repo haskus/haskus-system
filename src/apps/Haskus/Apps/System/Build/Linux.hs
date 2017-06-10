@@ -90,6 +90,9 @@ linuxMain config = do
                shellInErr fp2 ("make firmware_install INSTALL_FW_PATH="++tgtfw) $
                   failWith "Cannot copy Linux firmwares"
 
+               showStep "Copying .config file..."
+               copyFile (fp2 </> ".config") (tgtfp </> ".config")
+
 
 -- | Build Linux tree in the given directory
 linuxBuild :: LinuxConfig -> FilePath -> IO ()
