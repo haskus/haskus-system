@@ -45,19 +45,19 @@ data ShutFlag
 -- | Shut down part of a full-duplex connection
 sysShutdown :: MonadIO m => Handle -> ShutFlag -> Flow m '[(),ErrorCode]
 sysShutdown (Handle fd) flag =
-   liftIO (syscall @"shutdown" fd (fromEnum flag))
+   liftIO (syscall_shutdown fd (fromEnum flag))
       ||> toErrorCodeVoid
 
 -- | Call sendfile using implicit file cursor for input
 sysSendFile :: MonadIO m => Handle -> Handle -> Word64 -> Flow m '[Word64,ErrorCode]
 sysSendFile (Handle outfd) (Handle infd) count =
-   liftIO (syscall @"sendfile" outfd infd nullPtr count)
+   liftIO (syscall_sendfile outfd infd nullPtr count)
       ||> toErrorCodePure fromIntegral
 
 -- | Call sendFile using explicit input offset, returns new offset
 sysSendFileWithOffset :: MonadInIO m => Handle -> Handle -> Word64 -> Word64 -> Flow m '[(Word64,Word64),ErrorCode]
 sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
-   with offset $ \off -> liftIO (syscall @"sendfile" outfd infd off count)
+   with offset $ \off -> liftIO (syscall_sendfile outfd infd off count)
       ||> toErrorCode
       >.~.> (\x -> do
          newOff <- peek off
@@ -158,7 +158,7 @@ instance Enum SocketOption where
 -- `subprotocol` may be 0
 sysSocket' :: MonadIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow m '[Handle,ErrorCode]
 sysSocket' typ protocol subprotocol opts =
-   liftIO (syscall @"socket" (fromEnum protocol) typ' subprotocol)
+   liftIO (syscall_socket (fromEnum protocol) typ' subprotocol)
       ||> toErrorCodePure (Handle . fromIntegral)
    where
       f :: Enum a => a -> Word64
@@ -171,7 +171,7 @@ sysSocket' typ protocol subprotocol opts =
 sysSocketPair' :: MonadInIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
 sysSocketPair' typ protocol subprotocol opts =
    allocaArray 2 $ \ptr ->
-      liftIO (syscall @"socketpair" (fromEnum protocol) typ' subprotocol (castPtr ptr))
+      liftIO (syscall_socketpair (fromEnum protocol) typ' subprotocol (castPtr ptr))
          ||>   toErrorCode
          >.~.> (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
    where
@@ -285,14 +285,14 @@ sysSocketPair typ opts =
 sysBind :: (MonadInIO m, Storable a) => Handle -> a -> Flow m '[(),ErrorCode]
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
-      liftIO (syscall @"bind" fd (castPtr addr') (sizeOf' addr))
+      liftIO (syscall_bind fd (castPtr addr') (sizeOf' addr))
          ||> toErrorCodeVoid
 
 -- | Connect a socket
 sysConnect :: (MonadInIO m, Storable a) => Handle -> a -> Flow m '[(),ErrorCode]
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
-      liftIO (syscall @"connect" fd (castPtr addr') (sizeOf' addr))
+      liftIO (syscall_connect fd (castPtr addr') (sizeOf' addr))
          ||> toErrorCodeVoid
 
 -- | Accept a connection on a socket
@@ -307,7 +307,7 @@ sysAccept (Handle fd) addr opts =
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
    with addr $ \addr' ->
-      liftIO (syscall @"accept4" fd (castPtr addr') (sizeOf' addr) opts')
+      liftIO (syscall_accept4 fd (castPtr addr') (sizeOf' addr) opts')
          ||> toErrorCodePure (Handle . fromIntegral)
 
 -- | Listen on a socket
@@ -315,7 +315,7 @@ sysAccept (Handle fd) addr opts =
 -- @ backlog is the number of incoming requests that are stored
 sysListen :: MonadIO m => Handle -> Word64 -> Flow m '[(),ErrorCode]
 sysListen (Handle fd) backlog =
-   liftIO (syscall @"listen" fd backlog)
+   liftIO (syscall_listen fd backlog)
       ||> toErrorCodeVoid
 
 

@@ -44,7 +44,7 @@ sysMount source target fstype flags dat =
    withCString source $ \source' ->
       withCString target $ \target' ->
          withCString fstype $ \fstype' ->
-            liftIO (syscall @"mount" source' target' fstype' (BitSet.toBits flags) dat)
+            liftIO (syscall_mount source' target' fstype' (BitSet.toBits flags) dat)
                ||> toErrorCodeVoid
 
 
@@ -52,7 +52,7 @@ sysMount source target fstype flags dat =
 sysUnmount :: MonadInIO m => String -> UnmountFlags -> Flow m '[(),ErrorCode]
 sysUnmount target flags =
    withCString target $ \target' ->
-      liftIO (syscall @"umount2" target' (BitSet.toBits flags))
+      liftIO (syscall_umount2 target' (BitSet.toBits flags))
          ||> toErrorCodeVoid
 
 -- | Type of the low-level Linux "mount" function

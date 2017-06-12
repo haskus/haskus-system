@@ -64,7 +64,7 @@ import Haskus.Utils.Flow
 -- | Send a custom command to a device
 ioctl :: (Arg a, MonadIO m) => Command -> a -> Handle -> Flow m '[Int64,ErrorCode]
 ioctl (Command cmd) arg (Handle fd) =
-   liftIO (syscall @"ioctl" fd (fromIntegral (bitFieldsBits cmd)) (toArg arg))
+   liftIO (syscall_ioctl fd (fromIntegral (bitFieldsBits cmd)) (toArg arg))
       ||> toErrorCode
 
 -----------------------------------------------------------------------------

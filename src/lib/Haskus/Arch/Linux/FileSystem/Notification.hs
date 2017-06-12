@@ -117,7 +117,7 @@ sysPoll entries blocking timeout = do
             Just x  -> abs x
    
    withArray fds $ \fds' -> do
-      liftIO (syscall @"poll" (castPtr fds') nfds timeout')
+      liftIO (syscall_poll (castPtr fds') nfds timeout')
          ||> toErrorCode
          >.~.> (\case
             0 -> return PollTimeOut

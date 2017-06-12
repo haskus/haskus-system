@@ -96,7 +96,7 @@ instance Enum Clock where
 sysClockGetTime :: MonadInIO m => Clock -> Flow m '[TimeSpec,ErrorCode]
 sysClockGetTime clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      liftIO (syscall @"clock_gettime" (fromEnum clk) (castPtr t))
+      liftIO (syscall_clock_gettime (fromEnum clk) (castPtr t))
          ||>   toErrorCode
          >.~.> (const $ peek t)
 
@@ -104,14 +104,14 @@ sysClockGetTime clk =
 sysClockSetTime :: MonadInIO m => Clock -> TimeSpec -> Flow m '[(),ErrorCode]
 sysClockSetTime clk time =
    with time $ \(t :: Ptr TimeSpec) ->
-      liftIO (syscall @"clock_settime" (fromEnum clk) (castPtr t))
+      liftIO (syscall_clock_settime (fromEnum clk) (castPtr t))
          ||> toErrorCodeVoid
 
 -- | Retrieve clock resolution
 sysClockGetResolution :: MonadInIO m => Clock -> Flow m '[TimeSpec,ErrorCode]
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) ->
-      liftIO (syscall @"clock_getres" (fromEnum clk) (castPtr t))
+      liftIO (syscall_clock_getres (fromEnum clk) (castPtr t))
          ||>   toErrorCode
          >.~.> (const $ peek t)
 
@@ -120,7 +120,7 @@ sysGetTimeOfDay :: MonadInIO m => Flow m '[TimeVal,ErrorCode]
 sysGetTimeOfDay =
    alloca $ \(tv :: Ptr TimeVal) ->
       -- timezone arg is deprecated (NULL passed instead)
-      liftIO (syscall @"gettimeofday" (castPtr tv) nullPtr)
+      liftIO (syscall_gettimeofday (castPtr tv) nullPtr)
          ||>   toErrorCode
          >.~.> (const $ peek tv)
 
@@ -129,7 +129,7 @@ sysSetTimeOfDay :: MonadInIO m => TimeVal -> Flow m '[(),ErrorCode]
 sysSetTimeOfDay tv =
    with tv $ \ptv ->
       -- timezone arg is deprecated (NULL passed instead)
-      liftIO (syscall @"settimeofday" (castPtr ptv) nullPtr)
+      liftIO (syscall_settimeofday (castPtr ptv) nullPtr)
          ||> toErrorCodeVoid
 
 -- | Result of a sleep
@@ -145,7 +145,7 @@ sysNanoSleep :: MonadInIO m => TimeSpec -> Flow m '[SleepResult,ErrorCode]
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
-         liftIO (syscall @"nanosleep" (castPtr ts') (castPtr rem'))
+         liftIO (syscall_nanosleep (castPtr ts') (castPtr rem'))
             ||> toErrorCodePure (const CompleteSleep)
             >%~$> \case
                EINTR -> flowSet =<< (WokenUp <$> peek rem')

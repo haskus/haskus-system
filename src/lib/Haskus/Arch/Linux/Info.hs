@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | System info (uname)
@@ -30,6 +29,6 @@ data SystemInfo = SystemInfo
 
 -- | "uname" syscall
 systemInfo :: MonadInIO m => Flow m '[SystemInfo,ErrorCode]
-systemInfo = alloca $ \(ptr :: Ptr SystemInfo) -> liftIO (syscall @"uname" (castPtr ptr))
+systemInfo = alloca $ \(ptr :: Ptr SystemInfo) -> liftIO (syscall_uname (castPtr ptr))
       ||>   toErrorCode
       >.~.> (const (peek ptr))

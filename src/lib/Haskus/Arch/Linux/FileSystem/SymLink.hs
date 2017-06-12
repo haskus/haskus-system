@@ -68,7 +68,7 @@ sysReadLinkAt hdl path = go' 2048
       go size =
          allocaBytes size $ \ptr ->
             withCString path $ \path' ->
-               liftIO (syscall @"readlinkat" fd path' ptr (fromIntegral size))
+               liftIO (syscall_readlinkat fd path' ptr (fromIntegral size))
                   ||> toErrorCode
                   >.~.> (\n ->
                      if fromIntegral n == size
@@ -80,6 +80,6 @@ sysSymlink :: MonadInIO m => FilePath -> FilePath -> Flow m '[(),ErrorCode]
 sysSymlink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         liftIO (syscall @"symlink" src' dest')
+         liftIO (syscall_symlink src' dest')
             ||> toErrorCodeVoid
 

@@ -95,7 +95,7 @@ type SendReceiveFlags = BitSet Word64 SendReceiveFlag
 sysReceive :: (MonadInIO m, Storable a) => Handle -> Ptr () -> Word64 -> SendReceiveFlags -> Maybe a -> Flow m '[Word64,ErrorCode]
 sysReceive (Handle fd) ptr size flags addr = do
    let
-      call add len = liftIO (syscall @"recvfrom" fd ptr size (BitSet.toBits flags) (castPtr add) len)
+      call add len = liftIO (syscall_recvfrom fd ptr size (BitSet.toBits flags) (castPtr add) len)
                         ||> toErrorCodePure fromIntegral
 
    case addr of

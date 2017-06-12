@@ -30,7 +30,7 @@ import Haskus.Utils.Flow
 -- | Fcntl syscall
 sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> Flow m '[Int64,ErrorCode]
 sysFcntl (Handle fd) cmd arg =
-   liftIO (syscall @"fcntl" fd (fromCEnum cmd) (toArg arg))
+   liftIO (syscall_fcntl fd (fromCEnum cmd) (toArg arg))
       ||> toErrorCode
 
 

@@ -42,15 +42,15 @@ sysCreateDirectory fd path perm sticky = do
                      else BitSet.empty
       mode       = makeMode FileTypeDirectory perm opt
       call path' = case fd of
-         Nothing           -> liftIO $ syscall @"mkdir" path' mode
-         Just (Handle fd') -> liftIO $ syscall @"mkdirat" fd' path' mode
+         Nothing           -> liftIO $ syscall_mkdir path' mode
+         Just (Handle fd') -> liftIO $ syscall_mkdirat fd' path' mode
 
    withCString path call ||> toErrorCodeVoid
 
 
 sysRemoveDirectory :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
 sysRemoveDirectory path = withCString path $ \path' ->
-   liftIO (syscall @"rmdir" path')
+   liftIO (syscall_rmdir path')
       ||> toErrorCodeVoid
 
 
@@ -136,7 +136,7 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                   else return xs
 
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
-      liftIO (syscall @"getdents64" fd (castPtr ptr) (fromIntegral buffersize))
+      liftIO (syscall_getdents64 fd (castPtr ptr) (fromIntegral buffersize))
          ||> toErrorCode
          >.~.> (\nread -> readEntries (castPtr ptr) (fromIntegral nread))
 

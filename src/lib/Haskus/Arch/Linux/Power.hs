@@ -32,7 +32,7 @@ sysPower cmd = case cmd of
       PowerRestartCommand cmdPath -> withCString cmdPath f
       _                           -> f nullPtr
    where
-      f path = liftIO (syscall @"reboot" magic1 magic2 cmd' path)
+      f path = liftIO (syscall_reboot magic1 magic2 cmd' path)
                   ||> toErrorCodeVoid
       magic1 = 0xfee1dead :: Word64
       magic2 = 0x28121969 :: Word64

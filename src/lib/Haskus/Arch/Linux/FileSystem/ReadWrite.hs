@@ -56,7 +56,7 @@ type ReadErrors
 -- Returns the number of bytes read or 0 if end of file
 sysRead :: MonadIO m => Handle -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors)
 sysRead (Handle fd) ptr count =
-   liftIO (syscall @"read" fd ptr count)
+   liftIO (syscall_read fd ptr count)
       ||> toErrorCodePure fromIntegral
       >..%~^> \case
          EAGAIN -> flowSet RetryLater
@@ -86,7 +86,7 @@ type ReadErrors'
 -- | Read a file descriptor at a given position
 sysReadWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow m (Word64 ': ReadErrors')
 sysReadWithOffset (Handle fd) offset ptr count =
-   liftIO (syscall @"pread64" fd ptr count offset)
+   liftIO (syscall_pread64 fd ptr count offset)
       ||> toErrorCodePure fromIntegral
       >..%~^> \case
          EAGAIN    -> flowSet RetryLater
@@ -129,7 +129,7 @@ sysReadMany (Handle fd) bufs =
       count = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      liftIO (syscall @"readv" fd (castPtr bufs') count)
+      liftIO (syscall_readv fd (castPtr bufs') count)
          ||> toErrorCodePure fromIntegral
 
 -- | Like readMany, with additional offset in file
@@ -143,20 +143,20 @@ sysReadManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      liftIO (syscall @"preadv" fd (castPtr bufs') count ol oh)
+      liftIO (syscall_preadv fd (castPtr bufs') count ol oh)
          ||> toErrorCodePure fromIntegral
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
 sysWrite :: MonadIO m => Handle -> Ptr a -> Word64 -> Flow m '[Word64,ErrorCode]
 sysWrite (Handle fd) buf count =
-   liftIO (syscall @"write" fd (castPtr buf) count)
+   liftIO (syscall_write fd (castPtr buf) count)
       ||> toErrorCodePure fromIntegral
 
 -- | Write a file descriptor at a given position
 sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow m '[Word64,ErrorCode]
 sysWriteWithOffset (Handle fd) offset buf count =
-   liftIO (syscall @"pwrite64" fd buf count offset)
+   liftIO (syscall_pwrite64 fd buf count offset)
       ||> toErrorCodePure fromIntegral
 
 
@@ -168,7 +168,7 @@ sysWriteMany (Handle fd) bufs =
       count       = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      liftIO (syscall @"writev" fd (castPtr bufs') count)
+      liftIO (syscall_writev fd (castPtr bufs') count)
          ||> toErrorCodePure fromIntegral
 
 -- | Like writeMany, with additional offset in file
@@ -182,7 +182,7 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' ->
-      liftIO (syscall @"pwritev" fd (castPtr bufs') count ol oh)
+      liftIO (syscall_pwritev fd (castPtr bufs') count ol oh)
          ||> toErrorCodePure fromIntegral
 
 -- | Write a buffer

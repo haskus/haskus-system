@@ -19,7 +19,7 @@ import Haskus.Utils.Flow
 createPipe :: MonadInIO m => Flow m '[(Handle, Handle),ErrorCode]
 createPipe =
    allocaArray 2 $ \(ptr :: Ptr Word) ->
-      liftIO (syscall @"pipe" (castPtr ptr))
+      liftIO (syscall_pipe (castPtr ptr))
          ||> toErrorCode
          >.~.> (const ((,)
             <$> (Handle <$> peekElemOff ptr 0)

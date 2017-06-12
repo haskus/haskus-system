@@ -35,12 +35,12 @@ type LoadModuleFlags = BitSet Word LoadModuleFlag
 loadModuleFromFile :: MonadInIO m => Handle -> String -> LoadModuleFlags -> Flow m '[(),ErrorCode]
 loadModuleFromFile (Handle fd) params flags = do
    withCString params $ \params' ->
-      liftIO (syscall @"finit_module" fd  params' (BitSet.toBits flags))
+      liftIO (syscall_finit_module fd  params' (BitSet.toBits flags))
          ||> toErrorCodeVoid
 
 -- | Load a module from memory
 loadModuleFromMemory :: MonadInIO m => Ptr () -> Word64 -> String -> Flow m '[(),ErrorCode]
 loadModuleFromMemory ptr sz params =
    withCString params $ \params' ->
-      liftIO (syscall @"init_module" ptr sz params')
+      liftIO (syscall_init_module ptr sz params')
          ||> toErrorCodeVoid

@@ -32,7 +32,7 @@ data FutexOp
 -- | All the Futex API uses this `futex` syscall
 sysFutex :: MonadIO m => Ptr Int64 -> FutexOp -> Int64 -> Ptr TimeSpec -> Ptr Int64 -> Int64 -> Flow m '[Int64,ErrorCode]
 sysFutex uaddr op val timeout uaddr2 val3 =
-   liftIO (syscall @"futex" uaddr (fromEnum op) val (castPtr timeout) uaddr2 val3)
+   liftIO (syscall_futex uaddr (fromEnum op) val (castPtr timeout) uaddr2 val3)
       ||> toErrorCode
 
 -- | Atomically check that addr contains val and sleep until it is wakened up or until the timeout expires

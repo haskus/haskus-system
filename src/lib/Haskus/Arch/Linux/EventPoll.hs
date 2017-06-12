@@ -30,5 +30,5 @@ fromFlags = foldl' (.|.) 0 . fmap fromFlag
 -- | Create event poller
 sysEventPollCreate :: MonadIO m => [EventPollFlag] -> Flow m '[Handle,ErrorCode]
 sysEventPollCreate flags =
-   liftIO (syscall @"epoll_create1" (fromFlags flags))
+   liftIO (syscall_epoll_create1 (fromFlags flags))
       ||> toErrorCodePure (Handle . fromIntegral)
