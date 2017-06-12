@@ -5,39 +5,37 @@ programming. Fundamentally it is an experiment into providing an integrated
 interface leveraging Haskell features (type-safety, STM, etc.) for the whole
 system: input, display, sound, network, etc.
 
-It is based directly and only on the Linux kernel:
-
-* it doesn't contain any kernel level code (device driver, etc.)
-* it doesn't rely on usual interfaces (e.g., libdrm, libinput, X11, wayland,
-  etc.) to communicate with the kernel
-
-Note that it still depends on GHC's RTS dependencies (libc, etc.).
-
-Some modules are quite orthogonal to the aim of the project and can be used
-independently. E.g.,
-
-* the [file formats](src/lib/Haskus/Format) modules
-* an [x86-64 disassembler](src/lib/Haskus/Arch/X86_64/Disassembler.hs)
-
-The low-level Linux interface is in
-[Haskus.Arch.Linux](src/lib/Haskus/Arch/Linux) and the fluctuating higher-level
-interface on top of it is in [Haskus.System](src/lib/Haskus/System).
-
 Website: http://www.haskus.org/system
 
-# How to build and install
+Documentation: http://doc.haskus.org/manual/ 
 
-Use stack commands to build Haskus system:
+# Building systems
+
+The ``haskus-system-build`` tool (in the package of the same name) is the
+preferred way to build systems.
+
+Install it with ``stack install haskus-system-build``:
+
+Then in a **new directory** do:
+```bash
+$ haskus-system-build init       # download system template
+$ haskus-system-build test       # download, build and test system in QEMU
+```
+
+Stack installs programs into `~/.local/bin`, so you have to ensure that it is in
+your path.
+
+You may have to install missing programs (cpio, lzip, qemu, make, gcc, binutils,
+gzip, etc.) for these commands to succeed.
+
+# Hacking on haskus-system
+
+Use stack commands to build the ``haskus-system`` package:
 
 Build:
 ```bash
 $ stack setup
 $ stack build
-```
-
-Install:
-```bash
-$ stack install
 ```
 
 Tests:
@@ -50,23 +48,9 @@ Benchmarks:
 $ stack bench
 ```
 
-# Building systems
-
-Use ``haskus-system-build`` tool to build systems (Stack installs programs into
-`~/.local/bin`, so you have to ensure that it is in your path).
-
-In a **new directory** do:
-```bash
-$ haskus-system-build init
-$ haskus-system-build test
-```
-
-You may have to install missing programs (cpio, lzip, qemu, make, gcc, binutils,
-gzip, etc.) for these commands to succeed.
-
 # Other programs
 
-Several other utility programs are bundled with the framework:
+Several other utility or test programs are bundled with the framework:
 
 #### haskus-elf
 
