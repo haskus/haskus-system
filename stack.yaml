@@ -1,11 +1,11 @@
-resolver: lts-8.15
+resolver: lts-8.18
 packages:
 - '.'
 
 extra-deps:
 - diagrams-1.4
 - haskus-binary-0.6.0.0
-- haskus-utils-0.6.0.0
+- haskus-utils-0.7.0.0
 
 flags:
    diagrams:
@@ -23,7 +23,6 @@ build:
       haddock-args:
          - "--optghc=-freduction-depth=0"
          - "--odir=./doc/haddock"
-
 
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
