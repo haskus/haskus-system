@@ -117,6 +117,8 @@ library
     Haskus.System.FileSystem
     Haskus.System.Event
     Haskus.System.Network
+    Haskus.System.PCI
+    Haskus.System.PCI.MakeTable
 
     Haskus.Format.CPIO
     Haskus.Format.Text
