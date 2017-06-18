@@ -17,9 +17,9 @@ module Haskus.System.FileSystem
 where
 
 
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.FileSystem
-import Haskus.Arch.Linux.FileSystem.ReadWrite
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.FileSystem
+import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable

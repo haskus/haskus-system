@@ -6,10 +6,10 @@ module Haskus.System.Network
 where
 
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Arch.Linux.KernelEvent
-import Haskus.Arch.Linux.Network
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.Network.SendReceive
+import Haskus.System.Linux.KernelEvent
+import Haskus.System.Linux.Network
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.Network.SendReceive
 import Haskus.Utils.Flow
 import Haskus.System.Sys
 

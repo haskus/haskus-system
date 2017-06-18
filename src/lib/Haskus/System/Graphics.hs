@@ -35,20 +35,20 @@ import Haskus.Utils.Flow
 import Haskus.Utils.List (isPrefixOf)
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.FileSystem.ReadWrite
-import Haskus.Arch.Linux.Memory
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.FileSystem.ReadWrite
+import Haskus.System.Linux.Memory
 
-import Haskus.Arch.Linux.Internals.Graphics
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.Capability
-import Haskus.Arch.Linux.Graphics.GenericBuffer
-import Haskus.Arch.Linux.Graphics.Helper
-import Haskus.Arch.Linux.Graphics.Mode
-import Haskus.Arch.Linux.Graphics.IDs
-import Haskus.Arch.Linux.Graphics.FrameBuffer
-import Haskus.Arch.Linux.Graphics.PixelFormat
-import Haskus.Arch.Linux.Graphics.Event as Graphics
+import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.Capability
+import Haskus.System.Linux.Graphics.GenericBuffer
+import Haskus.System.Linux.Graphics.Helper
+import Haskus.System.Linux.Graphics.Mode
+import Haskus.System.Linux.Graphics.IDs
+import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.Event as Graphics
 
 import System.FilePath (takeBaseName)
 

@@ -27,9 +27,9 @@ import Haskus.System.Sys
 import Haskus.System.Event
 import Haskus.System.Devices
 import Haskus.Utils.Flow
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.Internals.Input as Input
-import Haskus.Arch.Linux.Time (TimeVal)
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.Internals.Input as Input
+import Haskus.System.Linux.Time (TimeVal)
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
 import qualified Haskus.Format.Text as Text

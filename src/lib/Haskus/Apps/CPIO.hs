@@ -9,7 +9,7 @@ import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Put
 import Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
-import Haskus.Arch.Linux.FileSystem
+import Haskus.System.Linux.FileSystem
 import Haskus.Utils.Flow
 
 import System.FilePath

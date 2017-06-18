@@ -53,12 +53,12 @@ import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
 import Haskus.Format.Text (Text)
 import qualified Haskus.Format.Text as Text
-import Haskus.Arch.Linux.Error
-import Haskus.Arch.Linux.Devices
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.FileSystem
-import Haskus.Arch.Linux.FileSystem.Directory
-import Haskus.Arch.Linux.KernelEvent
+import Haskus.System.Linux.Error
+import Haskus.System.Linux.Devices
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.FileSystem
+import Haskus.System.Linux.FileSystem.Directory
+import Haskus.System.Linux.KernelEvent
 import Haskus.System.Sys
 import Haskus.System.FileSystem
 import Haskus.System.Process

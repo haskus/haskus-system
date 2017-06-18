@@ -21,13 +21,13 @@ module Haskus.System.System
 where
 
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Arch.Linux.ErrorCode
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.FileSystem
-import Haskus.Arch.Linux.FileSystem.Directory
-import Haskus.Arch.Linux.FileSystem.ReadWrite
-import Haskus.Arch.Linux.FileSystem.Mount
-import Haskus.Arch.Linux.Process.MemoryMap
+import Haskus.System.Linux.ErrorCode
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.FileSystem
+import Haskus.System.Linux.FileSystem.Directory
+import Haskus.System.Linux.FileSystem.ReadWrite
+import Haskus.System.Linux.FileSystem.Mount
+import Haskus.System.Linux.Process.MemoryMap
 
 import Haskus.System.Sys
 import Haskus.System.FileSystem

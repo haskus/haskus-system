@@ -23,10 +23,10 @@ where
 
 import Haskus.System.Sys
 import Haskus.System.Process
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.Error
-import Haskus.Arch.Linux.Terminal (stdin,stdout)
-import Haskus.Arch.Linux.FileSystem.ReadWrite hiding (writeBuffer)
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.Error
+import Haskus.System.Linux.Terminal (stdin,stdout)
+import Haskus.System.Linux.FileSystem.ReadWrite hiding (writeBuffer)
 import Haskus.Utils.STM.TList as TList
 import Haskus.Utils.STM.Future
 import Haskus.Utils.Memory

@@ -11,8 +11,8 @@ where
 
 import Prelude hiding (init,tail)
 
-import Haskus.Arch.Linux.Handle
-import Haskus.Arch.Linux.FileSystem.ReadWrite
+import Haskus.System.Linux.Handle
+import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Utils.Flow
 import Haskus.Utils.STM
 import Haskus.System.Sys

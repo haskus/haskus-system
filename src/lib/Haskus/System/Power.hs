@@ -4,4 +4,4 @@ module Haskus.System.Power
    )
 where
 
-import Haskus.Arch.Linux.Power as X
+import Haskus.System.Linux.Power as X

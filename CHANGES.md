@@ -79,12 +79,12 @@
     * basic CPUID interface
 * Haskus.Arch.X86_64.Linux
     * Low-level Linux syscall wrappers on X86-64
-* Haskus.Arch.Linux.Internals
+* Haskus.System.Linux.Internals
     * Low-level interface to Linux's subsystems:
         * DRM/KMS
         * Alsa
         * Input
-* Haskus.Arch.Linux
+* Haskus.System.Linux
     * interface with Linux common syscalls and subsystems
 * Haskus.System
     * High-level more generic system interface used by applications

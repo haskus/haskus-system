@@ -23,7 +23,7 @@ module Haskus.Arch.X86_64.Linux.Syscall
    )
 where
 
-import Haskus.Arch.Linux.Internals.Arg
+import Haskus.System.Linux.Internals.Arg
 import Haskus.Format.Binary.Word
 import GHC.Base
 import GHC.Int

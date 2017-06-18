@@ -6,7 +6,7 @@ where
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 
-import Haskus.Arch.Linux.ErrorCode
+import Haskus.System.Linux.ErrorCode
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
 

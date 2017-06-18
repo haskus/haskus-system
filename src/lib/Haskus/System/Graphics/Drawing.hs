@@ -28,8 +28,8 @@ import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Buffer as B
 import Haskus.System.Graphics
-import Haskus.Arch.Linux.Graphics.FrameBuffer
-import Haskus.Arch.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.PixelFormat
 
 -- | Blanding method
 data BlendOp

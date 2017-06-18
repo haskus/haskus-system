@@ -11,7 +11,7 @@ module Haskus.System.Process
 where
 
 import Haskus.System.Sys
-import Haskus.Arch.Linux.Handle
+import Haskus.System.Linux.Handle
 import Haskus.Utils.Flow
 
 import System.Posix.Types (Fd(..))
