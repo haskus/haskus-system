@@ -245,7 +245,7 @@ initDeviceManager sysfs devfs = do
    -- After the traversal, kernel events potentially received during the
    -- traversal are used to create/remove nodes. We have to be liberal in their
    -- interpretation: e.g., a remove event could be received for a directory we
-   -- haven't be able to read, etc.
+   -- haven't been able to read, etc.
    let
 
       withDevDir hdl path f = withOpenAt hdl path flags BitSet.empty f
