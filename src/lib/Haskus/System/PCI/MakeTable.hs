@@ -1,11 +1,8 @@
 module Haskus.System.PCI.MakeTable
    ( pcis
-   , Vendor (..)
-   , Device (..)
    , fromList
    )
 where
-
 
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.Bits
@@ -20,32 +17,31 @@ import Data.IntMap.Strict
 
 pcis :: QuasiQuoter
 pcis = quoteFile $ QuasiQuoter
-   { quoteDec  = undefined
-   , quoteExp  = makeTable
+   { quoteDec  = makeTable
+   , quoteExp  = undefined
    , quotePat  = undefined
    , quoteType = undefined
    }
 
-makeTable :: String -> Q Exp
+makeTable :: String -> Q [Dec]
 makeTable str =
    case runParser parseLines "PCI vendor/device identifier table" str of
       Right e   -> return e
       Left err  -> fail (show err)
 
-data Vendor = Vendor
-   { vendorName    :: String
-   , vendorDevices :: IntMap Device
-   }
-
-data Device = Device
-   { deviceName       :: String
-   , deviceSubDevices :: IntMap String
-   }
-
-
 -- | Parse PCI ids
-parseLines :: Parser Exp
-parseLines = vendors
+parseLines :: Parser [Dec]
+parseLines = do
+      vs <- vendors
+      cs <- classes
+      return $
+         [ SigD (mkName "pciDevices") (ConT (mkName "IntMap")
+                                        `AppT` ConT (mkName "Vendor"))
+         , ValD (VarP (mkName "pciDevices")) (NormalB vs) []
+         , SigD (mkName "pciClasses") (ConT (mkName "IntMap")
+                                        `AppT` ConT (mkName "Class"))
+         , ValD (VarP (mkName "pciClasses")) (NormalB cs) []
+         ]
    where
 
       end        = void eol <|> eof
@@ -55,8 +51,9 @@ parseLines = vendors
          return $ VarE (mkName "fromList")
                      `AppE` ListE vs
          
-      vendor = do
+      vendor = try $ do
          skipUseless
+         notFollowedBy (char 'C')
          vid <- hexadecimal
          someSpace
          vname <- anyChar `manyTill` end
@@ -97,6 +94,53 @@ parseLines = vendors
          return $ TupE
             [ LitE $ IntegerL $ (vid `shiftL` 16) .|. did
             , LitE $ StringL $ dname
+            ]
+
+      classes = do
+         vs <- many cls
+         return $ VarE (mkName "fromList")
+                     `AppE` ListE vs
+      cls = do
+         skipUseless
+         void (char 'C')
+         someSpace
+         cid <- hexadecimal
+         someSpace
+         cname <- anyChar `manyTill` end
+         devs  <- many subclass
+         skipUseless
+         return $ TupE
+            [ LitE $ IntegerL cid
+            , ConE (mkName "Class")
+               `AppE` (LitE $ StringL $ cname)
+               `AppE` (VarE (mkName "fromList")
+                  `AppE` ListE devs)
+            ]
+      subclass = try $ do
+         skipUseless
+         void (char '\t')
+         cid <- hexadecimal
+         someSpace
+         cname <- anyChar `manyTill` end
+         subs  <- many progInterface
+         return $ TupE
+            [ LitE $ IntegerL cid
+            , ConE (mkName "SubClass")
+               `AppE` (LitE $ StringL $ cname)
+               `AppE` (VarE (mkName "fromList")
+                  `AppE` ListE subs)
+            ]
+
+      progInterface = try $ do
+         skipUseless
+         void (char '\t')
+         void (char '\t')
+         cid <- hexadecimal
+         someSpace
+         cname <- anyChar `manyTill` end
+         return $ TupE
+            [ LitE $ IntegerL $ cid
+            , LitE $ StringL $ cname
             ]
 
       -- 'space' from MegaParsec also consider line-breaks as spaces...

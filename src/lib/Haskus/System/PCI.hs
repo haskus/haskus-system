@@ -4,9 +4,14 @@
 -- | PCI devices
 module Haskus.System.PCI
    ( pciDevices
+   , pciClasses
    , lookupVendor
    , lookupDevice
    , lookupSubDevice
+   , Vendor (..)
+   , Device (..)
+   , Class (..)
+   , SubClass (..)
    )
 where
 
@@ -14,11 +19,11 @@ import Prelude hiding (lookup)
 import Data.IntMap.Strict
 
 import Haskus.System.PCI.MakeTable
+import Haskus.System.PCI.Types
 import Haskus.Format.Binary.Bits
 
 -- | List of PCI vendor/device names
-pciDevices :: IntMap Vendor
-pciDevices = [pcis|src/lib/Haskus/System/PCI/pci.ids|]
+[pcis|src/lib/Haskus/System/PCI/pci.ids|]
 
 -- | Lookup vendor by ID
 lookupVendor :: Int -> Maybe Vendor

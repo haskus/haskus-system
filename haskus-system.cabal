@@ -119,6 +119,7 @@ library
     Haskus.System.Network
     Haskus.System.PCI
     Haskus.System.PCI.MakeTable
+    Haskus.System.PCI.Types
 
     Haskus.Format.CPIO
     Haskus.Format.Text
