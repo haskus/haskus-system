@@ -165,17 +165,11 @@ library
       ,  haskus-utils              >= 0.6
       ,  haskus-binary             >= 0.6
       ,  containers                >= 0.5
-      ,  list-t                    >= 0.4
       ,  stm                       >= 2.4
-      ,  stm-containers            >= 0.2
       ,  cereal                    >= 0.5
       ,  bytestring                >= 0.10
-      ,  system-fileio             >= 0.3
-      ,  system-filepath           >= 0.4
-      ,  pureMD5                   >= 2.1
       ,  text                      >= 1.2
       ,  filepath                  >= 1.4
-      ,  either                    >= 4.4
       ,  vector                    >= 0.11
       ,  directory                 >= 1.2
       ,  megaparsec                >= 5.0
@@ -185,7 +179,6 @@ library
       ,  mtl                       >= 2.2
       ,  template-haskell          >= 2.10
       ,  text-format               >= 0.3
-      ,  diagrams                  >= 1.4
       ,  diagrams-lib              >= 1.4
       ,  diagrams-core             >= 1.4
       ,  diagrams-rasterific       >= 1.4
@@ -309,7 +302,6 @@ executable haskus-udev
          base
       ,  haskus-system
       ,  haskus-utils
-      ,  either
       ,  transformers
 
 executable haskus-disassembler
