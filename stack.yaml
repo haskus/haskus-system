@@ -1,4 +1,4 @@
-resolver: lts-8.15
+resolver: lts-8.18
 
 flags: {}
 
@@ -7,7 +7,7 @@ packages:
 - location:
     git: git@github.com:haskus/haskus-system
     #git: /home/hsyl20/travail/code/haskus-system
-    commit: f611e5936f646db46a37cb2ad6ab57b8b373152b
+    commit: a29623c3366466bc86b27767be35b841d2f6cbca
   extra-dep: true
 
 ghc-options:
@@ -15,6 +15,4 @@ ghc-options:
 
 extra-deps:
 - haskus-binary-0.6.0.0
-- haskus-utils-0.6.0.0
-- JuicyPixels-3.2.7.1
-- pqueue-1.3.2
+- haskus-utils-0.7.0.0
