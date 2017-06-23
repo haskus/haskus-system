@@ -12,6 +12,7 @@
    * (Graphics) Detect and report the flipped framebuffer
    * (Sound) Fix field sizes
    * (Syscalls) Replace the type-level syscall table with a TH generated table
+   * (PCI) Add PCI device identifier table
 * Utils
    * New flow operators (>.~!!> and all the MaybeCatchable variants)
    * Preliminary continuation stuff
