@@ -7,18 +7,18 @@
 
 import Haskus.System
 
-import Haskus.Arch.Linux.FileSystem.Directory
-import Haskus.Arch.Linux.FileSystem
+import Haskus.System.Linux.FileSystem.Directory
+import Haskus.System.Linux.FileSystem
 import qualified Haskus.Format.Binary.Buffer as B
 import Haskus.Format.Binary.Endianness
 import qualified Haskus.Format.Binary.BitSet as BitSet
 
-import Haskus.Arch.Linux.Graphics.Capability
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.FrameBuffer
-import Haskus.Arch.Linux.Graphics.Mode
-import Haskus.Arch.Linux.Graphics.PixelFormat
-import Haskus.Arch.Linux.Graphics.Helper
+import Haskus.System.Linux.Graphics.Capability
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.Mode
+import Haskus.System.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Graphics.Drawing
 import qualified Haskus.System.Graphics.Diagrams as D
 import Haskus.System.Graphics.Diagrams ((#),fc,lw,rasterizeDiagram,mkWidth,none)

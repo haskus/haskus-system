@@ -8,14 +8,14 @@ import Clock.Render
 import Haskus.Format.Binary.Endianness
 import qualified Haskus.Format.Binary.BitSet as BitSet
 
-import Haskus.Arch.Linux.Time
-import Haskus.Arch.Linux.Graphics.Capability
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.FrameBuffer
-import Haskus.Arch.Linux.Graphics.Mode
-import Haskus.Arch.Linux.Graphics.PixelFormat
-import Haskus.Arch.Linux.Graphics.Helper
---import Haskus.Arch.Linux.Internals.Graphics
+import Haskus.System.Linux.Time
+import Haskus.System.Linux.Graphics.Capability
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.Mode
+import Haskus.System.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.Helper
+--import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (rasterizeDiagram,mkWidth)
 import Data.Maybe (fromJust)

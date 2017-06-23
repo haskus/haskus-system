@@ -1,6 +1,6 @@
 import Haskus.System
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.Config
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.Config
 import qualified Haskus.Utils.Map as Map
 
 

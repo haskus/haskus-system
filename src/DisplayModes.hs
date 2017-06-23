@@ -1,9 +1,9 @@
 import Haskus.System
 
-import Haskus.Arch.Linux.Graphics.Mode
-import Haskus.Arch.Linux.Graphics.Helper
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.Mode
+import Haskus.System.Linux.Graphics.Helper
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.PixelFormat
 import qualified Haskus.Utils.Map as Map
 
 main :: IO ()

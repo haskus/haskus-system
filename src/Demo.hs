@@ -10,11 +10,11 @@ import Haskus.System
 
 import qualified Haskus.Format.Binary.Buffer as B
 
-import Haskus.Arch.Linux.Info
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.Mode
-import Haskus.Arch.Linux.Graphics.Property
-import Haskus.Arch.Linux.Graphics.Config
+import Haskus.System.Linux.Info
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.Mode
+import Haskus.System.Linux.Graphics.Property
+import Haskus.System.Linux.Graphics.Config
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed

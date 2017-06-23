@@ -1,5 +1,5 @@
 import Haskus.System
-import Haskus.Arch.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.State
 
 main :: IO ()
 main = runSys <| do

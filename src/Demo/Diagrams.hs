@@ -10,7 +10,7 @@ where
 import Haskus.System
 import Haskus.System.Graphics.Diagrams
 import Haskus.Format.String
-import Haskus.Arch.Linux.Info
+import Haskus.System.Linux.Info
 
 -- | Top-bar
 topBarDiag :: Float -> Float -> VDiagram

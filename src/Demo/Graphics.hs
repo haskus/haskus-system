@@ -7,9 +7,9 @@ module Demo.Graphics
 where
 
 import Haskus.System.Graphics
-import Haskus.Arch.Linux.Graphics.State
-import Haskus.Arch.Linux.Graphics.IDs
-import Haskus.Arch.Linux.Handle
+import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.IDs
+import Haskus.System.Linux.Handle
 import Haskus.System.Graphics.Diagrams
 import Haskus.Utils.Flow
 import Haskus.Utils.List

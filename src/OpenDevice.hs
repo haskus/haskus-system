@@ -3,7 +3,7 @@
 import Haskus.System
 import Haskus.Format.Binary.Word
 
-import qualified Haskus.Arch.Linux.Terminal as Raw
+import qualified Haskus.System.Linux.Terminal as Raw
 
 main :: IO ()
 main = runSys' <| do

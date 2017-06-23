@@ -3,7 +3,7 @@
 import Haskus.System
 import qualified Haskus.Format.Text as Text
 
-import qualified Haskus.Arch.Linux.Internals.Sound as Snd
+import qualified Haskus.System.Linux.Internals.Sound as Snd
 
 main :: IO ()
 main = runSys' <| do
