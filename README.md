@@ -14,19 +14,27 @@ Documentation: http://doc.haskus.org/manual/
 The ``haskus-system-build`` tool (in the package of the same name) is the
 preferred way to build systems.
 
-Install it with ``stack install haskus-system-build``:
+Install it with:
+
+```bash
+$ git clone https://github.com/haskus/haskus-system-build.git
+$ cd haskus-system-build
+$ stack install --install-ghc
+```
+
+It will install the program into ~/.local/bin. Be sure to add this path to your
+$PATH environment variable.
 
 Then in a **new directory** do:
 ```bash
-$ haskus-system-build init       # download system template
+$ haskus-system-build init       # download default system template
 $ haskus-system-build test       # download, build and test system in QEMU
 ```
 
-Stack installs programs into `~/.local/bin`, so you have to ensure that it is in
-your path.
-
 You may have to install missing programs (cpio, lzip, qemu, make, gcc, binutils,
-gzip, etc.) for these commands to succeed.
+gzip, etc.) for these commands to succeed. See the
+[documentation](http://doc.haskus.org/manual/system/volume1/automatic_building.html).
+
 
 # Hacking on haskus-system
 
