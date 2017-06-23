@@ -11,5 +11,5 @@ like this:
 
    haskus-system-build test --init Clock
 
-Please read the [documentation](http://haskus.org/system/manual) to know how to
+Please read the `documentation <http://haskus.org/system/manual>`_ to know how to
 install and use the tool.
