@@ -1,4 +1,30 @@
-## Version 0.7 (next)
+## Version 0.8 (next)
+
+## Version 0.7 (2017-06-23)
+
+* System
+   * (Terminal) Use writeMany syscall to reduce the number of write syscalls
+   * (Graphics) Better support for Planes
+   * (Graphics) Add a configuration monad (to support atomic configuration in
+     the future)
+   * (Graphics) Add page-flip target support
+   * (Graphics) Add non-atomic property support
+   * (Graphics) Detect and report the flipped framebuffer
+   * (Sound) Fix field sizes
+   * (Syscalls) Replace the type-level syscall table with a TH generated table
+* Utils
+   * New flow operators (>.~!!> and all the MaybeCatchable variants)
+   * Preliminary continuation stuff
+* Various
+   * Package renamed from ViperVM to haskus-system
+   * Package split into haskus-utils, haskus-binary and haskus-system
+   * Switch to GHC 8.0
+   * Most uses of Proxy have been replaced with type applications
+   * Tests now use Tasty
+   * Removed useless dependencies
+   * Provide the haskus-system-build tool (in a separate package)
+   * Add Travis CI support
+
 
 ## Version 0.6 (2016-11-13)
 
