@@ -1,10 +1,14 @@
 resolver: lts-8.18
 packages:
 - '.'
+- location:
+    #git: git@github.com:haskus/haskus-system
+    git: /home/hsyl20/travail/code/haskus-binary
+    commit: 3695259fb5f3a8da2938e715b6294c6951f10df2
+  extra-dep: true
 
 extra-deps:
 - diagrams-1.4
-- haskus-binary-0.6.0.0
 - haskus-utils-0.7.0.0
 
 flags:
@@ -16,7 +20,7 @@ extra-package-dbs: []
 ghc-options:
    "haskus-system": -freduction-depth=0 -fobject-code
    # -fobject-code       -- GHCI needs it because of the foreign primops
-   # -freduction-depth=0 -- used to allow compilation of large type-level Syscalls table
+   # -freduction-depth=0 -- used to allow compilation of some Variants
 
 build:
    haddock-arguments:
