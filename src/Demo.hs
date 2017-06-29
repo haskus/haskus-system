@@ -21,6 +21,7 @@ import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed
 import Haskus.Utils.STM
 import Haskus.Utils.Monad
+import Haskus.Format.String
 import qualified Haskus.Utils.Map as Map
 
 import Data.Char
@@ -69,10 +70,19 @@ main = runSys' <| do
    
    let blackTexture = Just . uniformTexture $ PixelRGBA8 0 0 0 255
        redTexture   = Just . uniformTexture $ PixelRGBA8 255 0 0 255
+       gradDef      = [ (0  , PixelRGBA8 0 0x86 0xc1 255)
+                      , (0.5, PixelRGBA8 0xff 0xf4 0xc1 255)
+                      , (1  , PixelRGBA8 0xFF 0x53 0x73 255)
+                      ]
+       rainbowTexture   = Just (linearGradientTexture gradDef (V2 40 40) (V2 130 130))
 
    term <- defaultTerminal
    sys  <- defaultSystemInit
    let dm = systemDeviceManager sys
+
+   info <- systemInfo
+      >.-.> Just
+      >..~.> const (return Nothing)
 
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
@@ -135,23 +145,65 @@ main = runSys' <| do
    -------------------------------------------------
    -- terminal management
    -------------------------------------------------
-   termContents <- newTVarIO [[TextRange fontBold (PointSize 12) "Welcome to the terminal!" redTexture]]
+   termContents <- newTVarIO [[TextRange fontBold (PointSize 12) "Enter commands in the terminal:" redTexture]]
    termStr <- newTVarIO ""
 
    let
       termAppend s = do
          modifyTVar termStr (++ s)
          needRedraw
-      termNewLine  = do
+      termModifyContents f = do
+         modifyTVar termContents f
+         needRedraw
+      termModifyCurrent f = do
+         modifyTVar termStr f
+         needRedraw
+      termAppendStyled s = termModifyContents $ \case
+            []     -> [[s]]
+            (x:xs) -> (x ++ [s]):xs
+      termNewLine = termModifyContents ([]:)
+      termPrompt = termAppendStyled (TextRange fontBoldItalic (PointSize 12) "$> " blackTexture)
+      termBackErase = termModifyCurrent $ \case
+            "" -> ""
+            s  -> init s
+         
+      termEnter  = do
          s <- readTVar termStr
-         modifyTVar termContents ([TextRange fontNormal (PointSize 12) s blackTexture]:)
+         termAppendStyled (TextRange fontNormal (PointSize 12) s blackTexture)
+         termNewLine
+         case s of
+            "exit" -> do
+               termAppendStyled (TextRange fontBoldItalic (PointSize 12) "Exiting..." blackTexture)
+               termNewLine
+               mustQuit
+            "help" -> do
+               termAppendStyled (TextRange fontBoldItalic (PointSize 16) "You are on your own for now..." rainbowTexture)
+               termNewLine
+            "uname" -> do
+               
+               let res = case info of
+                     Just info' -> fromCStringBuffer (systemName info') ++ " " 
+                           ++ fromCStringBuffer (systemRelease info')
+                           ++ " (" ++ fromCStringBuffer (systemMachine info') ++ ") - "
+                           ++ fromCStringBuffer (systemVersion info')
+                     Nothing -> "Information unavailable"
+               termAppendStyled (TextRange fontItalic (PointSize 12) res blackTexture)
+               termNewLine
+            _       -> do
+               termAppendStyled (TextRange fontItalic (PointSize 12) "Unknown command" redTexture)
+               termNewLine
+         termPrompt
          writeTVar termStr ""
          needRedraw
       termGetContents = do
          cs <- readTVar termContents
          c  <- readTVar termStr
          let c' = [TextRange fontNormal (PointSize 12) c blackTexture]
-         return (c':cs)
+         return $ case cs of
+            []     -> [c']
+            (x:xs) -> (x++c'):xs
+
+   atomically (termNewLine >> termPrompt)
    -------------------------------------------------
 
          
@@ -192,7 +244,7 @@ main = runSys' <| do
          BackSlash -> "\\"
          Comma     -> ","
          Dot       -> "."
-         k         -> show k
+         k         -> fmap toLower (show k)
 
    writeStrLn term "Loading input devices..."
    inputs <- loadInputDevices dm
@@ -225,8 +277,9 @@ main = runSys' <| do
                         _    -> return ()
                   PageTerminal -> do
                      case x of
-                        Enter -> termNewLine
-                        _     -> termAppend (charMapFr x)
+                        BackSpace -> termBackErase
+                        Enter     -> termEnter
+                        _         -> termAppend (charMapFr x)
                   _        -> return ()
          _                              -> return ()
 
@@ -264,10 +317,6 @@ main = runSys' <| do
             enc    <- Map.lookup encId (graphicsEncoders state)
             ctrlId <- encoderControllerID enc
             Map.lookup ctrlId (graphicsControllers state)
-
-      info <- systemInfo
-         >.-.> Just
-         >..~.> const (return Nothing)
 
       let
          bgColor  = 0x316594
@@ -351,30 +400,10 @@ main = runSys' <| do
 
                PageTerminal -> do
                   termLines <- atomically termGetContents
-                  let abcd = renderDrawing 1000 800 (PixelRGBA8 255 255 255 255)
+                  let abcd = renderDrawing 1000 700 (PixelRGBA8 255 255 255 255)
                               . withTexture (uniformTexture $ PixelRGBA8 0 0 0 255) $ do
-                                  printTextRanges (V2 20 40)
-                                    [ TextRange fontNormal (PointSize 12) "A simple text test! " blackTexture
-                                    , TextRange fontBold   (PointSize 12) "Bold text" redTexture
-                                    ]
-                                  printTextRanges (V2 20 60)
-                                    [ TextRange fontItalic     (PointSize 12) "Another simple text test " blackTexture
-                                    , TextRange fontBoldItalic (PointSize 12) "C'était comme ça Â\233 €" redTexture
-                                    ]
-                                  printTextAt fontNormal (PointSize 12) (V2 20 80)
-                                       ([chr i | i <- [1..100]])
-                                  printTextAt fontNormal (PointSize 12) (V2 20 100)
-                                       ([chr i | i <- [101..200]])
-                                  printTextAt fontNormal (PointSize 12) (V2 20 120)
-                                       ([chr i | i <- [201..255]])
-                                  printTextAt fontBold (PointSize 12) (V2 20 140)
-                                       ([chr i | i <- [1..100]])
-                                  printTextAt fontBold (PointSize 12) (V2 20 160)
-                                       ([chr i | i <- [101..200]])
-                                  printTextAt fontBold (PointSize 12) (V2 20 180)
-                                       ([chr i | i <- [201..255]])
                                   forM_ (reverse termLines `zip` [0..]) $ \(rs,i) ->
-                                    printTextRanges (V2 20 (20*i + 200)) rs
+                                    printTextRanges (V2 20 (20*i + 20)) rs
 
                   liftIO <| blendImage gfb abcd BlendAlpha (10,50) (fullImg abcd)
 
