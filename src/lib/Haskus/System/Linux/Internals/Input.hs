@@ -960,10 +960,10 @@ data Sound
 
 -- | Input event
 data Event = Event
-   { eventTime  :: !TimeVal
-   , eventType  :: !(EnumField Word16 EventType)
-   , eventCode  :: !Word16
-   , eventValue :: !Int32
+   { eventTime  :: {-# UNPACK #-} !TimeVal
+   , eventType  :: {-# UNPACK #-} !(EnumField Word16 EventType)
+   , eventCode  :: {-# UNPACK #-} !Word16
+   , eventValue :: {-# UNPACK #-} !Int32
    } deriving (Show,Eq,Generic,Storable)
 
 -- | Protocol version
@@ -976,10 +976,10 @@ protocolVersion = 0x010001
 --
 -- `struct input_id`
 data DeviceInfo = DeviceInfo
-   { infoBusType :: !(EnumField Word16 BusType)
-   , infoVendor  :: !Word16
-   , infoProduct :: !Word16
-   , infoVersion :: !Word16
+   { infoBusType :: {-# UNPACK #-} !(EnumField Word16 BusType)
+   , infoVendor  :: {-# UNPACK #-} !Word16
+   , infoProduct :: {-# UNPACK #-} !Word16
+   , infoVersion :: {-# UNPACK #-} !Word16
    } deriving (Show,Eq,Generic,Storable)
 
 -- | Absolute info
@@ -1003,12 +1003,12 @@ data DeviceInfo = DeviceInfo
 -- ABS_RZ) is reported in units per radian.
 --
 data AbsoluteInfo = AbsoluteInfo
-   { absValue      :: !Int32   -- ^ Latest reported value for the axis
-   , absMinimum    :: !Int32   -- ^ Minimum value for the axis
-   , absMaximum    :: !Int32   -- ^ Maximum value for the axis
-   , absFuzz       :: !Int32   -- ^ Fuzz value used to filter noise from the event stream
-   , absFlat       :: !Int32   -- ^ Values that are within this value will be discarded and reported as 0 instead
-   , absResolution :: !Int32   -- ^ Resolution for the values reported for the axis
+   { absValue      :: {-# UNPACK #-} !Int32   -- ^ Latest reported value for the axis
+   , absMinimum    :: {-# UNPACK #-} !Int32   -- ^ Minimum value for the axis
+   , absMaximum    :: {-# UNPACK #-} !Int32   -- ^ Maximum value for the axis
+   , absFuzz       :: {-# UNPACK #-} !Int32   -- ^ Fuzz value used to filter noise from the event stream
+   , absFlat       :: {-# UNPACK #-} !Int32   -- ^ Values that are within this value will be discarded and reported as 0 instead
+   , absResolution :: {-# UNPACK #-} !Int32   -- ^ Resolution for the values reported for the axis
    } deriving (Show, Eq, Generic, Storable)
 
 -- | Query or modify keymap data
@@ -1028,11 +1028,11 @@ data AbsoluteInfo = AbsoluteInfo
 -- EVIOCGKEYCODE will also return scancode or index (depending on which element
 -- was used to perform lookup).
 data KeymapEntry = KeymapEntry
-   { keymapEntryFlags    :: !(BitSet Word8 KeymapFlag) -- ^ Indicate how kernel should handle the request
-   , keymapEntryLength   :: !Word8                     -- ^ Length of the scancode
-   , keymapEntryIndex    :: !Word16                    -- ^ Index in the keymap (may be used instead of the scancode)
-   , keymapEntryKeyCode  :: !Word32                    -- ^ Key code assigned to this scancode
-   , keymapEntryScanCode :: !(Vector 32 Word8)         -- ^ Scan in machine-endian form (up to 32 bytes)
+   { keymapEntryFlags    :: {-# UNPACK #-} !(BitSet Word8 KeymapFlag) -- ^ Indicate how kernel should handle the request
+   , keymapEntryLength   :: {-# UNPACK #-} !Word8                     -- ^ Length of the scancode
+   , keymapEntryIndex    :: {-# UNPACK #-} !Word16                    -- ^ Index in the keymap (may be used instead of the scancode)
+   , keymapEntryKeyCode  :: {-# UNPACK #-} !Word32                    -- ^ Key code assigned to this scancode
+   , keymapEntryScanCode :: {-# UNPACK #-} !(Vector 32 Word8)         -- ^ Scan in machine-endian form (up to 32 bytes)
    } deriving (Show,Generic,Storable)
 
 
@@ -1042,9 +1042,9 @@ data KeymapFlag
 
 -- | Mask of events that are supported by the device
 data EventMask = EventMask
-   { maskType      :: !Word32
-   , maskCodesSize :: !Word32
-   , maskCodesPtr  :: !Word64
+   { maskType      :: {-# UNPACK #-} !Word32
+   , maskCodesSize :: {-# UNPACK #-} !Word32
+   , maskCodesPtr  :: {-# UNPACK #-} !Word64
    }
    deriving (Show,Eq,Generic,Storable)
 
@@ -1064,8 +1064,8 @@ getDeviceInfo = ioctlRead 0x45 0x02
 --
 -- We use a structure instead of Vector 2 Word
 data RepeatSettings = RepeatSettings
-   { repeatDelay  :: !Word
-   , repeatPeriod :: !Word
+   { repeatDelay  :: {-# UNPACK #-} !Word
+   , repeatPeriod :: {-# UNPACK #-} !Word
    }
    deriving (Show,Eq,Generic,Storable)
 
@@ -1367,14 +1367,14 @@ data ForceFeedbackStatus
 
 -- | Defines scheduling of the force-feedback effect
 data ForceFeedbackReplay = ForceFeedbackReplay
-   { ffReplayLength :: !Word16 -- ^ Duration of the effect
-   , ffReplayDelay  :: !Word16 -- ^ Delay before effect should start playing
+   { ffReplayLength :: {-# UNPACK #-} !Word16 -- ^ Duration of the effect
+   , ffReplayDelay  :: {-# UNPACK #-} !Word16 -- ^ Delay before effect should start playing
    } deriving (Show,Eq,Generic,Storable)
 
 -- | Defines what triggers the force-feedback effect
 data ForceFeedbackTrigger = ForceFeedbackTrigger
-   { ffTriggerButton   :: !Word16 -- ^ number of the button triggering the effect
-   , ffTriggerInterval :: !Word16 -- ^ controls how soon the effect can be re-triggered
+   { ffTriggerButton   :: {-# UNPACK #-} !Word16 -- ^ number of the button triggering the effect
+   , ffTriggerInterval :: {-# UNPACK #-} !Word16 -- ^ controls how soon the effect can be re-triggered
    } deriving (Show,Eq,Generic,Storable)
 
 -- | Generic force-feedback effect envelope
@@ -1384,33 +1384,33 @@ data ForceFeedbackTrigger = ForceFeedbackTrigger
 -- value based on polarity of the default level of the effect.
 -- Valid range for the attack and fade levels is 0x0000 - 0x7fff
 data ForceFeedbackEnvelope = ForceFeedbackEnvelope
-   { ffEnvelopeAttackLength :: !Word16 -- ^ duration of the attack (ms)
-   , ffEnvelopeAttackLevel  :: !Word16 -- ^ level at the beginning of the attack
-   , ffEnvelopeFadeLength   :: !Word16 -- ^ duration of fade (ms)
-   , ffEnvelopeFadeLevel    :: !Word16 -- ^ level at the end of fade
+   { ffEnvelopeAttackLength :: {-# UNPACK #-} !Word16 -- ^ duration of the attack (ms)
+   , ffEnvelopeAttackLevel  :: {-# UNPACK #-} !Word16 -- ^ level at the beginning of the attack
+   , ffEnvelopeFadeLength   :: {-# UNPACK #-} !Word16 -- ^ duration of fade (ms)
+   , ffEnvelopeFadeLevel    :: {-# UNPACK #-} !Word16 -- ^ level at the end of fade
    } deriving (Eq,Show,Generic,Storable)
 
 -- | Defines parameters of a constant force-feedback effect
 data ForceFeedbackConstantEffect = ForceFeedbackConstantEffect
-   { ffConstantEffectLevel    :: !Int16                 -- ^ strength of the effect; may be negative
-   , ffConstantEffectEnvelope :: !ForceFeedbackEnvelope -- ^ envelope data
+   { ffConstantEffectLevel    :: {-# UNPACK #-} !Int16                 -- ^ strength of the effect; may be negative
+   , ffConstantEffectEnvelope :: {-# UNPACK #-} !ForceFeedbackEnvelope -- ^ envelope data
    } deriving (Eq,Show,Generic,Storable)
 
 -- | Defines parameters of a ramp force-feedback effect
 data ForceFeedbackRampEffect = ForceFeedbackRampEffect
-   { ffRampEffectStartLevel :: !Int16                 -- ^ beginning strength of the effect; may be negative
-   , ffRampEffectEndLevel   :: !Int16                 -- ^ final strength of the effect; may be negative
-   , ffRampEffectEnvelope   :: !ForceFeedbackEnvelope -- ^ envelope data
+   { ffRampEffectStartLevel :: {-# UNPACK #-} !Int16                 -- ^ beginning strength of the effect; may be negative
+   , ffRampEffectEndLevel   :: {-# UNPACK #-} !Int16                 -- ^ final strength of the effect; may be negative
+   , ffRampEffectEnvelope   :: {-# UNPACK #-} !ForceFeedbackEnvelope -- ^ envelope data
    } deriving (Eq,Show,Generic,Storable)
 
 -- | Defines a spring or friction force-feedback effect
 data ForceFeedbackConditionEffect = ForceFeedbackConditionEffect
-   { ffConditionEffectRightSaturation :: !Word16 -- ^ maximum level when joystick moved all way to the right
-   , ffConditionEffectLeftSaturation  :: !Word16 -- ^ same for the left side
-   , ffConditionEffectRightCoeff      :: !Int16  -- ^ controls how fast the force grows when the joystick moves to the right
-   , ffConditionEffectLeftCoeff       :: !Int16  -- ^ same for the left side
-   , ffConditionEffectDeadBand        :: !Word16 -- ^ size of the dead zone, where no force is produced
-   , ffConditionEffectCenter          :: !Int16  -- ^ position of the dead zone
+   { ffConditionEffectRightSaturation :: {-# UNPACK #-} !Word16 -- ^ maximum level when joystick moved all way to the right
+   , ffConditionEffectLeftSaturation  :: {-# UNPACK #-} !Word16 -- ^ same for the left side
+   , ffConditionEffectRightCoeff      :: {-# UNPACK #-} !Int16  -- ^ controls how fast the force grows when the joystick moves to the right
+   , ffConditionEffectLeftCoeff       :: {-# UNPACK #-} !Int16  -- ^ same for the left side
+   , ffConditionEffectDeadBand        :: {-# UNPACK #-} !Word16 -- ^ size of the dead zone, where no force is produced
+   , ffConditionEffectCenter          :: {-# UNPACK #-} !Int16  -- ^ position of the dead zone
    } deriving (Eq,Show,Generic,Storable)
 
 -- | Defines parameters of a periodic force-feedback effect
@@ -1421,14 +1421,14 @@ data ForceFeedbackConditionEffect = ForceFeedbackConditionEffect
 -- Note: the data pointed by custom_data is copied by the driver.
 -- You can therefore dispose of the memory after the upload/update.
 data ForceFeedbackPeriodicEffect = ForceFeedbackPeriodicEffect
-   { ffPeriodicEffectWaveform   :: !(EnumField Word16 ForceFeedbackPeriodicEffectType) -- ^ kind of the effect (wave)
-   , ffPeriodicEffectPeriod     :: !Word16                -- ^ period of the wave (ms)
-   , ffPeriodicEffectMagnitude  :: !Int16                 -- ^ peak value
-   , ffPeriodicEffectOffset     :: !Int16                 -- ^ mean value of the wave (roughly)
-   , ffPeriodicEffectPhase      :: !Word16                -- ^ 'horizontal' shift
-   , ffPeriodicEffectEnvelope   :: !ForceFeedbackEnvelope -- ^ envelope data
-   , ffPeriodicEffectCustomLen  :: !Word32                -- ^ number of samples (FF_CUSTOM only)
-   , ffPeriodicEffectCustomData :: !(Ptr Int16)           -- ^ buffer of samples (FF_CUSTOM only)
+   { ffPeriodicEffectWaveform   :: {-# UNPACK #-} !(EnumField Word16 ForceFeedbackPeriodicEffectType) -- ^ kind of the effect (wave)
+   , ffPeriodicEffectPeriod     :: {-# UNPACK #-} !Word16                -- ^ period of the wave (ms)
+   , ffPeriodicEffectMagnitude  :: {-# UNPACK #-} !Int16                 -- ^ peak value
+   , ffPeriodicEffectOffset     :: {-# UNPACK #-} !Int16                 -- ^ mean value of the wave (roughly)
+   , ffPeriodicEffectPhase      :: {-# UNPACK #-} !Word16                -- ^ 'horizontal' shift
+   , ffPeriodicEffectEnvelope   :: {-# UNPACK #-} !ForceFeedbackEnvelope -- ^ envelope data
+   , ffPeriodicEffectCustomLen  :: {-# UNPACK #-} !Word32                -- ^ number of samples (FF_CUSTOM only)
+   , ffPeriodicEffectCustomData :: {-# UNPACK #-} !(Ptr Int16)           -- ^ buffer of samples (FF_CUSTOM only)
    } deriving (Eq,Show,Generic,Storable)
 
 -- | Defines parameters of a periodic force-feedback effect
@@ -1436,8 +1436,8 @@ data ForceFeedbackPeriodicEffect = ForceFeedbackPeriodicEffect
 -- Some rumble pads have two motors of different weight. Strong_magnitude
 -- represents the magnitude of the vibration generated by the heavy one.
 data ForceFeedbackRumbleEffect = ForceFeedbackRumbleEffect
-   { ffRumbleEffectStrongMagnitude :: !Word16 -- ^ magnitude of the heavy motor
-   , ffRumbleEffectWeakMagnitude   :: !Word16 -- ^ magnitude of the light one
+   { ffRumbleEffectStrongMagnitude :: {-# UNPACK #-} !Word16 -- ^ magnitude of the heavy motor
+   , ffRumbleEffectWeakMagnitude   :: {-# UNPACK #-} !Word16 -- ^ magnitude of the light one
    } deriving (Eq,Show,Generic,Storable)
 
 
@@ -1465,12 +1465,13 @@ data ForceFeedbackRumbleEffect = ForceFeedbackRumbleEffect
 -- 180 deg -> 0x8000 (up)
 -- 270 deg -> 0xC000 (right)
 data ForceFeedbackEffect = ForceFeedbackEffect
-   { ffEffectType       :: !(EnumField Word16 ForceFeedbackEffectType)
-   , ffEffectID         :: !Int16
-   , ffEffectDirection  :: !(EnumField Word16 ForceFeedbackDirection)
-   , ffEffectTrigger    :: !ForceFeedbackTrigger
-   , ffEffectReplay     :: !ForceFeedbackReplay
-   , ffEffectParams     :: !(Union '[ ForceFeedbackConstantEffect
+   { ffEffectType       :: {-# UNPACK #-} !(EnumField Word16 ForceFeedbackEffectType)
+   , ffEffectID         :: {-# UNPACK #-} !Int16
+   , ffEffectDirection  :: {-# UNPACK #-} !(EnumField Word16 ForceFeedbackDirection)
+   , ffEffectTrigger    :: {-# UNPACK #-} !ForceFeedbackTrigger
+   , ffEffectReplay     :: {-# UNPACK #-} !ForceFeedbackReplay
+   , ffEffectParams     :: {-# UNPACK #-} !(Union 
+                                 '[ ForceFeedbackConstantEffect
                                   , ForceFeedbackRampEffect
                                   , ForceFeedbackPeriodicEffect
                                   , Vector 2 ForceFeedbackConditionEffect -- one for each axis

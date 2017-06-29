@@ -250,21 +250,21 @@ data DirtyMode
 
 -- | drm_mode_modeinfo
 data StructMode = StructMode
-   { miClock      :: !Word32
-   , miHDisplay   :: !Word16
-   , miHSyncStart :: !Word16
-   , miHSyncEnd   :: !Word16
-   , miHTotal     :: !Word16
-   , miHSkew      :: !Word16
-   , miVDisplay   :: !Word16
-   , miVSyncStart :: !Word16
-   , miVSyncEnd   :: !Word16
-   , miVTotal     :: !Word16
-   , miVScan      :: !Word16
-   , miVRefresh   :: !Word32
-   , miFlags      :: !ModeFlagsStereo3D
-   , miType       :: !ModeTypes
-   , miName       :: !(CStringBuffer 32)
+   { miClock      :: {-# UNPACK #-} !Word32
+   , miHDisplay   :: {-# UNPACK #-} !Word16
+   , miHSyncStart :: {-# UNPACK #-} !Word16
+   , miHSyncEnd   :: {-# UNPACK #-} !Word16
+   , miHTotal     :: {-# UNPACK #-} !Word16
+   , miHSkew      :: {-# UNPACK #-} !Word16
+   , miVDisplay   :: {-# UNPACK #-} !Word16
+   , miVSyncStart :: {-# UNPACK #-} !Word16
+   , miVSyncEnd   :: {-# UNPACK #-} !Word16
+   , miVTotal     :: {-# UNPACK #-} !Word16
+   , miVScan      :: {-# UNPACK #-} !Word16
+   , miVRefresh   :: {-# UNPACK #-} !Word32
+   , miFlags      :: {-# UNPACK #-} !ModeFlagsStereo3D
+   , miType       :: {-# UNPACK #-} !ModeTypes
+   , miName       :: {-# UNPACK #-} !(CStringBuffer 32)
    } deriving (Generic)
 
 instance Storable StructMode
@@ -278,18 +278,18 @@ emptyStructMode = StructMode 0 0 0 0 0 0 0 0 0 0 0 0 (BitFields 0) BitSet.empty 
 
 -- | drm_mode_card_res
 data StructCardRes = StructCardRes
-   { csFbIdPtr    :: !Word64
-   , csCrtcIdPtr  :: !Word64
-   , csConnIdPtr  :: !Word64
-   , csEncIdPtr   :: !Word64
-   , csCountFbs   :: !Word32
-   , csCountCrtcs :: !Word32
-   , csCountConns :: !Word32
-   , csCountEncs  :: !Word32
-   , csMinWidth   :: !Word32
-   , csMaxWidth   :: !Word32
-   , csMinHeight  :: !Word32
-   , csMaxHeight  :: !Word32
+   { csFbIdPtr    :: {-# UNPACK #-} !Word64
+   , csCrtcIdPtr  :: {-# UNPACK #-} !Word64
+   , csConnIdPtr  :: {-# UNPACK #-} !Word64
+   , csEncIdPtr   :: {-# UNPACK #-} !Word64
+   , csCountFbs   :: {-# UNPACK #-} !Word32
+   , csCountCrtcs :: {-# UNPACK #-} !Word32
+   , csCountConns :: {-# UNPACK #-} !Word32
+   , csCountEncs  :: {-# UNPACK #-} !Word32
+   , csMinWidth   :: {-# UNPACK #-} !Word32
+   , csMaxWidth   :: {-# UNPACK #-} !Word32
+   , csMinHeight  :: {-# UNPACK #-} !Word32
+   , csMaxHeight  :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -298,15 +298,15 @@ data StructCardRes = StructCardRes
 
 -- | drm_mode_crtc
 data StructController = StructController
-   { contSetConnPtr :: !Word64
-   , contConnCount  :: !Word32
-   , contID         :: !Word32
-   , contFbID       :: !Word32
-   , contFbX        :: !Word32
-   , contFbY        :: !Word32
-   , contGammaSize  :: !Word32
-   , contModeValid  :: !Word32
-   , contModeInfo   :: !StructMode
+   { contSetConnPtr :: {-# UNPACK #-} !Word64
+   , contConnCount  :: {-# UNPACK #-} !Word32
+   , contID         :: {-# UNPACK #-} !Word32
+   , contFbID       :: {-# UNPACK #-} !Word32
+   , contFbX        :: {-# UNPACK #-} !Word32
+   , contFbY        :: {-# UNPACK #-} !Word32
+   , contGammaSize  :: {-# UNPACK #-} !Word32
+   , contModeValid  :: {-# UNPACK #-} !Word32
+   , contModeInfo   :: {-# UNPACK #-} !StructMode
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -324,36 +324,36 @@ type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 --
 -- Planes blend with or override other bits on the CRTC
 data StructSetPlane = StructSetPlane
-   { spPlaneId :: !Word32
-   , spCrtcId  :: !Word32
-   , spFbId    :: !Word32 -- ^ Frame buffer contains surface format type
-   , spFlags   :: !ModeFieldPresents
-   , spCrtcX   :: !Int32 -- ^ Signed dest location allows it to be partially off screen
-   , spCrtcY   :: !Int32
-   , spCrtcW   :: !Word32
-   , spCrtcH   :: !Word32
+   { spPlaneId :: {-# UNPACK #-} !Word32
+   , spCrtcId  :: {-# UNPACK #-} !Word32
+   , spFbId    :: {-# UNPACK #-} !Word32 -- ^ Frame buffer contains surface format type
+   , spFlags   :: {-# UNPACK #-} !ModeFieldPresents
+   , spCrtcX   :: {-# UNPACK #-} !Int32 -- ^ Signed dest location allows it to be partially off screen
+   , spCrtcY   :: {-# UNPACK #-} !Int32
+   , spCrtcW   :: {-# UNPACK #-} !Word32
+   , spCrtcH   :: {-# UNPACK #-} !Word32
 
-   , spSrcX    :: !(FixedPoint Word32 16 16)
-   , spSrcY    :: !(FixedPoint Word32 16 16)
-   , spSrcH    :: !(FixedPoint Word32 16 16)
-   , spSrcW    :: !(FixedPoint Word32 16 16)
+   , spSrcX    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
+   , spSrcY    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
+   , spSrcH    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
+   , spSrcW    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
    } deriving (Generic,Storable)
 
 -- | drm_mode_get_plane
 data StructGetPlane = StructGetPlane
-   { gpPlaneId       :: !Word32
-   , gpCrtcId        :: !Word32
-   , gpFbId          :: !Word32
-   , gpPossibleCrtcs :: !(BitSet Word32 Int)
-   , gpGammaSize     :: !Word32
-   , gpCountFmtTypes :: !Word32
-   , gpFormatTypePtr :: !Word64
+   { gpPlaneId       :: {-# UNPACK #-} !Word32
+   , gpCrtcId        :: {-# UNPACK #-} !Word32
+   , gpFbId          :: {-# UNPACK #-} !Word32
+   , gpPossibleCrtcs :: {-# UNPACK #-} !(BitSet Word32 Int)
+   , gpGammaSize     :: {-# UNPACK #-} !Word32
+   , gpCountFmtTypes :: {-# UNPACK #-} !Word32
+   , gpFormatTypePtr :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 -- | drm_mode_get_plane_res
 data StructGetPlaneRes = StructGetPlaneRes
-   { gprsPlaneIdPtr  :: !Word64
-   , gprsCountPlanes :: !Word32
+   { gprsPlaneIdPtr  :: {-# UNPACK #-} !Word64
+   , gprsCountPlanes :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 
@@ -375,11 +375,11 @@ data EncoderType
 
 -- | drm_mode_get_encoder
 data StructGetEncoder = StructGetEncoder
-   { geEncoderId      :: !Word32
-   , geEncoderType    :: !(EnumField Word32 EncoderType)
-   , geCrtcId         :: !Word32
-   , gePossibleCrtcs  :: !(BitSet Word32 Int) -- ^ Valid controller indexes
-   , gePossibleClones :: !(BitSet Word32 Int) -- ^ Valid clone encoder indexes
+   { geEncoderId      :: {-# UNPACK #-} !Word32
+   , geEncoderType    :: {-# UNPACK #-} !(EnumField Word32 EncoderType)
+   , geCrtcId         :: {-# UNPACK #-} !Word32
+   , gePossibleCrtcs  :: {-# UNPACK #-} !(BitSet Word32 Int) -- ^ Valid controller indexes
+   , gePossibleClones :: {-# UNPACK #-} !(BitSet Word32 Int) -- ^ Valid clone encoder indexes
    } deriving (Generic,Storable)
 
 -- | This is for connectors with multiple signal types
@@ -456,24 +456,24 @@ instance Show ConnectorType where
 
 -- | drm_mode_get_connector
 data StructGetConnector = StructGetConnector
-   { connEncodersPtr       :: !Word64
-   , connModesPtr          :: !Word64
-   , connPropsPtr          :: !Word64
-   , connPropValuesPtr     :: !Word64
+   { connEncodersPtr       :: {-# UNPACK #-} !Word64
+   , connModesPtr          :: {-# UNPACK #-} !Word64
+   , connPropsPtr          :: {-# UNPACK #-} !Word64
+   , connPropValuesPtr     :: {-# UNPACK #-} !Word64
 
-   , connModesCount        :: !Word32
-   , connPropsCount        :: !Word32
-   , connEncodersCount     :: !Word32
+   , connModesCount        :: {-# UNPACK #-} !Word32
+   , connPropsCount        :: {-# UNPACK #-} !Word32
+   , connEncodersCount     :: {-# UNPACK #-} !Word32
 
-   , connEncoderID_        :: !Word32   -- ^ current encoder
-   , connConnectorID_      :: !Word32   -- ^ ID
-   , connConnectorType_    :: !(EnumField Word32 ConnectorType)
-   , connConnectorTypeID_  :: !Word32
+   , connEncoderID_        :: {-# UNPACK #-} !Word32   -- ^ current encoder
+   , connConnectorID_      :: {-# UNPACK #-} !Word32   -- ^ ID
+   , connConnectorType_    :: {-# UNPACK #-} !(EnumField Word32 ConnectorType)
+   , connConnectorTypeID_  :: {-# UNPACK #-} !Word32
 
-   , connConnection_       :: !Word32
-   , connWidth_            :: !Word32   -- ^ HxW in millimeters
-   , connHeight_           :: !Word32
-   , connSubPixel_         :: !(EnumField Word32 SubPixel)
+   , connConnection_       :: {-# UNPACK #-} !Word32
+   , connWidth_            :: {-# UNPACK #-} !Word32   -- ^ HxW in millimeters
+   , connHeight_           :: {-# UNPACK #-} !Word32
+   , connSubPixel_         :: {-# UNPACK #-} !(EnumField Word32 SubPixel)
    } deriving (Generic,Storable)
 
 
@@ -514,50 +514,50 @@ isAtomic x = testBit (gpsFlags x) 31
 
 -- | drm_mode_property_enum
 data StructPropertyEnum = StructPropertyEnum
-   { peValue       :: !Word64
-   , peName        :: !(CStringBuffer 32)
+   { peValue       :: {-# UNPACK #-} !Word64
+   , peName        :: {-# UNPACK #-} !(CStringBuffer 32)
    } deriving (Generic,Storable)
 
 -- | drm_mode_get_property
 data StructGetProperty = StructGetProperty
-   { gpsValuesPtr      :: !Word64 -- ^ Values or blob lengths
-   , gpsEnumBlobPtr    :: !Word64 -- ^ Enum or blob id ptrs
-   , gpsPropId         :: !Word32
-   , gpsFlags          :: !Word32
-   , gpsName           :: !(CStringBuffer 32)
-   , gpsCountValues    :: !Word32
-   , gpsCountEnum      :: !Word32
+   { gpsValuesPtr      :: {-# UNPACK #-} !Word64 -- ^ Values or blob lengths
+   , gpsEnumBlobPtr    :: {-# UNPACK #-} !Word64 -- ^ Enum or blob id ptrs
+   , gpsPropId         :: {-# UNPACK #-} !Word32
+   , gpsFlags          :: {-# UNPACK #-} !Word32
+   , gpsName           :: {-# UNPACK #-} !(CStringBuffer 32)
+   , gpsCountValues    :: {-# UNPACK #-} !Word32
+   , gpsCountEnum      :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -- | drm_mode_set_property
 data StructSetProperty = StructSetProperty
-   { spsValue        :: !Word64
-   , spsPropId       :: !Word32
-   , spsConnId       :: !Word32
+   { spsValue        :: {-# UNPACK #-} !Word64
+   , spsPropId       :: {-# UNPACK #-} !Word32
+   , spsConnId       :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -- | drm_mode_obj_get_properties
 data StructGetObjectProperties = StructGetObjectProperties
-   { gopPropsPtr        :: !Word64
-   , gopValuesPtr       :: !Word64
-   , gopCountProps      :: !Word32
-   , gopObjId           :: !Word32
-   , gopObjType         :: !Word32
+   { gopPropsPtr        :: {-# UNPACK #-} !Word64
+   , gopValuesPtr       :: {-# UNPACK #-} !Word64
+   , gopCountProps      :: {-# UNPACK #-} !Word32
+   , gopObjId           :: {-# UNPACK #-} !Word32
+   , gopObjType         :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -- | drm_mode_obj_set_property
 data StructSetObjectProperty = StructSetObjectProperty
-   { sopValue           :: !Word64
-   , sopPropId          :: !Word32
-   , sopObjId           :: !Word32
-   , sopObjType         :: !Word32
+   { sopValue           :: {-# UNPACK #-} !Word64
+   , sopPropId          :: {-# UNPACK #-} !Word32
+   , sopObjId           :: {-# UNPACK #-} !Word32
+   , sopObjType         :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -- | drm_mode_get_blob
 data StructGetBlob = StructGetBlob
-   { gbBlobId     :: !Word32
-   , gbLength     :: !Word32
-   , gbData       :: !Word64
+   { gbBlobId     :: {-# UNPACK #-} !Word32
+   , gbLength     :: {-# UNPACK #-} !Word32
+   , gbData       :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -576,15 +576,15 @@ type FrameBufferFlags = BitSet Word32 FrameBufferFlag
 
 -- | Data matching the C structure drm_mode_fb_cmd2
 data StructFrameBufferCommand = StructFrameBufferCommand
-   { fc2FbId          :: !Word32
-   , fc2Width         :: !Word32
-   , fc2Height        :: !Word32
-   , fc2PixelFormat   :: !PixelFormat
-   , fc2Flags         :: !FrameBufferFlags
-   , fc2Handles       :: !(Vector 4 Word32)
-   , fc2Pitches       :: !(Vector 4 Word32)  -- ^ Pitch for each plane
-   , fc2Offsets       :: !(Vector 4 Word32)  -- ^ Offset of each plane
-   , fc2Modifiers     :: !(Vector 4 Word64)  -- ^ tiling, compressed
+   { fc2FbId          :: {-# UNPACK #-} !Word32
+   , fc2Width         :: {-# UNPACK #-} !Word32
+   , fc2Height        :: {-# UNPACK #-} !Word32
+   , fc2PixelFormat   :: {-# UNPACK #-} !PixelFormat
+   , fc2Flags         :: {-# UNPACK #-} !FrameBufferFlags
+   , fc2Handles       :: {-# UNPACK #-} !(Vector 4 Word32)
+   , fc2Pitches       :: {-# UNPACK #-} !(Vector 4 Word32)  -- ^ Pitch for each plane
+   , fc2Offsets       :: {-# UNPACK #-} !(Vector 4 Word32)  -- ^ Offset of each plane
+   , fc2Modifiers     :: {-# UNPACK #-} !(Vector 4 Word64)  -- ^ tiling, compressed
    } deriving (Generic,Storable)
 
 -- | Mark a region of a framebuffer as dirty.
@@ -618,17 +618,17 @@ dirtyMaxClips = 256
 
 -- | drm_mode_fb_dirty_cmd
 data StructFrameBufferDirty = StructFrameBufferDirty
-   { fdFbId          :: !Word32
-   , fdFlags         :: !Word32
-   , fdColor         :: !Word32
-   , fdNumClips      :: !Word32
-   , fdClipsPtr      :: !Word64
+   { fdFbId          :: {-# UNPACK #-} !Word32
+   , fdFlags         :: {-# UNPACK #-} !Word32
+   , fdColor         :: {-# UNPACK #-} !Word32
+   , fdNumClips      :: {-# UNPACK #-} !Word32
+   , fdClipsPtr      :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 -- | drm_mode_mode_cmd
 data StructModeCommand = StructModeCommand
-   { mcConnId     :: !Word32
-   , mcMode       :: !StructMode
+   { mcConnId     :: {-# UNPACK #-} !Word32
+   , mcMode       :: {-# UNPACK #-} !StructMode
    } deriving (Generic,Storable)
 
 
@@ -657,26 +657,26 @@ type CursorFlags = BitSet Word32 CursorFlag
 
 -- | drm_mode_cursor
 data StructCursor = StructCursor
-   { curFlags     :: !CursorFlags
-   , curCrtcId    :: !Word32
-   , curX         :: !Int32
-   , curY         :: !Int32
-   , curWidth     :: !Word32
-   , curHeight    :: !Word32
-   , curHandle    :: !Word32
+   { curFlags     :: {-# UNPACK #-} !CursorFlags
+   , curCrtcId    :: {-# UNPACK #-} !Word32
+   , curX         :: {-# UNPACK #-} !Int32
+   , curY         :: {-# UNPACK #-} !Int32
+   , curWidth     :: {-# UNPACK #-} !Word32
+   , curHeight    :: {-# UNPACK #-} !Word32
+   , curHandle    :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -- | drm_mode_cursor2
 data StructCursor2 = StructCursor2
-   { cur2Flags     :: !CursorFlags
-   , cur2CrtcId    :: !Word32
-   , cur2X         :: !Int32
-   , cur2Y         :: !Int32
-   , cur2Width     :: !Word32
-   , cur2Height    :: !Word32
-   , cur2Handle    :: !Word32
-   , cur2HotX      :: !Int32
-   , cur2HotY      :: !Int32
+   { cur2Flags     :: {-# UNPACK #-} !CursorFlags
+   , cur2CrtcId    :: {-# UNPACK #-} !Word32
+   , cur2X         :: {-# UNPACK #-} !Int32
+   , cur2Y         :: {-# UNPACK #-} !Int32
+   , cur2Width     :: {-# UNPACK #-} !Word32
+   , cur2Height    :: {-# UNPACK #-} !Word32
+   , cur2Handle    :: {-# UNPACK #-} !Word32
+   , cur2HotX      :: {-# UNPACK #-} !Int32
+   , cur2HotY      :: {-# UNPACK #-} !Int32
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -685,11 +685,11 @@ data StructCursor2 = StructCursor2
 
 -- | drm_mode_crtc_lut
 data StructControllerLut = StructControllerLut
-   { clsCrtcId       :: !Word32
-   , clsGammaSize    :: !Word32
-   , clsRed          :: !Word64
-   , clsGreen        :: !Word64
-   , clsBlue         :: !Word64
+   { clsCrtcId       :: {-# UNPACK #-} !Word32
+   , clsGammaSize    :: {-# UNPACK #-} !Word32
+   , clsRed          :: {-# UNPACK #-} !Word64
+   , clsGreen        :: {-# UNPACK #-} !Word64
+   , clsBlue         :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -731,11 +731,11 @@ type PageFlipFlags = BitSet Word32 PageFlipFlag
 
 -- | drm_mode_crtc_page_flip
 data StructPageFlip = StructPageFlip
-   { pfCrtcId        :: !Word32
-   , pfFbId          :: !Word32
-   , pfFlags         :: !PageFlipFlags
-   , pfReserved      :: !Word32
-   , pfUserData      :: !Word64
+   { pfCrtcId        :: {-# UNPACK #-} !Word32
+   , pfFbId          :: {-# UNPACK #-} !Word32
+   , pfFlags         :: {-# UNPACK #-} !PageFlipFlags
+   , pfReserved      :: {-# UNPACK #-} !Word32
+   , pfUserData      :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 --
@@ -759,11 +759,11 @@ data StructPageFlip = StructPageFlip
 
 -- drm_mode_crtc_page_flip_target
 data StructPageFlipTarget = StructPageFlipTarget
-   { pftCrtcId   :: !Word32
-   , pftFbId     :: !Word32
-   , pftFlags    :: !Word32
-   , pftSequence :: !Word32
-   , pftUserData :: !Word64
+   { pftCrtcId   :: {-# UNPACK #-} !Word32
+   , pftFbId     :: {-# UNPACK #-} !Word32
+   , pftFlags    :: {-# UNPACK #-} !Word32
+   , pftSequence :: {-# UNPACK #-} !Word32
+   , pftUserData :: {-# UNPACK #-} !Word64
    } deriving (Show,Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -772,21 +772,21 @@ data StructPageFlipTarget = StructPageFlipTarget
 
 -- | drm_mode_create_dumb
 data StructCreateDumb = StructCreateDumb
-   { cdHeight :: !Word32
-   , cdWidth  :: !Word32
-   , cdBPP    :: !Word32 -- ^ Bits per pixel
-   , cdFlags  :: !Word32
-   , cdHandle :: !Word32 -- ^ Handle, pitch, size will be returned
-   , cdPitch  :: !Word32
-   , cdSize   :: !Word64
+   { cdHeight :: {-# UNPACK #-} !Word32
+   , cdWidth  :: {-# UNPACK #-} !Word32
+   , cdBPP    :: {-# UNPACK #-} !Word32 -- ^ Bits per pixel
+   , cdFlags  :: {-# UNPACK #-} !Word32
+   , cdHandle :: {-# UNPACK #-} !Word32 -- ^ Handle, pitch, size will be returned
+   , cdPitch  :: {-# UNPACK #-} !Word32
+   , cdSize   :: {-# UNPACK #-} !Word64
    } deriving (Show,Generic,Storable)
 
 
 -- | drm_mode_map_dumb
 data StructMapDumb = StructMapDumb
-   { mdHandle :: !Word32
-   , mdPad    :: !Word32  -- Padding field: not useful
-   , mdOffset :: !Word64  -- ^ Fake offset to use for subsequent mmap call
+   { mdHandle :: {-# UNPACK #-} !Word32
+   , mdPad    :: {-# UNPACK #-} !Word32  -- Padding field: not useful
+   , mdOffset :: {-# UNPACK #-} !Word64  -- ^ Fake offset to use for subsequent mmap call
    } deriving (Show,Generic,Storable)
 
 -- | drm_mode_destroy_dumb
@@ -827,14 +827,14 @@ type AtomicFlags = BitSet Word32 AtomicFlag
 
 -- | drm_mode_atomic
 data StructAtomic = StructAtomic
-   { atomFlags         :: !AtomicFlags
-   , atomCountObjects  :: !Word32
-   , atomObjectsPtr    :: !Word64
-   , atomCountPropsPtr :: !Word64
-   , atomPropsPtr      :: !Word64
-   , atomPropValuesPtr :: !Word64
-   , atomReserved      :: !Word64
-   , atomUserData      :: !Word64
+   { atomFlags         :: {-# UNPACK #-} !AtomicFlags
+   , atomCountObjects  :: {-# UNPACK #-} !Word32
+   , atomObjectsPtr    :: {-# UNPACK #-} !Word64
+   , atomCountPropsPtr :: {-# UNPACK #-} !Word64
+   , atomPropsPtr      :: {-# UNPACK #-} !Word64
+   , atomPropValuesPtr :: {-# UNPACK #-} !Word64
+   , atomReserved      :: {-# UNPACK #-} !Word64
+   , atomUserData      :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -844,9 +844,9 @@ data StructAtomic = StructAtomic
 -- | Create a new 'blob' data property, copying length bytes from data pointer,
 -- and returning new blob ID.
 data StructCreateBlob = StructCreateBlob
-   { cbData   :: !Word64 -- ^ Pointer to data to copy
-   , cbLength :: !Word32 -- ^ Length of data to copy
-   , cbBlobID :: !Word32 -- ^ Return: new property ID
+   { cbData   :: {-# UNPACK #-} !Word64 -- ^ Pointer to data to copy
+   , cbLength :: {-# UNPACK #-} !Word32 -- ^ Length of data to copy
+   , cbBlobID :: {-# UNPACK #-} !Word32 -- ^ Return: new property ID
    } deriving (Generic,Storable)
 
 -- | Destroy a user-created blob property.
@@ -863,10 +863,10 @@ newtype StructDestroyBlob = StructDestroyBlob
 -----------------------------------------------------------------------------
 
 data Clip = Clip
-   { clipX1 :: !Word16
-   , clipY1 :: !Word16
-   , clipX2 :: !Word16
-   , clipY2 :: !Word16
+   { clipX1 :: {-# UNPACK #-} !Word16
+   , clipY1 :: {-# UNPACK #-} !Word16
+   , clipX2 :: {-# UNPACK #-} !Word16
+   , clipY2 :: {-# UNPACK #-} !Word16
    } deriving (Show,Eq,Generic,Storable)
 
 -----------------------------------------------------------------------------
@@ -905,8 +905,8 @@ instance CEnum Capability where
 -- size.
 -- 
 data StructGetCap = StructGetCap
-   { gcCapability :: !(EnumField Word64 Capability)
-   , gcValue      :: !Word64
+   { gcCapability :: {-# UNPACK #-} !(EnumField Word64 Capability)
+   , gcValue      :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 -- | Client capabilities
@@ -922,8 +922,8 @@ instance CEnum ClientCapability where
    toCEnum   = toEnum . (\x -> x-1) . fromIntegral
 
 data StructSetClientCap = StructSetClientCap
-   { sccCapability :: !(EnumField Word64 ClientCapability)
-   , sccValue      :: !Word64
+   { sccCapability :: {-# UNPACK #-} !(EnumField Word64 ClientCapability)
+   , sccValue      :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
 
 data PrimeFlag
@@ -941,9 +941,9 @@ instance Enum PrimeFlag where
 
 -- | struct drm_prime_handle
 data StructPrimeHandle = StructPrimeHandle
-   { sphHandle :: !Word32
-   , sphFlags  :: !(BitSet Word32 PrimeFlag) -- ^ FD flags: only applciable for handle->fd
-   , sphFD     :: !Int32                     -- ^ Returned DMAbuf file descriptor
+   { sphHandle :: {-# UNPACK #-} !Word32
+   , sphFlags  :: {-# UNPACK #-} !(BitSet Word32 PrimeFlag) -- ^ FD flags: only applciable for handle->fd
+   , sphFD     :: {-# UNPACK #-} !Int32                     -- ^ Returned DMAbuf file descriptor
    }
    deriving (Generic,Storable)
 
@@ -1059,8 +1059,8 @@ ioctlDestroyBlob = drmIoctl 0xBE
 
 -- | drm_event
 data DRMEventHeader = DRMEventHeader
-   { eventType     :: !Word32
-   , eventLength   :: !Word32
+   { eventType     :: {-# UNPACK #-} !Word32
+   , eventLength   :: {-# UNPACK #-} !Word32
    } deriving (Generic,Storable)
 
 -- | Event type
@@ -1078,13 +1078,13 @@ toEventType v = case v of
 
 -- | drm_event_vblank
 data DRMEvent = DRMEvent
-   { drmEventType         :: !Word32
-   , drmEventSize         :: !Word32
-   , drmEventUserData     :: !Word64
-   , drmEventSeconds      :: !Word32
-   , drmEventMicroseconds :: !Word32
-   , drmEventSequence     :: !Word32
-   , drmEventReserved     :: !Word32
+   { drmEventType         :: {-# UNPACK #-} !Word32
+   , drmEventSize         :: {-# UNPACK #-} !Word32
+   , drmEventUserData     :: {-# UNPACK #-} !Word64
+   , drmEventSeconds      :: {-# UNPACK #-} !Word32
+   , drmEventMicroseconds :: {-# UNPACK #-} !Word32
+   , drmEventSequence     :: {-# UNPACK #-} !Word32
+   , drmEventReserved     :: {-# UNPACK #-} !Word32
    } deriving (Show,Generic,Storable)
 
 -- =============================================================
