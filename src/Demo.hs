@@ -15,6 +15,7 @@ import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Config
+import qualified Haskus.System.Linux.Internals.Input as Key
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed
@@ -22,7 +23,10 @@ import Haskus.Utils.STM
 import Haskus.Utils.Monad
 import qualified Haskus.Utils.Map as Map
 
+import Data.Char
 import Codec.Picture.Types
+import Graphics.Text.TrueType
+import qualified Data.ByteString.Lazy as LBS
 
 import Demo.Diagrams
 import Demo.Graphics
@@ -30,8 +34,17 @@ import Demo.Graphics
 rawlogo :: B.Buffer
 rawlogo = B.Buffer $(embedFile "src/image/logo_transparent.png")
 
-rawabcd :: B.Buffer
-rawabcd = B.Buffer $(embedFile "src/image/abcd.png")
+rawFontNormal :: B.Buffer
+rawFontNormal = B.Buffer $(embedFile "src/Demo/VeraMono.ttf")
+
+rawFontBold :: B.Buffer
+rawFontBold = B.Buffer $(embedFile "src/Demo/VeraMoBd.ttf")
+
+rawFontItalic :: B.Buffer
+rawFontItalic = B.Buffer $(embedFile "src/Demo/VeraMoIt.ttf")
+
+rawFontBoldItalic :: B.Buffer
+rawFontBoldItalic = B.Buffer $(embedFile "src/Demo/VeraMoBI.ttf")
 
 data Page
    = PageNone
@@ -45,7 +58,17 @@ main :: IO ()
 main = runSys' <| do
 
    let logo = loadPng rawlogo
-   let abcd = loadPng rawabcd
+
+   let
+   -- fonts
+      loadFont             = decodeFont . LBS.fromStrict . B.bufferUnpackByteString
+      Right fontNormal     = loadFont rawFontNormal
+      Right fontBold       = loadFont rawFontBold
+      Right fontBoldItalic = loadFont rawFontBoldItalic
+      Right fontItalic     = loadFont rawFontItalic
+   
+   let blackTexture = Just . uniformTexture $ PixelRGBA8 0 0 0 255
+       redTexture   = Just . uniformTexture $ PixelRGBA8 255 0 0 255
 
    term <- defaultTerminal
    sys  <- defaultSystemInit
@@ -54,20 +77,122 @@ main = runSys' <| do
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
 
+   -------------------------------------------------
+   -- redrawing management
+   -------------------------------------------------
+   needRedrawVar <- newTVarIO True
+   let needRedraw   = writeTVar needRedrawVar True
+       redrawNeeded = readTVar needRedrawVar
+       redrawing    = writeTVar needRedrawVar False
+   -------------------------------------------------
+
+
+   -------------------------------------------------
+   -- system exit management
+   -------------------------------------------------
    quitKey <- newTVarIO False
+
+   let mustQuit     = writeTVar quitKey True
+       quitRequired = readTVar quitKey
+
+   -------------------------------------------------
+
+
+   -------------------------------------------------
+   -- page management
+   -------------------------------------------------
    page    <- newTVarIO PageNone
 
+   let changePage newp = do
+         oldp <- readTVar page
+         when (oldp /= newp) $ do
+            writeTVar page newp
+            needRedraw
+       currentPage   = readTVar page
+       currentPageIO = readTVarIO page
+   -------------------------------------------------
+
+
+   -------------------------------------------------
+   -- mouse management
+   -------------------------------------------------
    mousePos <- newTVarIO (250.0,250.0)
-   lastKey  <- newTVarIO Nothing
 
    let
       wf = 1024 / 0x7FFF :: Float
       hf = 768  / 0x7FFF :: Float
-      updateMouseRel dx dy = modifyTVar mousePos (\(x,y) -> (x+fromIntegral dx,y+fromIntegral dy))
-      updateMouseAbsX v    = modifyTVar mousePos (\(_,y) -> (fromIntegral v * wf,y))
-      updateMouseAbsY v    = modifyTVar mousePos (\(x,_) -> (x,fromIntegral v * hf))
+      changeMousePos f     = do
+         modifyTVar mousePos f
+         needRedraw
+      getMousePos          = readTVar mousePos
+      getMousePosIO        = readTVarIO mousePos
+      updateMouseRel dx dy = changeMousePos (\(x,y) -> (x+fromIntegral dx,y+fromIntegral dy))
+      updateMouseAbsX v    = changeMousePos (\(_,y) -> (fromIntegral v * wf,y))
+      updateMouseAbsY v    = changeMousePos (\(x,_) -> (x,fromIntegral v * hf))
+   -------------------------------------------------
 
+
+   -------------------------------------------------
+   -- terminal management
+   -------------------------------------------------
+   termContents <- newTVarIO [[TextRange fontBold (PointSize 12) "Welcome to the terminal!" redTexture]]
+   termStr <- newTVarIO ""
+
+   let
+      termAppend s = do
+         modifyTVar termStr (++ s)
+         needRedraw
+      termNewLine  = do
+         s <- readTVar termStr
+         modifyTVar termContents ([TextRange fontNormal (PointSize 12) s blackTexture]:)
+         writeTVar termStr ""
+         needRedraw
+      termGetContents = do
+         cs <- readTVar termContents
+         c  <- readTVar termStr
+         let c' = [TextRange fontNormal (PointSize 12) c blackTexture]
+         return (c':cs)
+   -------------------------------------------------
+
+         
+   -------------------------------------------------
+   -- DPMS management
+   -------------------------------------------------
    dpmsState <- atomically $ newEmptyTMVar
+
+   let dpmsSet = putTMVar dpmsState
+   -------------------------------------------------
+
+   let
+      charMapFr = charMapEn . f
+         where f = \case
+                  Q         -> A
+                  A         -> Q
+                  M         -> SemiColon
+                  SemiColon -> M
+                  k         -> k
+
+      charMapEn = \case
+         Key.Space -> " "
+         Key0      -> "0"
+         Key1      -> "1"
+         Key2      -> "2"
+         Key3      -> "3"
+         Key4      -> "4"
+         Key5      -> "5"
+         Key6      -> "6"
+         Key7      -> "7"
+         Key8      -> "8"
+         Key9      -> "9"
+         Minus     -> "-"
+         Equal     -> "="
+         Tab       -> "    "
+         SemiColon -> ";"
+         Slash     -> "/"
+         BackSlash -> "\\"
+         Comma     -> ","
+         Dot       -> "."
+         k         -> show k
 
    writeStrLn term "Loading input devices..."
    inputs <- loadInputDevices dm
@@ -80,25 +205,28 @@ main = runSys' <| do
          InputAbsoluteEvent AbsoluteX v -> updateMouseAbsX v
          InputAbsoluteEvent AbsoluteY v -> updateMouseAbsY v
          InputKeyEvent KeyPress k       -> do
-            writeTVar lastKey (Just k)
-            p <- readTVar page
+            p <- currentPage
             case k of
                Esc -> case p of
-                  PageNone -> writeTVar quitKey True
-                  _        -> writeTVar page PageNone
-               F1  -> writeTVar page PageInfo
-               F2  -> writeTVar page PageGraphics
-               F3  -> writeTVar page PageDPMS
-               F4  -> writeTVar page PageTerminal
+                  PageNone -> mustQuit
+                  _        -> changePage PageNone
+               F1  -> changePage PageInfo
+               F2  -> changePage PageGraphics
+               F3  -> changePage PageDPMS
+               F4  -> changePage PageTerminal
                x   -> case p of
                   PageDPMS -> do
                      void (tryTakeTMVar dpmsState)
                      case x of
-                        Key0 -> putTMVar dpmsState 0
-                        Key1 -> putTMVar dpmsState 1
-                        Key2 -> putTMVar dpmsState 2
-                        Key3 -> putTMVar dpmsState 3
+                        Key0 -> dpmsSet 0
+                        Key1 -> dpmsSet 1
+                        Key2 -> dpmsSet 2
+                        Key3 -> dpmsSet 3
                         _    -> return ()
+                  PageTerminal -> do
+                     case x of
+                        Enter -> termNewLine
+                        _     -> termAppend (charMapFr x)
                   _        -> return ()
          _                              -> return ()
 
@@ -184,8 +312,6 @@ main = runSys' <| do
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
                >..~!> (\err -> lift $ sysWarning <| "Cannot set DPMS: " ++ show err)
 
-      oldState <- newTVarIO (0,0,PageNone)
-         
 
       initRenderingEngine card ctrl mode 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
          let
@@ -200,18 +326,15 @@ main = runSys' <| do
                           )
 
          do
-            -- compare with old state, if nothing has changed, wait
+            -- wait if redrawing is not needed
             atomically $ do
-               (mx,my) <- readTVar mousePos
-               page' <- readTVar page
-               (oldX,oldY,oldPage) <- readTVar oldState
-               when (oldX == mx && oldY == my && oldPage == page')
-                  retry
-               writeTVar oldState (mx,my,page')
+               redrawNeeded >>= \case
+                  False -> retry
+                  True  -> redrawing
 
-            (mx,my) <- readTVarIO mousePos
+            (mx,my) <- getMousePosIO
             liftIO <| fillFrame gfb bgColor
-            readTVarIO page >>= \case
+            currentPageIO >>= \case
                PageNone -> liftIO <| blendImage gfb logo BlendAlpha (centerPos logo) (fullImg logo)
 
                PageInfo -> case infoPage of
@@ -227,6 +350,32 @@ main = runSys' <| do
                   liftIO <| blendImage gfb dpmsPage BlendAlpha (10,50) (fullImg dpmsPage)
 
                PageTerminal -> do
+                  termLines <- atomically termGetContents
+                  let abcd = renderDrawing 1000 800 (PixelRGBA8 255 255 255 255)
+                              . withTexture (uniformTexture $ PixelRGBA8 0 0 0 255) $ do
+                                  printTextRanges (V2 20 40)
+                                    [ TextRange fontNormal (PointSize 12) "A simple text test! " blackTexture
+                                    , TextRange fontBold   (PointSize 12) "Bold text" redTexture
+                                    ]
+                                  printTextRanges (V2 20 60)
+                                    [ TextRange fontItalic     (PointSize 12) "Another simple text test " blackTexture
+                                    , TextRange fontBoldItalic (PointSize 12) "C'était comme ça Â\233 €" redTexture
+                                    ]
+                                  printTextAt fontNormal (PointSize 12) (V2 20 80)
+                                       ([chr i | i <- [1..100]])
+                                  printTextAt fontNormal (PointSize 12) (V2 20 100)
+                                       ([chr i | i <- [101..200]])
+                                  printTextAt fontNormal (PointSize 12) (V2 20 120)
+                                       ([chr i | i <- [201..255]])
+                                  printTextAt fontBold (PointSize 12) (V2 20 140)
+                                       ([chr i | i <- [1..100]])
+                                  printTextAt fontBold (PointSize 12) (V2 20 160)
+                                       ([chr i | i <- [101..200]])
+                                  printTextAt fontBold (PointSize 12) (V2 20 180)
+                                       ([chr i | i <- [201..255]])
+                                  forM_ (reverse termLines `zip` [0..]) $ \(rs,i) ->
+                                    printTextRanges (V2 20 (20*i + 200)) rs
+
                   liftIO <| blendImage gfb abcd BlendAlpha (10,50) (fullImg abcd)
 
             liftIO <| blendImage gfb topBarDiagram BlendAlpha (0,0) (fullImg topBarDiagram)
@@ -239,10 +388,10 @@ main = runSys' <| do
    -- wait for a key in the standard input (in the console) or ESC (in the graphic interface)
    sysFork "Terminal wait for key" <| do
       waitForKey term
-      atomically <| writeTVar quitKey True
+      atomically <| mustQuit
    
    atomically <| do
-      q <- readTVar quitKey
+      q <- quitRequired
       unless q retry
 
    writeStrLn term "Log:"

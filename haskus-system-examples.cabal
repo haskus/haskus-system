@@ -31,6 +31,7 @@ executable Demo
       ,  haskus-binary
       ,  transformers
       ,  JuicyPixels
+      ,  FontyFruity
       ,  diagrams-lib
       ,  containers
       ,  colour
