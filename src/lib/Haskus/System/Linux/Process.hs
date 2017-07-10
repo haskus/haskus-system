@@ -8,6 +8,7 @@ module Haskus.System.Linux.Process
    , ThreadID(..)
    , UserID(..)
    , GroupID(..)
+   , SessionID(..)
    , sysExit
    , sysGetCPU
    , sysGetProcessID
@@ -43,6 +44,9 @@ newtype UserID = UserID Word32 deriving (Show,Eq,Ord,Storable)
 
 -- | Group ID
 newtype GroupID = GroupID Word32 deriving (Show,Eq,Ord,Storable)
+
+-- | Session ID
+newtype SessionID = SessionID Word32 deriving (Show,Eq,Ord,Storable)
 
 -- | Exit the current process with the given return value
 -- This syscall does not return.

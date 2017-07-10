@@ -11,6 +11,7 @@ module Haskus.System.Linux.Internals.Ioctl
    , CommandType
    , CommandNumber
    , ioctlCommand
+   , rawIoctlCommand
    )
 where
 
@@ -72,3 +73,7 @@ ioctlCommand dir typ nb sz = Command
    $ updateField @"type"      typ
    $ updateField @"number"    nb
    $ BitFields 0
+
+-- | Raw IOCTL command
+rawIoctlCommand :: Word32 -> Command
+rawIoctlCommand = Command . BitFields

@@ -52,6 +52,7 @@ library
     Haskus.System.Linux.Internals.Handle
     Haskus.System.Linux.Internals.Arg
     Haskus.System.Linux.Internals.Tables
+    Haskus.System.Linux.Internals.Terminal
 
     Haskus.System.Linux.Devices
     Haskus.System.Linux.Error

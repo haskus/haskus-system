@@ -12,6 +12,10 @@ import Haskus.Format.Binary.Ptr (Ptr, ptrToWordPtr)
 class Arg a where
    toArg :: a -> Int64
 
+instance Arg Bool    where
+   toArg True  = 1
+   toArg False = 0
+
 instance Arg Int     where toArg = fromIntegral
 instance Arg Int32   where toArg = fromIntegral
 instance Arg Int64   where toArg = id
