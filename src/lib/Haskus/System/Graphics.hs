@@ -212,8 +212,8 @@ data FrameWait
 -- TODO: support connections/disconnections
 -- TODO: better support for mode setting (change during rendering, etc.)
 -- TODO: support accelerated buffers
-initRenderingEngine :: GraphicCard -> Controller -> Mode -> Word -> [FrameWait] -> (Mode -> GenericFrame -> Sys ()) -> Sys RenderingEngine
-initRenderingEngine card ctrl mode nfb flags draw
+initRenderingEngine :: GraphicCard -> Controller -> Mode -> Connector -> Word -> [FrameWait] -> (Mode -> GenericFrame -> Sys ()) -> Sys RenderingEngine
+initRenderingEngine card ctrl mode conn nfb flags draw
    | nfb <= 2  = error "initRenderingEngine: require at least 2 buffers"
    | otherwise = do
 
@@ -229,6 +229,11 @@ initRenderingEngine card ctrl mode nfb flags draw
 
       -- initialize generic framebuffers
       bufs <- forM [1..nfb] (const (initGenericFrameBuffer card mode fmt))
+
+      -- perform initial mode-setting
+      let initFB = genericFrameBuffer (head bufs)
+      setController ctrl (SetFB initFB) [conn] (Just mode)
+         |> flowAssertQuiet "Perform initial mode-setting"
 
       -- page flip
       fbState <- newTVarIO (BufferingState
@@ -319,10 +324,6 @@ initRenderingEngine card ctrl mode nfb flags draw
                         }
             -- switch to another thread
             yield
-
-      -- set mode and connectors
-      -- setController ctrl (SetFB fb1) [conn] (Just mode)
-      --    |> flowAssertQuiet "Set controller"
 
       -- Force the generation of the first page-flip event
       switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) ctrlId
