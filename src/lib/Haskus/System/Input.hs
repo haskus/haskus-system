@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Manage input devices
 module Haskus.System.Input
@@ -10,6 +11,8 @@ module Haskus.System.Input
    , loadInputDevices
    , InputEventBundle (..)
    , newInputEventHandler
+   , inputSetAutoRepeatDelay
+   , inputSetAutoRepeatPeriod
    -- re-export
    , SyncEventType (..)
    , KeyEventType (..)
@@ -27,9 +30,12 @@ import Haskus.System.Sys
 import Haskus.System.Event
 import Haskus.System.Devices
 import Haskus.Utils.Flow
+import Haskus.Format.Binary.Storable
 import Haskus.System.Linux.Handle
+import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Internals.Input as Input
-import Haskus.System.Linux.Time (TimeVal)
+import Haskus.System.Linux.Time (TimeVal(..))
+import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
 import qualified Haskus.Format.Text as Text
@@ -67,7 +73,7 @@ data InputEventType
    | InputSwitchEvent !SwitchEventType !Int32     -- ^ Switch event
    | InputLEDEvent !LED !Int32                    -- ^ LED event
    | InputSoundEvent !Sound !Int32                -- ^ Sound event
-   | InputReplayEvent !Word16 !Int32              -- ^ Replay event
+   | InputRepeatEvent !Word16 !Int32              -- ^ Repeated event
    | InputForceFeedbackEvent !Word16 !Int32       -- ^ Force feedback event
    | InputPowerEvent !Word16 !Int32               -- ^ Power event
    | InputForceFeedbackStatusEvent !Word16 !Int32 -- ^ Force feedback statusevent
@@ -96,7 +102,7 @@ makeInputEvent (Input.Event {..}) = InputEvent eventTime t
             EventTypeSwitch              -> InputSwitchEvent (toCEnum c) v
             EventTypeLED                 -> InputLEDEvent (toCEnum c) v
             EventTypeSound               -> InputSoundEvent (toCEnum c) v
-            EventTypeReplay              -> InputReplayEvent c v
+            EventTypeRepeat              -> InputRepeatEvent c v
             EventTypeForceFeedback       -> InputForceFeedbackEvent c v
             EventTypePower               -> InputPowerEvent c v
             EventTypeForceFeedbackStatus -> InputForceFeedbackStatusEvent c v
@@ -124,6 +130,24 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
                      <|< flowSingle bundleChannel
                )
 
+-- | Configure auto-repeat delay
+inputSetAutoRepeatDelay :: MonadInIO m => Handle -> Word32 -> Flow m '[Word64,ErrorCode]
+inputSetAutoRepeatDelay hdl delay = do
+   let
+      tv = TimeVal 0 0
+      ev = Input.Event tv (toEnumField EventTypeRepeat) (fromCEnum RepeatDelay) (fromIntegral delay)
+   with ev $ \pev ->
+      sysWrite hdl pev (sizeOfT' @Input.Event)
+
+-- | Configure auto-repeat period
+inputSetAutoRepeatPeriod :: MonadInIO m => Handle -> Word32 -> Flow m '[Word64,ErrorCode]
+inputSetAutoRepeatPeriod hdl period = do
+   let
+      tv = TimeVal 0 0
+      ev = Input.Event tv (toEnumField EventTypeRepeat) (fromCEnum RepeatPeriod) (fromIntegral period)
+   with ev $ \pev ->
+      sysWrite hdl pev (sizeOfT' @Input.Event)
+   
 
 
 -- | Convert a stream a input events into a stream of input event bundles

@@ -186,7 +186,7 @@ data EventType
    | EventTypeSwitch              -- ^ Binary state switch
    | EventTypeLED                 -- ^ Turn LEDs on and off
    | EventTypeSound               -- ^ Output sound to devices
-   | EventTypeReplay              -- ^ Auto-repeating devices
+   | EventTypeRepeat              -- ^ Auto-repeating devices
    | EventTypeForceFeedback       -- ^ Send force-feedback to an input device
    | EventTypePower               -- ^ Power button and switch
    | EventTypeForceFeedbackStatus -- ^ Receive force-feedback status
