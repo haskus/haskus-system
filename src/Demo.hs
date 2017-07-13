@@ -216,6 +216,9 @@ main = runSys' <| do
    let dpmsSet = putTMVar dpmsState
    -------------------------------------------------
 
+   -------------------------------------------------
+   -- Char map management
+   -------------------------------------------------
    let
       charMapFr = charMapEn . f
          where f = \case
@@ -223,6 +226,8 @@ main = runSys' <| do
                   A         -> Q
                   M         -> SemiColon
                   SemiColon -> M
+                  Z         -> W
+                  W         -> Z
                   k         -> k
 
       charMapEn = \case
@@ -246,6 +251,7 @@ main = runSys' <| do
          Comma     -> ","
          Dot       -> "."
          k         -> fmap toLower (show k)
+   -------------------------------------------------
 
    writeStrLn term "Loading input devices..."
    inputs <- loadInputDevices dm
