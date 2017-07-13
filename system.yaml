@@ -7,6 +7,11 @@ linux:
          - CONFIG_DRM_RADEON
          - CONFIG_DRM_NOUVEAU
          - CONFIG_DRM_VIRTIO
+         - CONFIG_EXPERT
+      disable:
+         - CONFIG_FRAMEBUFFER_CONSOLE
+         - CONFIG_VGA_CONSOLE
+         - CONFIG_VT
    make-args: "-j16"
 
 ramdisk:

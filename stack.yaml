@@ -5,9 +5,17 @@ flags: {}
 packages:
 - '.'
 - location:
-    git: git@github.com:haskus/haskus-system
-    #git: /home/hsyl20/travail/code/haskus-system
-    commit: a29623c3366466bc86b27767be35b841d2f6cbca
+    #git: git@github.com:haskus/haskus-system
+    git: /home/hsyl20/travail/code/haskus-system
+    commit: e2463198ad034c74c24ff21f2d3d554c2fd61bb2
+  extra-dep: true
+- location:
+    git: /home/hsyl20/travail/code/haskus-binary
+    commit: 86c3020532dc0ead052e761bbb97d88ec61a32e6
+  extra-dep: true
+- location:
+    git: /home/hsyl20/travail/code/haskus-utils
+    commit: 3e658bf8e6d9b2084ffb36553b23432fb388ee3f
   extra-dep: true
 # We need a patched FontyFruity to support accentuated characters correctly.
 # Patches have been submitted upstream, so this should ultimately be unnecessary.

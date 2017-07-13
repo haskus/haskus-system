@@ -20,6 +20,7 @@ import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed
 import Haskus.Utils.STM
+import Haskus.Utils.Maybe
 import Haskus.Utils.Monad
 import Haskus.Format.String
 import qualified Haskus.Utils.Map as Map
@@ -312,11 +313,22 @@ main = runSys' <| do
          width  = fromIntegral <| modeHorizontalDisplay mode
          height = fromIntegral <| modeVerticalDisplay mode
 
-      let Just ctrl = do
+      let defaultCtrl = do
             encId  <- connectorEncoderID conn
             enc    <- Map.lookup encId (graphicsEncoders state)
             ctrlId <- encoderControllerID enc
             Map.lookup ctrlId (graphicsControllers state)
+
+          Just ctrl = case defaultCtrl of
+            -- we already have a connected controller, use it
+            Just c  -> Just c
+            -- we need to select a controller and an encoder
+            Nothing -> do
+               encId  <- headMaybe (connectorPossibleEncoderIDs conn)
+               enc    <- Map.lookup encId (graphicsEncoders state)
+               ctrlId <- headMaybe (encoderPossibleControllers enc)
+               Map.lookup ctrlId (graphicsControllers state)
+            
 
       let
          bgColor  = 0x316594
@@ -362,7 +374,7 @@ main = runSys' <| do
                >..~!> (\err -> lift $ sysWarning <| "Cannot set DPMS: " ++ show err)
 
 
-      initRenderingEngine card ctrl mode 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
+      initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
          let
             centerPos x = ( (floor width  - imageWidth x ) `div` 2
                           , (floor height - imageHeight x) `div` 2
