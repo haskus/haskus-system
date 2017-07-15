@@ -2,9 +2,8 @@ resolver: lts-8.18
 packages:
 - '.'
 - location:
-    #git: git@github.com:haskus/haskus-system
-    git: /home/hsyl20/travail/code/haskus-binary
-    commit: 3695259fb5f3a8da2938e715b6294c6951f10df2
+    git: git@github.com:hsyl20/haskus-binary
+    commit: 86c3020532dc0ead052e761bbb97d88ec61a32e6
   extra-dep: true
 
 extra-deps:
