@@ -22,16 +22,16 @@ import qualified Haskus.Arch.X86_64.ISA.RegisterFile as RF
 
 -- | Register family
 data RegFamily
-   = RF_GPR    -- general purpose register: xL, xX, ExX, RxX
-   | RF_X87 
-   | RF_MMX
-   | RF_XMM
-   | RF_YMM
-   | RF_ZMM
-   | RF_VEC    -- vector register: MMX (64), XMM (128), YMM (256), ZMM (512)
-   | RF_SEG
-   | RF_CTRL
-   | RF_DBG
+   = RF_GPR    -- ^ general purpose register: xL, xX, ExX, RxX
+   | RF_X87    -- ^ x87 stack: st(0)..st(7)
+   | RF_MMX    -- ^ MMX (64 bits)
+   | RF_XMM    -- ^ XMM (128 bits)
+   | RF_YMM    -- ^ YMM (256 bits)
+   | RF_ZMM    -- ^ ZMM (512 bits)
+   | RF_VEC    -- ^ any vector register: MMX (64), XMM (128), YMM (256), ZMM (512)
+   | RF_SEG    -- ^ segment registers
+   | RF_CTRL   -- ^ control registers
+   | RF_DBG    -- ^ debug registers
    deriving (Show,Eq)
 
 -- | X86 registers
@@ -331,24 +331,24 @@ getRegisterFile mode = mergeRegisterFiles . fmap makeRegisterFile $ regSets
             ]
 
 
-      regsL pitch = makeRegSequence 8 pitch 0 ["al","bl","cl","dl"]
-      regsH pitch = makeRegSequence 8 pitch 8 ["ah","bh","ch","dh"]
-      regsX pitch = makeRegSequence 16 pitch 0 ["ax","bx","cx","dx","bp","si","di","sp"]
-      regsE pitch = makeRegSequence 32 pitch 0 ["eax","ebx","ecx","edx","ebp","esi","edi","esp"]
-      regsR pitch = makeRegSequence 64 pitch 0 ["rax","rbx","rcx","rdx","rbp","rsi","rdi","rsp","r8","r9","r10","r11","r12","r13","r14","r15"]
-      regsFPU = makeRegSequence 64 64 0 ["fpr0","fpr1","fpr2","fpr3","fpr4","fpr5","fpr6","fpr7"]
-      regsMMX = makeRegSequence 64 64 0 ["mmx0","mmx1","mmx2","mmx3","mmx4","mmx5","mmx6","mmx7"]
+      regsL pitch         = makeRegSequence 8 pitch 0 ["al","bl","cl","dl"]
+      regsH pitch         = makeRegSequence 8 pitch 8 ["ah","bh","ch","dh"]
+      regsX pitch         = makeRegSequence 16 pitch 0 ["ax","bx","cx","dx","bp","si","di","sp"]
+      regsE pitch         = makeRegSequence 32 pitch 0 ["eax","ebx","ecx","edx","ebp","esi","edi","esp"]
+      regsR pitch         = makeRegSequence 64 pitch 0 ["rax","rbx","rcx","rdx","rbp","rsi","rdi","rsp","r8","r9","r10","r11","r12","r13","r14","r15"]
+      regsFPU             = makeRegSequence 64 64 0 ["fpr0","fpr1","fpr2","fpr3","fpr4","fpr5","fpr6","fpr7"]
+      regsMMX             = makeRegSequence 64 64 0 ["mmx0","mmx1","mmx2","mmx3","mmx4","mmx5","mmx6","mmx7"]
       regsXMM pitch count = makeRegSequence 128 pitch 0 ["xmm" ++ show n | n <- [0..count-1 :: Int]]
       regsYMM pitch count = makeRegSequence 256 pitch 0 ["ymm" ++ show n | n <- [0..count-1 :: Int]]
-      regRIP = RF.Register "rip" 64 0
-      regEIP = RF.Register "eip" 32 0
-      regIP  = RF.Register "ip"  16 0
-      regRFLAGS = RF.Register "rflags" 64 0
-      regEFLAGS = RF.Register "eflags" 32 0
-      regFLAGS = RF.Register "flags" 16 0
-      regSegs16 = makeRegSequence 16 16 0 ["cs", "ds", "es", "ss"]
-      regSegs32 = makeRegSequence 16 16 0 ["cs", "ds", "es", "fs", "gs", "ss"]
-      regSegs64 = makeRegSequence 16 16 0 ["cs", "fs", "gs"]
+      regRIP              = RF.Register "rip" 64 0
+      regEIP              = RF.Register "eip" 32 0
+      regIP               = RF.Register "ip"  16 0
+      regRFLAGS           = RF.Register "rflags" 64 0
+      regEFLAGS           = RF.Register "eflags" 32 0
+      regFLAGS            = RF.Register "flags" 16 0
+      regSegs16           = makeRegSequence 16 16 0 ["cs", "ds", "es", "ss"]
+      regSegs32           = makeRegSequence 16 16 0 ["cs", "ds", "es", "fs", "gs", "ss"]
+      regSegs64           = makeRegSequence 16 16 0 ["cs", "fs", "gs"]
 
 -- TODO: 32 bit registers are zero-extended into 64 bit registers
 -- 16 and 8 bit registers are not zero-extended
@@ -359,87 +359,87 @@ getRegisterFile mode = mergeRegisterFiles . fmap makeRegisterFile $ regSets
 
 registerName :: Register -> String
 registerName = \case
-   R_AL -> "al"
-   R_BL -> "bl" 
-   R_CL -> "cl"
-   R_DL -> "dl"
-   R_AH -> "ah"
-   R_BH -> "bh"
-   R_CH -> "ch"
-   R_DH -> "dh"
-   R_AX -> "ax"
-   R_BX -> "bx"
-   R_CX -> "cx"
-   R_DX -> "dx"
-   R_BP -> "bp"
-   R_SP -> "sp"
-   R_DI -> "di"
-   R_SI -> "si"
-   R_BPL -> "bpl"
-   R_SPL -> "spl"
-   R_DIL -> "dil"
-   R_SIL -> "sil"
-   R_EAX -> "eax"
-   R_EBX -> "ebx"
-   R_ECX -> "ecx"
-   R_EDX -> "edx"
-   R_EBP -> "ebp"
-   R_ESP -> "esp"
-   R_EDI -> "edi"
-   R_ESI -> "esi"
-   R_RAX -> "rax"
-   R_RBX -> "rbx"
-   R_RCX -> "rcx"
-   R_RDX -> "rdx"
-   R_RBP -> "rbp"
-   R_RSP -> "rsp"
-   R_RDI -> "rdi"
-   R_RSI -> "rsi"
-   R_R8  -> "r8"
-   R_R9  -> "r9"
-   R_R10 -> "r10"
-   R_R11 -> "r11"
-   R_R12 -> "r12"
-   R_R13 -> "r13"
-   R_R14 -> "r14"
-   R_R15 -> "r15"
-   R_R8L -> "r8l"
-   R_R9L -> "r9l"
-   R_R10L -> "r10l"
-   R_R11L -> "r11l"
-   R_R12L -> "r12l"
-   R_R13L -> "r13l"
-   R_R14L -> "r14l"
-   R_R15L -> "r15l"
-   R_R8W -> "r8w"
-   R_R9W -> "r9w"
+   R_AL    -> "al"
+   R_BL    -> "bl"
+   R_CL    -> "cl"
+   R_DL    -> "dl"
+   R_AH    -> "ah"
+   R_BH    -> "bh"
+   R_CH    -> "ch"
+   R_DH    -> "dh"
+   R_AX    -> "ax"
+   R_BX    -> "bx"
+   R_CX    -> "cx"
+   R_DX    -> "dx"
+   R_BP    -> "bp"
+   R_SP    -> "sp"
+   R_DI    -> "di"
+   R_SI    -> "si"
+   R_BPL   -> "bpl"
+   R_SPL   -> "spl"
+   R_DIL   -> "dil"
+   R_SIL   -> "sil"
+   R_EAX   -> "eax"
+   R_EBX   -> "ebx"
+   R_ECX   -> "ecx"
+   R_EDX   -> "edx"
+   R_EBP   -> "ebp"
+   R_ESP   -> "esp"
+   R_EDI   -> "edi"
+   R_ESI   -> "esi"
+   R_RAX   -> "rax"
+   R_RBX   -> "rbx"
+   R_RCX   -> "rcx"
+   R_RDX   -> "rdx"
+   R_RBP   -> "rbp"
+   R_RSP   -> "rsp"
+   R_RDI   -> "rdi"
+   R_RSI   -> "rsi"
+   R_R8    -> "r8"
+   R_R9    -> "r9"
+   R_R10   -> "r10"
+   R_R11   -> "r11"
+   R_R12   -> "r12"
+   R_R13   -> "r13"
+   R_R14   -> "r14"
+   R_R15   -> "r15"
+   R_R8L   -> "r8l"
+   R_R9L   -> "r9l"
+   R_R10L  -> "r10l"
+   R_R11L  -> "r11l"
+   R_R12L  -> "r12l"
+   R_R13L  -> "r13l"
+   R_R14L  -> "r14l"
+   R_R15L  -> "r15l"
+   R_R8W   -> "r8w"
+   R_R9W   -> "r9w"
    R_R10W  -> "r10w"
    R_R11W  -> "r11w"
    R_R12W  -> "r12w"
    R_R13W  -> "r13w"
    R_R14W  -> "r14w"
    R_R15W  -> "r15w"
-   R_R8D    -> "r8d"
-   R_R9D    -> "r9d"
+   R_R8D   -> "r8d"
+   R_R9D   -> "r9d"
    R_R10D  -> "r10d"
    R_R11D  -> "r11d"
    R_R12D  -> "r12d"
    R_R13D  -> "r13d"
    R_R14D  -> "r14d"
    R_R15D  -> "r15d"
-   R_ST w -> "st" ++ show w
-   R_CR w -> "cr" ++ show w
-   R_DR w -> "dr" ++ show w
+   R_ST w  -> "st" ++ show w
+   R_CR w  -> "cr" ++ show w
+   R_DR w  -> "dr" ++ show w
    R_MMX w -> "mmx" ++ show w
    R_XMM w -> "xmm" ++ show w
    R_YMM w -> "ymm" ++ show w
    R_ZMM w -> "zmm" ++ show w
-   R_CS -> "cs"
-   R_DS -> "ds"
-   R_ES -> "es"
-   R_FS -> "fs"
-   R_GS -> "gs"
-   R_SS -> "ss"
-   R_IP -> "ip"
-   R_EIP  -> "eip"
-   R_RIP  -> "rip"
+   R_CS    -> "cs"
+   R_DS    -> "ds"
+   R_ES    -> "es"
+   R_FS    -> "fs"
+   R_GS    -> "gs"
+   R_SS    -> "ss"
+   R_IP    -> "ip"
+   R_EIP   -> "eip"
+   R_RIP   -> "rip"
