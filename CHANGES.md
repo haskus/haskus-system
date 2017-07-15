@@ -1,5 +1,12 @@
 ## Version 0.8 (next)
 
+* Input
+   * Set auto-repeat period/delay
+* Graphics
+   * Perform initial full mode-setting in the rendering manager
+* Terminal
+   * Support for terminal (TTY) IOCTLs
+
 ## Version 0.7 (2017-06-23)
 
 * System
