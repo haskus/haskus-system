@@ -35,6 +35,7 @@ import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Insn
+import Haskus.Arch.X86_64.ISA.RegisterNames
 
 -------------------------------------------------------------------
 -- Helper methods

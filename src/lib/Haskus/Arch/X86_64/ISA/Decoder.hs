@@ -10,6 +10,7 @@ where
 
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Registers
+import Haskus.Arch.X86_64.ISA.RegisterNames
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.OpcodeMaps
 import Haskus.Arch.X86_64.ISA.Insns
@@ -692,8 +693,8 @@ readOperands mode ps oc enc = do
             Just modrm' -> return $ OpMem mtype $ Addr seg' base idx scl disp
                where
                   toR = case addressSize of
-                           AddrSize32 -> reg32
-                           AddrSize64 -> reg64
+                           AddrSize32 -> gpr 32
+                           AddrSize64 -> gpr 64
                            AddrSize16 -> error "Trying to use AddrSize16"
                   base = if addressSize == AddrSize16
                            then case (modField modrm', rmField modrm') of
@@ -714,8 +715,8 @@ readOperands mode ps oc enc = do
                               -- SIB: if mod is 0b00, don't use EBP as base.
                               (0b00, 0b100)
                                  | baseField sib' == 0b101 -> Nothing
-                              (_,    0b100) -> Just (toR sibBase)
-                              _             -> Just (toR modRMrm)
+                              (_,    0b100) -> Just (toR (fromIntegral sibBase))
+                              _             -> Just (toR (fromIntegral modRMrm))
                   idx = if addressSize == AddrSize16
                            then case rmField modrm' of
                               0b000 -> Just R_SI
@@ -731,7 +732,7 @@ readOperands mode ps oc enc = do
                            -- SIB: if index is 0b100 (should be ESP), don't
                            -- use any index
                            (0b100, 0b100) -> Nothing
-                           (0b100, _    ) -> Just (toR sibIdx)
+                           (0b100, _    ) -> Just (toR (fromIntegral sibIdx))
                            _              -> Nothing -- no SIB
                   scl = if addressSize /= AddrSize16 && rmField modrm' == 0b100
                            then Just (scaleField sib')
@@ -745,50 +746,43 @@ readOperands mode ps oc enc = do
                RegVec128   -> return $ OpReg $ R_XMM regid
                RegVec256   -> return $ OpReg $ R_YMM regid
                RegFixed r  -> return $ OpReg r
-               RegSegment  -> OpReg <$> case regid of
-                                0 -> return R_ES
-                                1 -> return R_CS
-                                2 -> return R_SS
-                                3 -> return R_DS
-                                4 -> return R_FS
-                                5 -> return R_GS
-                                _ -> fail ("Invalid segment register id: " ++ show regid)
-               RegControl  -> return $ OpReg $ R_CR regid
-               RegDebug    -> return $ OpReg $ R_DR regid
-               Reg8        -> return $ OpReg $ reg8 regid
-               Reg16       -> return $ OpReg $ reg16 regid
-               Reg32       -> return $ OpReg $ reg32 regid
-               Reg64       -> return $ OpReg $ reg64 regid
+               RegSegment  -> return $ OpReg $ R_Seg regid
+               RegControl  -> return $ OpReg $ if is64bitMode'
+                                 then R_CR64 regid
+                                 else R_CR32 regid
+               RegDebug    -> return $ OpReg $ if is64bitMode'
+                                 then R_DR64 regid
+                                 else R_DR32 regid
+               Reg8        -> return $ OpReg $ gpr 8  regid
+               Reg16       -> return $ OpReg $ gpr 16 regid
+               Reg32       -> return $ OpReg $ gpr 32 regid
+               Reg64       -> return $ OpReg $ gpr 64 regid
                Reg32o64    -> return $ OpReg $ if is64bitMode'
-                                 then reg64 regid
-                                 else reg32 regid
-               RegOpSize   -> return $ OpReg $ case operandSize of
-                                OpSize8  -> reg8  regid
-                                OpSize16 -> reg16 regid
-                                OpSize32 -> reg32 regid
-                                OpSize64 -> reg64 regid
+                                 then gpr 64 regid
+                                 else gpr 32 regid
+               RegOpSize   -> return $ OpReg $ gprOpSize regid
                RegST       -> return $ OpReg $ R_ST regid
                RegCounter  -> return $ OpReg $ case addressSize of
                                 AddrSize16 -> R_CX
                                 AddrSize32 -> R_ECX
                                 AddrSize64 -> R_RCX
-               RegAccu     -> return $ OpReg $ gpr operandSize 0
+               RegAccu     -> return $ OpReg $ gprOpSize 0
                RegStackPtr -> return $ OpReg rSP
                RegBasePtr  -> return $ OpReg rBP
                RegFam rf   -> return $ case rf of
-                                 RegFamAX -> OpReg $ gpr operandSize 0
-                                 RegFamBX -> OpReg $ gpr operandSize 3
-                                 RegFamCX -> OpReg $ gpr operandSize 1
-                                 RegFamDX -> OpReg $ gpr operandSize 2
-                                 RegFamSI -> OpReg $ gpr operandSize 6
-                                 RegFamDI -> OpReg $ gpr operandSize 7
+                                 RegFamAX -> OpReg $ gprOpSize 0
+                                 RegFamBX -> OpReg $ gprOpSize 3
+                                 RegFamCX -> OpReg $ gprOpSize 1
+                                 RegFamDX -> OpReg $ gprOpSize 2
+                                 RegFamSI -> OpReg $ gprOpSize 6
+                                 RegFamDI -> OpReg $ gprOpSize 7
                                  RegFamDXAX -> case operandSize of
                                     OpSize8  -> OpReg R_AX
                                     OpSize16 -> OpRegPair R_DX R_AX
                                     OpSize32 -> OpRegPair R_EDX R_EAX
                                     OpSize64 -> OpRegPair R_RDX R_RAX
             where
-               regid = case opEnc spec of
+               regid = fromIntegral $ case opEnc spec of
                   RM         -> modRMrm
                   Reg        -> modRMreg
                   Vvvv       -> vvvv
@@ -893,92 +887,8 @@ readOperands mode ps oc enc = do
                AddrSize32 -> R_EIP
                AddrSize64 -> R_RIP
 
-      gpr osize r = case osize of
-         OpSize8  -> reg8  r
-         OpSize16 -> reg16 r
-         OpSize32 -> reg32 r
-         OpSize64 -> reg64 r
-
-      reg8 = \case
-            0              -> R_AL
-            1              -> R_CL
-            2              -> R_DL
-            3              -> R_BL
-            4 | useExtRegs -> R_SPL
-              | otherwise  -> R_AH
-            5 | useExtRegs -> R_BPL
-              | otherwise  -> R_CH
-            6 | useExtRegs -> R_SIL
-              | otherwise  -> R_DH
-            7 | useExtRegs -> R_DIL
-              | otherwise  -> R_BH
-            8              -> R_R8L
-            9              -> R_R9L
-            10             -> R_R10L
-            11             -> R_R11L
-            12             -> R_R12L
-            13             -> R_R13L
-            14             -> R_R14L
-            15             -> R_R15L
-            r              -> error ("Invalid reg8 id: " ++ show r)
-
-      reg16 = \case
-            0              -> R_AX
-            1              -> R_CX
-            2              -> R_DX
-            3              -> R_BX
-            4              -> R_SP
-            5              -> R_BP
-            6              -> R_SI
-            7              -> R_DI
-            8              -> R_R8W
-            9              -> R_R9W
-            10             -> R_R10W
-            11             -> R_R11W
-            12             -> R_R12W
-            13             -> R_R13W
-            14             -> R_R14W
-            15             -> R_R15W
-            r              -> error ("Invalid reg16 id: " ++ show r)
-
-      reg32 = \case
-            0              -> R_EAX
-            1              -> R_ECX
-            2              -> R_EDX
-            3              -> R_EBX
-            4              -> R_ESP
-            5              -> R_EBP
-            6              -> R_ESI
-            7              -> R_EDI
-            8              -> R_R8D
-            9              -> R_R9D
-            10             -> R_R10D
-            11             -> R_R11D
-            12             -> R_R12D
-            13             -> R_R13D
-            14             -> R_R14D
-            15             -> R_R15D
-            r              -> error ("Invalid reg32 id: " ++ show r)
-
-      reg64 = \case
-            0              -> R_RAX
-            1              -> R_RCX
-            2              -> R_RDX
-            3              -> R_RBX
-            4              -> R_RSP
-            5              -> R_RBP
-            6              -> R_RSI
-            7              -> R_RDI
-            8              -> R_R8
-            9              -> R_R9
-            10             -> R_R10
-            11             -> R_R11
-            12             -> R_R12
-            13             -> R_R13
-            14             -> R_R14
-            15             -> R_R15
-            r              -> error ("Invalid reg64 id: " ++ show r)
-
+      gpr sz r  = regGPR useExtRegs sz r
+      gprOpSize = gpr (opSizeInBits operandSize)
 
       -- extended ModRM.reg (with REX.R, VEX.R, etc.)
       modRMreg = opcodeR oc `unsafeShiftL` 3 .|. regField modrm'

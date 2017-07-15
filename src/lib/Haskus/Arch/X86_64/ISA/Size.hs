@@ -1,9 +1,13 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | Sizes
 module Haskus.Arch.X86_64.ISA.Size
    ( Size(..)
+   , sizeInBits
    , AddressSize(..)
    , SizedValue(..)
    , OperandSize(..)
+   , opSizeInBits
    , getSize
    ) where
 
@@ -20,6 +24,17 @@ data Size
    | Size256
    | Size512
    deriving (Show,Eq)
+
+-- | Get a size in bits
+sizeInBits :: Size -> Word
+sizeInBits = \case
+   Size8   -> 8
+   Size16  -> 16
+   Size32  -> 32
+   Size64  -> 64
+   Size128 -> 128
+   Size256 -> 256
+   Size512 -> 512
 
 -- | Address size
 data AddressSize
@@ -43,6 +58,14 @@ data OperandSize
    | OpSize32 
    | OpSize64 
    deriving (Show,Eq)
+
+-- | Operand size in bits
+opSizeInBits :: OperandSize -> Word
+opSizeInBits = \case
+   OpSize8  -> 8
+   OpSize16 -> 16
+   OpSize32 -> 32
+   OpSize64 -> 64
 
 -- | Read a SizedValue
 getSize :: Size -> Get SizedValue
