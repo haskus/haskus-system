@@ -756,7 +756,7 @@ data Addr = Addr
 -- L bit
 -- -----
 -- VEX/XOP prefixes have a L flag that indicates the size of the vector register
--- (XMM or YMM). It can be ignored of fixed at a specified value.
+-- (XMM or YMM). It can be ignored or fixed at a specified value.
 --
 -- Immediate operands
 -- ------------------
@@ -788,43 +788,43 @@ data Addr = Addr
 
 -- | Immediate type
 data ImmType
-   = ImmSize8    -- ^ 8-bit immediate
-   | ImmSize16   -- ^ 16-bit immediate
-   | ImmSizeOp   -- ^ operand-size immediate
-   | ImmSizeSE   -- ^ sign-extendable immediate:
-                 --     * if sign-extendable bit is set: sign-extended 8-bit immediate
-                 --     * if 64-bit operand size: sign-extended 32-bit immediate
-                 --     * otherwise: operand-size immediate
+   = ImmSize8     -- ^ 8-bit immediate
+   | ImmSize16    -- ^ 16-bit immediate
+   | ImmSizeOp    -- ^ operand-size immediate
+   | ImmSizeSE    -- ^ sign-extendable immediate:
+                  -- * if sign-extendable bit is set: sign-extended 8-bit immediate
+                  -- * if 64-bit operand size: sign-extended 32-bit immediate
+                  -- * otherwise: operand-size immediate
    | ImmConst Int -- ^ Constant immediate (used in implicit)
    deriving (Show,Eq)
 
 -- | Memory address type
 data MemType
-   = MemPair16o32 -- ^ Pair of words in memory (words are operand-size large)
-   | Mem8         -- ^ 8-bit memory
-   | Mem16        -- ^ 16-bit memory
-   | Mem32        -- ^ 32-bit memory
-   | Mem64        -- ^ 64-bit memory
-   | Mem128       -- ^ 128-bit memory
-   | Mem256       -- ^ 256-bit memory
-   | Mem512       -- ^ 512-bit memory
-   | MemOpSize    -- ^ operand-size-bit memory
-   | MemVoid      -- ^ The pointer is used to identify a page, etc. (e.g., CLFLUSH)
-   | MemPtr       -- ^ m16:16, m16:32 or m16:64 (16-bit selector + offset)
-   | MemDescTable -- ^ Descriptor table: m16&32 (legacy)  or m16&64 (64-bit mode)
-   | MemFP        -- ^ m32fp or m64fp (x87)
-   | MemFP80      -- ^ m80fp (x87)
-   | MemInt       -- ^ m32int or m16int (x87)
-   | MemInt64     -- ^ m64int (x87)
-   | MemDec80     -- ^ Binary coded decimal (m80dec (x87))
-   | MemEnv       -- ^ 14/28 bit FPU environment (x87)
-   | MemFPUState  -- ^ 94/108 bit FPU state (x87)
-   | MemDSrSI     -- ^ operand-size memory at DS:rSI (rSI depends on address-size, DS if fixed)
-   | MemESrDI     -- ^ operand-size memory at ES:rDI (rDI depends on address-size, ES is fixed)
-   | MemDSrDI     -- ^ operand-size memory at DS:rDI (rDI depends on address-size, DS is overridable with prefixes)
+   = MemPair16o32       -- ^ Pair of words in memory (words are operand-size large)
+   | Mem8               -- ^ 8-bit memory
+   | Mem16              -- ^ 16-bit memory
+   | Mem32              -- ^ 32-bit memory
+   | Mem64              -- ^ 64-bit memory
+   | Mem128             -- ^ 128-bit memory
+   | Mem256             -- ^ 256-bit memory
+   | Mem512             -- ^ 512-bit memory
+   | MemOpSize          -- ^ operand-size-bit memory
+   | MemVoid            -- ^ The pointer is used to identify a page, etc. (e.g., CLFLUSH)
+   | MemPtr             -- ^ m16:16, m16:32 or m16:64 (16-bit selector + offset)
+   | MemDescTable       -- ^ Descriptor table: m16&32 (legacy)  or m16&64 (64-bit mode)
+   | MemFP              -- ^ m32fp or m64fp (x87)
+   | MemFP80            -- ^ m80fp (x87)
+   | MemInt             -- ^ m32int or m16int (x87)
+   | MemInt64           -- ^ m64int (x87)
+   | MemDec80           -- ^ Binary coded decimal (m80dec (x87))
+   | MemEnv             -- ^ 14/28 bit FPU environment (x87)
+   | MemFPUState        -- ^ 94/108 bit FPU state (x87)
+   | MemDSrSI           -- ^ operand-size memory at DS:rSI (rSI depends on address-size, DS is fixed)
+   | MemESrDI           -- ^ operand-size memory at ES:rDI (rDI depends on address-size, ES is fixed)
+   | MemDSrDI           -- ^ operand-size memory at DS:rDI (rDI depends on address-size, DS is overridable with prefixes)
    | MemVSIB32 VSIBType -- ^ VSIB: 32-bit memory referred to by the VSIB
    | MemVSIB64 VSIBType -- ^ VSIB: 64-bit memory referred to by the VSIB
-   | MemState     -- ^ Processor extended states (cf XSAVE/XRSTOR)
+   | MemState           -- ^ Processor extended states (cf XSAVE/XRSTOR)
    deriving (Show,Eq)
 
 -- | How to use the index register
