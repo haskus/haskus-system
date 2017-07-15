@@ -14,6 +14,10 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , ValidMode (..)
    , hasImmediate
    , encSupportHLE
+   , encSupportMode
+   , encRequiredExtensions
+   , encSupportExtensions
+   , encSupportExecMode
    , encValidModRMMode
    , encHasVariableSizedOperand
    , encMayHaveMemoryOperand
@@ -105,6 +109,8 @@ import Haskus.Arch.X86_64.ISA.MicroArch
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Registers
+
+import Haskus.Utils.List ((\\))
 
 -- | Instruction encoding
 data Encoding = Encoding
@@ -288,6 +294,35 @@ encSupportHLE a e = case filter isHLE (encProperties e) of
       isHLE (HLE _) = True
       isHLE _       = False
 
+-- | Test if an encoding is supported in a given mode
+encSupportMode :: X86Mode -> Encoding -> Bool
+encSupportMode mode enc = case mode of
+   LongMode Long64bitMode     -> LongModeSupport   `elem` props
+   LongMode CompatibilityMode -> LegacyModeSupport `elem` props
+   LegacyMode _               -> LegacyModeSupport `elem` props
+   where
+      props = encProperties enc
+
+-- | Get required extensions for the encoding
+encRequiredExtensions :: Encoding -> [X86Extension]
+encRequiredExtensions enc =
+   mapMaybe extractExt (encProperties enc)
+   where
+      extractExt (Extension e) = Just e
+      extractExt _             = Nothing
+
+-- | Indicate if an encoding is supported given a set of extensions.
+-- For now, check if the required extensions are enabled.
+encSupportExtensions :: [X86Extension] -> Encoding -> Bool
+encSupportExtensions exts enc =
+   -- FIXME: don't use a list, use (Bit)Set ops
+   null (encRequiredExtensions enc \\ exts)
+
+-- | Test if an encoding is supported in a given execution mode
+encSupportExecMode :: ExecMode -> Encoding -> Bool
+encSupportExecMode mode enc =
+   encSupportMode (x86Mode mode) enc
+   && encSupportExtensions (extensions mode) enc
 
 
 -- | Some instructions store flags and values into the opcode byte. This method

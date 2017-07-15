@@ -19,7 +19,6 @@ import Haskus.Format.Dwarf
 
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
-import Haskus.Arch.X86_64.ISA.Decoder
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Registers

@@ -5,7 +5,6 @@
 
 module Haskus.Arch.X86_64.ISA.Decoder
    ( getInstruction
-   , ExecMode (..)
    )
 where
 
@@ -29,23 +28,6 @@ import Haskus.Utils.Flow
 
 import qualified Data.Map as Map
 import qualified Data.Vector as V
-
--- ===========================================================================
--- X86 execution mode
--- ===========================================================================
-
--- | Execution mode
-data ExecMode = ExecMode
-   { x86Mode            :: X86Mode        -- ^ x86 mode
-   , defaultAddressSize :: AddressSize    -- ^ Default address size (used in protected/compat mode)
-   , defaultOperandSize :: OperandSize    -- ^ Default operand size (used in protected/compat mode)
-   , extensions         :: [X86Extension] -- ^ Enabled extensions
-   }
-
--- | Indicate if an extension is enabled
-hasExtension :: ExecMode -> X86Extension -> Bool
-hasExtension mode ext = ext `elem` extensions mode
-
 
 -- ===========================================================================
 -- X86 Instruction
@@ -178,26 +160,13 @@ getInstruction mode = consumeAtMost 15 $ do
          -- Filter out invalid enabled extensions
          -- and invalid execution mode
          let
-            cs5 = filter hasModeSupport (filter hasValidExtension cs4)
+            cs5 = filter (encSupportExecMode mode . entryEncoding) cs4
                
-            hasValidExtension i = null
-               (mapMaybe extractExt (encProperties (entryEncoding i))
-                \\ extensions mode)
+         when (null cs5) $ do
+            -- get disabled extensions that may have filtered out the expected
+            -- encoding
+            let es = nub (concatMap (encRequiredExtensions . entryEncoding) cs4) \\ extensions mode
 
-            hasModeSupport i = case x86Mode mode of
-               LongMode Long64bitMode     -> LongModeSupport `elem` props
-               LongMode CompatibilityMode -> LegacyModeSupport `elem` props
-               LegacyMode _               -> LegacyModeSupport `elem` props
-               where
-                  props = encProperties (entryEncoding i)
-               
-            extractExt (Extension e) = Just e
-            extractExt _             = Nothing
-
-            -- disabled extensions that filter out some insn
-            es = nub (concatMap (mapMaybe extractExt . encProperties . entryEncoding) cs4) \\ extensions mode
-
-         when (null cs5) $ 
             fail ("No candidate instruction found, try enabling one of: "++ show es)
 
          -- If there are more than one instruction left, signal a bug
@@ -442,7 +411,7 @@ readLegacyOpcode mode ps rex = do
 -- existing instructions but add new ones (new opcode maps). Moreover they are
 -- mutually exclusive with the REX prefix as they subsume it.
 --
--- Some legacy prefixes are supported: address-size and sesgment override.
+-- Some legacy prefixes are supported: address-size and segment override.
 --
 ---------------------------------------------------------------------------
 

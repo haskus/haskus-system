@@ -11,8 +11,13 @@ module Haskus.Arch.X86_64.ISA.Mode
    , is64bitMode
    , is32bitMode
    , isLongMode
+   -- * Execution mode
+   , ExecMode (..)
+   , hasExtension
    )
-   where
+where
+
+import Haskus.Arch.X86_64.ISA.Size
 
 
 -- | X86 and X86-64 operating mode
@@ -125,3 +130,18 @@ is32bitMode _                            = False
 isLongMode :: X86Mode -> Bool
 isLongMode (LongMode _) = True
 isLongMode _            = False
+
+
+-- | Execution mode
+data ExecMode = ExecMode
+   { x86Mode            :: X86Mode        -- ^ x86 mode
+   , defaultAddressSize :: AddressSize    -- ^ Default address size (used in protected/compat mode)
+   , defaultOperandSize :: OperandSize    -- ^ Default operand size (used in protected/compat mode)
+   , extensions         :: [X86Extension] -- ^ Enabled extensions
+   }
+
+-- | Indicate if an extension is enabled
+hasExtension :: ExecMode -> X86Extension -> Bool
+hasExtension mode ext = ext `elem` extensions mode
+
+

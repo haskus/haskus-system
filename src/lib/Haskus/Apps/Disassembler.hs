@@ -12,7 +12,6 @@ import Haskus.Format.Binary.Buffer
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
-import Haskus.Arch.X86_64.ISA.Decoder
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Registers
