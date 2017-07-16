@@ -15280,7 +15280,7 @@ i_pslld = insn
 i_psllq :: X86Insn
 i_psllq = insn
    { insnDesc        = "Shift packed data left logical"
-   , insnMnemonic    = "PSLLD"
+   , insnMnemonic    = "PSLLQ"
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xF3
@@ -15625,6 +15625,7 @@ i_psrldq = insn
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x73
+                           ,    encOpcodeExt       = Just 3
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension SSE2
