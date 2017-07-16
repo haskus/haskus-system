@@ -748,17 +748,29 @@ readOperands mode ps oc enc = do
                   seg' = fromMaybe (defaultSegment base) segOverride
                         
          -- Register
-         T_Reg rfam -> return $ OpReg $ regFixupFamily predSolver fam
+         T_Reg rfam -> return $ OpReg $ regFixupFamily predSolver
+                        $ fixupOffset $ fixupFamilyId rfam
             where
-               -- updated family
-               fam = rfam { regFamId = Set regid }
-
-               regid = fromIntegral $ case opEnc spec of
-                  RM         -> modRMrm
-                  Reg        -> modRMreg
-                  Vvvv       -> vvvv
-                  OpcodeLow3 -> opcodeRegId
+               -- update family id
+               fixupFamilyId fam = case opEnc spec of
+                  RM         -> updateFam modRMrm
+                  Reg        -> updateFam modRMreg
+                  Vvvv       -> updateFam vvvv
+                  OpcodeLow3 -> updateFam opcodeRegId
+                  Implicit   -> fam
                   e          -> error ("Invalid register encoding: " ++ show e)
+                  where
+                     -- update family id
+                     updateFam regid = fam { regFamId = Set (fromIntegral regid) }
+
+               -- fixup to handle ah,bh,ch,dh vs spl,dil,etc.
+               fixupOffset fam = case (regFamOffset fam, regFamBank fam, regFamSize fam, regFamId fam) of
+                  (OneOf [0,8], Set GPR, Set 8, Set i)
+                     | not useExtRegs && 4 <= i && i <= 7 -> fam { regFamOffset = Set 8
+                                                                 , regFamId     = Set (i-4)
+                                                                 }
+                     | otherwise                          -> fam { regFamOffset = Set 0 }
+                  _ -> fam
 
          -- Sub-part of a register
          T_SubReg _ rtype -> readParam (spec {opType = T_Reg rtype})

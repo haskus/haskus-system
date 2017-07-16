@@ -79,10 +79,10 @@ regMatchFamily predSolver RegFam{..} Reg{..} =
       && matchQualifier predSolver registerOffset regFamOffset
 
 -- | Fixup a family (all fields must reduce to Set qualifier)
-regFixupFamily :: (Eq b) => (p -> Bool) -> RegFam p b -> Reg b
+regFixupFamily :: (Eq b,Show b,Show p) => (p -> Bool) -> RegFam p b -> Reg b
 regFixupFamily predSolver fam =
    case regFixupFamilyMaybe predSolver fam of
-      Nothing -> error "Cannot fixup family"
+      Nothing -> error ("Cannot fixup family: " ++ show fam)
       Just c  -> c
 
 -- | Try to fixup a family (all fields must reduce to Set qualifier)
