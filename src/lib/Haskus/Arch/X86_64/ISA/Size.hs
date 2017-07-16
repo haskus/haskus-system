@@ -23,7 +23,7 @@ data Size
    | Size128
    | Size256
    | Size512
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Get a size in bits
 sizeInBits :: Size -> Word
@@ -41,7 +41,7 @@ data AddressSize
    = AddrSize16 
    | AddrSize32 
    | AddrSize64 
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Sized value
 data SizedValue
@@ -49,7 +49,7 @@ data SizedValue
    | SizedValue16 !Word16
    | SizedValue32 !Word32
    | SizedValue64 !Word64
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Operand size
 data OperandSize
@@ -57,7 +57,7 @@ data OperandSize
    | OpSize16 
    | OpSize32 
    | OpSize64 
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Operand size in bits
 opSizeInBits :: OperandSize -> Word

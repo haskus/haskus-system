@@ -35,6 +35,7 @@ library
     Haskus.Arch.X86_64.ISA.Mode
     Haskus.Arch.X86_64.ISA.Registers
     Haskus.Arch.X86_64.ISA.RegisterNames
+    Haskus.Arch.X86_64.ISA.RegisterFamilies
     Haskus.Arch.X86_64.ISA.OpcodeMaps
     Haskus.Arch.X86_64.ISA.Size
     Haskus.Arch.X86_64.ISA.Decoder
