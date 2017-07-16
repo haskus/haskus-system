@@ -689,12 +689,12 @@ readOperands mode ps oc enc = do
                where
                   seg' = fromMaybe R_DS segOverride
                   rSI  = case operandSize of
-                     OpSize8  -> Nothing -- shouldn't happen
+                     OpSize8  -> Just R_SI
                      OpSize16 -> Just R_SI
                      OpSize32 -> Just R_ESI
                      OpSize64 -> Just R_RSI
                   rDI  = case operandSize of
-                     OpSize8  -> Nothing -- shouldn't happen
+                     OpSize8  -> Just R_DI -- happens in SCAS
                      OpSize16 -> Just R_DI
                      OpSize32 -> Just R_EDI
                      OpSize64 -> Just R_RDI
