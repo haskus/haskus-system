@@ -88,11 +88,9 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , Operand(..)
    , Addr(..)
    , ImmType (..)
-   , RegType (..)
    , SubRegType (..)
    , MemType (..)
    , RelType (..)
-   , RegFamilies (..)
    , VSIBType (..)
    , VSIBIndexReg (..)
    , maybeOpTypeReg
@@ -109,6 +107,8 @@ import Haskus.Arch.X86_64.ISA.MicroArch
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Registers
+import Haskus.Arch.X86_64.ISA.RegisterFamilies
+import Haskus.Arch.Common.Register (RegFam(..),Qualifier(..),matchQualifier)
 
 import Haskus.Utils.List ((\\))
 
@@ -268,14 +268,17 @@ encHasVariableSizedOperand e = any (vsizeOp . opType) (encOperands e)
                            MemESrDI     -> True
                            MemDSrDI     -> True
                            _            -> False
-         T_Reg rt      -> case rt of
-                           RegOpSize   -> True
-                           RegAccu     -> True
-                           RegStackPtr -> True
-                           RegBasePtr  -> True
-                           RegFam _    -> True
-                           _           -> False
-                           
+         T_Reg rt      -> case regFamSize rt of
+                           -- guarded with operand-size predicate
+                           Or (Guard (OperandSizeEqual _) _:_) -> True
+                           -- stack operation on [E,R]SP or [E,R]BP, hence the
+                           -- targeted size depends on the operand-size (TODO:
+                           -- check this)
+                           _ -> matchQualifier (const True) GPR (regFamBank rt)
+                                 && ( matchQualifier (const True) 4 (regFamId rt) -- xSP
+                                    ||matchQualifier (const True) 5 (regFamId rt) -- xBP
+                                    )
+
          T_Imm it      -> case it of
                            ImmSizeOp -> True
                            ImmSizeSE -> True
@@ -838,41 +841,6 @@ data VSIBIndexReg
    | VSIB256
    deriving (Show,Eq)
 
--- | Register type
-data RegType
-   = RegVec64           -- ^  64-bit vector register (mmx)
-   | RegVec128          -- ^ 128-bit vector register (xmm)
-   | RegVec256          -- ^ 256-bit vector register (ymm)
-   | RegFixed Register  -- ^ Fixed register
-   | RegSegment         -- ^ Segment register
-   | RegControl         -- ^ Control register
-   | RegDebug           -- ^ Debug register
-   | Reg8               -- ^ General purpose 8-bit register
-   | Reg16              -- ^ General purpose 16-bit register
-   | Reg32              -- ^ General purpose 32-bit register
-   | Reg64              -- ^ General purpose 64-bit register
-   | Reg32o64           -- ^ General purpose 32-bit register in legacy mode,
-                        -- general purpose 64-bit register in 64-bit mode
-   | RegOpSize          -- ^ General purpose register: 8, 16, 32 or 64-bit
-   | RegST              -- ^ x87 register
-   | RegCounter         -- ^ CX, ECX or RCX depending on the address-size
-   | RegAccu            -- ^ AL, AX, EAX, RAX depending on the operand-size
-   | RegStackPtr        -- ^ SP, ESP, RSP (default in 64-bit mode)
-   | RegBasePtr         -- ^ BP, EBP, RBP (default in 64-bit mode)
-   | RegFam RegFamilies -- ^ Register family
-   deriving (Show,Eq)
-
--- | Register family
-data RegFamilies
-   = RegFamAX          -- ^ AX, EAX, RAX (depending on operand-size)
-   | RegFamBX          -- ^ BX, EBX, RBX (depending on operand-size)
-   | RegFamCX          -- ^ CX, ECX, RCX (depending on operand-size)
-   | RegFamDX          -- ^ DX, EDX, RDX (depending on operand-size)
-   | RegFamSI          -- ^ SI, ESI, RSI (depending on operand-size)
-   | RegFamDI          -- ^ DI, EDI, RDI (depending on operand-size)
-   | RegFamDXAX        -- ^ AX, DX:AX, EDX:EAX, RDX:RAX
-   deriving (Show,Eq)
-
 -- | Sub register type
 data SubRegType
    = SubLow8      -- ^ Low  8-bit of a register
@@ -895,8 +863,8 @@ data OperandType
    | TLE OperandType OperandType    -- ^ One of the two types depending on Vex.L
    | TWE OperandType OperandType    -- ^ One of the two types depending on Rex.W
    | T_Mem MemType                  -- ^ Memory address
-   | T_Reg RegType                  -- ^ Register
-   | T_SubReg SubRegType RegType    -- ^ Sub-part of a register
+   | T_Reg X86RegFam                -- ^ Register
+   | T_SubReg SubRegType X86RegFam  -- ^ Sub-part of a register
    | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
    | T_Imm ImmType                  -- ^ Immediate value
    | T_Rel RelType                  -- ^ Memory offset relative to current IP
@@ -947,6 +915,7 @@ maybeOpTypeReg = \case
    T_MemOffset     -> False
    T_MemDSrAX      -> False
 
+-- | Is the operand encoding an immediate?
 isImmediate :: OperandEnc -> Bool
 isImmediate = \case
    Imm    -> True

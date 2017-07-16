@@ -11,6 +11,8 @@ where
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.RegisterNames
+import Haskus.Arch.X86_64.ISA.RegisterFamilies
+import Haskus.Arch.Common.Register (Qualifier(..),RegFam(..),regFixupFamily,regFixupFamilyMaybe)
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.OpcodeMaps
 import Haskus.Arch.X86_64.ISA.Insns
@@ -653,6 +655,12 @@ readOperands mode ps oc enc = do
    let
       is64bitMode' = is64bitMode (x86Mode mode)
 
+      -- predicate solver
+      predSolver Mode64bit            = is64bitMode'
+      predSolver (OperandSizeEqual s) = operandSize == s
+      predSolver (AddressSizeEqual s) = addressSize == s
+      predSolver (Not x)              = not (predSolver x)
+
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)
          TME r m -> case modField <$> modrm of
@@ -739,61 +747,31 @@ readOperands mode ps oc enc = do
                            else Nothing
                   seg' = fromMaybe (defaultSegment base) segOverride
                         
-
          -- Register
-         T_Reg rtype -> case rtype of
-               RegVec64    -> return $ OpReg $ R_MMX regid
-               RegVec128   -> return $ OpReg $ R_XMM regid
-               RegVec256   -> return $ OpReg $ R_YMM regid
-               RegFixed r  -> return $ OpReg r
-               RegSegment  -> return $ OpReg $ R_Seg regid
-               RegControl  -> return $ OpReg $ if is64bitMode'
-                                 then R_CR64 regid
-                                 else R_CR32 regid
-               RegDebug    -> return $ OpReg $ if is64bitMode'
-                                 then R_DR64 regid
-                                 else R_DR32 regid
-               Reg8        -> return $ OpReg $ gpr 8  regid
-               Reg16       -> return $ OpReg $ gpr 16 regid
-               Reg32       -> return $ OpReg $ gpr 32 regid
-               Reg64       -> return $ OpReg $ gpr 64 regid
-               Reg32o64    -> return $ OpReg $ if is64bitMode'
-                                 then gpr 64 regid
-                                 else gpr 32 regid
-               RegOpSize   -> return $ OpReg $ gprOpSize regid
-               RegST       -> return $ OpReg $ R_ST regid
-               RegCounter  -> return $ OpReg $ case addressSize of
-                                AddrSize16 -> R_CX
-                                AddrSize32 -> R_ECX
-                                AddrSize64 -> R_RCX
-               RegAccu     -> return $ OpReg $ gprOpSize 0
-               RegStackPtr -> return $ OpReg rSP
-               RegBasePtr  -> return $ OpReg rBP
-               RegFam rf   -> return $ case rf of
-                                 RegFamAX -> OpReg $ gprOpSize 0
-                                 RegFamBX -> OpReg $ gprOpSize 3
-                                 RegFamCX -> OpReg $ gprOpSize 1
-                                 RegFamDX -> OpReg $ gprOpSize 2
-                                 RegFamSI -> OpReg $ gprOpSize 6
-                                 RegFamDI -> OpReg $ gprOpSize 7
-                                 RegFamDXAX -> case operandSize of
-                                    OpSize8  -> OpReg R_AX
-                                    OpSize16 -> OpRegPair R_DX R_AX
-                                    OpSize32 -> OpRegPair R_EDX R_EAX
-                                    OpSize64 -> OpRegPair R_RDX R_RAX
+         T_Reg rfam -> return $ OpReg $ regFixupFamily predSolver fam
             where
+               -- updated family
+               fam = rfam { regFamId = Set regid }
+
                regid = fromIntegral $ case opEnc spec of
                   RM         -> modRMrm
                   Reg        -> modRMreg
                   Vvvv       -> vvvv
                   OpcodeLow3 -> opcodeRegId
                   e          -> error ("Invalid register encoding: " ++ show e)
-         
+
          -- Sub-part of a register
          T_SubReg _ rtype -> readParam (spec {opType = T_Reg rtype})
 
          -- Pair (AAA:BBB)
-         T_Pair (T_Reg (RegFixed r1)) (T_Reg (RegFixed r2)) -> return (OpRegPair r1 r2)
+         T_Pair (T_Reg f1) (T_Reg f2) ->
+            -- registers are constant in pairs, so we just have to fix them. We
+            -- allow the first register to not be fixable, in which case it's
+            -- not a pair. We do this to support the family:
+            --    AX, DX:AX, EDX:RAX, RDX:RAX
+            return $ case (regFixupFamilyMaybe predSolver f1, regFixupFamily predSolver f2) of
+               (Just r1,r2) -> OpRegPair r1 r2
+               (Nothing,r)  -> OpReg r
 
          T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp) -> return $ case imms of
             [SizedValue16 x, SizedValue16 y] -> OpPtr16_16 x y
@@ -868,27 +846,12 @@ readOperands mode ps oc enc = do
       -- memory segment (when override is allowed)
       seg = fromMaybe defSeg segOverride
 
-      rSP = if is64bitMode'
-               then R_RSP
-               else case addressSize of
-                 AddrSize16 -> R_SP
-                 AddrSize32 -> R_ESP
-                 AddrSize64 -> R_RSP
-      
-      rBP = if is64bitMode'
-               then R_RBP  
-               else case addressSize of
-                 AddrSize16 -> R_BP
-                 AddrSize32 -> R_EBP
-                 AddrSize64 -> R_RBP
-
       rIP = case addressSize of
                AddrSize16 -> R_IP
                AddrSize32 -> R_EIP
                AddrSize64 -> R_RIP
 
       gpr sz r  = regGPR useExtRegs sz r
-      gprOpSize = gpr (opSizeInBits operandSize)
 
       -- extended ModRM.reg (with REX.R, VEX.R, etc.)
       modRMreg = opcodeR oc `unsafeShiftL` 3 .|. regField modrm'

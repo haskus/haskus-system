@@ -36,6 +36,7 @@ import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.RegisterNames
+import Haskus.Arch.X86_64.ISA.RegisterFamilies
 
 -------------------------------------------------------------------
 -- Helper methods
@@ -138,52 +139,52 @@ mem64 m = op m (T_Mem Mem64) RM
 
 -- | 64-bit vector or memory
 mvec64 :: AccessMode -> OperandSpec
-mvec64 m = op m (TME (T_Reg RegVec64) (T_Mem Mem64)) RM
+mvec64 m = op m (TME (T_Reg regFamVec64) (T_Mem Mem64)) RM
 
 -- | 256-bit vector or memory
 mvec256 :: AccessMode -> OperandSpec
-mvec256 m = op m (TME (T_Reg RegVec256) (T_Mem Mem256)) RM
+mvec256 m = op m (TME (T_Reg regFamVec256) (T_Mem Mem256)) RM
 
 -- | 128-bit vector or memory
 mvec128 :: AccessMode -> OperandSpec
-mvec128 m = op m (TME (T_Reg RegVec128) (T_Mem Mem128)) RM
+mvec128 m = op m (TME (T_Reg regFamVec128) (T_Mem Mem128)) RM
 
 -- | 128-bit or 256-bit vector or memory
 mvec128o256 :: AccessMode -> OperandSpec
 mvec128o256 m = op m (TME
-      (TLE (T_Reg RegVec128) (T_Reg RegVec256))
+      (TLE (T_Reg regFamVec128) (T_Reg regFamVec256))
       (TLE (T_Mem Mem128)    (T_Mem Mem256)))
    RM
 
 -- | low 64-bit of 128-bit vector or 64-bit memory
 mvec128low64 :: AccessMode -> OperandSpec
-mvec128low64 m = op m (TME (T_SubReg SubLow64 RegVec128) (T_Mem Mem64)) RM
+mvec128low64 m = op m (TME (T_SubReg SubLow64 regFamVec128) (T_Mem Mem64)) RM
 
 -- | low 32-bit of 128-bit vector or 32-bit memory
 mvec128low32 :: AccessMode -> OperandSpec
-mvec128low32 m = op m (TME (T_SubReg SubLow32 RegVec128) (T_Mem Mem32)) RM
+mvec128low32 m = op m (TME (T_SubReg SubLow32 regFamVec128) (T_Mem Mem32)) RM
 
 -- | low 16-bit of 128-bit vector or 16-bit memory
 mvec128low16 :: AccessMode -> OperandSpec
-mvec128low16 m = op m (TME (T_SubReg SubLow16 RegVec128) (T_Mem Mem16)) RM
+mvec128low16 m = op m (TME (T_SubReg SubLow16 regFamVec128) (T_Mem Mem16)) RM
 
 -- | low 8-bit of 128-bit vector or 8-bit memory
 mvec128low8 :: AccessMode -> OperandSpec
-mvec128low8 m = op m (TME (T_SubReg SubLow8 RegVec128) (T_Mem Mem8)) RM
+mvec128low8 m = op m (TME (T_SubReg SubLow8 regFamVec128) (T_Mem Mem8)) RM
 
 -- | 64-bit even positioned values in vector register or memory
 --    * low 64-bit of 128-bit vector
 --    * [63,0] and [191,128] of 256-bit vector
 mvecEven64 :: AccessMode -> OperandSpec
 mvecEven64 m = op m (TME
-   (TLE (T_SubReg SubLow64 RegVec128) (T_SubReg SubEven64 RegVec256))
+   (TLE (T_SubReg SubLow64 regFamVec128) (T_SubReg SubEven64 regFamVec256))
    (TLE (T_Mem Mem64) (T_Mem Mem256))
    ) RM
 
 -- | low bytes of a vector or memory
 mveclow :: AccessMode -> OperandSpec
 mveclow m = op m (TME 
-   (TLE (T_SubReg SubLow64 RegVec128) (T_Reg RegVec128))
+   (TLE (T_SubReg SubLow64 regFamVec128) (T_Reg regFamVec128))
    (TLE (T_Mem Mem64) (T_Mem Mem128))) RM
 
 -- | 128-bit or 256-bit memory depending on Vex.L
@@ -192,46 +193,46 @@ m128o256 m = op m (TLE (T_Mem Mem128) (T_Mem Mem256)) RM
 
 -- | 256-bit vector
 vec256 :: AccessMode -> OperandEnc -> OperandSpec
-vec256 m e = op m (T_Reg RegVec256) e
+vec256 m e = op m (T_Reg regFamVec256) e
 
 -- | 128-bit vector
 vec128 :: AccessMode -> OperandEnc -> OperandSpec
-vec128 m e = op m (T_Reg RegVec128) e
+vec128 m e = op m (T_Reg regFamVec128) e
 
 -- | 64-bit vector
 vec64 :: AccessMode -> OperandEnc -> OperandSpec
-vec64 m e = op m (T_Reg RegVec64) e
+vec64 m e = op m (T_Reg regFamVec64) e
 
 -- | Low 64-bit of 128-bit vector
 vec128low64 :: AccessMode -> OperandEnc -> OperandSpec
-vec128low64 m e = op m (T_SubReg SubLow64 RegVec128) e
+vec128low64 m e = op m (T_SubReg SubLow64 regFamVec128) e
 
 -- | High 64-bit of 128-bit vector
 vec128high64 :: AccessMode -> OperandEnc -> OperandSpec
-vec128high64 m e = op m (T_SubReg SubHigh64 RegVec128) e
+vec128high64 m e = op m (T_SubReg SubHigh64 regFamVec128) e
 
 -- | Low 32-bit of 128-bit vector
 vec128low32 :: AccessMode -> OperandEnc -> OperandSpec
-vec128low32 m e = op m (T_SubReg SubLow32 RegVec128) e
+vec128low32 m e = op m (T_SubReg SubLow32 regFamVec128) e
 
 -- | 128-bit or 256-bit vector depending on Vex.L
 vec128o256 :: AccessMode -> OperandEnc -> OperandSpec
-vec128o256 m e = op m (TLE (T_Reg RegVec128) (T_Reg RegVec256)) e
+vec128o256 m e = op m (TLE (T_Reg regFamVec128) (T_Reg regFamVec256)) e
 
 -- | 32-bit or 64-bit general purpose register (depending on Rex.W)
 reg32o64 :: AccessMode -> OperandEnc -> OperandSpec
-reg32o64 m e = op m (TWE (T_Reg Reg32) (T_Reg Reg64)) e
+reg32o64 m e = op m (TWE (T_Reg regFamGPR32) (T_Reg regFamGPR64)) e
 
 -- | 32-bit or 64-bit general purpose register (depending on Rex.W) or memory
 rm32o64 :: AccessMode -> OperandSpec
 rm32o64 m = op m (TME
-   (TWE (T_Reg Reg32) (T_Reg Reg64))
+   (TWE (T_Reg regFamGPR32) (T_Reg regFamGPR64))
    (TWE (T_Mem Mem32) (T_Mem Mem64)))
    RM
 
 -- | 16-bit general purpose register
 reg16 :: AccessMode -> OperandEnc -> OperandSpec
-reg16 m e = op m (T_Reg Reg16) e
+reg16 m e = op m (T_Reg regFamGPR16) e
 
 
 -- | 8-bit memory
@@ -244,11 +245,11 @@ mem16 m = op m (T_Mem Mem16) RM
 
 -- | 8-bit general purpose register or memory
 rm8 :: AccessMode -> OperandSpec
-rm8 m = op m (TME (T_Reg Reg8) (T_Mem Mem8)) RM
+rm8 m = op m (TME (T_Reg regFamGPR8) (T_Mem Mem8)) RM
 
 -- | 16-bit general purpose register or memory
 rm16 :: AccessMode -> OperandSpec
-rm16 m = op m (TME (T_Reg Reg16) (T_Mem Mem16)) RM
+rm16 m = op m (TME (T_Reg regFamGPR16) (T_Mem Mem16)) RM
 
 -- | 32-bit memory
 mem32 :: AccessMode -> OperandSpec
@@ -260,11 +261,11 @@ mem512 m = op m (T_Mem Mem512) RM
 
 -- | 32-bit general purpose register or memory
 rm32 :: AccessMode -> OperandSpec
-rm32 m = op m (TME (T_Reg Reg32) (T_Mem Mem32)) RM
+rm32 m = op m (TME (T_Reg regFamGPR32) (T_Mem Mem32)) RM
 
 -- | 64-bit general purpose register or memory
 rm64 :: AccessMode -> OperandSpec
-rm64 m = op m (TME (T_Reg Reg64) (T_Mem Mem64)) RM
+rm64 m = op m (TME (T_Reg regFamGPR64) (T_Mem Mem64)) RM
 
 -- | 128-bit or 256-bit memory (depending on Rex.W)
 mem128o256 :: AccessMode -> OperandSpec
@@ -280,11 +281,11 @@ mem32o64 m = op m (TWE (T_Mem Mem32) (T_Mem Mem64)) RM
 
 -- | General purpose register with the operand-size
 gpr :: AccessMode -> OperandEnc -> OperandSpec
-gpr m e = op m (T_Reg RegOpSize) e
+gpr m e = op m (T_Reg regFamGPR) e
 
 -- | General purpose register with the operand-size or memory
 mgpr :: AccessMode -> OperandSpec
-mgpr m = op m (TME (T_Reg RegOpSize) (T_Mem MemOpSize)) RM
+mgpr m = op m (TME (T_Reg regFamGPR) (T_Mem MemOpSize)) RM
 
 -- | Memory with the operand-size
 mem :: AccessMode -> OperandSpec
@@ -296,40 +297,45 @@ mvoid = op NA (T_Mem MemVoid) RM
 
 -- | Fixed register
 reg :: Register -> AccessMode -> OperandEnc -> OperandSpec
-reg r m e = op m (T_Reg (RegFixed r)) e
+reg r m e = op m (T_Reg (regFamFixed r)) e
 
 -- | EAX or RAX
 rAX :: AccessMode -> OperandSpec
-rAX m = op m (TWE (T_Reg (RegFixed R_EAX)) (T_Reg (RegFixed R_RAX))) Implicit
+rAX m = op m (TWE (T_Reg (regFamFixed R_EAX)) (T_Reg (regFamFixed R_RAX))) Implicit
 
 -- | ECX or RCX
 rCX :: AccessMode -> OperandSpec
-rCX m = op m (TWE (T_Reg (RegFixed R_ECX)) (T_Reg (RegFixed R_RCX))) Implicit
+rCX m = op m (TWE (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_RCX))) Implicit
 
 -- | EDX or RDX
 rDX :: AccessMode -> OperandSpec
-rDX m = op m (TWE (T_Reg (RegFixed R_EDX)) (T_Reg (RegFixed R_RDX))) Implicit
+rDX m = op m (TWE (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_RDX))) Implicit
 
 -- | EDX:EAX or RDX:RAX pair
 rDXrAX :: AccessMode -> OperandSpec
 rDXrAX m = op m (TWE
-   (T_Pair (T_Reg (RegFixed R_EDX)) (T_Reg (RegFixed R_EAX)))
-   (T_Pair (T_Reg (RegFixed R_RDX)) (T_Reg (RegFixed R_RAX))))
+   (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX)))
+   (T_Pair (T_Reg (regFamFixed R_RDX)) (T_Reg (regFamFixed R_RAX))))
    Implicit
+
+-- | AX, DX:AX, EDX:EAX, RDX:RAX
+rDXAX :: AccessMode -> OperandSpec
+rDXAX m = op m (T_Pair (T_Reg regFamDX) (T_Reg regFamAX')) Implicit
+
 
 -- | EDX:EAX
 eDXeAX :: AccessMode -> OperandSpec
-eDXeAX m = op m (T_Pair (T_Reg (RegFixed R_EDX)) (T_Reg (RegFixed R_EAX))) Implicit
+eDXeAX m = op m (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX))) Implicit
 
 -- | XMM0
 xmm0 :: AccessMode -> OperandSpec
-xmm0 m = op m (T_Reg (RegFixed (R_XMM 0))) Implicit
+xmm0 m = op m (T_Reg (regFamFixed (R_XMM 0))) Implicit
 
 -- | ECX:EBX or RCX:RBX pair
 rCXrBX :: AccessMode -> OperandSpec
 rCXrBX m = op m (TWE
-   (T_Pair (T_Reg (RegFixed R_ECX)) (T_Reg (RegFixed R_EBX)))
-   (T_Pair (T_Reg (RegFixed R_RCX)) (T_Reg (RegFixed R_RBX))))
+   (T_Pair (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_EBX)))
+   (T_Pair (T_Reg (regFamFixed R_RCX)) (T_Reg (regFamFixed R_RBX))))
    Implicit
 
 -- | 8-bit relative offset
@@ -358,11 +364,11 @@ m16x = op RO (T_Mem MemPtr) RM
 
 -- | x87 register (there are all in RM)
 st :: AccessMode -> OperandSpec
-st m = op m (T_Reg RegST) RM
+st m = op m (T_Reg regFamST) RM
 
 -- | real memory or x87 register
 mst :: AccessMode -> OperandSpec
-mst m = op m (TME (T_Reg RegST) (T_Mem MemFP)) RM
+mst m = op m (TME (T_Reg regFamST) (T_Mem MemFP)) RM
 
 -- | x87 int memory
 mint :: AccessMode -> OperandSpec
@@ -398,23 +404,23 @@ mdt m = op m (T_Mem MemDescTable) RM
 
 -- | Counter register
 regCounter :: AccessMode -> OperandSpec
-regCounter m = op m (T_Reg RegCounter) Implicit
+regCounter m = op m (T_Reg regFamCounter) Implicit
 
 -- | Accumulator register
 regAccu :: AccessMode -> OperandSpec
-regAccu m = op m (T_Reg RegAccu) Implicit
+regAccu m = op m (T_Reg regFamAccu) Implicit
 
 -- | Stack pointer register
 regStackPtr :: AccessMode -> OperandEnc -> OperandSpec
-regStackPtr m e = op m (T_Reg RegStackPtr) e
+regStackPtr m e = op m (T_Reg regFamStackPtr) e
 
 -- | Base pointer register
 regBasePtr :: AccessMode -> OperandEnc -> OperandSpec
-regBasePtr m e = op m (T_Reg RegBasePtr) e
+regBasePtr m e = op m (T_Reg regFamStackBase) e
 
 -- | Register family
-regFam :: RegFamilies -> AccessMode -> OperandEnc -> OperandSpec
-regFam x m e = op m (T_Reg (RegFam x)) e
+regFam :: X86RegFam -> AccessMode -> OperandEnc -> OperandSpec
+regFam x m e = op m (T_Reg x) e
 
 -- | Memory at DS:rSI
 mDSrSI :: AccessMode -> OperandSpec
@@ -4220,8 +4226,8 @@ i_cwd = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ regFam RegFamDX WO Implicit
-                                                  , regFam RegFamAX RW Implicit
+                           ,    encOperands     = [ regFam regFamDX WO Implicit
+                                                  , regFam regFamAX RW Implicit
                                                   ]
                            }
                        ]
@@ -4302,7 +4308,7 @@ i_div = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ regFam RegFamDXAX RW Implicit
+                           ,    encOperands     = [ rDXAX RW
                                                   , mgpr RO
                                                   ]
                            }
@@ -6426,7 +6432,7 @@ i_idiv = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ regFam RegFamDXAX RW Implicit
+                           ,    encOperands        = [ rDXAX RW
                                                      , mgpr RO
                                                      ]
                            }
@@ -6448,7 +6454,7 @@ i_imul = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ regFam RegFamDXAX WO Implicit
+                           ,    encOperands        = [ rDXAX WO
                                                      , regAccu RO
                                                      , mgpr RO
                                                      ]
@@ -8037,7 +8043,7 @@ i_mov = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr WO
-                                                     , op RO (T_Reg RegSegment) Reg
+                                                     , op RO (T_Reg regFamSegment) Reg
                                                      ]
                            }
                        , leg
@@ -8079,8 +8085,8 @@ i_movcr = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ op WO (T_Reg Reg32o64)   RM
-                                                     , op RO (T_Reg RegControl) Reg
+                           ,    encOperands        = [ op WO (T_Reg regFamGPR32o64)   RM
+                                                     , op RO (T_Reg regFamControl) Reg
                                                      ]
                            }
                        ]
@@ -8099,8 +8105,8 @@ i_movdr = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ op    WO (T_Reg Reg32o64) RM
-                                                     , op    RO (T_Reg RegDebug) Reg
+                           ,    encOperands        = [ op    WO (T_Reg regFamGPR32o64) RM
+                                                     , op    RO (T_Reg regFamDebug) Reg
                                                      ]
                            }
                        ]
@@ -9425,7 +9431,7 @@ i_mul = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ regFam RegFamDXAX RW Implicit
+                           ,    encOperands     = [ rDXAX RW
                                                   , regAccu RO
                                                   , mgpr RO
                                                   ]
@@ -14322,12 +14328,12 @@ i_popa = insn
                            ,    encOpcode          = 0x61
                            ,    encProperties      = [ LegacyModeSupport ]
                            ,    encOperands        = [ regBasePtr WO Implicit
-                                                     , regFam RegFamDI WO Implicit
-                                                     , regFam RegFamSI WO Implicit
-                                                     , regFam RegFamAX WO Implicit
-                                                     , regFam RegFamBX WO Implicit
-                                                     , regFam RegFamCX WO Implicit
-                                                     , regFam RegFamDX WO Implicit
+                                                     , regFam regFamDI WO Implicit
+                                                     , regFam regFamSI WO Implicit
+                                                     , regFam regFamAX WO Implicit
+                                                     , regFam regFamBX WO Implicit
+                                                     , regFam regFamCX WO Implicit
+                                                     , regFam regFamDX WO Implicit
                                                      , regStackPtr RW Implicit
                                                      ]
                            }
@@ -17077,12 +17083,12 @@ i_pusha = insn
                            ,    encOpcode          = 0x60
                            ,    encProperties      = [ LegacyModeSupport ]
                            ,    encOperands        = [ regBasePtr RO Implicit
-                                                     , regFam RegFamDI RO Implicit
-                                                     , regFam RegFamSI RO Implicit
-                                                     , regFam RegFamAX RO Implicit
-                                                     , regFam RegFamBX RO Implicit
-                                                     , regFam RegFamCX RO Implicit
-                                                     , regFam RegFamDX RO Implicit
+                                                     , regFam regFamDI RO Implicit
+                                                     , regFam regFamSI RO Implicit
+                                                     , regFam regFamAX RO Implicit
+                                                     , regFam regFamBX RO Implicit
+                                                     , regFam regFamCX RO Implicit
+                                                     , regFam regFamDX RO Implicit
                                                      , regStackPtr RW Implicit
                                                      ]
                            }
@@ -22154,7 +22160,7 @@ i_xlat = insn
                                                      ]
                            ,    encOperands        = [ reg R_AL RW Implicit
                                                      , reg R_DS RO Implicit
-                                                     , regFam RegFamBX RO Implicit
+                                                     , regFam regFamBX RO Implicit
                                                      -- FIXME: we don't encode
                                                      -- the effective address:
                                                      -- [DS:rBX + zero_extend(AL)]
