@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | Register
 module Haskus.Arch.Common.Register
@@ -8,6 +9,11 @@ module Haskus.Arch.Common.Register
    , RegFam (..)
    , Qualifier (..)
    , regMatchFamily
+   , regFixupFamily
+   , regFixupFamilyMaybe
+   , matchQualifier
+   , fixupQualifier
+   , fixupQualifierMaybe
    , regFamFromReg
    )
 where
@@ -51,7 +57,6 @@ data Qualifier p a
    | NoneOf [a]
    | OneOf  [a]
    | Any
-   | And [Qualifier p a]
    | Or [Qualifier p a]
    | Guard p (Qualifier p a)
    deriving (Show,Eq)
@@ -68,18 +73,56 @@ data RegFam pred banks = RegFam
 -- | Test if a register match a family
 regMatchFamily :: (Eq b) => (p -> Bool) -> RegFam p b -> Reg b -> Bool
 regMatchFamily predSolver RegFam{..} Reg{..} =
-      test registerBank regFamBank
-      && test registerId regFamId
-      && test registerSize regFamSize
-      && test registerOffset regFamOffset
+      matchQualifier predSolver registerBank regFamBank
+      && matchQualifier predSolver registerId regFamId
+      && matchQualifier predSolver registerSize regFamSize
+      && matchQualifier predSolver registerOffset regFamOffset
+
+-- | Fixup a family (all fields must reduce to Set qualifier)
+regFixupFamily :: (Eq b) => (p -> Bool) -> RegFam p b -> Reg b
+regFixupFamily predSolver fam =
+   case regFixupFamilyMaybe predSolver fam of
+      Nothing -> error "Cannot fixup family"
+      Just c  -> c
+
+-- | Try to fixup a family (all fields must reduce to Set qualifier)
+regFixupFamilyMaybe :: (Eq b) => (p -> Bool) -> RegFam p b -> Maybe (Reg b)
+regFixupFamilyMaybe predSolver RegFam{..} =
+   Reg <$> fixupQualifierMaybe predSolver regFamBank
+       <*> fixupQualifierMaybe predSolver regFamId
+       <*> fixupQualifierMaybe predSolver regFamSize
+       <*> fixupQualifierMaybe predSolver regFamOffset
+
+-- | Match a qualifier
+matchQualifier :: Eq a => (p -> Bool) -> a -> Qualifier p a -> Bool
+matchQualifier predSolver = test
    where
       test y (Set x)     = x == y
       test y (NoneOf xs) = y `notElem` xs
       test y (OneOf xs)  = y `elem` xs
       test _ Any         = True
-      test y (And xs)    = all (test y) xs
       test y (Or xs)     = any (test y) xs
       test y (Guard p x) = predSolver p && test y x
+
+-- | Reduce a qualifier to a Set if possible and retrieve the value
+fixupQualifier :: Eq a => (p -> Bool) -> Qualifier p a -> a
+fixupQualifier fp q = case fixupQualifierMaybe fp q of
+      Nothing -> error "Can't fix up qualifier"
+      Just x  -> x
+
+-- | Reduce a qualifier to a Set if possible and retrieve the value
+fixupQualifierMaybe :: Eq a => (p -> Bool) -> Qualifier p a -> Maybe a
+fixupQualifierMaybe fp = \case
+   Set x      -> Just x
+   NoneOf _   -> Nothing
+   OneOf  [x] -> Just x
+   OneOf  _   -> Nothing
+   Any        -> Nothing
+   Or     []  -> Nothing
+   Or  (x:xs) -> case fixupQualifierMaybe fp x of
+                     Nothing -> fixupQualifierMaybe fp (Or xs)
+                     c       -> c
+   Guard p x -> if fp p then fixupQualifierMaybe fp x else Nothing
 
 -- | Make a family matching a single register
 regFamFromReg :: Reg b -> RegFam p b
