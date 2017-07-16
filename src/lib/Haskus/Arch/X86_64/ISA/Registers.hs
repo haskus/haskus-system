@@ -8,7 +8,7 @@ module Haskus.Arch.X86_64.ISA.Registers
    , Register
    , regSupportRex
    , regRequireRex
-   , getRegisterFile
+   , getModeRegisters
    , regGPR
    )
 where
@@ -16,8 +16,8 @@ where
 import Haskus.Arch.Common.Register
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.RegisterNames
-import Haskus.Arch.X86_64.ISA.RegisterFile (makeRegSequence,RegisterFile,mergeRegisterFiles,makeRegisterFile)
-import qualified Haskus.Arch.X86_64.ISA.RegisterFile as RF
+
+import Data.Set as Set
 
 type Register = X86Reg
 
@@ -53,76 +53,67 @@ regGPR useExtRegs sz r
 
    
 ---------------------------------------------------------------------
--- REGISTER FILE
+-- REGISTERS PER MODE
 ---------------------------------------------------------------------
 
--- | Return X86 register file for the selected mode
-getRegisterFile :: X86Mode -> RegisterFile
-getRegisterFile mode = mergeRegisterFiles . fmap makeRegisterFile $ regSets
+-- | Return X86 registers for the selected mode
+getModeRegisters :: X86Mode -> Set Register
+getModeRegisters mode = Set.unions $ fmap Set.fromList regSets
    where
       regSets = case mode of
-         LongMode Long64bitMode -> [
-               concatMap ($ 64) [regsL,regsH,regsX,regsE,regsR], -- General purpose registers (GPRs)
-               regsFPU ++ regsMMX,                               -- 64 bit Media and Floating-Point registers
-               regsXMM 256 16 ++ regsYMM 256 16,                 -- SSE Media registers
-               [regRIP],                                         -- Instruction pointer
-               [regRFLAGS],                                      -- Flags
-               regSegs64                                         -- Segments
+         LongMode Long64bitMode ->
+            [ regsL64,regsH,regsX64,regsE64,regsR -- General purpose registers (GPRs)
+            , regsFPU, regsMMX                    -- 64 bit Media and Floating-Point registers
+            , regsXMM 16, regsYMM 16              -- SSE Media registers
+            , [R_RIP]                             -- Instruction pointer
+            , [R_Flags64]                         -- Flags
+            , [R_CS,R_FS,R_GS]                    -- Segments
             ]
-         LongMode CompatibilityMode -> [
-               concatMap ($ 32) [regsL,regsH,regsX,regsE],       -- General purpose registers (GPRs)
-               regsFPU ++ regsMMX,                               -- 64 bit Media and Floating-Point registers
-               regsXMM 256 8 ++ regsYMM 256 8,                   -- SSE Media registers
-               [regEIP],                                         -- Instruction pointer
-               [regEFLAGS],                                      -- Flags
-               regSegs32                                         -- Segments
+         LongMode CompatibilityMode ->
+            [ regsL,regsH,regsX,regsE             -- General purpose registers (GPRs)
+            , regsFPU, regsMMX                    -- 64 bit Media and Floating-Point registers
+            , regsXMM 8, regsYMM 8                -- SSE Media registers
+            , [R_EIP]                             -- Instruction pointer
+            , [R_Flags32]                         -- Flags
+            , regSegs32                           -- Segments
             ]
-         LegacyMode ProtectedMode -> [
-               concatMap ($ 32) [regsL,regsH,regsX,regsE],       -- General purpose registers (GPRs)
-               regsFPU ++ regsMMX,                               -- 64 bit Media and Floating-Point registers
-               regsXMM 256 8 ++ regsYMM 256 8,                   -- SSE Media registers
-               [regEIP],                                         -- Instruction pointer
-               [regEFLAGS],                                      -- Flags
-               regSegs32                                         -- Segments
+         LegacyMode ProtectedMode ->
+            [ regsL,regsH,regsX,regsE             -- General purpose registers (GPRs)
+            , regsFPU, regsMMX                    -- 64 bit Media and Floating-Point registers
+            , regsXMM 8, regsYMM 8                -- SSE Media registers
+            , [R_EIP]                             -- Instruction pointer
+            , [R_Flags32]                         -- Flags
+            , regSegs32                           -- Segments
             ]
-         LegacyMode Virtual8086Mode -> [
-               concatMap ($ 16) [regsL,regsH,regsX],             -- General purpose registers (GPRs)
-               regsFPU ++ regsMMX,                               -- 64 bit Media and Floating-Point registers
-               [regIP],                                          -- Instruction pointer
-               [regFLAGS],                                       -- Flags
-               regSegs16                                         -- Segments
+         LegacyMode Virtual8086Mode ->
+            [ regsL,regsH,regsX                   -- General purpose registers (GPRs)
+            , regsFPU, regsMMX                    -- 64 bit Media and Floating-Point registers
+            , [R_IP]                              -- Instruction pointer
+            , [R_Flags16]                         -- Flags
+            , regSegs16                           -- Segments
             ]
-         LegacyMode RealMode -> [
-               concatMap ($ 16) [regsL,regsH,regsX],             -- General purpose registers (GPRs)
-               regsFPU,                                          -- 64 bit Media and Floating-Point registers
-               [regIP],                                          -- Instruction pointer
-               [regFLAGS],                                       -- Flags
-               regSegs16                                         -- Segments
+         LegacyMode RealMode ->
+            [ regsL,regsH,regsX                   -- General purpose registers (GPRs)
+            , regsFPU                             -- 64 bit Media and Floating-Point registers
+            , [R_IP]                              -- Instruction pointer
+            , [R_Flags16]                         -- Flags
+            , regSegs16                           -- Segments
             ]
 
-
-      regsL pitch         = makeRegSequence 8 pitch 0 ["al","bl","cl","dl"]
-      regsH pitch         = makeRegSequence 8 pitch 8 ["ah","bh","ch","dh"]
-      regsX pitch         = makeRegSequence 16 pitch 0 ["ax","bx","cx","dx","bp","si","di","sp"]
-      regsE pitch         = makeRegSequence 32 pitch 0 ["eax","ebx","ecx","edx","ebp","esi","edi","esp"]
-      regsR pitch         = makeRegSequence 64 pitch 0 ["rax","rbx","rcx","rdx","rbp","rsi","rdi","rsp","r8","r9","r10","r11","r12","r13","r14","r15"]
-      regsFPU             = makeRegSequence 64 64 0 ["fpr0","fpr1","fpr2","fpr3","fpr4","fpr5","fpr6","fpr7"]
-      regsMMX             = makeRegSequence 64 64 0 ["mmx0","mmx1","mmx2","mmx3","mmx4","mmx5","mmx6","mmx7"]
-      regsXMM pitch count = makeRegSequence 128 pitch 0 ["xmm" ++ show n | n <- [0..count-1 :: Int]]
-      regsYMM pitch count = makeRegSequence 256 pitch 0 ["ymm" ++ show n | n <- [0..count-1 :: Int]]
-      regRIP              = RF.Register "rip" 64 0
-      regEIP              = RF.Register "eip" 32 0
-      regIP               = RF.Register "ip"  16 0
-      regRFLAGS           = RF.Register "rflags" 64 0
-      regEFLAGS           = RF.Register "eflags" 32 0
-      regFLAGS            = RF.Register "flags" 16 0
-      regSegs16           = makeRegSequence 16 16 0 ["cs", "ds", "es", "ss"]
-      regSegs32           = makeRegSequence 16 16 0 ["cs", "ds", "es", "fs", "gs", "ss"]
-      regSegs64           = makeRegSequence 16 16 0 ["cs", "fs", "gs"]
+      regsL               = fmap (flip R_GPR 8)  [0..3]         -- al,bl,cl,dl
+      regsH               = fmap R_GPRh          [0..3]         -- ah,bh,ch,dh
+      regsX               = fmap (flip R_GPR 16) [0..7]         -- ax, bx, cx, dx, bp, si, di, sp
+      regsE               = fmap (flip R_GPR 32) [0..7]         -- eax, ebx, ecx, edx, ebp, esi, edi, esp
+      regsL64             = fmap (flip R_GPR 8)  [0..15]        -- al,...,R15L
+      regsX64             = fmap (flip R_GPR 16) [0..15]        -- ax,...,R15W
+      regsE64             = fmap (flip R_GPR 32) [0..15]        -- eax,...,R15D
+      regsR               = fmap (flip R_GPR 64) [0..15]        -- rax, rbx, ..., r15
+      regsFPU             = fmap R_ST            [0..7]         -- ST(0)..ST(7)
+      regsMMX             = fmap R_MMX           [0..7]         -- MM0..MM7
+      regsXMM       count = fmap R_XMM           [0..count-1]   -- XMM0..XMMn
+      regsYMM       count = fmap R_YMM           [0..count-1]   -- YMM0..YMMn
+      regSegs16           = [R_CS,R_DS,R_ES,R_SS]
+      regSegs32           = [R_CS,R_DS,R_ES,R_FS,R_GS,R_SS]
 
 -- TODO: 32 bit registers are zero-extended into 64 bit registers
 -- 16 and 8 bit registers are not zero-extended
---
--- TODO: register encoding
--- TODO: only addressable with REX / not addressable with REX prefix (AMD 1 page 27)
-

@@ -1,11 +1,18 @@
-{-# LANGUAGE LambdaCase, TemplateHaskell #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 import Haskus.Apps.System.Info.CmdLine (Options(..), getOptions)
 
-import qualified Haskus.Arch.X86_64.ISA.Insn       as X86
-import qualified Haskus.Arch.X86_64.ISA.Insns      as X86
-import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps as X86
-import qualified Haskus.Arch.X86_64.ISA.Encoding   as X86
+import qualified Haskus.Arch.X86_64.ISA.Insn          as X86
+import qualified Haskus.Arch.X86_64.ISA.Insns         as X86
+import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps    as X86
+import qualified Haskus.Arch.X86_64.ISA.Encoding      as X86
+import qualified Haskus.Arch.X86_64.ISA.RegisterNames as X86
+import qualified Haskus.Arch.X86_64.ISA.Registers     as X86
+import Haskus.Arch.X86_64.ISA.Mode
+import Haskus.Arch.Common.Register
+
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
 import Haskus.Utils.Embed
@@ -20,8 +27,9 @@ import Numeric
 import Happstack.Server
 import Data.Char (toUpper)
 import Data.Maybe
-import qualified Data.List as List
-import qualified Data.Map  as Map
+import qualified Data.List   as List
+import qualified Data.Map    as Map
+import qualified Data.Set    as Set
 import qualified Data.Vector as V
 
 import Text.Blaze.Html5 ((!), toHtml, docTypeHtml, Html, toValue)
@@ -41,18 +49,14 @@ main = withSocketsDo $ do
 server :: Conf -> IO ()
 server conf = do
    putStrLn (printf "Starting Web server at localhost:%d" (port conf))
+   let
+      defaultRep t = ok . toResponse . appTemplate t
    simpleHTTP conf $ msum
-      [ 
-      
-        -- CSS 
-        dir "css" $ dir "style.css" $ ok css
-
-      , dir "all" $ nullDir >> (ok . toResponse . appTemplate "List all" $ showAll)
-      , dir "maps" $ nullDir >> (ok . toResponse . appTemplate "Maps" $ showMaps)
-
-      , dir "insn" $ path $ \mnemo -> (ok . toResponse . appTemplate mnemo $ showInsnByMnemo mnemo)
-
-        -- Show welcome screen
+      [ dir "css"  $ dir "style.css" $ ok css
+      , dir "all"  $ nullDir >> defaultRep "List all" showAll
+      , dir "maps" $ nullDir >> defaultRep "Maps"     showMaps
+      , dir "insn" $ path $ \mnemo -> defaultRep mnemo (showInsnByMnemo mnemo)
+      , dir "regs" $ nullDir >> defaultRep "Registers" showRegs
       , nullDir >> (ok . toResponse . appTemplate "System info" $ showWelcome)
       ]
 
@@ -63,14 +67,14 @@ css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/Hasku
 appTemplate :: String -> Html -> Html
 appTemplate title bdy = docTypeHtml $ do
    H.head $ do
-      H.title (toHtml "Haskus X86 instructions")
+      H.title (toHtml "haskus-system info")
       H.meta ! A.httpEquiv (toValue "Content-Type")
              ! A.content   (toValue "text/html;charset=utf-8")
       H.link ! A.rel       (toValue "stylesheet") 
              ! A.type_     (toValue "text/css")
              ! A.href      (toValue "/css/style.css")
    H.body $ do
-      H.div (toHtml $ "Haskus " ++ showVersion version ++ " / " ++ title)
+      H.div (toHtml $ "haskus-system " ++ showVersion version ++ " - " ++ title)
          ! A.class_ (toValue "headtitle")
       bdy
 
@@ -81,6 +85,9 @@ showWelcome = do
    H.ul $ do
       H.li $ H.a (toHtml "List all") ! A.href (toValue "/all")
       H.li $ H.a (toHtml "Tables")   ! A.href (toValue "/maps")
+   H.h2 (toHtml "X86 Registers")
+   H.ul $ do
+      H.li $ H.a (toHtml "List all") ! A.href (toValue "/regs")
 
 showInsnByMnemo :: String -> Html
 showInsnByMnemo mnemo = do
@@ -221,3 +228,26 @@ showMnemo :: String -> Html
 showMnemo mnemo = do
    H.a (toHtml mnemo)
       ! A.href (toValue ("/insn/" ++ urlEncode mnemo))
+
+-- | Show registers
+showRegs :: Html
+showRegs = do
+
+   H.h1 (toHtml "Registers")
+
+   let
+      showMode mode = do
+         H.h2 (toHtml (show mode))
+         let
+            regs  = Set.toList $ X86.getModeRegisters mode
+            f x y = registerBank x == registerBank y
+            regs' = List.groupBy f regs
+
+         H.ul $ forM_ regs' $ \rs -> H.li $
+            toHtml (concat (List.intersperse "," (fmap X86.registerName rs)))
+
+   showMode (LongMode Long64bitMode)
+   showMode (LongMode CompatibilityMode)
+   showMode (LegacyMode ProtectedMode)
+   showMode (LegacyMode Virtual8086Mode)
+   showMode (LegacyMode RealMode)
