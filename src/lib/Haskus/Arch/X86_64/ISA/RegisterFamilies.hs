@@ -1,6 +1,13 @@
+{-# LANGUAGE RecordWildCards #-}
+
+
+-- | X86 register families
 module Haskus.Arch.X86_64.ISA.RegisterFamilies
    ( Predicate (..)
    , X86RegFam
+   , RegFamilyDesc (..)
+   , showRegFamily
+   -- * Families
    , regFamST
    , regFamVec64
    , regFamVec128
@@ -15,6 +22,7 @@ module Haskus.Arch.X86_64.ISA.RegisterFamilies
    , regFamGPR64
    , regFamGPR32o64
    , regFamGPR
+   , regFamGPRh
    , regFamCounter
    , regFamAccu
    , regFamStackPtr
@@ -32,17 +40,52 @@ where
 import Haskus.Arch.Common.Register
 import Haskus.Arch.X86_64.ISA.RegisterNames
 import Haskus.Arch.X86_64.ISA.Size
+import Haskus.Utils.Maybe
 
 -- | Encoding predicates
 data Predicate
    = OperandSizeEqual OperandSize
    | AddressSizeEqual AddressSize
    | Mode64bit
+   | UseExtendedRegs -- ^ Enable the use of SIL, etc. Disable AH,BH,CH,DH.
    | Not Predicate
    deriving (Show,Eq,Ord)
 
 
 type X86RegFam = RegFam Predicate RegBank
+
+-- | Simpler representation of a family (for showing)
+data RegFamilyDesc
+   = RegFamReg X86Reg                  -- ^ The family reduces to a single register
+   | RegFamGuard1 [(Predicate,X86Reg)] -- ^ The family has a single guard level
+   | RegFamRaw X86RegFam
+   deriving (Show)
+
+-- | Reduce a reg family to a simpler description
+showRegFamily :: X86RegFam -> RegFamilyDesc
+showRegFamily raw@RegFam{..} =
+   case (regFamBank,regFamId,regFamSize,regFamOffset) of
+      (Set b, Set i, Set s, Set o) -> RegFamReg (Reg b i s o)
+      (Set b, Set i, ys   , Set o)
+         | Just xs <- isGuardedSetOr ys -> makeGuard1 (\y -> Reg b i y o) xs
+      (Set b, Set i, Set s, ys   )
+         | Just xs <- isGuardedSetOr ys -> makeGuard1 (\y -> Reg b i s y) xs
+      (Set b, ys   , Set s, Set o)
+         | Just xs <- isGuardedSetOr ys -> makeGuard1 (\y -> Reg b y s o) xs
+      (ys   , Set i, Set s, Set o)
+         | Just xs <- isGuardedSetOr ys -> makeGuard1 (\y -> Reg y i s o) xs
+      _                         -> RegFamRaw raw
+
+   where
+      isGuardedSet (Guard p (Set v)) = Just (p,v)
+      isGuardedSet _                 = Nothing
+
+      isGuardedSetOr (Or xs) = let xs' = fmap isGuardedSet xs in
+         if all isJust xs' then Just (catMaybes xs') else Nothing
+      isGuardedSetOr _               = Nothing
+
+      makeGuard1 f xs = RegFamGuard1 (fmap (\(p,v) -> (p, f v)) xs)
+
 
 -- | FPU stack register
 regFamST :: X86RegFam
@@ -96,7 +139,10 @@ regFamDebug = (regFamFromReg (R_DR32 0))
 regFamGPR8 :: X86RegFam
 regFamGPR8 = (regFamFromReg R_AL)
    { regFamId     = Any
-   , regFamOffset = OneOf [0,8]
+   , regFamOffset = Or
+      [ Guard (Not UseExtendedRegs) (OneOf [0,8])
+      , Guard UseExtendedRegs (Set 0)
+      ]
    }
 
 -- | General purpose 16-bit register
@@ -131,13 +177,30 @@ regFamGPR32o64 = (regFamFromReg R_RAX)
 -- | General purpose register (size = operand-size)
 regFamGPR :: X86RegFam
 regFamGPR = (regFamFromReg R_RAX)
-   { regFamId     = Any
+   { regFamId     = Or
+      [ Guard (Not (OperandSizeEqual OpSize8)) Any
+      , Guard UseExtendedRegs Any
+      , Guard (Not UseExtendedRegs) (NoneOf [4,5,6,7]) -- disable SIL,DIL,etc.
+      ]
    , regFamSize   = Or
       [ Guard (OperandSizeEqual OpSize8)  (Set 8 )
       , Guard (OperandSizeEqual OpSize16) (Set 16)
       , Guard (OperandSizeEqual OpSize32) (Set 32)
       , Guard (OperandSizeEqual OpSize64) (Set 64)
       ]
+   , regFamOffset = Or
+      [ Guard (Not (OperandSizeEqual OpSize8)) (Set 0)
+      , Guard UseExtendedRegs (Set 0) -- disable AH,BH,CH,DH
+      , Guard (Not UseExtendedRegs) (OneOf [0,8])
+      ]
+   }
+
+-- | AH,BH,CH,DH
+regFamGPRh :: X86RegFam
+regFamGPRh = (regFamFromReg R_AH)
+   { regFamId     = OneOf [0,1,2,3]
+   , regFamSize   = Set 8
+   , regFamOffset = Set 8
    }
 
 -- | CX,ECX,RCX depending on the address-size

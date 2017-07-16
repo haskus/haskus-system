@@ -4,13 +4,15 @@
 
 import Haskus.Apps.System.Info.CmdLine (Options(..), getOptions)
 
-import qualified Haskus.Arch.X86_64.ISA.Insn          as X86
-import qualified Haskus.Arch.X86_64.ISA.Insns         as X86
-import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps    as X86
-import qualified Haskus.Arch.X86_64.ISA.Encoding      as X86
-import qualified Haskus.Arch.X86_64.ISA.RegisterNames as X86
-import qualified Haskus.Arch.X86_64.ISA.Registers     as X86
+import qualified Haskus.Arch.X86_64.ISA.Insn             as X86
+import qualified Haskus.Arch.X86_64.ISA.Insns            as X86
+import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps       as X86
+import qualified Haskus.Arch.X86_64.ISA.Encoding         as X86
+import qualified Haskus.Arch.X86_64.ISA.RegisterNames    as X86
+import qualified Haskus.Arch.X86_64.ISA.RegisterFamilies as X86
+import qualified Haskus.Arch.X86_64.ISA.Registers        as X86
 import Haskus.Arch.X86_64.ISA.Mode
+import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.Common.Register
 
 import Haskus.Format.Binary.Word
@@ -136,6 +138,28 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
    where
       pad = if usePad && x <= 0xF then "0" else ""
 
+showPredicate :: X86.Predicate -> Html
+showPredicate = \case
+   X86.OperandSizeEqual s -> do
+      toHtml "Operand size = "
+      case s of
+         OpSize8  -> toHtml "8"
+         OpSize16 -> toHtml "16"
+         OpSize32 -> toHtml "32"
+         OpSize64 -> toHtml "64"
+   X86.AddressSizeEqual s -> do
+      toHtml "Address size = "
+      case s of
+         AddrSize16 -> toHtml "16"
+         AddrSize32 -> toHtml "32"
+         AddrSize64 -> toHtml "64"
+
+   X86.Mode64bit       -> toHtml "64-bit mode"
+   X86.UseExtendedRegs -> toHtml "Use extended regs"
+   X86.Not p  -> do
+      toHtml "Not ("
+      showPredicate p
+      toHtml ")"
 
 
 showEnc :: Word8 -> Bool -> X86.Encoding -> Html
@@ -171,7 +195,15 @@ showEnc oc rv e = H.tr $ do
    forM_ ops $ \o -> H.td (toHtml (show (X86.opMode o)))
    H.tr $ do
       H.th (toHtml "Type")
-      forM_ (rev ops) $ \o -> H.td (toHtml (show (X86.opType o)))
+      forM_ (rev ops) $ \o -> H.td $
+         case X86.opType o of
+            X86.T_Reg fam -> case X86.showRegFamily fam of
+               X86.RegFamReg reg   -> toHtml (X86.registerName reg)
+               X86.RegFamGuard1 xs -> H.table $ forM_ xs $ \(p,v) -> H.tr $ do
+                  H.th $ toHtml (showPredicate p)
+                  H.td $ toHtml (X86.registerName v)
+               X86.RegFamRaw raw   -> toHtml (show raw)
+            t             -> toHtml (show t)
    H.tr $ do
       H.th (toHtml "Encoding")
       forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opEnc o of

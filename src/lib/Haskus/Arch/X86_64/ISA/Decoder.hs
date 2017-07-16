@@ -12,7 +12,7 @@ import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.RegisterNames
 import Haskus.Arch.X86_64.ISA.RegisterFamilies
-import Haskus.Arch.Common.Register (Qualifier(..),RegFam(..),regFixupFamily,regFixupFamilyMaybe)
+import Haskus.Arch.Common.Register hiding (Reg)
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.OpcodeMaps
 import Haskus.Arch.X86_64.ISA.Insns
@@ -660,6 +660,7 @@ readOperands mode ps oc enc = do
       predSolver (OperandSizeEqual s) = operandSize == s
       predSolver (AddressSizeEqual s) = addressSize == s
       predSolver (Not x)              = not (predSolver x)
+      predSolver UseExtendedRegs      = useExtRegs
 
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)
@@ -749,7 +750,7 @@ readOperands mode ps oc enc = do
                         
          -- Register
          T_Reg rfam -> return $ OpReg $ regFixupFamily predSolver
-                        $ fixupOffset $ fixupFamilyId rfam
+                        $ fixupGPRh $ fixupFamilyId rfam
             where
                -- update family id
                fixupFamilyId fam = case opEnc spec of
@@ -763,14 +764,28 @@ readOperands mode ps oc enc = do
                      -- update family id
                      updateFam regid = fam { regFamId = Set (fromIntegral regid) }
 
-               -- fixup to handle ah,bh,ch,dh vs spl,dil,etc.
-               fixupOffset fam = case (regFamOffset fam, regFamBank fam, regFamSize fam, regFamId fam) of
-                  (OneOf [0,8], Set GPR, Set 8, Set i)
-                     | not useExtRegs && 4 <= i && i <= 7 -> fam { regFamOffset = Set 8
-                                                                 , regFamId     = Set (i-4)
-                                                                 }
-                     | otherwise                          -> fam { regFamOffset = Set 0 }
+               -- Fixup to handle ah,bh,ch,dh vs spl,dil,etc.
+               -- -------------------------------------------
+               fixupGPRh fam
+                  -- 1) reduce family as much as possible without commiting to
+                  -- UseExtendedRegs or not
+                  = regReduceFamily predSolver' fam
+                  -- 2) check if we are left with a GPR of size 8 whose
+                  -- offset is not set. Fix it and fix the id accordingly.
+                  |> fixupIdOffset
+
+               predSolver' UseExtendedRegs = Nothing
+               predSolver' x               = Just (predSolver x)
+
+               fixupIdOffset fam = case fam of
+                  RegFam (Set GPR) (Set i) (Set 8) (Or _)
+                     | not useExtRegs && 4 <= i && i <= 7 ->
+                        fam { regFamOffset = Set 8
+                            , regFamId     = Set (i-4)
+                            }
+                     | otherwise -> fam { regFamOffset = Set 0 }
                   _ -> fam
+
 
          -- Sub-part of a register
          T_SubReg _ rtype -> readParam (spec {opType = T_Reg rtype})

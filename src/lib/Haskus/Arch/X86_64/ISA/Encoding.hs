@@ -108,7 +108,7 @@ import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.RegisterFamilies
-import Haskus.Arch.Common.Register (RegFam(..),Qualifier(..),matchQualifier)
+import Haskus.Arch.Common.Register (RegFam(..),Qualifier(..))
 
 import Haskus.Utils.List ((\\))
 
@@ -269,15 +269,16 @@ encHasVariableSizedOperand e = any (vsizeOp . opType) (encOperands e)
                            MemDSrDI     -> True
                            _            -> False
          T_Reg rt      -> case regFamSize rt of
-                           -- guarded with operand-size predicate
-                           Or (Guard (OperandSizeEqual _) _:_) -> True
-                           -- stack operation on [E,R]SP or [E,R]BP, hence the
-                           -- targeted size depends on the operand-size (TODO:
-                           -- check this)
-                           _ -> matchQualifier (const True) GPR (regFamBank rt)
-                                 && ( matchQualifier (const True) 4 (regFamId rt) -- xSP
-                                    ||matchQualifier (const True) 5 (regFamId rt) -- xBP
-                                    )
+                           -- guarded with operand-size predicate enabling
+                           -- 16-bit. It should be the only cases where the
+                           -- operand-size prefix can be used.
+                           --
+                           -- TODO: check this and make it more future proof
+                           Or xs -> any matchGuard16 xs
+                              where
+                                 matchGuard16 (Guard (OperandSizeEqual OpSize16) _) = True
+                                 matchGuard16 _                                     = False
+                           _ -> False
 
          T_Imm it      -> case it of
                            ImmSizeOp -> True
@@ -357,7 +358,7 @@ encGenerateOpcodes e = nub ocs
       mf (Nothing, Nothing) = oc
       fs = [ mf (x,y) | x <- fps, y <- fps]
 
-      -- opcodes with differetnt flags
+      -- opcodes with different flags
       ocs' = oc : (fs ++ catMaybes [roc,rsoc,szoc,seoc])
 
       -- operand stored in the opcode
@@ -922,4 +923,3 @@ isImmediate = \case
    Imm8h  -> True
    Imm8l  -> True
    _      -> False
-
