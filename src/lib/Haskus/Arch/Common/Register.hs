@@ -14,9 +14,13 @@ module Haskus.Arch.Common.Register
    , matchQualifier
    , fixupQualifier
    , fixupQualifierMaybe
+   , reduceQualifier
+   , regReduceFamily
    , regFamFromReg
    )
 where
+
+import Haskus.Utils.Maybe
 
 -- | Register
 data Reg banks = Reg
@@ -57,6 +61,7 @@ data Qualifier p a
    | NoneOf [a]
    | OneOf  [a]
    | Any
+   | None
    | Or [Qualifier p a]
    | Guard p (Qualifier p a)
    deriving (Show,Eq)
@@ -93,6 +98,48 @@ regFixupFamilyMaybe predSolver RegFam{..} =
        <*> fixupQualifierMaybe predSolver regFamSize
        <*> fixupQualifierMaybe predSolver regFamOffset
 
+-- | Try to fixup a family as much as possible
+regReduceFamily :: (Eq b) => (p -> Maybe Bool) -> RegFam p b -> RegFam p b
+regReduceFamily predSolver RegFam{..} =
+   RegFam (reduceQualifier predSolver regFamBank)
+          (reduceQualifier predSolver regFamId)
+          (reduceQualifier predSolver regFamSize)
+          (reduceQualifier predSolver regFamOffset)
+
+-- | Reduce a qualifier as much as possible
+reduceQualifier :: Eq a => (p -> Maybe Bool) -> Qualifier p a -> Qualifier p a
+reduceQualifier fp q = fromMaybe q (go q)
+   where
+      go = \case
+         Set x      -> Just (Set x)
+         NoneOf []  -> Just None
+         NoneOf _   -> Nothing
+         OneOf  [x] -> Just (Set x)
+         OneOf  _   -> Nothing
+         Any        -> Nothing
+         None       -> Nothing
+         Guard p x  -> case fp p of
+            Nothing    -> Nothing
+            Just True  -> go x
+            Just False -> Just None
+         Or     []  -> Just None
+         Or     xs  -> if any isJust xs'
+                           then g xs''
+                           else Nothing
+            where
+               -- try to reduce all children
+               xs'         = fmap go xs
+               -- merge reduced children with unreduced ones
+               f new old   = fromMaybe old new
+               xs''        = zipWith f xs' xs
+               -- recursively remove bad children
+               g []         = Just None
+               g (None:vs)  = g vs
+               g (Set v:_)  = Just (Set v)
+               g (Any:_)    = Just Any
+               g (Or us:vs) = g (us ++ vs)
+               g vs         = Just (Or vs)
+
 -- | Match a qualifier
 matchQualifier :: Eq a => (p -> Bool) -> a -> Qualifier p a -> Bool
 matchQualifier predSolver = test
@@ -101,6 +148,7 @@ matchQualifier predSolver = test
       test y (NoneOf xs) = y `notElem` xs
       test y (OneOf xs)  = y `elem` xs
       test _ Any         = True
+      test _ None        = False
       test y (Or xs)     = any (test y) xs
       test y (Guard p x) = predSolver p && test y x
 
@@ -113,6 +161,7 @@ fixupQualifier fp q = case fixupQualifierMaybe fp q of
 -- | Reduce a qualifier to a Set if possible and retrieve the value
 fixupQualifierMaybe :: Eq a => (p -> Bool) -> Qualifier p a -> Maybe a
 fixupQualifierMaybe fp = \case
+   None       -> Nothing
    Set x      -> Just x
    NoneOf _   -> Nothing
    OneOf  [x] -> Just x
