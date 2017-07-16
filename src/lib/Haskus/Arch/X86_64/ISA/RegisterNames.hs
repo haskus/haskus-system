@@ -11,6 +11,11 @@ module Haskus.Arch.X86_64.ISA.RegisterNames
    , pattern R_CR64
    , pattern R_DR32
    , pattern R_DR64
+   -- * Flags registers
+   , pattern R_Flags
+   , pattern R_Flags16
+   , pattern R_Flags32
+   , pattern R_Flags64
    -- * Vector registers
    , pattern R_MMX
    , pattern R_XMM
@@ -206,7 +211,8 @@ data RegBank
    | Control -- ^ Control register bank
    | Debug   -- ^ Debug register bank
    | IP      -- ^ Instruction pointer
-   deriving (Show,Eq)
+   | Flags   -- ^ Flags
+   deriving (Show,Eq,Ord)
 
 type X86Reg = Reg RegBank
 
@@ -245,6 +251,26 @@ pattern R_DR32 t = Reg Debug t 32 0
 -- | Debug registers
 pattern R_DR64 :: Word -> X86Reg
 pattern R_DR64 t = Reg Debug t 64 0
+
+---------------------------------------
+-- Flags registers
+---------------------------------------
+
+-- | Flags registers
+pattern R_Flags :: Word -> X86Reg
+pattern R_Flags s = Reg Flags 0 s 0
+
+-- | Flags16 register
+pattern R_Flags16 :: X86Reg
+pattern R_Flags16 = Reg Flags 0 16 0
+
+-- | Flags32 register
+pattern R_Flags32 :: X86Reg
+pattern R_Flags32 = Reg Flags 0 32 0
+
+-- | Flags64 register
+pattern R_Flags64 :: X86Reg
+pattern R_Flags64 = Reg Flags 0 64 0
 
 ---------------------------------------
 -- Segment registers
@@ -676,7 +702,7 @@ registerName = \case
    R_CR32 w    -> "cr" ++ show w
    R_CR64 w    -> "cr" ++ show w
    R_DR64 w    -> "dr" ++ show w
-   R_MMX w     -> "mmx" ++ show w
+   R_MMX w     -> "mm" ++ show w
    R_XMM w     -> "xmm" ++ show w
    R_YMM w     -> "ymm" ++ show w
    R_ZMM w     -> "zmm" ++ show w
@@ -689,5 +715,8 @@ registerName = \case
    R_IP        -> "ip"
    R_EIP       -> "eip"
    R_RIP       -> "rip"
+   R_Flags16   -> "flags"
+   R_Flags32   -> "eflags"
+   R_Flags64   -> "rflags"
    Reg b i s o -> "Reg"++show (b,i,s,o)
 
