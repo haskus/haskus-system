@@ -480,89 +480,29 @@ readOperands mode ps oc enc = do
 
 
    let
-      -- we determine the effective address size. It depends on:
-      --    * the mode of execution
+      -- we compute the overriden address size. It depends on:
+      --    * the default address size
       --    * the presence of the 0x67 legacy prefix
-      --    * the default address size of the instruction in 64-bit mode
       hasAddressSizePrefix = LegacyPrefix67 `elem` ps
-      addrSize16o32 = case (defaultAddressSize mode, hasAddressSizePrefix) of
-         (AddrSize16, False) -> AddrSize16
-         (AddrSize32, False) -> AddrSize32
-         (AddrSize16, True)  -> AddrSize32
-         (AddrSize32, True)  -> AddrSize16
-         (a,_)               -> error ("Invalid default address size for the current mode: "
-                                       ++ show (x86Mode mode) ++ " and "
-                                       ++ show a)
+      addressSize          = overriddenAddressSize hasAddressSizePrefix mode
 
-      -- some instructions have 64-bit address size by default, in this case the
-      -- prefix can switch back to 32-bit address size
-      hasDefaultAddress64 = DefaultAddressSize64 `elem` encProperties enc
-      addrSize32o64 = case (hasDefaultAddress64, hasAddressSizePrefix) of
-         (True, False)  -> AddrSize64
-         (True, True)   -> AddrSize32
-         (False, False) -> AddrSize64
-         (False, True)  -> AddrSize32
-
-      addressSize = case x86Mode mode of
-         -- old modes defaulting to 16-bit
-         LegacyMode RealMode        -> AddrSize16
-         LegacyMode Virtual8086Mode -> AddrSize16
-         -- protected modes that can either be 16- or 32-bit
-         -- The default mode is indicated in the segment descriptor (D "default
-         -- size" flag)
-         LegacyMode ProtectedMode   -> addrSize16o32
-         LongMode CompatibilityMode -> addrSize16o32
-         -- long mode that can be either 32- or 64-bit
-         LongMode Long64bitMode     -> addrSize32o64
-
-   let
       -- we determine the effective operand size. It depends on:
       --   * the mode of execution
       --   * the presence of the 0x66 legacy prefix
-      --   * the default operand size of the instruction in 64-bit mode
+      --   * the default operand size of the instruction in 64-bit mode (64-bit
+      --   or not)
       --   * the value of the ForceNo8bit bit in the opcode (if applicable)
       --   * the value of REX.W/VEX.W/XOP.W (if applicable)
       hasOperandSizePrefix = LegacyPrefix66 `elem` ps
       hasDefaultOp64       = DefaultOperandSize64 `elem` encProperties enc
       hasRexW              = opcodeW oc
 
-      opSize16o32 = case (defaultOperandSize mode, hasOperandSizePrefix) of
-         (OpSize16, False) -> OpSize16
-         (OpSize32, False) -> OpSize32
-         (OpSize16, True)  -> OpSize32
-         (OpSize32, True)  -> OpSize16
-         (a,_)               -> error ("Invalid default address size for the current mode: "
-                                       ++ show (x86Mode mode) ++ " and "
-                                       ++ show a)
-
-      -- in 64-bit mode, most 64-bit instructions default to 32-bit operand
-      -- size, except those with the DefaultOperandSize64 property.
-      -- REX.W/VEX.W/XOP.W can be used to set a 64-bit operand size (it has
-      -- precedence over the 0x66 legacy prefix)
-      opSize16o32o64 = case (hasDefaultOp64, hasRexW, hasOperandSizePrefix) of
-         (True,     _,      _) -> OpSize64
-         (False, True,      _) -> OpSize64
-         (False, False, False) -> OpSize32
-         (False, False, True ) -> OpSize16
-
-      defOperandSize = case x86Mode mode of
-         -- old modes defaulting to 16-bit
-         LegacyMode RealMode        -> OpSize16
-         LegacyMode Virtual8086Mode -> OpSize16
-         -- protected modes that can either be 16- or 32-bit
-         -- The default mode is indicated in the segment descriptor (D "default
-         -- size" flag)
-         LegacyMode ProtectedMode   -> opSize16o32
-         LongMode CompatibilityMode -> opSize16o32
-         -- 64-bit mode can be either 16-, 32- or 64-bit
-         LongMode Long64bitMode     -> opSize16o32o64
+      oos64 = overriddenOperationSize64 hasOperandSizePrefix hasRexW hasDefaultOp64 mode
 
       --finally we take into account the NoForce8bit bit in the opcode
       operandSize = case encNoForce8Bit enc of
-         Just b
-            | testBit (opcodeByte oc) b -> defOperandSize
-            | otherwise                 -> OpSize8
-         _                              -> defOperandSize
+         Just b | not (testBit (opcodeByte oc) b) -> OpSize8
+         _                                        -> oos64
 
       -- do we need to read an SIB byte?
       hasSIB = fromMaybe False (useSIB addressSize <$> modrm)
@@ -749,8 +689,10 @@ readOperands mode ps oc enc = do
                   seg' = fromMaybe (defaultSegment base) segOverride
                         
          -- Register
-         T_Reg rfam -> return $ OpReg $ regFixupFamily predSolver
-                        $ fixupGPRh $ fixupFamilyId rfam
+         T_Reg rfam -> return <| OpReg
+                              <| regFixupFamily predSolver -- fixup the whole reg family
+                              <| fixupGPRh                 -- handle ah,bh,ch,dh
+                              <| fixupFamilyId rfam        -- fix reg id in reg family
             where
                -- update family id
                fixupFamilyId fam = case opEnc spec of

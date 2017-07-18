@@ -6554,7 +6554,6 @@ i_ins = insn
                            ,    encNoForce8Bit     = Just 0
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
-                                                     , DefaultAddressSize64
                                                      , NoOperandSize64
                                                      , Repeatable
                                                      ]
@@ -7383,7 +7382,6 @@ i_lea = insn
                            ,    encOpcode          = 0x8D
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
-                                                     , DefaultAddressSize64
                                                      ]
                            ,    encOperands        = [ gpr WO Reg
                                                      , mvoid
@@ -9860,7 +9858,6 @@ i_outs = insn
                            ,    encNoForce8Bit     = Just 0
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
-                                                     , DefaultAddressSize64
                                                      , NoOperandSize64
                                                      , Repeatable
                                                      ]

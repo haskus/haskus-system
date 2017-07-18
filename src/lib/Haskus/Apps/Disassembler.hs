@@ -35,8 +35,8 @@ disassX86_64 initOffset buffer = LT.toStrict (toLazyText bld)
       -- arch mode
       m = ExecMode
             { x86Mode            = LongMode Long64bitMode
-            , defaultAddressSize = AddrSize64
-            , defaultOperandSize = OpSize32
+            , csDescriptorFlagD  = False
+            , ssDescriptorFlagB  = False
             , extensions         = allExtensions
             }
 

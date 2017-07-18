@@ -161,16 +161,13 @@ data EncodingProperties
    | DefaultOperandSize64     -- ^ Default operand size is 64-bits for this
                               --   instruction in LongMode
    | NoOperandSize64          -- ^ 64-bit operand size not supported
-
-   | DefaultAddressSize64     -- ^ Default address size is 64-bits for this
-                              --   instruction in LongMode
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
    | DefaultSegment Register  -- ^ Default register
    | HLE HLEAction            -- ^ Hardware-lock elision (HLE) prefix support
    deriving (Show,Eq)
 
--- | Hardware-lock ellision prefixes
+-- | Hardware-lock elision prefixes
 data HLEAction
    = XAcquire
    | XRelease

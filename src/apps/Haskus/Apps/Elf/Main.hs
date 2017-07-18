@@ -421,8 +421,8 @@ showSectionAsm elf s = do
       bs = getSectionContentBuffer elf s
       m = ExecMode
             { x86Mode            = LongMode Long64bitMode
-            , defaultAddressSize = AddrSize64
-            , defaultOperandSize = OpSize32
+            , csDescriptorFlagD  = False
+            , ssDescriptorFlagB  = False
             , extensions         = allExtensions
             }
 
