@@ -138,7 +138,7 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
    where
       pad = if usePad && x <= 0xF then "0" else ""
 
-showPredicate :: X86.Predicate -> Html
+showPredicate :: X86.RegPredicate -> Html
 showPredicate = \case
    X86.OperandSizeEqual s -> do
       toHtml "Operand size = "
@@ -156,10 +156,6 @@ showPredicate = \case
 
    X86.Mode64bit       -> toHtml "64-bit mode"
    X86.UseExtendedRegs -> toHtml "Use extended regs"
-   X86.Not p  -> do
-      toHtml "Not ("
-      showPredicate p
-      toHtml ")"
 
 
 showEnc :: Word8 -> Bool -> X86.Encoding -> Html
@@ -197,12 +193,12 @@ showEnc oc rv e = H.tr $ do
       H.th (toHtml "Type")
       forM_ (rev ops) $ \o -> H.td $
          case X86.opType o of
-            X86.T_Reg fam -> case X86.showRegFamily fam of
-               X86.RegFamReg reg   -> toHtml (X86.registerName reg)
-               X86.RegFamGuard1 xs -> H.table $ forM_ xs $ \(p,v) -> H.tr $ do
-                  H.th $ toHtml (showPredicate p)
-                  H.td $ toHtml (X86.registerName v)
-               X86.RegFamRaw raw   -> toHtml (show raw)
+            -- X86.T_Reg fam -> case X86.showRegFamily fam of
+            --    X86.RegFamReg reg   -> toHtml (X86.registerName reg)
+            --    X86.RegFamGuard1 xs -> H.table $ forM_ xs $ \(p,v) -> H.tr $ do
+            --       H.th $ toHtml (showPredicate p)
+            --       H.td $ toHtml (X86.registerName v)
+            --    X86.RegFamRaw raw   -> toHtml (show raw)
             t             -> toHtml (show t)
    H.tr $ do
       H.th (toHtml "Encoding")

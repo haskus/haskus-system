@@ -25,6 +25,7 @@ import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.BitField
 import qualified Haskus.Format.Binary.BitSet as BitSet
 
+import Haskus.Utils.Solver
 import Haskus.Utils.List (nub, (\\))
 import Haskus.Utils.Maybe
 import Haskus.Utils.Flow
@@ -596,11 +597,10 @@ readOperands mode ps oc enc = do
       is64bitMode' = is64bitMode (x86Mode mode)
 
       -- predicate solver
-      predSolver Mode64bit            = is64bitMode'
-      predSolver (OperandSizeEqual s) = operandSize == s
-      predSolver (AddressSizeEqual s) = addressSize == s
-      predSolver (Not x)              = not (predSolver x)
-      predSolver UseExtendedRegs      = useExtRegs
+      predSolver Mode64bit            = Just $ is64bitMode'
+      predSolver (OperandSizeEqual s) = Just $ operandSize == s
+      predSolver (AddressSizeEqual s) = Just $ addressSize == s
+      predSolver UseExtendedRegs      = Just $ useExtRegs
 
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)
@@ -690,43 +690,41 @@ readOperands mode ps oc enc = do
                         
          -- Register
          T_Reg rfam -> return <| OpReg
-                              <| regFixupFamily predSolver -- fixup the whole reg family
-                              <| fixupGPRh                 -- handle ah,bh,ch,dh
-                              <| fixupFamilyId rfam        -- fix reg id in reg family
+                              <| regFixupFamily predSolver updatedFam
             where
-               -- update family id
-               fixupFamilyId fam = case opEnc spec of
-                  RM         -> updateFam modRMrm
-                  Reg        -> updateFam modRMreg
-                  Vvvv       -> updateFam vvvv
-                  OpcodeLow3 -> updateFam opcodeRegId
-                  Implicit   -> fam
+               fam' = case reducePredicates predSolver rfam of
+                  Match x -> x
+                  r -> error ("Cannot reduce register family to a terminal: " ++ show r)
+
+               -- get raw register id
+               rawId = fromIntegral $ case opEnc spec of
+                  RM         -> modRMrm
+                  Reg        -> modRMreg
+                  Vvvv       -> vvvv
+                  OpcodeLow3 -> opcodeRegId
+                  Implicit   -> case regFamId fam' of
+                     Terminal (Singleton i) -> fromIntegral i
+                     e -> error ("Invalid implicit register id: " ++ show e)
                   e          -> error ("Invalid register encoding: " ++ show e)
-                  where
-                     -- update family id
-                     updateFam regid = fam { regFamId = Set (fromIntegral regid) }
 
-               -- Fixup to handle ah,bh,ch,dh vs spl,dil,etc.
-               -- -------------------------------------------
-               fixupGPRh fam
-                  -- 1) reduce family as much as possible without commiting to
-                  -- UseExtendedRegs or not
-                  = regReduceFamily predSolver' fam
-                  -- 2) check if we are left with a GPR of size 8 whose
-                  -- offset is not set. Fix it and fix the id accordingly.
-                  |> fixupIdOffset
+               -- update family id and offset
+               updatedFam = fam'
+                  { regFamId     = trySetQualifier predSolver regId     (regFamId fam')
+                  , regFamOffset = trySetQualifier predSolver regOffset (regFamOffset fam')
+                  }
 
-               predSolver' UseExtendedRegs = Nothing
-               predSolver' x               = Just (predSolver x)
+               -- get the adjusted register id and the offset
+               (regId,regOffset) = case fam' of
+                  -- Check if we are left with a GPR of size 8 whose offset
+                  -- is OneOf[0,8]. Fix it and fix the id accordingly.
+                  RegFam
+                     (Terminal (Singleton GPR))
+                     _
+                     (Terminal (Singleton 8))
+                     (Terminal (OneOf [0,8]))
+                       | not useExtRegs && 4 <= rawId && rawId <= 7 -> (rawId-4, 8)
+                  _ -> (rawId,0)
 
-               fixupIdOffset fam = case fam of
-                  RegFam (Set GPR) (Set i) (Set 8) (Or _)
-                     | not useExtRegs && 4 <= i && i <= 7 ->
-                        fam { regFamOffset = Set 8
-                            , regFamId     = Set (i-4)
-                            }
-                     | otherwise -> fam { regFamOffset = Set 0 }
-                  _ -> fam
 
 
          -- Sub-part of a register

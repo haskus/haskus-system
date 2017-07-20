@@ -11,7 +11,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , OpcodeEncoding (..)
    , EncodingProperties(..)
    , HLEAction (..)
-   , ValidMode (..)
+   , ValidMod (..)
    , hasImmediate
    , encSupportHLE
    , encSupportMode
@@ -100,6 +100,7 @@ where
 
 import Haskus.Utils.Maybe
 import Haskus.Utils.List (nub)
+import Haskus.Utils.Solver
 import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.BitField
@@ -108,7 +109,7 @@ import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.RegisterFamilies
-import Haskus.Arch.Common.Register (RegFam(..),Qualifier(..))
+import Haskus.Arch.Common.Register (RegFam(..))
 
 import Haskus.Utils.List ((\\))
 
@@ -129,7 +130,7 @@ data Encoding = Encoding
                                                 --   size is defined by operand-size
                                                 --   prefix and REX.W bit
    , encSignExtendImmBit:: Maybe Int            -- ^ Used in conjunction with a set
-                                                --   Sizable bit.  Imm8 operand is used
+                                                --   NoForce8Bit bit. Imm8 operand is used
                                                 --   and sign-extended if the given bit is
                                                 --   set
    , encFPUDestBit      :: Maybe Int            -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
@@ -147,6 +148,21 @@ data OpcodeEncoding
    = EncLegacy -- ^ Legacy encoding
    | EncVEX    -- ^ VEX encoding
    deriving (Show,Eq,Ord)
+
+data OperandSizeExpr
+   = DefaultOperationSize                               -- ^ Default operation size
+   | DefaultOperationSize64                             -- ^ Default operation size, allow W prefix and default 64-bit size
+   | FixedOperandSize OperandSize                       -- ^ Fixed operand size
+   | GuardedOperandSize [(OpSizePredicate,OperandSize)] -- ^ Conditional operand size
+   deriving (Eq,Show,Ord)
+
+data OpSizePredicate
+   = PrefixL Bool
+   | PrefixW Bool
+   | PAnd [OpSizePredicate]
+   | POr [OpSizePredicate]
+   deriving (Show,Eq,Ord)
+
 
 -- | Encoding properties
 data EncodingProperties
@@ -214,15 +230,16 @@ encRequireModRM e = hasOpExt || hasOps
          Vvvv       -> False
          OpcodeLow3 -> False
 
-data ValidMode
-   = ModeOnlyReg
-   | ModeOnlyMem
-   | ModeBoth
-   | ModeNone
+-- | Valid ModRM.mod values
+data ValidMod
+   = ModeOnlyReg  -- ^ Only register
+   | ModeOnlyMem  -- ^ Only memory
+   | ModeBoth     -- ^ Register and memory
+   | ModeNone     -- ^ None
    deriving (Show,Eq)
 
 -- | ModRM.mod only supports the given value
-encValidModRMMode :: Encoding -> ValidMode
+encValidModRMMode :: Encoding -> ValidMod
 encValidModRMMode e = case ots of
       []  -> ModeNone
       [x] -> toM x
@@ -265,17 +282,16 @@ encHasVariableSizedOperand e = any (vsizeOp . opType) (encOperands e)
                            MemESrDI     -> True
                            MemDSrDI     -> True
                            _            -> False
-         T_Reg rt      -> case regFamSize rt of
-                           -- guarded with operand-size predicate enabling
+         T_Reg rt      ->  -- guarded with operand-size predicate enabling
                            -- 16-bit. It should be the only cases where the
                            -- operand-size prefix can be used.
                            --
-                           -- TODO: check this and make it more future proof
-                           Or xs -> any matchGuard16 xs
+                           -- TODO: make it depends directly on the Prefix66
+                           -- predicate
+                         any matchGuard16 (getPredicates (regFamSize rt))
                               where
-                                 matchGuard16 (Guard (OperandSizeEqual OpSize16) _) = True
-                                 matchGuard16 _                                     = False
-                           _ -> False
+                                 matchGuard16 (OperandSizeEqual OpSize16) = True
+                                 matchGuard16 _                           = False
 
          T_Imm it      -> case it of
                            ImmSizeOp -> True

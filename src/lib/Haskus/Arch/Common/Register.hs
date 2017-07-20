@@ -1,5 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- | Register
 module Haskus.Arch.Common.Register
@@ -7,20 +11,20 @@ module Haskus.Arch.Common.Register
    , TypedReg (..)
    -- * Register family
    , RegFam (..)
-   , Qualifier (..)
+   , Qualifier
+   , CSet (..)
    , regMatchFamily
    , regFixupFamily
    , regFixupFamilyMaybe
    , matchQualifier
-   , fixupQualifier
-   , fixupQualifierMaybe
    , reduceQualifier
-   , regReduceFamily
+   , trySetQualifier
    , regFamFromReg
    )
 where
 
-import Haskus.Utils.Maybe
+import Haskus.Utils.Solver
+import Haskus.Utils.List (nub)
 
 -- | Register
 data Reg banks = Reg
@@ -55,16 +59,35 @@ data TypedReg typ bank = TypedReg
 --
 
 
--- | Qualifiers
-data Qualifier p a
-   = Set a
-   | NoneOf [a]
-   | OneOf  [a]
-   | Any
-   | None
-   | Or [Qualifier p a]
-   | Guard p (Qualifier p a)
+-- | Constrained Set
+data CSet a
+   = Singleton a     -- ^ {a}
+   | NoneOf [a]      -- ^ {*} \ {a,...}
+   | OneOf  [a]      -- ^ {a,...}
+   | Any             -- ^ {*}
+   | None            -- ^ {}
    deriving (Show,Eq)
+
+-- | Test if an element is in a set
+elemSet :: Eq a => a -> CSet a -> Bool
+elemSet y (Singleton x) = x == y
+elemSet y (NoneOf xs)   = y `notElem` xs
+elemSet y (OneOf xs)    = y `elem` xs
+elemSet _ Any           = True
+elemSet _ None          = False
+
+-- | Simplify a set if possible
+simplifySet :: CSet a -> CSet a
+simplifySet s = case s of
+   OneOf  [x]  -> Singleton x
+   NoneOf []   -> Any
+   OneOf  _    -> s
+   NoneOf _    -> s
+   Singleton _ -> s
+   Any         -> s
+   None        -> s
+
+type Qualifier p a = Rule () p (CSet a)
 
 -- | Register family
 data RegFam pred banks = RegFam
@@ -75,8 +98,29 @@ data RegFam pred banks = RegFam
    }
    deriving (Show,Eq)
 
+instance (Eq b, Eq p) => Predicated (RegFam p b) where
+   type Pred (RegFam p b)    = p
+   type PredErr (RegFam p b) = ()
+   reducePredicates fp (RegFam b i s o) =
+      RegFam <$> reducePredicates fp b
+             <*> reducePredicates fp i
+             <*> reducePredicates fp s
+             <*> reducePredicates fp o
+
+   getTerminals (RegFam bs is ss os) = [ RegFam b i s o | b <- getTerminals bs
+                                                        , i <- getTerminals is
+                                                        , s <- getTerminals ss
+                                                        , o <- getTerminals os
+                                       ]
+   getPredicates (RegFam b i s o) = nub $ concat [ getPredicates b
+                                                 , getPredicates i
+                                                 , getPredicates s
+                                                 , getPredicates o
+                                                 ]
+
+
 -- | Test if a register match a family
-regMatchFamily :: (Eq b) => (p -> Bool) -> RegFam p b -> Reg b -> Bool
+regMatchFamily :: (Eq p, Eq b) => (p -> Maybe Bool) -> RegFam p b -> Reg b -> Bool
 regMatchFamily predSolver RegFam{..} Reg{..} =
       matchQualifier predSolver registerBank regFamBank
       && matchQualifier predSolver registerId regFamId
@@ -84,100 +128,57 @@ regMatchFamily predSolver RegFam{..} Reg{..} =
       && matchQualifier predSolver registerOffset regFamOffset
 
 -- | Fixup a family (all fields must reduce to Set qualifier)
-regFixupFamily :: (Eq b,Show b,Show p) => (p -> Bool) -> RegFam p b -> Reg b
+regFixupFamily :: (Eq p,Eq b,Show b,Show p) => (p -> Maybe Bool) -> RegFam p b -> Reg b
 regFixupFamily predSolver fam =
    case regFixupFamilyMaybe predSolver fam of
       Nothing -> error ("Cannot fixup family: " ++ show fam)
       Just c  -> c
 
 -- | Try to fixup a family (all fields must reduce to Set qualifier)
-regFixupFamilyMaybe :: (Eq b) => (p -> Bool) -> RegFam p b -> Maybe (Reg b)
-regFixupFamilyMaybe predSolver RegFam{..} =
-   Reg <$> fixupQualifierMaybe predSolver regFamBank
-       <*> fixupQualifierMaybe predSolver regFamId
-       <*> fixupQualifierMaybe predSolver regFamSize
-       <*> fixupQualifierMaybe predSolver regFamOffset
-
--- | Try to fixup a family as much as possible
-regReduceFamily :: (Eq b) => (p -> Maybe Bool) -> RegFam p b -> RegFam p b
-regReduceFamily predSolver RegFam{..} =
-   RegFam (reduceQualifier predSolver regFamBank)
-          (reduceQualifier predSolver regFamId)
-          (reduceQualifier predSolver regFamSize)
-          (reduceQualifier predSolver regFamOffset)
+regFixupFamilyMaybe ::
+   ( Predicated (RegFam p b)
+   , Eq b
+   ) => (p -> Maybe Bool) -> RegFam p b -> Maybe (Reg b)
+regFixupFamilyMaybe fp rf =
+   case reducePredicates fp rf of
+      Match (RegFam (Terminal a) (Terminal b) (Terminal c) (Terminal d)) ->
+         case (simplifySet a, simplifySet b, simplifySet c, simplifySet d) of
+            (Singleton u, Singleton v, Singleton w, Singleton x) -> Just (Reg u v w x)
+            _                                                    -> Nothing
+      _ -> Nothing
 
 -- | Reduce a qualifier as much as possible
-reduceQualifier :: Eq a => (p -> Maybe Bool) -> Qualifier p a -> Qualifier p a
-reduceQualifier fp q = fromMaybe q (go q)
-   where
-      go = \case
-         Set x      -> Just (Set x)
-         NoneOf []  -> Just None
-         NoneOf _   -> Nothing
-         OneOf  [x] -> Just (Set x)
-         OneOf  _   -> Nothing
-         Any        -> Nothing
-         None       -> Nothing
-         Guard p x  -> case fp p of
-            Nothing    -> Nothing
-            Just True  -> go x
-            Just False -> Just None
-         Or     []  -> Just None
-         Or     xs  -> if any isJust xs'
-                           then g xs''
-                           else Nothing
-            where
-               -- try to reduce all children
-               xs'         = fmap go xs
-               -- merge reduced children with unreduced ones
-               f new old   = fromMaybe old new
-               xs''        = zipWith f xs' xs
-               -- recursively remove bad children
-               g []         = Just None
-               g (None:vs)  = g vs
-               g (Set v:_)  = Just (Set v)
-               g (Any:_)    = Just Any
-               g (Or us:vs) = g (us ++ vs)
-               g vs         = Just (Or vs)
+reduceQualifier :: (Eq p, Eq a) => (p -> Maybe Bool) -> Qualifier p a -> Qualifier p a
+reduceQualifier fp x = case ruleReduce fp x of
+      NoMatch          -> Terminal None
+      DivergentMatch _ -> error "reduceQualifier: divergent qualifier"
+      MatchFail _      -> Terminal None
+      Match a          -> Terminal (simplifySet a)
+      MatchRule r      -> r
 
 -- | Match a qualifier
-matchQualifier :: Eq a => (p -> Bool) -> a -> Qualifier p a -> Bool
-matchQualifier predSolver = test
+matchQualifier :: (Eq p, Eq a) => (p -> Maybe Bool) -> a -> Qualifier p a -> Bool
+matchQualifier fp y q = case ruleReduce fp q of
+   NoMatch          -> False
+   DivergentMatch _ -> False
+   MatchFail _      -> False
+   Match s          -> y `elemSet` s
+   MatchRule _      -> False
+
+-- | Try to set the value of a qualifier if it matches. Otherwise leave it
+-- untouched
+trySetQualifier :: (Eq p, Eq a) => (p -> Maybe Bool) -> a -> Qualifier p a -> Qualifier p a
+trySetQualifier oracle a q = fmap f q
    where
-      test y (Set x)     = x == y
-      test y (NoneOf xs) = y `notElem` xs
-      test y (OneOf xs)  = y `elem` xs
-      test _ Any         = True
-      test _ None        = False
-      test y (Or xs)     = any (test y) xs
-      test y (Guard p x) = predSolver p && test y x
+      f | matchQualifier oracle a q = \_ -> Singleton a
+        | otherwise                 = id
 
--- | Reduce a qualifier to a Set if possible and retrieve the value
-fixupQualifier :: Eq a => (p -> Bool) -> Qualifier p a -> a
-fixupQualifier fp q = case fixupQualifierMaybe fp q of
-      Nothing -> error "Can't fix up qualifier"
-      Just x  -> x
-
--- | Reduce a qualifier to a Set if possible and retrieve the value
-fixupQualifierMaybe :: Eq a => (p -> Bool) -> Qualifier p a -> Maybe a
-fixupQualifierMaybe fp = \case
-   None       -> Nothing
-   Set x      -> Just x
-   NoneOf _   -> Nothing
-   OneOf  [x] -> Just x
-   OneOf  _   -> Nothing
-   Any        -> Nothing
-   Or     []  -> Nothing
-   Or  (x:xs) -> case fixupQualifierMaybe fp x of
-                     Nothing -> fixupQualifierMaybe fp (Or xs)
-                     c       -> c
-   Guard p x -> if fp p then fixupQualifierMaybe fp x else Nothing
 
 -- | Make a family matching a single register
 regFamFromReg :: Reg b -> RegFam p b
 regFamFromReg Reg{..} = RegFam
-   { regFamBank   = Set registerBank
-   , regFamId     = Set registerId
-   , regFamSize   = Set registerSize
-   , regFamOffset = Set registerOffset
+   { regFamBank   = Terminal $ Singleton registerBank
+   , regFamId     = Terminal $ Singleton registerId
+   , regFamSize   = Terminal $ Singleton registerSize
+   , regFamOffset = Terminal $ Singleton registerOffset
    }
