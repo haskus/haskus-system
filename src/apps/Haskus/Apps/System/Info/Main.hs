@@ -18,6 +18,7 @@ import Haskus.Arch.Common.Register
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
 import Haskus.Utils.Embed
+import Haskus.Utils.Solver
 
 import Paths_haskus_system
 import Data.Version
@@ -191,14 +192,39 @@ showEnc oc rv e = H.tr $ do
    forM_ ops $ \o -> H.td (toHtml (show (X86.opMode o)))
    H.tr $ do
       H.th (toHtml "Type")
-      forM_ (rev ops) $ \o -> H.td $
+      forM_ (rev ops) $ \o -> H.td $ do
+         let
+            showReg r = case r of
+               RegFam (Terminal (Singleton b))
+                      (Terminal (Singleton i))
+                      (Terminal (Singleton s))
+                      (Terminal (Singleton off))
+                  -> toHtml (X86.registerName (Reg b i s off))
+               RegFam (Terminal (Singleton X86.GPR))
+                      (Terminal Any)
+                      (Terminal (Singleton s))
+                      (Terminal (Singleton 0))
+                  -> toHtml ("Any " ++ show s ++ "-bit GPR (except ah,bh,ch,dh)")
+               RegFam (Terminal (Singleton X86.GPR))
+                      (Terminal (NoneOf [4,5,6,7]))
+                      (Terminal (Singleton 8))
+                      (Terminal (OneOf [0,8]))
+                  -> toHtml ("Any legacy 8-bit GPR")
+               r' -> toHtml (show r')
          case X86.opType o of
-            -- X86.T_Reg fam -> case X86.showRegFamily fam of
-            --    X86.RegFamReg reg   -> toHtml (X86.registerName reg)
-            --    X86.RegFamGuard1 xs -> H.table $ forM_ xs $ \(p,v) -> H.tr $ do
-            --       H.th $ toHtml (showPredicate p)
-            --       H.td $ toHtml (X86.registerName v)
-            --    X86.RegFamRaw raw   -> toHtml (show raw)
+            X86.T_Reg fam -> case createPredicateTable fam of
+               Left r   -> showReg r
+               Right rs -> H.table $ do
+                  H.tr $ do
+                     forM_ (fst $ head rs) $ \case
+                        Left p  -> H.th $ toHtml (showPredicate p)
+                        Right p -> H.th $ toHtml (showPredicate p)
+                     H.th (toHtml "Register")
+                  forM_ rs $ \(ps,v) -> H.tr $ do
+                     forM_ ps $ \case
+                        Left _  -> H.td (toHtml "0")
+                        Right _ -> H.td (toHtml "1")
+                     H.td $ showReg v
             t             -> toHtml (show t)
    H.tr $ do
       H.th (toHtml "Encoding")

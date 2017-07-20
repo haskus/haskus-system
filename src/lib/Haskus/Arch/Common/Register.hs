@@ -127,7 +127,7 @@ regMatchFamily predSolver RegFam{..} Reg{..} =
       && matchQualifier predSolver registerSize regFamSize
       && matchQualifier predSolver registerOffset regFamOffset
 
--- | Fixup a family (all fields must reduce to Set qualifier)
+-- | Fixup a family (all fields must reduce to Singleton qualifier)
 regFixupFamily :: (Eq p,Eq b,Show b,Show p) => (p -> Maybe Bool) -> RegFam p b -> Reg b
 regFixupFamily predSolver fam =
    case regFixupFamilyMaybe predSolver fam of
