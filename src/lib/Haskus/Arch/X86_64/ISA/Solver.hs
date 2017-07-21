@@ -18,6 +18,7 @@ module Haskus.Arch.X86_64.ISA.Solver
    , pCS_D
    , pLegacy8bitRegs
    , pOverriddenOperationSize64
+   , pForce8bit
    , pOverriddenAddressSize
    -- * Rules
    , rDefaultOperationSize
@@ -84,11 +85,11 @@ type X86Constraint = Constraint String X86Pred
 pCheck :: Eq a => X86Rule a -> X86Rule a
 pCheck r = if null rs
       then r
-      else fmap snd (mergeRules (orderedNonTerminal rs') r)
+      else orderedNonTerminal rs'
    where
       ps = getPredicates r
 
-      rs' = rs ++ [(CBool True, Terminal ())]
+      rs' = rs ++ [(CBool True, r)]
       rs = concat [ rexp
                   , csdp
                   , csdp2
@@ -180,10 +181,9 @@ pLegacy8bitRegs = And [ Predicate (EncodingPred PLegacyEncoding)
                       , Not (Predicate (EncodingPred PRexEncoding))
                       ]
 
-
 -- | 64-bit long mode predicate
 pMode64bit :: X86Constraint
-pMode64bit = pMode (LongMode Long64bitMode)
+pMode64bit = pModeEx (LongMode Long64bitMode)
 
 -- | Exclusive mode predicate
 pMode :: X86Mode -> X86Constraint
@@ -218,6 +218,10 @@ pPrefix = Predicate . PrefixPred
 pOverriddenOperationSize64 :: OperandSize -> X86Constraint
 pOverriddenOperationSize64 t = rOverriddenOperationSize64 `evalsTo` Terminal t
 
+-- | Force 8-bit operand size
+pForce8bit :: X86Constraint
+pForce8bit = Predicate (InsnPred Force8bit)
+
 -- | Overriden address size predicate
 pOverriddenAddressSize :: AddressSize -> X86Constraint
 pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` Terminal t
@@ -242,7 +246,6 @@ rDefaultOperationSize = NonTerminal
                   ]
       s32oFail = NonTerminal
                   [ (Not pCS_D, Terminal OpSize32)
-                  , (pCS_D    , Fail "#GP: D flag in CS descriptor must be 0 in 64-bit mode")
                   ]
 
 -- | Default address size (DAS)
@@ -261,7 +264,6 @@ rDefaultAddressSize = NonTerminal
                   ]
       s32oFail = NonTerminal
                   [ (Not pCS_D, Terminal AddrSize64)
-                  , (pCS_D    , Fail "#GP: D flag in CS descriptor must be 0 in 64-bit mode")
                   ]
 
 -- | Overridden operation size (OOS)

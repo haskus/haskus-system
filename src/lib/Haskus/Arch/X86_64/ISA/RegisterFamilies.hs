@@ -133,19 +133,19 @@ regFamGPR32o64 = (regFamFromReg R_RAX)
 regFamGPR :: X86RegFam
 regFamGPR = (regFamFromReg R_RAX)
    { regFamId     = pCheck $ orderedNonTerminal
-      [ (Not (pOverriddenOperationSize64 OpSize8)  , Terminal Any)
+      [ (Not pForce8bit                            , Terminal Any)
       , (Not pLegacy8bitRegs                       , Terminal Any)
                                                    -- disable SIL,DIL,etc.
       , (pLegacy8bitRegs                           , Terminal (NoneOf [4,5,6,7]))
       ]
    , regFamSize   = pCheck $ orderedNonTerminal
-      [ (pOverriddenOperationSize64 OpSize8 , Terminal (Singleton 8 ))
+      [ (pForce8bit                         , Terminal (Singleton 8 ))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
       , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
       ]
    , regFamOffset = pCheck $ orderedNonTerminal
-      [ (Not (pOverriddenOperationSize64 OpSize8), Terminal (Singleton 0))
+      [ (Not pForce8bit                          , Terminal (Singleton 0))
                                                    -- disable AH,BH,CH,DH
                                                    -- (offset = 8)
       , (Not pLegacy8bitRegs                     , Terminal (Singleton 0))
@@ -175,7 +175,7 @@ regFamCounter = (regFamFromReg R_CX)
 regFamAccu :: X86RegFam
 regFamAccu = (regFamFromReg R_AX)
    { regFamSize   = pCheck $ orderedNonTerminal
-      [ (pOverriddenOperationSize64 OpSize8 , Terminal (Singleton 8 ))
+      [ (pForce8bit                         , Terminal (Singleton 8 ))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
       , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
@@ -223,7 +223,7 @@ famSizes = pCheck $ orderedNonTerminal
 regFamAX' :: X86RegFam
 regFamAX' = (regFamFromReg R_AX)
    { regFamSize   = pCheck $ orderedNonTerminal
-      [ (pOverriddenOperationSize64 OpSize8 , Terminal (Singleton 16))
+      [ (pForce8bit                         , Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
       , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
