@@ -7,7 +7,7 @@ packages:
   extra-dep: true
 - location:
     git: git@github.com:haskus/haskus-utils
-    commit: 52c39e1c7974a71350621127e71c698609cf50e8
+    commit: 2d7a7daf84389473d55479d511280398b556376a
   extra-dep: true
 
 extra-deps:

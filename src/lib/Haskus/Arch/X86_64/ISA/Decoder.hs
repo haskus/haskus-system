@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module Haskus.Arch.X86_64.ISA.Decoder
    ( getInstruction
@@ -30,7 +31,7 @@ import Haskus.Utils.List (nub, (\\))
 import Haskus.Utils.Maybe
 import Haskus.Utils.Flow
 
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Vector as V
 
 -- ===========================================================================
@@ -598,25 +599,41 @@ readOperands mode ps oc enc = do
    let
       is64bitMode' = is64bitMode (x86Mode mode)
 
-      -- predicate solver
-      oracle (ContextPred (Mode m))         = Just (m == x86Mode mode)
-      oracle (ContextPred CS_D)             = Just (csDescriptorFlagD mode)
-      oracle (ContextPred SS_B)             = Just (ssDescriptorFlagB mode)
-      oracle (PrefixPred Prefix66)          = Just hasPrefix66
-      oracle (PrefixPred Prefix67)          = Just hasPrefix67
-      oracle (PrefixPred PrefixW)           = Just (opcodeW oc)
-      oracle (PrefixPred PrefixL)           = opcodeL oc
-      oracle (InsnPred Default64OpSize)     = Just hasDefaultOp64
-      oracle (InsnPred Force8bit)           = Just hasForce8bit
-      oracle (EncodingPred e) = case (e, oc) of
-         (PLegacyEncoding, OpLegacy {})          -> Just True
-         (PRexEncoding, OpLegacy _ (Just _) _ _) -> Just True
-         (PRexEncoding, OpLegacy _ Nothing _ _)  -> Just False
-         (PVexEncoding, OpVex {})                -> Just True
-         (PXopEncoding, OpXop {})                -> Just True
-         -- (PEvexEncoding, OpEvex {})              -> Just True
-         -- (PMvexEncoding, OpMvex {})              -> Just True
-         _                                       -> Just False
+      -- predicate oracle
+      oracle = makeOracle <|
+         (fmap (\m -> (ContextPred (Mode m), UnsetPred))
+               (filter (/= x86Mode mode) allModes))
+         ++
+         [ (ContextPred (Mode (x86Mode mode)), SetPred)
+         , (ContextPred CS_D         , if | is64bitMode'           -> UnsetPred
+                                          | csDescriptorFlagD mode -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (ContextPred SS_B         , if | ssDescriptorFlagB mode -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (PrefixPred Prefix66      , if | hasPrefix66            -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (PrefixPred Prefix67      , if | hasPrefix67            -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (PrefixPred PrefixW       , if | opcodeW oc             -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (PrefixPred PrefixL       , case opcodeL oc of
+                                          Nothing    -> UndefPred
+                                          Just True  -> SetPred
+                                          Just False -> UnsetPred)
+         , (InsnPred Default64OpSize , if | hasDefaultOp64         -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (InsnPred Force8bit       , if | hasForce8bit           -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (EncodingPred PRexEncoding, case oc of
+               (OpLegacy _ (Just _) _ _) -> SetPred
+               (OpLegacy _ Nothing _ _)  -> UnsetPred
+               _                         -> UndefPred)
+         , (EncodingPred (case oc of
+               OpLegacy {} -> PLegacyEncoding
+               OpVex    {} -> PVexEncoding
+               OpXop    {} -> PXopEncoding), SetPred)
+         ]
+
 
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)

@@ -96,7 +96,7 @@ regFamDebug = (pRegFamFromReg (R_DR32 0))
 regFamGPR8 :: X86PredRegFam
 regFamGPR8 = (pRegFamFromReg R_AL)
    { regFamId     = Terminal Any
-   , regFamOffset = pCheck $ NonTerminal
+   , regFamOffset = NonTerminal
       [ (pLegacy8bitRegs    , Terminal (OneOf [0,8]))
       , (Not pLegacy8bitRegs, Terminal (Singleton 0))
       ]
@@ -125,7 +125,7 @@ regFamGPR64 = (pRegFamFromReg R_RAX)
 regFamGPR32o64 :: X86PredRegFam
 regFamGPR32o64 = (pRegFamFromReg R_RAX)
    { regFamId     = Terminal Any
-   , regFamSize   = pCheck $ NonTerminal
+   , regFamSize   = NonTerminal
       [ (pMode64bit    , Terminal (Singleton 64))
       , (Not pMode64bit, Terminal (Singleton 32))
       ]
@@ -134,19 +134,19 @@ regFamGPR32o64 = (pRegFamFromReg R_RAX)
 -- | General purpose register (size = operand-size)
 regFamGPR :: X86PredRegFam
 regFamGPR = (pRegFamFromReg R_RAX)
-   { regFamId     = pCheck $ orderedNonTerminal
+   { regFamId     = orderedNonTerminal
       [ (Not pForce8bit                            , Terminal Any)
       , (Not pLegacy8bitRegs                       , Terminal Any)
                                                    -- disable SIL,DIL,etc.
       , (pLegacy8bitRegs                           , Terminal (NoneOf [4,5,6,7]))
       ]
-   , regFamSize   = pCheck $ orderedNonTerminal
+   , regFamSize   = orderedNonTerminal
       [ (pForce8bit                         , Terminal (Singleton 8 ))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
       , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
       ]
-   , regFamOffset = pCheck $ orderedNonTerminal
+   , regFamOffset = orderedNonTerminal
       [ (Not pForce8bit                          , Terminal (Singleton 0))
                                                    -- disable AH,BH,CH,DH
                                                    -- (offset = 8)
@@ -166,7 +166,7 @@ regFamGPRh = (pRegFamFromReg R_AH)
 -- | CX,ECX,RCX depending on the address-size
 regFamCounter :: X86PredRegFam
 regFamCounter = (pRegFamFromReg R_CX)
-   { regFamSize   = pCheck $ orderedNonTerminal
+   { regFamSize   = orderedNonTerminal
       [ (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
       , (pOverriddenAddressSize AddrSize64, Terminal (Singleton 64))
@@ -176,7 +176,7 @@ regFamCounter = (pRegFamFromReg R_CX)
 -- | AL,AX,EAX,RAX depending on the operand-size
 regFamAccu :: X86PredRegFam
 regFamAccu = (pRegFamFromReg R_AX)
-   { regFamSize   = pCheck $ orderedNonTerminal
+   { regFamSize   = orderedNonTerminal
       [ (pForce8bit                         , Terminal (Singleton 8 ))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
@@ -189,7 +189,7 @@ regFamAccu = (pRegFamFromReg R_AX)
 -- Use RSP in 64-bit mode, otherwise use address-size
 regFamStackPtr :: X86PredRegFam
 regFamStackPtr = (pRegFamFromReg R_SP)
-   { regFamSize     = pCheck $ orderedNonTerminal
+   { regFamSize     = orderedNonTerminal
       [ (pMode64bit                       , Terminal (Singleton 64))
       , (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
@@ -202,7 +202,7 @@ regFamStackPtr = (pRegFamFromReg R_SP)
 -- Use RBP in 64-bit mode, otherwise use address-size
 regFamStackBase :: X86PredRegFam
 regFamStackBase = (pRegFamFromReg R_BP)
-   { regFamSize     = pCheck $ orderedNonTerminal
+   { regFamSize     = orderedNonTerminal
       [ (pMode64bit                       , Terminal (Singleton 64))
       , (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
@@ -213,7 +213,7 @@ regFamStackBase = (pRegFamFromReg R_BP)
 
 -- | Helper for families
 famSizes :: X86Rule (CSet Word)
-famSizes = pCheck $ orderedNonTerminal
+famSizes = orderedNonTerminal
    [ (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
    , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
    , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
@@ -224,7 +224,7 @@ famSizes = pCheck $ orderedNonTerminal
 -- This on is used to encode AX, DX:AX, EDX:EAX, RDX:RAX
 regFamAX' :: X86PredRegFam
 regFamAX' = (pRegFamFromReg R_AX)
-   { regFamSize   = pCheck $ orderedNonTerminal
+   { regFamSize   = orderedNonTerminal
       [ (pForce8bit                         , Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))

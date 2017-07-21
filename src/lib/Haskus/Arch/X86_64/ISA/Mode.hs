@@ -5,6 +5,7 @@ module Haskus.Arch.X86_64.ISA.Mode
    , LongSubMode (..)
    , LegacySubMode (..)
    , X86Extension(..)
+   , allModes
    , allExtensions
    , ModeInfo (..)
    , getModeInfo
@@ -45,6 +46,15 @@ data LegacySubMode
    | Virtual8086Mode
    | RealMode
    deriving (Show,Eq,Ord)
+
+-- | All the X86 modes
+allModes :: [X86Mode]
+allModes  = [ LongMode Long64bitMode
+            , LongMode CompatibilityMode
+            , LegacyMode RealMode
+            , LegacyMode Virtual8086Mode
+            , LegacyMode ProtectedMode
+            ]
 
 -- | Return the mode name
 modeName :: X86Mode -> String

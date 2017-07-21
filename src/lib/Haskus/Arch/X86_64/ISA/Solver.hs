@@ -10,10 +10,11 @@ module Haskus.Arch.X86_64.ISA.Solver
    , InsnPred (..)
    , PrefixPred (..)
    , EncodingPred (..)
-   , pCheck
+   , X86PredOracle
+   , PredError (..)
+   , checkOracle
    , pPrefix
    , pMode
-   , pModeEx
    , pMode64bit
    , pCS_D
    , pLegacy8bitRegs
@@ -32,7 +33,7 @@ where
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Utils.Solver
-import Haskus.Utils.Flow
+import Haskus.Utils.Maybe
 
 -- | Context predicate
 data ContextPred
@@ -81,98 +82,91 @@ type X86Constraint = Constraint String X86Pred
 -- Predicates
 -----------------------------------------------------
 
--- | Architecture invariant predicate
-pCheck :: Eq a => X86Rule a -> X86Rule a
-pCheck r = if null rs
-      then r
-      else orderedNonTerminal rs'
+-- | Predicate oracle
+type X86PredOracle = PredOracle X86Pred
+
+data PredError
+   = PredImply [(X86Pred,PredState)] [(X86Pred,PredState)]
+   | PredIncompatible [(X86Pred,PredState)]
+   deriving (Show)
+
+-- | Check an oracle, return a list of incompatible predicates
+checkOracle :: X86PredOracle -> [PredError]
+checkOracle oracle =
+      (fmap PredIncompatible (mapMaybe checkCompat incompatible))
+      ++ (fmap (uncurry PredImply) (mapMaybe checkImply implies))
    where
-      ps = getPredicates r
+      predAll is        = all (\(p,s) -> predIs oracle p s) is
+      predAllOrUndef is = all (\(p,s) -> case predState oracle p of
+                                          UndefPred -> True
+                                          s'        -> s == s'
+                             ) is
 
-      rs' = rs ++ [(CBool True, r)]
-      rs = concat [ rexp
-                  , csdp
-                  , csdp2
-                  , csdp3
-                  , modesp
-                  , encsp
-                  ]
+      checkCompat is = 
+         if predAll is
+            then Just is
+            else Nothing
 
-      makeP True  rule = [rule]
-      makeP False _    = []
+      checkImply (cs,rs) =
+         if predAll cs && not (predAllOrUndef rs)
+            then Just (cs,rs)
+            else Nothing
 
-      -- we have to be careful not to add predicates that were not already
-      -- present in the rule, otherwise `getPredicates` will return our added
-      -- predicates...
-      rexp = makeP 
-               (EncodingPred PLegacyEncoding `elem` ps
-                && EncodingPred PRexEncoding `elem` ps
-               )
-               (And [ Not (Predicate (EncodingPred PLegacyEncoding))
-                    , Predicate (EncodingPred PRexEncoding)
+      implies =
+         [
+           -- CS.D doesn't make sense in real-mode and virtual 8086 mode
+            (  [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
+            ,  [ (ContextPred CS_D                               , UndefPred)]
+            )
+         ,  (  [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), SetPred)]
+            ,  [ (ContextPred CS_D                               , UndefPred)]
+            )
+
+         ,  -- REX prefix only valid with a legacy encoding
+            (  [(EncodingPred PRexEncoding   , SetPred)]
+            ,  [(EncodingPred PLegacyEncoding, SetPred)]
+            )
+
+         , -- CS.D can't be 1 in long 64-bit mode.
+            (  [ (ContextPred (Mode (LongMode Long64bitMode)), SetPred)]
+            ,  [ (ContextPred CS_D                           , UnsetPred)]
+            )
+
+         , -- W doesn't make sense in real-mode and virtual 8086 mode
+            ( [ (PrefixPred PrefixW                             , SetPred)]
+            , [ (ContextPred (Mode (LegacyMode RealMode))       , UndefPred)]
+            )
+         ,  ( [ (PrefixPred PrefixW                             , SetPred)]
+            , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), UndefPred)]
+            )
+
+         , -- L doesn't make sense in real-mode and virtual 8086 mode
+            ( [ (PrefixPred PrefixL                             , SetPred)]
+            , [ (ContextPred (Mode (LegacyMode RealMode))       , UndefPred)]
+            )
+         ,  ( [ (PrefixPred PrefixL                             , SetPred)]
+            , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), UndefPred)]
+            )
+
+         ]
+
+      incompatible =
+         -- execution modes are incompatible
+         exclusive (fmap (ContextPred . Mode) allModes)
+
+         -- encodings are incompatible
+         ++ exclusive (fmap EncodingPred encodings)
+
+      exclusive []     = []
+      exclusive [_]    = []
+      exclusive (x:xs) = [[(x,SetPred),(y,SetPred)] | y <- xs] ++ exclusive xs
+
+      encodings =   [ PLegacyEncoding
+                    , PVexEncoding
+                    , PXopEncoding
+                    , PEvexEncoding
+                    , PMvexEncoding
                     ]
-               , Fail "REX prefix not allowed without legacy encoding"
-               )
-
-      csdp = makeP
-               ( ContextPred (Mode (LongMode Long64bitMode)) `elem` ps
-                 && ContextPred CS_D `elem` ps
-               )
-               (And [ pMode (LongMode Long64bitMode)
-                    , Predicate (ContextPred CS_D)
-                    ]
-               , Fail "CS.D and long 64-bit mode are mutually exclusive"
-               )
-
-      csdp2 = makeP
-               ( ContextPred (Mode (LegacyMode RealMode)) `elem` ps
-                 && ContextPred CS_D `elem` ps
-               )
-               (And [ pMode (LegacyMode RealMode)
-                    , Predicate (ContextPred CS_D)
-                    ]
-               , Fail "CS.D makes no sense in real mode"
-               )
-
-      csdp3 = makeP
-               ( ContextPred (Mode (LegacyMode Virtual8086Mode)) `elem` ps
-                 && ContextPred CS_D `elem` ps
-               )
-               (And [ pMode (LegacyMode Virtual8086Mode)
-                    , Predicate (ContextPred CS_D)
-                    ]
-               , Fail "CS.D makes no sense in virtual 8086 mode"
-               )
-
-      modes  = [ LongMode Long64bitMode
-               , LongMode CompatibilityMode
-               , LegacyMode RealMode
-               , LegacyMode Virtual8086Mode
-               , LegacyMode ProtectedMode
-               ]
-      modes' = filter (`elem` ps) (fmap (ContextPred . Mode) modes)
-
-      modesp = makeP
-                  (length modes' > 1)
-                  (Not <| Xor <| fmap Predicate modes'
-                  , Fail "Execution modes are mutually exclusive"
-                  )
-
-
-      encs =   [ PLegacyEncoding
-               , PVexEncoding
-               , PXopEncoding
-               , PEvexEncoding
-               , PMvexEncoding
-               ]
-      encs' = filter (`elem` ps) (fmap EncodingPred encs)
-
-      encsp = makeP
-                  (length encs' > 1)
-                  ( Not <| Xor <| fmap Predicate encs'
-                  , Fail "Encodings are mutually exclusive"
-                  )
-
 
 
 -- | Allow the use of legacy 8-bit AH,BH,CH,DH registers
@@ -183,27 +177,11 @@ pLegacy8bitRegs = And [ Predicate (EncodingPred PLegacyEncoding)
 
 -- | 64-bit long mode predicate
 pMode64bit :: X86Constraint
-pMode64bit = pModeEx (LongMode Long64bitMode)
+pMode64bit = pMode (LongMode Long64bitMode)
 
 -- | Exclusive mode predicate
 pMode :: X86Mode -> X86Constraint
 pMode = Predicate . ContextPred . Mode
-
--- | Mode predicate
-pModeEx :: X86Mode -> X86Constraint
-pModeEx m = And cs
-   where
-      -- we make all the modes mutually exclusive
-      cs = fmap (\m' -> f m' (pMode  m'))
-            [ LongMode Long64bitMode
-            , LongMode CompatibilityMode
-            , LegacyMode RealMode
-            , LegacyMode Virtual8086Mode
-            , LegacyMode ProtectedMode
-            ]
-      
-      f m' | m == m'   = id
-           | otherwise = Not
          
 
 -- | CS.D flag
@@ -233,11 +211,11 @@ pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` t
 -- | Default operation size (DOS)
 rDefaultOperationSize :: X86Rule OperandSize
 rDefaultOperationSize = NonTerminal
-      [ (pModeEx (LegacyMode RealMode)           , Terminal OpSize16)
-      , (pModeEx (LegacyMode Virtual8086Mode)    , Terminal OpSize16)
-      , (pModeEx (LegacyMode ProtectedMode)      , s16o32)
-      , (pModeEx (LongMode   CompatibilityMode)  , s16o32)
-      , (pModeEx (LongMode   Long64bitMode)      , s32oFail)
+      [ (pMode (LegacyMode RealMode)           , Terminal OpSize16)
+      , (pMode (LegacyMode Virtual8086Mode)    , Terminal OpSize16)
+      , (pMode (LegacyMode ProtectedMode)      , s16o32)
+      , (pMode (LongMode   CompatibilityMode)  , s16o32)
+      , (pMode (LongMode   Long64bitMode)      , s32oFail)
       ]
    where
       s16o32   = NonTerminal
@@ -251,11 +229,11 @@ rDefaultOperationSize = NonTerminal
 -- | Default address size (DAS)
 rDefaultAddressSize :: X86Rule AddressSize
 rDefaultAddressSize = NonTerminal
-      [ (pModeEx (LegacyMode RealMode)           , Terminal AddrSize16)
-      , (pModeEx (LegacyMode Virtual8086Mode)    , Terminal AddrSize16)
-      , (pModeEx (LegacyMode ProtectedMode)      , s16o32)
-      , (pModeEx (LongMode   CompatibilityMode)  , s16o32)
-      , (pModeEx (LongMode   Long64bitMode)      , s32oFail)
+      [ (pMode (LegacyMode RealMode)           , Terminal AddrSize16)
+      , (pMode (LegacyMode Virtual8086Mode)    , Terminal AddrSize16)
+      , (pMode (LegacyMode ProtectedMode)      , s16o32)
+      , (pMode (LongMode   CompatibilityMode)  , s16o32)
+      , (pMode (LongMode   Long64bitMode)      , s32oFail)
       ]
    where
       s16o32   = NonTerminal

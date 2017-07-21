@@ -109,10 +109,10 @@ type family Q t a :: * where
 
 -- | Register family
 data RegFam t banks = RegFam
-   { regFamBank   :: Q t (CSet banks) -- ^ Register bank
-   , regFamId     :: Q t (CSet Word)  -- ^ Register ID
-   , regFamSize   :: Q t (CSet Word)  -- ^ Register size in bits
-   , regFamOffset :: Q t (CSet Word)  -- ^ Register offset in bits
+   { regFamBank   :: !(Q t (CSet banks)) -- ^ Register bank
+   , regFamId     :: !(Q t (CSet Word))  -- ^ Register ID
+   , regFamSize   :: !(Q t (CSet Word))  -- ^ Register size in bits
+   , regFamOffset :: !(Q t (CSet Word))  -- ^ Register offset in bits
    }
 
 type PredRegFam p e b = RegFam (NT p e) b
@@ -125,7 +125,7 @@ deriving instance (Show p, Show e, Show b) => Show (RegFam (NT p e) b)
 deriving instance (Eq p, Eq e, Eq b)       => Eq   (RegFam (NT p e) b)
 deriving instance (Ord p, Ord e, Ord b)    => Ord  (RegFam (NT p e) b)
 
-instance (Eq e, Eq b, Eq p) => Predicated (RegFam (NT p e) b) where
+instance (Ord p, Eq e, Eq b, Eq p) => Predicated (RegFam (NT p e) b) where
    type Pred     (RegFam (NT p e) b) = p
    type PredErr  (RegFam (NT p e) b) = e
    type PredTerm (RegFam (NT p e) b) = RegFam T b
@@ -156,7 +156,11 @@ instance (Eq e, Eq b, Eq p) => Predicated (RegFam (NT p e) b) where
 
 
 -- | Test if a register match a family
-regMatchFamily :: (Eq b, Predicated (PredRegFam p e b)) => (p -> Maybe Bool) -> PredRegFam p e b -> Reg b -> Bool
+regMatchFamily ::
+   ( Ord p
+   , Eq b
+   , Predicated (PredRegFam p e b)
+   ) => PredOracle p -> PredRegFam p e b -> Reg b -> Bool
 regMatchFamily oracle rf Reg{..} =
    case reducePredicates oracle rf of
       Match (RegFam {..}) -> registerBank `elemSet` regFamBank
@@ -170,7 +174,8 @@ regFixupPredFamily ::
    ( Predicated (PredRegFam p e b)
    , Show (PredRegFam p e b)
    , Eq b
-   ) => (p -> Maybe Bool) -> PredRegFam p e b -> Reg b
+   , Ord p
+   ) => PredOracle p -> PredRegFam p e b -> Reg b
 regFixupPredFamily oracle fam =
    case regFixupPredFamilyMaybe oracle fam of
       Nothing -> error ("Cannot fixup family: " ++ show fam)
@@ -180,7 +185,8 @@ regFixupPredFamily oracle fam =
 regFixupPredFamilyMaybe ::
    ( Predicated (PredRegFam p e b)
    , Eq b
-   ) => (p -> Maybe Bool) -> PredRegFam p e b -> Maybe (Reg b)
+   , Ord p
+   ) => PredOracle p -> PredRegFam p e b -> Maybe (Reg b)
 regFixupPredFamilyMaybe oracle fam =
    case reducePredicates oracle fam of
       Match r -> regFixupTermFamilyMaybe r
@@ -200,7 +206,7 @@ regFixupTermFamily fam = fromMaybe err (regFixupTermFamilyMaybe fam)
       err = error ("Cannot fixup family: " ++ show fam)
 
 -- | Reduce a qualifier as much as possible
-reducePSet :: (Eq e, Eq p, Eq a) => (p -> Maybe Bool) -> PSet e p a -> PSet e p a
+reducePSet :: (Eq e, Eq p, Eq a, Ord p) => PredOracle p -> PSet e p a -> PSet e p a
 reducePSet oracle x = case reducePredicates oracle x of
       NoMatch          -> liftTerminal None
       MatchDiverge _   -> liftTerminal None
@@ -209,7 +215,7 @@ reducePSet oracle x = case reducePredicates oracle x of
       DontMatch a      -> a
 
 -- | Match a qualifier
-matchPSet :: (Eq e, Eq p, Eq a) => (p -> Maybe Bool) -> a -> PSet e p a -> Bool
+matchPSet :: (Eq e, Eq p, Eq a, Ord p) => PredOracle p -> a -> PSet e p a -> Bool
 matchPSet fp y q = case reducePredicates fp q of
    NoMatch            -> False
    MatchDiverge _     -> False
@@ -218,11 +224,11 @@ matchPSet fp y q = case reducePredicates fp q of
    DontMatch _        -> False
 
 -- | Try to set the value of a PSet if it matches. Otherwise leave it untouched
-trySetPSet :: (Eq e, Eq p, Eq a) => (p -> Maybe Bool) -> a -> PSet e p a -> PSet e p a
+trySetPSet :: (Eq e, Eq p, Eq a, Ord p) => PredOracle p -> a -> PSet e p a -> PSet e p a
 trySetPSet oracle a q = fmap f q
    where
       f | matchPSet oracle a q = \_ -> Singleton a
-        | otherwise                 = id
+        | otherwise            = id
 
 -- | Try to set the value of a CSet if it matches. Otherwise leave it untouched
 trySetCSet :: (Eq a) => a -> CSet a -> CSet a

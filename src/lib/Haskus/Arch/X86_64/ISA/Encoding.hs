@@ -115,31 +115,31 @@ import Haskus.Utils.List ((\\))
 
 -- | Instruction encoding
 data Encoding = Encoding
-   { encOpcodeEncoding  :: OpcodeEncoding       -- ^ Opcode encoding
-   , encMandatoryPrefix :: Maybe LegacyPrefix   -- ^ Mandatory prefix
-   , encOpcodeMap       :: OpcodeMap            -- ^ Map
-   , encOpcode          :: Word8                -- ^ Opcode
-   , encOpcodeExt       :: Maybe Word8          -- ^ Opcode extension in ModRM.reg
-   , encOpcodeFullExt   :: Maybe Word8          -- ^ Opcode extension in full ModRM byte
-   , encOpcodeWExt      :: Maybe Bool           -- ^ Opcode extension in REX.W, VEX.W, etc.
-   , encOpcodeLExt      :: Maybe Bool           -- ^ Opcode extension in VEX.L, etc.
-   , encReversableBit   :: Maybe Int            -- ^ Args are reversed if the given bit is
-                                                --   set in the opcode.
-   , encNoForce8Bit     :: Maybe Int            -- ^ Operand size is 8 if the given bit is
-                                                --   unset in the opcode. Otherwise, the
-                                                --   size is defined by operand-size
-                                                --   prefix and REX.W bit
-   , encSignExtendImmBit:: Maybe Int            -- ^ Used in conjunction with a set
-                                                --   NoForce8Bit bit. Imm8 operand is used
-                                                --   and sign-extended if the given bit is
-                                                --   set
-   , encFPUDestBit      :: Maybe Int            -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
-                                                --   only if both operands are registers!
-   , encFPUPopBit       :: Maybe Int            -- ^ Opcode bit: pop the FPU register,
-                                                --   only if destination is (ST(i))
-   , encFPUSizableBit   :: Maybe Int            -- ^ Opcode bit: change the FPU size (only if memory operand)
-   , encProperties      :: [EncodingProperties] -- ^ Encoding properties
-   , encOperands        :: [OperandSpec]        -- ^ Operand encoding
+   { encOpcodeEncoding  :: !OpcodeEncoding       -- ^ Opcode encoding
+   , encMandatoryPrefix :: !(Maybe LegacyPrefix) -- ^ Mandatory prefix
+   , encOpcodeMap       :: !OpcodeMap            -- ^ Map
+   , encOpcode          :: {-# UNPACK #-} !Word8 -- ^ Opcode
+   , encOpcodeExt       :: !(Maybe Word8)        -- ^ Opcode extension in ModRM.reg
+   , encOpcodeFullExt   :: !(Maybe Word8)        -- ^ Opcode extension in full ModRM byte
+   , encOpcodeWExt      :: !(Maybe Bool)         -- ^ Opcode extension in REX.W, VEX.W, etc.
+   , encOpcodeLExt      :: !(Maybe Bool)         -- ^ Opcode extension in VEX.L, etc.
+   , encReversableBit   :: !(Maybe Int)          -- ^ Args are reversed if the given bit is
+                                                 --   set in the opcode.
+   , encNoForce8Bit     :: !(Maybe Int)          -- ^ Operand size is 8 if the given bit is
+                                                 --   unset in the opcode. Otherwise, the
+                                                 --   size is defined by operand-size
+                                                 --   prefix and REX.W bit
+   , encSignExtendImmBit:: !(Maybe Int)          -- ^ Used in conjunction with a set
+                                                 --   NoForce8Bit bit. Imm8 operand is used
+                                                 --   and sign-extended if the given bit is
+                                                 --   set
+   , encFPUDestBit      :: !(Maybe Int)          -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
+                                                 --   only if both operands are registers!
+   , encFPUPopBit       :: !(Maybe Int)          -- ^ Opcode bit: pop the FPU register,
+                                                 --   only if destination is (ST(i))
+   , encFPUSizableBit   :: !(Maybe Int)          -- ^ Opcode bit: change the FPU size (only if memory operand)
+   , encProperties      :: ![EncodingProperties] -- ^ Encoding properties
+   , encOperands        :: ![OperandSpec]        -- ^ Operand encoding
    }
    deriving (Show)
 
@@ -148,21 +148,6 @@ data OpcodeEncoding
    = EncLegacy -- ^ Legacy encoding
    | EncVEX    -- ^ VEX encoding
    deriving (Show,Eq,Ord)
-
-data OperandSizeExpr
-   = DefaultOperationSize                               -- ^ Default operation size
-   | DefaultOperationSize64                             -- ^ Default operation size, allow W prefix and default 64-bit size
-   | FixedOperandSize OperandSize                       -- ^ Fixed operand size
-   | GuardedOperandSize [(OpSizePredicate,OperandSize)] -- ^ Conditional operand size
-   deriving (Eq,Show,Ord)
-
-data OpSizePredicate
-   = PrefixL Bool
-   | PrefixW Bool
-   | PAnd [OpSizePredicate]
-   | POr [OpSizePredicate]
-   deriving (Show,Eq,Ord)
-
 
 -- | Encoding properties
 data EncodingProperties
@@ -891,9 +876,9 @@ data OperandEnc
 
 -- | Operand specification
 data OperandSpec = OperandSpec
-   { opMode :: AccessMode
-   , opType :: OperandType
-   , opEnc  :: OperandEnc
+   { opMode :: !AccessMode
+   , opType :: !OperandType
+   , opEnc  :: !OperandEnc
    } deriving (Show)
 
 -- | Operand access mode
