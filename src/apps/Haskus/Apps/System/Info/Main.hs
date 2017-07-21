@@ -251,7 +251,7 @@ showReg r = case r of
 
 showRegFamily :: X86.X86PredRegFam -> Html
 showRegFamily fam =
-   case createPredicateTable fam (const True) False of
+   case createPredicateTable fam (null . checkOracle False) False of
       Left r   -> showReg r
       Right [] -> toHtml ("Error: empty table! " ++ show fam)
       Right rs -> H.table $ do

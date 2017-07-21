@@ -91,15 +91,17 @@ data PredError
    deriving (Show)
 
 -- | Check an oracle, return a list of incompatible predicates
-checkOracle :: X86PredOracle -> [PredError]
-checkOracle oracle =
+checkOracle :: Bool -> X86PredOracle -> [PredError]
+checkOracle strict oracle =
       (fmap PredIncompatible (mapMaybe checkCompat incompatible))
       ++ (fmap (uncurry PredImply) (mapMaybe checkImply implies))
    where
       predAll is        = all (\(p,s) -> predIs oracle p s) is
-      predAllOrUndef is = all (\(p,s) -> case predState oracle p of
-                                          UndefPred -> True
-                                          s'        -> s == s'
+      predAllOrUndef is = all (\(p,s) -> case (s,predState oracle p) of
+                                          (UndefPred,_)
+                                             | not strict -> True
+                                          (_,UndefPred)   -> True
+                                          (_,s')          -> s == s'
                              ) is
 
       checkCompat is = 
