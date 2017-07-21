@@ -864,17 +864,17 @@ data RelType
 
 -- | Operand types
 data OperandType
-   = TME OperandType OperandType    -- ^ One of the two types (for ModRM.rm)
-   | TLE OperandType OperandType    -- ^ One of the two types depending on Vex.L
-   | TWE OperandType OperandType    -- ^ One of the two types depending on Rex.W
-   | T_Mem MemType                  -- ^ Memory address
-   | T_Reg X86RegFam                -- ^ Register
-   | T_SubReg SubRegType X86RegFam  -- ^ Sub-part of a register
-   | T_Pair OperandType OperandType -- ^ Pair (AAA:BBB)
-   | T_Imm ImmType                  -- ^ Immediate value
-   | T_Rel RelType                  -- ^ Memory offset relative to current IP
-   | T_MemOffset                    -- ^ Memory offset relative to the segment base: the offset is address-sized, the value is operand-sized
-   | T_MemDSrAX                     -- ^ Memory whose address is DS:EAX or DS:RAX (64-bit mode)
+   = TME OperandType OperandType       -- ^ One of the two types (for ModRM.rm)
+   | TLE OperandType OperandType       -- ^ One of the two types depending on Vex.L
+   | TWE OperandType OperandType       -- ^ One of the two types depending on Rex.W
+   | T_Mem MemType                     -- ^ Memory address
+   | T_Reg X86PredRegFam               -- ^ Register
+   | T_SubReg SubRegType X86PredRegFam -- ^ Sub-part of a register
+   | T_Pair OperandType OperandType    -- ^ Pair (AAA:BBB)
+   | T_Imm ImmType                     -- ^ Immediate value
+   | T_Rel RelType                     -- ^ Memory offset relative to current IP
+   | T_MemOffset                       -- ^ Memory offset relative to the segment base: the offset is address-sized, the value is operand-sized
+   | T_MemDSrAX                        -- ^ Memory whose address is DS:EAX or DS:RAX (64-bit mode)
    deriving (Show,Eq)
 
 -- | Operand encoding

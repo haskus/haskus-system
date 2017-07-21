@@ -216,7 +216,7 @@ pPrefix = Predicate . PrefixPred
 
 -- | Overriden 64-bit operation size predicate
 pOverriddenOperationSize64 :: OperandSize -> X86Constraint
-pOverriddenOperationSize64 t = rOverriddenOperationSize64 `evalsTo` Terminal t
+pOverriddenOperationSize64 t = rOverriddenOperationSize64 `evalsTo` t
 
 -- | Force 8-bit operand size
 pForce8bit :: X86Constraint
@@ -224,7 +224,7 @@ pForce8bit = Predicate (InsnPred Force8bit)
 
 -- | Overriden address size predicate
 pOverriddenAddressSize :: AddressSize -> X86Constraint
-pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` Terminal t
+pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` t
 
 -----------------------------------------------------
 -- Predicates
@@ -273,8 +273,8 @@ rOverriddenOperationSize = NonTerminal
       , ((Not (pPrefix Prefix66)), rDefaultOperationSize)
       ]
    where
-      p66 = [ (rDefaultOperationSize `evalsTo` Terminal OpSize16, Terminal OpSize32)
-            , (rDefaultOperationSize `evalsTo` Terminal OpSize32, Terminal OpSize16)
+      p66 = [ (rDefaultOperationSize `evalsTo` OpSize16, Terminal OpSize32)
+            , (rDefaultOperationSize `evalsTo` OpSize32, Terminal OpSize16)
             ]
 
 -- | Overridden address size (OAS)
@@ -284,9 +284,9 @@ rOverriddenAddressSize = NonTerminal
       , ((Not (pPrefix Prefix67)), rDefaultAddressSize)
       ]
    where
-      p67 = [ (rDefaultAddressSize `evalsTo` Terminal AddrSize16, Terminal AddrSize32)
-            , (rDefaultAddressSize `evalsTo` Terminal AddrSize32, Terminal AddrSize16)
-            , (rDefaultAddressSize `evalsTo` Terminal AddrSize64, Terminal AddrSize32)
+      p67 = [ (rDefaultAddressSize `evalsTo` AddrSize16, Terminal AddrSize32)
+            , (rDefaultAddressSize `evalsTo` AddrSize32, Terminal AddrSize16)
+            , (rDefaultAddressSize `evalsTo` AddrSize64, Terminal AddrSize32)
             ]
 
 -- | Overriden operation size for 64-bit

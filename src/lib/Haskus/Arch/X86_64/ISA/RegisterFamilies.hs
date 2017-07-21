@@ -3,7 +3,8 @@
 
 -- | X86 register families
 module Haskus.Arch.X86_64.ISA.RegisterFamilies
-   ( X86RegFam
+   ( X86PredRegFam
+   , X86TermRegFam
    -- * Families
    , regFamST
    , regFamVec64
@@ -40,59 +41,60 @@ import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Utils.Solver
 
-type X86RegFam = RegFam X86Pred RegBank
+type X86PredRegFam = PredRegFam X86Pred String RegBank
+type X86TermRegFam = TermRegFam RegBank
 
 -- | FPU stack register
-regFamST :: X86RegFam
-regFamST = (regFamFromReg (R_ST 0))
+regFamST :: X86PredRegFam
+regFamST = (pRegFamFromReg (R_ST 0))
    { regFamId = Terminal Any
    }
 
 -- | 64-bit vector register (mmx)
-regFamVec64 :: X86RegFam
-regFamVec64 = (regFamFromReg (R_MMX 0))
+regFamVec64 :: X86PredRegFam
+regFamVec64 = (pRegFamFromReg (R_MMX 0))
    { regFamId = Terminal Any
    }
 
 -- | 128-bit vector register (xmm)
-regFamVec128 :: X86RegFam
-regFamVec128 = (regFamFromReg (R_XMM 0))
+regFamVec128 :: X86PredRegFam
+regFamVec128 = (pRegFamFromReg (R_XMM 0))
    { regFamId = Terminal Any
    }
 
 -- | 256-bit vector register (ymm)
-regFamVec256 :: X86RegFam
-regFamVec256 = (regFamFromReg (R_YMM 0))
+regFamVec256 :: X86PredRegFam
+regFamVec256 = (pRegFamFromReg (R_YMM 0))
    { regFamId = Terminal Any
    }
 
 -- | Fixed register
-regFamFixed :: X86Reg -> X86RegFam
-regFamFixed = regFamFromReg
+regFamFixed :: X86Reg -> X86PredRegFam
+regFamFixed = pRegFamFromReg
 
 -- | Segment register
-regFamSegment :: X86RegFam
-regFamSegment = (regFamFromReg R_CS)
+regFamSegment :: X86PredRegFam
+regFamSegment = (pRegFamFromReg R_CS)
    { regFamId = Terminal Any
    }
 
 -- | Control register
-regFamControl :: X86RegFam
-regFamControl = (regFamFromReg (R_CR32 0))
+regFamControl :: X86PredRegFam
+regFamControl = (pRegFamFromReg (R_CR32 0))
    { regFamId   = Terminal Any
    , regFamSize = Terminal $ OneOf [32,64]
    }
 
 -- | Debug register
-regFamDebug :: X86RegFam
-regFamDebug = (regFamFromReg (R_DR32 0))
+regFamDebug :: X86PredRegFam
+regFamDebug = (pRegFamFromReg (R_DR32 0))
    { regFamId   = Terminal Any
    , regFamSize = Terminal $ OneOf [32,64]
    }
 
 -- | General purpose 8-bit register
-regFamGPR8 :: X86RegFam
-regFamGPR8 = (regFamFromReg R_AL)
+regFamGPR8 :: X86PredRegFam
+regFamGPR8 = (pRegFamFromReg R_AL)
    { regFamId     = Terminal Any
    , regFamOffset = pCheck $ NonTerminal
       [ (pLegacy8bitRegs    , Terminal (OneOf [0,8]))
@@ -101,27 +103,27 @@ regFamGPR8 = (regFamFromReg R_AL)
    }
 
 -- | General purpose 16-bit register
-regFamGPR16 :: X86RegFam
-regFamGPR16 = (regFamFromReg R_AX)
+regFamGPR16 :: X86PredRegFam
+regFamGPR16 = (pRegFamFromReg R_AX)
    { regFamId     = Terminal Any
    }
 
 -- | General purpose 32-bit register
-regFamGPR32 :: X86RegFam
-regFamGPR32 = (regFamFromReg R_EAX)
+regFamGPR32 :: X86PredRegFam
+regFamGPR32 = (pRegFamFromReg R_EAX)
    { regFamId     = Terminal Any
    }
 
 -- | General purpose 64-bit register
-regFamGPR64 :: X86RegFam
-regFamGPR64 = (regFamFromReg R_RAX)
+regFamGPR64 :: X86PredRegFam
+regFamGPR64 = (pRegFamFromReg R_RAX)
    { regFamId     = Terminal Any
    }
 
 -- | General purpose 32-bit register in legacy mode,
 -- general purpose 64-bit register in 64-bit mode.
-regFamGPR32o64 :: X86RegFam
-regFamGPR32o64 = (regFamFromReg R_RAX)
+regFamGPR32o64 :: X86PredRegFam
+regFamGPR32o64 = (pRegFamFromReg R_RAX)
    { regFamId     = Terminal Any
    , regFamSize   = pCheck $ NonTerminal
       [ (pMode64bit    , Terminal (Singleton 64))
@@ -130,8 +132,8 @@ regFamGPR32o64 = (regFamFromReg R_RAX)
    }
 
 -- | General purpose register (size = operand-size)
-regFamGPR :: X86RegFam
-regFamGPR = (regFamFromReg R_RAX)
+regFamGPR :: X86PredRegFam
+regFamGPR = (pRegFamFromReg R_RAX)
    { regFamId     = pCheck $ orderedNonTerminal
       [ (Not pForce8bit                            , Terminal Any)
       , (Not pLegacy8bitRegs                       , Terminal Any)
@@ -154,16 +156,16 @@ regFamGPR = (regFamFromReg R_RAX)
    }
 
 -- | AH,BH,CH,DH
-regFamGPRh :: X86RegFam
-regFamGPRh = (regFamFromReg R_AH)
+regFamGPRh :: X86PredRegFam
+regFamGPRh = (pRegFamFromReg R_AH)
    { regFamId     = Terminal $ OneOf [0,1,2,3]
    , regFamSize   = Terminal $ Singleton 8
    , regFamOffset = Terminal $ Singleton 8
    }
 
 -- | CX,ECX,RCX depending on the address-size
-regFamCounter :: X86RegFam
-regFamCounter = (regFamFromReg R_CX)
+regFamCounter :: X86PredRegFam
+regFamCounter = (pRegFamFromReg R_CX)
    { regFamSize   = pCheck $ orderedNonTerminal
       [ (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
@@ -172,8 +174,8 @@ regFamCounter = (regFamFromReg R_CX)
    }
 
 -- | AL,AX,EAX,RAX depending on the operand-size
-regFamAccu :: X86RegFam
-regFamAccu = (regFamFromReg R_AX)
+regFamAccu :: X86PredRegFam
+regFamAccu = (pRegFamFromReg R_AX)
    { regFamSize   = pCheck $ orderedNonTerminal
       [ (pForce8bit                         , Terminal (Singleton 8 ))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
@@ -185,8 +187,8 @@ regFamAccu = (regFamFromReg R_AX)
 -- | SP, ESP or RSP
 --
 -- Use RSP in 64-bit mode, otherwise use address-size
-regFamStackPtr :: X86RegFam
-regFamStackPtr = (regFamFromReg R_SP)
+regFamStackPtr :: X86PredRegFam
+regFamStackPtr = (pRegFamFromReg R_SP)
    { regFamSize     = pCheck $ orderedNonTerminal
       [ (pMode64bit                       , Terminal (Singleton 64))
       , (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
@@ -198,8 +200,8 @@ regFamStackPtr = (regFamFromReg R_SP)
 -- | BP, EBP or RBP
 --
 -- Use RBP in 64-bit mode, otherwise use address-size
-regFamStackBase :: X86RegFam
-regFamStackBase = (regFamFromReg R_BP)
+regFamStackBase :: X86PredRegFam
+regFamStackBase = (pRegFamFromReg R_BP)
    { regFamSize     = pCheck $ orderedNonTerminal
       [ (pMode64bit                       , Terminal (Singleton 64))
       , (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
@@ -210,7 +212,7 @@ regFamStackBase = (regFamFromReg R_BP)
 
 
 -- | Helper for families
-famSizes :: Qualifier X86Pred Word
+famSizes :: X86Rule (CSet Word)
 famSizes = pCheck $ orderedNonTerminal
    [ (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
    , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
@@ -220,8 +222,8 @@ famSizes = pCheck $ orderedNonTerminal
 -- | AX,AX,EAX,RAX depending on the operand-size
 --
 -- This on is used to encode AX, DX:AX, EDX:EAX, RDX:RAX
-regFamAX' :: X86RegFam
-regFamAX' = (regFamFromReg R_AX)
+regFamAX' :: X86PredRegFam
+regFamAX' = (pRegFamFromReg R_AX)
    { regFamSize   = pCheck $ orderedNonTerminal
       [ (pForce8bit                         , Terminal (Singleton 16))
       , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
@@ -231,37 +233,37 @@ regFamAX' = (regFamFromReg R_AX)
    }
 
 -- | AX,EAX,RAX depending on the operand-size
-regFamAX :: X86RegFam
-regFamAX = (regFamFromReg R_AX)
+regFamAX :: X86PredRegFam
+regFamAX = (pRegFamFromReg R_AX)
    { regFamSize   = famSizes
    }
 
 -- | BX,EBX,RBX depending on the operand-size
-regFamBX :: X86RegFam
-regFamBX = (regFamFromReg R_BX)
+regFamBX :: X86PredRegFam
+regFamBX = (pRegFamFromReg R_BX)
    { regFamSize   = famSizes
    }
 
 -- | CX,ECX,RCX depending on the operand-size
-regFamCX :: X86RegFam
-regFamCX = (regFamFromReg R_CX)
+regFamCX :: X86PredRegFam
+regFamCX = (pRegFamFromReg R_CX)
    { regFamSize   = famSizes
    }
 
 -- | DX,EDX,RDX depending on the operand-size
-regFamDX :: X86RegFam
-regFamDX = (regFamFromReg R_DX)
+regFamDX :: X86PredRegFam
+regFamDX = (pRegFamFromReg R_DX)
    { regFamSize   = famSizes
    }
 
 -- | SI,ESI,RSI depending on the operand-size
-regFamSI :: X86RegFam
-regFamSI = (regFamFromReg R_SI)
+regFamSI :: X86PredRegFam
+regFamSI = (pRegFamFromReg R_SI)
    { regFamSize   = famSizes
    }
 
 -- | DI,EDI,RDI depending on the operand-size
-regFamDI :: X86RegFam
-regFamDI = (regFamFromReg R_DI)
+regFamDI :: X86PredRegFam
+regFamDI = (pRegFamFromReg R_DI)
    { regFamSize   = famSizes
    }

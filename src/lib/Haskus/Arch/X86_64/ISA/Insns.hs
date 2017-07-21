@@ -419,7 +419,7 @@ regBasePtr :: AccessMode -> OperandEnc -> OperandSpec
 regBasePtr m e = op m (T_Reg regFamStackBase) e
 
 -- | Register family
-regFam :: X86RegFam -> AccessMode -> OperandEnc -> OperandSpec
+regFam :: X86PredRegFam -> AccessMode -> OperandEnc -> OperandSpec
 regFam x m e = op m (T_Reg x) e
 
 -- | Memory at DS:rSI

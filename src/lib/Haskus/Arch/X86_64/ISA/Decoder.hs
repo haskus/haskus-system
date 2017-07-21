@@ -706,7 +706,7 @@ readOperands mode ps oc enc = do
                         
          -- Register
          T_Reg rfam -> return <| OpReg
-                              <| regFixupFamily oracle updatedFam
+                              <| regFixupTermFamily updatedFam
             where
                fam' = case reducePredicates oracle rfam of
                   Match x -> x
@@ -719,14 +719,14 @@ readOperands mode ps oc enc = do
                   Vvvv       -> vvvv
                   OpcodeLow3 -> opcodeRegId
                   Implicit   -> case regFamId fam' of
-                     Terminal (Singleton i) -> fromIntegral i
-                     e -> error ("Invalid implicit register id: " ++ show e)
+                     Singleton i -> fromIntegral i
+                     e           -> error ("Invalid implicit register id: " ++ show e)
                   e          -> error ("Invalid register encoding: " ++ show e)
 
                -- update family id and offset
                updatedFam = fam'
-                  { regFamId     = trySetQualifier oracle regId     (regFamId fam')
-                  , regFamOffset = trySetQualifier oracle regOffset (regFamOffset fam')
+                  { regFamId     = trySetCSet regId     (regFamId fam')
+                  , regFamOffset = trySetCSet regOffset (regFamOffset fam')
                   }
 
                -- get the adjusted register id and the offset
@@ -734,10 +734,10 @@ readOperands mode ps oc enc = do
                   -- Check if we are left with a GPR of size 8 whose offset
                   -- is OneOf[0,8]. Fix it and fix the id accordingly.
                   RegFam
-                     (Terminal (Singleton GPR))
+                     (Singleton GPR)
                      _
-                     (Terminal (Singleton 8))
-                     (Terminal (OneOf [0,8]))
+                     (Singleton 8)
+                     (OneOf [0,8])
                        | not useExtRegs && 4 <= rawId && rawId <= 7 -> (rawId-4, 8)
                   _ -> (rawId,0)
 
@@ -752,7 +752,7 @@ readOperands mode ps oc enc = do
             -- allow the first register to not be fixable, in which case it's
             -- not a pair. We do this to support the family:
             --    AX, DX:AX, EDX:RAX, RDX:RAX
-            return $ case (regFixupFamilyMaybe oracle f1, regFixupFamily oracle f2) of
+            return $ case (regFixupPredFamilyMaybe oracle f1, regFixupPredFamily oracle f2) of
                (Just r1,r2) -> OpRegPair r1 r2
                (Nothing,r)  -> OpReg r
 

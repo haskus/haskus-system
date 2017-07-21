@@ -9,6 +9,7 @@ import qualified Haskus.Arch.X86_64.ISA.Insns            as X86
 import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps       as X86
 import qualified Haskus.Arch.X86_64.ISA.Encoding         as X86
 import qualified Haskus.Arch.X86_64.ISA.RegisterNames    as X86
+import qualified Haskus.Arch.X86_64.ISA.RegisterFamilies as X86
 import qualified Haskus.Arch.X86_64.ISA.Registers        as X86
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Solver
@@ -190,39 +191,8 @@ showEnc oc rv e = H.tr $ do
    H.tr $ do
       H.th (toHtml "Type")
       forM_ (rev ops) $ \o -> H.td $ do
-         let
-            showReg r = case r of
-               RegFam (Terminal (Singleton b))
-                      (Terminal (Singleton i))
-                      (Terminal (Singleton s))
-                      (Terminal (Singleton off))
-                  -> toHtml (X86.registerName (Reg b i s off))
-               RegFam (Terminal (Singleton X86.GPR))
-                      (Terminal Any)
-                      (Terminal (Singleton s))
-                      (Terminal (Singleton 0))
-                  -> toHtml ("Any " ++ show s ++ "-bit GPR (except ah,bh,ch,dh)")
-               RegFam (Terminal (Singleton X86.GPR))
-                      (Terminal (NoneOf [4,5,6,7]))
-                      (Terminal (Singleton 8))
-                      (Terminal (OneOf [0,8]))
-                  -> toHtml ("Any legacy 8-bit GPR")
-               r' -> toHtml (show r')
          case X86.opType o of
-            X86.T_Reg fam -> case createPredicateTable fam of
-               Left r   -> showReg r
-               Right [] -> toHtml ("Error: empty table! " ++ show fam)
-               Right rs -> H.table $ do
-                  H.tr $ do
-                     forM_ (fst $ head rs) $ \case
-                        Left p  -> H.th $ toHtml (showPredicate p)
-                        Right p -> H.th $ toHtml (showPredicate p)
-                     H.th (toHtml "Register")
-                  forM_ rs $ \(ps,v) -> H.tr $ do
-                     forM_ ps $ \case
-                        Left _  -> H.td (toHtml "0")
-                        Right _ -> H.td (toHtml "1")
-                     H.td $ showReg v
+            X86.T_Reg fam -> showRegFamily e fam
             t             -> toHtml (show t)
    H.tr $ do
       H.th (toHtml "Encoding")
@@ -235,6 +205,53 @@ showEnc oc rv e = H.tr $ do
          X86.Implicit    -> "Implicit"
          X86.Vvvv        -> "VEX.vvvv"
          X86.OpcodeLow3  -> "Opcode [2:0]"
+
+
+showReg :: X86.X86TermRegFam -> Html
+showReg r = case r of
+   RegFam (Singleton b)
+          (Singleton i)
+          (Singleton s)
+          (Singleton off)
+      -> toHtml (X86.registerName (Reg b i s off))
+   RegFam (Singleton X86.GPR)
+          (Any)
+          (Singleton s)
+          (Singleton 0)
+      -> toHtml ("Any " ++ show s ++ "-bit GPR (except ah,bh,ch,dh)")
+   RegFam (Singleton X86.GPR)
+          (NoneOf [4,5,6,7])
+          (Singleton 8)
+          (OneOf [0,8])
+      -> toHtml ("Any legacy 8-bit GPR")
+   r' -> toHtml (show r')
+
+showRegFamily :: X86.Encoding -> X86.X86PredRegFam -> Html
+showRegFamily enc fam = do
+   let
+      oracle (InsnPred Default64OpSize) = Just (X86.DefaultOperandSize64 `elem` X86.encProperties enc)
+      oracle (InsnPred Force8bit)       = if isNothing (X86.encNoForce8Bit enc) then Just False else Nothing
+      oracle _                          = Nothing
+
+      fam' = case reducePredicates oracle fam of
+               Match     f -> liftTerminal f
+               DontMatch f -> f
+               _           -> error "Invalid register family"
+
+   case createPredicateTable fam' of
+      Left r   -> showReg r
+      Right [] -> toHtml ("Error: empty table! " ++ show fam)
+      Right rs -> H.table $ do
+         H.tr $ do
+            forM_ (fst $ head rs) $ \case
+               Left p  -> H.th $ toHtml (showPredicate p)
+               Right p -> H.th $ toHtml (showPredicate p)
+            H.th (toHtml "Register")
+         forM_ rs $ \(ps,v) -> H.tr $ do
+            forM_ ps $ \case
+               Left _  -> H.td (toHtml "0")
+               Right _ -> H.td (toHtml "1")
+            H.td $ showReg v
 
 
 showMaps :: Html
