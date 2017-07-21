@@ -31,6 +31,7 @@ library
     Haskus.Arch.X86_64.Linux.SyscallTable
     Haskus.Arch.X86_64.Linux.Syscalls
 
+    Haskus.Arch.X86_64.ISA.Solver
     Haskus.Arch.X86_64.ISA.MicroArch
     Haskus.Arch.X86_64.ISA.Mode
     Haskus.Arch.X86_64.ISA.Registers

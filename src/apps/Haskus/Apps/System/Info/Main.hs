@@ -9,10 +9,9 @@ import qualified Haskus.Arch.X86_64.ISA.Insns            as X86
 import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps       as X86
 import qualified Haskus.Arch.X86_64.ISA.Encoding         as X86
 import qualified Haskus.Arch.X86_64.ISA.RegisterNames    as X86
-import qualified Haskus.Arch.X86_64.ISA.RegisterFamilies as X86
 import qualified Haskus.Arch.X86_64.ISA.Registers        as X86
 import Haskus.Arch.X86_64.ISA.Mode
-import Haskus.Arch.X86_64.ISA.Size
+import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.Common.Register
 
 import Haskus.Format.Binary.Word
@@ -139,25 +138,23 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
    where
       pad = if usePad && x <= 0xF then "0" else ""
 
-showPredicate :: X86.RegPredicate -> Html
-showPredicate = \case
-   X86.OperandSizeEqual s -> do
-      toHtml "Operand size = "
-      case s of
-         OpSize8  -> toHtml "8"
-         OpSize16 -> toHtml "16"
-         OpSize32 -> toHtml "32"
-         OpSize64 -> toHtml "64"
-   X86.AddressSizeEqual s -> do
-      toHtml "Address size = "
-      case s of
-         AddrSize16 -> toHtml "16"
-         AddrSize32 -> toHtml "32"
-         AddrSize64 -> toHtml "64"
-
-   X86.Mode64bit       -> toHtml "64-bit mode"
-   X86.UseExtendedRegs -> toHtml "Use extended regs"
-
+showPredicate :: X86Pred -> Html
+showPredicate x = toHtml $ case x of
+   ContextPred (Mode m)         -> modeName m
+   ContextPred CS_D             -> "CS.D"
+   ContextPred SS_B             -> "SS.B"
+   PrefixPred Prefix66          -> "Prefix 66"
+   PrefixPred Prefix67          -> "Prefix 67"
+   PrefixPred PrefixW           -> "W"
+   PrefixPred PrefixL           -> "L"
+   InsnPred Default64OpSize     -> "Def64OpSize"
+   InsnPred Force8bit           -> "Force 8-bit opcode bit"
+   EncodingPred PLegacyEncoding -> "Legacy encoding"
+   EncodingPred PRexEncoding    -> "REX prefix"
+   EncodingPred PVexEncoding    -> "VEX encoding"
+   EncodingPred PXopEncoding    -> "XOP encoding"
+   EncodingPred PEvexEncoding   -> "EVEX encoding"
+   EncodingPred PMvexEncoding   -> "MVEX encoding"
 
 showEnc :: Word8 -> Bool -> X86.Encoding -> Html
 showEnc oc rv e = H.tr $ do
@@ -214,6 +211,7 @@ showEnc oc rv e = H.tr $ do
          case X86.opType o of
             X86.T_Reg fam -> case createPredicateTable fam of
                Left r   -> showReg r
+               Right [] -> toHtml ("Error: empty table! " ++ show fam)
                Right rs -> H.table $ do
                   H.tr $ do
                      forM_ (fst $ head rs) $ \case

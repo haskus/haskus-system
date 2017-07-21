@@ -11,9 +11,9 @@ where
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.RegisterNames
-import Haskus.Arch.X86_64.ISA.RegisterFamilies
 import Haskus.Arch.Common.Register hiding (Reg)
 import Haskus.Arch.X86_64.ISA.Size
+import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.OpcodeMaps
 import Haskus.Arch.X86_64.ISA.Insns
 import Haskus.Arch.X86_64.ISA.Insn
@@ -484,8 +484,8 @@ readOperands mode ps oc enc = do
       -- we compute the overriden address size. It depends on:
       --    * the default address size
       --    * the presence of the 0x67 legacy prefix
-      hasAddressSizePrefix = LegacyPrefix67 `elem` ps
-      addressSize          = overriddenAddressSize hasAddressSizePrefix mode
+      hasPrefix67 = LegacyPrefix67 `elem` ps
+      addressSize = overriddenAddressSize hasPrefix67 mode
 
       -- we determine the effective operand size. It depends on:
       --   * the mode of execution
@@ -494,16 +494,18 @@ readOperands mode ps oc enc = do
       --   or not)
       --   * the value of the ForceNo8bit bit in the opcode (if applicable)
       --   * the value of REX.W/VEX.W/XOP.W (if applicable)
-      hasOperandSizePrefix = LegacyPrefix66 `elem` ps
-      hasDefaultOp64       = DefaultOperandSize64 `elem` encProperties enc
-      hasRexW              = opcodeW oc
+      hasPrefix66     = LegacyPrefix66 `elem` ps
+      hasDefaultOp64  = DefaultOperandSize64 `elem` encProperties enc
+      hasRexW         = opcodeW oc
 
-      oos64 = overriddenOperationSize64 hasOperandSizePrefix hasRexW hasDefaultOp64 mode
+      oos64 = overriddenOperationSize64 hasPrefix66 hasRexW hasDefaultOp64 mode
 
       --finally we take into account the NoForce8bit bit in the opcode
-      operandSize = case encNoForce8Bit enc of
-         Just b | not (testBit (opcodeByte oc) b) -> OpSize8
-         _                                        -> oos64
+      hasForce8bit = case encNoForce8Bit enc of
+         Just b | not (testBit (opcodeByte oc) b) -> True
+         _                                        -> False
+
+      operandSize = if hasForce8bit then OpSize8 else oos64
 
       -- do we need to read an SIB byte?
       hasSIB = fromMaybe False (useSIB addressSize <$> modrm)
@@ -597,10 +599,24 @@ readOperands mode ps oc enc = do
       is64bitMode' = is64bitMode (x86Mode mode)
 
       -- predicate solver
-      predSolver Mode64bit            = Just $ is64bitMode'
-      predSolver (OperandSizeEqual s) = Just $ operandSize == s
-      predSolver (AddressSizeEqual s) = Just $ addressSize == s
-      predSolver UseExtendedRegs      = Just $ useExtRegs
+      oracle (ContextPred (Mode m))         = Just (m == x86Mode mode)
+      oracle (ContextPred CS_D)             = Just (csDescriptorFlagD mode)
+      oracle (ContextPred SS_B)             = Just (ssDescriptorFlagB mode)
+      oracle (PrefixPred Prefix66)          = Just hasPrefix66
+      oracle (PrefixPred Prefix67)          = Just hasPrefix67
+      oracle (PrefixPred PrefixW)           = Just (opcodeW oc)
+      oracle (PrefixPred PrefixL)           = opcodeL oc
+      oracle (InsnPred Default64OpSize)     = Just hasDefaultOp64
+      oracle (InsnPred Force8bit)           = Just hasForce8bit
+      oracle (EncodingPred e) = case (e, oc) of
+         (PLegacyEncoding, OpLegacy {})          -> Just True
+         (PRexEncoding, OpLegacy _ (Just _) _ _) -> Just True
+         (PRexEncoding, OpLegacy _ Nothing _ _)  -> Just False
+         (PVexEncoding, OpVex {})                -> Just True
+         (PXopEncoding, OpXop {})                -> Just True
+         -- (PEvexEncoding, OpEvex {})              -> Just True
+         -- (PMvexEncoding, OpMvex {})              -> Just True
+         _                                       -> Just False
 
       readParam spec = case opType spec of
          -- One of the two types (for ModRM.rm)
@@ -690,9 +706,9 @@ readOperands mode ps oc enc = do
                         
          -- Register
          T_Reg rfam -> return <| OpReg
-                              <| regFixupFamily predSolver updatedFam
+                              <| regFixupFamily oracle updatedFam
             where
-               fam' = case reducePredicates predSolver rfam of
+               fam' = case reducePredicates oracle rfam of
                   Match x -> x
                   r -> error ("Cannot reduce register family to a terminal: " ++ show r)
 
@@ -709,8 +725,8 @@ readOperands mode ps oc enc = do
 
                -- update family id and offset
                updatedFam = fam'
-                  { regFamId     = trySetQualifier predSolver regId     (regFamId fam')
-                  , regFamOffset = trySetQualifier predSolver regOffset (regFamOffset fam')
+                  { regFamId     = trySetQualifier oracle regId     (regFamId fam')
+                  , regFamOffset = trySetQualifier oracle regOffset (regFamOffset fam')
                   }
 
                -- get the adjusted register id and the offset
@@ -736,7 +752,7 @@ readOperands mode ps oc enc = do
             -- allow the first register to not be fixable, in which case it's
             -- not a pair. We do this to support the family:
             --    AX, DX:AX, EDX:RAX, RDX:RAX
-            return $ case (regFixupFamilyMaybe predSolver f1, regFixupFamily predSolver f2) of
+            return $ case (regFixupFamilyMaybe oracle f1, regFixupFamily oracle f2) of
                (Just r1,r2) -> OpRegPair r1 r2
                (Nothing,r)  -> OpReg r
 

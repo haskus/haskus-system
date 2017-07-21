@@ -11,6 +11,7 @@ module Haskus.Arch.X86_64.ISA.Mode
    , is64bitMode
    , is32bitMode
    , isLongMode
+   , modeName
    -- * Execution mode
    , ExecMode (..)
    , defaultOperationSize
@@ -30,20 +31,28 @@ import Haskus.Arch.X86_64.ISA.Size
 data X86Mode
    = LongMode LongSubMode     -- ^ x86-64 long mode
    | LegacyMode LegacySubMode -- ^ x86-32 mode
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Sub-mode for x86-64
 data LongSubMode
    = Long64bitMode
    | CompatibilityMode
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Sub-mode for x86-32 (legacy)
 data LegacySubMode
    = ProtectedMode
    | Virtual8086Mode
    | RealMode
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
+
+-- | Return the mode name
+modeName :: X86Mode -> String
+modeName (LongMode Long64bitMode)     = "Long 64-bit mode"
+modeName (LongMode CompatibilityMode) = "Long compatibility mode"
+modeName (LegacyMode RealMode)        = "Real-mode"
+modeName (LegacyMode Virtual8086Mode) = "Virtual 8086 mode"
+modeName (LegacyMode ProtectedMode)   = "Protected mode"
 
 data X86Extension
    = VEX             -- ^ VEX encoded instruction support

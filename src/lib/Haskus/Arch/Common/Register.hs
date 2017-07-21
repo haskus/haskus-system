@@ -87,7 +87,7 @@ simplifySet s = case s of
    Any         -> s
    None        -> s
 
-type Qualifier p a = Rule () p (CSet a)
+type Qualifier p a = Rule String p (CSet a)
 
 -- | Register family
 data RegFam pred banks = RegFam
@@ -100,7 +100,7 @@ data RegFam pred banks = RegFam
 
 instance (Eq b, Eq p) => Predicated (RegFam p b) where
    type Pred (RegFam p b)    = p
-   type PredErr (RegFam p b) = ()
+   type PredErr (RegFam p b) = String
    reducePredicates fp (RegFam b i s o) =
       RegFam <$> reducePredicates fp b
              <*> reducePredicates fp i

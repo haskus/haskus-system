@@ -107,9 +107,9 @@ import Haskus.Format.Binary.BitField
 import Haskus.Arch.X86_64.ISA.MicroArch
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
+import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.RegisterFamilies
-import Haskus.Arch.Common.Register (RegFam(..))
 
 import Haskus.Utils.List ((\\))
 
@@ -282,16 +282,7 @@ encHasVariableSizedOperand e = any (vsizeOp . opType) (encOperands e)
                            MemESrDI     -> True
                            MemDSrDI     -> True
                            _            -> False
-         T_Reg rt      ->  -- guarded with operand-size predicate enabling
-                           -- 16-bit. It should be the only cases where the
-                           -- operand-size prefix can be used.
-                           --
-                           -- TODO: make it depends directly on the Prefix66
-                           -- predicate
-                         any matchGuard16 (getPredicates (regFamSize rt))
-                              where
-                                 matchGuard16 (OperandSizeEqual OpSize16) = True
-                                 matchGuard16 _                           = False
+         T_Reg rt      -> PrefixPred Prefix66 `elem` getPredicates rt
 
          T_Imm it      -> case it of
                            ImmSizeOp -> True
