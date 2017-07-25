@@ -573,18 +573,18 @@ readOperands mode ps oc enc = do
                             , head (immTypeSize y)]
          it              -> error ("Unhandled immediate type: " ++ show it)
 
-      immSize x = case opEnc x of
-         Imm8h -> [Size8]
-         Imm8l -> [Size8]
-         Imm   -> immTypeSize (opType x)
-         _     -> error ("unhandled immediate encoding: " ++ show x)
+      immSize x = case opStore x of
+         S_Imm8h -> [Size8]
+         S_Imm8l -> [Size8]
+         S_Imm   -> immTypeSize (opType x)
+         _       -> error ("unhandled immediate encoding: " ++ show x)
 
-      immSizes = case filter (isImmediate . opEnc) (encOperands enc) of
+      immSizes = case filter (isImmediate . opStore) (encOperands enc) of
          []    -> []
          [x]   -> immSize x
          [x,y] 
-            | opEnc x == Imm8h && opEnc y == Imm8l -> [Size8]
-            | opEnc x == Imm8l && opEnc y == Imm8h -> [Size8]
+            | opStore x == S_Imm8h && opStore y == S_Imm8l -> [Size8]
+            | opStore x == S_Imm8l && opStore y == S_Imm8h -> [Size8]
          xs    -> concatMap immSize xs
 
    -- read immediates if necessary
@@ -730,15 +730,15 @@ readOperands mode ps oc enc = do
                   r -> error ("Cannot reduce register family to a terminal: " ++ show r)
 
                -- get raw register id
-               rawId = fromIntegral $ case opEnc spec of
-                  RM         -> modRMrm
-                  Reg        -> modRMreg
-                  Vvvv       -> vvvv
-                  OpcodeLow3 -> opcodeRegId
-                  Implicit   -> case regFamId fam' of
+               rawId = fromIntegral $ case opStore spec of
+                  S_RM         -> modRMrm
+                  S_Reg        -> modRMreg
+                  S_Vvvv       -> vvvv
+                  S_OpcodeLow3 -> opcodeRegId
+                  S_Implicit   -> case regFamId fam' of
                      Singleton i -> fromIntegral i
                      e           -> error ("Invalid implicit register id: " ++ show e)
-                  e          -> error ("Invalid register encoding: " ++ show e)
+                  e            -> error ("Invalid register encoding: " ++ show e)
 
                -- update family id and offset
                updatedFam = fam'

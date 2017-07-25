@@ -100,14 +100,14 @@ enc = Encoding
    }
 
 -- | Operand
-op :: AccessMode -> OperandType -> OperandEnc -> OperandSpec
+op :: AccessMode -> OperandType -> OperandStorage -> OperandSpec
 op = OperandSpec
 
 
 -- | Immediate helpers. Immediate operands are always read-only and encoded in
 -- the same way.
 imm :: ImmType -> OperandSpec
-imm s = op RO (T_Imm s) Imm
+imm s = op RO (T_Imm s) S_Imm
 
 -- | 8-bit immediate operand
 imm8 :: OperandSpec
@@ -127,50 +127,50 @@ immSE = imm ImmSizeSE
 
 -- | 256-bit memory
 mem256 :: AccessMode -> OperandSpec
-mem256 m = op m (T_Mem Mem256) RM
+mem256 m = op m (T_Mem Mem256) S_RM
 
 -- | 128-bit memory
 mem128 :: AccessMode -> OperandSpec
-mem128 m = op m (T_Mem Mem128) RM
+mem128 m = op m (T_Mem Mem128) S_RM
 
 -- | 64-bit memory
 mem64 :: AccessMode -> OperandSpec
-mem64 m = op m (T_Mem Mem64) RM
+mem64 m = op m (T_Mem Mem64) S_RM
 
 -- | 64-bit vector or memory
 mvec64 :: AccessMode -> OperandSpec
-mvec64 m = op m (TME (T_Reg regFamVec64) (T_Mem Mem64)) RM
+mvec64 m = op m (TME (T_Reg regFamVec64) (T_Mem Mem64)) S_RM
 
 -- | 256-bit vector or memory
 mvec256 :: AccessMode -> OperandSpec
-mvec256 m = op m (TME (T_Reg regFamVec256) (T_Mem Mem256)) RM
+mvec256 m = op m (TME (T_Reg regFamVec256) (T_Mem Mem256)) S_RM
 
 -- | 128-bit vector or memory
 mvec128 :: AccessMode -> OperandSpec
-mvec128 m = op m (TME (T_Reg regFamVec128) (T_Mem Mem128)) RM
+mvec128 m = op m (TME (T_Reg regFamVec128) (T_Mem Mem128)) S_RM
 
 -- | 128-bit or 256-bit vector or memory
 mvec128o256 :: AccessMode -> OperandSpec
 mvec128o256 m = op m (TME
       (TLE (T_Reg regFamVec128) (T_Reg regFamVec256))
       (TLE (T_Mem Mem128)    (T_Mem Mem256)))
-   RM
+   S_RM
 
 -- | low 64-bit of 128-bit vector or 64-bit memory
 mvec128low64 :: AccessMode -> OperandSpec
-mvec128low64 m = op m (TME (T_SubReg SubLow64 regFamVec128) (T_Mem Mem64)) RM
+mvec128low64 m = op m (TME (T_SubReg SubLow64 regFamVec128) (T_Mem Mem64)) S_RM
 
 -- | low 32-bit of 128-bit vector or 32-bit memory
 mvec128low32 :: AccessMode -> OperandSpec
-mvec128low32 m = op m (TME (T_SubReg SubLow32 regFamVec128) (T_Mem Mem32)) RM
+mvec128low32 m = op m (TME (T_SubReg SubLow32 regFamVec128) (T_Mem Mem32)) S_RM
 
 -- | low 16-bit of 128-bit vector or 16-bit memory
 mvec128low16 :: AccessMode -> OperandSpec
-mvec128low16 m = op m (TME (T_SubReg SubLow16 regFamVec128) (T_Mem Mem16)) RM
+mvec128low16 m = op m (TME (T_SubReg SubLow16 regFamVec128) (T_Mem Mem16)) S_RM
 
 -- | low 8-bit of 128-bit vector or 8-bit memory
 mvec128low8 :: AccessMode -> OperandSpec
-mvec128low8 m = op m (TME (T_SubReg SubLow8 regFamVec128) (T_Mem Mem8)) RM
+mvec128low8 m = op m (TME (T_SubReg SubLow8 regFamVec128) (T_Mem Mem8)) S_RM
 
 -- | 64-bit even positioned values in vector register or memory
 --    * low 64-bit of 128-bit vector
@@ -179,48 +179,48 @@ mvecEven64 :: AccessMode -> OperandSpec
 mvecEven64 m = op m (TME
    (TLE (T_SubReg SubLow64 regFamVec128) (T_SubReg SubEven64 regFamVec256))
    (TLE (T_Mem Mem64) (T_Mem Mem256))
-   ) RM
+   ) S_RM
 
 -- | low bytes of a vector or memory
 mveclow :: AccessMode -> OperandSpec
 mveclow m = op m (TME 
    (TLE (T_SubReg SubLow64 regFamVec128) (T_Reg regFamVec128))
-   (TLE (T_Mem Mem64) (T_Mem Mem128))) RM
+   (TLE (T_Mem Mem64) (T_Mem Mem128))) S_RM
 
 -- | 128-bit or 256-bit memory depending on Vex.L
 m128o256 :: AccessMode -> OperandSpec
-m128o256 m = op m (TLE (T_Mem Mem128) (T_Mem Mem256)) RM
+m128o256 m = op m (TLE (T_Mem Mem128) (T_Mem Mem256)) S_RM
 
 -- | 256-bit vector
-vec256 :: AccessMode -> OperandEnc -> OperandSpec
+vec256 :: AccessMode -> OperandStorage -> OperandSpec
 vec256 m e = op m (T_Reg regFamVec256) e
 
 -- | 128-bit vector
-vec128 :: AccessMode -> OperandEnc -> OperandSpec
+vec128 :: AccessMode -> OperandStorage -> OperandSpec
 vec128 m e = op m (T_Reg regFamVec128) e
 
 -- | 64-bit vector
-vec64 :: AccessMode -> OperandEnc -> OperandSpec
+vec64 :: AccessMode -> OperandStorage -> OperandSpec
 vec64 m e = op m (T_Reg regFamVec64) e
 
 -- | Low 64-bit of 128-bit vector
-vec128low64 :: AccessMode -> OperandEnc -> OperandSpec
+vec128low64 :: AccessMode -> OperandStorage -> OperandSpec
 vec128low64 m e = op m (T_SubReg SubLow64 regFamVec128) e
 
 -- | High 64-bit of 128-bit vector
-vec128high64 :: AccessMode -> OperandEnc -> OperandSpec
+vec128high64 :: AccessMode -> OperandStorage -> OperandSpec
 vec128high64 m e = op m (T_SubReg SubHigh64 regFamVec128) e
 
 -- | Low 32-bit of 128-bit vector
-vec128low32 :: AccessMode -> OperandEnc -> OperandSpec
+vec128low32 :: AccessMode -> OperandStorage -> OperandSpec
 vec128low32 m e = op m (T_SubReg SubLow32 regFamVec128) e
 
 -- | 128-bit or 256-bit vector depending on Vex.L
-vec128o256 :: AccessMode -> OperandEnc -> OperandSpec
+vec128o256 :: AccessMode -> OperandStorage -> OperandSpec
 vec128o256 m e = op m (TLE (T_Reg regFamVec128) (T_Reg regFamVec256)) e
 
 -- | 32-bit or 64-bit general purpose register (depending on Rex.W)
-reg32o64 :: AccessMode -> OperandEnc -> OperandSpec
+reg32o64 :: AccessMode -> OperandStorage -> OperandSpec
 reg32o64 m e = op m (TWE (T_Reg regFamGPR32) (T_Reg regFamGPR64)) e
 
 -- | 32-bit or 64-bit general purpose register (depending on Rex.W) or memory
@@ -228,240 +228,240 @@ rm32o64 :: AccessMode -> OperandSpec
 rm32o64 m = op m (TME
    (TWE (T_Reg regFamGPR32) (T_Reg regFamGPR64))
    (TWE (T_Mem Mem32) (T_Mem Mem64)))
-   RM
+   S_RM
 
 -- | 16-bit general purpose register
-reg16 :: AccessMode -> OperandEnc -> OperandSpec
+reg16 :: AccessMode -> OperandStorage -> OperandSpec
 reg16 m e = op m (T_Reg regFamGPR16) e
 
 
 -- | 8-bit memory
 mem8 :: AccessMode -> OperandSpec
-mem8 m = op m (T_Mem Mem8) RM
+mem8 m = op m (T_Mem Mem8) S_RM
 
 -- | 16-bit memory
 mem16 :: AccessMode -> OperandSpec
-mem16 m = op m (T_Mem Mem16) RM
+mem16 m = op m (T_Mem Mem16) S_RM
 
 -- | 8-bit general purpose register or memory
 rm8 :: AccessMode -> OperandSpec
-rm8 m = op m (TME (T_Reg regFamGPR8) (T_Mem Mem8)) RM
+rm8 m = op m (TME (T_Reg regFamGPR8) (T_Mem Mem8)) S_RM
 
 -- | 16-bit general purpose register or memory
 rm16 :: AccessMode -> OperandSpec
-rm16 m = op m (TME (T_Reg regFamGPR16) (T_Mem Mem16)) RM
+rm16 m = op m (TME (T_Reg regFamGPR16) (T_Mem Mem16)) S_RM
 
 -- | 32-bit memory
 mem32 :: AccessMode -> OperandSpec
-mem32 m = op m (T_Mem Mem32) RM
+mem32 m = op m (T_Mem Mem32) S_RM
 
 -- | 512-bit memory
 mem512 :: AccessMode -> OperandSpec
-mem512 m = op m (T_Mem Mem512) RM
+mem512 m = op m (T_Mem Mem512) S_RM
 
 -- | 32-bit general purpose register or memory
 rm32 :: AccessMode -> OperandSpec
-rm32 m = op m (TME (T_Reg regFamGPR32) (T_Mem Mem32)) RM
+rm32 m = op m (TME (T_Reg regFamGPR32) (T_Mem Mem32)) S_RM
 
 -- | 64-bit general purpose register or memory
 rm64 :: AccessMode -> OperandSpec
-rm64 m = op m (TME (T_Reg regFamGPR64) (T_Mem Mem64)) RM
+rm64 m = op m (TME (T_Reg regFamGPR64) (T_Mem Mem64)) S_RM
 
 -- | 128-bit or 256-bit memory (depending on Rex.W)
 mem128o256 :: AccessMode -> OperandSpec
-mem128o256 m = op m (TWE (T_Mem Mem128) (T_Mem Mem256)) RM
+mem128o256 m = op m (TWE (T_Mem Mem128) (T_Mem Mem256)) S_RM
 
 -- | 64-bit or 128-bit memory (depending on Rex.W)
 mem64o128 :: AccessMode -> OperandSpec
-mem64o128 m = op m (TWE (T_Mem Mem64) (T_Mem Mem128)) RM
+mem64o128 m = op m (TWE (T_Mem Mem64) (T_Mem Mem128)) S_RM
 
 -- | 32-bit or 64-bit memory (depending on Rex.W)
 mem32o64 :: AccessMode -> OperandSpec
-mem32o64 m = op m (TWE (T_Mem Mem32) (T_Mem Mem64)) RM
+mem32o64 m = op m (TWE (T_Mem Mem32) (T_Mem Mem64)) S_RM
 
 -- | General purpose register with the operand-size
-gpr :: AccessMode -> OperandEnc -> OperandSpec
+gpr :: AccessMode -> OperandStorage -> OperandSpec
 gpr m e = op m (T_Reg regFamGPR) e
 
 -- | General purpose register with the operand-size or memory
 mgpr :: AccessMode -> OperandSpec
-mgpr m = op m (TME (T_Reg regFamGPR) (T_Mem MemOpSize)) RM
+mgpr m = op m (TME (T_Reg regFamGPR) (T_Mem MemOpSize)) S_RM
 
 -- | Memory with the operand-size
 mem :: AccessMode -> OperandSpec
-mem m = op m (T_Mem MemOpSize) RM
+mem m = op m (T_Mem MemOpSize) S_RM
 
 -- | Any memory address (the pointed type doesn't matter)
 mvoid :: OperandSpec
-mvoid = op NA (T_Mem MemVoid) RM
+mvoid = op NA (T_Mem MemVoid) S_RM
 
 -- | Fixed register
-reg :: Register -> AccessMode -> OperandEnc -> OperandSpec
+reg :: Register -> AccessMode -> OperandStorage -> OperandSpec
 reg r m e = op m (T_Reg (regFamFixed r)) e
 
 -- | EAX or RAX
 rAX :: AccessMode -> OperandSpec
-rAX m = op m (TWE (T_Reg (regFamFixed R_EAX)) (T_Reg (regFamFixed R_RAX))) Implicit
+rAX m = op m (TWE (T_Reg (regFamFixed R_EAX)) (T_Reg (regFamFixed R_RAX))) S_Implicit
 
 -- | ECX or RCX
 rCX :: AccessMode -> OperandSpec
-rCX m = op m (TWE (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_RCX))) Implicit
+rCX m = op m (TWE (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_RCX))) S_Implicit
 
 -- | EDX or RDX
 rDX :: AccessMode -> OperandSpec
-rDX m = op m (TWE (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_RDX))) Implicit
+rDX m = op m (TWE (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_RDX))) S_Implicit
 
 -- | EDX:EAX or RDX:RAX pair
 rDXrAX :: AccessMode -> OperandSpec
 rDXrAX m = op m (TWE
    (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX)))
    (T_Pair (T_Reg (regFamFixed R_RDX)) (T_Reg (regFamFixed R_RAX))))
-   Implicit
+   S_Implicit
 
 -- | AX, DX:AX, EDX:EAX, RDX:RAX
 rDXAX :: AccessMode -> OperandSpec
-rDXAX m = op m (T_Pair (T_Reg regFamDX) (T_Reg regFamAX')) Implicit
+rDXAX m = op m (T_Pair (T_Reg regFamDX) (T_Reg regFamAX')) S_Implicit
 
 
 -- | EDX:EAX
 eDXeAX :: AccessMode -> OperandSpec
-eDXeAX m = op m (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX))) Implicit
+eDXeAX m = op m (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX))) S_Implicit
 
 -- | XMM0
 xmm0 :: AccessMode -> OperandSpec
-xmm0 m = op m (T_Reg (regFamFixed (R_XMM 0))) Implicit
+xmm0 m = op m (T_Reg (regFamFixed (R_XMM 0))) S_Implicit
 
 -- | ECX:EBX or RCX:RBX pair
 rCXrBX :: AccessMode -> OperandSpec
 rCXrBX m = op m (TWE
    (T_Pair (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_EBX)))
    (T_Pair (T_Reg (regFamFixed R_RCX)) (T_Reg (regFamFixed R_RBX))))
-   Implicit
+   S_Implicit
 
 -- | 8-bit relative offset
 rel8 :: OperandSpec
-rel8 = op RO (T_Rel Rel8) Imm
+rel8 = op RO (T_Rel Rel8) S_Imm
 
 -- | 16-bit or 32-bit relative offset (16-bit invalid in 64-bit mode)
 rel16o32 :: OperandSpec
-rel16o32 = op RO (T_Rel Rel16o32) Imm
+rel16o32 = op RO (T_Rel Rel16o32) S_Imm
 
 -- | Immediate pointer: 16:16 or 16:32
 ptr16x :: OperandSpec
-ptr16x = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp)) Imm
+ptr16x = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp)) S_Imm
 
 -- | Immediate couple for ENTER: 16:8
 stackFrame :: OperandSpec
-stackFrame = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSize8)) Imm
+stackFrame = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSize8)) S_Imm
 
--- | Implicit immediate constant
+-- | S_Implicit immediate constant
 constImm :: Int -> OperandSpec
-constImm x = op RO (T_Imm (ImmConst x)) Implicit
+constImm x = op RO (T_Imm (ImmConst x)) S_Implicit
 
 -- | Address of a pointer
 m16x :: OperandSpec
-m16x = op RO (T_Mem MemPtr) RM
+m16x = op RO (T_Mem MemPtr) S_RM
 
--- | x87 register (there are all in RM)
+-- | x87 register (there are all in S_RM)
 st :: AccessMode -> OperandSpec
-st m = op m (T_Reg regFamST) RM
+st m = op m (T_Reg regFamST) S_RM
 
 -- | real memory or x87 register
 mst :: AccessMode -> OperandSpec
-mst m = op m (TME (T_Reg regFamST) (T_Mem MemFP)) RM
+mst m = op m (TME (T_Reg regFamST) (T_Mem MemFP)) S_RM
 
 -- | x87 int memory
 mint :: AccessMode -> OperandSpec
-mint m = op m (T_Mem MemInt) RM
+mint m = op m (T_Mem MemInt) S_RM
 
 -- | x87 int64 memory
 mint64 :: AccessMode -> OperandSpec
-mint64 m = op m (T_Mem MemInt64) RM
+mint64 m = op m (T_Mem MemInt64) S_RM
 
 -- | x87 m80real memory
 mfp80 :: AccessMode -> OperandSpec
-mfp80 m = op m (T_Mem MemFP80) RM
+mfp80 m = op m (T_Mem MemFP80) S_RM
 
 -- | x87 m80dec memory
 mdec80 :: AccessMode -> OperandSpec
-mdec80 m = op m (T_Mem MemDec80) RM
+mdec80 m = op m (T_Mem MemDec80) S_RM
 
 -- | x87 14/28 env memory
 menv :: AccessMode -> OperandSpec
-menv m = op m (T_Mem MemEnv) RM
+menv m = op m (T_Mem MemEnv) S_RM
 
 -- | x87 14/28 state memory
 mFPUstate :: AccessMode -> OperandSpec
-mFPUstate m = op m (T_Mem MemFPUState) RM
+mFPUstate m = op m (T_Mem MemFPUState) S_RM
 
 -- | Processor extended state
 mstate :: AccessMode -> OperandSpec
-mstate m = op m (T_Mem MemState) RM
+mstate m = op m (T_Mem MemState) S_RM
 
 -- | descriptor table memory
 mdt :: AccessMode -> OperandSpec
-mdt m = op m (T_Mem MemDescTable) RM
+mdt m = op m (T_Mem MemDescTable) S_RM
 
 -- | Counter register
 regCounter :: AccessMode -> OperandSpec
-regCounter m = op m (T_Reg regFamCounter) Implicit
+regCounter m = op m (T_Reg regFamCounter) S_Implicit
 
 -- | Accumulator register
 regAccu :: AccessMode -> OperandSpec
-regAccu m = op m (T_Reg regFamAccu) Implicit
+regAccu m = op m (T_Reg regFamAccu) S_Implicit
 
 -- | Stack pointer register
-regStackPtr :: AccessMode -> OperandEnc -> OperandSpec
+regStackPtr :: AccessMode -> OperandStorage -> OperandSpec
 regStackPtr m e = op m (T_Reg regFamStackPtr) e
 
 -- | Base pointer register
-regBasePtr :: AccessMode -> OperandEnc -> OperandSpec
+regBasePtr :: AccessMode -> OperandStorage -> OperandSpec
 regBasePtr m e = op m (T_Reg regFamStackBase) e
 
 -- | Register family
-regFam :: X86PredRegFam -> AccessMode -> OperandEnc -> OperandSpec
+regFam :: X86PredRegFam -> AccessMode -> OperandStorage -> OperandSpec
 regFam x m e = op m (T_Reg x) e
 
 -- | Memory at DS:rSI
 mDSrSI :: AccessMode -> OperandSpec
-mDSrSI m = op m (T_Mem MemDSrSI) Implicit
+mDSrSI m = op m (T_Mem MemDSrSI) S_Implicit
 
 -- | Memory at ES:rDI
 mESrDI :: AccessMode -> OperandSpec
-mESrDI m = op m (T_Mem MemESrDI) Implicit
+mESrDI m = op m (T_Mem MemESrDI) S_Implicit
 
 -- | Memory at DS:rDI (DS is overridable)
 mDSrDI :: AccessMode -> OperandSpec
-mDSrDI m = op m (T_Mem MemDSrDI) Implicit
+mDSrDI m = op m (T_Mem MemDSrDI) S_Implicit
 
 -- | VSIB: 32-bit memory. 32-bit indices in 128-bit vector
 m32vsib32x :: AccessMode -> OperandSpec
-m32vsib32x m = op m (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128))) RM
+m32vsib32x m = op m (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128))) S_RM
 
 -- | VSIB: 32-bit memory. 32-bit indices in 128-bit or 256-bit vector
 m32vsib32xy :: AccessMode -> OperandSpec
 m32vsib32xy m = op m (TLE
    (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128)))
    (T_Mem (MemVSIB32 (VSIBType Size32 VSIB256))))
-   RM
+   S_RM
 
 -- | VSIB: 32-bit memory. 64-bit indices in 128-bit or 256-bit vector
 m32vsib64xy :: AccessMode -> OperandSpec
 m32vsib64xy m = op m (TLE
    (T_Mem (MemVSIB32 (VSIBType Size64 VSIB128)))
    (T_Mem (MemVSIB32 (VSIBType Size64 VSIB256))))
-   RM
+   S_RM
 
 -- | VSIB: 64-bit memory. 32-bit indices in 128-bit vector
 m64vsib32x :: AccessMode -> OperandSpec
-m64vsib32x m = op m (T_Mem (MemVSIB64 (VSIBType Size32 VSIB128))) RM
+m64vsib32x m = op m (T_Mem (MemVSIB64 (VSIBType Size32 VSIB128))) S_RM
 
 -- | VSIB: 64-bit memory. 64-bit indices in 128-bit or 256-bit vector
 m64vsib64xy :: AccessMode -> OperandSpec
 m64vsib64xy m = op m (TLE
    (T_Mem (MemVSIB64 (VSIBType Size64 VSIB128)))
    (T_Mem (MemVSIB64 (VSIBType Size64 VSIB256))))
-   RM
+   S_RM
 
 -------------------------------------------------------------------
 -- Instructions
@@ -471,7 +471,7 @@ m64vsib64xy m = op m (TLE
 amd3DNowEncoding :: Encoding
 amd3DNowEncoding = leg
    {    encOpcodeMap = MapLegacy Map3DNow
-   ,    encOperands  = [ vec64 RW Reg
+   ,    encOperands  = [ vec64 RW S_Reg
                        , mvec64 RO
                        ]
    }
@@ -1254,7 +1254,7 @@ i_aaa = insn
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x37
                            ,    encProperties      = [LegacyModeSupport]
-                           ,    encOperands        = [ reg R_AX RW Implicit ]
+                           ,    encOperands        = [ reg R_AX RW S_Implicit ]
                            }
                         ]
    }
@@ -1270,7 +1270,7 @@ i_aad = insn
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xD5
                            ,    encProperties      = [LegacyModeSupport]
-                           ,    encOperands        = [ reg R_AX RW Implicit
+                           ,    encOperands        = [ reg R_AX RW S_Implicit
                                                      , imm8
                                                      ]
                            }
@@ -1289,7 +1289,7 @@ i_aam = insn
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xD4
                            ,    encProperties      = [LegacyModeSupport]
-                           ,    encOperands        = [ reg R_AX RW Implicit
+                           ,    encOperands        = [ reg R_AX RW S_Implicit
                                                      , imm8
                                                      ]
                            }
@@ -1308,7 +1308,7 @@ i_aas = insn
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x3F
                            ,    encProperties      = [LegacyModeSupport]
-                           ,    encOperands        = [ reg R_AX RW Implicit ]
+                           ,    encOperands        = [ reg R_AX RW S_Implicit ]
                            }
                        ]
    }
@@ -1342,7 +1342,7 @@ i_adc = insn
                                                      , HLE XBoth
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      ]
                            }
                         , leg
@@ -1375,7 +1375,7 @@ i_adcx = insn
                            ,    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0xF6
                            ,    encProperties      = [Extension ADX]
-                           ,    encOperands        = [ reg32o64 RW Reg
+                           ,    encOperands        = [ reg32o64 RW S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -1409,7 +1409,7 @@ i_add = insn
                                                      , HLE XBoth
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      ]
                            }
                        , leg
@@ -1442,7 +1442,7 @@ i_addpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1461,8 +1461,8 @@ i_vaddpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -1480,7 +1480,7 @@ i_addps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  RW Reg
+                           ,    encOperands        = [ vec128  RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1498,8 +1498,8 @@ i_vaddps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -1518,7 +1518,7 @@ i_addsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -1537,8 +1537,8 @@ i_vaddsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -1557,7 +1557,7 @@ i_addss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -1576,8 +1576,8 @@ i_vaddss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -1596,7 +1596,7 @@ i_addsubpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1615,8 +1615,8 @@ i_vaddsubpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -1635,7 +1635,7 @@ i_addsubps = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1654,8 +1654,8 @@ i_vaddsubps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -1677,7 +1677,7 @@ i_adox = insn
                                                      , LongModeSupport
                                                      , Extension ADX
                                                      ]
-                           ,    encOperands        = [ reg32o64 RW Reg
+                           ,    encOperands        = [ reg32o64 RW S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -1696,7 +1696,7 @@ i_aesdec = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1716,8 +1716,8 @@ i_vaesdec = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   ]
                            }
@@ -1736,7 +1736,7 @@ i_aesdeclast = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1756,8 +1756,8 @@ i_vaesdeclast = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   ]
                            }
@@ -1776,7 +1776,7 @@ i_aesenc = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1796,8 +1796,8 @@ i_vaesenc = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   ]
                            }
@@ -1816,7 +1816,7 @@ i_aesenclast = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1836,8 +1836,8 @@ i_vaesenclast = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   ]
                            }
@@ -1856,7 +1856,7 @@ i_aesimc = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -1876,7 +1876,7 @@ i_vaesimc = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
+                           , encOperands        = [ vec128 WO S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -1895,7 +1895,7 @@ i_aeskeygenassist = insn
                                                      , LongModeSupport
                                                      , Extension AES
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -1916,7 +1916,7 @@ i_vaeskeygenassist = insn
                                                   , Extension AES
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
+                           , encOperands        = [ vec128 WO S_Reg
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -1954,7 +1954,7 @@ i_and = insn
                                                   , HLE XBoth
                                                   ]
                            ,    encOperands     = [ mgpr RW
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -1991,8 +1991,8 @@ i_andn = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , encOperands     = [ reg32o64 WO Reg
-                                               , reg32o64 RO Vvvv
+                           , encOperands     = [ reg32o64 WO S_Reg
+                                               , reg32o64 RO S_Vvvv
                                                , rm32o64 RO
                                                ]
                            }
@@ -2011,7 +2011,7 @@ i_andpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -2030,8 +2030,8 @@ i_vandpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -2049,7 +2049,7 @@ i_andps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -2067,8 +2067,8 @@ i_vandps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                ]
                            }
@@ -2087,7 +2087,7 @@ i_andnpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -2106,8 +2106,8 @@ i_vandnpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -2125,7 +2125,7 @@ i_andnps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -2143,8 +2143,8 @@ i_vandnps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                ]
                            }
@@ -2161,7 +2161,7 @@ i_arpl = insn
                            ,    encOpcode       = 0x63
                            ,    encProperties   = [LegacyModeSupport]
                            ,    encOperands     = [ rm16 RW
-                                                  , reg16 RO Reg
+                                                  , reg16 RO S_Reg
                                                   ]
                            }
                        ]
@@ -2179,7 +2179,7 @@ i_blendpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -2199,8 +2199,8 @@ i_vblendpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -2224,9 +2224,9 @@ i_bextr = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , encOperands     = [ reg32o64 WO Reg
+                           , encOperands     = [ reg32o64 WO S_Reg
                                                , rm32o64 RO
-                                               , reg32o64 RO Vvvv
+                                               , reg32o64 RO S_Vvvv
                                                ]
                            }
                        ]
@@ -2244,7 +2244,7 @@ i_blendps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -2264,8 +2264,8 @@ i_vblendps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -2285,9 +2285,9 @@ i_blendvpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
-                                                     , reg (R_XMM 0) RO Implicit
+                                                     , reg (R_XMM 0) RO S_Implicit
                                                      ]
                            }
                        ]
@@ -2306,10 +2306,10 @@ i_vblendvpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
-                                                  , vec128o256 RO Imm8h
+                                                  , vec128o256 RO S_Imm8h
                                                   ]
                            }
                        ]
@@ -2327,9 +2327,9 @@ i_blendvps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
-                                                     , reg (R_XMM 0) RO Implicit
+                                                     , reg (R_XMM 0) RO S_Implicit
                                                      ]
                            }
                        ]
@@ -2348,10 +2348,10 @@ i_vblendvps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
-                                                  , vec128o256 RO Imm8h
+                                                  , vec128o256 RO S_Imm8h
                                                   ]
                            }
                        ]
@@ -2374,7 +2374,7 @@ i_blsi = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , encOperands     = [ reg32o64 WO Vvvv
+                           , encOperands     = [ reg32o64 WO S_Vvvv
                                                , rm32o64 RO
                                                ]
                            }
@@ -2398,7 +2398,7 @@ i_blsmsk = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , encOperands     = [ reg32o64 WO Vvvv
+                           , encOperands     = [ reg32o64 WO S_Vvvv
                                                , rm32o64 RO
                                                ]
                            }
@@ -2422,7 +2422,7 @@ i_blsr = insn
                                                , LongModeSupport
                                                , Extension BMI1
                                                ]
-                           , encOperands     = [ reg32o64 WO Vvvv
+                           , encOperands     = [ reg32o64 WO S_Vvvv
                                                , rm32o64 RO
                                                ]
                            }
@@ -2437,8 +2437,8 @@ i_bound = insn
                            {    encOpcodeMap    = MapLegacy MapPrimary
                            ,    encOpcode       = 0x62
                            ,    encProperties   = [LegacyModeSupport]
-                           ,    encOperands     = [ gpr RO Reg
-                                                  , op    RO    (T_Mem MemPair16o32) RM
+                           ,    encOperands     = [ gpr RO S_Reg
+                                                  , op    RO    (T_Mem MemPair16o32) S_RM
                                                   ]
                            }
                        ]
@@ -2457,7 +2457,7 @@ i_bsf = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr WO Reg
+                           ,    encOperands     = [ gpr WO S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2477,7 +2477,7 @@ i_bsr = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr WO Reg
+                           ,    encOperands     = [ gpr WO S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2495,7 +2495,7 @@ i_bswap = insn
                                                   , LongModeSupport
                                                   , Arch Intel486
                                                   ]
-                           ,    encOperands     = [ reg32o64 RW OpcodeLow3 ]
+                           ,    encOperands     = [ reg32o64 RW S_OpcodeLow3 ]
                            }
                        ]
    }
@@ -2514,7 +2514,7 @@ i_bt = insn
                                                   , LongModeSupport
                                                   ]
                            ,    encOperands     = [ mgpr RO
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -2547,7 +2547,7 @@ i_btc = insn
                                                   , HLE XBoth
                                                   ]
                            ,    encOperands     = [ mgpr RW
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -2582,7 +2582,7 @@ i_btr = insn
                                                   , HLE XBoth
                                                   ]
                            ,    encOperands     = [ mgpr RW
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -2617,7 +2617,7 @@ i_bts = insn
                                                   , HLE XBoth
                                                   ]
                            ,    encOperands     = [ mgpr RW
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -2652,9 +2652,9 @@ i_bzhi = insn
                                                   , LongModeSupport
                                                   , Extension BMI2
                                                   ]
-                              , encOperands     = [ reg32o64 WO Reg
+                              , encOperands     = [ reg32o64 WO S_Reg
                                                   , rm32o64 RO
-                                                  , reg32o64 RO Vvvv
+                                                  , reg32o64 RO S_Vvvv
                                                   ]
                               }
                           ]
@@ -2844,7 +2844,7 @@ i_cmovo = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2862,7 +2862,7 @@ i_cmovno = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2880,7 +2880,7 @@ i_cmovc = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2898,7 +2898,7 @@ i_cmovnc = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2916,7 +2916,7 @@ i_cmovz = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2934,7 +2934,7 @@ i_cmovnz = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2952,7 +2952,7 @@ i_cmovbe = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2970,7 +2970,7 @@ i_cmova = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -2988,7 +2988,7 @@ i_cmovs = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3006,7 +3006,7 @@ i_cmovns = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3024,7 +3024,7 @@ i_cmovp = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3042,7 +3042,7 @@ i_cmovnp = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3060,7 +3060,7 @@ i_cmovl = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3078,7 +3078,7 @@ i_cmovge = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3096,7 +3096,7 @@ i_cmovle = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3114,7 +3114,7 @@ i_cmovg = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ gpr RW Reg
+                           ,    encOperands     = [ gpr RW S_Reg
                                                   , mgpr RO
                                                   ]
                            }
@@ -3148,7 +3148,7 @@ i_cmp = insn
                                                   , LongModeSupport
                                                   ]
                            ,    encOperands     = [ mgpr RO
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -3180,7 +3180,7 @@ i_cmppd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128 RW Reg
+                           ,    encOperands           = [ vec128 RW S_Reg
                                                         , mvec128 RO
                                                         , imm8
                                                         ]
@@ -3200,8 +3200,8 @@ i_vcmppd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      , imm8
                                                      ]
@@ -3220,7 +3220,7 @@ i_cmpps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -3239,8 +3239,8 @@ i_vcmpps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                , imm8
                                                ]
@@ -3280,7 +3280,7 @@ i_cmpsd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128 RW Reg
+                           ,    encOperands           = [ vec128 RW S_Reg
                                                         , mvec128 RO
                                                         , imm8
                                                         ]
@@ -3300,8 +3300,8 @@ i_vcmpsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -3321,7 +3321,7 @@ i_cmpss = insn
                                                         , LongModeSupport
                                                         , Extension SSE
                                                         ]
-                           ,    encOperands           = [ vec128 RW Reg
+                           ,    encOperands           = [ vec128 RW S_Reg
                                                         , mvec128 RO
                                                         , imm8
                                                         ]
@@ -3341,8 +3341,8 @@ i_vcmpss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -3367,7 +3367,7 @@ i_cmpxchg = insn
                                                   ]
                            ,    encOperands     = [ mgpr RW
                                                   , regAccu RO
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        ]
@@ -3413,7 +3413,7 @@ i_comisd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128low64 RO Reg
+                           ,    encOperands           = [ vec128low64 RO S_Reg
                                                         , mvec128low64 RO
                                                         ]
                            }
@@ -3425,7 +3425,7 @@ i_comisd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128low64 RO Reg
+                           , encOperands        = [ vec128low64 RO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -3446,7 +3446,7 @@ i_comiss = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128low32 RO Reg
+                           ,    encOperands     = [ vec128low32 RO S_Reg
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -3457,7 +3457,7 @@ i_comiss = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128low32 RO Reg
+                           , encOperands     = [ vec128low32 RO S_Reg
                                                , mvec128low32 RO
                                                ]
                            }
@@ -3474,10 +3474,10 @@ i_cpuid = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ reg R_EAX RW Implicit
-                                                  , reg R_ECX RW Implicit
-                                                  , reg R_EBX WO Implicit
-                                                  , reg R_EDX WO Implicit
+                           ,    encOperands     = [ reg R_EAX RW S_Implicit
+                                                  , reg R_ECX RW S_Implicit
+                                                  , reg R_EBX WO S_Implicit
+                                                  , reg R_EDX WO S_Implicit
                                                   ]
                            }
                        ]
@@ -3495,7 +3495,7 @@ i_crc32 = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr RW Reg
+                           ,    encOperands        = [ gpr RW S_Reg
                                                      , mgpr RO
                                                      ]
                            }
@@ -3514,7 +3514,7 @@ i_cvtdq2pd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -3533,7 +3533,7 @@ i_vcvtdq2pd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mveclow RO
                                                   ]
                            }
@@ -3551,7 +3551,7 @@ i_cvtdq2ps = insn
                                                   , LongModeSupport
                                                   , Extension SSE2
                                                   ]
-                           ,    encOperands     = [ vec128 WO Reg
+                           ,    encOperands     = [ vec128 WO S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -3569,7 +3569,7 @@ i_vcvtdq2ps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
+                           , encOperands     = [ vec128o256 WO S_Reg
                                                , mvec128o256 RO
                                                ]
                            }
@@ -3588,7 +3588,7 @@ i_cvtpd2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -3607,7 +3607,7 @@ i_vcvtpd2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -3625,7 +3625,7 @@ i_cvtpd2di = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -3644,7 +3644,7 @@ i_cvtpd2ps = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -3663,7 +3663,7 @@ i_vcvtpd2ps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
+                           , encOperands        = [ vec128 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -3681,7 +3681,7 @@ i_cvtpi2pd = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -3698,7 +3698,7 @@ i_cvtpi2ps = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ vec128 WO Reg
+                           ,    encOperands     = [ vec128 WO S_Reg
                                                   , mvec64 RO
                                                   ]
                            }
@@ -3717,7 +3717,7 @@ i_cvtps2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -3736,7 +3736,7 @@ i_vcvtps2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -3754,7 +3754,7 @@ i_cvtps2pd = insn
                                                   , LongModeSupport
                                                   , Extension SSE2
                                                   ]
-                           ,    encOperands     = [ vec128 WO Reg
+                           ,    encOperands     = [ vec128 WO S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -3772,7 +3772,7 @@ i_vcvtps2pd = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128 WO Reg
+                           , encOperands     = [ vec128 WO S_Reg
                                                , mvec128o256 RO
                                                ]
                            }
@@ -3789,7 +3789,7 @@ i_cvtps2pi = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ vec64 WO Reg
+                           ,    encOperands     = [ vec64 WO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -3808,7 +3808,7 @@ i_cvtsd2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
+                           ,    encOperands        = [ reg32o64 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -3827,7 +3827,7 @@ i_vcvtsd2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ reg32o64 WO Reg
+                           , encOperands        = [ reg32o64 WO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -3846,7 +3846,7 @@ i_cvtsd2ss = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -3865,8 +3865,8 @@ i_vcvtsd2ss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -3885,7 +3885,7 @@ i_cvtsi2sd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -3904,8 +3904,8 @@ i_vcvtsi2sd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , rm32o64 RO
                                                   ]
                            }
@@ -3925,7 +3925,7 @@ i_cvtsi2ss = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -3944,8 +3944,8 @@ i_vcvtsi2ss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , rm32o64 RO
                                                   ]
                            }
@@ -3964,7 +3964,7 @@ i_cvtss2sd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -3983,8 +3983,8 @@ i_vcvtss2sd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -4003,7 +4003,7 @@ i_cvtss2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
+                           ,    encOperands        = [ reg32o64 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -4022,7 +4022,7 @@ i_vcvtss2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ reg32o64 WO Reg
+                           , encOperands        = [ reg32o64 WO S_Reg
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -4041,7 +4041,7 @@ i_cvttpd2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -4060,7 +4060,7 @@ i_vcvttpd2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -4078,7 +4078,7 @@ i_cvttpd2pi = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -4097,7 +4097,7 @@ i_cvttps2dq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -4116,7 +4116,7 @@ i_vcvttps2dq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -4133,7 +4133,7 @@ i_cvttps2pi = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ vec64 WO Reg
+                           ,    encOperands     = [ vec64 WO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -4152,7 +4152,7 @@ i_cvttsd2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
+                           ,    encOperands        = [ reg32o64 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -4171,7 +4171,7 @@ i_vcvttsd2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ reg32o64 WO Reg
+                           , encOperands        = [ reg32o64 WO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -4190,7 +4190,7 @@ i_cvttss2si = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
+                           ,    encOperands        = [ reg32o64 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -4209,7 +4209,7 @@ i_vcvttss2si = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ reg32o64 WO Reg
+                           , encOperands        = [ reg32o64 WO S_Reg
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -4226,8 +4226,8 @@ i_cwd = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , LongModeSupport
                                                   ]
-                           ,    encOperands     = [ regFam regFamDX WO Implicit
-                                                  , regFam regFamAX RW Implicit
+                           ,    encOperands     = [ regFam regFamDX WO S_Implicit
+                                                  , regFam regFamAX RW S_Implicit
                                                   ]
                            }
                        ]
@@ -4244,7 +4244,7 @@ i_daa = insn
                            {    encOpcodeMap    = MapLegacy MapPrimary
                            ,    encOpcode       = 0x27
                            ,    encProperties   = [LegacyModeSupport]
-                           ,    encOperands     = [ reg R_AL RW Implicit ]
+                           ,    encOperands     = [ reg R_AL RW S_Implicit ]
                            }
                        ]
    }
@@ -4260,7 +4260,7 @@ i_das = insn
                            {    encOpcodeMap    = MapLegacy MapPrimary
                            ,    encOpcode       = 0x2F
                            ,    encProperties   = [LegacyModeSupport]
-                           ,    encOperands     = [ reg R_AL RW Implicit ]
+                           ,    encOperands     = [ reg R_AL RW S_Implicit ]
                            }
                        ]
    }
@@ -4289,7 +4289,7 @@ i_dec = insn
                            ,    encProperties   = [ LegacyModeSupport
                                                   , Lockable
                                                   ]
-                           ,    encOperands     = [ gpr RW OpcodeLow3 ]
+                           ,    encOperands     = [ gpr RW S_OpcodeLow3 ]
                            }
                        ]
    }
@@ -4327,7 +4327,7 @@ i_divpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -4346,8 +4346,8 @@ i_vdivpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -4365,7 +4365,7 @@ i_divps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -4383,8 +4383,8 @@ i_vdivps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                ]
                            }
@@ -4403,7 +4403,7 @@ i_divsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -4422,8 +4422,8 @@ i_vdivsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -4442,7 +4442,7 @@ i_divss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -4461,8 +4461,8 @@ i_vdivss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -4481,7 +4481,7 @@ i_dppd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -4501,8 +4501,8 @@ i_vdppd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -4522,7 +4522,7 @@ i_dpps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -4542,8 +4542,8 @@ i_vdpps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -4595,7 +4595,7 @@ i_extractps = insn
                                                      , Extension SSE4_1
                                                      ]
                            ,    encOperands        = [ rm32 RW
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -4615,7 +4615,7 @@ i_enctractps = insn
                                                   , Extension AVX
                                                   ]
                            , encOperands        = [ rm32 WO
-                                                  , vec128 RO Vvvv
+                                                  , vec128 RO S_Vvvv
                                                   , imm8
                                                   ]
                            }
@@ -4635,7 +4635,7 @@ i_f2xm1 = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -4652,7 +4652,7 @@ i_fabs = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -4672,7 +4672,7 @@ i_fadd = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -4692,7 +4692,7 @@ i_fiadd = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -4711,7 +4711,7 @@ i_fbld = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mdec80 RO
                                                    ]
                            }
@@ -4730,7 +4730,7 @@ i_fbstp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mdec80 RW
                                                    ]
                            }
@@ -4749,7 +4749,7 @@ i_fchs = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -4783,7 +4783,7 @@ i_fcmovb = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4804,7 +4804,7 @@ i_fcmove = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4825,7 +4825,7 @@ i_fcmovbe = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4846,7 +4846,7 @@ i_fcmovu = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4867,7 +4867,7 @@ i_fcmovnb = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4888,7 +4888,7 @@ i_fcmovne = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4909,7 +4909,7 @@ i_fcmovnbe = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4930,7 +4930,7 @@ i_fcmovnu = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -4950,7 +4950,7 @@ i_fcom = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -4970,7 +4970,7 @@ i_fcomp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -4989,8 +4989,8 @@ i_fcompp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -5009,7 +5009,7 @@ i_fcomi = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -5029,7 +5029,7 @@ i_fucomi = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -5048,7 +5048,7 @@ i_fcos = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -5084,7 +5084,7 @@ i_fdiv = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -5104,7 +5104,7 @@ i_fidiv = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -5127,7 +5127,7 @@ i_fdivr = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -5147,7 +5147,7 @@ i_fidivr = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -5184,7 +5184,7 @@ i_ficom = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -5204,7 +5204,7 @@ i_ficomp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -5284,7 +5284,7 @@ i_fist = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint WO
                                                    ]
                            }
@@ -5304,7 +5304,7 @@ i_fistp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint WO
                                                    ]
                            }
@@ -5316,7 +5316,7 @@ i_fistp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint64 WO
                                                    ]
                            }
@@ -5336,7 +5336,7 @@ i_fisttp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint WO
                                                    ]
                            }
@@ -5348,7 +5348,7 @@ i_fisttp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mint64 WO
                                                    ]
                            }
@@ -5368,7 +5368,7 @@ i_fld = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -5380,7 +5380,7 @@ i_fld = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit
                                                    , mfp80 RO
                                                    ]
                            }
@@ -5399,7 +5399,7 @@ i_fld1 = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5416,7 +5416,7 @@ i_fldl2t = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5433,7 +5433,7 @@ i_fldl2e = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5450,7 +5450,7 @@ i_fldpi = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5467,7 +5467,7 @@ i_fldlg2 = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5485,7 +5485,7 @@ i_fldln2 = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5503,7 +5503,7 @@ i_fldz = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) WO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) WO S_Implicit ]
                            }
                        ]
    }
@@ -5558,7 +5558,7 @@ i_fmul = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -5578,7 +5578,7 @@ i_fimul = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -5614,8 +5614,8 @@ i_fpatan = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -5633,8 +5633,8 @@ i_fprem = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -5652,8 +5652,8 @@ i_fprem1 = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -5671,8 +5671,8 @@ i_fptan = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RW S_Implicit
                                                    ]
                            }
                        ]
@@ -5690,7 +5690,7 @@ i_frndint = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -5741,8 +5741,8 @@ i_fscale = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -5760,7 +5760,7 @@ i_fsin = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -5777,8 +5777,8 @@ i_fsincos = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) WO S_Implicit
                                                    ]
                            }
                        ]
@@ -5796,7 +5796,7 @@ i_fsqrt = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit ]
                            }
                        ]
    }
@@ -5814,7 +5814,7 @@ i_fst = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mst WO
                                                    ]
                            }
@@ -5834,7 +5834,7 @@ i_fstp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mst WO
                                                    ]
                            }
@@ -5846,7 +5846,7 @@ i_fstp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , mfp80 WO
                                                    ]
                            }
@@ -5911,7 +5911,7 @@ i_fnstsw = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg R_AX RO Implicit ]
+                           ,    encOperands      = [ reg R_AX RO S_Implicit ]
                            }
                        ]
    }
@@ -5931,7 +5931,7 @@ i_fsub = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -5951,7 +5951,7 @@ i_fisub = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -5973,7 +5973,7 @@ i_fsubr = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mst RO
                                                    ]
                            }
@@ -5993,7 +5993,7 @@ i_fisubr = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , mint RO
                                                    ]
                            }
@@ -6012,7 +6012,7 @@ i_ftst = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit ]
                            }
                        ]
    }
@@ -6030,7 +6030,7 @@ i_fucom = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -6050,7 +6050,7 @@ i_fucomp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
                                                    , st RO
                                                    ]
                            }
@@ -6069,8 +6069,8 @@ i_fucompp = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -6089,7 +6089,7 @@ i_fxam = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RO Implicit ]
+                           ,    encOperands      = [ reg (R_ST 0) RO S_Implicit ]
                            }
                        ]
    }
@@ -6107,7 +6107,7 @@ i_fxch = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
                                                    , st RW
                                                    ]
                            }
@@ -6197,8 +6197,8 @@ i_fxtract = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) WO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) WO S_Implicit
                                                    ]
                            }
                        ]
@@ -6216,8 +6216,8 @@ i_fyl2x = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -6235,8 +6235,8 @@ i_fyl2xp1 = insn
                                                    , LegacyModeSupport
                                                    , LongModeSupport
                                                    ]
-                           ,    encOperands      = [ reg (R_ST 0) RW Implicit
-                                                   , reg (R_ST 1) RO Implicit
+                           ,    encOperands      = [ reg (R_ST 0) RW S_Implicit
+                                                   , reg (R_ST 1) RO S_Implicit
                                                    ]
                            }
                        ]
@@ -6254,7 +6254,7 @@ i_haddpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -6274,8 +6274,8 @@ i_vhaddpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -6295,7 +6295,7 @@ i_haddps = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -6315,8 +6315,8 @@ i_vhaddps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -6349,7 +6349,7 @@ i_hsubpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -6369,8 +6369,8 @@ i_vhsubpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -6390,7 +6390,7 @@ i_hsubps = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -6410,8 +6410,8 @@ i_vhsubps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -6465,7 +6465,7 @@ i_imul = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr RW Reg
+                           ,    encOperands        = [ gpr RW S_Reg
                                                      , mgpr RO
                                                      ]
                            }
@@ -6476,7 +6476,7 @@ i_imul = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr RW Reg
+                           ,    encOperands        = [ gpr RW S_Reg
                                                      , mgpr RO
                                                      , immSE
                                                      ]
@@ -6509,7 +6509,7 @@ i_in = insn
                                                      , NoOperandSize64
                                                      ]
                            ,    encOperands        = [ regAccu WO
-                                                     , reg R_DX RO Implicit
+                                                     , reg R_DX RO S_Implicit
                                                      ]
                            }
 
@@ -6539,7 +6539,7 @@ i_inc = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , Lockable
                                                      ]
-                           ,    encOperands        = [ gpr RW OpcodeLow3 ]
+                           ,    encOperands        = [ gpr RW S_OpcodeLow3 ]
                            }
                        ]
    }
@@ -6558,7 +6558,7 @@ i_ins = insn
                                                      , Repeatable
                                                      ]
                            ,    encOperands        = [ mESrDI WO  
-                                                     , reg R_DX RO Implicit
+                                                     , reg R_DX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -6576,7 +6576,7 @@ i_insertps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -6596,8 +6596,8 @@ i_vinsertps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -6690,7 +6690,7 @@ i_invpcid = insn
                                                      , LongModeSupport
                                                      , Extension INVPCID
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
+                           ,    encOperands        = [ reg32o64 WO S_Reg
                                                      , mem128 RO
                                                      ]
                            }
@@ -7223,7 +7223,7 @@ i_lahf = insn
                                                      , LongModeSupport
                                                      , Extension LSAHF
                                                      ]
-                           ,    encOperands        = [ reg R_AH WO Implicit ]
+                           ,    encOperands        = [ reg R_AH WO S_Implicit ]
                            }
                        ]
    }
@@ -7239,7 +7239,7 @@ i_lar = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ gpr WO S_Reg
                                                      , mgpr RO
                                                      ]
                            }
@@ -7258,7 +7258,7 @@ i_lddqu = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mem128 RO
                                                      ]
                            }
@@ -7277,7 +7277,7 @@ i_vlddqu = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , m128o256 RO
                                                   ]
                            }
@@ -7323,7 +7323,7 @@ i_ldfarptr = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , DefaultSegment R_DS
                                                      ]
-                           ,    encOperands        = [ gpr RO Reg
+                           ,    encOperands        = [ gpr RO S_Reg
                                                      , m16x
                                                      ]
                            }
@@ -7333,7 +7333,7 @@ i_ldfarptr = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , DefaultSegment R_ES
                                                      ]
-                           ,    encOperands        = [ gpr RO Reg
+                           ,    encOperands        = [ gpr RO S_Reg
                                                      , m16x
                                                      ]
                            }
@@ -7344,7 +7344,7 @@ i_ldfarptr = insn
                                                      , LongModeSupport
                                                      , DefaultSegment R_SS
                                                      ]
-                           ,    encOperands        = [ gpr RO Reg
+                           ,    encOperands        = [ gpr RO S_Reg
                                                      , m16x
                                                      ]
                            }
@@ -7355,7 +7355,7 @@ i_ldfarptr = insn
                                                      , LongModeSupport
                                                      , DefaultSegment R_FS
                                                      ]
-                           ,    encOperands        = [ gpr RO Reg
+                           ,    encOperands        = [ gpr RO S_Reg
                                                      , m16x
                                                      ]
                            }
@@ -7366,7 +7366,7 @@ i_ldfarptr = insn
                                                      , LongModeSupport
                                                      , DefaultSegment R_GS
                                                      ]
-                           ,    encOperands        = [ gpr RO Reg
+                           ,    encOperands        = [ gpr RO S_Reg
                                                      , m16x
                                                      ]
                            }
@@ -7383,7 +7383,7 @@ i_lea = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ gpr WO S_Reg
                                                      , mvoid
                                                      ]
                            }
@@ -7400,8 +7400,8 @@ i_leave = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ regStackPtr WO Implicit
-                                                     , regBasePtr  RW Implicit
+                           ,    encOperands        = [ regStackPtr WO S_Implicit
+                                                     , regBasePtr  RW S_Implicit
                                                      ]
                            }
                        ]
@@ -7574,7 +7574,7 @@ i_lsl = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr RW Reg
+                           ,    encOperands        = [ gpr RW S_Reg
                                                      , mgpr RO
                                                      ]
                            }
@@ -7613,8 +7613,8 @@ i_maskmovdqu = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
-                                                     , vec128 RO RM
+                           ,    encOperands        = [ vec128 RW S_Reg
+                                                     , vec128 RO S_RM
                                                      , mDSrDI RO
                                                      ]
                            }
@@ -7633,8 +7633,8 @@ i_vmaskmovdqu = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_RM
                                                      , mDSrDI RO
                                                      ]
                            }
@@ -7653,8 +7653,8 @@ i_maskmovq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
-                                                     , vec64 RO RM
+                           ,    encOperands        = [ vec64 RW S_Reg
+                                                     , vec64 RO S_RM
                                                      , mDSrDI RO
                                                      ]
                            }
@@ -7673,7 +7673,7 @@ i_maxpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -7692,8 +7692,8 @@ i_vmaxpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -7711,7 +7711,7 @@ i_maxps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -7729,8 +7729,8 @@ i_vmaxps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -7749,7 +7749,7 @@ i_maxsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -7768,8 +7768,8 @@ i_vmaxsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -7788,7 +7788,7 @@ i_maxss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -7807,8 +7807,8 @@ i_vmaxss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -7842,7 +7842,7 @@ i_minpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -7861,8 +7861,8 @@ i_vminpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -7880,7 +7880,7 @@ i_minps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -7898,8 +7898,8 @@ i_vminps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -7918,7 +7918,7 @@ i_minsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -7937,8 +7937,8 @@ i_vminsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -7957,7 +7957,7 @@ i_minss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -7976,8 +7976,8 @@ i_vminss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -7996,9 +7996,9 @@ i_monitor = insn
                                                    , LongModeSupport
                                                    , Extension MONITOR
                                                    ]
-                           ,    encOperands        = [ reg R_ECX RO Implicit
-                                                     , reg R_EDX RO Implicit
-                                                     , op NA T_MemDSrAX Implicit
+                           ,    encOperands        = [ reg R_ECX RO S_Implicit
+                                                     , reg R_EDX RO S_Implicit
+                                                     , op NA T_MemDSrAX S_Implicit
                                                      ]
                            }
                        ]
@@ -8017,7 +8017,7 @@ i_mov = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ regAccu WO
-                                                     , op    RO    T_MemOffset  Imm
+                                                     , op    RO    T_MemOffset  S_Imm
                                                      ]
                            }
                        , leg
@@ -8030,7 +8030,7 @@ i_mov = insn
                                                      , HLE XRelease
                                                      ]
                            ,    encOperands        = [ mgpr WO
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      ]
                            }
                        , leg
@@ -8041,7 +8041,7 @@ i_mov = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr WO
-                                                     , op RO (T_Reg regFamSegment) Reg
+                                                     , op RO (T_Reg regFamSegment) S_Reg
                                                      ]
                            }
                        , leg
@@ -8051,7 +8051,7 @@ i_mov = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr RW OpcodeLow3
+                           ,    encOperands        = [ gpr RW S_OpcodeLow3
                                                      , immOp
                                                      ]
                            }
@@ -8083,8 +8083,8 @@ i_movcr = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ op WO (T_Reg regFamGPR32o64)   RM
-                                                     , op RO (T_Reg regFamControl) Reg
+                           ,    encOperands        = [ op WO (T_Reg regFamGPR32o64)   S_RM
+                                                     , op RO (T_Reg regFamControl) S_Reg
                                                      ]
                            }
                        ]
@@ -8103,8 +8103,8 @@ i_movdr = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ op    WO (T_Reg regFamGPR32o64) RM
-                                                     , op    RO (T_Reg regFamDebug) Reg
+                           ,    encOperands        = [ op    WO (T_Reg regFamGPR32o64) S_RM
+                                                     , op    RO (T_Reg regFamDebug) S_Reg
                                                      ]
                            }
                        ]
@@ -8125,7 +8125,7 @@ i_movapd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -8145,7 +8145,7 @@ i_vmovapd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -8164,7 +8164,7 @@ i_movaps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -8183,7 +8183,7 @@ i_vmovaps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -8201,7 +8201,7 @@ i_movbe = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ gpr WO S_Reg
                                                      , mem RO
                                                      ]
                            }
@@ -8220,7 +8220,7 @@ i_movdq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -8233,7 +8233,7 @@ i_movdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -8247,7 +8247,7 @@ i_movdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , rm32o64 RO
                                                      ]
                            }
@@ -8266,7 +8266,7 @@ i_movddup = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -8278,7 +8278,7 @@ i_movddup = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvecEven64 RO
                                                      ]
                            }
@@ -8298,7 +8298,7 @@ i_movdqa = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -8311,7 +8311,7 @@ i_movdqa = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -8331,7 +8331,7 @@ i_movdqu = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -8344,7 +8344,7 @@ i_movdqu = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -8363,8 +8363,8 @@ i_movdq2q = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
-                                                     , vec128low64 RO RM
+                           ,    encOperands        = [ vec64 WO S_Reg
+                                                     , vec128low64 RO S_RM
                                                      ]
                            }
                        ]
@@ -8381,8 +8381,8 @@ i_movhlps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128low64 WO Reg
-                                                     , vec128high64 RO RM
+                           ,    encOperands        = [ vec128low64 WO S_Reg
+                                                     , vec128high64 RO S_RM
                                                      ]
                            }
                         ]
@@ -8400,9 +8400,9 @@ i_vmovhlps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128low64 RO Vvvv
-                                                     , vec128high64 RO RM
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128low64 RO S_Vvvv
+                                                     , vec128high64 RO S_RM
                                                      ]
                            }
                        ]
@@ -8423,7 +8423,7 @@ i_movhpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128high64 WO Reg
+                           ,    encOperands        = [ vec128high64 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -8437,7 +8437,7 @@ i_movhpd = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ mem64 WO
-                                                     , vec128high64 RO Reg
+                                                     , vec128high64 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8456,8 +8456,8 @@ i_vmovhpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128low64 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128low64 RO S_Vvvv
                                                      , mem64 RO
                                                      ]
                            }
@@ -8477,7 +8477,7 @@ i_movhps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128high64 WO Reg
+                           ,    encOperands        = [ vec128high64 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -8490,7 +8490,7 @@ i_movhps = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ mem64 WO
-                                                     , vec128high64 RO Reg
+                                                     , vec128high64 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8508,8 +8508,8 @@ i_vmovhps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128low64 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128low64 RO S_Vvvv
                                                      , mem64 RO
                                                      ]
                            }
@@ -8530,7 +8530,7 @@ i_movlpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128low64 WO Reg
+                           ,    encOperands        = [ vec128low64 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -8544,7 +8544,7 @@ i_movlpd = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ mem64 WO
-                                                     , vec128low64 RO Reg
+                                                     , vec128low64 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8563,8 +8563,8 @@ i_vmovlpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128high64 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128high64 RO S_Vvvv
                                                      , mem64 RO
                                                      ]
                            }
@@ -8584,7 +8584,7 @@ i_movlps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128low64 WO Reg
+                           ,    encOperands        = [ vec128low64 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -8597,7 +8597,7 @@ i_movlps = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ mem64 WO
-                                                     , vec128low64 RO Reg
+                                                     , vec128low64 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8615,8 +8615,8 @@ i_vmovlps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128high64 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128high64 RO S_Vvvv
                                                      , mem64 RO
                                                      ]
                            }
@@ -8634,8 +8634,8 @@ i_movlhps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128high64 WO Reg
-                                                     , vec128low64 RO RM
+                           ,    encOperands        = [ vec128high64 WO S_Reg
+                                                     , vec128low64 RO S_RM
                                                      ]
                            }
                         ]
@@ -8653,9 +8653,9 @@ i_vmovlhps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128high64 RO Vvvv
-                                                     , vec128low64 RO RM
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128high64 RO S_Vvvv
+                                                     , vec128low64 RO S_RM
                                                      ]
                            }
                        ]
@@ -8675,8 +8675,8 @@ i_movmskpd = insn
                                                      , Extension SSE2
                                                      , DefaultOperandSize64
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
-                                                     , vec128 RO RM
+                           ,    encOperands        = [ gpr WO S_Reg
+                                                     , vec128 RO S_RM
                                                      ]
                            }
                         ]
@@ -8695,8 +8695,8 @@ i_vmovmskpd = insn
                                                      , Extension AVX
                                                      , DefaultOperandSize64
                                                      ]
-                           , encOperands           = [ gpr WO Reg
-                                                     , vec128o256 RO RM
+                           , encOperands           = [ gpr WO S_Reg
+                                                     , vec128o256 RO S_RM
                                                      ]
                            }
                        ]
@@ -8715,8 +8715,8 @@ i_movmskps = insn
                                                      , Extension SSE
                                                      , DefaultOperandSize64
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
-                                                     , vec128 RO RM
+                           ,    encOperands        = [ gpr WO S_Reg
+                                                     , vec128 RO S_RM
                                                      ]
                            }
                         ]
@@ -8734,8 +8734,8 @@ i_vmovmskps = insn
                                                      , Extension AVX
                                                      , DefaultOperandSize64
                                                      ]
-                           , encOperands           = [ gpr WO Reg
-                                                     , vec128o256 RO RM
+                           , encOperands           = [ gpr WO S_Reg
+                                                     , vec128o256 RO S_RM
                                                      ]
                            }
                        ]
@@ -8754,7 +8754,7 @@ i_movntdqa = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mem128 RO
                                                      ]
                            }
@@ -8767,7 +8767,7 @@ i_movntdqa = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mem128 RO
                                                      ]
                            }
@@ -8780,7 +8780,7 @@ i_movntdqa = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mem256 RO
                                                      ]
                            }
@@ -8802,7 +8802,7 @@ i_movntdq = insn
                                                      , Extension SSE2
                                                      ]
                            ,    encOperands        = [ mem128 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      ]
                            }
                        , enc
@@ -8814,7 +8814,7 @@ i_movntdq = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ mem128o256 WO
-                                                     , vec128o256 RO Reg
+                                                     , vec128o256 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8832,7 +8832,7 @@ i_movnti = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mem32o64 WO
-                                                     , reg32o64 RO Reg
+                                                     , reg32o64 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8852,7 +8852,7 @@ i_movntpd = insn
                                                      , Extension SSE2
                                                      ]
                            ,    encOperands        = [ mem128 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      ]
                            }
                        , enc
@@ -8864,7 +8864,7 @@ i_movntpd = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ mem128o256 WO
-                                                     , vec128o256 RO Reg
+                                                     , vec128o256 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8883,7 +8883,7 @@ i_movntps = insn
                                                      , Extension SSE
                                                      ]
                            ,    encOperands        = [ mem128 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      ]
                            }
                        , enc
@@ -8895,7 +8895,7 @@ i_movntps = insn
                                                   , Extension AVX
                                                   ]
                            , encOperands        = [ mem128o256 WO
-                                                  , vec128o256 RO Reg
+                                                  , vec128o256 RO S_Reg
                                                   ]
                            }
                        ]
@@ -8913,7 +8913,7 @@ i_movntq = insn
                                                      , Extension MMX
                                                      ]
                            ,    encOperands        = [ mem64 WO
-                                                     , vec64 RO Reg
+                                                     , vec64 RO S_Reg
                                                      ]
                            }
                        ]
@@ -8931,7 +8931,7 @@ i_movq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -8943,7 +8943,7 @@ i_movq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128low64 WO Reg
+                           ,    encOperands        = [ vec128low64 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -8956,7 +8956,7 @@ i_movq = insn
                                                      , Extension SSE2
                                                      ]
                            ,    encOperands        = [ mvec128low64 WO
-                                                     , vec128low64 RO Reg
+                                                     , vec128low64 RO S_Reg
                                                      ]
                            }
                        , enc
@@ -8968,7 +8968,7 @@ i_movq = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128low64 WO Reg
+                           , encOperands        = [ vec128low64 WO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -8982,7 +8982,7 @@ i_movq = insn
                                                   , Extension AVX
                                                   ]
                            , encOperands        = [ mvec128low64 WO
-                                                  , vec128low64 RO Reg
+                                                  , vec128low64 RO S_Reg
                                                   ]
                            }
                        ]
@@ -9000,8 +9000,8 @@ i_movq2dq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec128low64 WO Reg
-                                                     , vec64 RO RM
+                           ,    encOperands        = [ vec128low64 WO S_Reg
+                                                     , vec64 RO S_RM
                                                      ]
                            }
                        ]
@@ -9039,7 +9039,7 @@ i_movsd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128low64 WO Reg
+                           ,    encOperands           = [ vec128low64 WO S_Reg
                                                         , mvec128low64 RO
                                                         ]
                            }
@@ -9058,9 +9058,9 @@ i_vmovsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
-                                                     , vec128o256 RO RM
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
+                                                     , vec128o256 RO S_RM
                                                      ]
                            }
                        ,  enc
@@ -9071,9 +9071,9 @@ i_vmovsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128high64 RO Vvvv
-                                                     , vec128low64 RO RM
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128high64 RO S_Vvvv
+                                                     , vec128low64 RO S_RM
                                                      ]
                            }
                        ,  enc
@@ -9085,7 +9085,7 @@ i_vmovsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128low64 WO Reg
+                           , encOperands           = [ vec128low64 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -9104,7 +9104,7 @@ i_movshdup = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9116,7 +9116,7 @@ i_movshdup = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -9136,7 +9136,7 @@ i_movsldup = insn
                                                      , LongModeSupport
                                                      , Extension SSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9148,7 +9148,7 @@ i_movsldup = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -9168,7 +9168,7 @@ i_movss = insn
                                                         , LongModeSupport
                                                         , Extension SSE
                                                         ]
-                           ,    encOperands           = [ vec128low32 WO Reg
+                           ,    encOperands           = [ vec128low32 WO S_Reg
                                                         , mvec128low32 RO
                                                         ]
                            }
@@ -9187,9 +9187,9 @@ i_vmovss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
-                                                     , vec128o256 RO RM
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
+                                                     , vec128o256 RO S_RM
                                                      ]
                            }
                        ,  enc
@@ -9200,9 +9200,9 @@ i_vmovss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128high64 RO Vvvv
-                                                     , vec128low64 RO RM
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128high64 RO S_Vvvv
+                                                     , vec128low64 RO S_RM
                                                      ]
                            }
                        ,  enc
@@ -9214,7 +9214,7 @@ i_vmovss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128low64 WO Reg
+                           , encOperands           = [ vec128low64 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -9231,7 +9231,7 @@ i_movsx = insn
                            ,    encProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
                                                         ]
-                           ,    encOperands           = [ gpr WO Reg
+                           ,    encOperands           = [ gpr WO S_Reg
                                                         , rm8 RO
                                                         ]
                            }
@@ -9241,7 +9241,7 @@ i_movsx = insn
                            ,    encProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
                                                         ]
-                           ,    encOperands           = [ reg32o64 WO Reg
+                           ,    encOperands           = [ reg32o64 WO S_Reg
                                                         , rm16 RO
                                                         ]
                            }
@@ -9251,7 +9251,7 @@ i_movsx = insn
                            ,    encProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
                                                         ]
-                           ,    encOperands           = [ reg32o64 WO Reg
+                           ,    encOperands           = [ reg32o64 WO S_Reg
                                                         , rm32 RO
                                                         ]
                            }
@@ -9272,7 +9272,7 @@ i_movupd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9292,7 +9292,7 @@ i_vmovupd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -9311,7 +9311,7 @@ i_movups = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9330,7 +9330,7 @@ i_vmovups = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -9347,7 +9347,7 @@ i_movzx = insn
                            ,    encProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
                                                         ]
-                           ,    encOperands           = [ gpr WO Reg
+                           ,    encOperands           = [ gpr WO S_Reg
                                                         , rm8 RO
                                                         ]
                            }
@@ -9357,7 +9357,7 @@ i_movzx = insn
                            ,    encProperties         = [ LegacyModeSupport
                                                         , LongModeSupport
                                                         ]
-                           ,    encOperands           = [ reg32o64 WO Reg
+                           ,    encOperands           = [ reg32o64 WO S_Reg
                                                         , rm16 RO
                                                         ]
                            }
@@ -9376,7 +9376,7 @@ i_mpsadbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -9390,8 +9390,8 @@ i_mpsadbw = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -9405,8 +9405,8 @@ i_mpsadbw = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec256 RO
                                                   , imm8
                                                   ]
@@ -9449,7 +9449,7 @@ i_mulpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9468,8 +9468,8 @@ i_vmulpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -9487,7 +9487,7 @@ i_mulps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  RW Reg
+                           ,    encOperands        = [ vec128  RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9505,8 +9505,8 @@ i_vmulps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -9525,7 +9525,7 @@ i_mulsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -9544,8 +9544,8 @@ i_vmulsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -9564,7 +9564,7 @@ i_mulss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -9583,8 +9583,8 @@ i_vmulss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -9604,8 +9604,8 @@ i_mulx = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
-                                                     , reg32o64 WO Vvvv
+                              , encOperands        = [ reg32o64 WO S_Reg
+                                                     , reg32o64 WO S_Vvvv
                                                      , rm32o64 RO
                                                      , rDX RO
                                                      ]
@@ -9625,8 +9625,8 @@ i_mwait = insn
                                                    , LongModeSupport
                                                    , Extension MONITOR
                                                    ]
-                           ,    encOperands        = [ reg R_ECX RO Implicit
-                                                     , reg R_EAX RO Implicit
+                           ,    encOperands        = [ reg R_ECX RO S_Implicit
+                                                     , reg R_EAX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -9719,7 +9719,7 @@ i_or = insn
                                                   , HLE XBoth
                                                   ]
                            ,    encOperands     = [ mgpr RW
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -9752,7 +9752,7 @@ i_orpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9771,8 +9771,8 @@ i_vorpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -9790,7 +9790,7 @@ i_orps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -9808,8 +9808,8 @@ i_vorps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                ]
                            }
@@ -9840,7 +9840,7 @@ i_out = insn
                                                      , LongModeSupport
                                                      , NoOperandSize64
                                                      ]
-                           ,    encOperands        = [ reg R_DX RO Implicit
+                           ,    encOperands        = [ reg R_DX RO S_Implicit
                                                      , regAccu RO
                                                      ]
                            }
@@ -9861,7 +9861,7 @@ i_outs = insn
                                                      , NoOperandSize64
                                                      , Repeatable
                                                      ]
-                           ,    encOperands        = [ reg R_DX RO Implicit
+                           ,    encOperands        = [ reg R_DX RO S_Implicit
                                                      , mDSrSI RO  
                                                      ]
                            }
@@ -9879,7 +9879,7 @@ i_pabsb = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -9891,7 +9891,7 @@ i_pabsb = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9904,7 +9904,7 @@ i_pabsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9917,7 +9917,7 @@ i_pabsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec256 RO
                                                      ]
                            }
@@ -9937,7 +9937,7 @@ i_pabsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -9949,7 +9949,7 @@ i_pabsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9962,7 +9962,7 @@ i_pabsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -9975,7 +9975,7 @@ i_pabsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec256 RO
                                                      ]
                            }
@@ -9995,7 +9995,7 @@ i_pabsd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10007,7 +10007,7 @@ i_pabsd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10020,7 +10020,7 @@ i_pabsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10033,7 +10033,7 @@ i_pabsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10052,7 +10052,7 @@ i_packsswb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10064,7 +10064,7 @@ i_packsswb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10077,8 +10077,8 @@ i_packsswb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10091,8 +10091,8 @@ i_packsswb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10112,7 +10112,7 @@ i_packssdw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10124,7 +10124,7 @@ i_packssdw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10137,8 +10137,8 @@ i_packssdw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10151,8 +10151,8 @@ i_packssdw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10172,7 +10172,7 @@ i_packusdw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10185,8 +10185,8 @@ i_packusdw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10199,8 +10199,8 @@ i_packusdw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10218,7 +10218,7 @@ i_packuswb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10230,7 +10230,7 @@ i_packuswb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10243,8 +10243,8 @@ i_packuswb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10257,8 +10257,8 @@ i_packuswb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10277,7 +10277,7 @@ i_paddb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10289,7 +10289,7 @@ i_paddb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10302,8 +10302,8 @@ i_paddb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10316,8 +10316,8 @@ i_paddb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10338,7 +10338,7 @@ i_paddw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10350,7 +10350,7 @@ i_paddw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10363,8 +10363,8 @@ i_paddw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10377,8 +10377,8 @@ i_paddw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10398,7 +10398,7 @@ i_paddd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10410,7 +10410,7 @@ i_paddd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10423,8 +10423,8 @@ i_paddd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10437,8 +10437,8 @@ i_paddd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10459,7 +10459,7 @@ i_paddq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10471,7 +10471,7 @@ i_paddq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10484,8 +10484,8 @@ i_paddq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10498,8 +10498,8 @@ i_paddq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10520,7 +10520,7 @@ i_paddsb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10532,7 +10532,7 @@ i_paddsb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10545,8 +10545,8 @@ i_paddsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10559,8 +10559,8 @@ i_paddsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10580,7 +10580,7 @@ i_paddsw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10592,7 +10592,7 @@ i_paddsw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10605,8 +10605,8 @@ i_paddsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10619,8 +10619,8 @@ i_paddsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10640,7 +10640,7 @@ i_paddusb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10652,7 +10652,7 @@ i_paddusb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10665,8 +10665,8 @@ i_paddusb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10679,8 +10679,8 @@ i_paddusb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10700,7 +10700,7 @@ i_paddusw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10712,7 +10712,7 @@ i_paddusw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10725,8 +10725,8 @@ i_paddusw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10739,8 +10739,8 @@ i_paddusw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10759,7 +10759,7 @@ i_palignr = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      , imm8
                                                      ]
@@ -10772,7 +10772,7 @@ i_palignr = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -10786,8 +10786,8 @@ i_palignr = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -10801,8 +10801,8 @@ i_palignr = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      , imm8
                                                      ]
@@ -10822,7 +10822,7 @@ i_pand = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10834,7 +10834,7 @@ i_pand = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10847,8 +10847,8 @@ i_pand = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10861,8 +10861,8 @@ i_pand = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10882,7 +10882,7 @@ i_pandn = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10894,7 +10894,7 @@ i_pandn = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10907,8 +10907,8 @@ i_pandn = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10921,8 +10921,8 @@ i_pandn = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -10956,7 +10956,7 @@ i_pavgb = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -10968,7 +10968,7 @@ i_pavgb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10981,8 +10981,8 @@ i_pavgb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -10995,8 +10995,8 @@ i_pavgb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11017,7 +11017,7 @@ i_pavgw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11029,7 +11029,7 @@ i_pavgw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11042,8 +11042,8 @@ i_pavgw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11056,8 +11056,8 @@ i_pavgw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11079,7 +11079,7 @@ i_pblendvb = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , xmm0 RO
                                                      ]
@@ -11094,10 +11094,10 @@ i_pblendvb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
-                                                     , vec128 RO Imm8h
+                                                     , vec128 RO S_Imm8h
                                                      ]
                            }
                        , enc
@@ -11110,10 +11110,10 @@ i_pblendvb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
-                                                     , vec256 RO Imm8h
+                                                     , vec256 RO S_Imm8h
                                                      ]
                            }
 
@@ -11133,7 +11133,7 @@ i_pblendw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -11147,8 +11147,8 @@ i_pblendw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -11162,8 +11162,8 @@ i_pblendw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      , imm8
                                                      ]
@@ -11185,7 +11185,7 @@ i_pclmulqdq = insn
                                                      , LongModeSupport
                                                      , Extension PCLMULQDQ
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -11200,8 +11200,8 @@ i_pclmulqdq = insn
                                                      , Extension AVX
                                                      , Extension PCLMULQDQ
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -11221,7 +11221,7 @@ i_pcmpeqb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11233,7 +11233,7 @@ i_pcmpeqb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11246,8 +11246,8 @@ i_pcmpeqb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11260,8 +11260,8 @@ i_pcmpeqb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11280,7 +11280,7 @@ i_pcmpeqw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11292,7 +11292,7 @@ i_pcmpeqw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11305,8 +11305,8 @@ i_pcmpeqw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11319,8 +11319,8 @@ i_pcmpeqw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11339,7 +11339,7 @@ i_pcmpeqd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11351,7 +11351,7 @@ i_pcmpeqd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11364,8 +11364,8 @@ i_pcmpeqd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11378,8 +11378,8 @@ i_pcmpeqd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11399,7 +11399,7 @@ i_pcmpeqq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11412,8 +11412,8 @@ i_pcmpeqq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11426,8 +11426,8 @@ i_pcmpeqq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11450,7 +11450,7 @@ i_pcmpestri = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_2
                                                      ]
-                           ,    encOperands        = [ vec128 RO Reg
+                           ,    encOperands        = [ vec128 RO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , rCX WO
@@ -11467,7 +11467,7 @@ i_pcmpestri = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , rCX WO
@@ -11494,7 +11494,7 @@ i_pcmpestrm = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_2
                                                      ]
-                           ,    encOperands        = [ vec128 RO Reg
+                           ,    encOperands        = [ vec128 RO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , xmm0 WO
@@ -11511,7 +11511,7 @@ i_pcmpestrm = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , xmm0 WO
@@ -11533,7 +11533,7 @@ i_pcmpgtb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11545,7 +11545,7 @@ i_pcmpgtb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11558,8 +11558,8 @@ i_pcmpgtb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11572,8 +11572,8 @@ i_pcmpgtb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11592,7 +11592,7 @@ i_pcmpgtw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11604,7 +11604,7 @@ i_pcmpgtw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11617,8 +11617,8 @@ i_pcmpgtw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11631,8 +11631,8 @@ i_pcmpgtw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11651,7 +11651,7 @@ i_pcmpgtd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -11663,7 +11663,7 @@ i_pcmpgtd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11676,8 +11676,8 @@ i_pcmpgtd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11690,8 +11690,8 @@ i_pcmpgtd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11711,7 +11711,7 @@ i_pcmpgtq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11724,8 +11724,8 @@ i_pcmpgtq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -11738,8 +11738,8 @@ i_pcmpgtq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -11761,7 +11761,7 @@ i_pcmpistri = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_2
                                                      ]
-                           ,    encOperands        = [ vec128 RO Reg
+                           ,    encOperands        = [ vec128 RO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , rCX WO
@@ -11776,7 +11776,7 @@ i_pcmpistri = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , rCX WO
@@ -11801,7 +11801,7 @@ i_pcmpistrm = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_2
                                                      ]
-                           ,    encOperands        = [ vec128 RO Reg
+                           ,    encOperands        = [ vec128 RO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , xmm0 WO
@@ -11816,7 +11816,7 @@ i_pcmpistrm = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      , xmm0 WO
@@ -11838,8 +11838,8 @@ i_pdep = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
-                                                     , reg32o64 RO Vvvv
+                              , encOperands        = [ reg32o64 WO S_Reg
+                                                     , reg32o64 RO S_Vvvv
                                                      , rm32o64 RO
                                                      ]
                               }
@@ -11859,8 +11859,8 @@ i_pext = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
-                                                     , reg32o64 RO Vvvv
+                              , encOperands        = [ reg32o64 WO S_Reg
+                                                     , reg32o64 RO S_Vvvv
                                                      , rm32o64 RO
                                                      ]
                               }
@@ -11881,7 +11881,7 @@ i_pextrb = insn
                                                      , Extension SSE4_1
                                                      ]
                            ,    encOperands        = [ rm8 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -11895,7 +11895,7 @@ i_pextrb = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ rm8 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -11916,7 +11916,7 @@ i_pextrd = insn
                                                      , Extension SSE4_1
                                                      ]
                            ,    encOperands        = [ rm32o64 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -11930,7 +11930,7 @@ i_pextrd = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ rm32o64 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -11948,8 +11948,8 @@ i_pextrw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ reg16 WO Reg
-                                                     , vec64 RO RM
+                           ,    encOperands        = [ reg16 WO S_Reg
+                                                     , vec64 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -11961,8 +11961,8 @@ i_pextrw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ reg16 WO Reg
-                                                     , vec128 RO RM
+                           ,    encOperands        = [ reg16 WO S_Reg
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -11976,8 +11976,8 @@ i_pextrw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ reg16 WO Reg
-                                                     , vec128 RO RM
+                           , encOperands           = [ reg16 WO S_Reg
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -11992,7 +11992,7 @@ i_pextrw = insn
                                                      , Extension AVX
                                                      ]
                            , encOperands           = [ rm16 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -12011,7 +12011,7 @@ i_phaddw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12023,7 +12023,7 @@ i_phaddw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12036,8 +12036,8 @@ i_phaddw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12050,8 +12050,8 @@ i_phaddw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12070,7 +12070,7 @@ i_phaddd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12082,7 +12082,7 @@ i_phaddd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12095,8 +12095,8 @@ i_phaddd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12109,8 +12109,8 @@ i_phaddd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12129,7 +12129,7 @@ i_phaddsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12141,7 +12141,7 @@ i_phaddsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12154,8 +12154,8 @@ i_phaddsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12168,8 +12168,8 @@ i_phaddsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12188,7 +12188,7 @@ i_phminposuw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12201,7 +12201,7 @@ i_phminposuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12219,7 +12219,7 @@ i_phsubw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12231,7 +12231,7 @@ i_phsubw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12244,8 +12244,8 @@ i_phsubw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12258,8 +12258,8 @@ i_phsubw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12278,7 +12278,7 @@ i_phsubd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12290,7 +12290,7 @@ i_phsubd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12303,8 +12303,8 @@ i_phsubd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12317,8 +12317,8 @@ i_phsubd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12337,7 +12337,7 @@ i_phsubsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12349,7 +12349,7 @@ i_phsubsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12362,8 +12362,8 @@ i_phsubsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12376,8 +12376,8 @@ i_phsubsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12396,7 +12396,7 @@ i_pinsrb = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , rm8 RO
                                                      , imm8
                                                      ]
@@ -12410,8 +12410,8 @@ i_pinsrb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , rm8 RO
                                                      , imm8
                                                      ]
@@ -12432,7 +12432,7 @@ i_pinsrd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , rm32o64 RO
                                                      , imm8
                                                      ]
@@ -12446,8 +12446,8 @@ i_pinsrd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , rm32o64 RO
                                                      , imm8
                                                      ]
@@ -12466,7 +12466,7 @@ i_pinsrw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , rm16 RO
                                                      , imm8
                                                      ]
@@ -12479,7 +12479,7 @@ i_pinsrw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , rm16 RO
                                                      , imm8
                                                      ]
@@ -12494,8 +12494,8 @@ i_pinsrw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , rm16 RO
                                                      , imm8
                                                      ]
@@ -12514,7 +12514,7 @@ i_pmaddubsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12526,7 +12526,7 @@ i_pmaddubsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12539,8 +12539,8 @@ i_pmaddubsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12553,8 +12553,8 @@ i_pmaddubsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12572,7 +12572,7 @@ i_pmaddwd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12584,7 +12584,7 @@ i_pmaddwd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12597,8 +12597,8 @@ i_pmaddwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12611,8 +12611,8 @@ i_pmaddwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12632,7 +12632,7 @@ i_pmaxsb = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12645,8 +12645,8 @@ i_pmaxsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12659,8 +12659,8 @@ i_pmaxsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12680,7 +12680,7 @@ i_pmaxsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12693,8 +12693,8 @@ i_pmaxsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12707,8 +12707,8 @@ i_pmaxsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12726,7 +12726,7 @@ i_pmaxsw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12738,7 +12738,7 @@ i_pmaxsw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12751,8 +12751,8 @@ i_pmaxsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12765,8 +12765,8 @@ i_pmaxsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12785,7 +12785,7 @@ i_pmaxub = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -12797,7 +12797,7 @@ i_pmaxub = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12810,8 +12810,8 @@ i_pmaxub = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12824,8 +12824,8 @@ i_pmaxub = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12844,7 +12844,7 @@ i_pmaxud = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12857,8 +12857,8 @@ i_pmaxud = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12871,8 +12871,8 @@ i_pmaxud = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12893,7 +12893,7 @@ i_pmaxuw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12906,8 +12906,8 @@ i_pmaxuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12920,8 +12920,8 @@ i_pmaxuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12943,7 +12943,7 @@ i_pminsb = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12956,8 +12956,8 @@ i_pminsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -12970,8 +12970,8 @@ i_pminsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -12991,7 +12991,7 @@ i_pminsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13004,8 +13004,8 @@ i_pminsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13018,8 +13018,8 @@ i_pminsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13037,7 +13037,7 @@ i_pminsw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -13049,7 +13049,7 @@ i_pminsw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13062,8 +13062,8 @@ i_pminsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13076,8 +13076,8 @@ i_pminsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13096,7 +13096,7 @@ i_pminub = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -13108,7 +13108,7 @@ i_pminub = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13121,8 +13121,8 @@ i_pminub = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13135,8 +13135,8 @@ i_pminub = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13155,7 +13155,7 @@ i_pminud = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13168,8 +13168,8 @@ i_pminud = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13182,8 +13182,8 @@ i_pminud = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13204,7 +13204,7 @@ i_pminuw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13217,8 +13217,8 @@ i_pminuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13231,8 +13231,8 @@ i_pminuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13251,8 +13251,8 @@ i_pmovmskb = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
-                                                     , vec64 RO RM
+                           ,    encOperands        = [ reg32o64 WO S_Reg
+                                                     , vec64 RO S_RM
                                                      ]
                            }
                        , leg
@@ -13264,8 +13264,8 @@ i_pmovmskb = insn
                                                      , Extension SSE2
                                                      , DefaultOperandSize64
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO Reg
-                                                     , vec128 RO RM
+                           ,    encOperands        = [ reg32o64 WO S_Reg
+                                                     , vec128 RO S_RM
                                                      ]
                            }
                        , enc
@@ -13278,8 +13278,8 @@ i_pmovmskb = insn
                                                      , Extension AVX
                                                      , DefaultOperandSize64
                                                      ]
-                           , encOperands           = [ reg32o64 WO Reg
-                                                     , vec128 RO RM
+                           , encOperands           = [ reg32o64 WO S_Reg
+                                                     , vec128 RO S_RM
                                                      ]
                            }
                        , enc
@@ -13292,8 +13292,8 @@ i_pmovmskb = insn
                                                      , Extension AVX2
                                                      , DefaultOperandSize64
                                                      ]
-                           , encOperands           = [ reg32o64 WO Reg
-                                                     , vec256 RO RM
+                           , encOperands           = [ reg32o64 WO S_Reg
+                                                     , vec256 RO S_RM
                                                      ]
                            }
                        ]
@@ -13311,7 +13311,7 @@ i_pmovsxbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13324,7 +13324,7 @@ i_pmovsxbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13337,7 +13337,7 @@ i_pmovsxbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13357,7 +13357,7 @@ i_pmovsxbd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13370,7 +13370,7 @@ i_pmovsxbd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13383,7 +13383,7 @@ i_pmovsxbd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13403,7 +13403,7 @@ i_pmovsxbq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low16 RO
                                                      ]
                            }
@@ -13416,7 +13416,7 @@ i_pmovsxbq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low16 RO
                                                      ]
                            }
@@ -13429,7 +13429,7 @@ i_pmovsxbq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low16 RO
                                                      ]
                            }
@@ -13449,7 +13449,7 @@ i_pmovsxwd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13462,7 +13462,7 @@ i_pmovsxwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13475,7 +13475,7 @@ i_pmovsxwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13495,7 +13495,7 @@ i_pmovsxwq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13508,7 +13508,7 @@ i_pmovsxwq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13521,7 +13521,7 @@ i_pmovsxwq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13541,7 +13541,7 @@ i_pmovsxdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13554,7 +13554,7 @@ i_pmovsxdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13567,7 +13567,7 @@ i_pmovsxdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13587,7 +13587,7 @@ i_pmovzxbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13600,7 +13600,7 @@ i_pmovzxbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13613,7 +13613,7 @@ i_pmovzxbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13633,7 +13633,7 @@ i_pmovzxbd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13646,7 +13646,7 @@ i_pmovzxbd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13659,7 +13659,7 @@ i_pmovzxbd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13679,7 +13679,7 @@ i_pmovzxbq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low16 RO
                                                      ]
                            }
@@ -13692,7 +13692,7 @@ i_pmovzxbq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low16 RO
                                                      ]
                            }
@@ -13705,7 +13705,7 @@ i_pmovzxbq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low16 RO
                                                      ]
                            }
@@ -13725,7 +13725,7 @@ i_pmovzxwd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13738,7 +13738,7 @@ i_pmovzxwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13751,7 +13751,7 @@ i_pmovzxwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13771,7 +13771,7 @@ i_pmovzxwq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13784,7 +13784,7 @@ i_pmovzxwq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13797,7 +13797,7 @@ i_pmovzxwq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -13817,7 +13817,7 @@ i_pmovzxdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13830,7 +13830,7 @@ i_pmovzxdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13843,7 +13843,7 @@ i_pmovzxdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -13863,7 +13863,7 @@ i_pmuldq = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13876,8 +13876,8 @@ i_pmuldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13890,8 +13890,8 @@ i_pmuldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13911,7 +13911,7 @@ i_pmulhrsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -13923,7 +13923,7 @@ i_pmulhrsw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13936,8 +13936,8 @@ i_pmulhrsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13950,8 +13950,8 @@ i_pmulhrsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -13971,7 +13971,7 @@ i_pmulhuw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -13983,7 +13983,7 @@ i_pmulhuw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -13996,8 +13996,8 @@ i_pmulhuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14010,8 +14010,8 @@ i_pmulhuw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14030,7 +14030,7 @@ i_pmulhw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14042,7 +14042,7 @@ i_pmulhw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14055,8 +14055,8 @@ i_pmulhw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14069,8 +14069,8 @@ i_pmulhw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14089,7 +14089,7 @@ i_pmulld = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14102,8 +14102,8 @@ i_pmulld = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14116,8 +14116,8 @@ i_pmulld = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14136,7 +14136,7 @@ i_pmullw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14148,7 +14148,7 @@ i_pmullw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14161,8 +14161,8 @@ i_pmullw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14175,8 +14175,8 @@ i_pmullw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14194,7 +14194,7 @@ i_pmuludq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14206,7 +14206,7 @@ i_pmuludq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14219,8 +14219,8 @@ i_pmuludq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14233,8 +14233,8 @@ i_pmuludq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14254,7 +14254,7 @@ i_pop = insn
                                                      , NoOperandSize64
                                                      ]
                            ,    encOperands        = [ mgpr WO
-                                                     , regStackPtr RW Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -14265,32 +14265,32 @@ i_pop = insn
                                                      , DefaultOperandSize64
                                                      , NoOperandSize64
                                                      ]
-                           ,    encOperands        = [ gpr WO OpcodeLow3
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ gpr WO S_OpcodeLow3
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x1F
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_DS WO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_DS WO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x07
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_ES WO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_ES WO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x17
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_SS WO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_SS WO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -14299,8 +14299,8 @@ i_pop = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_FS WO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_FS WO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -14309,8 +14309,8 @@ i_pop = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_GS WO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_GS WO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        ]
@@ -14324,14 +14324,14 @@ i_popa = insn
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x61
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ regBasePtr WO Implicit
-                                                     , regFam regFamDI WO Implicit
-                                                     , regFam regFamSI WO Implicit
-                                                     , regFam regFamAX WO Implicit
-                                                     , regFam regFamBX WO Implicit
-                                                     , regFam regFamCX WO Implicit
-                                                     , regFam regFamDX WO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ regBasePtr WO S_Implicit
+                                                     , regFam regFamDI WO S_Implicit
+                                                     , regFam regFamSI WO S_Implicit
+                                                     , regFam regFamAX WO S_Implicit
+                                                     , regFam regFamBX WO S_Implicit
+                                                     , regFam regFamCX WO S_Implicit
+                                                     , regFam regFamDX WO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        ]
@@ -14351,7 +14351,7 @@ i_popcnt = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ gpr WO S_Reg
                                                      , mgpr RO
                                                      ]
                            }
@@ -14370,7 +14370,7 @@ i_popf = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ regStackPtr RW Implicit
+                           ,    encOperands        = [ regStackPtr RW S_Implicit
                                                      ]
                            }
                        ]
@@ -14387,7 +14387,7 @@ i_por = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14399,7 +14399,7 @@ i_por = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14412,8 +14412,8 @@ i_por = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14426,8 +14426,8 @@ i_por = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14550,7 +14550,7 @@ i_psadbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14562,7 +14562,7 @@ i_psadbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14575,8 +14575,8 @@ i_psadbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14589,8 +14589,8 @@ i_psadbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14609,7 +14609,7 @@ i_pshufb = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14621,7 +14621,7 @@ i_pshufb = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14634,8 +14634,8 @@ i_pshufb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14648,8 +14648,8 @@ i_pshufb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14668,7 +14668,7 @@ i_pshufd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -14682,7 +14682,7 @@ i_pshufd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -14696,7 +14696,7 @@ i_pshufd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec256 RO
                                                      , imm8
                                                      ]
@@ -14716,7 +14716,7 @@ i_pshufhw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -14730,7 +14730,7 @@ i_pshufhw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -14744,7 +14744,7 @@ i_pshufhw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec256 RO
                                                      , imm8
                                                      ]
@@ -14765,7 +14765,7 @@ i_pshuflw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -14779,7 +14779,7 @@ i_pshuflw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -14793,7 +14793,7 @@ i_pshuflw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec256 RO
                                                      , imm8
                                                      ]
@@ -14811,7 +14811,7 @@ i_pshufw = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      , imm8
                                                      ]
@@ -14830,7 +14830,7 @@ i_psignb = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14842,7 +14842,7 @@ i_psignb = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14855,8 +14855,8 @@ i_psignb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14869,8 +14869,8 @@ i_psignb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14889,7 +14889,7 @@ i_psignw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14901,7 +14901,7 @@ i_psignw = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14914,8 +14914,8 @@ i_psignw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14928,8 +14928,8 @@ i_psignw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -14948,7 +14948,7 @@ i_psignd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -14960,7 +14960,7 @@ i_psignd = insn
                                                      , LongModeSupport
                                                      , Extension SSSE3
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14973,8 +14973,8 @@ i_psignd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -14987,8 +14987,8 @@ i_psignd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15008,7 +15008,7 @@ i_pslldq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15022,7 +15022,7 @@ i_pslldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
+                           , encOperands           = [ vec128 WO S_Vvvv
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -15037,7 +15037,7 @@ i_pslldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
+                           , encOperands           = [ vec256 WO S_Vvvv
                                                      , mvec256 RO
                                                      , imm8
                                                      ]
@@ -15057,7 +15057,7 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15069,7 +15069,7 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15081,7 +15081,7 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15094,7 +15094,7 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15107,8 +15107,8 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15121,8 +15121,8 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15136,8 +15136,8 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15151,8 +15151,8 @@ i_psllw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15171,7 +15171,7 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15183,7 +15183,7 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15195,7 +15195,7 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15208,7 +15208,7 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15221,8 +15221,8 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15235,8 +15235,8 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15250,8 +15250,8 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15265,8 +15265,8 @@ i_pslld = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15285,7 +15285,7 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15297,7 +15297,7 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15309,7 +15309,7 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15322,7 +15322,7 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15335,8 +15335,8 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15349,8 +15349,8 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15364,8 +15364,8 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15379,8 +15379,8 @@ i_psllq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15398,7 +15398,7 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15410,7 +15410,7 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15422,7 +15422,7 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15435,7 +15435,7 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15448,8 +15448,8 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15462,8 +15462,8 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15477,8 +15477,8 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15492,8 +15492,8 @@ i_psraw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15512,7 +15512,7 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15524,7 +15524,7 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15536,7 +15536,7 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15549,7 +15549,7 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15562,8 +15562,8 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15576,8 +15576,8 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15591,8 +15591,8 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15606,8 +15606,8 @@ i_psrad = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15627,7 +15627,7 @@ i_psrldq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW RM
+                           ,    encOperands        = [ vec128 RW S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15641,8 +15641,8 @@ i_psrldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15656,8 +15656,8 @@ i_psrldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15675,7 +15675,7 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15687,7 +15687,7 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15699,7 +15699,7 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15712,7 +15712,7 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15725,8 +15725,8 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15739,8 +15739,8 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15754,8 +15754,8 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15769,8 +15769,8 @@ i_psrlw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15788,7 +15788,7 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15800,7 +15800,7 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15812,7 +15812,7 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15825,7 +15825,7 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15838,8 +15838,8 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15852,8 +15852,8 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15867,8 +15867,8 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15882,8 +15882,8 @@ i_psrld = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15902,7 +15902,7 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -15914,7 +15914,7 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15926,7 +15926,7 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15939,7 +15939,7 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -15952,8 +15952,8 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -15966,8 +15966,8 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -15981,8 +15981,8 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Vvvv
-                                                     , vec128 RO RM
+                           , encOperands           = [ vec128 WO S_Vvvv
+                                                     , vec128 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -15996,8 +15996,8 @@ i_psrlq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Vvvv
-                                                     , vec256 RO RM
+                           , encOperands           = [ vec256 WO S_Vvvv
+                                                     , vec256 RO S_RM
                                                      , imm8
                                                      ]
                            }
@@ -16015,7 +16015,7 @@ i_psubb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16027,7 +16027,7 @@ i_psubb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16040,8 +16040,8 @@ i_psubb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16054,8 +16054,8 @@ i_psubb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16076,7 +16076,7 @@ i_psubw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16088,7 +16088,7 @@ i_psubw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16101,8 +16101,8 @@ i_psubw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16115,8 +16115,8 @@ i_psubw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16136,7 +16136,7 @@ i_psubd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16148,7 +16148,7 @@ i_psubd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16161,8 +16161,8 @@ i_psubd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16175,8 +16175,8 @@ i_psubd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16197,7 +16197,7 @@ i_psubq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec64 WO Reg
+                           ,    encOperands        = [ vec64 WO S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16209,7 +16209,7 @@ i_psubq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16222,8 +16222,8 @@ i_psubq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16236,8 +16236,8 @@ i_psubq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16258,7 +16258,7 @@ i_psubsb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16270,7 +16270,7 @@ i_psubsb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16283,8 +16283,8 @@ i_psubsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16297,8 +16297,8 @@ i_psubsb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16318,7 +16318,7 @@ i_psubsw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16330,7 +16330,7 @@ i_psubsw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16343,8 +16343,8 @@ i_psubsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16357,8 +16357,8 @@ i_psubsw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16377,7 +16377,7 @@ i_psubusb = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16389,7 +16389,7 @@ i_psubusb = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16402,8 +16402,8 @@ i_psubusb = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16416,8 +16416,8 @@ i_psubusb = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16437,7 +16437,7 @@ i_psubusw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16449,7 +16449,7 @@ i_psubusw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16462,8 +16462,8 @@ i_psubusw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16476,8 +16476,8 @@ i_psubusw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16499,7 +16499,7 @@ i_ptest = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 RO Reg
+                           ,    encOperands        = [ vec128 RO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16511,7 +16511,7 @@ i_ptest = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 RO Reg
+                           , encOperands           = [ vec128o256 RO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -16529,7 +16529,7 @@ i_punpckhbw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16541,7 +16541,7 @@ i_punpckhbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16554,8 +16554,8 @@ i_punpckhbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16568,8 +16568,8 @@ i_punpckhbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16588,7 +16588,7 @@ i_punpckhwd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16600,7 +16600,7 @@ i_punpckhwd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16613,8 +16613,8 @@ i_punpckhwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16627,8 +16627,8 @@ i_punpckhwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16647,7 +16647,7 @@ i_punpckhdq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16659,7 +16659,7 @@ i_punpckhdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16672,8 +16672,8 @@ i_punpckhdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16686,8 +16686,8 @@ i_punpckhdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16707,7 +16707,7 @@ i_punpckhqdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16720,8 +16720,8 @@ i_punpckhqdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16734,8 +16734,8 @@ i_punpckhqdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16754,7 +16754,7 @@ i_punpcklbw = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16766,7 +16766,7 @@ i_punpcklbw = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16779,8 +16779,8 @@ i_punpcklbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16793,8 +16793,8 @@ i_punpcklbw = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16813,7 +16813,7 @@ i_punpcklwd = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16825,7 +16825,7 @@ i_punpcklwd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16838,8 +16838,8 @@ i_punpcklwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16852,8 +16852,8 @@ i_punpcklwd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16872,7 +16872,7 @@ i_punpckldq = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -16884,7 +16884,7 @@ i_punpckldq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16897,8 +16897,8 @@ i_punpckldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16911,8 +16911,8 @@ i_punpckldq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16932,7 +16932,7 @@ i_punpcklqdq = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16945,8 +16945,8 @@ i_punpcklqdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -16959,8 +16959,8 @@ i_punpcklqdq = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -16981,7 +16981,7 @@ i_push = insn
                                                      , NoOperandSize64
                                                      ]
                            ,    encOperands        = [ mgpr RO
-                                                     , regStackPtr RW Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -16992,8 +16992,8 @@ i_push = insn
                                                      , DefaultOperandSize64
                                                      , NoOperandSize64
                                                      ]
-                           ,    encOperands        = [ gpr RO OpcodeLow3
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ gpr RO S_OpcodeLow3
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -17003,7 +17003,7 @@ i_push = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ imm8
-                                                     , regStackPtr RW Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -17014,39 +17014,39 @@ i_push = insn
                                                      , NoOperandSize64
                                                      ]
                            ,    encOperands        = [ immOp
-                                                     , regStackPtr RW Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x0E
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_CS RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_CS RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x1E
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_DS RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_DS RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x06
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_ES RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_ES RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x16
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ reg R_SS RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_SS RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -17055,8 +17055,8 @@ i_push = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_FS RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_FS RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        , leg
@@ -17065,8 +17065,8 @@ i_push = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_GS RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ reg R_GS RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        ]
@@ -17080,14 +17080,14 @@ i_pusha = insn
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x60
                            ,    encProperties      = [ LegacyModeSupport ]
-                           ,    encOperands        = [ regBasePtr RO Implicit
-                                                     , regFam regFamDI RO Implicit
-                                                     , regFam regFamSI RO Implicit
-                                                     , regFam regFamAX RO Implicit
-                                                     , regFam regFamBX RO Implicit
-                                                     , regFam regFamCX RO Implicit
-                                                     , regFam regFamDX RO Implicit
-                                                     , regStackPtr RW Implicit
+                           ,    encOperands        = [ regBasePtr RO S_Implicit
+                                                     , regFam regFamDI RO S_Implicit
+                                                     , regFam regFamSI RO S_Implicit
+                                                     , regFam regFamAX RO S_Implicit
+                                                     , regFam regFamBX RO S_Implicit
+                                                     , regFam regFamCX RO S_Implicit
+                                                     , regFam regFamDX RO S_Implicit
+                                                     , regStackPtr RW S_Implicit
                                                      ]
                            }
                        ]
@@ -17103,7 +17103,7 @@ i_pushf = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ regStackPtr RW Implicit
+                           ,    encOperands        = [ regStackPtr RW S_Implicit
                                                      ]
                            }
                        ]
@@ -17120,7 +17120,7 @@ i_pxor = insn
                                                      , LongModeSupport
                                                      , Extension MMX
                                                      ]
-                           ,    encOperands        = [ vec64 RW Reg
+                           ,    encOperands        = [ vec64 RW S_Reg
                                                      , mvec64 RO
                                                      ]
                            }
@@ -17132,7 +17132,7 @@ i_pxor = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -17145,8 +17145,8 @@ i_pxor = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128 RO
                                                      ]
                            }
@@ -17159,8 +17159,8 @@ i_pxor = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
-                                                     , vec256 RO Vvvv
+                           , encOperands           = [ vec256 WO S_Reg
+                                                     , vec256 RO S_Vvvv
                                                      , mvec256 RO
                                                      ]
                            }
@@ -17193,7 +17193,7 @@ i_rcl = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -17238,7 +17238,7 @@ i_rcr = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -17283,7 +17283,7 @@ i_rol = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -17328,7 +17328,7 @@ i_ror = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -17357,7 +17357,7 @@ i_rcpps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  WO Reg
+                           ,    encOperands        = [ vec128  WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -17368,7 +17368,7 @@ i_rcpps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -17388,7 +17388,7 @@ i_rcpss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  WO Reg
+                           ,    encOperands        = [ vec128  WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -17400,8 +17400,8 @@ i_rcpss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -17421,8 +17421,8 @@ i_rdfsbase = insn
                            ,    encProperties      = [ LongModeSupport
                                                      , Extension FSGSBASE
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO RM
-                                                     , reg R_FS RO Implicit
+                           ,    encOperands        = [ reg32o64 WO S_RM
+                                                     , reg R_FS RO S_Implicit
                                                      ]
                            }
                        ]
@@ -17441,8 +17441,8 @@ i_rdgsbase = insn
                            ,    encProperties      = [ LongModeSupport
                                                      , Extension FSGSBASE
                                                      ]
-                           ,    encOperands        = [ reg32o64 WO RM
-                                                     , reg R_GS RO Implicit
+                           ,    encOperands        = [ reg32o64 WO S_RM
+                                                     , reg R_GS RO S_Implicit
                                                      ]
                            }
                        ]
@@ -17460,7 +17460,7 @@ i_rdmsr = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ eDXeAX WO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -17481,7 +17481,7 @@ i_rdpkru = insn
                                                      ]
                            ,    encOperands        = [ rAX WO
                                                      , rDX WO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -17499,7 +17499,7 @@ i_rdpmc = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ eDXeAX WO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -17520,7 +17520,7 @@ i_rdrand = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr WO RM ]
+                           ,    encOperands        = [ gpr WO S_RM ]
                            }
                        ]
    }
@@ -17540,7 +17540,7 @@ i_rdseed = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ gpr WO RM ]
+                           ,    encOperands        = [ gpr WO S_RM ]
                            }
                        ]
    }
@@ -17574,7 +17574,7 @@ i_rdtscp = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ eDXeAX WO
-                                                     , reg R_ECX WO Implicit
+                                                     , reg R_ECX WO S_Implicit
                                                      ]
                            }
                        ]
@@ -17616,7 +17616,7 @@ i_ret = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ imm16
-                                                     , regStackPtr WO Implicit
+                                                     , regStackPtr WO S_Implicit
                                                      ]
                            }
                        ]
@@ -17639,7 +17639,7 @@ i_retfar = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ imm16
-                                                     , regStackPtr WO Implicit
+                                                     , regStackPtr WO S_Implicit
                                                      ]
                            }
                        ]
@@ -17658,8 +17658,8 @@ i_rorx = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
-                                                     , reg32o64 RO RM
+                              , encOperands        = [ reg32o64 WO S_Reg
+                                                     , reg32o64 RO S_RM
                                                      , imm8
                                                      ]
                               }
@@ -17678,7 +17678,7 @@ i_roundpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -17691,7 +17691,7 @@ i_roundpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -17712,7 +17712,7 @@ i_roundps = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -17725,7 +17725,7 @@ i_roundps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -17746,7 +17746,7 @@ i_roundsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -17759,7 +17759,7 @@ i_roundsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
+                           , encOperands        = [ vec128 WO S_Reg
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -17780,7 +17780,7 @@ i_roundss = insn
                                                      , LongModeSupport
                                                      , Extension SSE4_1
                                                      ]
-                           ,    encOperands        = [ vec128 WO Reg
+                           ,    encOperands        = [ vec128 WO S_Reg
                                                      , mvec128 RO
                                                      , imm8
                                                      ]
@@ -17793,7 +17793,7 @@ i_roundss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
+                           , encOperands        = [ vec128 WO S_Reg
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -17825,7 +17825,7 @@ i_rsqrtps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  WO Reg
+                           ,    encOperands        = [ vec128  WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -17836,7 +17836,7 @@ i_rsqrtps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -17856,7 +17856,7 @@ i_rsqrtss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  WO Reg
+                           ,    encOperands        = [ vec128  WO S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -17868,8 +17868,8 @@ i_rsqrtss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -17888,7 +17888,7 @@ i_sahf = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_AX RO Implicit ]
+                           ,    encOperands        = [ reg R_AX RO S_Implicit ]
                            }
                        ]
    }
@@ -17920,7 +17920,7 @@ i_shl = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -17966,7 +17966,7 @@ i_sar = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -18012,7 +18012,7 @@ i_shr = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , reg R_CL RO Implicit
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        , leg
@@ -18043,9 +18043,9 @@ i_sarx = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
+                              , encOperands        = [ reg32o64 WO S_Reg
                                                      , rm32o64 RO
-                                                     , reg32o64 RO Vvvv
+                                                     , reg32o64 RO S_Vvvv
                                                      ]
                               }
                           ]
@@ -18064,9 +18064,9 @@ i_shlx = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
+                              , encOperands        = [ reg32o64 WO S_Reg
                                                      , rm32o64 RO
-                                                     , reg32o64 RO Vvvv
+                                                     , reg32o64 RO S_Vvvv
                                                      ]
                               }
                           ]
@@ -18086,9 +18086,9 @@ i_shrx = insn
                                                      , LongModeSupport
                                                      , Extension BMI2
                                                      ]
-                              , encOperands        = [ reg32o64 WO Reg
+                              , encOperands        = [ reg32o64 WO S_Reg
                                                      , rm32o64 RO
-                                                     , reg32o64 RO Vvvv
+                                                     , reg32o64 RO S_Vvvv
                                                      ]
                               }
                           ]
@@ -18121,7 +18121,7 @@ i_sbb = insn
                                                      , HLE XBoth
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      ]
                            }
                        , leg
@@ -18463,7 +18463,7 @@ i_shld = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -18474,8 +18474,8 @@ i_shld = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
-                                                     , reg R_CL RO Implicit
+                                                     , gpr RO S_Reg
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        ]
@@ -18495,7 +18495,7 @@ i_shrd = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -18506,8 +18506,8 @@ i_shrd = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
-                                                     , reg R_CL RO Implicit
+                                                     , gpr RO S_Reg
+                                                     , reg R_CL RO S_Implicit
                                                      ]
                            }
                        ]
@@ -18525,7 +18525,7 @@ i_shufpd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128 RW Reg
+                           ,    encOperands           = [ vec128 RW S_Reg
                                                         , mvec128 RO
                                                         , imm8
                                                         ]
@@ -18545,8 +18545,8 @@ i_vshufpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      , imm8
                                                      ]
@@ -18565,7 +18565,7 @@ i_shufps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -18584,8 +18584,8 @@ i_vshufps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                , imm8
                                                ]
@@ -18655,7 +18655,7 @@ i_sqrtpd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128 WO Reg
+                           ,    encOperands           = [ vec128 WO S_Reg
                                                         , mvec128 RO
                                                         ]
                            }
@@ -18667,7 +18667,7 @@ i_sqrtpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -18686,7 +18686,7 @@ i_sqrtps = insn
                                                         , LongModeSupport
                                                         , Extension SSE
                                                         ]
-                           ,    encOperands           = [ vec128 WO Reg
+                           ,    encOperands           = [ vec128 WO S_Reg
                                                         , mvec128 RO
                                                         ]
                            }
@@ -18697,7 +18697,7 @@ i_sqrtps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -18717,7 +18717,7 @@ i_sqrtsd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128 RW Reg
+                           ,    encOperands           = [ vec128 RW S_Reg
                                                         , mvec128low64 RO
                                                         ]
                            }
@@ -18729,8 +18729,8 @@ i_sqrtsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -18750,7 +18750,7 @@ i_sqrtss = insn
                                                         , LongModeSupport
                                                         , Extension SSE
                                                         ]
-                           ,    encOperands           = [ vec128 RW Reg
+                           ,    encOperands           = [ vec128 RW S_Reg
                                                         , mvec128low32 RO
                                                         ]
                            }
@@ -18762,8 +18762,8 @@ i_sqrtss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
-                                                     , vec128 RO Vvvv
+                           , encOperands           = [ vec128 WO S_Reg
+                                                     , vec128 RO S_Vvvv
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -18926,7 +18926,7 @@ i_sub = insn
                                                      , HLE XBoth
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RO Reg
+                                                     , gpr RO S_Reg
                                                      ]
                            }
                        , leg
@@ -18959,7 +18959,7 @@ i_subpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -18978,8 +18978,8 @@ i_vsubpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -18997,7 +18997,7 @@ i_subps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128  RW Reg
+                           ,    encOperands        = [ vec128  RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -19015,8 +19015,8 @@ i_vsubps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19035,7 +19035,7 @@ i_subsd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -19054,8 +19054,8 @@ i_vsubsd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -19074,7 +19074,7 @@ i_subss = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128low32 RO
                                                      ]
                            }
@@ -19093,8 +19093,8 @@ i_vsubss = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128 WO Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 WO S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -19111,7 +19111,7 @@ i_swapgs = insn
                            ,    encOpcodeFullExt   = Just 0xF8
                            ,    encProperties      = [ LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_GS WO Implicit
+                           ,    encOperands        = [ reg R_GS WO S_Implicit
                                                      ]
                            }
                        ]
@@ -19204,7 +19204,7 @@ i_test = insn
                                                   , LongModeSupport
                                                   ]
                            ,    encOperands     = [ mgpr RO
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -19238,7 +19238,7 @@ i_tzcnt = insn
                                                      , LongModeSupport
                                                      , Extension BMI1
                                                      ]
-                           ,    encOperands        = [ gpr WO Reg
+                           ,    encOperands        = [ gpr WO S_Reg
                                                      , mgpr RO
                                                      ]
                            }
@@ -19260,7 +19260,7 @@ i_ucomisd = insn
                                                         , LongModeSupport
                                                         , Extension SSE2
                                                         ]
-                           ,    encOperands           = [ vec128low64 RO Reg
+                           ,    encOperands           = [ vec128low64 RO S_Reg
                                                         , mvec128low64 RO
                                                         ]
                            }
@@ -19272,7 +19272,7 @@ i_ucomisd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128low64 RO Reg
+                           , encOperands        = [ vec128low64 RO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -19293,7 +19293,7 @@ i_ucomiss = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128low32 RO Reg
+                           ,    encOperands     = [ vec128low32 RO S_Reg
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -19304,7 +19304,7 @@ i_ucomiss = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128low32 RO Reg
+                           , encOperands     = [ vec128low32 RO S_Reg
                                                , mvec128low32 RO
                                                ]
                            }
@@ -19338,7 +19338,7 @@ i_unpckhpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -19350,8 +19350,8 @@ i_unpckhpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -19370,7 +19370,7 @@ i_unpckhps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -19381,8 +19381,8 @@ i_unpckhps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -19402,7 +19402,7 @@ i_unpcklpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -19414,8 +19414,8 @@ i_unpcklpd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -19434,7 +19434,7 @@ i_unpcklps = insn
                                                      , LongModeSupport
                                                      , Extension SSE
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -19445,8 +19445,8 @@ i_unpcklps = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128o256 RO Vvvv
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128o256 RO S_Vvvv
                                                      , mvec128o256 RO
                                                      ]
                            }
@@ -19467,7 +19467,7 @@ i_vbroadcastss = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
+                           , encOperands           = [ vec128o256 WO S_Reg
                                                      , mem32 RO
                                                      ]
                            }
@@ -19480,8 +19480,8 @@ i_vbroadcastss = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128low32 RO RM
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128low32 RO S_RM
                                                      ]
                            }
 
@@ -19503,7 +19503,7 @@ i_vbroadcastsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mem64 RO
                                                      ]
                            }
@@ -19517,8 +19517,8 @@ i_vbroadcastsd = insn
                                                      , LongModeSupport
                                                      , Extension AVX2
                                                      ]
-                           , encOperands           = [ vec128o256 WO Reg
-                                                     , vec128low64 RO RM
+                           , encOperands           = [ vec128o256 WO S_Reg
+                                                     , vec128low64 RO S_RM
                                                      ]
                            }
 
@@ -19540,7 +19540,7 @@ i_vbroadcastf128 = insn
                                                      , LongModeSupport
                                                      , Extension AVX
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mem128 RO
                                                      ]
                            }
@@ -19562,7 +19562,7 @@ i_vcvtph2ps = insn
                                                      , LongModeSupport
                                                      , Extension F16C
                                                      ]
-                           , encOperands           = [ vec128 WO Reg
+                           , encOperands           = [ vec128 WO S_Reg
                                                      , mvec128low64 RO
                                                      ]
                            }
@@ -19576,7 +19576,7 @@ i_vcvtph2ps = insn
                                                      , LongModeSupport
                                                      , Extension F16C
                                                      ]
-                           , encOperands           = [ vec256 WO Reg
+                           , encOperands           = [ vec256 WO S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -19600,7 +19600,7 @@ i_vcvtps2ph = insn
                                                      , Extension F16C
                                                      ]
                            , encOperands           = [ mvec128low64 WO
-                                                     , vec128 RO Reg
+                                                     , vec128 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -19615,7 +19615,7 @@ i_vcvtps2ph = insn
                                                      , Extension F16C
                                                      ]
                            , encOperands           = [ mvec128 WO
-                                                     , vec256 RO Reg
+                                                     , vec256 RO S_Reg
                                                      , imm8
                                                      ]
                            }
@@ -19673,7 +19673,7 @@ i_enctractf128 = insn
                                                   , Extension AVX
                                                   ]
                            , encOperands        = [ mvec128 WO
-                                                  , vec256 RO Reg
+                                                  , vec256 RO S_Reg
                                                   , imm8
                                                   ]
                            }
@@ -19696,7 +19696,7 @@ i_enctracti128 = insn
                                                   , Extension AVX2
                                                   ]
                            , encOperands        = [ mvec128 WO
-                                                  , vec256 RO Reg
+                                                  , vec256 RO S_Reg
                                                   , imm8
                                                   ]
                            }
@@ -19716,8 +19716,8 @@ i_vfmadd132pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19738,8 +19738,8 @@ i_vfmadd213pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19760,8 +19760,8 @@ i_vfmadd231pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19782,8 +19782,8 @@ i_vfmadd132ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19804,8 +19804,8 @@ i_vfmadd213ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19826,8 +19826,8 @@ i_vfmadd231ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -19848,8 +19848,8 @@ i_vfmadd132sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -19870,8 +19870,8 @@ i_vfmadd213sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -19892,8 +19892,8 @@ i_vfmadd231sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -19914,8 +19914,8 @@ i_vfmadd132ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -19936,8 +19936,8 @@ i_vfmadd213ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -19958,8 +19958,8 @@ i_vfmadd231ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -19980,8 +19980,8 @@ i_vfmaddsub132pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20002,8 +20002,8 @@ i_vfmaddsub213pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20024,8 +20024,8 @@ i_vfmaddsub231pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20046,8 +20046,8 @@ i_vfmaddsub132ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20068,8 +20068,8 @@ i_vfmaddsub213ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20090,8 +20090,8 @@ i_vfmaddsub231ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20112,8 +20112,8 @@ i_vfmsubadd132pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20134,8 +20134,8 @@ i_vfmsubadd213pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20156,8 +20156,8 @@ i_vfmsubadd231pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20178,8 +20178,8 @@ i_vfmsubadd132ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20200,8 +20200,8 @@ i_vfmsubadd213ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20222,8 +20222,8 @@ i_vfmsubadd231ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20244,8 +20244,8 @@ i_vfmsub132pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20266,8 +20266,8 @@ i_vfmsub213pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20288,8 +20288,8 @@ i_vfmsub231pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20310,8 +20310,8 @@ i_vfmsub132ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20332,8 +20332,8 @@ i_vfmsub213ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20354,8 +20354,8 @@ i_vfmsub231ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20376,8 +20376,8 @@ i_vfmsub132sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20398,8 +20398,8 @@ i_vfmsub213sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20420,8 +20420,8 @@ i_vfmsub231sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20442,8 +20442,8 @@ i_vfmsub132ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20464,8 +20464,8 @@ i_vfmsub213ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20486,8 +20486,8 @@ i_vfmsub231ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20507,8 +20507,8 @@ i_vfnmadd132pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20529,8 +20529,8 @@ i_vfnmadd213pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20551,8 +20551,8 @@ i_vfnmadd231pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20573,8 +20573,8 @@ i_vfnmadd132ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20595,8 +20595,8 @@ i_vfnmadd213ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20617,8 +20617,8 @@ i_vfnmadd231ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20639,8 +20639,8 @@ i_vfnmadd132sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20661,8 +20661,8 @@ i_vfnmadd213sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20683,8 +20683,8 @@ i_vfnmadd231sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20705,8 +20705,8 @@ i_vfnmadd132ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20727,8 +20727,8 @@ i_vfnmadd213ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20749,8 +20749,8 @@ i_vfnmadd231ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20770,8 +20770,8 @@ i_vfnmsub132pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20792,8 +20792,8 @@ i_vfnmsub213pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20814,8 +20814,8 @@ i_vfnmsub231pd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20836,8 +20836,8 @@ i_vfnmsub132ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20858,8 +20858,8 @@ i_vfnmsub213ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20880,8 +20880,8 @@ i_vfnmsub231ps = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 RW S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -20902,8 +20902,8 @@ i_vfnmsub132sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20924,8 +20924,8 @@ i_vfnmsub213sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20946,8 +20946,8 @@ i_vfnmsub231sd = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -20968,8 +20968,8 @@ i_vfnmsub132ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -20990,8 +20990,8 @@ i_vfnmsub213ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -21012,8 +21012,8 @@ i_vfnmsub231ss = insn
                                                   , LongModeSupport
                                                   , Extension FMA
                                                   ]
-                           , encOperands        = [ vec128 RW Reg
-                                                  , vec128 RO Vvvv
+                           , encOperands        = [ vec128 RW S_Reg
+                                                  , vec128 RO S_Vvvv
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -21034,9 +21034,9 @@ i_vgatherdpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m64vsib32x RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21056,9 +21056,9 @@ i_vgatherqpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m64vsib64xy RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21077,9 +21077,9 @@ i_vgatherdps = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m32vsib32xy RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21098,9 +21098,9 @@ i_vgatherqps = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m32vsib64xy RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21120,9 +21120,9 @@ i_vpgatherdd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m32vsib32xy RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21141,9 +21141,9 @@ i_vpgatherqd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m32vsib64xy RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21163,9 +21163,9 @@ i_vpgatherdq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m32vsib32x RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21184,9 +21184,9 @@ i_vpgatherqq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 RW Reg
+                           , encOperands        = [ vec128o256 RW S_Reg
                                                   , m64vsib64xy RO
-                                                  , vec128o256 RW Vvvv
+                                                  , vec128o256 RW S_Vvvv
                                                   ]
                            }
                        ]
@@ -21207,8 +21207,8 @@ i_vinsertf128 = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -21231,8 +21231,8 @@ i_vinserti128 = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec128 RO
                                                   , imm8
                                                   ]
@@ -21254,8 +21254,8 @@ i_vmaskmovps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mem128o256 RO
                                                   ]
                            }
@@ -21269,8 +21269,8 @@ i_vmaskmovps = insn
                                                   , Extension AVX
                                                   ]
                            , encOperands        = [ mem128o256 WO
-                                                  , vec128o256 RO Vvvv
-                                                  , vec128o256 WO Reg
+                                                  , vec128o256 RO S_Vvvv
+                                                  , vec128o256 WO S_Reg
                                                   ]
                            }
                        ]
@@ -21290,8 +21290,8 @@ i_vmaskmovpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mem128o256 RO
                                                   ]
                            }
@@ -21305,8 +21305,8 @@ i_vmaskmovpd = insn
                                                   , Extension AVX
                                                   ]
                            , encOperands        = [ mem128o256 WO
-                                                  , vec128o256 RO Vvvv
-                                                  , vec128o256 WO Reg
+                                                  , vec128o256 RO S_Vvvv
+                                                  , vec128o256 WO S_Reg
                                                   ]
                            }
                        ]
@@ -21326,8 +21326,8 @@ i_vblendd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -21349,7 +21349,7 @@ i_vpbroadcastb = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128low8 RO
                                                   ]
                            }
@@ -21370,7 +21370,7 @@ i_vpbroadcastw = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128low16 RO
                                                   ]
                            }
@@ -21391,7 +21391,7 @@ i_vpbroadcastd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128low32 RO
                                                   ]
                            }
@@ -21412,7 +21412,7 @@ i_vpbroadcastq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128low64 RO
                                                   ]
                            }
@@ -21433,7 +21433,7 @@ i_vpbroadcasti128 = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
+                           , encOperands        = [ vec256 WO S_Reg
                                                   , mem128 RO
                                                   ]
                            }
@@ -21455,8 +21455,8 @@ i_vpermd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec256 RO
                                                   ]
                            }
@@ -21478,7 +21478,7 @@ i_vpermpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
+                           , encOperands        = [ vec256 WO S_Reg
                                                   , mvec256 RO
                                                   , imm8
                                                   ]
@@ -21501,8 +21501,8 @@ i_vpermps = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec256 RO
                                                   ]
                            }
@@ -21523,7 +21523,7 @@ i_vpermq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
+                           , encOperands        = [ vec256 WO S_Reg
                                                   , mvec256 RO
                                                   , imm8
                                                   ]
@@ -21546,8 +21546,8 @@ i_vperm2i128 = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec256 RO
                                                   , imm8
                                                   ]
@@ -21569,8 +21569,8 @@ i_vpermilpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21583,7 +21583,7 @@ i_vpermilpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -21605,8 +21605,8 @@ i_vpermilps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21619,7 +21619,7 @@ i_vpermilps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
+                           , encOperands        = [ vec128o256 WO S_Reg
                                                   , mvec128o256 RO
                                                   , imm8
                                                   ]
@@ -21641,8 +21641,8 @@ i_vperm2f128 = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec256 WO Reg
-                                                  , vec256 RO Vvvv
+                           , encOperands        = [ vec256 WO S_Reg
+                                                  , vec256 RO S_Vvvv
                                                   , mvec256 RO
                                                   , imm8
                                                   ]
@@ -21663,8 +21663,8 @@ i_vpmaskmovd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mem128o256 RO
                                                   ]
                            }
@@ -21678,8 +21678,8 @@ i_vpmaskmovd = insn
                                                   , Extension AVX2
                                                   ]
                            , encOperands        = [ mem128o256 WO
-                                                  , vec128o256 RO Vvvv
-                                                  , vec128o256 WO Reg
+                                                  , vec128o256 RO S_Vvvv
+                                                  , vec128o256 WO S_Reg
                                                   ]
                            }
                        ]
@@ -21699,8 +21699,8 @@ i_vpmaskmovq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mem128o256 RO
                                                   ]
                            }
@@ -21714,8 +21714,8 @@ i_vpmaskmovq = insn
                                                   , Extension AVX2
                                                   ]
                            , encOperands        = [ mem128o256 WO
-                                                  , vec128o256 RO Vvvv
-                                                  , vec128o256 WO Reg
+                                                  , vec128o256 RO S_Vvvv
+                                                  , vec128o256 WO S_Reg
                                                   ]
                            }
                        ]
@@ -21735,8 +21735,8 @@ i_vpsllvd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21757,8 +21757,8 @@ i_vpsllvq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21779,8 +21779,8 @@ i_vpsravd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21801,8 +21801,8 @@ i_vpsrlvd = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21823,8 +21823,8 @@ i_vpsrlvq = insn
                                                   , LongModeSupport
                                                   , Extension AVX2
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21848,7 +21848,7 @@ i_vtestpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 RO Reg
+                           , encOperands        = [ vec128o256 RO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21872,7 +21872,7 @@ i_vtestps = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 RO Reg
+                           , encOperands        = [ vec128o256 RO S_Reg
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -21955,8 +21955,8 @@ i_wrfsbase = insn
                            ,    encProperties      = [ LongModeSupport
                                                      , Extension FSGSBASE
                                                      ]
-                           ,    encOperands        = [ reg32o64 RO RM
-                                                     , reg R_FS WO Implicit
+                           ,    encOperands        = [ reg32o64 RO S_RM
+                                                     , reg R_FS WO S_Implicit
                                                      ]
                            }
                        ]
@@ -21975,8 +21975,8 @@ i_wrgsbase = insn
                            ,    encProperties      = [ LongModeSupport
                                                      , Extension FSGSBASE
                                                      ]
-                           ,    encOperands        = [ reg32o64 RO RM
-                                                     , reg R_GS WO Implicit
+                           ,    encOperands        = [ reg32o64 RO S_RM
+                                                     , reg R_GS WO S_Implicit
                                                      ]
                            }
                        ]
@@ -21993,7 +21993,7 @@ i_wrmsr = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ eDXeAX RO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -22013,7 +22013,7 @@ i_wrpkru = insn
                                                      ]
                            ,    encOperands        = [ rAX RO
                                                      , rDX RO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -22033,7 +22033,7 @@ i_xabort = insn
                                                      , Extension RTM
                                                      ]
                            ,    encOperands        = [ imm8
-                                                     , reg R_EAX WO Implicit
+                                                     , reg R_EAX WO S_Implicit
                                                      ]
                            }
                        ]
@@ -22055,7 +22055,7 @@ i_xadd = insn
                                                      , HLE XBoth
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr WO Reg
+                                                     , gpr WO S_Reg
                                                      ]
                            }
                        ]
@@ -22091,7 +22091,7 @@ i_xchg = insn
                                                      , Commutable
                                                      ]
                            ,    encOperands        = [ regAccu RW
-                                                     , gpr RW OpcodeLow3
+                                                     , gpr RW S_OpcodeLow3
                                                      ]
                            }
                        , leg
@@ -22104,7 +22104,7 @@ i_xchg = insn
                                                      , HLE XBoth
                                                      ]
                            ,    encOperands        = [ mgpr RW
-                                                     , gpr RW Reg
+                                                     , gpr RW S_Reg
                                                      ]
                            }
                        ]
@@ -22139,7 +22139,7 @@ i_xgetbv = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ rDXrAX WO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]
@@ -22156,9 +22156,9 @@ i_xlat = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      ]
-                           ,    encOperands        = [ reg R_AL RW Implicit
-                                                     , reg R_DS RO Implicit
-                                                     , regFam regFamBX RO Implicit
+                           ,    encOperands        = [ reg R_AL RW S_Implicit
+                                                     , reg R_DS RO S_Implicit
+                                                     , regFam regFamBX RO S_Implicit
                                                      -- FIXME: we don't encode
                                                      -- the effective address:
                                                      -- [DS:rBX + zero_extend(AL)]
@@ -22197,7 +22197,7 @@ i_xor = insn
                                                   , HLE XBoth
                                                   ]
                            ,    encOperands     = [ mgpr RW
-                                                  , gpr RO Reg
+                                                  , gpr RO S_Reg
                                                   ]
                            }
                        , leg
@@ -22230,7 +22230,7 @@ i_xorpd = insn
                                                      , LongModeSupport
                                                      , Extension SSE2
                                                      ]
-                           ,    encOperands        = [ vec128 RW Reg
+                           ,    encOperands        = [ vec128 RW S_Reg
                                                      , mvec128 RO
                                                      ]
                            }
@@ -22249,8 +22249,8 @@ i_vxorpd = insn
                                                   , LongModeSupport
                                                   , Extension AVX
                                                   ]
-                           , encOperands        = [ vec128o256 WO Reg
-                                                  , vec128o256 RO Vvvv
+                           , encOperands        = [ vec128o256 WO S_Reg
+                                                  , vec128o256 RO S_Vvvv
                                                   , mvec128o256 RO
                                                   ]
                            }
@@ -22268,7 +22268,7 @@ i_xorps = insn
                                                   , LongModeSupport
                                                   , Extension SSE
                                                   ]
-                           ,    encOperands     = [ vec128 RW Reg
+                           ,    encOperands     = [ vec128 RW S_Reg
                                                   , mvec128 RO
                                                   ]
                            }
@@ -22286,8 +22286,8 @@ i_vxorps = insn
                                                , LongModeSupport
                                                , Extension AVX
                                                ]
-                           , encOperands     = [ vec128o256 WO Reg
-                                               , vec128o256 RO Vvvv
+                           , encOperands     = [ vec128o256 WO S_Reg
+                                               , vec128o256 RO S_Vvvv
                                                , mvec128o256 RO
                                                ]
                            }
@@ -22421,7 +22421,7 @@ i_xsetbv = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ rDXrAX RO
-                                                     , reg R_ECX RO Implicit
+                                                     , reg R_ECX RO S_Implicit
                                                      ]
                            }
                        ]

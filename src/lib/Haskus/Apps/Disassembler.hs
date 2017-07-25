@@ -82,8 +82,8 @@ showAsmOperand op enc = fimp $ case op of
    OpStackFrame w1 w2 -> show w1 ++ ":" ++ show w2
    where
       fimp x
-         | opEnc enc == Implicit = "{" ++ x ++ "}"
-         | otherwise             = x
+         | opStore enc == S_Implicit = "{" ++ x ++ "}"
+         | otherwise                 = x
 
 showAsmAddr :: Addr -> String
 showAsmAddr a = showAsmReg (addrSeg a) ++ ":[" ++ xs ++ "]"

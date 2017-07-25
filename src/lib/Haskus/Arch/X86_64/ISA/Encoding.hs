@@ -82,7 +82,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , rmRegMode
    -- * Operands
    , OperandType(..)
-   , OperandEnc(..)
+   , OperandStorage(..)
    , OperandSpec (..)
    , AccessMode (..)
    , Operand(..)
@@ -176,7 +176,7 @@ data HLEAction
    deriving (Show,Eq)
 
 hasImmediate :: Encoding -> Bool
-hasImmediate e = any (isImmediate . opEnc) (encOperands e)
+hasImmediate e = any (isImmediate . opStore) (encOperands e)
 
 isLegacyEncoding :: Encoding -> Bool
 isLegacyEncoding = (== EncLegacy) . encOpcodeEncoding
@@ -205,15 +205,15 @@ encRequireModRM e = hasOpExt || hasOps
 
       -- has operands in ModRM
       hasOps   = any matchEnc (encOperands e)
-      matchEnc x = case opEnc x of
-         RM         -> True
-         Reg        -> True
-         Imm        -> False
-         Imm8h      -> False
-         Imm8l      -> False
-         Implicit   -> False
-         Vvvv       -> False
-         OpcodeLow3 -> False
+      matchEnc x = case opStore x of
+         S_RM         -> True
+         S_Reg        -> True
+         S_Imm        -> False
+         S_Imm8h      -> False
+         S_Imm8l      -> False
+         S_Implicit   -> False
+         S_Vvvv       -> False
+         S_OpcodeLow3 -> False
 
 -- | Valid ModRM.mod values
 data ValidMod
@@ -239,7 +239,7 @@ encValidModRMMode e = case ots of
                            then toM x
                            else ModeBoth
          x           -> error ("encValidModRMMode: invalid param type: " ++ show x)
-      ots = opType <$> filter ((== RM) . opEnc) (encOperands e)
+      ots = opType <$> filter ((== S_RM) . opStore) (encOperands e)
 
 -- | Indicate if a memory operand may be encoded
 encMayHaveMemoryOperand :: Encoding -> Bool
@@ -351,7 +351,7 @@ encGenerateOpcodes e = nub ocs
       ocs' = oc : (fs ++ catMaybes [roc,rsoc,szoc,seoc])
 
       -- operand stored in the opcode
-      ocs = if OpcodeLow3 `elem` fmap opEnc (encOperands e)
+      ocs = if S_OpcodeLow3 `elem` fmap opStore (encOperands e)
                then [o + i | o <- ocs', i <- [0..7]]
                else ocs'
 
@@ -862,23 +862,23 @@ data OperandType
    | T_MemDSrAX                        -- ^ Memory whose address is DS:EAX or DS:RAX (64-bit mode)
    deriving (Show,Eq)
 
--- | Operand encoding
-data OperandEnc
-   = RM         -- ^ Operand stored in ModRM.rm
-   | Reg        -- ^ Operand stored in ModRM.reg
-   | Imm        -- ^ Operand stored in immediate bytes
-   | Imm8h      -- ^ Operand stored in bits [7:4] of the immediate byte
-   | Imm8l      -- ^ Operand stored in bits [3:0] of the immediate byte
-   | Implicit   -- ^ Implicit
-   | Vvvv       -- ^ Operand stored in Vex.vvvv field
-   | OpcodeLow3 -- ^ Operand stored in opcode 3 last bits
+-- | Operand storage
+data OperandStorage
+   = S_RM         -- ^ Operand stored in ModRM.rm
+   | S_Reg        -- ^ Operand stored in ModRM.reg
+   | S_Imm        -- ^ Operand stored in immediate bytes
+   | S_Imm8h      -- ^ Operand stored in bits [7:4] of the immediate byte
+   | S_Imm8l      -- ^ Operand stored in bits [3:0] of the immediate byte
+   | S_Implicit   -- ^ Implicit
+   | S_Vvvv       -- ^ Operand stored in Vex.vvvv field
+   | S_OpcodeLow3 -- ^ Operand stored in opcode 3 last bits
    deriving (Show,Eq)
 
 -- | Operand specification
 data OperandSpec = OperandSpec
-   { opMode :: !AccessMode
-   , opType :: !OperandType
-   , opEnc  :: !OperandEnc
+   { opMode   :: !AccessMode
+   , opType   :: !OperandType
+   , opStore  :: !OperandStorage
    } deriving (Show)
 
 -- | Operand access mode
@@ -906,9 +906,9 @@ maybeOpTypeReg = \case
    T_MemDSrAX      -> False
 
 -- | Is the operand encoding an immediate?
-isImmediate :: OperandEnc -> Bool
+isImmediate :: OperandStorage -> Bool
 isImmediate = \case
-   Imm    -> True
-   Imm8h  -> True
-   Imm8l  -> True
-   _      -> False
+   S_Imm    -> True
+   S_Imm8h  -> True
+   S_Imm8l  -> True
+   _        -> False

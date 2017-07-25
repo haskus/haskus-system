@@ -215,15 +215,15 @@ showEnc oc rv e = H.tr $ do
             t             -> toHtml (show t)
    H.tr $ do
       H.th (toHtml "Encoding")
-      forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opEnc o of
-         X86.RM          -> "ModRM.rm"
-         X86.Reg         -> "ModRM.reg"
-         X86.Imm         -> "Immediate"
-         X86.Imm8h       -> "Imm8 [7:4]"
-         X86.Imm8l       -> "Imm8 [3:0]"
-         X86.Implicit    -> "Implicit"
-         X86.Vvvv        -> "VEX.vvvv"
-         X86.OpcodeLow3  -> "Opcode [2:0]"
+      forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opStore o of
+         X86.S_RM          -> "ModRM.rm"
+         X86.S_Reg         -> "ModRM.reg"
+         X86.S_Imm         -> "Immediate"
+         X86.S_Imm8h       -> "Imm8 [7:4]"
+         X86.S_Imm8l       -> "Imm8 [3:0]"
+         X86.S_Implicit    -> "Implicit"
+         X86.S_Vvvv        -> "VEX.vvvv"
+         X86.S_OpcodeLow3  -> "Opcode [2:0]"
 
 
 showReg :: X86.X86TermRegFam -> Html
