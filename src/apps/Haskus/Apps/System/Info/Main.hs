@@ -151,6 +151,7 @@ showPredicate x = toHtml $ case x of
    PrefixPred PrefixL           -> "L"
    InsnPred Default64OpSize     -> "Def64OpSize"
    InsnPred Force8bit           -> "Force 8-bit opcode bit"
+   InsnPred RegModRM            -> "ModRM.mod = 11b"
    EncodingPred PLegacyEncoding -> "Legacy encoding"
    EncodingPred PRexEncoding    -> "REX prefix"
    EncodingPred PVexEncoding    -> "VEX encoding"

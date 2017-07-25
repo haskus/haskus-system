@@ -53,7 +53,7 @@ data PrefixPred
 -- | Instruction specific predicates
 data InsnPred
    = Default64OpSize    -- ^ Instruction defaulting to 64-bit size
---   | ModRM_mod ValidMod -- ^ Required ModRM.mod contents
+   | RegModRM           -- ^ Require ModRM.mod == 11b (register)
    | Force8bit          -- ^ Instruction having a set Force8Bit bit in the opcode
    deriving (Show,Eq,Ord)
 
