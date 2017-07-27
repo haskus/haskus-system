@@ -31,12 +31,16 @@ where
 import Haskus.Utils.List ((\\))
 import Haskus.Arch.X86_64.ISA.MicroArch
 import Haskus.Arch.X86_64.ISA.Mode
-import Haskus.Arch.X86_64.ISA.Registers
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Insn
-import Haskus.Arch.X86_64.ISA.RegisterNames
-import Haskus.Arch.X86_64.ISA.RegisterFamilies
+import Haskus.Arch.X86_64.ISA.Register
+import Haskus.Arch.X86_64.ISA.Immediate
+import Haskus.Arch.X86_64.ISA.Memory
+import Haskus.Arch.X86_64.ISA.Solver
+import Haskus.Arch.X86_64.ISA.Operand
+import Haskus.Format.Binary.Word
+import Haskus.Utils.Solver
 
 -------------------------------------------------------------------
 -- Helper methods
@@ -60,408 +64,446 @@ allFlags = [CF,PF,AF,ZF,SF,TF,OF]
 -- | Legacy encoding
 leg :: Encoding
 leg = Encoding
-   { encOpcodeEncoding  = EncLegacy
-   , encMandatoryPrefix = Nothing
-   , encOpcodeMap       = MapLegacy MapPrimary
-   , encOpcode          = 0
-   , encOpcodeExt       = Nothing
-   , encOpcodeFullExt   = Nothing
-   , encOpcodeWExt      = Nothing
-   , encOpcodeLExt      = Nothing
-   , encReversableBit   = Nothing
-   , encNoForce8Bit     = Nothing
-   , encSignExtendImmBit  = Nothing
-   , encFPUDestBit      = Nothing
-   , encFPUPopBit       = Nothing
-   , encFPUSizableBit   = Nothing
-   , encProperties      = []
-   , encOperands        = []
+   { encOpcodeEncoding   = EncLegacy
+   , encMandatoryPrefix  = Nothing
+   , encOpcodeMap        = MapLegacy MapPrimary
+   , encOpcode           = 0
+   , encOpcodeExt        = Nothing
+   , encOpcodeFullExt    = Nothing
+   , encOpcodeWExt       = Nothing
+   , encOpcodeLExt       = Nothing
+   , encReversableBit    = Nothing
+   , encNoForce8Bit      = Nothing
+   , encSignExtendImmBit = Nothing
+   , encFPUDestBit       = Nothing
+   , encFPUPopBit        = Nothing
+   , encFPUSizableBit    = Nothing
+   , encProperties       = []
+   , encOperands         = []
    }
 
 -- | Vex encoding
 enc :: Encoding
 enc = Encoding
-   { encOpcodeEncoding  = EncVEX
-   , encMandatoryPrefix = Nothing
-   , encOpcodeMap       = MapVex 0
-   , encOpcode          = 0
-   , encOpcodeExt       = Nothing
-   , encOpcodeFullExt   = Nothing
-   , encOpcodeWExt      = Nothing
-   , encOpcodeLExt      = Nothing
-   , encReversableBit   = Nothing
-   , encNoForce8Bit     = Nothing
-   , encSignExtendImmBit  = Nothing
-   , encFPUDestBit      = Nothing
-   , encFPUPopBit       = Nothing
-   , encFPUSizableBit   = Nothing
-   , encProperties      = []
-   , encOperands        = []
+   { encOpcodeEncoding   = EncVEX
+   , encMandatoryPrefix  = Nothing
+   , encOpcodeMap        = MapVex 0
+   , encOpcode           = 0
+   , encOpcodeExt        = Nothing
+   , encOpcodeFullExt    = Nothing
+   , encOpcodeWExt       = Nothing
+   , encOpcodeLExt       = Nothing
+   , encReversableBit    = Nothing
+   , encNoForce8Bit      = Nothing
+   , encSignExtendImmBit = Nothing
+   , encFPUDestBit       = Nothing
+   , encFPUPopBit        = Nothing
+   , encFPUSizableBit    = Nothing
+   , encProperties       = []
+   , encOperands         = []
    }
 
 -- | Operand
-op :: AccessMode -> OperandType -> OperandStorage -> OperandSpec
-op = OperandSpec
+op :: AccessMode -> OperandFamP -> OperandStorage -> OperandSpecP
+op am ot = OperandSpec am (Terminal ot)
 
+-- | Operand (predicated operand type)
+opP :: AccessMode -> X86Rule OperandFamP -> OperandStorage -> OperandSpecP
+opP = OperandSpec
+
+-- | Select depending on PrefixL
+tle :: X86Rule a -> X86Rule a -> X86Rule a
+tle = sPrefix PrefixL
 
 -- | Immediate helpers. Immediate operands are always read-only and encoded in
 -- the same way.
-imm :: ImmType -> OperandSpec
+imm :: X86ImmFamP -> OperandSpecP
 imm s = op RO (T_Imm s) S_Imm
 
 -- | 8-bit immediate operand
-imm8 :: OperandSpec
-imm8 = imm ImmSize8
+imm8 :: OperandSpecP
+imm8 = imm (immFamFixedSize OpSize8)
 
 -- | 16-bit immediate operand
-imm16 :: OperandSpec
-imm16 = imm ImmSize16
+imm16 :: OperandSpecP
+imm16 = imm (immFamFixedSize OpSize16)
 
 -- | operand-sized immediate operand
-immOp :: OperandSpec
-immOp = imm ImmSizeOp
+immOp :: OperandSpecP
+immOp = imm immFamOpSize
 
 -- | operand-sized immediate operand, sign-extended 32-bit for 64-bit
-immSE :: OperandSpec
-immSE = imm ImmSizeSE
+immSE :: OperandSpecP
+immSE = imm immFamOpSizeSE
 
 -- | 256-bit memory
-mem256 :: AccessMode -> OperandSpec
-mem256 m = op m (T_Mem Mem256) S_RM
+mem256 :: AccessMode -> OperandSpecP
+mem256 m = op m (T_Mem (memFamFixed 256)) S_RM
 
 -- | 128-bit memory
-mem128 :: AccessMode -> OperandSpec
-mem128 m = op m (T_Mem Mem128) S_RM
+mem128 :: AccessMode -> OperandSpecP
+mem128 m = op m (T_Mem (memFamFixed 128)) S_RM
 
 -- | 64-bit memory
-mem64 :: AccessMode -> OperandSpec
-mem64 m = op m (T_Mem Mem64) S_RM
+mem64 :: AccessMode -> OperandSpecP
+mem64 m = op m (T_Mem (memFamFixed 64)) S_RM
 
 -- | 64-bit vector or memory
-mvec64 :: AccessMode -> OperandSpec
-mvec64 m = op m (TME (T_Reg regFamVec64) (T_Mem Mem64)) S_RM
+mvec64 :: AccessMode -> OperandSpecP
+mvec64 m = opP m (sRegModRM (Terminal $ T_Mem (memFamFixed 64))
+                            (Terminal $ T_Reg regFamVec64))
+                 S_RM
 
 -- | 256-bit vector or memory
-mvec256 :: AccessMode -> OperandSpec
-mvec256 m = op m (TME (T_Reg regFamVec256) (T_Mem Mem256)) S_RM
+mvec256 :: AccessMode -> OperandSpecP
+mvec256 m = opP m (sRegModRM (Terminal $ T_Mem (memFamFixed 256))
+                             (Terminal $ T_Reg regFamVec256))
+                  S_RM
 
 -- | 128-bit vector or memory
-mvec128 :: AccessMode -> OperandSpec
-mvec128 m = op m (TME (T_Reg regFamVec128) (T_Mem Mem128)) S_RM
+mvec128 :: AccessMode -> OperandSpecP
+mvec128 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 128))
+      (Terminal $ T_Reg regFamVec128))
+   S_RM
 
 -- | 128-bit or 256-bit vector or memory
-mvec128o256 :: AccessMode -> OperandSpec
-mvec128o256 m = op m (TME
-      (TLE (T_Reg regFamVec128) (T_Reg regFamVec256))
-      (TLE (T_Mem Mem128)    (T_Mem Mem256)))
+mvec128o256 :: AccessMode -> OperandSpecP
+mvec128o256 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamL 128 256))
+      (Terminal $ T_Reg (regFam128o256L regFamVec128)))
    S_RM
 
 -- | low 64-bit of 128-bit vector or 64-bit memory
-mvec128low64 :: AccessMode -> OperandSpec
-mvec128low64 m = op m (TME (T_SubReg SubLow64 regFamVec128) (T_Mem Mem64)) S_RM
+mvec128low64 :: AccessMode -> OperandSpecP
+mvec128low64 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 64))
+      (Terminal $ T_Reg (setRegFamType (SubReg (SubLow 64)) regFamVec128)))
+   S_RM
 
 -- | low 32-bit of 128-bit vector or 32-bit memory
-mvec128low32 :: AccessMode -> OperandSpec
-mvec128low32 m = op m (TME (T_SubReg SubLow32 regFamVec128) (T_Mem Mem32)) S_RM
+mvec128low32 :: AccessMode -> OperandSpecP
+mvec128low32 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 32))
+      (Terminal $ T_Reg (setRegFamType (SubReg (SubLow 32)) regFamVec128)))
+   S_RM
 
 -- | low 16-bit of 128-bit vector or 16-bit memory
-mvec128low16 :: AccessMode -> OperandSpec
-mvec128low16 m = op m (TME (T_SubReg SubLow16 regFamVec128) (T_Mem Mem16)) S_RM
+mvec128low16 :: AccessMode -> OperandSpecP
+mvec128low16 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 16))
+      (Terminal $ T_Reg (setRegFamType (SubReg (SubLow 16)) regFamVec128)))
+   S_RM
 
 -- | low 8-bit of 128-bit vector or 8-bit memory
-mvec128low8 :: AccessMode -> OperandSpec
-mvec128low8 m = op m (TME (T_SubReg SubLow8 regFamVec128) (T_Mem Mem8)) S_RM
+mvec128low8 :: AccessMode -> OperandSpecP
+mvec128low8 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 8))
+      (Terminal $ T_Reg (setRegFamType (SubReg (SubLow 8)) regFamVec128)))
+   S_RM
 
 -- | 64-bit even positioned values in vector register or memory
 --    * low 64-bit of 128-bit vector
 --    * [63,0] and [191,128] of 256-bit vector
-mvecEven64 :: AccessMode -> OperandSpec
-mvecEven64 m = op m (TME
-   (TLE (T_SubReg SubLow64 regFamVec128) (T_SubReg SubEven64 regFamVec256))
-   (TLE (T_Mem Mem64) (T_Mem Mem256))
-   ) S_RM
+mvecEven64 :: AccessMode -> OperandSpecP
+mvecEven64 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamL 64 256))
+      (tle (Terminal $ T_Reg (setRegFamType (SubReg (SubLow 64)) regFamVec128))
+           (Terminal $ T_Reg (setRegFamType (SubReg (SubEven 64)) regFamVec256))))
+   S_RM
 
 -- | low bytes of a vector or memory
-mveclow :: AccessMode -> OperandSpec
-mveclow m = op m (TME 
-   (TLE (T_SubReg SubLow64 regFamVec128) (T_Reg regFamVec128))
-   (TLE (T_Mem Mem64) (T_Mem Mem128))) S_RM
+mveclow :: AccessMode -> OperandSpecP
+mveclow m = opP m (sRegModRM 
+      (Terminal $ T_Mem (memFamL 64 128))
+      (tle (Terminal $ T_Reg (setRegFamType (SubReg (SubLow 64)) regFamVec128))
+           (Terminal $ T_Reg regFamVec128)))
+   S_RM
 
 -- | 128-bit or 256-bit memory depending on Vex.L
-m128o256 :: AccessMode -> OperandSpec
-m128o256 m = op m (TLE (T_Mem Mem128) (T_Mem Mem256)) S_RM
+m128o256 :: AccessMode -> OperandSpecP
+m128o256 m = op m (T_Mem (memFamL 128 256)) S_RM
 
 -- | 256-bit vector
-vec256 :: AccessMode -> OperandStorage -> OperandSpec
+vec256 :: AccessMode -> OperandStorage -> OperandSpecP
 vec256 m e = op m (T_Reg regFamVec256) e
 
 -- | 128-bit vector
-vec128 :: AccessMode -> OperandStorage -> OperandSpec
+vec128 :: AccessMode -> OperandStorage -> OperandSpecP
 vec128 m e = op m (T_Reg regFamVec128) e
 
 -- | 64-bit vector
-vec64 :: AccessMode -> OperandStorage -> OperandSpec
+vec64 :: AccessMode -> OperandStorage -> OperandSpecP
 vec64 m e = op m (T_Reg regFamVec64) e
 
 -- | Low 64-bit of 128-bit vector
-vec128low64 :: AccessMode -> OperandStorage -> OperandSpec
-vec128low64 m e = op m (T_SubReg SubLow64 regFamVec128) e
+vec128low64 :: AccessMode -> OperandStorage -> OperandSpecP
+vec128low64 m e = op m (T_Reg (setRegFamType (SubReg (SubLow 64)) regFamVec128)) e
 
 -- | High 64-bit of 128-bit vector
-vec128high64 :: AccessMode -> OperandStorage -> OperandSpec
-vec128high64 m e = op m (T_SubReg SubHigh64 regFamVec128) e
+vec128high64 :: AccessMode -> OperandStorage -> OperandSpecP
+vec128high64 m e = op m (T_Reg (setRegFamType (SubReg (SubHigh 64)) regFamVec128)) e
 
 -- | Low 32-bit of 128-bit vector
-vec128low32 :: AccessMode -> OperandStorage -> OperandSpec
-vec128low32 m e = op m (T_SubReg SubLow32 regFamVec128) e
+vec128low32 :: AccessMode -> OperandStorage -> OperandSpecP
+vec128low32 m e = op m (T_Reg (setRegFamType (SubReg (SubLow 32)) regFamVec128)) e
 
 -- | 128-bit or 256-bit vector depending on Vex.L
-vec128o256 :: AccessMode -> OperandStorage -> OperandSpec
-vec128o256 m e = op m (TLE (T_Reg regFamVec128) (T_Reg regFamVec256)) e
+vec128o256 :: AccessMode -> OperandStorage -> OperandSpecP
+vec128o256 m e = op m (T_Reg (regFam128o256L regFamVec128)) e
 
 -- | 32-bit or 64-bit general purpose register (depending on Rex.W)
-reg32o64 :: AccessMode -> OperandStorage -> OperandSpec
-reg32o64 m e = op m (TWE (T_Reg regFamGPR32) (T_Reg regFamGPR64)) e
+reg32o64 :: AccessMode -> OperandStorage -> OperandSpecP
+reg32o64 m e = op m (T_Reg (regFam32o64W regFamGPR32)) e
 
 -- | 32-bit or 64-bit general purpose register (depending on Rex.W) or memory
-rm32o64 :: AccessMode -> OperandSpec
-rm32o64 m = op m (TME
-   (TWE (T_Reg regFamGPR32) (T_Reg regFamGPR64))
-   (TWE (T_Mem Mem32) (T_Mem Mem64)))
+rm32o64 :: AccessMode -> OperandSpecP
+rm32o64 m = opP m (sRegModRM
+   (Terminal $ T_Mem (memFamW 32 64))
+   (Terminal $ T_Reg (regFam32o64W regFamGPR32)))
    S_RM
 
 -- | 16-bit general purpose register
-reg16 :: AccessMode -> OperandStorage -> OperandSpec
+reg16 :: AccessMode -> OperandStorage -> OperandSpecP
 reg16 m e = op m (T_Reg regFamGPR16) e
 
 
 -- | 8-bit memory
-mem8 :: AccessMode -> OperandSpec
-mem8 m = op m (T_Mem Mem8) S_RM
+mem8 :: AccessMode -> OperandSpecP
+mem8 m = op m (T_Mem (memFamFixed 8)) S_RM
 
 -- | 16-bit memory
-mem16 :: AccessMode -> OperandSpec
-mem16 m = op m (T_Mem Mem16) S_RM
+mem16 :: AccessMode -> OperandSpecP
+mem16 m = op m (T_Mem (memFamFixed 16)) S_RM
 
 -- | 8-bit general purpose register or memory
-rm8 :: AccessMode -> OperandSpec
-rm8 m = op m (TME (T_Reg regFamGPR8) (T_Mem Mem8)) S_RM
+rm8 :: AccessMode -> OperandSpecP
+rm8 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 8))
+      (Terminal $ T_Reg regFamGPR8))
+   S_RM
 
 -- | 16-bit general purpose register or memory
-rm16 :: AccessMode -> OperandSpec
-rm16 m = op m (TME (T_Reg regFamGPR16) (T_Mem Mem16)) S_RM
+rm16 :: AccessMode -> OperandSpecP
+rm16 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 16))
+      (Terminal $ T_Reg regFamGPR16))
+   S_RM
 
 -- | 32-bit memory
-mem32 :: AccessMode -> OperandSpec
-mem32 m = op m (T_Mem Mem32) S_RM
+mem32 :: AccessMode -> OperandSpecP
+mem32 m = op m (T_Mem (memFamFixed 32)) S_RM
 
 -- | 512-bit memory
-mem512 :: AccessMode -> OperandSpec
-mem512 m = op m (T_Mem Mem512) S_RM
+mem512 :: AccessMode -> OperandSpecP
+mem512 m = op m (T_Mem (memFamFixed 512)) S_RM
 
 -- | 32-bit general purpose register or memory
-rm32 :: AccessMode -> OperandSpec
-rm32 m = op m (TME (T_Reg regFamGPR32) (T_Mem Mem32)) S_RM
+rm32 :: AccessMode -> OperandSpecP
+rm32 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 32))
+      (Terminal $ T_Reg regFamGPR32))
+   S_RM
 
 -- | 64-bit general purpose register or memory
-rm64 :: AccessMode -> OperandSpec
-rm64 m = op m (TME (T_Reg regFamGPR64) (T_Mem Mem64)) S_RM
+rm64 :: AccessMode -> OperandSpecP
+rm64 m = opP m (sRegModRM
+      (Terminal $ T_Mem (memFamFixed 64))
+      (Terminal $ T_Reg regFamGPR64))
+   S_RM
 
 -- | 128-bit or 256-bit memory (depending on Rex.W)
-mem128o256 :: AccessMode -> OperandSpec
-mem128o256 m = op m (TWE (T_Mem Mem128) (T_Mem Mem256)) S_RM
+mem128o256 :: AccessMode -> OperandSpecP
+mem128o256 m = op m (T_Mem (memFamW 128 256)) S_RM
 
 -- | 64-bit or 128-bit memory (depending on Rex.W)
-mem64o128 :: AccessMode -> OperandSpec
-mem64o128 m = op m (TWE (T_Mem Mem64) (T_Mem Mem128)) S_RM
+mem64o128 :: AccessMode -> OperandSpecP
+mem64o128 m = op m (T_Mem (memFamW 64 128)) S_RM
 
 -- | 32-bit or 64-bit memory (depending on Rex.W)
-mem32o64 :: AccessMode -> OperandSpec
-mem32o64 m = op m (TWE (T_Mem Mem32) (T_Mem Mem64)) S_RM
+mem32o64 :: AccessMode -> OperandSpecP
+mem32o64 m = op m (T_Mem (memFamW 32 64)) S_RM
 
 -- | General purpose register with the operand-size
-gpr :: AccessMode -> OperandStorage -> OperandSpec
+gpr :: AccessMode -> OperandStorage -> OperandSpecP
 gpr m e = op m (T_Reg regFamGPR) e
 
 -- | General purpose register with the operand-size or memory
-mgpr :: AccessMode -> OperandSpec
-mgpr m = op m (TME (T_Reg regFamGPR) (T_Mem MemOpSize)) S_RM
+mgpr :: AccessMode -> OperandSpecP
+mgpr m = opP m (sRegModRM
+      (Terminal $ T_Mem memFamOpSize)
+      (Terminal $ T_Reg regFamGPR))
+   S_RM
 
 -- | Memory with the operand-size
-mem :: AccessMode -> OperandSpec
-mem m = op m (T_Mem MemOpSize) S_RM
+mem :: AccessMode -> OperandSpecP
+mem m = op m (T_Mem memFamOpSize) S_RM
 
 -- | Any memory address (the pointed type doesn't matter)
-mvoid :: OperandSpec
-mvoid = op NA (T_Mem MemVoid) S_RM
+mvoid :: OperandSpecP
+mvoid = op NA (T_Mem memFamVoid) S_RM
 
 -- | Fixed register
-reg :: Register -> AccessMode -> OperandStorage -> OperandSpec
+reg :: X86Reg -> AccessMode -> OperandStorage -> OperandSpecP
 reg r m e = op m (T_Reg (regFamFixed r)) e
 
 -- | EAX or RAX
-rAX :: AccessMode -> OperandSpec
-rAX m = op m (TWE (T_Reg (regFamFixed R_EAX)) (T_Reg (regFamFixed R_RAX))) S_Implicit
+rAX :: AccessMode -> OperandSpecP
+rAX m = op m (T_Reg (regFam32o64W (regFamFixed R_EAX))) S_Implicit
 
 -- | ECX or RCX
-rCX :: AccessMode -> OperandSpec
-rCX m = op m (TWE (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_RCX))) S_Implicit
+rCX :: AccessMode -> OperandSpecP
+rCX m = op m (T_Reg (regFam32o64W (regFamFixed R_ECX))) S_Implicit
 
 -- | EDX or RDX
-rDX :: AccessMode -> OperandSpec
-rDX m = op m (TWE (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_RDX))) S_Implicit
+rDX :: AccessMode -> OperandSpecP
+rDX m = op m (T_Reg (regFam32o64W (regFamFixed R_EDX))) S_Implicit
 
 -- | EDX:EAX or RDX:RAX pair
-rDXrAX :: AccessMode -> OperandSpec
-rDXrAX m = op m (TWE
-   (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX)))
-   (T_Pair (T_Reg (regFamFixed R_RDX)) (T_Reg (regFamFixed R_RAX))))
+rDXrAX :: AccessMode -> OperandSpecP
+rDXrAX m = op m
+   (T_Pair (T_Reg (regFam32o64W (regFamFixed R_EDX)))
+           (T_Reg (regFam32o64W (regFamFixed R_EAX))))
    S_Implicit
 
 -- | AX, DX:AX, EDX:EAX, RDX:RAX
-rDXAX :: AccessMode -> OperandSpec
+rDXAX :: AccessMode -> OperandSpecP
 rDXAX m = op m (T_Pair (T_Reg regFamDX) (T_Reg regFamAX')) S_Implicit
 
 
 -- | EDX:EAX
-eDXeAX :: AccessMode -> OperandSpec
+eDXeAX :: AccessMode -> OperandSpecP
 eDXeAX m = op m (T_Pair (T_Reg (regFamFixed R_EDX)) (T_Reg (regFamFixed R_EAX))) S_Implicit
 
 -- | XMM0
-xmm0 :: AccessMode -> OperandSpec
+xmm0 :: AccessMode -> OperandSpecP
 xmm0 m = op m (T_Reg (regFamFixed (R_XMM 0))) S_Implicit
 
 -- | ECX:EBX or RCX:RBX pair
-rCXrBX :: AccessMode -> OperandSpec
-rCXrBX m = op m (TWE
-   (T_Pair (T_Reg (regFamFixed R_ECX)) (T_Reg (regFamFixed R_EBX)))
-   (T_Pair (T_Reg (regFamFixed R_RCX)) (T_Reg (regFamFixed R_RBX))))
+rCXrBX :: AccessMode -> OperandSpecP
+rCXrBX m = op m
+   (T_Pair (T_Reg (regFam32o64W (regFamFixed R_ECX)))
+           (T_Reg (regFam32o64W (regFamFixed R_EBX))))
    S_Implicit
 
 -- | 8-bit relative offset
-rel8 :: OperandSpec
-rel8 = op RO (T_Rel Rel8) S_Imm
+rel8 :: OperandSpecP
+rel8 = op RO (T_Mem memFamRelCode8) S_Imm
 
 -- | 16-bit or 32-bit relative offset (16-bit invalid in 64-bit mode)
-rel16o32 :: OperandSpec
-rel16o32 = op RO (T_Rel Rel16o32) S_Imm
+rel16o32 :: OperandSpecP
+rel16o32 = op RO (T_Mem memFamRelCode16o32) S_Imm
 
 -- | Immediate pointer: 16:16 or 16:32
-ptr16x :: OperandSpec
-ptr16x = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp)) S_Imm
+ptr16x :: OperandSpecP
+ptr16x = op RO (T_Pair (T_Imm (immFamFixedSize OpSize16)) (T_Imm immFamOpSize)) S_Imm
 
 -- | Immediate couple for ENTER: 16:8
-stackFrame :: OperandSpec
-stackFrame = op RO (T_Pair (T_Imm ImmSize16) (T_Imm ImmSize8)) S_Imm
+stackFrame :: OperandSpecP
+stackFrame = op RO (T_Pair (T_Imm (immFamFixedSize OpSize16)) (T_Imm (immFamFixedSize OpSize8))) S_Imm
 
 -- | S_Implicit immediate constant
-constImm :: Int -> OperandSpec
-constImm x = op RO (T_Imm (ImmConst x)) S_Implicit
+constImm :: Word64 -> OperandSpecP
+constImm x = op RO (T_Imm (immFamConst OpSize8 x)) S_Implicit
 
 -- | Address of a pointer
-m16x :: OperandSpec
-m16x = op RO (T_Mem MemPtr) S_RM
+m16x :: OperandSpecP
+m16x = op RO (T_Mem memFamPtr) S_RM
 
 -- | x87 register (there are all in S_RM)
-st :: AccessMode -> OperandSpec
+st :: AccessMode -> OperandSpecP
 st m = op m (T_Reg regFamST) S_RM
 
 -- | real memory or x87 register
-mst :: AccessMode -> OperandSpec
-mst m = op m (TME (T_Reg regFamST) (T_Mem MemFP)) S_RM
+mst :: AccessMode -> OperandSpecP
+mst m = opP m (sRegModRM
+      (Terminal $ T_Mem memFamFP)
+      (Terminal $ T_Reg regFamST))
+   S_RM
 
 -- | x87 int memory
-mint :: AccessMode -> OperandSpec
-mint m = op m (T_Mem MemInt) S_RM
+mint :: AccessMode -> OperandSpecP
+mint m = op m (T_Mem memFamFPUInt) S_RM
 
 -- | x87 int64 memory
-mint64 :: AccessMode -> OperandSpec
-mint64 m = op m (T_Mem MemInt64) S_RM
+mint64 :: AccessMode -> OperandSpecP
+mint64 m = op m (T_Mem (memFamFixed 64)) S_RM
 
 -- | x87 m80real memory
-mfp80 :: AccessMode -> OperandSpec
-mfp80 m = op m (T_Mem MemFP80) S_RM
+mfp80 :: AccessMode -> OperandSpecP
+mfp80 m = op m (T_Mem (memFamFixedFP 80)) S_RM
 
 -- | x87 m80dec memory
-mdec80 :: AccessMode -> OperandSpec
-mdec80 m = op m (T_Mem MemDec80) S_RM
+mdec80 :: AccessMode -> OperandSpecP
+mdec80 m = op m (T_Mem memFamBCD) S_RM
 
 -- | x87 14/28 env memory
-menv :: AccessMode -> OperandSpec
-menv m = op m (T_Mem MemEnv) S_RM
+menv :: AccessMode -> OperandSpecP
+menv m = op m (T_Mem memFamFPUEnv) S_RM
 
 -- | x87 14/28 state memory
-mFPUstate :: AccessMode -> OperandSpec
-mFPUstate m = op m (T_Mem MemFPUState) S_RM
+mFPUstate :: AccessMode -> OperandSpecP
+mFPUstate m = op m (T_Mem memFamFPUState) S_RM
 
 -- | Processor extended state
-mstate :: AccessMode -> OperandSpec
-mstate m = op m (T_Mem MemState) S_RM
+mstate :: AccessMode -> OperandSpecP
+mstate m = op m (T_Mem memFamState) S_RM
 
 -- | descriptor table memory
-mdt :: AccessMode -> OperandSpec
-mdt m = op m (T_Mem MemDescTable) S_RM
+mdt :: AccessMode -> OperandSpecP
+mdt m = op m (T_Mem memFamDescTable) S_RM
 
 -- | Counter register
-regCounter :: AccessMode -> OperandSpec
+regCounter :: AccessMode -> OperandSpecP
 regCounter m = op m (T_Reg regFamCounter) S_Implicit
 
 -- | Accumulator register
-regAccu :: AccessMode -> OperandSpec
+regAccu :: AccessMode -> OperandSpecP
 regAccu m = op m (T_Reg regFamAccu) S_Implicit
 
 -- | Stack pointer register
-regStackPtr :: AccessMode -> OperandStorage -> OperandSpec
+regStackPtr :: AccessMode -> OperandStorage -> OperandSpecP
 regStackPtr m e = op m (T_Reg regFamStackPtr) e
 
 -- | Base pointer register
-regBasePtr :: AccessMode -> OperandStorage -> OperandSpec
+regBasePtr :: AccessMode -> OperandStorage -> OperandSpecP
 regBasePtr m e = op m (T_Reg regFamStackBase) e
 
 -- | Register family
-regFam :: X86PredRegFam -> AccessMode -> OperandStorage -> OperandSpec
+regFam :: X86RegFamP -> AccessMode -> OperandStorage -> OperandSpecP
 regFam x m e = op m (T_Reg x) e
 
 -- | Memory at DS:rSI
-mDSrSI :: AccessMode -> OperandSpec
-mDSrSI m = op m (T_Mem MemDSrSI) S_Implicit
+mDSrSI :: AccessMode -> OperandSpecP
+mDSrSI m = op m (T_Mem memFamStringSource) S_Implicit
 
 -- | Memory at ES:rDI
-mESrDI :: AccessMode -> OperandSpec
-mESrDI m = op m (T_Mem MemESrDI) S_Implicit
+mESrDI :: AccessMode -> OperandSpecP
+mESrDI m = op m (T_Mem memFamStringDest) S_Implicit
 
 -- | Memory at DS:rDI (DS is overridable)
-mDSrDI :: AccessMode -> OperandSpec
-mDSrDI m = op m (T_Mem MemDSrDI) S_Implicit
+mDSrDI :: AccessMode -> OperandSpecP
+mDSrDI m = op m (T_Mem memFamdSrDI) S_Implicit
 
 -- | VSIB: 32-bit memory. 32-bit indices in 128-bit vector
-m32vsib32x :: AccessMode -> OperandSpec
-m32vsib32x m = op m (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128))) S_RM
+m32vsib32x :: AccessMode -> OperandSpecP
+m32vsib32x m = op m (T_Mem (memFamVSIB 32 Size32 Size128)) S_RM
 
 -- | VSIB: 32-bit memory. 32-bit indices in 128-bit or 256-bit vector
-m32vsib32xy :: AccessMode -> OperandSpec
-m32vsib32xy m = op m (TLE
-   (T_Mem (MemVSIB32 (VSIBType Size32 VSIB128)))
-   (T_Mem (MemVSIB32 (VSIBType Size32 VSIB256))))
-   S_RM
+m32vsib32xy :: AccessMode -> OperandSpecP
+m32vsib32xy m = op m (T_Mem (memFamVSIBxy 32 Size32)) S_RM
 
 -- | VSIB: 32-bit memory. 64-bit indices in 128-bit or 256-bit vector
-m32vsib64xy :: AccessMode -> OperandSpec
-m32vsib64xy m = op m (TLE
-   (T_Mem (MemVSIB32 (VSIBType Size64 VSIB128)))
-   (T_Mem (MemVSIB32 (VSIBType Size64 VSIB256))))
-   S_RM
+m32vsib64xy :: AccessMode -> OperandSpecP
+m32vsib64xy m = op m (T_Mem (memFamVSIBxy 32 Size64)) S_RM
 
 -- | VSIB: 64-bit memory. 32-bit indices in 128-bit vector
-m64vsib32x :: AccessMode -> OperandSpec
-m64vsib32x m = op m (T_Mem (MemVSIB64 (VSIBType Size32 VSIB128))) S_RM
+m64vsib32x :: AccessMode -> OperandSpecP
+m64vsib32x m = op m (T_Mem (memFamVSIB 64 Size32 Size128)) S_RM
 
 -- | VSIB: 64-bit memory. 64-bit indices in 128-bit or 256-bit vector
-m64vsib64xy :: AccessMode -> OperandSpec
-m64vsib64xy m = op m (TLE
-   (T_Mem (MemVSIB64 (VSIBType Size64 VSIB128)))
-   (T_Mem (MemVSIB64 (VSIBType Size64 VSIB256))))
-   S_RM
+m64vsib64xy :: AccessMode -> OperandSpecP
+m64vsib64xy m = op m (T_Mem (memFamVSIBxy 64 Size64)) S_RM
 
 -------------------------------------------------------------------
 -- Instructions
@@ -2438,7 +2480,7 @@ i_bound = insn
                            ,    encOpcode       = 0x62
                            ,    encProperties   = [LegacyModeSupport]
                            ,    encOperands     = [ gpr RO S_Reg
-                                                  , op    RO    (T_Mem MemPair16o32) S_RM
+                                                  , op  RO (T_Mem memFamPair16o32) S_RM
                                                   ]
                            }
                        ]
@@ -7998,7 +8040,7 @@ i_monitor = insn
                                                    ]
                            ,    encOperands        = [ reg R_ECX RO S_Implicit
                                                      , reg R_EDX RO S_Implicit
-                                                     , op NA T_MemDSrAX S_Implicit
+                                                     , op NA (T_Mem memFamDSrAX) S_Implicit
                                                      ]
                            }
                        ]
@@ -8017,7 +8059,7 @@ i_mov = insn
                                                      , LongModeSupport
                                                      ]
                            ,    encOperands        = [ regAccu WO
-                                                     , op    RO    T_MemOffset  S_Imm
+                                                     , op RO (T_Mem memFamOffset) S_Imm
                                                      ]
                            }
                        , leg

@@ -21,8 +21,11 @@ import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Encoding
-import Haskus.Arch.X86_64.ISA.Registers
-import Haskus.Arch.X86_64.ISA.RegisterNames
+import Haskus.Arch.X86_64.ISA.Register
+import Haskus.Arch.X86_64.ISA.Immediate
+import Haskus.Arch.X86_64.ISA.Memory
+import Haskus.Arch.Common.Memory
+import Haskus.Arch.X86_64.ISA.Operand
 import Haskus.Arch.X86_64.Disassembler
 
 import Haskus.Format.Binary.Buffer
@@ -455,22 +458,22 @@ showSectionAsm elf s = do
 
 showAsmOperand :: Operand -> Html ()
 showAsmOperand op = case op of
-   OpImmediate v      -> showAsmImm v
-   OpReg reg          -> showAsmReg reg
-   OpRegPair r1 r2    -> showAsmReg r1 >> ":" >> showAsmReg r2
-   OpMem _ addr       -> showAsmAddr addr -- TODO: show memory type
-   OpCodeAddr addr    -> showAsmAddr addr
-   OpPtr16_16 w1 w2   -> toHtml (show w1 ++ ":" ++ show w2)
-   OpPtr16_32 w1 w2   -> toHtml (show w1 ++ ":" ++ show w2)
-   OpStackFrame w1 w2 ->  toHtml (show w1 ++ ":" ++ show w2)
+   OpImm v         -> showAsmImm v
+   OpMem m         -> showAsmMem m
+   OpReg reg       -> showAsmReg reg
+   OpRegPair r1 r2 -> showAsmReg r1 >> ":" >> showAsmReg r2
+   OpImmPair i1 i2 -> showAsmImm i1 >> ":" >> showAsmImm i2
 
-showAsmAddr :: Addr -> Html ()
-showAsmAddr a = do
-   showAsmReg (addrSeg a)
-   ":["
+-- TODO: show memory type
+showAsmMem :: X86Mem -> Html ()
+showAsmMem m = do
+   toHtml cs
+   "["
    void (sequence xs)
    "]"
    where
+      a  = memAddr m
+      cs = fromMaybe "" (fmap ((>>":").showAsmReg) (addrSeg a))
       xs = intersperse " + " (catMaybes [bs, is, ds])
       bs = showAsmReg <$> addrBase a
       is = case (addrIndex a, addrScale a) of
@@ -480,16 +483,12 @@ showAsmAddr a = do
          (Just i, Just Scale2) -> Just (showAsmReg i >> "*2")
          (Just i, Just Scale4) -> Just (showAsmReg i >> "*4")
          (Just i, Just Scale8) -> Just (showAsmReg i >> "*8")
-      ds = showAsmImm <$> addrDisp a
+      ds = (toHtml . show . fromSizedValue) <$> addrDisp a
 
-showAsmImm :: SizedValue -> Html ()
-showAsmImm = \case
-   SizedValue8  w -> toHtml (show w)
-   SizedValue16 w -> toHtml (show w)
-   SizedValue32 w -> toHtml (show w)
-   SizedValue64 w -> toHtml (show w)
+showAsmImm :: X86Imm -> Html ()
+showAsmImm = toHtml . show . immValue
 
-showAsmReg :: Register -> Html ()
+showAsmReg :: X86Reg -> Html ()
 showAsmReg reg = do
    toHtml (registerName reg)
 

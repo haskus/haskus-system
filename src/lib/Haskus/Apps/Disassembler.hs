@@ -14,8 +14,11 @@ import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Encoding
-import Haskus.Arch.X86_64.ISA.Registers
-import Haskus.Arch.X86_64.ISA.RegisterNames
+import Haskus.Arch.X86_64.ISA.Register
+import Haskus.Arch.X86_64.ISA.Immediate
+import Haskus.Arch.X86_64.ISA.Memory
+import Haskus.Arch.Common.Memory
+import Haskus.Arch.X86_64.ISA.Operand
 import Haskus.Arch.X86_64.Disassembler
 import Haskus.Utils.List
 import Haskus.Utils.Maybe
@@ -70,24 +73,24 @@ disassX86_64 initOffset buffer = LT.toStrict (toLazyText bld)
             ++ concat (intersperse ", " (fmap (uncurry showAsmOperand)
                   (insnOperands ins `zip` encOperands (insnEncoding ins))))
 
-showAsmOperand :: Operand -> OperandSpec -> String
+showAsmOperand :: Operand -> OperandSpec t -> String
 showAsmOperand op enc = fimp $ case op of
-   OpImmediate v      -> showAsmImm v
-   OpReg reg          -> showAsmReg reg
-   OpRegPair r1 r2    -> showAsmReg r1 ++ ":" ++ showAsmReg r2
-   OpMem _ addr       -> showAsmAddr addr -- TODO: show memory type
-   OpCodeAddr addr    -> showAsmAddr addr
-   OpPtr16_16 w1 w2   -> show w1 ++ ":" ++ show w2
-   OpPtr16_32 w1 w2   -> show w1 ++ ":" ++ show w2
-   OpStackFrame w1 w2 -> show w1 ++ ":" ++ show w2
+   OpImm v         -> showAsmImm v
+   OpMem m         -> showAsmMem m
+   OpReg reg       -> showAsmReg reg
+   OpRegPair r1 r2 -> showAsmReg r1 ++ ":" ++ showAsmReg r2
+   OpImmPair i1 i2 -> showAsmImm i1 ++ ":" ++ showAsmImm i2
    where
       fimp x
          | opStore enc == S_Implicit = "{" ++ x ++ "}"
          | otherwise                 = x
 
-showAsmAddr :: Addr -> String
-showAsmAddr a = showAsmReg (addrSeg a) ++ ":[" ++ xs ++ "]"
+-- TODO: show mem type
+showAsmMem :: X86Mem -> String
+showAsmMem m = cs ++ "[" ++ xs ++ "]"
    where
+      a  = memAddr m
+      cs = fromMaybe "" (fmap ((++":").showAsmReg) (addrSeg a))
       xs = concat (intersperse " + " (catMaybes [bs, is, ds]))
       bs = showAsmReg <$> addrBase a
       is = case (addrIndex a, addrScale a) of
@@ -97,14 +100,10 @@ showAsmAddr a = showAsmReg (addrSeg a) ++ ":[" ++ xs ++ "]"
          (Just i, Just Scale2) -> Just (showAsmReg i >> "*2")
          (Just i, Just Scale4) -> Just (showAsmReg i >> "*4")
          (Just i, Just Scale8) -> Just (showAsmReg i >> "*8")
-      ds = showAsmImm <$> addrDisp a
+      ds = (show . fromSizedValue) <$> addrDisp a
 
-showAsmImm :: SizedValue -> String
-showAsmImm = \case
-   SizedValue8  w -> show w
-   SizedValue16 w -> show w
-   SizedValue32 w -> show w
-   SizedValue64 w -> show w
+showAsmImm :: X86Imm -> String
+showAsmImm = show . immValue
 
-showAsmReg :: Register -> String
+showAsmReg :: X86Reg -> String
 showAsmReg reg = registerName reg

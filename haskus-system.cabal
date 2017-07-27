@@ -24,6 +24,9 @@ library
   exposed-modules:
 
     Haskus.Arch.Common.Register
+    Haskus.Arch.Common.Memory
+    Haskus.Arch.Common.Immediate
+    Haskus.Arch.Common.Solver
 
     Haskus.Arch.X86_64.Cpuid
 
@@ -31,12 +34,13 @@ library
     Haskus.Arch.X86_64.Linux.SyscallTable
     Haskus.Arch.X86_64.Linux.Syscalls
 
+    Haskus.Arch.X86_64.ISA.Operand
+    Haskus.Arch.X86_64.ISA.Memory
+    Haskus.Arch.X86_64.ISA.Immediate
     Haskus.Arch.X86_64.ISA.Solver
     Haskus.Arch.X86_64.ISA.MicroArch
     Haskus.Arch.X86_64.ISA.Mode
-    Haskus.Arch.X86_64.ISA.Registers
-    Haskus.Arch.X86_64.ISA.RegisterNames
-    Haskus.Arch.X86_64.ISA.RegisterFamilies
+    Haskus.Arch.X86_64.ISA.Register
     Haskus.Arch.X86_64.ISA.OpcodeMaps
     Haskus.Arch.X86_64.ISA.Size
     Haskus.Arch.X86_64.ISA.Decoder

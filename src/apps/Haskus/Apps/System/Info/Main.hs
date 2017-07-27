@@ -9,9 +9,8 @@ import qualified Haskus.Arch.X86_64.ISA.Insn             as X86
 import qualified Haskus.Arch.X86_64.ISA.Insns            as X86
 import qualified Haskus.Arch.X86_64.ISA.OpcodeMaps       as X86
 import qualified Haskus.Arch.X86_64.ISA.Encoding         as X86
-import qualified Haskus.Arch.X86_64.ISA.RegisterNames    as X86
-import qualified Haskus.Arch.X86_64.ISA.RegisterFamilies as X86
-import qualified Haskus.Arch.X86_64.ISA.Registers        as X86
+import qualified Haskus.Arch.X86_64.ISA.Register         as X86
+import qualified Haskus.Arch.X86_64.ISA.Operand          as X86
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.Common.Register
@@ -151,6 +150,8 @@ showPredicate x = toHtml $ case x of
    PrefixPred PrefixL           -> "L"
    InsnPred Default64OpSize     -> "Def64OpSize"
    InsnPred Force8bit           -> "Force 8-bit opcode bit"
+   InsnPred SignExtendBit       -> "Sign-extend immediate"
+   InsnPred FPUSizeBit          -> "FPU alternative size bit"
    InsnPred RegModRM            -> "ModRM.mod = 11b"
    EncodingPred PLegacyEncoding -> "Legacy encoding"
    EncodingPred PRexEncoding    -> "REX prefix"
@@ -193,8 +194,8 @@ showEnc oc rv e = H.tr $ do
    H.tr $ do
       H.th (toHtml "Type")
       forM_ (rev ops) $ \o -> H.td $ do
-         case X86.opType o of
-            X86.T_Reg fam -> do
+         case getTerminals (X86.opFam o) of
+            [X86.T_Reg fam] -> do
                let
                   oracle = makeOracle
                               [(InsnPred Default64OpSize, if | X86.DefaultOperandSize64 `elem` X86.encProperties e -> SetPred
@@ -226,31 +227,35 @@ showEnc oc rv e = H.tr $ do
          X86.S_OpcodeLow3  -> "Opcode [2:0]"
 
 
-showReg :: X86.X86TermRegFam -> Html
+showReg :: X86.X86RegFamT -> Html
 showReg r = case r of
    RegFam (Singleton b)
           (Singleton i)
           (Singleton s)
           (Singleton off)
-      -> toHtml (X86.registerName (Reg b i s off))
+          sub
+      -> toHtml (X86.registerName (Reg b i s off sub))
    RegFam (Singleton X86.GPR)
           (Any)
           (Singleton 8)
           (Singleton 0)
+          _
       -> toHtml ("Any 8-bit GPR (except ah,bh,ch,dh)")
    RegFam (Singleton X86.GPR)
           (Any)
           (Singleton s)
           (Singleton 0)
+          _
       -> toHtml ("Any " ++ show s ++ "-bit GPR")
    RegFam (Singleton X86.GPR)
           (NoneOf [4,5,6,7])
           (Singleton 8)
           (OneOf [0,8])
+          _
       -> toHtml ("Any legacy 8-bit GPR")
    r' -> toHtml (show r')
 
-showRegFamily :: X86.X86PredRegFam -> Html
+showRegFamily :: X86.X86RegFamP -> Html
 showRegFamily fam =
    case createPredicateTable fam (null . checkOracle False) False of
       Left r   -> showReg r

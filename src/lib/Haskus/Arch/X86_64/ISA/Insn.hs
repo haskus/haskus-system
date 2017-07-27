@@ -14,6 +14,7 @@ where
 import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
 import Haskus.Format.Binary.Word
 import Haskus.Arch.X86_64.ISA.Encoding
+import Haskus.Arch.X86_64.ISA.Operand
 
 data Insn = Insn
    { insnOpcode   :: Opcode

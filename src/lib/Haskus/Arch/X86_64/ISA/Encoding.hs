@@ -3,11 +3,15 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Instruction encoding
 module Haskus.Arch.X86_64.ISA.Encoding
    ( -- * Encoding
      Encoding (..)
+   , OpcodeBit (..)
    , OpcodeEncoding (..)
    , EncodingProperties(..)
    , HLEAction (..)
@@ -19,7 +23,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , encSupportExtensions
    , encSupportExecMode
    , encValidModRMMode
-   , encHasVariableSizedOperand
+   , encAllowPrefix66
    , encMayHaveMemoryOperand
    , isLegacyEncoding
    , isVexEncoding
@@ -28,6 +32,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , encBranchHintable
    , encRequireModRM
    , encGenerateOpcodes
+   , setAddrFam
    -- * Generic opcode
    , Opcode (..)
    , OpcodeMap (..)
@@ -42,6 +47,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    -- * Legacy prefixes
    , LegacyPrefix (..)
    , toLegacyPrefix
+   , legacyPrefixGroup
    -- * REX prefix
    , Rex (..)
    , rexW
@@ -80,21 +86,6 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , indexField
    , baseField
    , rmRegMode
-   -- * Operands
-   , OperandType(..)
-   , OperandStorage(..)
-   , OperandSpec (..)
-   , AccessMode (..)
-   , Operand(..)
-   , Addr(..)
-   , ImmType (..)
-   , SubRegType (..)
-   , MemType (..)
-   , RelType (..)
-   , VSIBType (..)
-   , VSIBIndexReg (..)
-   , maybeOpTypeReg
-   , isImmediate
    )
 where
 
@@ -108,10 +99,13 @@ import Haskus.Arch.X86_64.ISA.MicroArch
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Solver
-import Haskus.Arch.X86_64.ISA.Registers
-import Haskus.Arch.X86_64.ISA.RegisterFamilies
+import Haskus.Arch.X86_64.ISA.Register
+import Haskus.Arch.X86_64.ISA.Memory
+import Haskus.Arch.X86_64.ISA.Operand
+import Haskus.Arch.Common.Register
 
 import Haskus.Utils.List ((\\))
+import Control.Applicative
 
 -- | Instruction encoding
 data Encoding = Encoding
@@ -139,9 +133,20 @@ data Encoding = Encoding
                                                  --   only if destination is (ST(i))
    , encFPUSizableBit   :: !(Maybe Int)          -- ^ Opcode bit: change the FPU size (only if memory operand)
    , encProperties      :: ![EncodingProperties] -- ^ Encoding properties
-   , encOperands        :: ![OperandSpec]        -- ^ Operand encoding
+   , encOperands        :: ![OperandSpecP]       -- ^ Operand encoding
    }
    deriving (Show)
+
+-- | Some bits in the opcode may be meaningful.
+data OpcodeBit
+   = OcBitNoForce8Bit   -- ^ If unset, 8-bit operand size, otherwise any other
+   | OcBitImmSignExtend -- ^ If set (and OcBitNoForce8Bit too), use sign-extended imm8 operand
+   | OcBitReversable    -- ^ Args are reversed if the given bit is set
+   | OcBitFPUDest       -- ^ FPU register destination: 0 if ST0, 1 if ST(i)
+   | OcBitFPUPop        -- ^ Pop the FPU register (only if OcBitFPUDest is set)
+   | OcBitFPUSizable    -- ^ Change the FPU operand size (only if memory operand)
+   deriving (Show,Eq)
+
 
 -- | Opcode encoding
 data OpcodeEncoding
@@ -164,7 +169,7 @@ data EncodingProperties
    | NoOperandSize64          -- ^ 64-bit operand size not supported
    | Extension X86Extension   -- ^ Required CPU extension
    | Arch X86Arch             -- ^ Instruction added starting at the given arch
-   | DefaultSegment Register  -- ^ Default register
+   | DefaultSegment X86Reg    -- ^ Default register
    | HLE HLEAction            -- ^ Hardware-lock elision (HLE) prefix support
    deriving (Show,Eq)
 
@@ -227,19 +232,24 @@ data ValidMod
 encValidModRMMode :: Encoding -> ValidMod
 encValidModRMMode e = case ots of
       []  -> ModeNone
-      [x] -> toM x
+      [x] -> foldl comb ModeNone (fmap toM (getTerminals x))
       _   -> error ("encValidModRMMode: more than one ModRM.rm param: " ++ show ots)
    where
+      ots = opFam <$> filter ((== S_RM) . opStore) (encOperands e)
+
+      comb ModeBoth    _           = ModeBoth
+      comb _           ModeBoth    = ModeBoth
+      comb ModeNone    c           = c
+      comb c           ModeNone    = c
+      comb ModeOnlyReg ModeOnlyReg = ModeOnlyReg
+      comb ModeOnlyMem ModeOnlyMem = ModeOnlyMem
+      comb ModeOnlyReg ModeOnlyMem = ModeBoth
+      comb ModeOnlyMem ModeOnlyReg = ModeBoth
+
       toM = \case
-         T_Mem _     -> ModeOnlyMem
-         T_SubReg {} -> ModeOnlyReg
-         T_Reg _     -> ModeOnlyReg
-         TME _ _     -> ModeBoth
-         TLE x y     -> if toM x == toM y
-                           then toM x
-                           else ModeBoth
-         x           -> error ("encValidModRMMode: invalid param type: " ++ show x)
-      ots = opType <$> filter ((== S_RM) . opStore) (encOperands e)
+         T_Mem _ -> ModeOnlyMem
+         T_Reg _ -> ModeOnlyReg
+         x       -> error ("encValidModRMMode: invalid param type: " ++ show x)
 
 -- | Indicate if a memory operand may be encoded
 encMayHaveMemoryOperand :: Encoding -> Bool
@@ -249,33 +259,17 @@ encMayHaveMemoryOperand e = case encValidModRMMode e of
    ModeOnlyMem -> True
    ModeBoth    -> True
 
--- | Indicate if a variable-sized operand is encoded (hence the operand-size
--- prefix can be used)
-encHasVariableSizedOperand :: Encoding -> Bool
-encHasVariableSizedOperand e = any (vsizeOp . opType) (encOperands e)
-   where
-      vsizeOp = \case
-         TME o1 o2     -> vsizeOp o1 || vsizeOp o2
-         TLE o1 o2     -> vsizeOp o1 || vsizeOp o2
-         TWE o1 o2     -> vsizeOp o1 || vsizeOp o2
-         T_Pair o1 o2  -> vsizeOp o1 || vsizeOp o2
-         T_SubReg _ rt -> vsizeOp (T_Reg rt)
-         T_Mem mt      -> case mt of
-                           MemPair16o32 -> True
-                           MemOpSize    -> True
-                           MemDSrSI     -> True
-                           MemESrDI     -> True
-                           MemDSrDI     -> True
-                           _            -> False
-         T_Reg rt      -> PrefixPred Prefix66 `elem` getPredicates rt
+-- | Return predicates of the encoding
+encPredicates :: Encoding -> [X86Pred]
+encPredicates enc =
+   concatMap getPredicates (encOperands enc)
 
-         T_Imm it      -> case it of
-                           ImmSizeOp -> True
-                           ImmSizeSE -> True
-                           _         -> False
-         T_Rel _       -> False
-         T_MemOffset   -> True
-         T_MemDSrAX    -> False
+
+-- | Indicate if prefix 66 (override operand-size) can be used
+encAllowPrefix66 :: Encoding -> Bool
+encAllowPrefix66 e =
+   encMandatoryPrefix e == Just LegacyPrefix66
+   || PrefixPred Prefix66 `elem` encPredicates e
 
 -- | Test if an encoding support the given Hardware-Lock Ellision prefix
 encSupportHLE :: HLEAction -> Encoding -> Bool
@@ -441,6 +435,51 @@ opcodeL = \case
 -- Legacy prefixes
 -------------------------------------------------------------------
 
+---------------------------------------------------------------------------
+-- Legacy prefixes
+-- ~~~~~~~~~~~~~~~
+-- 
+-- An instruction optionally begins with up to five legacy prefixes, in any
+-- order. These prefixes can:
+--    1) modify the instruction's default address size
+--    2) modify the instruction's default operand size
+--    3) modify the instruction's memory address segment
+--    4) be used as an opcode extension
+--    5) provide atomic bus locking or hardware-lock elision (HLE)
+--    6) repeat the instruction until a condition is met
+--
+-- Note: the effective sizes of the operands may not be the same: the shorter
+-- may be sign-extended or zero-extended.
+--
+-- Legacy prefixes that are used as opcode extensions are mandatory.
+--
+--
+-- Legacy prefix groups
+-- ~~~~~~~~~~~~~~~~~~~~
+--
+-- Legacy prefixes are organized in five groups. An instruction may include
+-- at most one prefix from each group. The result of using multiple prefixes
+-- from a single group is undefined.
+--
+-- We give the original meaning in parentheses, but prefixes can be used with
+-- other meanings.
+--
+-- G1: 0x66 (Operand-size override)
+-- G2: 0x67 (Address-size override)
+-- G3: 0x2E (CS segment override)
+--     0x3E (DS segment override)
+--     0x26 (ES segment override)
+--     0x64 (FS segment override)
+--     0x65 (GS segment override)
+--     0x36 (SS segment override)
+-- G4: 0xF0 (atomic memory access (lock))
+-- G5: 0xF3 (repeat while zero)
+--     0xF2 (repeat while non-zero)
+--
+-- New opcode encodings (VEX, XOP, etc.) only support legacy prefixes from
+-- groups G2 and G3.
+---------------------------------------------------------------------------
+
 
 -- | Legacy prefixes
 data LegacyPrefix
@@ -471,6 +510,22 @@ toLegacyPrefix = \case
    0xF3 -> Just LegacyPrefixF3
    0xF2 -> Just LegacyPrefixF2
    _    -> Nothing
+
+-- | Get the legacy prefix group
+legacyPrefixGroup :: LegacyPrefix -> Int
+legacyPrefixGroup = \case
+   LegacyPrefix66  -> 1
+   LegacyPrefix67  -> 2
+   LegacyPrefix2E  -> 3
+   LegacyPrefix3E  -> 3
+   LegacyPrefix26  -> 3
+   LegacyPrefix64  -> 3
+   LegacyPrefix65  -> 3
+   LegacyPrefix36  -> 3
+   LegacyPrefixF0  -> 4
+   LegacyPrefixF3  -> 5
+   LegacyPrefixF2  -> 5
+
 -------------------------------------------------------------------
 -- REX prefix
 -------------------------------------------------------------------
@@ -566,14 +621,6 @@ newtype ModRM = ModRM (BitFields Word8
 
 -- | SIB byte
 newtype SIB = SIB Word8 deriving (Show,Eq)
-
--- | SIB scale factor
-data Scale
-   = Scale1 
-   | Scale2 
-   | Scale4 
-   | Scale8 
-   deriving (Show,Eq)
 
 -- | Mode for the R/M field
 data RMMode
@@ -683,232 +730,89 @@ indexField (SIB x) = (x `shiftR` 3) .&. 0x07
 baseField :: SIB -> Word8
 baseField (SIB x) = x .&. 0x07
 
--------------------------------------------------------------------
--- Operands
--------------------------------------------------------------------
-
--- | An operand
-data Operand
-   = OpImmediate SizedValue            -- ^ Immediate value
-   | OpReg Register                    -- ^ Register
-   | OpRegPair Register Register       -- ^ REG:REG
-   | OpMem MemType Addr                -- ^ Memory address
-   | OpCodeAddr Addr                   -- ^ Code address
-   | OpPtr16_16 !Word16 !Word16        -- ^ Immediate 16:16 ptr
-   | OpPtr16_32 !Word16 !Word32        -- ^ Immediate 16:32 ptr
-   | OpStackFrame !Word16 !Word8       -- ^ Stack frame (cf ENTER)
-   deriving (Show,Eq)
-
--- The X86 architecture supports different kinds of memory addressing. The
--- available addressing modes depend on the execution mode.
--- The most complicated addressing has:
---    - a base register
---    - an index register with a scaling factor (1, 2, 4 or 8)
---    - an offset (displacement)
+-- | Set a memory address from ModRM/SIB
 --
--- Base and index registers can be extended in 64-bit mode to access new registers.
--- Offset size depends on the address size and on the execution mode.
+-- TODO: replace this function with a predicated stuff
+setAddrFam :: Bool -> [LegacyPrefix] -> Opcode -> AddressSize -> Bool -> ModRM -> Maybe SIB -> Maybe Size -> Maybe Word64 -> AddrFam -> AddrFam
+setAddrFam is64bitMode' ps oc addressSize useExtRegs modrm msib mdispSize mdisp fam = fam
+      { addrFamSeg      = FixedSeg <$> seg'
+      , addrFamBase     = base
+      , addrFamIndex    = regFamFromReg <$> idx
+      , addrFamScale    = scl
+      , addrFamDisp     = mdisp
+      , addrFamDispSize = mdispSize
+      }
+   where
+      -- segment override prefixes
+      segOverride = case filter ((== 3) . legacyPrefixGroup) ps of
+         []               -> Nothing
+         [LegacyPrefix2E] -> Just R_CS
+         [LegacyPrefix3E] -> Just R_DS
+         [LegacyPrefix26] -> Just R_ES
+         [LegacyPrefix64] -> Just R_FS
+         [LegacyPrefix65] -> Just R_GS
+         [LegacyPrefix36] -> Just R_SS
+         xs -> error ("More than one segment-override prefix: "++show xs)
 
--- | A memory address
-data Addr = Addr
-   { addrSeg   :: Register             -- ^ Segment register
-   , addrBase  :: Maybe Register       -- ^ Base register
-   , addrIndex :: Maybe Register       -- ^ Index register
-   , addrScale :: Maybe Scale          -- ^ Scale
-   , addrDisp  :: Maybe SizedValue     -- ^ Displacement
-   }
-   deriving (Show,Eq)
+      sib' = fromJust msib
+            
+      -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
+      modRMrm = opcodeB oc `unsafeShiftL` 3 .|. rmField modrm
 
--- Note [Operand size]
--- ~~~~~~~~~~~~~~~~~~~
---
--- Default operand size(s)
--- -----------------------
---   * In virtual 8086-mode, real-mode and system management mode: 16-bit
---   * In protected mode or compatibility mode: 16-bit or 32-bit (a flag is set
---   for each segment)
---   * In 64-bit mode: 32-bit. Some instructions have 64-bit default.
--- 
--- 0x66 prefix
--- -----------
--- In protected mode and compatibility mode, the 0x66 prefix can be used to
--- switch to the second default mode.
---
--- Instruction specific operand size
--- ---------------------------------
--- Some instructions have a bit in the operand indicating whether they use the
--- default operand size or a fixed 8-bit operand size.
---
--- W bit
--- -----
--- REX/VEX/XOP prefixes have a W flag that indicates whether the operand size is
--- the default one or 64-bit. The flag is ignored by some instructions.
---
--- Some instructions only use 32- or 64-bit selected with the W bit (e.g. ADOX).
---
--- L bit
--- -----
--- VEX/XOP prefixes have a L flag that indicates the size of the vector register
--- (XMM or YMM). It can be ignored or fixed at a specified value.
---
--- Immediate operands
--- ------------------
--- Immediate operands can be of the operand size (e.g. MOV)
---
--- More commonly, they are of the operand size *except in 64-bit*:
---    Operand size   | 8 | 16 | 32 | 64
---    Immediate size | 8 | 16 | 32 | 32 (sign-extended)
---
--- Or the immediate size can be fixed to 8-bit and it is sign-extended.
---
--- Or the immediate size can be arbitrarily fixed.
---
--- Per-operand size
--- ----------------
---
--- Some instructions (e.g. CRC32) have one operand that follows REX.W (i.e.
--- 32-bit or 64-bit) while the other one follows the default size (or sizable
--- bit in the opcode).
+      -- | Extended SIB index (with REX.X, VEX.X, etc.)
+      sibIdx = opcodeX oc `unsafeShiftL` 3 .|. indexField sib'
+            
+      -- | Extended SIB base (with REX.B, VEX.B, etc.)
+      sibBase = opcodeB oc `unsafeShiftL` 3 .|. baseField sib'
 
--- Note [Operands]
--- ~~~~~~~~~~~~~~~
---
--- The ModRM.RM field allows the encoding of either a memory address or a
--- register.
---
--- Only a subset of a register may be used (e.g. the low-order 64-bits of a XMM
--- register).
+      gpr sz r  = regGPR useExtRegs sz r
 
--- | Immediate type
-data ImmType
-   = ImmSize8     -- ^ 8-bit immediate
-   | ImmSize16    -- ^ 16-bit immediate
-   | ImmSizeOp    -- ^ operand-size immediate
-   | ImmSizeSE    -- ^ sign-extendable immediate:
-                  -- * if sign-extendable bit is set: sign-extended 8-bit immediate
-                  -- * if 64-bit operand size: sign-extended 32-bit immediate
-                  -- * otherwise: operand-size immediate
-   | ImmConst Int -- ^ Constant immediate (used in implicit)
-   deriving (Show,Eq)
 
--- | Memory address type
-data MemType
-   = MemPair16o32       -- ^ Pair of words in memory (words are operand-size large)
-   | Mem8               -- ^ 8-bit memory
-   | Mem16              -- ^ 16-bit memory
-   | Mem32              -- ^ 32-bit memory
-   | Mem64              -- ^ 64-bit memory
-   | Mem128             -- ^ 128-bit memory
-   | Mem256             -- ^ 256-bit memory
-   | Mem512             -- ^ 512-bit memory
-   | MemOpSize          -- ^ operand-size-bit memory
-   | MemVoid            -- ^ The pointer is used to identify a page, etc. (e.g., CLFLUSH)
-   | MemPtr             -- ^ m16:16, m16:32 or m16:64 (16-bit selector + offset)
-   | MemDescTable       -- ^ Descriptor table: m16&32 (legacy)  or m16&64 (64-bit mode)
-   | MemFP              -- ^ m32fp or m64fp (x87)
-   | MemFP80            -- ^ m80fp (x87)
-   | MemInt             -- ^ m32int or m16int (x87)
-   | MemInt64           -- ^ m64int (x87)
-   | MemDec80           -- ^ Binary coded decimal (m80dec (x87))
-   | MemEnv             -- ^ 14/28 bit FPU environment (x87)
-   | MemFPUState        -- ^ 94/108 bit FPU state (x87)
-   | MemDSrSI           -- ^ operand-size memory at DS:rSI (rSI depends on address-size, DS is fixed)
-   | MemESrDI           -- ^ operand-size memory at ES:rDI (rDI depends on address-size, ES is fixed)
-   | MemDSrDI           -- ^ operand-size memory at DS:rDI (rDI depends on address-size, DS is overridable with prefixes)
-   | MemVSIB32 VSIBType -- ^ VSIB: 32-bit memory referred to by the VSIB
-   | MemVSIB64 VSIBType -- ^ VSIB: 64-bit memory referred to by the VSIB
-   | MemState           -- ^ Processor extended states (cf XSAVE/XRSTOR)
-   deriving (Show,Eq)
+      toR = case addressSize of
+               AddrSize32 -> gpr 32
+               AddrSize64 -> gpr 64
+               AddrSize16 -> error "Trying to use AddrSize16"
+      base = if addressSize == AddrSize16
+               then case (modField modrm, rmField modrm) of
+                  (_,    0b000) -> Just R_BX
+                  (_,    0b001) -> Just R_BX
+                  (_,    0b010) -> Just R_BP
+                  (_,    0b011) -> Just R_BP
+                  (_,    0b100) -> Nothing    
+                  (_,    0b101) -> Nothing    
+                  (0b00, 0b110) -> Nothing    
+                  (_,    0b110) -> Just R_BP
+                  (_,    0b111) -> Just R_BX
+                  _             -> error "Invalid 16-bit addressing"
+               else case (modField modrm, rmField modrm) of
+                  (0b00, 0b101) -> if is64bitMode'
+                                       then Just R_RIP
+                                       else Nothing
+                  -- SIB: if mod is 0b00, don't use EBP as base.
+                  (0b00, 0b100)
+                     | baseField sib' == 0b101 -> Nothing
+                  (_,    0b100) -> Just (toR (fromIntegral sibBase))
+                  _             -> Just (toR (fromIntegral modRMrm))
+      idx = if addressSize == AddrSize16
+               then case rmField modrm of
+                  0b000 -> Just R_SI
+                  0b001 -> Just R_DI
+                  0b010 -> Just R_SI
+                  0b011 -> Just R_DI
+                  0b100 -> Just R_SI
+                  0b101 -> Just R_DI
+                  0b110 -> Nothing
+                  0b111 -> Nothing
+                  _     -> error "Invalid 16-bit addressing"
+            else case (rmField modrm, indexField sib') of
+               -- SIB: if index is 0b100 (should be ESP), don't
+               -- use any index
+               (0b100, 0b100) -> Nothing
+               (0b100, _    ) -> Just (toR (fromIntegral sibIdx))
+               _              -> Nothing -- no SIB
+      scl = if addressSize /= AddrSize16 && rmField modrm == 0b100
+               then Just (scaleField sib')
+               else Nothing
 
--- | How to use the index register
--- e.g., VSIBType 32 128 --> 32-bit indices in a 128-bits register (XMM)
-data VSIBType = VSIBType Size VSIBIndexReg
-   deriving (Show,Eq)
+      seg' = segOverride <|> (baseDefaultSegment <$> base)
 
--- | Register size for VSIB
-data VSIBIndexReg
-   = VSIB128
-   | VSIB256
-   deriving (Show,Eq)
-
--- | Sub register type
-data SubRegType
-   = SubLow8      -- ^ Low  8-bit of a register
-   | SubLow16     -- ^ Low 16-bit of a register
-   | SubLow32     -- ^ Low 32-bit of a register
-   | SubLow64     -- ^ Low 64-bit of a register
-   | SubHigh64    -- ^ High 64-bit of a register
-   | SubEven64    -- ^ [63:0] and [191:128], etc.
-   deriving (Show,Eq)
-
--- | Relative type
-data RelType
-   = Rel8         -- ^ Relative 8-bit displacement
-   | Rel16o32     -- ^ Relative 16- or 32-bit displacement (16-bit invalid in 64-bit mode)
-   deriving (Show,Eq)
-
--- | Operand types
-data OperandType
-   = TME OperandType OperandType       -- ^ One of the two types (for ModRM.rm)
-   | TLE OperandType OperandType       -- ^ One of the two types depending on Vex.L
-   | TWE OperandType OperandType       -- ^ One of the two types depending on Rex.W
-   | T_Mem MemType                     -- ^ Memory address
-   | T_Reg X86PredRegFam               -- ^ Register
-   | T_SubReg SubRegType X86PredRegFam -- ^ Sub-part of a register
-   | T_Pair OperandType OperandType    -- ^ Pair (AAA:BBB)
-   | T_Imm ImmType                     -- ^ Immediate value
-   | T_Rel RelType                     -- ^ Memory offset relative to current IP
-   | T_MemOffset                       -- ^ Memory offset relative to the segment base: the offset is address-sized, the value is operand-sized
-   | T_MemDSrAX                        -- ^ Memory whose address is DS:EAX or DS:RAX (64-bit mode)
-   deriving (Show,Eq)
-
--- | Operand storage
-data OperandStorage
-   = S_RM         -- ^ Operand stored in ModRM.rm
-   | S_Reg        -- ^ Operand stored in ModRM.reg
-   | S_Imm        -- ^ Operand stored in immediate bytes
-   | S_Imm8h      -- ^ Operand stored in bits [7:4] of the immediate byte
-   | S_Imm8l      -- ^ Operand stored in bits [3:0] of the immediate byte
-   | S_Implicit   -- ^ Implicit
-   | S_Vvvv       -- ^ Operand stored in Vex.vvvv field
-   | S_OpcodeLow3 -- ^ Operand stored in opcode 3 last bits
-   deriving (Show,Eq)
-
--- | Operand specification
-data OperandSpec = OperandSpec
-   { opMode   :: !AccessMode
-   , opType   :: !OperandType
-   , opStore  :: !OperandStorage
-   } deriving (Show)
-
--- | Operand access mode
-data AccessMode
-   = RO         -- ^ Read-only
-   | RW         -- ^ Read-write
-   | WO         -- ^ Write-only
-   | NA         -- ^ Meta use of the operand
-   deriving (Show,Eq)
-
--- | Indicate if the operand type can be register when stored in ModRM.rm
--- (i.e. ModRM.mod may be 11b)
-maybeOpTypeReg :: OperandType -> Bool
-maybeOpTypeReg = \case
-   TME x y         -> maybeOpTypeReg x || maybeOpTypeReg y
-   TLE x y         -> maybeOpTypeReg x || maybeOpTypeReg y
-   TWE x y         -> maybeOpTypeReg x || maybeOpTypeReg y
-   T_Pair x y      -> maybeOpTypeReg x || maybeOpTypeReg y
-   T_Rel _         -> False
-   T_Mem _         -> False
-   T_Reg _         -> True
-   T_SubReg _ _    -> True
-   T_Imm _         -> False
-   T_MemOffset     -> False
-   T_MemDSrAX      -> False
-
--- | Is the operand encoding an immediate?
-isImmediate :: OperandStorage -> Bool
-isImmediate = \case
-   S_Imm    -> True
-   S_Imm8h  -> True
-   S_Imm8l  -> True
-   _        -> False

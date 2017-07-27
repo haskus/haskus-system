@@ -3,6 +3,7 @@
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Haskus.Arch.X86_64.ISA.Decoder
    ( getInstruction
@@ -10,15 +11,17 @@ module Haskus.Arch.X86_64.ISA.Decoder
 where
 
 import Haskus.Arch.X86_64.ISA.Mode
-import Haskus.Arch.X86_64.ISA.Registers
-import Haskus.Arch.X86_64.ISA.RegisterNames
-import Haskus.Arch.Common.Register hiding (Reg)
+import Haskus.Arch.X86_64.ISA.Register
+import Haskus.Arch.X86_64.ISA.Memory
+import Haskus.Arch.Common.Immediate
+import Haskus.Arch.Common.Memory
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.OpcodeMaps
 import Haskus.Arch.X86_64.ISA.Insns
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Encoding
+import Haskus.Arch.X86_64.ISA.Operand
 
 import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Word
@@ -33,6 +36,7 @@ import Haskus.Utils.Flow
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector as V
+import Control.Applicative
 
 -- ===========================================================================
 -- X86 Instruction
@@ -80,7 +84,7 @@ getInstruction mode = consumeAtMost 15 $ do
             isPrefixValid e x = Just x == encMandatoryPrefix e
                || case x of
                   -- operand-size prefix
-                  LegacyPrefix66 -> encHasVariableSizedOperand e
+                  LegacyPrefix66 -> encAllowPrefix66 e
                   -- address-size prefix
                   LegacyPrefix67 -> encMayHaveMemoryOperand e
                   -- CS segment override / Branch not taken hint
@@ -239,51 +243,6 @@ getInstruction mode = consumeAtMost 15 $ do
 -- Legacy encoding
 -- ===========================================================================
 
----------------------------------------------------------------------------
--- Legacy prefixes
--- ~~~~~~~~~~~~~~~
--- 
--- An instruction optionally begins with up to five legacy prefixes, in any
--- order. These prefixes can:
---    1) modify the instruction's default address size
---    2) modify the instruction's default operand size
---    3) modify the instruction's memory address segment
---    4) be used as an opcode extension
---    5) provide atomic bus locking or hardware-lock elision (HLE)
---    6) repeat the instruction until a condition is met
---
--- Note: the effective sizes of the operands may not be the same: the shorter
--- may be sign-extended or zero-extended.
---
--- Legacy prefixes that are used as opcode extensions are mandatory.
---
---
--- Legacy prefix groups
--- ~~~~~~~~~~~~~~~~~~~~
---
--- Legacy prefixes are organized in five groups. An instruction may include
--- at most one prefix from each group. The result of using multiple prefixes
--- from a single group is undefined.
---
--- We give the original meaning in parentheses, but prefixes can be used with
--- other meanings.
---
--- G1: 0x66 (Operand-size override)
--- G2: 0x67 (Address-size override)
--- G3: 0x2E (CS segment override)
---     0x3E (DS segment override)
---     0x26 (ES segment override)
---     0x64 (FS segment override)
---     0x65 (GS segment override)
---     0x36 (SS segment override)
--- G4: 0xF0 (atomic memory access (lock))
--- G5: 0xF3 (repeat while zero)
---     0xF2 (repeat while non-zero)
---
--- New opcode encodings (VEX, XOP, etc.) only support legacy prefixes from
--- groups G2 and G3.
----------------------------------------------------------------------------
-
 -- | Read legacy prefixes (up to 5)
 readLegacyPrefixes :: Get [LegacyPrefix]
 readLegacyPrefixes = do
@@ -304,22 +263,6 @@ readLegacyPrefixes = do
       then return ws
       else fail ("Invalid legacy prefixes: " ++ show ws)
    
--- | Get the legacy prefix group
-legacyPrefixGroup :: LegacyPrefix -> Int
-legacyPrefixGroup = \case
-   LegacyPrefix66  -> 1
-   LegacyPrefix67  -> 2
-   LegacyPrefix2E  -> 3
-   LegacyPrefix3E  -> 3
-   LegacyPrefix26  -> 3
-   LegacyPrefix64  -> 3
-   LegacyPrefix65  -> 3
-   LegacyPrefix36  -> 3
-   LegacyPrefixF0  -> 4
-   LegacyPrefixF3  -> 5
-   LegacyPrefixF2  -> 5
-
-
 ---------------------------------------------------------------------------
 -- REX prefix
 -- ~~~~~~~~~~
@@ -497,112 +440,30 @@ readOperands mode ps oc enc = do
       --   * the value of REX.W/VEX.W/XOP.W (if applicable)
       hasPrefix66     = LegacyPrefix66 `elem` ps
       hasDefaultOp64  = DefaultOperandSize64 `elem` encProperties enc
-      hasRexW         = opcodeW oc
-
-      oos64 = overriddenOperationSize64 hasPrefix66 hasRexW hasDefaultOp64 mode
 
       --finally we take into account the NoForce8bit bit in the opcode
       hasForce8bit = case encNoForce8Bit enc of
          Just b | not (testBit (opcodeByte oc) b) -> True
          _                                        -> False
 
-      operandSize = if hasForce8bit then OpSize8 else oos64
+      
+      hasSignExtendBit = case encSignExtendImmBit enc of
+         Just b | testBit (opcodeByte oc) b -> True
+         _                                  -> False
 
-      -- do we need to read an SIB byte?
-      hasSIB = fromMaybe False (useSIB addressSize <$> modrm)
+      hasFPUSizeBit = case encFPUSizableBit enc of
+         Just b | testBit (opcodeByte oc) b -> True
+         _                                  -> False
 
-      -- do we need to read a MemOffset displacement?
-      hasMemOffset = T_MemOffset `elem` fmap opType (encOperands enc)
-
-      -- do we need to read a Relative displacement?
-      hasRelOffset = filter isRel (fmap opType (encOperands enc))
-         where isRel (T_Rel _) = True
-               isRel _         = False
-
-   -- read SIB byte if necessary
-   sib <- if hasSIB
-      then (Just . SIB) <$> getWord8
-      else return Nothing
-
-   let
-      -- do we need to read a displacement? Which size?
-      dispSize = case (hasMemOffset, hasRelOffset) of
-         (False, []) -> join (useDisplacement addressSize sib <$> modrm)
-         (True,  []) -> case addressSize of
-                           AddrSize16 -> Just Size16
-                           AddrSize32 -> Just Size32
-                           AddrSize64 -> Just Size64
-         (False, [T_Rel rel]) -> case rel of
-            Rel8     -> Just Size8
-            Rel16o32 -> case operandSize of
-               OpSize64 -> Just Size32
-               OpSize32 -> Just Size32
-               OpSize16 -> Just Size16
-               OpSize8  -> error "Unsupported relative offset with 8-bit operand size"
-         (_, xs) -> error ("Unsupported relative offsets: " ++ show xs)
-
-
-   -- read displacement if necessary
-   disp <- forM dispSize getSize
-
-
-   let
-      -- do we need to read some immediates?
-      immTypeSize = \case
-         T_MemOffset     -> [] -- already read above as displacement
-         T_Rel _         -> [] -- already read above as displacement
-         T_Imm ImmSize8  -> [Size8]
-         T_Imm ImmSize16 -> [Size16]
-         T_Imm ImmSizeOp -> case operandSize of
-                              OpSize8  -> [Size8]
-                              OpSize16 -> [Size16]
-                              OpSize32 -> [Size32]
-                              OpSize64 -> [Size64]
-         T_Imm ImmSizeSE -> case encSignExtendImmBit enc of
-                              -- if the sign-extendable bit is set, we read an
-                              -- Imm8 that will be sign-extended to match the
-                              -- operand size
-                              Just t
-                                 | testBit (opcodeByte oc) t -> [Size8]
-                              _ -> case operandSize of
-                                 OpSize8  -> [Size8]
-                                 OpSize16 -> [Size16]
-                                 OpSize32 -> [Size32]
-                                 OpSize64 -> [Size32] -- sign-extended
-         T_Pair x y      -> [ head (immTypeSize x) -- immediate pointer: 16:16 or 16:32
-                            , head (immTypeSize y)]
-         it              -> error ("Unhandled immediate type: " ++ show it)
-
-      immSize x = case opStore x of
-         S_Imm8h -> [Size8]
-         S_Imm8l -> [Size8]
-         S_Imm   -> immTypeSize (opType x)
-         _       -> error ("unhandled immediate encoding: " ++ show x)
-
-      immSizes = case filter (isImmediate . opStore) (encOperands enc) of
-         []    -> []
-         [x]   -> immSize x
-         [x,y] 
-            | opStore x == S_Imm8h && opStore y == S_Imm8l -> [Size8]
-            | opStore x == S_Imm8l && opStore y == S_Imm8h -> [Size8]
-         xs    -> concatMap immSize xs
-
-   -- read immediates if necessary
-   imms <- forM immSizes getSize
-
-   ----------------------------------------------------------------------------
-   -- at this point we have read the whole instruction (except in the 3DNow!
-   -- case where there is a single byte left to read). Now we can determine the
-   -- operands.
-   ----------------------------------------------------------------------------
-
-   let
       is64bitMode' = is64bitMode (x86Mode mode)
+      isRegModRM   = case modrm of
+         Nothing -> False
+         Just m  -> rmRegMode m
 
       -- predicate oracle
       oracle = makeOracle <|
-         (fmap (\m -> (ContextPred (Mode m), UnsetPred))
-               (filter (/= x86Mode mode) allModes))
+         [ (ContextPred (Mode m), UnsetPred) | m <- allModes
+                                             , m /= x86Mode mode]
          ++
          [ (ContextPred (Mode (x86Mode mode)), SetPred)
          , (ContextPred CS_D         , if | is64bitMode'           -> UnsetPred
@@ -624,6 +485,12 @@ readOperands mode ps oc enc = do
                                           | otherwise              -> UnsetPred)
          , (InsnPred Force8bit       , if | hasForce8bit           -> SetPred
                                           | otherwise              -> UnsetPred)
+         , (InsnPred SignExtendBit   , if | hasSignExtendBit       -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (InsnPred FPUSizeBit      , if | hasFPUSizeBit          -> SetPred
+                                          | otherwise              -> UnsetPred)
+         , (InsnPred RegModRM        , if | isRegModRM             -> SetPred
+                                          | otherwise              -> UnsetPred)
          , (EncodingPred PRexEncoding, case oc of
                (OpLegacy _ (Just _) _ _) -> SetPred
                (OpLegacy _ Nothing _ _)  -> UnsetPred
@@ -634,224 +501,134 @@ readOperands mode ps oc enc = do
                OpXop    {} -> PXopEncoding), SetPred)
          ]
 
+      -- reduce operands predicates
+      ops = encOperands enc
+            ||> reducePredicates oracle
+            ||> (\case
+               Match a     -> a
+               DontMatch x -> error ("Operand doesn't reduce: "
+                                 ++ show x
+                                 ++ ". Terminals: "
+                                 ++ show (getTerminals x))
 
-      readParam spec = case opType spec of
-         -- One of the two types (for ModRM.rm)
-         TME r m -> case modField <$> modrm of
-            Just 0b11 -> readParam (spec { opType = r })
-            Just _    -> readParam (spec { opType = m })
-            Nothing   -> fail "Cannot read ModRM.mod"
-         
-         -- One of the two types depending on Vex.L
-         TLE l128 l256 -> case opcodeL oc of
-            Just False -> readParam (spec { opType = l128 })
-            Just True  -> readParam (spec { opType = l256 })
-            Nothing    -> fail "Cannot read VEX.L/XOP.L"
+               e           -> error ("Operand doesn't reduce: "++ show e)
+               )
 
-         -- One of the two types depending on Rex.W
-         TWE now w     -> if hasRexW
-                              then readParam (spec { opType = w })
-                              else readParam (spec { opType = now })
-         
-         -- Memory address
-         T_Mem mtype -> case modrm of
-            Nothing     -> case mtype of
-                  MemDSrSI -> return $ OpMem mtype $ Addr R_DS rSI Nothing Nothing Nothing
-                  MemDSrDI -> return $ OpMem mtype $ Addr seg' rDI Nothing Nothing Nothing
-                  MemESrDI -> return $ OpMem mtype $ Addr R_ES rDI Nothing Nothing Nothing
-                  _        -> fail "ModRM required"
-               where
-                  seg' = fromMaybe R_DS segOverride
-                  rSI  = case operandSize of
-                     OpSize8  -> Just R_SI
-                     OpSize16 -> Just R_SI
-                     OpSize32 -> Just R_ESI
-                     OpSize64 -> Just R_RSI
-                  rDI  = case operandSize of
-                     OpSize8  -> Just R_DI -- happens in SCAS
-                     OpSize16 -> Just R_DI
-                     OpSize32 -> Just R_EDI
-                     OpSize64 -> Just R_RDI
-            Just modrm' -> return $ OpMem mtype $ Addr seg' base idx scl disp
-               where
-                  toR = case addressSize of
-                           AddrSize32 -> gpr 32
-                           AddrSize64 -> gpr 64
-                           AddrSize16 -> error "Trying to use AddrSize16"
-                  base = if addressSize == AddrSize16
-                           then case (modField modrm', rmField modrm') of
-                              (_,    0b000) -> Just R_BX
-                              (_,    0b001) -> Just R_BX
-                              (_,    0b010) -> Just R_BP
-                              (_,    0b011) -> Just R_BP
-                              (_,    0b100) -> Nothing    
-                              (_,    0b101) -> Nothing    
-                              (0b00, 0b110) -> Nothing    
-                              (_,    0b110) -> Just R_BP
-                              (_,    0b111) -> Just R_BX
-                              _             -> error "Invalid 16-bit addressing"
-                           else case (modField modrm', rmField modrm') of
-                              (0b00, 0b101) -> if is64bitMode'
-                                                   then Just R_RIP
-                                                   else Nothing
-                              -- SIB: if mod is 0b00, don't use EBP as base.
-                              (0b00, 0b100)
-                                 | baseField sib' == 0b101 -> Nothing
-                              (_,    0b100) -> Just (toR (fromIntegral sibBase))
-                              _             -> Just (toR (fromIntegral modRMrm))
-                  idx = if addressSize == AddrSize16
-                           then case rmField modrm' of
-                              0b000 -> Just R_SI
-                              0b001 -> Just R_DI
-                              0b010 -> Just R_SI
-                              0b011 -> Just R_DI
-                              0b100 -> Just R_SI
-                              0b101 -> Just R_DI
-                              0b110 -> Nothing
-                              0b111 -> Nothing
-                              _     -> error "Invalid 16-bit addressing"
-                        else case (rmField modrm', indexField sib') of
-                           -- SIB: if index is 0b100 (should be ESP), don't
-                           -- use any index
-                           (0b100, 0b100) -> Nothing
-                           (0b100, _    ) -> Just (toR (fromIntegral sibIdx))
-                           _              -> Nothing -- no SIB
-                  scl = if addressSize /= AddrSize16 && rmField modrm' == 0b100
-                           then Just (scaleField sib')
-                           else Nothing
-                  seg' = fromMaybe (defaultSegment base) segOverride
-                        
-         -- Register
-         T_Reg rfam -> return <| OpReg
-                              <| regFixupTermFamily updatedFam
-            where
-               fam' = case reducePredicates oracle rfam of
-                  Match x -> x
-                  r -> error ("Cannot reduce register family to a terminal: " ++ show r)
+   ----------------------
+   -- SIB
+   ----------------------
 
-               -- get raw register id
-               rawId = fromIntegral $ case opStore spec of
-                  S_RM         -> modRMrm
-                  S_Reg        -> modRMreg
-                  S_Vvvv       -> vvvv
-                  S_OpcodeLow3 -> opcodeRegId
-                  S_Implicit   -> case regFamId fam' of
-                     Singleton i -> fromIntegral i
-                     e           -> error ("Invalid implicit register id: " ++ show e)
-                  e            -> error ("Invalid register encoding: " ++ show e)
+   let
+      -- do we need to read an SIB byte?
+      hasSIB = fromMaybe False (useSIB addressSize <$> modrm)
 
-               -- update family id and offset
-               updatedFam = fam'
-                  { regFamId     = trySetCSet regId     (regFamId fam')
-                  , regFamOffset = trySetCSet regOffset (regFamOffset fam')
-                  }
+   -- read SIB byte if necessary
+   msib <- if hasSIB
+      then (Just . SIB) <$> getWord8
+      else return Nothing
 
-               -- get the adjusted register id and the offset
-               (regId,regOffset) = case fam' of
-                  -- Check if we are left with a GPR of size 8 whose offset
-                  -- is OneOf[0,8]. Fix it and fix the id accordingly.
-                  RegFam
-                     (Singleton GPR)
-                     _
-                     (Singleton 8)
-                     (OneOf [0,8])
-                       | not useExtRegs && 4 <= rawId && rawId <= 7 -> (rawId-4, 8)
-                  _ -> (rawId,0)
+   ----------------------
+   -- DISPLACEMENT
+   ----------------------
+
+   let
+      -- Do we need to read a displacement? Which size?
+      -- We can find the info in the SIB for usual memory addresses.
+      --
+      -- But some instructions have fixed displacement size (e.g., MOV
+      -- moffs[8,16,32] or Jcc rel[8,16,32]): we can find the disp size in the
+      -- operand spec.
+
+      getMemDisp x = case opFam x of
+         T_Mem m -> do
+            a <- memFamAddr m
+            addrFamDispSize a
+         _       -> Nothing
+
+      mDispSize = case mapMaybe getMemDisp ops of
+         []  -> Nothing
+         [d] -> Just d
+         as  -> error ("Found more than one memory operand with displacement: "++ show as)
+
+      dispSize = mDispSize <|> join (useDisplacement addressSize msib <$> modrm)
+
+   -- read displacement if necessary
+   disp <- forM dispSize getSize64
+
+   ----------------------
+   -- IMMEDIATE
+   ----------------------
+
+   let
+      -- do we need to read some immediates?
+      immTypeSize = \case
+         T_Imm i    -> [immFamSize i]
+         T_Pair x y -> concat [ immTypeSize x -- immediate pointer: 16:16 or 16:32
+                              , immTypeSize y
+                              ]
+         T_Mem _    -> [] -- some T_Mem only displacement, hence they have S_Imm storage
+                          -- but the displacement has been already read
+         it         -> error ("Unhandled immediate type: " ++ show it)
+
+      gimmSize x = case opStore x of
+         S_Imm8h -> [OpSize8]
+         S_Imm8l -> [OpSize8]
+         S_Imm   -> immTypeSize (opFam x)
+         _       -> error ("unhandled immediate encoding: " ++ show x)
+
+      immSizes = case filter (isImmediate . opStore) ops of
+         []    -> []
+         [x]   -> gimmSize x
+         [x,y] 
+            | opStore x == S_Imm8h && opStore y == S_Imm8l -> [OpSize8]
+            | opStore x == S_Imm8l && opStore y == S_Imm8h -> [OpSize8]
+         xs    -> concatMap gimmSize xs
+
+   -- read immediates if necessary
+   imms <- forM immSizes getOpSize64
+
+   ----------------------------------------------------------------------------
+   -- at this point we have read the whole instruction (except in the 3DNow!
+   -- case where there is a single opcode byte left to read). Now we can
+   -- determine the operands.
+   ----------------------------------------------------------------------------
+
+   let
+
+      -- update operand families with actual values
+
+      readParam spec = case (opFam spec, opStore spec) of
+         (x, S_Implicit)   -> x
+         (T_Mem mem, S_RM) -> case modrm of
+            Just modrm' -> T_Mem $ mem
+               { memFamAddr = Just $ setAddrFam is64bitMode' ps oc addressSize useExtRegs modrm' msib
+                                       dispSize disp
+                                       (fromMaybe emptyAddrFam (memFamAddr mem))
+               }
+            Nothing     -> error "ModRM required"
+                           
+         (T_Reg fam, S_RM)         -> T_Reg (setRegFamId useExtRegs (fromIntegral modRMrm)     fam)
+         (T_Reg fam, S_Reg)        -> T_Reg (setRegFamId useExtRegs (fromIntegral modRMreg)    fam)
+         (T_Reg fam, S_Vvvv)       -> T_Reg (setRegFamId useExtRegs (fromIntegral vvvv)        fam)
+         (T_Reg fam, S_OpcodeLow3) -> T_Reg (setRegFamId useExtRegs (fromIntegral opcodeRegId) fam)
+
+         (T_Mem mem, S_Imm) -> T_Mem $ mem
+            { memFamAddr = (\a -> a { addrFamDisp = disp}) <$> memFamAddr mem
+            }
+
+         (T_Pair (T_Imm i1) (T_Imm i2), S_Imm) -> case imms of
+            [x,y] -> T_Pair (T_Imm (i1 { immFamValue = Just x }))
+                            (T_Imm (i2 { immFamValue = Just y }))
+            xs -> error ("Expected immediate pair, got: " ++ show xs)
 
 
+         (T_Imm i, s)
+            | s `elem` [S_Imm, S_Imm8l, S_Imm8h] -> case imms of
+               [x] -> T_Imm (i { immFamValue = Just x })
+               xs  -> error ("Expecting a single immediate, got: " ++ show xs)
 
-         -- Sub-part of a register
-         T_SubReg _ rtype -> readParam (spec {opType = T_Reg rtype})
+         x -> error ("Unhandled param: " ++ show x)
 
-         -- Pair (AAA:BBB)
-         T_Pair (T_Reg f1) (T_Reg f2) ->
-            -- registers are constant in pairs, so we just have to fix them. We
-            -- allow the first register to not be fixable, in which case it's
-            -- not a pair. We do this to support the family:
-            --    AX, DX:AX, EDX:RAX, RDX:RAX
-            return $ case (regFixupPredFamilyMaybe oracle f1, regFixupPredFamily oracle f2) of
-               (Just r1,r2) -> OpRegPair r1 r2
-               (Nothing,r)  -> OpReg r
-
-         T_Pair (T_Imm ImmSize16) (T_Imm ImmSizeOp) -> return $ case imms of
-            [SizedValue16 x, SizedValue16 y] -> OpPtr16_16 x y
-            [SizedValue16 x, SizedValue32 y] -> OpPtr16_32 x y
-            xs -> error ("Invalid immediate operands for ptr16x: " ++ show xs)
-
-         T_Pair (T_Imm ImmSize16) (T_Imm ImmSize8) -> return $ case imms of
-            [SizedValue16 x, SizedValue8 y] -> OpStackFrame x y
-            xs -> error ("Invalid immediate operands for ENTER: " ++ show xs)
-
-         T_Pair x y -> error ("Unhandled operand pair: " ++ show (x,y))
-
-         -- Immediate
-         T_Imm (ImmConst n) ->
-            -- 8-bit is currently enough for known instructions
-            return (OpImmediate (SizedValue8 (fromIntegral n)))
-
-         T_Imm _            -> case imms of
-            [x] -> return (OpImmediate x)
-            xs  -> error ("Invalid immediate: " ++ show xs)
-
-         -- IP relative offset
-         T_Rel _ -> return (OpCodeAddr Addr
-            { addrSeg   = R_CS
-            , addrBase  = Just rIP
-            , addrIndex = Nothing
-            , addrScale = Nothing
-            , addrDisp  = disp
-            })
-         
-         -- Segment relative offset
-         T_MemOffset -> return (OpCodeAddr Addr
-            { addrSeg   = seg
-            , addrBase  = Nothing
-            , addrIndex = Nothing
-            , addrScale = Nothing
-            , addrDisp  = disp
-            })
-
-         -- DS:EAX or DS:RAX (used by monitor)
-         T_MemDSrAX -> return (OpMem MemVoid Addr
-            { addrSeg   = R_DS
-            , addrBase  = Just $ if is64bitMode' then R_RAX else R_EAX
-            , addrIndex = Nothing
-            , addrScale = Nothing
-            , addrDisp  = disp
-            })
-
-      -- The default segment is DS except
-      --  * for some instruction (cf DefaultSegment property)
-      --  * if rBP or rSP is used as base (in which case it is SS)
-      --  * for string instructions' source operand (in which case it is ES)
-      defSeg = case filter isD (encProperties enc) of
-            []                 -> R_DS
-            [DefaultSegment s] -> s
-            _                  -> error "More than one default segment"
-         where
-            isD (DefaultSegment _) = True
-            isD _                  = False
-
-      -- segment override prefixes
-      segOverride = case filter ((== 3) . legacyPrefixGroup) ps of
-         []               -> Nothing
-         [LegacyPrefix2E] -> Just R_CS
-         [LegacyPrefix3E] -> Just R_DS
-         [LegacyPrefix26] -> Just R_ES
-         [LegacyPrefix64] -> Just R_FS
-         [LegacyPrefix65] -> Just R_GS
-         [LegacyPrefix36] -> Just R_SS
-         xs -> error ("More than one segment-override prefix: "++show xs)
-
-      -- memory segment (when override is allowed)
-      seg = fromMaybe defSeg segOverride
-
-      rIP = case addressSize of
-               AddrSize16 -> R_IP
-               AddrSize32 -> R_EIP
-               AddrSize64 -> R_RIP
-
-      gpr sz r  = regGPR useExtRegs sz r
 
       -- extended ModRM.reg (with REX.R, VEX.R, etc.)
       modRMreg = opcodeR oc `unsafeShiftL` 3 .|. regField modrm'
@@ -860,14 +637,6 @@ readOperands mode ps oc enc = do
       -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
       modRMrm = opcodeB oc `unsafeShiftL` 3 .|. rmField modrm'
          where modrm' = fromMaybe (error "Cannot read ModRM") modrm
-
-      sib' = fromJust sib
-
-      -- | Extended SIB index (with REX.X, VEX.X, etc.)
-      sibIdx = opcodeX oc `unsafeShiftL` 3 .|. indexField sib'
-            
-      -- | Extended SIB base (with REX.B, VEX.B, etc.)
-      sibBase = opcodeB oc `unsafeShiftL` 3 .|. baseField sib'
 
       -- | Extended register id in opcode (with REX.B, VEX.B, etc.)
       opcodeRegId =  opcodeB oc `unsafeShiftL` 3 .|. (opcodeByte oc .&. 0b111)
@@ -886,26 +655,20 @@ readOperands mode ps oc enc = do
          _ -> error ("useExtRegs: we shouldn't check for 8-bit registers with non-legacy opcode: " ++ show oc)
 
          
-   ops' <- forM (encOperands enc) readParam
+   -- fixup values in operands families
+   let ops'' = fmap readParam ops
+
+   -- convert operand families into operands
+   let ops' = fmap (fromJust . opFamToOp) ops''
 
    -- reverse operands (FPU dest, reversable bit)
-   let ops = case (encReversableBit enc, encFPUDestBit enc) of
+   let fops = case (encReversableBit enc, encFPUDestBit enc) of
                (Just b, Nothing)
                   | testBit (opcodeByte oc) b -> reverse ops'
                (Nothing, Just b)
                   | testBit (opcodeByte oc) b -> reverse ops'
                _                              -> ops'
 
-   return ops
+   return fops
 
 
--- | Give the default segment for the given base register
-defaultSegment :: Maybe Register -> Register
-defaultSegment = \case
-   Just R_BP  -> R_SS
-   Just R_SP  -> R_SS
-   Just R_EBP -> R_SS
-   Just R_ESP -> R_SS
-   Just R_RBP -> R_SS
-   Just R_RSP -> R_SS
-   _          -> R_DS

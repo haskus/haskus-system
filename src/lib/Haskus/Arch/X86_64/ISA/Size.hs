@@ -6,9 +6,13 @@ module Haskus.Arch.X86_64.ISA.Size
    , sizeInBits
    , AddressSize(..)
    , SizedValue(..)
+   , toSizedValue
+   , fromSizedValue
    , OperandSize(..)
    , opSizeInBits
    , getSize
+   , getSize64
+   , getOpSize64
    ) where
 
 import Haskus.Format.Binary.Get
@@ -51,6 +55,23 @@ data SizedValue
    | SizedValue64 !Word64
    deriving (Show,Eq,Ord)
 
+-- | Convert a value into a SizedValue
+toSizedValue :: Size -> Word64 -> SizedValue
+toSizedValue s v = case s of
+   Size8  -> SizedValue8  (fromIntegral v)
+   Size16 -> SizedValue16 (fromIntegral v)
+   Size32 -> SizedValue32 (fromIntegral v)
+   Size64 -> SizedValue64 (fromIntegral v)
+   _      -> error ("toSizedValue: invalid size (" ++ show s ++ ")")
+
+-- | Convert a value from a SizedValue
+fromSizedValue :: SizedValue -> Word64
+fromSizedValue = \case
+   SizedValue8  v -> fromIntegral v
+   SizedValue16 v -> fromIntegral v
+   SizedValue32 v -> fromIntegral v
+   SizedValue64 v -> v
+
 -- | Operand size
 data OperandSize
    = OpSize8 
@@ -74,3 +95,18 @@ getSize Size16 = SizedValue16 <$> getWord16le
 getSize Size32 = SizedValue32 <$> getWord32le
 getSize Size64 = SizedValue64 <$> getWord64le
 getSize s      = error ("getSize: unsupported size: " ++ show s)
+
+-- | Read a value in a Word64
+getSize64 :: Size -> Get Word64
+getSize64 Size8  = fromIntegral <$> getWord8
+getSize64 Size16 = fromIntegral <$> getWord16le
+getSize64 Size32 = fromIntegral <$> getWord32le
+getSize64 Size64 =                  getWord64le
+getSize64 s      = error ("getSize: unsupported size: " ++ show s)
+
+-- | Read a value in a Word64
+getOpSize64 :: OperandSize -> Get Word64
+getOpSize64 OpSize8  = fromIntegral <$> getWord8
+getOpSize64 OpSize16 = fromIntegral <$> getWord16le
+getOpSize64 OpSize32 = fromIntegral <$> getWord32le
+getOpSize64 OpSize64 =                  getWord64le

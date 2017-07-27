@@ -10,16 +10,15 @@
 -- | Register
 module Haskus.Arch.Common.Register
    ( Reg (..)
-   , TypedReg (..)
    -- * Register family
    , RegFam (..)
-   , PredRegFam
-   , TermRegFam
+   , RegFamP
+   , RegFamT
    , regMatchFamily
    , regFixupPredFamily
    , regFixupPredFamilyMaybe
-   , regFixupTermFamilyMaybe
-   , regFixupTermFamily
+   , regFamToReg
+   , regFamToReg'
    , regFamFromReg
    , pRegFamFromReg
    -- * Set
@@ -32,27 +31,22 @@ module Haskus.Arch.Common.Register
    )
 where
 
+import Haskus.Arch.Common.Solver
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
 import Haskus.Utils.List (nub)
 
 -- | Register
-data Reg banks = Reg
+data Reg banks rt = Reg
    { registerBank   :: banks                -- ^ Register bank
    , registerId     :: {-# UNPACK #-} !Word -- ^ Register ID
    , registerSize   :: {-# UNPACK #-} !Word -- ^ Register size in bits
    , registerOffset :: {-# UNPACK #-} !Word -- ^ Register offset in bits (alias register)
+   , registerType   :: !rt                  -- ^ Register type
    }
    deriving (Show,Eq,Ord)
 
-
--- | Typed register
-data TypedReg typ bank = TypedReg
-   { typedReg     :: Reg bank   -- ^ Register
-   , typedRegType :: typ        -- ^ Register type
-   }
-   deriving (Show,Eq,Ord)
 
 --------------------------
 -- Register family
@@ -100,67 +94,71 @@ simplifySet s = case s of
 
 type PSet e p a = Rule e p (CSet a)
 
-data T      -- terminal
-data NT p e -- non-terminal
-
-type family Q t a :: * where
-   Q (NT p e) a = Rule e p a
-   Q T        a = a
-
 -- | Register family
-data RegFam t banks = RegFam
+data RegFam t banks rt = RegFam
    { regFamBank   :: !(Q t (CSet banks)) -- ^ Register bank
    , regFamId     :: !(Q t (CSet Word))  -- ^ Register ID
    , regFamSize   :: !(Q t (CSet Word))  -- ^ Register size in bits
    , regFamOffset :: !(Q t (CSet Word))  -- ^ Register offset in bits
+   , regFamType   :: !(Q t rt)           -- ^ Register type
    }
 
-type PredRegFam p e b = RegFam (NT p e) b
-type TermRegFam b     = RegFam T b
+-- | Predicated register family
+type RegFamP p e b rt = RegFam (NT p e) b rt
 
-deriving instance Show b => Show (RegFam T b)
-deriving instance Eq b   => Eq   (RegFam T b)
-deriving instance Ord b  => Ord  (RegFam T b)
-deriving instance (Show p, Show e, Show b) => Show (RegFam (NT p e) b)
-deriving instance (Eq p, Eq e, Eq b)       => Eq   (RegFam (NT p e) b)
-deriving instance (Ord p, Ord e, Ord b)    => Ord  (RegFam (NT p e) b)
+-- | Terminal register family
+type RegFamT b rt     = RegFam T b rt
 
-instance (Ord p, Eq e, Eq b, Eq p) => Predicated (RegFam (NT p e) b) where
-   type Pred     (RegFam (NT p e) b) = p
-   type PredErr  (RegFam (NT p e) b) = e
-   type PredTerm (RegFam (NT p e) b) = RegFam T b
+deriving instance (Show b, Show rt) => Show (RegFam T b rt)
+deriving instance (Eq b, Eq rt)     => Eq   (RegFam T b rt)
+deriving instance (Ord b, Ord rt)   => Ord  (RegFam T b rt)
+deriving instance (Show p, Show e, Show b, Show rt) => Show (RegFam (NT p e) b rt)
+deriving instance (Eq p, Eq e, Eq b, Eq rt)         => Eq   (RegFam (NT p e) b rt)
+deriving instance (Ord p, Ord e, Ord b, Ord rt)     => Ord  (RegFam (NT p e) b rt)
 
-   liftTerminal (RegFam b i s o) = RegFam (liftTerminal b)
-                                          (liftTerminal i)
-                                          (liftTerminal s)
-                                          (liftTerminal o)
+instance (Ord p, Eq e, Eq b, Eq p, Eq rt) => Predicated (RegFam (NT p e) b rt) where
+   type Pred     (RegFam (NT p e) b rt) = p
+   type PredErr  (RegFam (NT p e) b rt) = e
+   type PredTerm (RegFam (NT p e) b rt) = RegFam T b rt
 
-   reducePredicates oracle (RegFam b i s o) =
+   liftTerminal (RegFam b i s o t) = RegFam (liftTerminal b)
+                                            (liftTerminal i)
+                                            (liftTerminal s)
+                                            (liftTerminal o)
+                                            (liftTerminal t)
+
+   reducePredicates oracle (RegFam b i s o t) =
       initP RegFam RegFam
          |> (`applyP` reducePredicates oracle b)
          |> (`applyP` reducePredicates oracle i)
          |> (`applyP` reducePredicates oracle s)
          |> (`applyP` reducePredicates oracle o)
+         |> (`applyP` reducePredicates oracle t)
          |> resultP
 
-   getTerminals (RegFam bs is ss os) = [ RegFam b i s o | b <- getTerminals bs
-                                                        , i <- getTerminals is
-                                                        , s <- getTerminals ss
-                                                        , o <- getTerminals os
-                                       ]
-   getPredicates (RegFam b i s o) = nub $ concat [ getPredicates b
-                                                 , getPredicates i
-                                                 , getPredicates s
-                                                 , getPredicates o
-                                                 ]
+   getTerminals (RegFam bs is ss os ts) =
+      [ RegFam b i s o t | b <- getTerminals bs
+                         , i <- getTerminals is
+                         , s <- getTerminals ss
+                         , o <- getTerminals os
+                         , t <- getTerminals ts
+      ]
+   getPredicates (RegFam b i s o t) =
+      nub $ concat [ getPredicates b
+                   , getPredicates i
+                   , getPredicates s
+                   , getPredicates o
+                   , getPredicates t
+                   ]
 
 
 -- | Test if a register match a family
 regMatchFamily ::
    ( Ord p
    , Eq b
-   , Predicated (PredRegFam p e b)
-   ) => PredOracle p -> PredRegFam p e b -> Reg b -> Bool
+   , Eq rt
+   , Predicated (RegFamP p e b rt)
+   ) => PredOracle p -> RegFamP p e b rt -> Reg b rt -> Bool
 regMatchFamily oracle rf Reg{..} =
    case reducePredicates oracle rf of
       Match (RegFam {..}) -> registerBank `elemSet` regFamBank
@@ -171,11 +169,12 @@ regMatchFamily oracle rf Reg{..} =
 
 -- | Fixup a family (all fields must reduce to Singleton set)
 regFixupPredFamily ::
-   ( Predicated (PredRegFam p e b)
-   , Show (PredRegFam p e b)
+   ( Predicated (RegFamP p e b rt)
+   , Show (RegFamP p e b rt)
    , Eq b
+   , Eq rt
    , Ord p
-   ) => PredOracle p -> PredRegFam p e b -> Reg b
+   ) => PredOracle p -> RegFamP p e b rt -> Reg b rt
 regFixupPredFamily oracle fam =
    case regFixupPredFamilyMaybe oracle fam of
       Nothing -> error ("Cannot fixup family: " ++ show fam)
@@ -183,25 +182,27 @@ regFixupPredFamily oracle fam =
 
 -- | Try to fixup a family (all fields must reduce to Set qualifier)
 regFixupPredFamilyMaybe ::
-   ( Predicated (PredRegFam p e b)
+   ( Predicated (RegFamP p e b rt)
    , Eq b
+   , Eq rt
    , Ord p
-   ) => PredOracle p -> PredRegFam p e b -> Maybe (Reg b)
+   ) => PredOracle p -> RegFamP p e b rt -> Maybe (Reg b rt)
 regFixupPredFamilyMaybe oracle fam =
    case reducePredicates oracle fam of
-      Match r -> regFixupTermFamilyMaybe r
+      Match r -> regFamToReg r
       _       -> Nothing
 
 -- | Try to fixup a family (all fields must reduce to Set qualifier)
-regFixupTermFamilyMaybe :: Eq b => TermRegFam b -> Maybe (Reg b)
-regFixupTermFamilyMaybe (RegFam a b c d) =
+regFamToReg :: (Eq b, Eq rt) => RegFamT b rt -> Maybe (Reg b rt)
+regFamToReg (RegFam a b c d e) =
    case (simplifySet a, simplifySet b, simplifySet c, simplifySet d) of
-      (Singleton u, Singleton v, Singleton w, Singleton x) -> Just (Reg u v w x)
-      _                                                    -> Nothing
+      (Singleton u, Singleton v, Singleton w, Singleton x)
+         -> Just (Reg u v w x e)
+      _  -> Nothing
 
 -- | Try to fixup a family (all fields must reduce to Set qualifier)
-regFixupTermFamily :: (Show (TermRegFam b), Eq b) => TermRegFam b -> Reg b
-regFixupTermFamily fam = fromMaybe err (regFixupTermFamilyMaybe fam)
+regFamToReg' :: (Show (RegFamT b rt), Eq b, Eq rt) => RegFamT b rt -> Reg b rt
+regFamToReg' fam = fromMaybe err (regFamToReg fam)
    where
       err = error ("Cannot fixup family: " ++ show fam)
 
@@ -238,14 +239,15 @@ trySetCSet a s
 
 
 -- | Make a terminal register family matching a single register
-regFamFromReg :: Reg b -> TermRegFam b
+regFamFromReg :: Reg b rt -> RegFamT b rt
 regFamFromReg Reg{..} = RegFam
    { regFamBank   = Singleton registerBank
    , regFamId     = Singleton registerId
    , regFamSize   = Singleton registerSize
    , regFamOffset = Singleton registerOffset
+   , regFamType   = registerType
    }
 
 -- | Make a predicated register family matching a single register
-pRegFamFromReg :: (Predicated (PredRegFam p e b)) => Reg b -> PredRegFam p e b
+pRegFamFromReg :: (Predicated (RegFamP p e b rt)) => Reg b rt -> RegFamP p e b rt
 pRegFamFromReg = liftTerminal . regFamFromReg

@@ -6,6 +6,7 @@ module Haskus.Arch.X86_64.ISA.Solver
    , X86Constraint
    -- * Predicates
    , X86Pred (..)
+   , X86Err
    , ContextPred (..)
    , InsnPred (..)
    , PrefixPred (..)
@@ -14,12 +15,18 @@ module Haskus.Arch.X86_64.ISA.Solver
    , PredError (..)
    , checkOracle
    , pPrefix
+   , sPrefix
+   , pRegModRM
+   , sRegModRM
    , pMode
    , pMode64bit
    , pCS_D
    , pLegacy8bitRegs
    , pOverriddenOperationSize64
+   , pOverriddenOperationSize
    , pForce8bit
+   , pFPUSizeBit
+   , pSignExtendBit
    , pOverriddenAddressSize
    -- * Rules
    , rDefaultOperationSize
@@ -54,7 +61,9 @@ data PrefixPred
 data InsnPred
    = Default64OpSize    -- ^ Instruction defaulting to 64-bit size
    | RegModRM           -- ^ Require ModRM.mod == 11b (register)
-   | Force8bit          -- ^ Instruction having a set Force8Bit bit in the opcode
+   | Force8bit          -- ^ Set Force8Bit bit in the opcode
+   | FPUSizeBit         -- ^ Set Size bit in the FPU opcode
+   | SignExtendBit      -- ^ Sign-extend opcode bit set
    deriving (Show,Eq,Ord)
 
 -- | Encoding predicates
@@ -75,8 +84,9 @@ data X86Pred
    | InsnPred InsnPred
    deriving (Show,Eq,Ord)
 
-type X86Rule a     = Rule String X86Pred a
-type X86Constraint = Constraint String X86Pred
+type X86Err        = String
+type X86Rule a     = Rule X86Err X86Pred a
+type X86Constraint = Constraint X86Err X86Pred
 
 -----------------------------------------------------
 -- Predicates
@@ -194,17 +204,48 @@ pCS_D = Predicate (ContextPred CS_D)
 pPrefix :: PrefixPred -> X86Constraint
 pPrefix = Predicate . PrefixPred
 
+-- | Select using a prefix
+sPrefix :: PrefixPred -> X86Rule a -> X86Rule a -> X86Rule a
+sPrefix p a b = NonTerminal
+   [ (Not $ pPrefix p, a)
+   , (      pPrefix p, b)
+   ]
+
+-- | ModRM.mod = 11 predicate
+pRegModRM :: X86Constraint
+pRegModRM = Predicate (InsnPred RegModRM)
+
+-- | Select using a prefix
+sRegModRM :: X86Rule a -> X86Rule a -> X86Rule a
+sRegModRM a b = NonTerminal
+   [ (Not $ pRegModRM, a)
+   , (      pRegModRM, b)
+   ]
+
 -- | Overriden 64-bit operation size predicate
 pOverriddenOperationSize64 :: OperandSize -> X86Constraint
 pOverriddenOperationSize64 t = rOverriddenOperationSize64 `evalsTo` t
+
+-- | Overriden operation size predicate
+pOverriddenOperationSize :: OperandSize -> X86Constraint
+pOverriddenOperationSize t = rOverriddenOperationSize `evalsTo` t
 
 -- | Force 8-bit operand size
 pForce8bit :: X86Constraint
 pForce8bit = Predicate (InsnPred Force8bit)
 
+-- | FPU Size opcode bit
+pFPUSizeBit :: X86Constraint
+pFPUSizeBit = Predicate (InsnPred FPUSizeBit)
+
+-- | Sign-extend opcode bit
+pSignExtendBit :: X86Constraint
+pSignExtendBit = Predicate (InsnPred SignExtendBit)
+
 -- | Overriden address size predicate
 pOverriddenAddressSize :: AddressSize -> X86Constraint
 pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` t
+
 
 -----------------------------------------------------
 -- Predicates
