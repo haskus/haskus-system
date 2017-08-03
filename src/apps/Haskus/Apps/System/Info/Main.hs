@@ -2,6 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE TypeFamilies #-}
 
 import Haskus.Apps.System.Info.CmdLine (Options(..), getOptions)
 
@@ -194,26 +195,34 @@ showEnc oc rv e = H.tr $ do
    H.tr $ do
       H.th (toHtml "Type")
       forM_ (rev ops) $ \o -> H.td $ do
-         case getTerminals (X86.opFam o) of
-            [X86.T_Reg fam] -> do
-               let
-                  oracle = makeOracle
-                              [(InsnPred Default64OpSize, if | X86.DefaultOperandSize64 `elem` X86.encProperties e -> SetPred
-                                                             | otherwise                                           -> UnsetPred)
-                              ,(InsnPred Force8bit      , case X86.encNoForce8Bit e of
-                                                            Nothing -> UnsetPred
-                                                            Just t
-                                                               | testBit oc t -> UnsetPred
-                                                               | otherwise    -> SetPred)
-                              ]
+         let
+            oracle = makeOracle
+                        [(InsnPred Default64OpSize, if | X86.DefaultOperandSize64 `elem` X86.encProperties e -> SetPred
+                                                       | otherwise                                           -> UnsetPred)
+                        ,(InsnPred Force8bit      , case X86.encNoForce8Bit e of
+                                                      Nothing -> UnsetPred
+                                                      Just t
+                                                         | testBit oc t -> UnsetPred
+                                                         | otherwise    -> SetPred)
+                        ,(EncodingPred PLegacyEncoding, if | X86.isLegacyEncoding e -> SetPred
+                                                           | otherwise              -> UnsetPred)
+                        ,(EncodingPred PVexEncoding   , if | X86.isVexEncoding e    -> SetPred
+                                                           | otherwise              -> UnsetPred)
+                        ]
 
-                  fam' = case reducePredicates oracle fam of
-                           Match     f -> liftTerminal f
-                           DontMatch f -> f
-                           _           -> error "Invalid register family"
+            preReduce x = case reducePredicates oracle x of
+                     Match     f -> liftTerminal f
+                     DontMatch f -> f
+                     _           -> error "Invalid predicated value"
 
-               showRegFamily fam'
-            t             -> toHtml (show t)
+            showOpFam = \case
+               X86.T_Reg fam  -> showPredTable showReg (preReduce fam)
+               X86.T_Mem fam  -> showPredTable (toHtml . show) (preReduce fam)
+               X86.T_Imm fam  -> showPredTable (toHtml . show) (preReduce fam)
+               t              -> toHtml (show t)
+
+         showPredTable showOpFam (preReduce (X86.opFam o))
+
    H.tr $ do
       H.th (toHtml "Encoding")
       forM_ (rev ops) $ \o -> H.td . toHtml $ case X86.opStore o of
@@ -255,23 +264,30 @@ showReg r = case r of
       -> toHtml ("Any legacy 8-bit GPR")
    r' -> toHtml (show r')
 
-showRegFamily :: X86.X86RegFamP -> Html
-showRegFamily fam =
-   case createPredicateTable fam (null . checkOracle False) False of
-      Left r   -> showReg r
-      Right [] -> toHtml ("Error: empty table! " ++ show fam)
+showPredTable ::
+   ( Pred a ~ X86Pred
+   , Eq (PredTerm a)
+   , Ord (PredTerm a)
+   , Show a
+   , Eq a
+   , Predicated a
+   ) => (PredTerm a -> Html) -> a -> Html
+showPredTable showValue a =
+   case createPredicateTable a (null . checkOracle False) True of
+      Left r   -> showValue r
+      Right [] -> toHtml ("Error: empty table! " ++ show a)
       Right rs -> H.table $ do
-         let ps = List.sort (getPredicates fam)
+         let ps = List.sort (getPredicates a)
          H.tr $ do
             forM_ ps $ \p -> H.th $ toHtml (showPredicate p)
-            H.th (toHtml "Register")
+            H.th (toHtml "Value")
          forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
             forM_ ws $ \(oracle,v) -> H.tr $ do
                forM_ ps $ \p -> case predState oracle p of
                   UnsetPred -> H.td (toHtml "0")
                   SetPred   -> H.td (toHtml "1")
                   UndefPred -> H.td (toHtml "X")
-               H.td $ showReg v
+               H.td $ showValue v
 
 
 showMaps :: Html

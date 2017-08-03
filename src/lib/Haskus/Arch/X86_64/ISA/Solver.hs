@@ -167,6 +167,9 @@ checkOracle strict oracle =
          -- execution modes are incompatible
          exclusive (fmap (ContextPred . Mode) allModes)
 
+         -- all modes can't be unset
+         ++ [[(ContextPred (Mode m),UnsetPred) | m <- allModes]]
+
          -- encodings are incompatible
          ++ exclusive (fmap EncodingPred encodings)
 

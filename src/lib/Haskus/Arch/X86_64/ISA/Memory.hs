@@ -85,7 +85,7 @@ data Addr = Addr
 data AlignConstraint
    = StrictAlign    {-# UNPACK #-} !Word
    | PreferredAlign {-# UNPACK #-} !Word
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 
 -- | A memory address family
@@ -99,7 +99,7 @@ data AddrFam = AddrFam
    , addrFamDispSize  :: !(Maybe Size)            -- ^ Displacement size
    , addrFamAlign     :: !(Maybe AlignConstraint) -- ^ Alignment constraint
    }
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Empty address family
 emptyAddrFam :: AddrFam
@@ -145,7 +145,7 @@ baseDefaultSegment = \case
 data SegFam
    = FixedSeg X86Reg       -- ^ Fixed segment register
    | OverridableSeg X86Reg -- ^ Overridable segment register
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 
 -- | SIB scale factor
@@ -154,7 +154,7 @@ data Scale
    | Scale2 
    | Scale4 
    | Scale8 
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 
 -- | Memory address type
@@ -172,7 +172,7 @@ data MemType
    | T_MemVSIB         -- ^ generic memory referred to by indices in a vector register (indicated in the VSIB)
    | T_MemRel          -- ^ Relative code offset
    | T_MemOffset       -- ^ Offset from segment base
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Convert a memory family to a memory
 x86memFamToMem :: X86MemFamT -> Maybe X86Mem

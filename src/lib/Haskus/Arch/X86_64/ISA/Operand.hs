@@ -114,16 +114,19 @@ data Operand
 
 -- | Operand family
 data OperandFam t
-   = T_Pair (OperandFam t) (OperandFam t) -- ^ Pair (AAA:BBB) of immediates or registers
-   | T_Mem (X86MemFam t)                  -- ^ Memory address
+   = T_Mem (X86MemFam t)                  -- ^ Memory address
    | T_Reg (X86RegFam t)                  -- ^ Register
    | T_Imm (X86ImmFam t)                  -- ^ Immediate value
+   | T_Pair (OperandFam t) (OperandFam t) -- ^ Pair (AAA:BBB) of immediates or registers
 
 deriving instance (Show (OperandFam T))
 deriving instance (Show (OperandFam (NT X86Pred X86Err)))
 
 deriving instance (Eq (OperandFam T))
 deriving instance (Eq (OperandFam (NT X86Pred X86Err)))
+
+deriving instance (Ord (OperandFam T))
+deriving instance (Ord (OperandFam (NT X86Pred X86Err)))
 
 -- | Predicated operand type
 type OperandFamP = OperandFam (NT X86Pred X86Err)

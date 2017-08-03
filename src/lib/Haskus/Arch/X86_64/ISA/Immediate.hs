@@ -20,7 +20,7 @@ import Haskus.Format.Binary.Word
 
 data ImmType
    = ImmGeneric
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 type X86ImmFamP  = ImmFamP X86Pred X86Err ImmType OperandSize
 type X86ImmFamT  = ImmFamT ImmType OperandSize
