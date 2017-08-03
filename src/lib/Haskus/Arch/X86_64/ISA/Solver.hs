@@ -28,6 +28,7 @@ module Haskus.Arch.X86_64.ISA.Solver
    , pFPUSizeBit
    , pSignExtendBit
    , pOverriddenAddressSize
+   , pOpSize64
    -- * Rules
    , rDefaultOperationSize
    , rDefaultAddressSize
@@ -290,7 +291,7 @@ rDefaultAddressSize = NonTerminal
 -- | Overridden operation size (OOS)
 rOverriddenOperationSize :: X86Rule OperandSize
 rOverriddenOperationSize = NonTerminal
-      [ ((pPrefix Prefix66)      , orderedNonTerminal p66)
+      [ ((pPrefix Prefix66)      , NonTerminal p66)
       , ((Not (pPrefix Prefix66)), rDefaultOperationSize)
       ]
    where
@@ -301,7 +302,7 @@ rOverriddenOperationSize = NonTerminal
 -- | Overridden address size (OAS)
 rOverriddenAddressSize :: X86Rule AddressSize
 rOverriddenAddressSize = NonTerminal
-      [ ((pPrefix Prefix67)      , orderedNonTerminal p67)
+      [ ((pPrefix Prefix67)      , NonTerminal p67)
       , ((Not (pPrefix Prefix67)), rDefaultAddressSize)
       ]
    where
@@ -315,9 +316,20 @@ rOverriddenAddressSize = NonTerminal
 -- Support W prefix and default operation size set to 64-bit in 64-bit mode.
 rOverriddenOperationSize64 :: X86Rule OperandSize
 rOverriddenOperationSize64 = orderedNonTerminal
-      [ (Not pMode64bit, rOverriddenOperationSize)
-      , (Or [ Predicate (InsnPred Default64OpSize)
-            , Predicate (PrefixPred PrefixW)
-            ], Terminal OpSize64)
+      [ (And 
+         [ pMode64bit
+         , Or [ Predicate (InsnPred Default64OpSize)
+              , Predicate (PrefixPred PrefixW)
+              ]
+         ], Terminal OpSize64)
       , (CBool True, rOverriddenOperationSize)
       ]
+
+-- | Operand size predicate
+pOpSize64 :: a -> a -> a -> a -> X86Rule a
+pOpSize64 a b c d = NonTerminal
+   [ (pForce8bit                                               , Terminal a)
+   , (And [Not pForce8bit, pOverriddenOperationSize64 OpSize16], Terminal b)
+   , (And [Not pForce8bit, pOverriddenOperationSize64 OpSize32], Terminal c)
+   , (And [Not pForce8bit, pOverriddenOperationSize64 OpSize64], Terminal d)
+   ]

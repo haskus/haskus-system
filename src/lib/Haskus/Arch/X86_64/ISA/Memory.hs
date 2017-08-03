@@ -212,12 +212,7 @@ memFamOpSize :: X86MemFamP
 memFamOpSize = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = orderedNonTerminal
-      [ (pForce8bit                         , Terminal $ Just  8)
-      , (pOverriddenOperationSize64 OpSize16, Terminal $ Just 16)
-      , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 32)
-      , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 64)
-      ]
+   , memFamSize = pOpSize64 (Just 8) (Just 16) (Just 32) (Just 64)
    }
 
 -- | Generic depending on REX.W
@@ -225,7 +220,7 @@ memFamW :: Word -> Word -> X86MemFamP
 memFamW s1 s2 = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = orderedNonTerminal
+   , memFamSize = NonTerminal
       [ (Not (Predicate (PrefixPred PrefixW)), Terminal $ Just s1)
       , (    (Predicate (PrefixPred PrefixW)), Terminal $ Just s2)
       ]
@@ -236,7 +231,7 @@ memFamL :: Word -> Word -> X86MemFamP
 memFamL s1 s2 = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = orderedNonTerminal
+   , memFamSize = NonTerminal
       [ (Not (Predicate (PrefixPred PrefixL)), Terminal $ Just s1)
       , (    (Predicate (PrefixPred PrefixL)), Terminal $ Just s2)
       ]
@@ -247,12 +242,7 @@ memFamOpSizePair :: X86MemFamP
 memFamOpSizePair = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal (T_MemPair T_MemGeneric)
-   , memFamSize = orderedNonTerminal
-      [ (pForce8bit                         , Terminal $ Just 16 )
-      , (pOverriddenOperationSize64 OpSize16, Terminal $ Just 32)
-      , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 64)
-      , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 128)
-      ]
+   , memFamSize = pOpSize64 (Just 16) (Just 32) (Just 64) (Just 128)
    }
 
 -- | Pair of 16- or 32-bit
@@ -260,7 +250,7 @@ memFamPair16o32 :: X86MemFamP
 memFamPair16o32 = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal (T_MemPair T_MemGeneric)
-   , memFamSize = orderedNonTerminal
+   , memFamSize = NonTerminal
       [ (pOverriddenOperationSize64 OpSize16, Terminal $ Just 32)
       , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 64)
       ]
@@ -280,7 +270,7 @@ memFamPtr :: X86MemFamP
 memFamPtr = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemPtr
-   , memFamSize = orderedNonTerminal
+   , memFamSize = NonTerminal
       [ (pOverriddenOperationSize64 OpSize16, Terminal $ Just 16)
       , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 32)
       , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 64)
@@ -376,12 +366,7 @@ memFamStringSource = MemFam
             })
       ]
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = orderedNonTerminal
-      [ (pForce8bit                         , Terminal $ Just  8)
-      , (pOverriddenOperationSize64 OpSize16, Terminal $ Just 16)
-      , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 32)
-      , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 64)
-      ]
+   , memFamSize = pOpSize64 (Just 8) (Just 16) (Just 32) (Just 64)
    }
 
 -- | Operand-size at ES:rDI
@@ -402,12 +387,7 @@ memFamStringDest = MemFam
             })
       ]
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = orderedNonTerminal
-      [ (pForce8bit                         , Terminal $ Just  8)
-      , (pOverriddenOperationSize64 OpSize16, Terminal $ Just 16)
-      , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 32)
-      , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 64)
-      ]
+   , memFamSize = pOpSize64 (Just 8) (Just 16) (Just 32) (Just 64)
    }
 
 -- | Operand-size at dS:rDI (DS is overridable)
@@ -577,10 +557,5 @@ memFamOffset = MemFam
             })
       ]
    , memFamType = Terminal T_MemOffset
-   , memFamSize = orderedNonTerminal 
-      [ (pForce8bit                         , Terminal $ Just  8)
-      , (pOverriddenOperationSize64 OpSize16, Terminal $ Just 16)
-      , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 32)
-      , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 64)
-      ]
+   , memFamSize = pOpSize64 (Just 8) (Just 16) (Just 32) (Just 64)
    }

@@ -1040,12 +1040,7 @@ regFamGPR = (pRegFamFromReg R_RAX)
                                                    -- disable SIL,DIL,etc.
       , (pLegacy8bitRegs                           , Terminal (NoneOf [4,5,6,7]))
       ]
-   , regFamSize   = orderedNonTerminal
-      [ (pForce8bit                         , Terminal (Singleton 8 ))
-      , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
-      , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
-      , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
-      ]
+   , regFamSize   = pOpSize64 (Singleton 8) (Singleton 16) (Singleton 32) (Singleton 64)
    , regFamOffset = orderedNonTerminal
       [ (Not pForce8bit                          , Terminal (Singleton 0))
                                                    -- disable AH,BH,CH,DH
@@ -1076,12 +1071,7 @@ regFamCounter = (pRegFamFromReg R_CX)
 -- | AL,AX,EAX,RAX depending on the operand-size
 regFamAccu :: X86RegFamP
 regFamAccu = (pRegFamFromReg R_AX)
-   { regFamSize   = orderedNonTerminal
-      [ (pForce8bit                         , Terminal (Singleton 8 ))
-      , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
-      , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
-      , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
-      ]
+   { regFamSize   = pOpSize64 (Singleton 8) (Singleton 16) (Singleton 32) (Singleton 64)
    }
 
 -- | SP, ESP or RSP
@@ -1124,12 +1114,7 @@ famSizes = orderedNonTerminal
 -- This on is used to encode AX, DX:AX, EDX:EAX, RDX:RAX
 regFamAX' :: X86RegFamP
 regFamAX' = (pRegFamFromReg R_AX)
-   { regFamSize   = orderedNonTerminal
-      [ (pForce8bit                         , Terminal (Singleton 16))
-      , (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
-      , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
-      , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))
-      ]
+   { regFamSize   = pOpSize64 (Singleton 16) (Singleton 16) (Singleton 32) (Singleton 64)
    }
 
 -- | AX,EAX,RAX depending on the operand-size

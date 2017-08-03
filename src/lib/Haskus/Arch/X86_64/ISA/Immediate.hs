@@ -39,12 +39,7 @@ immFamFixedSize s = ImmFam
 -- | Operand-sized immediate
 immFamOpSize :: X86ImmFamP
 immFamOpSize = ImmFam
-   { immFamSize = orderedNonTerminal
-      [ (pForce8bit                         , Terminal OpSize8)
-      , (pOverriddenOperationSize64 OpSize16, Terminal OpSize16)
-      , (pOverriddenOperationSize64 OpSize32, Terminal OpSize32)
-      , (pOverriddenOperationSize64 OpSize64, Terminal OpSize64)
-      ]
+   { immFamSize = pOpSize64 OpSize8 OpSize16 OpSize32 OpSize64
    , immFamSignExtended = Terminal Nothing
    , immFamValue        = Terminal Nothing
    , immFamType         = Terminal (Just ImmGeneric)
