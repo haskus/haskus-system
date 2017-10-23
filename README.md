@@ -11,8 +11,8 @@ Documentation: http://doc.haskus.org/manual/
 
 # Building systems
 
-The ``haskus-system-build`` tool (in the package of the same name) is the
-preferred way to build systems.
+The [haskus-system-build](https://github.com/haskus/haskus-system-build.git)
+tool (in the package of the same name) is the preferred way to build systems.
 
 Install it with:
 

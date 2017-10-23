@@ -205,7 +205,7 @@ encRepeatable e = Repeatable `elem` encProperties e
 encRequireModRM :: Encoding -> Bool
 encRequireModRM e = hasOpExt || hasOps
    where
-      -- use opcode extension in ModRM.reg 
+      -- use opcode extension in ModRM.reg or in full ModRM
       hasOpExt = isJust (encOpcodeExt e) || isJust (encOpcodeFullExt e)
 
       -- has operands in ModRM
