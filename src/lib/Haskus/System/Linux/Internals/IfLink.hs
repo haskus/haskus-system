@@ -4,6 +4,8 @@
 
 module Haskus.System.Linux.Internals.IfLink where
 
+import Haskus.Utils.Types.Generics (Generic)
+import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Vector (Vector)
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.BitSet
@@ -48,6 +50,7 @@ data LinkStats = LinkStats
 
    , linkStatsRxNohandler  :: !Word32 -- ^ dropped, no handler found
    }
+   deriving (Generic,Storable,Show)
 
 -- | The main device statistics structure
 data LinkStats64 = LinkStats64
@@ -83,6 +86,7 @@ data LinkStats64 = LinkStats64
 
    , linkStats64RxNohandler  :: !Word64 -- ^ dropped, no handler found
    }
+   deriving (Generic,Storable,Show)
 
 -- | The struct should be in sync with struct ifmap
 data LinkIfMap = LinkIfMap
@@ -93,6 +97,7 @@ data LinkIfMap = LinkIfMap
    , linkIfMapDMA      :: !Word8
    , linkIfMapPort     :: !Word8
    }
+   deriving (Generic,Storable,Show)
 
 --
 -- IFLA_AF_SPEC
@@ -272,6 +277,7 @@ data BridgeId = BridgeId
    { bridgePriority :: Vector 2 Word8
    , bridgeAddress  :: Vector 6 Word8 -- ETH_ALEN
    }
+   deriving (Generic,Storable,Show)
 
 data BridgeMode
    = BridgeModeUnspec
@@ -313,11 +319,12 @@ data BridgePort
    deriving (Show,Eq,Enum)
 
 data CacheInfo = CacheInfo
-   { cacheInfoMaxReasmLen :: Word32
-   , cacheInfoTimestamp :: Word32   -- ^ ipv6InterfaceTable updated timestamp
+   { cacheInfoMaxReasmLen   :: Word32
+   , cacheInfoTimestamp     :: Word32   -- ^ ipv6InterfaceTable updated timestamp
    , cacheInfoReachableTime :: Word32
-   , cacheInfoRetransTime :: Word32
+   , cacheInfoRetransTime   :: Word32
    }
+   deriving (Generic,Storable,Show)
 
 data InterfaceInfo
    = InterfaceInfoUNSPEC
@@ -344,9 +351,10 @@ data VLAN
 
 
 data VLANFlags = VLANFlags
-   { vlanFlags :: Word32
-   , vlanMask  :: Word32
+   { vlanFlags :: !Word32
+   , vlanMask  :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 data VLAN_QOS
    = VLAN_QOS_UNSPEC
@@ -354,9 +362,10 @@ data VLAN_QOS
    deriving (Show,Eq,Enum)
 
 data VLAN_QOS_Mapping = VLAN_QOS_Mapping
-   { vlanQosMappingFrom :: Word32
-   , vlanQosMappingTo   :: Word32
+   { vlanQosMappingFrom :: !Word32
+   , vlanQosMappingTo   :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 --------------------
 -- MACVLAN section 
@@ -492,6 +501,7 @@ data VXLAN_PortRange = VXLAN_PortRange
    { vxlanPortRangeLow  :: AsBigEndian Word16
    , vxlanPortRangeHigh :: AsBigEndian Word16
    }
+   deriving (Generic,Storable,Show)
 
 -------------------
 -- GENEVE section
@@ -626,12 +636,14 @@ data VF_MAC = VF_MAC
    { vfMacVF  :: !Word32
    , vfMacMac :: Vector 32 Word8 -- MAX_ADDR_LEN
    }
+   deriving (Generic,Storable,Show)
 
 data VF_VLAN = VF_VLAN
    { vfVlanVF   :: !Word32
    , vfVlanVLAN :: !Word32 -- ^ 0 - 4095, 0 disables VLAN filter
    , vfVlanQOS  :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 data VF_VLAN_INFO
    = VF_VLAN_INFO_UNSPEC
@@ -644,27 +656,32 @@ data VFVlanInfo = VFVlanInfo
    , vfVlanInfoQOS  :: !Word32
    , vfVlanProto    :: AsBigEndian Word16 -- ^ VLAN protocol either 802.1Q or 802.1ad
    }
+   deriving (Generic,Storable,Show)
 
 data VF_TX_RATE = VF_TX_RATE
    { vfTxRateVF   :: !Word32
    , vfTxRateRate :: !Word32 -- ^ Max TX bandwidth in Mbps, 0 disables throttling
    }
+   deriving (Generic,Storable,Show)
 
 data VF_RATE = VF_RATE
    { vfRateVF :: !Word32
    , vfRateMinTxRate :: !Word32 -- ^ Min Bandwidth in Mbps
    , vfRateMaxTxRate :: !Word32 -- ^ Max Bandwidth in Mbps
    }
+   deriving (Generic,Storable,Show)
 
 data VF_SpoofCheck = VF_SpoofCheck
    { vfSpoofCheckVF      :: !Word32
    , vfSpoofCheckSetting :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 data VF_GUID = VF_GUID
    { vfGuidVF   :: !Word32
    , vfGuidGUID :: !Word64
    }
+   deriving (Generic,Storable,Show)
 
 data VF_LINK_STATE
    = VF_LINK_STATE_AUTO    -- ^ link state of the uplink
@@ -676,11 +693,13 @@ data VFLinkState = VFLinkState
    { vfLinkStateVF    :: !Word32
    , vfLinkStateState :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 data VF_RSS_QUERY_EN = VF_RSS_QUERY_EN
    { vfRssQueryVF      :: !Word32
    , vfRssQuerySetting :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 data VF_STATS
    = VF_STATS_RX_PACKETS
@@ -697,6 +716,7 @@ data VF_Trust = VF_Trust
    { vfTrustVF      :: !Word32
    , vfTrustSetting :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 -- VF ports management section
 --
@@ -764,6 +784,7 @@ data PORT_VSI = PORT_VSI
    , vsiTypeVersion :: !Word8
    , vsiPadding     :: Vector 3 Word8
    }
+   deriving (Generic,Storable,Show)
 
 
 -----------------
@@ -807,6 +828,7 @@ data InterfaceStatsMsg = InterfaceStatsMsg
    , ifStatsMsgIfIndex    :: !Word32
    , ifStatsMsgFilterMask :: !Word32
    }
+   deriving (Generic,Storable,Show)
 
 -- A stats attribute can be netdev specific or a global stat.
 -- For netdev stats, lets use the prefix IFLA_STATS_LINK_*
