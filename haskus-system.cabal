@@ -63,6 +63,7 @@ library
     Haskus.System.Linux.Internals.Terminal
     Haskus.System.Linux.Internals.IfLink
     Haskus.System.Linux.Internals.Netlink
+    Haskus.System.Linux.Internals.NetlinkRoute
 
     Haskus.System.Linux.Devices
     Haskus.System.Linux.Error

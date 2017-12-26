@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 
+-- | Netlink generic interface
 module Haskus.System.Linux.Internals.Netlink
    ( NetlinkType (..)
    , NetlinkSocket (..)
