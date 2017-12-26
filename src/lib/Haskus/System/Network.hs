@@ -10,6 +10,7 @@ import Haskus.System.Linux.KernelEvent
 import Haskus.System.Linux.Network
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Network.SendReceive
+import Haskus.System.Linux.Internals.Netlink
 import Haskus.Utils.Flow
 import Haskus.System.Sys
 

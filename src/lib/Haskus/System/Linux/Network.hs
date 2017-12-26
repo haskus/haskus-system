@@ -1,6 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -11,7 +9,6 @@ module Haskus.System.Linux.Network
    , SocketProtocol(..)
    , SocketRawType(..)
    , SocketType(..)
-   , NetlinkType(..)
    , IPType(..)
    , sysSocket'
    , sysSocket
@@ -25,12 +22,12 @@ module Haskus.System.Linux.Network
    )
 where
 
-import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.List (foldl')
 import Haskus.Utils.Flow
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
+import Haskus.System.Linux.Internals.Netlink
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Bits
@@ -187,73 +184,6 @@ data IPType
    | IPv6
    deriving (Show,Eq)
 
--- | Netlink socket type
-data NetlinkType
-   = NetlinkTypeRoute            -- ^ Routing/device hook
-   | NetlinkTypeUserSocket       -- ^ Reserved for user mode socket protocols
-   | NetlinkTypeSocketDiagnostic -- ^ socket monitoring
-   | NetlinkTypeNFLOG            -- ^ netfilter/iptables ULOG
-   | NetlinkTypeXFRM             -- ^ ipsec
-   | NetlinkTypeSELINUX          -- ^ SELinux event notifications
-   | NetlinkTypeISCSI            -- ^ Open-iSCSI
-   | NetlinkTypeAudit            -- ^ auditing
-   | NetlinkTypeFibLookup
-   | NetlinkTypeConnector
-   | NetlinkTypeNetfilter        -- ^ netfilter subsystem
-   | NetlinkTypeIP6FW
-   | NetlinkTypeDNRTMSG          -- ^ DECnet routing messages
-   | NetlinkTypeKernelEvent      -- ^ Kernel messages to userspace
-   | NetlinkTypeGeneric
-   | NetlinkTypeSCSITransport    -- ^ SCSI Transports
-   | NetlinkTypeECryptFS
-   | NetlinkTypeRDMA
-   | NetlinkTypeCrypto           -- ^ Crypto layer
-   deriving (Show,Eq)
-
-instance Enum NetlinkType where
-   toEnum x = case x of
-      0  -> NetlinkTypeRoute
-      2  -> NetlinkTypeUserSocket
-      4  -> NetlinkTypeSocketDiagnostic
-      5  -> NetlinkTypeNFLOG
-      6  -> NetlinkTypeXFRM
-      7  -> NetlinkTypeSELINUX
-      8  -> NetlinkTypeISCSI
-      9  -> NetlinkTypeAudit
-      10 -> NetlinkTypeFibLookup
-      11 -> NetlinkTypeConnector
-      12 -> NetlinkTypeNetfilter
-      13 -> NetlinkTypeIP6FW
-      14 -> NetlinkTypeDNRTMSG
-      15 -> NetlinkTypeKernelEvent
-      16 -> NetlinkTypeGeneric
-      18 -> NetlinkTypeSCSITransport
-      19 -> NetlinkTypeECryptFS
-      20 -> NetlinkTypeRDMA
-      21 -> NetlinkTypeCrypto
-      _  -> error "Invalid NetLink type"
-
-   fromEnum x = case x of
-      NetlinkTypeRoute              -> 0
-      NetlinkTypeUserSocket         -> 2
-      NetlinkTypeSocketDiagnostic   -> 4
-      NetlinkTypeNFLOG              -> 5
-      NetlinkTypeXFRM               -> 6
-      NetlinkTypeSELINUX            -> 7
-      NetlinkTypeISCSI              -> 8
-      NetlinkTypeAudit              -> 9
-      NetlinkTypeFibLookup          -> 10
-      NetlinkTypeConnector          -> 11
-      NetlinkTypeNetfilter          -> 12
-      NetlinkTypeIP6FW              -> 13
-      NetlinkTypeDNRTMSG            -> 14
-      NetlinkTypeKernelEvent        -> 15
-      NetlinkTypeGeneric            -> 16
-      NetlinkTypeSCSITransport      -> 18
-      NetlinkTypeECryptFS           -> 19
-      NetlinkTypeRDMA               -> 20
-      NetlinkTypeCrypto             -> 21
-
 -- | Socket type
 data SocketType
    = SockTypeTCP IPType
@@ -319,16 +249,13 @@ sysListen (Handle fd) backlog =
       ||> toErrorCodeVoid
 
 
--- | Netlink socket binding
-data NetlinkSocket
-   = NetlinkSocket Word32 Word32 Word32
-   deriving (Generic, Storable)
 
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
 sysBindNetlink :: MonadInIO m => Handle -> Word32 -> Word32 -> Flow m '[(),ErrorCode]
-sysBindNetlink fd portID groups = sysBind fd s
-   where
-      s = NetlinkSocket p portID groups
-      p = fromIntegral (fromEnum SockProtNETLINK)
+sysBindNetlink fd portID groups = sysBind fd <| NetlinkSocket
+   { netlinkSocketFamily = fromIntegral (fromEnum SockProtNETLINK)
+   , netlinkSocketPortID = portID
+   , netlinkSocketGroups = groups
+   }
