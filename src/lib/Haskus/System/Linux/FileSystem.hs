@@ -214,8 +214,8 @@ chownEx sc a uid gid = liftIO (sc a uid' gid') ||> toErrorCodeVoid
    where
       fuid (UserID x) = x
       fgid (GroupID x) = x
-      uid' = maybe (-1) fuid uid
-      gid' = maybe (-1) fgid gid
+      uid' = maybe maxBound fuid uid
+      gid' = maybe maxBound fgid gid
 
 
 -- | chown
@@ -395,7 +395,7 @@ sysCreateSpecialFile hdl path typ perm dev = do
       -- We pass a dummy file descriptor if the handle is not required
       fd   = case hdl of
                   Just (Handle x) -> x
-                  Nothing         -> (-1)
+                  Nothing         -> maxBound
    withCString path $ \path' ->
       withDeviceID dev' $ \dev'' ->
          liftIO (syscall_mknodat fd path' mode dev'')

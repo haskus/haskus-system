@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | Processor/memory topology
 module Haskus.System.Linux.Topology
    ( CPUMap(..)
@@ -15,13 +17,14 @@ module Haskus.System.Linux.Topology
 where
 
 import Text.Megaparsec
-import Text.Megaparsec.Text
-import Text.Megaparsec.Lexer hiding (space)
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer hiding (space)
 
 import System.Directory
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
+import Data.Void
 
 import Haskus.Format.Binary.Buffer (bufferReadFile)
 import Haskus.Format.Binary.Word
@@ -31,6 +34,8 @@ import Haskus.Format.Text (Text)
 import Haskus.Utils.List (isPrefixOf,stripPrefix)
 import Haskus.Utils.Maybe (fromJust,mapMaybe)
 import Haskus.Utils.Flow
+
+type Parser = Parsec Void Text
 
 -- | A CPUMap is a set of CPU identifiers
 --
@@ -56,11 +61,11 @@ parseMemInfo = parseFile
       parseLine :: Parser (Text, Word64)
       parseLine = do
          void (string "Node ")
-         void decimal
+         void (decimal :: Parser Int)
          void (char ' ')
          lbl <- someTill anyChar (char ':')
          space
-         value <- fromIntegral <$> decimal
+         value <- decimal
          kb <- (string " kB" *> return (*1024)) <|> return id
          void eol
          return (Text.pack lbl, kb value)
@@ -79,7 +84,7 @@ parseCPUMap :: Parser CPUMap
 parseCPUMap = parseFile
    where
       parseFile = do
-         es <- (fromIntegral <$> hexadecimal) `sepBy1` char ','
+         es <- hexadecimal `sepBy1` char ','
          void eol
          void eof
          return $ CPUMap . V.fromList . reverse . dropWhile (==0) $ es

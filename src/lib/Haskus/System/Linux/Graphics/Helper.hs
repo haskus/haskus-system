@@ -31,7 +31,7 @@ setController ctrl fbconf conns mode = do
    let 
       fbpos = case fbconf of
          SetFB fb  -> Just $ FrameBufferPos (fbID fb) 0 0
-         ReuseFB   -> Just $ FrameBufferPos (FrameBufferID (-1)) 0 0
+         ReuseFB   -> Just $ FrameBufferPos (FrameBufferID maxBound) 0 0
          ReleaseFB -> Nothing
       hdl  = controllerHandle ctrl
    setController' hdl (controllerID ctrl) fbpos (fmap connectorID conns) mode

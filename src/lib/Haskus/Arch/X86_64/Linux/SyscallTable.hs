@@ -9,9 +9,12 @@ import Haskus.Utils.Maybe
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
 
-import Text.Megaparsec hiding (Dec)
-import Text.Megaparsec.String
-import Text.Megaparsec.Lexer hiding (space)
+import Text.Megaparsec
+import Text.Megaparsec.Char.Lexer hiding (space)
+import Text.Megaparsec.Char
+import Data.Void
+
+type Parser = Parsec Void String
 
 syscalls :: QuasiQuoter
 syscalls = QuasiQuoter
@@ -73,7 +76,7 @@ parseLines = catMaybes <$> lines'
          )
 
       entryLine = do
-         num <- integer
+         num <- decimal
          someSpace
          mode <- some alphaNumChar
          someSpace
@@ -93,7 +96,7 @@ parseLines = catMaybes <$> lines'
       typElem    = identifier <|> string "()"
          
 
-      -- 'space' from MegaParsec also consider line-breaks as spaces...
+      -- 'space' from MegaParsec also considers line-breaks as spaces...
       manySpace  = skipMany (char ' ')
       someSpace  = skipSome (char ' ')
 

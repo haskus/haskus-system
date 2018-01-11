@@ -21,9 +21,12 @@ import Haskus.Format.Binary.Ptr (wordPtrToPtr)
 import Haskus.Format.Text as Text
 import Haskus.Utils.Flow
 
+import Data.Void
 import Text.Megaparsec
-import Text.Megaparsec.ByteString
-import Text.Megaparsec.Lexer hiding (space)
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer hiding (space)
+
+type Parser = Parsec Void Text
 
 -- | Memory map entry
 data MemoryMapEntry = MemoryMapEntry
@@ -67,7 +70,7 @@ readMemoryMap p = parseMemoryMap <$> bufferReadFile p
 -- | Parse a memory map in a buffer
 parseMemoryMap :: Buffer -> [MemoryMapEntry]
 parseMemoryMap b = 
-   case runParser memoryMapParser "" (bufferUnpackByteString b) of
+   case runParser memoryMapParser "" (bufferDecodeUtf8 b) of
       Right v  -> v
       Left err -> error ("memory map parsing error: "++ show err)
 
@@ -77,9 +80,9 @@ memoryMapParser = parseFile
    where
       parseFile = manyTill parseLine eof
       parseLine = do
-         start <- fromIntegral <$> hexadecimal
+         start <- hexadecimal
          void (char '-')
-         stop  <- fromIntegral <$> hexadecimal
+         stop  <- hexadecimal
          void spaceChar
          perms <- do
             r <- (char 'r' *> return [PermRead])  <|> (char '-' *> return [])
@@ -89,15 +92,15 @@ memoryMapParser = parseFile
          sharing <- (char 'p' *> return Private)
                 <|> (char 's' *> return Shared)
          void spaceChar
-         offset <- fromIntegral <$> hexadecimal
+         offset <- hexadecimal
          void spaceChar
          dev <- do
-            major <- fromIntegral <$> hexadecimal
+            major <- hexadecimal
             void (char ':')
-            minor <- fromIntegral <$> hexadecimal
+            minor <- hexadecimal
             return (major,minor)
          void spaceChar
-         inode <- fromIntegral <$> decimal
+         inode <- decimal
          void (many (char ' '))
          pth <- Text.pack <$> manyTill anyChar eol
          let typ = case (inode, Text.null pth) of

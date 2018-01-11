@@ -59,7 +59,7 @@ sysReadLinkAt hdl path = go' 2048
       -- hopefully we will get a EBADF error
       fd = case hdl of
             Just (Handle x) -> x
-            Nothing         -> (-1)
+            Nothing         -> maxBound
 
       go' size = go size >.~^> \case
                   Nothing -> go' (2*size)

@@ -10,10 +10,13 @@ import Haskus.Format.Binary.Bits
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
 
-import Text.Megaparsec hiding (Dec)
-import Text.Megaparsec.String
-import Text.Megaparsec.Lexer hiding (space)
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer hiding (space)
 import Data.IntMap.Strict
+import Data.Void
+
+type Parser = Parsec Void String
 
 pcis :: QuasiQuoter
 pcis = quoteFile $ QuasiQuoter

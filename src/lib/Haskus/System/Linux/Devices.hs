@@ -48,9 +48,11 @@ import Haskus.System.FileSystem
 
 import System.FilePath
 import Text.Megaparsec
-import Text.Megaparsec.Text
-import Text.Megaparsec.Lexer hiding (space)
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer hiding (space)
+import Data.Void
 
+type Parser = Parsec Void Text
 
 -- | Device
 data Device = Device
@@ -91,9 +93,9 @@ createDeviceFile hdl path dev perm = liftIO $ sysCreateSpecialFile hdl path typ 
 -- content format is: MMM:mmm\n (where M is major and m is minor)
 parseDevFile :: Parser DeviceID
 parseDevFile = do
-   major <- fromIntegral <$> decimal
+   major <- decimal
    void (char ':')
-   minor <- fromIntegral <$> decimal
+   minor <- decimal
    void eol
    return (DeviceID major minor)
 

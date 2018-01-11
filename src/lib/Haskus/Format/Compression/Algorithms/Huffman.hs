@@ -41,7 +41,7 @@ where
 
 import Data.Foldable (foldl')
 import Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import Data.PQueue.Prio.Min (MinPQueue)
 import qualified Data.PQueue.Prio.Min as PQueue
 import Control.Arrow (first)
@@ -65,7 +65,7 @@ type PriorityQueue a = MinPQueue Priority a
 computePriorityTable :: (Foldable m, Ord a) => m a -> PriorityTable a
 computePriorityTable = foldl' f Map.empty 
    where
-      f ocs k = Map.insertWith' (+) k 1 ocs
+      f ocs k = Map.insertWith (+) k 1 ocs
 
 -- | Build min priority queue (priority is number of occurences)
 computePriorityQueue :: PriorityTable a -> PriorityQueue a

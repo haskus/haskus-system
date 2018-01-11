@@ -196,6 +196,7 @@ showEnc oc rv e = H.tr $ do
       H.th (toHtml "Type")
       forM_ (rev ops) $ \o -> H.td $ do
          let
+            oracle :: PredOracle X86Pred
             oracle = makeOracle
                         [(InsnPred Default64OpSize, if | X86.DefaultOperandSize64 `elem` X86.encProperties e -> SetPred
                                                        | otherwise                                           -> UnsetPred)
@@ -210,6 +211,7 @@ showEnc oc rv e = H.tr $ do
                                                            | otherwise              -> UnsetPred)
                         ]
 
+            preReduce :: (Predicated a, Pred a ~ X86Pred) => a -> a
             preReduce x = case reducePredicates oracle x of
                      Match     f -> liftTerminal f
                      DontMatch f -> f

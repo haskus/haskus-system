@@ -770,9 +770,9 @@ showDynamicEntries es = do
          th_ "Value"
       forM_ es $ \e -> tr_ $ do
          case e of
-            DynEntryRaw raw -> do
-               td_ . toHtml $ show (rawDynType raw)
-               td_ . toHtml $ hexStr (rawDynValue raw)
+            DynEntryRaw r -> do
+               td_ . toHtml $ show (rawDynType r)
+               td_ . toHtml $ hexStr (rawDynValue r)
             DynEntryNone -> do
                td_ "None"
                td_ ""

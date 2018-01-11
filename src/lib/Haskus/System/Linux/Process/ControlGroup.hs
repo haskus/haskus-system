@@ -9,13 +9,16 @@ where
 import Prelude hiding (takeWhile)
 
 import Text.Megaparsec
-import Text.Megaparsec.Text
-import Text.Megaparsec.Lexer hiding (space)
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer hiding (space)
+import Data.Void
 
 import Haskus.Format.Binary.Buffer (bufferReadFile)
 import Haskus.Format.Text (Text)
 import Haskus.Utils.Flow
 import qualified Haskus.Format.Text as Text
+
+type Parser = Parsec Void Text
 
 -- | Control group entry
 data ControlGroupEntry = ControlGroupEntry
@@ -41,7 +44,7 @@ parseControlGroup = parseFile
          eof
          return es
       parseLine = do
-         hier <- fromIntegral <$> decimal
+         hier <- decimal
          void (char ':')
          subs <- Text.splitOn (Text.pack ",") . Text.pack <$> someTill anyChar (char ':')
          void (char ':')

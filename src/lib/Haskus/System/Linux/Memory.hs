@@ -145,7 +145,7 @@ type MapFlags = BitSet Word32 MapFlag
 sysMemMap :: MonadIO m => Maybe (Ptr ()) -> Word64 -> MemProtectFlags -> MapFlags -> Maybe Word8 -> Maybe (Handle, Word64) -> Flow m '[Ptr (), ErrorCode]
 sysMemMap addr len prot flags hugepagesize source = do
    let 
-      (fd,off) = fromMaybe (-1,0) ((\(Handle fd', x) -> (fd',x)) <$> source)
+      (fd,off) = fromMaybe (maxBound,0) ((\(Handle fd', x) -> (fd',x)) <$> source)
       flags'   = case hugepagesize of
                   Nothing -> flags
                   Just _  -> BitSet.union flags (BitSet.fromList [MapHugeTLB])
