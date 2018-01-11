@@ -115,6 +115,7 @@ library
     Haskus.System.Posix.Malloc
 
     Haskus.System
+    Haskus.System.EventLoop
     Haskus.System.Sys
     Haskus.System.System
     Haskus.System.Devices
