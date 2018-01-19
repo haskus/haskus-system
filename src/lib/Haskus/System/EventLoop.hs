@@ -72,8 +72,14 @@ mainLoop enterers idlers exiters handlers = go
             execJobs enterers
             execIdle
             execJobs exiters
-            execHandlers
+            execHandlers handlerLimit
             go
+
+      -- if handlers appear faster than they are executed, we still want to
+      -- execute the loop sometimes. We use this limit to ensure that we don't
+      -- execute more than `handlerLimit` handlers in one iteration.
+      handlerLimit :: Int
+      handlerLimit = 1000
 
       execJobs jobList = do
          jobs <- atomically <| swapTVar jobList []
@@ -107,10 +113,11 @@ mainLoop enterers idlers exiters handlers = go
                execIdle
    
       -- execute handlers
-      execHandlers = do
+      execHandlers 0     = return ()
+      execHandlers limit = do
          mj <- atomically <| tryReadTQueue handlers
          case mj of
             Nothing -> return ()
             Just j  -> do
                j
-               execHandlers
+               execHandlers (limit - 1)
