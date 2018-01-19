@@ -23,7 +23,8 @@ flags:
 extra-package-dbs: []
 
 ghc-options:
-   "haskus-system": -freduction-depth=0 -fobject-code -freverse-errors -fhide-source-paths
+   "$locals": -fhide-source-paths
+   "haskus-system": -freduction-depth=0 -fobject-code -freverse-errors
    # -fobject-code       -- GHCI needs it because of the foreign primops
    # -freduction-depth=0 -- used to allow compilation of some Variants
 
