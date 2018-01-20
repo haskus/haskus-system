@@ -1,32 +1,25 @@
-resolver: lts-8.18
+resolver: lts-10.3
 
 flags: {}
 
 packages:
 - '.'
 - location:
-    #git: git@github.com:haskus/haskus-system
-    git: /home/hsyl20/travail/code/haskus-system
-    commit: e2463198ad034c74c24ff21f2d3d554c2fd61bb2
+    git: https://github.com/haskus/haskus-system.git
+    commit: a2bfc6f8c743da0c77c615ccf590541569c6339e
   extra-dep: true
 - location:
-    git: /home/hsyl20/travail/code/haskus-binary
-    commit: 86c3020532dc0ead052e761bbb97d88ec61a32e6
+    git: https://github.com/haskus/haskus-binary.git
+    commit: f2a0e634cb2d9f5d5ec47c24e7209f65b674513b
   extra-dep: true
 - location:
-    git: /home/hsyl20/travail/code/haskus-utils
-    commit: 3e658bf8e6d9b2084ffb36553b23432fb388ee3f
+    git: https://github.com/haskus/haskus-utils.git
+    commit: 041b9421a4e4ff64b9ac0f7ce43ab0d68b879c9a
   extra-dep: true
-# We need a patched FontyFruity to support accentuated characters correctly.
-# Patches have been submitted upstream, so this should ultimately be unnecessary.
-- location:
-    git: git@github.com:hsyl20/FontyFruity
-    commit: 58dca4d1a840f0517c6a90b4285bfd5f06c7891b
-  extra-dep: true
+
+extra-deps:
+- diagrams-1.4
+- diagrams-rasterific-1.4
 
 ghc-options:
    "haskus-system": -freduction-depth=0 -fobject-code
-
-extra-deps:
-- haskus-binary-0.6.0.0
-- haskus-utils-0.7.0.0

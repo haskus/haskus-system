@@ -16,3 +16,7 @@ linux:
 
 ramdisk:
    init: Demo
+
+qemu:
+   profile: default
+   options: ""
