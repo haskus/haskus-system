@@ -135,7 +135,6 @@ main = runSys' <| do
       changeMousePos f     = do
          modifyTVar mousePos f
          needRedraw
-      getMousePos          = readTVar mousePos
       getMousePosIO        = readTVarIO mousePos
       updateMouseRel dx dy = changeMousePos (\(x,y) -> (x+fromIntegral dx,y+fromIntegral dy))
       updateMouseAbsX v    = changeMousePos (\(_,y) -> (fromIntegral v * wf,y))
