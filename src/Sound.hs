@@ -5,6 +5,9 @@ import qualified Haskus.Format.Text as Text
 
 import qualified Haskus.System.Linux.Internals.Sound as Snd
 
+import System.FilePath
+import Data.List as List
+
 main :: IO ()
 main = runSys' <| do
 
@@ -25,8 +28,8 @@ main = runSys' <| do
          Just hdl -> do
             writeStrLn term ("\n- " ++ show devPath)
 
-            -- "mixer" device seems to return garbage in QEMU
-            unless (Text.pack "mixer" `Text.isSuffixOf` devPath) <| do
+            -- "mixer*" device seems to return garbage in QEMU
+            unless ("mixer" `List.isPrefixOf` (takeBaseName (Text.unpack devPath))) <| do
                hwinfo <- liftIO (Snd.ioctlHwInfo hdl)
                writeStrLn term ("HW info: " ++ show hwinfo)
 
