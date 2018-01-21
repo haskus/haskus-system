@@ -4,6 +4,7 @@ module Haskus.System.Linux.Error
    ( RetryLater (..)
    , Overflow (..)
    , InvalidHandle (..)
+   , Busy (..)
    , TooManyProcessHandles (..)
    , TooManySystemHandles (..)
    , Interrupted (..)
@@ -68,6 +69,11 @@ data Interrupted
 -- | Invalid handle error
 data InvalidHandle
    = InvalidHandle
+   deriving (Show,Eq)
+
+-- | Busy
+data Busy
+   = Busy
    deriving (Show,Eq)
 
 -- | Too many open handles in the process

@@ -429,6 +429,7 @@ type OpenErrors
       , RetryLater
       , InvalidHandle
       , InvalidPathComponent
+      , Busy
       ]
 
 -- | Open and possibly create a file
@@ -465,6 +466,7 @@ open mhdl path flags mode = do
          ETXTBSY      -> flowSet CannotWriteExecutedImage
          EAGAIN       -> flowSet RetryLater
          EBADF        -> flowSet InvalidHandle
+         EBUSY        -> flowSet Busy
          err          -> unhdlErr "open" err
 
 
