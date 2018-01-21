@@ -2,6 +2,7 @@
 
 import Haskus.System
 import qualified Haskus.Format.Text as Text
+import Haskus.Utils.Maybe
 
 import qualified Haskus.System.Linux.Internals.Sound as Snd
 
@@ -50,5 +51,20 @@ main = runSys' <| do
 
          _            -> return ()
 
+
+   -- select "hw" devices
+   hwDevs <- catMaybes <|| forM (map fst soundDevs) <| \devPath -> do
+      let
+         path     = Text.unpack devPath
+         basename = takeBaseName path
+      if "mixer" `List.isPrefixOf` basename
+         then do
+            getDeviceHandleByName dm (Text.unpack devPath)
+               >.-.> Just
+               >..-.> const Nothing
+         else
+            return Nothing
+
+   writeStrLn term (show hwDevs)
 
    powerOff

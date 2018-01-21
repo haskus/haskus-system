@@ -37,16 +37,16 @@ rawlogo :: B.Buffer
 rawlogo = B.Buffer $(embedFile "src/image/logo_transparent.png")
 
 rawFontNormal :: B.Buffer
-rawFontNormal = B.Buffer $(embedFile "src/Demo/VeraMono.ttf")
+rawFontNormal = B.Buffer $(embedFile "src/demo/VeraMono.ttf")
 
 rawFontBold :: B.Buffer
-rawFontBold = B.Buffer $(embedFile "src/Demo/VeraMoBd.ttf")
+rawFontBold = B.Buffer $(embedFile "src/demo/VeraMoBd.ttf")
 
 rawFontItalic :: B.Buffer
-rawFontItalic = B.Buffer $(embedFile "src/Demo/VeraMoIt.ttf")
+rawFontItalic = B.Buffer $(embedFile "src/demo/VeraMoIt.ttf")
 
 rawFontBoldItalic :: B.Buffer
-rawFontBoldItalic = B.Buffer $(embedFile "src/Demo/VeraMoBI.ttf")
+rawFontBoldItalic = B.Buffer $(embedFile "src/demo/VeraMoBI.ttf")
 
 data Page
    = PageNone

@@ -23,3 +23,4 @@ extra-deps:
 
 ghc-options:
    "haskus-system": -freduction-depth=0 -fobject-code
+   "$locals": -fhide-source-paths
