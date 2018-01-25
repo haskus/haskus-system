@@ -6,7 +6,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/haskus/haskus-system.git
-    commit: a2bfc6f8c743da0c77c615ccf590541569c6339e
+    commit: 74ac4554017bdaa987b63520feb4294b97487656
   extra-dep: true
 - location:
     git: https://github.com/haskus/haskus-binary.git

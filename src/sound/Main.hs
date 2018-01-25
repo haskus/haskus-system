@@ -5,6 +5,7 @@ import qualified Haskus.Format.Text as Text
 import Haskus.Utils.Maybe
 
 import qualified Haskus.System.Linux.Internals.Sound as Snd
+import Haskus.System.Linux.FileSystem (close)
 
 import System.FilePath
 import Data.List as List
@@ -49,6 +50,8 @@ main = runSys' <| do
                controlhwinfo <- liftIO (Snd.ioctlControlHwInfo hdl)
                writeStrLn term ("Control HW info: "++show controlhwinfo)
 
+            void (close hdl)
+
          _            -> return ()
 
 
@@ -57,7 +60,7 @@ main = runSys' <| do
       let
          path     = Text.unpack devPath
          basename = takeBaseName path
-      if "mixer" `List.isPrefixOf` basename
+      if "hw" `List.isPrefixOf` basename
          then do
             getDeviceHandleByName dm (Text.unpack devPath)
                >.-.> Just
