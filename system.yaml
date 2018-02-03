@@ -8,6 +8,11 @@ linux:
          - CONFIG_DRM_NOUVEAU
          - CONFIG_DRM_VIRTIO
          - CONFIG_EXPERT
+         - CONFIG_SOUND
+         - CONFIG_SND
+         - CONFIG_SND_HDA_INTEL
+         - CONFIG_SND_HDA_CODEC_REALTEK
+         - CONFIG_SND_HDA_CODEC_ANALOG
       disable:
          - CONFIG_FRAMEBUFFER_CONSOLE
          - CONFIG_VGA_CONSOLE
