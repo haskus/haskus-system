@@ -24,6 +24,8 @@ module Haskus.System.Linux.Internals.Sound
    , PcmState (..)
    , PcmInfo (..)
    , PcmHwParam (..)
+   , PcmHwParamMask (..)
+   , PcmHwParamInterval (..)
    , PcmHwParamsFlag (..)
    , PcmHwParamsFlags
    , Mask (..)
@@ -603,11 +605,24 @@ data PcmInfo = PcmInfo
    , pcmInfoReserved             :: Vector 64 Word8  -- ^ reserved for future...
    } deriving (Generic, Show, Storable)
 
+-- | Alsa manipulates two kinds of parameters: masks and intervals.
+-- Most alsa-lib API handle both, but internally we need to know which one it is
+-- to set field accordingly (e.g., "intervals" or "masks" fields in HwParams).
 data PcmHwParam
+   = PcmHwParamMask     PcmHwParamMask       -- ^ Mask-like parameter
+   | PcmHwParamInterval PcmHwParamInterval   -- ^ Interval-like parameter
+   deriving (Show,Eq)
+
+-- | Mask-like parameter
+data PcmHwParamMask
    = PcmHwParamAccess      -- ^ Access type
    | PcmHwParamFormat      -- ^ Format
    | PcmHwParamSubFormat   -- ^ Subformat
-   | PcmHwParamSampleBits  -- ^ Bits per sample 
+   deriving (Show,Eq,Enum)
+
+-- | Interval-like parameter
+data PcmHwParamInterval
+   = PcmHwParamSampleBits  -- ^ Bits per sample 
    | PcmHwParamFrameBits   -- ^ Bits per frame 
    | PcmHwParamChannels    -- ^ Channels 
    | PcmHwParamRate        -- ^ Approx rate 
@@ -619,43 +634,45 @@ data PcmHwParam
    | PcmHwParamBufferSize  -- ^ Size of buffer in frames 
    | PcmHwParamBufferBytes -- ^ Size of buffer in bytes 
    | PcmHwParamTickTime    -- ^ Approx tick duration in us 
-   deriving (Show,Eq)
+   deriving (Show,Eq,Enum)
+
 
 instance Enum PcmHwParam where
    fromEnum x = case x of
-      PcmHwParamAccess      -> 0
-      PcmHwParamFormat      -> 1
-      PcmHwParamSubFormat   -> 2
-      PcmHwParamSampleBits  -> 8
-      PcmHwParamFrameBits   -> 9
-      PcmHwParamChannels    -> 10
-      PcmHwParamRate        -> 11
-      PcmHwParamPeriodTime  -> 12
-      PcmHwParamPeriodSize  -> 13
-      PcmHwParamPeriodBytes -> 14
-      PcmHwParamPeriods     -> 15
-      PcmHwParamBufferTime  -> 16
-      PcmHwParamBufferSize  -> 17
-      PcmHwParamBufferBytes -> 18
-      PcmHwParamTickTime    -> 19
+      PcmHwParamMask     PcmHwParamAccess      -> 0
+      PcmHwParamMask     PcmHwParamFormat      -> 1
+      PcmHwParamMask     PcmHwParamSubFormat   -> 2
+      PcmHwParamInterval PcmHwParamSampleBits  -> 8
+      PcmHwParamInterval PcmHwParamFrameBits   -> 9
+      PcmHwParamInterval PcmHwParamChannels    -> 10
+      PcmHwParamInterval PcmHwParamRate        -> 11
+      PcmHwParamInterval PcmHwParamPeriodTime  -> 12
+      PcmHwParamInterval PcmHwParamPeriodSize  -> 13
+      PcmHwParamInterval PcmHwParamPeriodBytes -> 14
+      PcmHwParamInterval PcmHwParamPeriods     -> 15
+      PcmHwParamInterval PcmHwParamBufferTime  -> 16
+      PcmHwParamInterval PcmHwParamBufferSize  -> 17
+      PcmHwParamInterval PcmHwParamBufferBytes -> 18
+      PcmHwParamInterval PcmHwParamTickTime    -> 19
    toEnum x = case x of
-      0  -> PcmHwParamAccess
-      1  -> PcmHwParamFormat
-      2  -> PcmHwParamSubFormat
-      8  -> PcmHwParamSampleBits
-      9  -> PcmHwParamFrameBits
-      10 -> PcmHwParamChannels
-      11 -> PcmHwParamRate
-      12 -> PcmHwParamPeriodTime
-      13 -> PcmHwParamPeriodSize
-      14 -> PcmHwParamPeriodBytes
-      15 -> PcmHwParamPeriods
-      16 -> PcmHwParamBufferTime
-      17 -> PcmHwParamBufferSize
-      18 -> PcmHwParamBufferBytes
-      19 -> PcmHwParamTickTime
+      0  -> PcmHwParamMask     PcmHwParamAccess
+      1  -> PcmHwParamMask     PcmHwParamFormat
+      2  -> PcmHwParamMask     PcmHwParamSubFormat
+      8  -> PcmHwParamInterval PcmHwParamSampleBits
+      9  -> PcmHwParamInterval PcmHwParamFrameBits
+      10 -> PcmHwParamInterval PcmHwParamChannels
+      11 -> PcmHwParamInterval PcmHwParamRate
+      12 -> PcmHwParamInterval PcmHwParamPeriodTime
+      13 -> PcmHwParamInterval PcmHwParamPeriodSize
+      14 -> PcmHwParamInterval PcmHwParamPeriodBytes
+      15 -> PcmHwParamInterval PcmHwParamPeriods
+      16 -> PcmHwParamInterval PcmHwParamBufferTime
+      17 -> PcmHwParamInterval PcmHwParamBufferSize
+      18 -> PcmHwParamInterval PcmHwParamBufferBytes
+      19 -> PcmHwParamInterval PcmHwParamTickTime
       _  -> error "Unknown PCM HW Param"
 
+-- | A parameter interval
 data Interval = Interval
    { intervalMin     :: Word32
    , intervalMax     :: Word32
@@ -663,10 +680,10 @@ data Interval = Interval
    } deriving (Show,Eq,Generic,Storable)
 
 data IntervalOption
-   = IntervalOpenMin
-   | IntervalOpenMax
-   | IntervalInteger
-   | IntervalEmpty
+   = IntervalOpenMin -- ^ Is interval lower bound excluded?
+   | IntervalOpenMax -- ^ Is interval upper bound excluded?
+   | IntervalInteger -- ^ Does the interval contain only integer values?
+   | IntervalEmpty   -- ^ Is the interval empty?
    deriving (Show,Eq,Enum,CBitSet)
 
 type IntervalOptions = BitSet Word32 IntervalOption
@@ -679,10 +696,12 @@ data PcmHwParamsFlag
 
 type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 
-data Mask = Mask
+-- | A parameter set (or mask)
+newtype Mask = Mask
    { maskBits :: Vector 8 Word32
    } deriving (Generic,Storable,Show)
 
+-- | PCM hw parameters
 data PcmHwParams = PcmHwParams
    { pcmHwParamsFlags               :: PcmHwParamsFlags
    , pcmHwParamsMasks               :: Vector 8 Mask

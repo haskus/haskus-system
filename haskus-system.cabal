@@ -89,6 +89,7 @@ library
     Haskus.System.Linux.Power
     Haskus.System.Linux.Process
     Haskus.System.Linux.Signal
+    Haskus.System.Linux.Sound.Pcm
     Haskus.System.Linux.Syscalls
     Haskus.System.Linux.Terminal
     Haskus.System.Linux.Time
