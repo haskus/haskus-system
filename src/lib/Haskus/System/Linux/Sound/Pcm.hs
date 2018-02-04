@@ -70,6 +70,7 @@ data PcmConfig = PcmConfig
    , pcmConfigSubFormat :: Set PcmSubFormat
    -- TODO: add other fields (intervals...)
    }
+   deriving (Show)
 
 -- | Convert raw PCM hw params into PcmConfig
 toConfig :: PcmHwParams -> PcmConfig
