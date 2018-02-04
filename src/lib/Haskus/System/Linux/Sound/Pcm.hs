@@ -1,14 +1,23 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | PCM devices
 module Haskus.System.Linux.Sound.Pcm
    ( anyInterval
    , anyMask
    , anyParams
+   , PcmConfig (..)
+   , toConfig
    )
 where
 
 import Haskus.System.Linux.Internals.Sound
 import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Format.Binary.BitSet (CBitSet)
 import qualified Haskus.Format.Binary.Vector as Vector
+import Haskus.Format.Binary.Bits (complement,zeroBits)
+
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 
 -- Note [PCM params]
@@ -36,9 +45,7 @@ anyInterval = Interval
 
 -- | Any mask
 anyMask :: Mask
-anyMask = Mask
-   { maskBits = Vector.replicate 0xffffffff
-   }
+anyMask = complement zeroBits
 
 -- | Any parameter set
 anyParams :: PcmHwParams
@@ -55,3 +62,24 @@ anyParams = PcmHwParams
    , pcmHwParamsFifoSize            = 0
    , pcmHwParamsReserved            = Vector.replicate 0
    }
+
+-- | PCM configuration
+data PcmConfig = PcmConfig
+   { pcmConfigAccess    :: Set PcmAccess
+   , pcmConfigFormat    :: Set PcmFormat
+   , pcmConfigSubFormat :: Set PcmSubFormat
+   -- TODO: add other fields (intervals...)
+   }
+
+-- | Convert raw PCM hw params into PcmConfig
+toConfig :: PcmHwParams -> PcmConfig
+toConfig params = PcmConfig
+   { pcmConfigAccess    = fromMask m1
+   , pcmConfigFormat    = fromMask m2
+   , pcmConfigSubFormat = fromMask m3
+   }
+   where
+      fromMask :: forall a. (Ord a, CBitSet a) => Mask -> Set a
+      fromMask v = Set.fromList (BitSet.toListFromBits v)
+
+      m1:m2:m3:_ = Vector.toList (pcmHwParamsMasks params)

@@ -18,7 +18,11 @@ module Haskus.System.Linux.Internals.Sound
    -- * PCM: /dev/snd/pcm*
    , pcmVersion
    , PcmClass (..)
+   , PcmSubClass (..)
+   , PcmStream (..)
+   , PcmAccess (..)
    , PcmFormat (..)
+   , PcmSubFormat (..)
    , PcmInfoFlag (..)
    , PcmInfoFlags
    , PcmState (..)
@@ -28,7 +32,7 @@ module Haskus.System.Linux.Internals.Sound
    , PcmHwParamInterval (..)
    , PcmHwParamsFlag (..)
    , PcmHwParamsFlags
-   , Mask (..)
+   , Mask
    , Interval (..)
    , IntervalOption (..)
    , IntervalOptions
@@ -328,7 +332,7 @@ data PcmAccess
    | PcmAccessMmapComplex         -- ^ complex mmap
    | PcmAccessRwInterleaved       -- ^ readi/writei
    | PcmAccessRwNonInterleaved    -- ^ readn/writen
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Ord,CBitSet)
 
 data PcmFormat
    = PcmFormatS8
@@ -378,7 +382,7 @@ data PcmFormat
    | PcmFormatDSD_U32_LE         -- ^ DSD, 4-byte samples DSD (x32), little endian
    | PcmFormatDSD_U16_BE         -- ^ DSD, 2-byte samples DSD (x16), big endian
    | PcmFormatDSD_U32_BE         -- ^ DSD, 4-byte samples DSD (x32), big endian
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord,CBitSet)
 
 instance Enum PcmFormat where
    fromEnum x = case x of
@@ -482,7 +486,7 @@ instance Enum PcmFormat where
 
 data PcmSubFormat
    = PcmSubFormatStd
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Ord,CBitSet)
 
 data PcmInfoFlag
    = PcmInfoMmap                     -- ^ hardware supports mmap
@@ -506,7 +510,7 @@ data PcmInfoFlag
    | PcmInfoHasLinkSynchronizedAtime -- ^ report synchronized audio/system time
    | PcmInfoDrainTrigger             -- ^ internal kernel flag - trigger in drain
    | PcmInfoFifoInFrames             -- ^ internal kernel flag - FIFO size is in frames
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Ord)
 
 instance CBitSet PcmInfoFlag where
    toBitOffset x = case x of
@@ -697,9 +701,7 @@ data PcmHwParamsFlag
 type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 
 -- | A parameter set (or mask)
-newtype Mask = Mask
-   { maskBits :: Vector 8 Word32
-   } deriving (Generic,Storable,Show)
+type Mask = Vector 8 Word32
 
 -- | PCM hw parameters
 data PcmHwParams = PcmHwParams
