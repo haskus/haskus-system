@@ -11,6 +11,7 @@ module Haskus.System.Input
    , loadInputDevices
    , InputEventBundle (..)
    , newInputEventHandler
+   , makeInputEvent
    , inputSetAutoRepeatDelay
    , inputSetAutoRepeatPeriod
    -- re-export
