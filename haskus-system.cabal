@@ -169,7 +169,7 @@ library
   other-modules:
 
   c-sources: 
-    src/lib/Haskus/Arch/X86_64/Linux/syscall.c
+    src/lib/Haskus/Arch/X86_64/Linux/syscall.s
     src/lib/Haskus/Arch/X86_64/cpuid.c
 
   cc-options: -O3
