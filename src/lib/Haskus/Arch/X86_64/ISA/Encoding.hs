@@ -117,21 +117,21 @@ data Encoding = Encoding
    , encOpcodeFullExt   :: !(Maybe Word8)        -- ^ Opcode extension in full ModRM byte
    , encOpcodeWExt      :: !(Maybe Bool)         -- ^ Opcode extension in REX.W, VEX.W, etc.
    , encOpcodeLExt      :: !(Maybe Bool)         -- ^ Opcode extension in VEX.L, etc.
-   , encReversableBit   :: !(Maybe Int)          -- ^ Args are reversed if the given bit is
+   , encReversableBit   :: !(Maybe Word)         -- ^ Args are reversed if the given bit is
                                                  --   set in the opcode.
-   , encNoForce8Bit     :: !(Maybe Int)          -- ^ Operand size is 8 if the given bit is
+   , encNoForce8Bit     :: !(Maybe Word)         -- ^ Operand size is 8 if the given bit is
                                                  --   unset in the opcode. Otherwise, the
                                                  --   size is defined by operand-size
                                                  --   prefix and REX.W bit
-   , encSignExtendImmBit:: !(Maybe Int)          -- ^ Used in conjunction with a set
+   , encSignExtendImmBit:: !(Maybe Word)         -- ^ Used in conjunction with a set
                                                  --   NoForce8Bit bit. Imm8 operand is used
                                                  --   and sign-extended if the given bit is
                                                  --   set
-   , encFPUDestBit      :: !(Maybe Int)          -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
+   , encFPUDestBit      :: !(Maybe Word)         -- ^ Opcode bit: register destination (0 if ST0, 1 if ST(i))
                                                  --   only if both operands are registers!
-   , encFPUPopBit       :: !(Maybe Int)          -- ^ Opcode bit: pop the FPU register,
+   , encFPUPopBit       :: !(Maybe Word)         -- ^ Opcode bit: pop the FPU register,
                                                  --   only if destination is (ST(i))
-   , encFPUSizableBit   :: !(Maybe Int)          -- ^ Opcode bit: change the FPU size (only if memory operand)
+   , encFPUSizableBit   :: !(Maybe Word)         -- ^ Opcode bit: change the FPU size (only if memory operand)
    , encProperties      :: ![EncodingProperties] -- ^ Encoding properties
    , encOperands        :: ![OperandSpecP]       -- ^ Operand encoding
    }
@@ -757,13 +757,13 @@ setAddrFam is64bitMode' ps oc addressSize useExtRegs modrm msib mdispSize mdisp 
       sib' = fromJust msib
             
       -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
-      modRMrm = opcodeB oc `unsafeShiftL` 3 .|. rmField modrm
+      modRMrm = opcodeB oc `uncheckedShiftL` 3 .|. rmField modrm
 
       -- | Extended SIB index (with REX.X, VEX.X, etc.)
-      sibIdx = opcodeX oc `unsafeShiftL` 3 .|. indexField sib'
+      sibIdx = opcodeX oc `uncheckedShiftL` 3 .|. indexField sib'
             
       -- | Extended SIB base (with REX.B, VEX.B, etc.)
-      sibBase = opcodeB oc `unsafeShiftL` 3 .|. baseField sib'
+      sibBase = opcodeB oc `uncheckedShiftL` 3 .|. baseField sib'
 
       gpr sz r  = regGPR useExtRegs sz r
 

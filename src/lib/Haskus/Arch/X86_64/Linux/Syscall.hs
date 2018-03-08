@@ -26,7 +26,6 @@ where
 import Haskus.System.Linux.Internals.Arg
 import Haskus.Format.Binary.Word
 import GHC.Base
-import GHC.Int
 
 --------------------------------------------------
 -- Implementation using Haskell foreign primops

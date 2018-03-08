@@ -119,19 +119,19 @@ blendImage gfb img op pos clp = do
       -- Convert betweeen RGBA8 and XRGB8 (endianness in DRM is misleading)
       {-# INLINE myPackPixel #-}
       myPackPixel (PixelRGBA8 !r !g !b !a) =
-          (fi r `unsafeShiftL` (2 * bitCount)) .|.
-          (fi g `unsafeShiftL` (1 * bitCount)) .|.
-          (fi b `unsafeShiftL` (0 * bitCount)) .|.
-          (fi a `unsafeShiftL` (3 * bitCount))
+          (fi r `uncheckedShiftL` (2 * bitCount)) .|.
+          (fi g `uncheckedShiftL` (1 * bitCount)) .|.
+          (fi b `uncheckedShiftL` (0 * bitCount)) .|.
+          (fi a `uncheckedShiftL` (3 * bitCount))
         where fi = fromIntegral
               bitCount = 8
 
       {-# INLINE myUnpackPixel #-}
       myUnpackPixel !v = PixelRGBA8
-          (low $ (v :: Word32) `unsafeShiftR` (2 * bitCount))
-          (low $ v `unsafeShiftR` bitCount)
+          (low $ (v :: Word32) `uncheckedShiftR` (2 * bitCount))
+          (low $ v `uncheckedShiftR` bitCount)
           (low v)
-          (low $ v `unsafeShiftR` (3 * bitCount))
+          (low $ v `uncheckedShiftR` (3 * bitCount))
          where
            low = fromIntegral . (.&. 0xFF)
            bitCount = 8
@@ -150,11 +150,11 @@ blendImage gfb img op pos clp = do
                   !new  = pixelAt img (sx+x) (y+sy)
                   !opa  = fromIntegral $ pixelOpacity new
                   -- clip to 255
-                  bl _ !s !d = if (z `unsafeShiftR` 8) /= 0
+                  bl _ !s !d = if (z `uncheckedShiftR` 8) /= 0
                         then 255
                         else fromIntegral (z .&. 0xff)
                      where
-                        !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `unsafeShiftR` 8
+                        !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `uncheckedShiftR` 8
                   !v = myPackPixel (mixWith bl new old)
                pokeByteOff (castPtr addr) doff (v :: Word32)
 

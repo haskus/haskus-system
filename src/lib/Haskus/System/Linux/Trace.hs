@@ -144,10 +144,10 @@ data TraceOption
 instance CBitSet TraceOption where
    toBitOffset x = case x of
       OptTraceExitKill   -> 20
-      _                  -> fromEnum x
+      _                  -> fromIntegral (fromEnum x)
    fromBitOffset x = case x of
       20 -> OptTraceExitKill
-      _  -> toEnum x
+      _  -> toEnum (fromIntegral x)
 
 -- | Event code
 data EventCode

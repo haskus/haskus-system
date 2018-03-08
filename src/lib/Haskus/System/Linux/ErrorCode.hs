@@ -21,22 +21,22 @@ import Haskus.System.Linux.Internals.Error
 toErrorCode :: Int64 -> Variant '[Int64,ErrorCode]
 {-# INLINE toErrorCode #-}
 toErrorCode r
-   | r < 0     = setVariantN @1 (toCEnum (abs r))
-   | otherwise = setVariantN @0 r
+   | r < 0     = toVariantAt @1 (toCEnum (abs r))
+   | otherwise = toVariantAt @0 r
 
 -- | Convert negative values into error codes, return () otherwise
 toErrorCodeVoid :: Int64 -> Variant '[(),ErrorCode]
 {-# INLINE toErrorCodeVoid #-}
 toErrorCodeVoid r
-   | r < 0     = setVariantN @1 (toCEnum (abs r))
-   | otherwise = setVariantN @0 ()
+   | r < 0     = toVariantAt @1 (toCEnum (abs r))
+   | otherwise = toVariantAt @0 ()
 
 -- | Convert negative values into error codes, return `f r` otherwise
 toErrorCodePure :: (Int64 -> a) -> Int64 -> Variant '[a,ErrorCode]
 {-# INLINE toErrorCodePure #-}
 toErrorCodePure f r
-   | r < 0     = setVariantN @1 (toCEnum (abs r))
-   | otherwise = setVariantN @0 (f r)
+   | r < 0     = toVariantAt @1 (toCEnum (abs r))
+   | otherwise = toVariantAt @0 (f r)
 
 -- | Error to call when a syscall returns an unexpected error value
 unhdlErr :: Show err => String -> err -> a

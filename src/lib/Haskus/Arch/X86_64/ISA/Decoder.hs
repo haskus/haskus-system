@@ -374,7 +374,7 @@ readVexXopOpcode mode ps rex = do
       -- They overload LES and LDS opcodes so that the first two bits
       -- of what would be ModRM are invalid (11b) for LES/LDS
       testMod :: Word8 -> Bool
-      testMod w    = w `unsafeShiftR` 6 == 0x03
+      testMod w    = w `uncheckedShiftR` 6 == 0x03
 
       isVexMode act = do
          c <- if is64bitMode (x86Mode mode)
@@ -631,15 +631,15 @@ readOperands mode ps oc enc = do
 
 
       -- extended ModRM.reg (with REX.R, VEX.R, etc.)
-      modRMreg = opcodeR oc `unsafeShiftL` 3 .|. regField modrm'
+      modRMreg = opcodeR oc `uncheckedShiftL` 3 .|. regField modrm'
          where modrm' = fromMaybe (error "Cannot read ModRM") modrm
             
       -- | Extended ModRM.rm (with REX.B, VEX.B, etc.)
-      modRMrm = opcodeB oc `unsafeShiftL` 3 .|. rmField modrm'
+      modRMrm = opcodeB oc `uncheckedShiftL` 3 .|. rmField modrm'
          where modrm' = fromMaybe (error "Cannot read ModRM") modrm
 
       -- | Extended register id in opcode (with REX.B, VEX.B, etc.)
-      opcodeRegId =  opcodeB oc `unsafeShiftL` 3 .|. (opcodeByte oc .&. 0b111)
+      opcodeRegId =  opcodeB oc `uncheckedShiftL` 3 .|. (opcodeByte oc .&. 0b111)
 
       -- VVVV field
       vvvv = case oc of

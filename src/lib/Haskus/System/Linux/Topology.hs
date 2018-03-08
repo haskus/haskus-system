@@ -91,9 +91,9 @@ parseCPUMap = parseFile
 
 -- | Check that a CPU belongs to a CPU Map
 member :: Word -> CPUMap -> Bool
-member idx (CPUMap v) = q < V.length v && testBit (v V.! q) r
+member idx (CPUMap v) = q < fromIntegral (V.length v) && testBit (v V.! fromIntegral q) r
    where
-      (q,r) = fromIntegral idx `quotRem` 32
+      (q,r) = idx `quotRem` 32
 
 -- | Transform a CPUMap into a list of identifiers
 fromCPUMap :: CPUMap -> [Word]

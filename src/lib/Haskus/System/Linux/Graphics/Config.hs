@@ -59,7 +59,7 @@ deriving instance Functor m => Functor (ConfigM m)
 deriving instance Monad m => MonadState ConfigState (ConfigM m)
 
 -- | Get config state
-getConfig :: (MonadState ConfigState (ConfigM m), Monad m) => ConfigM m ConfigState
+getConfig :: Monad m => ConfigM m ConfigState
 getConfig = ConfigM get
 
 data Atomic
@@ -122,7 +122,6 @@ setPropertyM obj prop val = ConfigM $ do
 getPropertyM ::
    ( MonadInIO m
    , Object o
-   , MonadState ConfigState (ConfigM m)
    ) => o -> ConfigM m (Variant '[[Property],ObjectNotFound,InvalidParam])
 getPropertyM obj = do
    s <- getConfig

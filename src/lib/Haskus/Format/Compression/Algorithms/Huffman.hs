@@ -189,7 +189,8 @@ makeBitGet leftIsZero = rec
             then return Nothing
             else do
                b <- getBitBoolM
-               if b `xor` leftIsZero
+               let bxor x y = (x && not y) || (y && not x)
+               if b `bxor` leftIsZero
                   then rec l
                   else rec r
 
@@ -258,7 +259,7 @@ codeReverseBits :: Code -> Code
 codeReverseBits (Code len v) = Code len (reverseLeastBits len v)
 
 -- | Test a bit in the code (no check if out of bounds)
-codeTestBit :: Code -> Int -> Bool
+codeTestBit :: Code -> Word -> Bool
 codeTestBit (Code _ v) n = testBit v n
 
 -- | Increase code length

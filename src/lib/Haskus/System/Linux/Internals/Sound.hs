@@ -701,6 +701,10 @@ data PcmHwParamsFlag
 type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 
 -- | A parameter set (or mask)
+--
+-- Word-order: left-to-right
+-- Byte-order: native?
+-- Bit-order: right-to-left
 type Mask = Vector 8 Word32
 
 -- | PCM hw parameters
@@ -1373,14 +1377,14 @@ instance CBitSet ControlElementAccess where
       ControlElemAccessOwner        -> 10
       ControlElemAccessTlvCallBack  -> 28
       ControlElemAccessUser         -> 29
-      _                             -> fromEnum x
+      _                             -> fromIntegral (fromEnum x)
    fromBitOffset x = case x of
       8  -> ControlElemAccessInactive
       9  -> ControlElemAccessLock
       10 -> ControlElemAccessOwner
       28 -> ControlElemAccessTlvCallBack
       29 -> ControlElemAccessUser
-      _  -> toEnum x
+      _  -> toEnum (fromIntegral x)
 
 type ControlElementAccesses = BitSet Word32 ControlElementAccess
 

@@ -172,8 +172,8 @@ readGraphicsState :: MonadInIO m => Handle -> Flow m '[GraphicsState,InvalidHand
 readGraphicsState hdl = do
    -- get resource IDs
    mres <- getResources hdl
-   case catchVariant @Resources mres of
-      Left xs   -> liftVariantM xs
+   case popVariant @Resources mres of
+      Left xs   -> return (liftVariant xs)
       Right res -> do
          let fbs = resFrameBufferIDs res
          -- read connectors, encoders and controllers
@@ -186,7 +186,7 @@ readGraphicsState hdl = do
             -- shouldn't happen, planes are invariant
             >..%~!!> (\(InvalidPlane _)  -> error "Invalid plane" )
 
-         case (catchVariant mconns, catchVariant mencs, catchVariant mctrls, catchVariant mplanes) of
+         case (popVariant mconns, popVariant mencs, popVariant mctrls, popVariant mplanes) of
             (Right conns, Right encs, Right ctrls, Right planes) ->
                flowSet (buildGraphicsState conns encs ctrls planes fbs)
             -- on failure we restart the process
