@@ -93,7 +93,7 @@ main = runSys' <| do
             clockDiagram h m s = rasterizeDiagram (mkWidth width) (clockDiag width height h m s)
 
             mainLoop !b = do
-               tv <- (fromJust . getVariantN @0) <$> sysGetTimeOfDay
+               tv <- (fromJust . fromVariantAt @0) <$> sysGetTimeOfDay
                let
                   gfb = if b then gfb1 else gfb2
                   GenericFrame fb _ = gfb

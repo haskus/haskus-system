@@ -5,10 +5,12 @@ import qualified Haskus.Format.Text as Text
 import Haskus.Utils.Maybe
 
 import qualified Haskus.System.Linux.Internals.Sound as Snd
+import Haskus.System.Linux.Sound.Pcm
 import Haskus.System.Linux.FileSystem (close)
 
 import System.FilePath
 import Data.List as List
+import Data.Monoid
 
 main :: IO ()
 main = runSys' <| do
@@ -56,11 +58,11 @@ main = runSys' <| do
 
 
    -- select "hw" devices
-   hwDevs <- catMaybes <|| forM (map fst soundDevs) <| \devPath -> do
+   pcmDevs <- catMaybes <|| forM (map fst soundDevs) <| \devPath -> do
       let
          path     = Text.unpack devPath
          basename = takeBaseName path
-      if "hw" `List.isPrefixOf` basename
+      if "pcm" `List.isPrefixOf` basename
          then do
             getDeviceHandleByName dm (Text.unpack devPath)
                >.-.> Just
@@ -68,6 +70,12 @@ main = runSys' <| do
          else
             return Nothing
 
-   writeStrLn term (show hwDevs)
+   forM_ pcmDevs <| \pcm -> do
+      writeStrLn term ("\n\nSetting params on device: " <> show pcm)
+      writeStrLn term ("Request: " <> show anyParams)
+      r <- liftIO <| Snd.ioctlPcmHwParams anyParams pcm
+      writeStrLn term ("Result: " <> show r)
+      r .~!> \r' -> writeStrLn term ("Result: " <> show (toConfig r'))
+      void (close pcm)
 
    powerOff

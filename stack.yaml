@@ -1,21 +1,14 @@
-resolver: lts-10.3
+resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-10.yaml
+
 
 flags: {}
 
 packages:
 - '.'
-- location:
-    git: https://github.com/haskus/haskus-system.git
-    commit: 74ac4554017bdaa987b63520feb4294b97487656
-  extra-dep: true
-- location:
-    git: https://github.com/haskus/haskus-binary.git
-    commit: f2a0e634cb2d9f5d5ec47c24e7209f65b674513b
-  extra-dep: true
-- location:
-    git: https://github.com/haskus/haskus-utils.git
-    commit: 041b9421a4e4ff64b9ac0f7ce43ab0d68b879c9a
-  extra-dep: true
+  # - location:
+  #     git: https://github.com/haskus/haskus-system.git
+  #     commit: fd9feb947109ac34d89161721f4858e7a1d821d0
+  #   extra-dep: true
 
 extra-deps:
 - diagrams-1.4
