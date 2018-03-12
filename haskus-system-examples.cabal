@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c657f123c64733027c709e48a85140a02b7fa7fe783482f1771c41f6cf8213db
+-- hash: e8aadee2051c78f506b3d656bb66065484518f634eb127782c54c0ceb34f68e0
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -60,6 +60,8 @@ executable Demo
   build-depends:
       FontyFruity
     , JuicyPixels
+    , MonadRandom
+    , Rasterific
     , base >=4.8 && <5
     , bytestring
     , colour
@@ -68,9 +70,11 @@ executable Demo
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , hsnoise
+    , mtl
     , transformers
   other-modules:
-      Demo.Diagrams Demo.Graphics
+      Demo.Diagrams Demo.Graphics Demo.Art
   default-language: Haskell2010
 
 executable DisplayModes

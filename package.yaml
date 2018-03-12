@@ -37,6 +37,7 @@ executables:
       other-modules:
          Demo.Diagrams
          Demo.Graphics
+         Demo.Art
       dependencies:
          - bytestring
          - transformers
@@ -45,6 +46,10 @@ executables:
          - diagrams-lib
          - containers
          - colour
+         - Rasterific
+         - hsnoise
+         - MonadRandom
+         - mtl
 
    Sound:
       main: Main.hs

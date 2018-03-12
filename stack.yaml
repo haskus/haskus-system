@@ -13,6 +13,7 @@ packages:
 extra-deps:
 - diagrams-1.4
 - diagrams-rasterific-1.4
+- hsnoise-0.0.2
 
 ghc-options:
    "haskus-system": -freduction-depth=0 -fobject-code

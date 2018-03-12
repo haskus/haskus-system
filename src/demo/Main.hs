@@ -32,6 +32,7 @@ import qualified Data.ByteString.Lazy as LBS
 
 import Demo.Diagrams
 import Demo.Graphics
+import Demo.Art
 
 rawlogo :: B.Buffer
 rawlogo = B.Buffer $(embedFile "src/image/logo_transparent.png")
@@ -54,6 +55,7 @@ data Page
    | PageGraphics
    | PageDPMS
    | PageTerminal
+   | PageArt
    deriving (Show,Eq)
 
 main :: IO ()
@@ -272,6 +274,7 @@ main = runSys' <| do
                F2  -> changePage PageGraphics
                F3  -> changePage PageDPMS
                F4  -> changePage PageTerminal
+               F5  -> changePage PageArt
                x   -> case p of
                   PageDPMS -> do
                      void (tryTakeTMVar dpmsState)
@@ -411,6 +414,10 @@ main = runSys' <| do
                   graphicsPage card >.~!> \diag -> do
                      let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
                      liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
+
+               PageArt -> do
+                  let d = makeArt 1520476193207 60 60 12
+                  liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
 
                PageDPMS -> do
                   liftIO <| blendImage gfb dpmsPage BlendAlpha (10,50) (fullImg dpmsPage)
