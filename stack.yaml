@@ -1,10 +1,16 @@
-resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-9.yaml
+resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-12.yaml
 packages:
 - '.'
 
 extra-deps:
 - diagrams-1.4
 - diagrams-rasterific-1.4
+- diagrams-core-1.4.1
+- diagrams-lib-1.4.2.1
+- diagrams-solve-0.1.1
+- dual-tree-0.2.1.1
+- lens-4.15.4
+- free-4.12.4
 
 #allow-newer: true
 
@@ -16,14 +22,8 @@ extra-package-dbs: []
 
 ghc-options:
    "$locals": -fhide-source-paths
-   "haskus-system": -freduction-depth=0 -fobject-code -freverse-errors
+   "haskus-system": -fobject-code -freverse-errors
    # -fobject-code       -- GHCI needs it because of the foreign primops
-   # -freduction-depth=0 -- used to allow compilation of some Variants
-
-build:
-   haddock-arguments:
-      haddock-args:
-         - "--optghc=-freduction-depth=0"
 
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor

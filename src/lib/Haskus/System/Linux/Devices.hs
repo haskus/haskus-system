@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -freduction-depth=0 #-}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
