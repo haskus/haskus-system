@@ -1,6 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Haskus.System.Linux.Internals.Sound
    ( Cea861AudioInfoFrame (..)
@@ -32,7 +37,7 @@ module Haskus.System.Linux.Internals.Sound
    , PcmHwParamInterval (..)
    , PcmHwParamsFlag (..)
    , PcmHwParamsFlags
-   , Mask
+   , Mask (..)
    , Interval (..)
    , IntervalOption (..)
    , IntervalOptions
@@ -179,7 +184,8 @@ module Haskus.System.Linux.Internals.Sound
 where
 
 import Haskus.Utils.Types.Generics (Generic)
-import Haskus.Format.Binary.Vector (Vector)
+import Haskus.Utils.Types
+import Haskus.Format.Binary.Vector (Vector, vectorReverse)
 import Haskus.Format.Binary.Union
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Ptr
@@ -705,7 +711,22 @@ type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 -- Word-order: left-to-right
 -- Byte-order: native?
 -- Bit-order: right-to-left
-type Mask = Vector 8 Word32
+newtype Mask
+   = Mask (Vector 8 Word32)
+   deriving stock (Show,Eq)
+   deriving newtype (Bitwise)
+
+instance StaticStorable Mask where
+   type SizeOf    Mask = SizeOf    (Vector 8 Word32)
+   type Alignment Mask = Alignment (Vector 8 Word32)
+   staticPeekIO ptr          = Mask . vectorReverse <$> staticPeekIO (castPtr ptr)
+   staticPokeIO ptr (Mask v) = staticPokeIO (castPtr ptr) (vectorReverse v)
+
+instance Storable Mask where
+   sizeOf _    = natValue @(SizeOf Mask)
+   alignment _ = natValue @(Alignment Mask)
+   peekIO = staticPeekIO
+   pokeIO = staticPokeIO
 
 -- | PCM hw parameters
 data PcmHwParams = PcmHwParams

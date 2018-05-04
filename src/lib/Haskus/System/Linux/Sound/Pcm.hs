@@ -45,7 +45,7 @@ anyInterval = Interval
 
 -- | Any mask
 anyMask :: Mask
-anyMask = complement zeroBits
+anyMask = Mask (complement zeroBits)
 
 -- | Any parameter set
 anyParams :: PcmHwParams
@@ -81,6 +81,6 @@ toConfig params = PcmConfig
    }
    where
       fromMask :: forall a. (Ord a, CBitSet a) => Mask -> Set a
-      fromMask v = Set.fromList (BitSet.toListFromBits v)
+      fromMask (Mask v) = Set.fromList (BitSet.toListFromBits v)
 
       m1:m2:m3:_ = Vector.toList (pcmHwParamsMasks params)
