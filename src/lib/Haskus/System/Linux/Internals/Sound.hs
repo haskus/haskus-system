@@ -484,7 +484,7 @@ instance Enum PcmFormat where
     50 -> PcmFormatDSD_U32_LE
     51 -> PcmFormatDSD_U16_BE
     52 -> PcmFormatDSD_U32_BE
-    _  -> error "Unknown PCM format"
+    f  -> error ("Unknown PCM format: " ++ show f)
 
 data PcmSubFormat
    = PcmSubFormatStd
