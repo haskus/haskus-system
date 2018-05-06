@@ -528,7 +528,7 @@ instance CBitSet PcmInfoFlag where
       PcmInfoResume                   -> 18
       PcmInfoPause                    -> 19
       PcmInfoHalfDuplex               -> 20
-      PcmInfoJOintDuplex              -> 21
+      PcmInfoJointDuplex              -> 21
       PcmInfoSyncStart                -> 22
       PcmInfoNoPeriodWakeUp           -> 23
       PcmInfoHasLinkAtime             -> 24
@@ -550,7 +550,7 @@ instance CBitSet PcmInfoFlag where
       18 -> PcmInfoResume
       19 -> PcmInfoPause
       20 -> PcmInfoHalfDuplex
-      21 -> PcmInfoJOintDuplex
+      21 -> PcmInfoJointDuplex
       22 -> PcmInfoSyncStart
       23 -> PcmInfoNoPeriodWakeUp
       24 -> PcmInfoHasLinkAtime
