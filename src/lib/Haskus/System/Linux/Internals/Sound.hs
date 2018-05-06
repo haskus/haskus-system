@@ -205,7 +205,7 @@ import Haskus.System.Linux.Process (ProcessID)
 -- =============================================================
 
 -----------------------------------------------------------------------------
--- Digit audio interface
+-- Digital audio interface
 -----------------------------------------------------------------------------
 
 data AesIec958 = AesIec958
@@ -215,16 +215,12 @@ data AesIec958 = AesIec958
    , aesDigSubFrame :: Vector 4 Word8   -- ^ AES/IEC958 subframe bits
    } deriving (Generic, Show, Storable)
 
------------------------------------------------------------------------------
--- Digit audio interface
------------------------------------------------------------------------------
-
 data Cea861AudioInfoFrame = Cea861AudioInfoFrame
    { ceaCodingTypeChannelCount :: Word8 -- ^ coding type and channel count
    , ceaSampleFrequencySize    :: Word8 -- ^ sample frequency and size
    , ceaUnused                 :: Word8 -- ^ not used, all zeros
    , ceaChannelAllocationCode  :: Word8 -- ^ channel allocation code
-   , ceaDownmixLevelShift      :: Word8 -- ^ downmix inhibit & level-shit values
+   , ceaDownmixLevelShift      :: Word8 -- ^ downmix inhibit & level-shift values
    } deriving (Generic, Show, Storable)
 
 -----------------------------------------------------------------------------
@@ -709,7 +705,7 @@ type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 -- | A parameter set (or mask)
 --
 -- Word-order: left-to-right
--- Byte-order: native?
+-- Byte-order: native
 -- Bit-order: right-to-left
 newtype Mask
    = Mask (Vector 8 Word32)
@@ -717,16 +713,16 @@ newtype Mask
    deriving newtype (Bitwise)
 
 instance StaticStorable Mask where
-   type SizeOf    Mask = SizeOf    (Vector 8 Word32)
-   type Alignment Mask = Alignment (Vector 8 Word32)
+   type SizeOf    Mask       = SizeOf    (Vector 8 Word32)
+   type Alignment Mask       = Alignment (Vector 8 Word32)
    staticPeekIO ptr          = Mask . vectorReverse <$> staticPeekIO (castPtr ptr)
    staticPokeIO ptr (Mask v) = staticPokeIO (castPtr ptr) (vectorReverse v)
 
 instance Storable Mask where
    sizeOf _    = natValue @(SizeOf Mask)
    alignment _ = natValue @(Alignment Mask)
-   peekIO = staticPeekIO
-   pokeIO = staticPokeIO
+   peekIO      = staticPeekIO
+   pokeIO      = staticPokeIO
 
 -- | PCM hw parameters
 data PcmHwParams = PcmHwParams
