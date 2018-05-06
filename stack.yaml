@@ -1,4 +1,4 @@
-resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-14.yaml
+resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-15.yaml
 packages:
 - '.'
 

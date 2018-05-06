@@ -80,7 +80,7 @@ toConfig params = PcmConfig
    , pcmConfigSubFormat = fromMask m3
    }
    where
-      fromMask :: forall a. (Ord a, CBitSet a) => Mask -> Set a
-      fromMask (Mask v) = Set.fromList (BitSet.toListFromBits v)
+      fromMask :: forall a. (Ord a, Bounded a, Enum a, CBitSet a) => Mask -> Set a
+      fromMask (Mask v) = Set.fromList (BitSet.enumerateSetBits v)
 
       m1:m2:m3:_ = Vector.toList (pcmHwParamsMasks params)

@@ -315,18 +315,18 @@ data PcmClass
    | PcmClassMulti    -- ^ multichannel device
    | PcmClassModem    -- ^ software modem class
    | PcmClassDigitize -- ^ digitizer class
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Bounded)
 
 
 data PcmSubClass
    = PcmSubClassGenericMix -- ^ mono or stereo subdevices are mixed together 
    | PcmSubClassMultiMix   -- ^ multichannel subdevices are mixed together 
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Bounded)
 
 data PcmStream
    = PcmStreamPlayback
    | PcmStreamCapture
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Bounded)
 
 data PcmAccess
    = PcmAccessMmapInterleaved     -- ^ interleaved mmap
@@ -334,7 +334,7 @@ data PcmAccess
    | PcmAccessMmapComplex         -- ^ complex mmap
    | PcmAccessRwInterleaved       -- ^ readi/writei
    | PcmAccessRwNonInterleaved    -- ^ readn/writen
-   deriving (Show,Eq,Enum,Ord,CBitSet)
+   deriving (Show,Eq,Enum,Ord,CBitSet,Bounded)
 
 data PcmFormat
    = PcmFormatS8
@@ -384,7 +384,7 @@ data PcmFormat
    | PcmFormatDSD_U32_LE         -- ^ DSD, 4-byte samples DSD (x32), little endian
    | PcmFormatDSD_U16_BE         -- ^ DSD, 2-byte samples DSD (x16), big endian
    | PcmFormatDSD_U32_BE         -- ^ DSD, 4-byte samples DSD (x32), big endian
-   deriving (Show,Eq,Ord,CBitSet)
+   deriving (Show,Eq,Ord,CBitSet,Bounded)
 
 instance Enum PcmFormat where
    fromEnum x = case x of
@@ -488,7 +488,7 @@ instance Enum PcmFormat where
 
 data PcmSubFormat
    = PcmSubFormatStd
-   deriving (Show,Eq,Enum,Ord,CBitSet)
+   deriving (Show,Eq,Enum,Ord,CBitSet,Bounded)
 
 data PcmInfoFlag
    = PcmInfoMmap                     -- ^ hardware supports mmap
@@ -503,7 +503,7 @@ data PcmInfoFlag
    | PcmInfoResume                   -- ^ hardware supports stream resume after suspend
    | PcmInfoPause                    -- ^ pause ioctl is supported
    | PcmInfoHalfDuplex               -- ^ only half duplex
-   | PcmInfoJOintDuplex              -- ^ playback and capture stream are somewhat correlated
+   | PcmInfoJointDuplex              -- ^ playback and capture stream are somewhat correlated
    | PcmInfoSyncStart                -- ^ pcm support some kind of sync go
    | PcmInfoNoPeriodWakeUp           -- ^ period wakeup can be disabled
    | PcmInfoHasLinkAtime             -- ^ report hardware link audio time, reset on startup
@@ -512,7 +512,7 @@ data PcmInfoFlag
    | PcmInfoHasLinkSynchronizedAtime -- ^ report synchronized audio/system time
    | PcmInfoDrainTrigger             -- ^ internal kernel flag - trigger in drain
    | PcmInfoFifoInFrames             -- ^ internal kernel flag - FIFO size is in frames
-   deriving (Show,Eq,Enum,Ord)
+   deriving (Show,Eq,Enum,Ord,Bounded)
 
 instance CBitSet PcmInfoFlag where
    toBitOffset x = case x of
@@ -574,7 +574,7 @@ data PcmState
    | PcmStatePaused       -- ^ stream is paused
    | PcmStateSuspended    -- ^ hardware is suspended
    | PcmStateDisconnected -- ^ hardware is disconnected
-   deriving (Show,Eq,Enum,CEnum)
+   deriving (Show,Eq,Enum,CEnum,Bounded)
 
 type PcmStateField = EnumField Int32 PcmState
 
@@ -582,7 +582,7 @@ data PcmMmapOffset
    = PcmMmapOffsetData
    | PcmMmapOffsetStatus
    | PcmMmapOffsetControl
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Bounded)
 
 instance CEnum PcmMmapOffset where
    fromCEnum x = case x of
@@ -640,7 +640,7 @@ data PcmHwParamInterval
    | PcmHwParamBufferSize  -- ^ Size of buffer in frames 
    | PcmHwParamBufferBytes -- ^ Size of buffer in bytes 
    | PcmHwParamTickTime    -- ^ Approx tick duration in us 
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Bounded)
 
 
 instance Enum PcmHwParam where
@@ -881,7 +881,7 @@ data ChannelPosition
    | ChannelPosBottomCenter        -- ^ bottom center
    | ChannelPosBottomLeftCenter    -- ^ bottom left center
    | ChannelPosBottomRightCenter   -- ^ bottom right center
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Enum,Bounded)
 
 data ChannelOption
    = ChannelPhaseInverse
