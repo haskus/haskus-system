@@ -1,8 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+-- This file has been generated from package.yaml by hpack version 0.28.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e8aadee2051c78f506b3d656bb66065484518f634eb127782c54c0ceb34f68e0
+-- hash: 601482b8a7288adfcf85b10be53186ea70553743a40e53e75210b0b84220611d
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -17,7 +17,6 @@ copyright:      Sylvain HENRY 2018
 license:        BSD3
 build-type:     Simple
 cabal-version:  >= 1.10
-
 extra-source-files:
     README.rst
 

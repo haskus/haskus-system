@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 import Haskus.System
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Ptr
 import qualified Haskus.Format.Text as Text
+import Haskus.Format.Text ((%),shown,textFormat)
 import Haskus.Format.Elf
 import Haskus.Format.Elf.Symbol
 import Haskus.Utils.Maybe
@@ -15,7 +18,7 @@ main = runSys' <| do
 
    -- get the list of memory mappings for our own process
    maps <- getProcessMemoryMap sys
-            >..~!!> \xs -> sysError ("Cannot retrieve memory map: " ++ show xs)
+            >..~!!> \xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs)
 
    let 
       isVDSO x = case entryType x of

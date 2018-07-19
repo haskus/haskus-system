@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Haskus.System
 
@@ -23,6 +24,7 @@ import Haskus.Utils.STM
 import Haskus.Utils.Maybe
 import Haskus.Utils.Monad
 import Haskus.Format.String
+import Haskus.Format.Text (textFormat,(%),shown)
 import qualified Haskus.Utils.Map as Map
 
 import Data.Char
@@ -379,7 +381,7 @@ main = runSys' <| do
             forM_ dpmsProp $ \prop -> do
                setPropertyM conn (propertyID (propertyMeta prop)) s
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
-               >..~!> (\err -> lift $ sysWarning <| "Cannot set DPMS: " ++ show err)
+               >..~!> (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
 
 
       initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do

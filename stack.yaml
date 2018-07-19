@@ -1,25 +1,19 @@
-resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-12.yaml
-
+resolver: lts-12.1
 
 flags: {}
 
 packages:
 - '.'
-- location:
-    git: https://github.com/haskus/haskus-system.git
-    commit: 8d579554b44edaa6a982ec50697cf1204b6f28ff
-  extra-dep: true
 
 extra-deps:
-- diagrams-1.4
-- diagrams-rasterific-1.4
-- diagrams-core-1.4.1
-- diagrams-lib-1.4.2.1
-- diagrams-solve-0.1.1
-- dual-tree-0.2.1.1
-- lens-4.15.4
-- free-4.12.4
+- haskus-utils-1.0
+- haskus-utils-types-1.0
+- haskus-utils-data-1.0
+- haskus-utils-variant-1.0
+- haskus-binary-1.0
 - hsnoise-0.0.2
+- git: https://github.com/haskus/haskus-system.git
+  commit: e4cbd6f75b945f8dda0d110c1412aca207cecf70
 
 ghc-options:
    "haskus-system": -fobject-code

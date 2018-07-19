@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 import Haskus.System
 
 import Haskus.System.Linux.Graphics.Mode

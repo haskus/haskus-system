@@ -10,7 +10,6 @@ import Haskus.System.Linux.FileSystem (close)
 
 import System.FilePath
 import Data.List as List
-import Data.Monoid
 
 main :: IO ()
 main = runSys' <| do
