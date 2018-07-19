@@ -18,7 +18,8 @@ import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.BufferList
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Ptr (wordPtrToPtr)
-import Haskus.Format.Text as Text
+import qualified Haskus.Format.Text as Text
+import Haskus.Format.Text (Text,bufferDecodeUtf8)
 import Haskus.Utils.Flow
 
 import Data.Void

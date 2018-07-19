@@ -151,7 +151,7 @@ inputThread s = forever $ do
                else return (after,fromIntegral size,ptr)
                         
    readBytes <- sysRead h ptr sz
-                  |> flowAssert ("Read bytes from "++show h)
+                  |> flowAssert (textFormat ("Read bytes from " % shown) h)
 
    -- TODO: if readBytes is zero, it's the end of file, etc.
    sysAssert "readBytes /= 0" (readBytes /= 0)
@@ -251,7 +251,7 @@ outputThread s = go [] 0 0
 
          -- write the buffers
          size <- wrt ps
-                  >..~!!> assertShow ("Write bytes to " ++ show h)
+                  >..~!!> assertShow (textFormat ("Write bytes to " % shown) h)
 
          let
             sig xs nb 0 = go xs nb 0

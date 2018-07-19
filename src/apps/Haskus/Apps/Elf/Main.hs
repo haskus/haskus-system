@@ -30,7 +30,7 @@ import Haskus.Arch.X86_64.Disassembler
 
 import Haskus.Format.Binary.Buffer
 import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text,textFormat,Only(..))
+import Haskus.Format.Text (Text,textFormat,int,stext,hex,(%))
 import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
@@ -55,7 +55,7 @@ main = do
 
 server :: FilePath -> Elf -> Conf -> IO ()
 server pth elf conf = do
-   Text.putStrLn (textFormat "Starting Web server at localhost: {}" (Only $ port conf))
+   Text.putStrLn (textFormat ("Starting Web server at localhost: " % int) (port conf))
 
    let ok' = ok . toResponse . renderBS . appTemplate
 
@@ -76,8 +76,8 @@ server pth elf conf = do
             -- dump section content
             , dir "content" $ do
                -- select suggested output filename by the browser
-               let filename = textFormat "section{}.bin" (Only (secnum :: Int))
-                   disp     = textFormat "attachment; filename=\"{}\"" (Only filename)
+               let filename = textFormat ("section" % int % ".bin") (secnum :: Int)
+                   disp     = textFormat ("attachment; filename=\"" % stext % "\"") filename
                ok 
                   $ addHeader "Content-Disposition" (Text.unpack disp)
                   $ toResponseBS (C.pack "application/octet-stream")
@@ -101,7 +101,7 @@ lookupMaybe :: MonadPlus m => Maybe a -> m a
 lookupMaybe = maybe mzero return
 
 hexStr :: Integral a => a -> Text.Text
-hexStr a = textFormat "0x{}" (Only $ Text.hex a)
+hexStr a = textFormat ("0x" % hex) a
 
 welcomePage :: FilePath -> Elf -> Html ()
 welcomePage pth elf = do
@@ -131,7 +131,7 @@ welcomePage pth elf = do
                   then "(none)"
                   else n
          td_ $ toHtml (show i)
-         td_ $ a_ [href_ (textFormat "section/{}" (Only i))] (toHtml name)
+         td_ $ a_ [href_ (textFormat ("section/" % int) i)] (toHtml name)
          td_ . toHtml $ show (sectionType s)
          td_ . toHtml . concat . List.intersperse ", " $ fmap show (BitSet.toList $ sectionFlags s)
          td_ . toHtml $ hexStr (sectionAddr s)
@@ -180,7 +180,7 @@ sectionPage pth elf i s = do
          Just str -> toHtml str
          Nothing  -> span_ [class_ "invalid"] "Invalid section name"
    h3_ $ do
-      toHtml $ textFormat "Section {} \"" (Only (i :: Int))
+      toHtml $ textFormat ("Section " % int % " \"") (i :: Int)
       name
       "\""
    showSection elf i secname s
@@ -196,7 +196,7 @@ sectionAsm pth elf i s = do
          Just str -> toHtml str
          Nothing  -> span_ [class_ "invalid"] "Invalid section name"
    h3_ $ do
-      toHtml $ textFormat "Section {} \"" (Only (i :: Int))
+      toHtml $ textFormat ("Section " % int % " \"") (i :: Int)
       name
       "\""
    showSectionAsm elf s
@@ -277,7 +277,7 @@ showSections elf =
             Just str -> toHtml str
             Nothing  -> span_ [class_ "invalid"] "Invalid section name"
       h3_ $ do
-         toHtml $ textFormat "Section {} " (Only (i :: Int))
+         toHtml $ textFormat ("Section " % int % " ") (i :: Int)
          name
       showSection elf i secname s
 
@@ -404,8 +404,8 @@ showSection elf secnum secname s = do
 
 
 
-   let contentPath = textFormat "/section/{}/content/" (Only secnum)
-   let asmPath     = textFormat "/section/{}/asm/" (Only secnum)
+   let contentPath = textFormat ("/section/" % int % "/content/") secnum
+   let asmPath     = textFormat ("/section/" % int % "/asm/") secnum
 
    br_ []
 
@@ -592,10 +592,10 @@ showSymbols elf symSec ss = do
             let idx = symbolNameIndex s
             case sname of
                Nothing   -> do
-                  toHtml $ textFormat "({}) " (Only idx)
+                  toHtml $ textFormat ("(" % int % ") ") idx
                   span_ [class_ "invalid"] "None"
                Just name -> do
-                  toHtml $ textFormat "({}) {}" (idx, name)
+                  toHtml $ textFormat ("(" % int % ") " % stext) idx name
                   -- GHC Z-String
                   let name' = Text.unpack name
                   case decodeZString name' of
@@ -608,7 +608,7 @@ showSymbols elf symSec ss = do
             SymbolBindingLocal      -> span_ [class_ "sym_local"]  "Local"
             SymbolBindingGlobal     -> span_ [class_ "sym_global"] "Global"
             SymbolBindingWeak       -> span_ [class_ "sym_weak"]   "Weak"
-            SymbolBindingUnknown v  -> toHtml $ textFormat "Unknown ({})" (Only v)
+            SymbolBindingUnknown v  -> toHtml $ textFormat ("Unknown (" % int % ")") v
 
          td_ $ case symbolType s of
             SymbolTypeNone          -> "None"
@@ -618,7 +618,7 @@ showSymbols elf symSec ss = do
             SymbolTypeFile          -> "File"
             SymbolTypeCommonData    -> "Data (common)"
             SymbolTypeTLSData       -> "Data (TLS)"
-            SymbolTypeUnknown v     -> toHtml $ textFormat "Unknown ({})" (Only v)
+            SymbolTypeUnknown v     -> toHtml $ textFormat ("Unknown (" % int %")") v
 
          td_ $ case symbolVisibility s of
             SymbolVisibilityDefault    -> "Default"
@@ -633,8 +633,8 @@ showSymbols elf symSec ss = do
             SymbolInfoIndexInExtraTable   -> "In extra table"
             SymbolInfoSectionBeforeAll    -> "Before all others sections"
             SymbolInfoSectionAfterAll     -> "After all others sections"
-            SymbolInfoSectionIndex v      -> toHtml $ textFormat "In section {}" (Only v)
-            SymbolInfoUnknown v           -> toHtml $ textFormat "Unknown ({})" (Only v)
+            SymbolInfoSectionIndex v      -> toHtml $ textFormat ("In section " % int) v
+            SymbolInfoUnknown v           -> toHtml $ textFormat ("Unknown (" % int % ")") v
 
          td_ . toHtml $ show (symbolValue s)
          td_ . toHtml $ show (symbolSize s)
@@ -796,13 +796,13 @@ showDynamicEntries es = do
                td_ . toHtml $ hexStr addr
             DynEntryStringTableSize sz -> do
                td_ "String table size"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
             DynEntrySymbolTableAddress addr -> do
                td_ "Symbol table address"
                td_ . toHtml $ hexStr addr
             DynEntrySymbolEntrySize sz -> do
                td_ "Symbol entry size"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
             DynEntryInitFunctionAddress addr -> do
                td_ "Init function address"
                td_ . toHtml $ hexStr addr
@@ -817,10 +817,10 @@ showDynamicEntries es = do
                td_ . toHtml $ hexStr addr
             DynEntryInitFunctionArraySize sz -> do
                td_ "Init function array size"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
             DynEntryFiniFunctionArraySize sz -> do
                td_ "Fini function array size"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
             DynEntrySymbolHashTableAddress addr -> do
                td_ "Symbol hash table address"
                td_ . toHtml $ hexStr addr
@@ -835,16 +835,16 @@ showDynamicEntries es = do
                td_ . toHtml $ hexStr addr
             DynEntryPLTRelocSize sz -> do
                td_ "Size of PLT relocations"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
             DynEntryRelocaAddress addr -> do
                td_ "Relocations with addend address"
                td_ . toHtml $ hexStr addr
             DynEntryRelocaSize sz -> do
                td_ "Size of relocations with addend"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
             DynEntryRelocaEntrySize sz -> do
                td_ "Size of a relocation with addend entry"
-               td_ . toHtml $ textFormat "{} bytes" (Only sz)
+               td_ . toHtml $ textFormat (int % " bytes") sz
 
 
 appTemplate :: Html () -> Html ()

@@ -13,6 +13,7 @@ where
 import Haskus.System.Sys
 import Haskus.System.Linux.Handle
 import Haskus.Utils.Flow
+import Haskus.Format.Text (Text)
 
 import System.Posix.Types (Fd(..))
 import qualified Control.Concurrent as CC
@@ -46,7 +47,7 @@ yield :: MonadIO m => m ()
 yield = liftIO CC.yield
 
 -- | Fork a thread
-sysFork :: String -> Sys () -> Sys ()
+sysFork :: Text -> Sys () -> Sys ()
 sysFork name f = do
    act <- forkSys name f
    void $ liftIO $ CC.forkIO act

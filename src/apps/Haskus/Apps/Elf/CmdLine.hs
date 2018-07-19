@@ -5,7 +5,6 @@ module Haskus.Apps.Elf.CmdLine
 where
 
 import Options.Applicative
-import Data.Monoid
 
 data Options = Options
    { optpath    :: String

@@ -1,10 +1,5 @@
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeOperators #-}
-
 -- | Linux device handling
 --
 -- Devices in the kernel are identified with two numbers (major and minor) and
@@ -43,7 +38,8 @@ import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.System.Linux.FileSystem.SymLink
 
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Text as Text
+import qualified Haskus.Format.Text as Text
+import Haskus.Format.Text (Text)
 import Haskus.Format.Binary.Word
 import Haskus.Utils.Flow
 import Haskus.System.FileSystem

@@ -1,16 +1,13 @@
-resolver: https://raw.githubusercontent.com/haskus/haskus-snapshots/master/haskus-15.yaml
+resolver: lts-12.1
 packages:
 - '.'
 
 extra-deps:
-- diagrams-1.4
-- diagrams-rasterific-1.4
-- diagrams-core-1.4.1
-- diagrams-lib-1.4.2.1
-- diagrams-solve-0.1.1
-- dual-tree-0.2.1.1
-- lens-4.15.4
-- free-4.12.4
+- haskus-utils-1.0
+- haskus-utils-types-1.0
+- haskus-utils-data-1.0
+- haskus-utils-variant-1.0
+- haskus-binary-1.0
 
 #allow-newer: true
 

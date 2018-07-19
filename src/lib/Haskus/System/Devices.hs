@@ -1,12 +1,5 @@
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-
 -- | Devices management
 --
 -- This module allows the creation of a 'DeviceManager' which:
@@ -68,6 +61,7 @@ import Haskus.System.Network
 import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
+import Haskus.Format.Text (textFormat,string,shown,(%))
 
 import Control.Arrow (second)
 import qualified Data.Map as Map
@@ -285,8 +279,7 @@ initDeviceManager sysfs devfs = do
 
    -- list devices in /devices
    void (withDevDir sysfs "devices" (readSysfsDir Text.empty)
-            >..~!!> (\err -> sysError ("Cannot read /devices in sysfs: " 
-                             ++ show err))
+            >..~!!> (\err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err))
         )
    
 
@@ -323,8 +316,7 @@ eventThread ch dm = do
                            return False
                         Nothing   -> return True
                   when notFound $
-                     sysWarning ("Event received for non existing device: "
-                                   ++ show path)
+                     sysWarning (textFormat ("Event received for non existing device: " % shown) path)
 
             case kernelEventAction ev of
                ActionAdd     -> do
@@ -350,8 +342,7 @@ eventThread ch dm = do
                   signalEvent deviceNodeOnOther
 
          -- warn on unrecognized event
-         str -> sysWarningShow ("sysfs event in /" ++ str ++ " ignored")
-                     (kernelEventDevPath ev)
+         str -> sysWarningShow (textFormat ("sysfs event in /" % string % " ignored") str) (kernelEventDevPath ev)
 
 
 -- | Lookup a device by name
@@ -441,8 +432,7 @@ deviceRemove dm path ev = do
          Nothing -> return True
    
    when notFound $ do
-      sysWarning $ "Remove event received for non existing device: "
-                     ++ show path
+      sysWarning $ textFormat ("Remove event received for non existing device: " % shown) path
 
 -- | Move a device
 --
@@ -471,9 +461,7 @@ deviceMove dm path ev = do
          Nothing -> return True
 
    when notFound $ do
-      sysWarning $ "Move event received for non existing device: "
-                    ++ show path
-                    ++ ". We try to add it"
+      sysWarning $ textFormat ("Move event received for non existing device: " % shown % ". We try to add it") path
       deviceAdd dm path (Just ev)
 
 -------------------------------------------------------------------------------
@@ -643,10 +631,8 @@ getDeviceHandle dm dev = do
    let 
       devname = "./dev" ++ show num
       devfd   = dmDevFS dm
-      logS    = "Opening device "
-                ++ showDevice dev
-                ++ " into "
-                ++ devname
+      logS    = textFormat ("Opening device " % string % " into " % string)
+                  (showDevice dev) devname
 
    sysLogSequence logS $ do
       -- create special file in device fs
@@ -664,7 +650,7 @@ getDeviceHandle dm dev = do
 releaseDeviceHandle :: Handle -> Sys ()
 releaseDeviceHandle fd = close fd
    >..~!!> \err -> do
-      let msg = Text.printf "close (failed with %s)" (show err)
+      let msg = textFormat ("close (failed with " % shown % ")") err
       sysLog LogWarning msg
 
 -- | Find device path by number (major, minor)

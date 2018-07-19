@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 -- | Sys monad
@@ -40,16 +41,15 @@ module Haskus.System.Sys
 where
 
 import Prelude hiding (log)
-import Data.String (fromString)
 import Control.Monad.State
-import Text.Printf
 
 import Haskus.Utils.Monad
 import Haskus.Utils.STM
 import Haskus.Utils.STM.Future
 import Haskus.Utils.Flow
 import Haskus.Utils.Variant
-import Haskus.Format.Text as Text
+import Haskus.Format.Text ((%),stext, textFormat,Text,pack,shown)
+import qualified Haskus.Format.Text as Text
 
 ------------------------------------------------
 -- Sys monad
@@ -77,7 +77,7 @@ runSys (Sys act) = do
    (log,logSrc)       <- newFutureIO
 
    let
-      e = LogEntry (Text.pack "Log root") LogInfo (LogNext status log)
+      e = LogEntry "Log root" LogInfo (LogNext status log)
       initState = SysState
          { sysLogRoot    = e 
          , sysLogCurrent = logSrc
@@ -88,7 +88,7 @@ runSys (Sys act) = do
    evalStateT act initState
 
 -- | Fork the log in the Sys monad
-forkSys :: String -> Sys a -> Sys (IO a)
+forkSys :: Text -> Sys a -> Sys (IO a)
 forkSys name act = do
    (status,statusSrc) <- newFutureIO
    (log,logSrc)       <- newFutureIO
@@ -99,7 +99,7 @@ forkSys name act = do
    mainState <- get
 
    let
-      e = LogFork (Text.pack name) (LogNext status log) (LogNext status2 log2)
+      e = LogFork name (LogNext status log) (LogNext status2 log2)
 
       forkState = SysState
          { sysLogRoot    = sysLogRoot mainState
@@ -204,11 +204,11 @@ sysLogAdd f = do
       }
 
 -- | Add a new entry to the log
-sysLog :: LogType -> String -> Sys ()
-sysLog typ text = sysLogAdd (LogEntry (Text.pack text) typ)
+sysLog :: LogType -> Text -> Sys ()
+sysLog typ text = sysLogAdd (LogEntry text typ)
 
 -- | Add a new sequence of actions to the log
-sysLogSequence :: String -> Sys a -> Sys a
+sysLogSequence :: Text -> Sys a -> Sys a
 sysLogSequence text act = do
    sysLogBegin text
    r <- act
@@ -217,10 +217,10 @@ sysLogSequence text act = do
 
 
 -- | Start a new log sequence
-sysLogBegin :: String -> Sys ()
+sysLogBegin :: Text -> Sys ()
 sysLogBegin text = do
    (log,logSrc) <- newFutureIO
-   sysLogAdd (LogGroup (Text.pack text) log)
+   sysLogAdd (LogGroup text log)
 
    -- add the group to the list
    modify' $ \s -> s
@@ -242,109 +242,107 @@ sysLogPrint = do
       -- print the log
       log <- gets sysLogRoot
       liftIO $ do
-         Text.putStrLn (Text.pack "")
+         Text.putStrLn ""
          printLog 0 log
    where
       printLog i l = 
          case l of
             LogEntry t ty (LogNext status n) -> do
                status' <- pollFutureIO status >>= \case
-                  Just st -> return $ Text.pack ("("++show st++")")
-                  Nothing -> return $ Text.pack ""
+                  Just st -> return $ textFormat ("(" % shown % ")") st
+                  Nothing -> return $ ""
 
-               Text.putStrLn $ textFormat (fromString "{}---- {}{}{}")
-                  ( Text.replicate i (Text.pack "  |")
-                  , Text.pack $ case ty of
-                     LogWarning  -> "Warning: "
-                     LogError    -> "Error: "
-                     LogDebug    -> "Debug: "
-                     LogInfo     -> ""
-                  , t
-                  , status'
+               Text.putStrLn $ textFormat (stext % "---- " % stext % stext % stext)
+                  (Text.replicate i "  |")
+                  (case ty of
+                      LogWarning  -> "Warning: "
+                      LogError    -> "Error: "
+                      LogDebug    -> "Debug: "
+                      LogInfo     -> ""
                   )
+                  t
+                  status'
                mapM_ (printLog i) =<< pollFutureIO n
 
             LogGroup t fl (LogNext _ n) -> do
-               Text.putStrLn $ textFormat (fromString "{}--+- {}")
-                  ( Text.replicate i (Text.pack "  |")
-                  , t
-                  )
+               Text.putStrLn $ textFormat (stext % "--+- " % stext)
+                  (Text.replicate i "  |")
+                  t
                mapM_ (printLog (i+1)) =<< pollFutureIO n
                mapM_ (printLog i)     =<< pollFutureIO fl
 
             LogFork t (LogNext _ n1) (LogNext _ n2) -> do
-               Text.putStrLn $ textFormat (fromString "{}--*- FORK: {}")
-                  ( Text.replicate i (Text.pack "  |")
-                  , t
-                  )
+               Text.putStrLn $ textFormat (stext % "--*- FORK: " % stext)
+                  (Text.replicate i "  |")
+                  t
                mapM_ (printLog (i+1)) =<< pollFutureIO n2
                mapM_ (printLog i)     =<< pollFutureIO n1
 
 -- | Assert in Sys (log the success)
-sysAssert :: String -> Bool -> Sys ()
+sysAssert :: Text -> Bool -> Sys ()
 sysAssert text b = if b
    then do
-      let msg = printf "%s (success)" text
+      let msg = textFormat (stext % " (success)") text
       sysLog LogInfo msg
    else do
-      let msg = printf "%s (assertion failed)" text
+      let msg = textFormat (stext % " (assertion failed)") text
       sysError msg
 
 -- | Assert in Sys (don't log on success)
-sysAssertQuiet :: String -> Bool -> Sys ()
+sysAssertQuiet :: Text -> Bool -> Sys ()
 sysAssertQuiet text b = unless b $ do
-   let msg = printf "%s (assertion failed)" text
+   let msg = textFormat (stext % " (assertion failed)") text
    sysError msg
 
 -- | Fail in Sys
-sysError :: String -> Sys a
+sysError :: Text -> Sys a
 sysError text = do
    sysLog LogError text
    sysOnError
 
 -- | Log Warning in Sys
-sysWarning :: String -> Sys ()
+sysWarning :: Text -> Sys ()
 sysWarning text = do
    sysLog LogWarning text
 
 -- | Log Info in Sys
-sysLogInfo :: String -> Sys ()
+sysLogInfo :: Text -> Sys ()
 sysLogInfo text = do
    sysLog LogInfo text
 
 -- | Fail in Sys
-sysErrorShow :: Show a => String -> a -> Sys b
-sysErrorShow text a = sysError (text ++ ": " ++ show a)
+sysErrorShow :: Show a => Text -> a -> Sys b
+sysErrorShow text a = sysError (text <> ": " <> pack (show a))
 
 -- | Warning in Sys
-sysWarningShow :: Show a => String -> a -> Sys ()
-sysWarningShow text a = sysWarning (text ++ ": " ++ show a)
+sysWarningShow :: Show a => Text -> a -> Sys ()
+sysWarningShow text a = sysWarning (text <> ": " <> pack (show a))
 
 -- | Log Info in Sys
-sysLogInfoShow :: Show a => String -> a -> Sys ()
-sysLogInfoShow text a = sysLogInfo (text ++ ": " ++ show a)
+sysLogInfoShow :: Show a => Text -> a -> Sys ()
+sysLogInfoShow text a = sysLogInfo (text <> ": " <> pack (show a))
 
 ----------------------
 -- Flow helpers
 ----------------------
 
 -- | Assert a successful result, and log the error otherwise
-flowAssertQuiet :: (Show (Variant xs)) => String -> Flow Sys (a ': xs) -> Sys a
+flowAssertQuiet :: (Show (Variant xs)) => Text -> Flow Sys (a ': xs) -> Sys a
 flowAssertQuiet text v = 
-   v >..~!!> (\a -> sysError (printf "%s (failed with %s)" text (show a)))
+   v >..~!!> (\a -> sysError (textFormat (stext % " (failed with " % shown % ")") text a))
 
 -- | Assert a successful result, log on error and on success
-flowAssert :: (Show a, Show (Variant xs)) => String -> Flow Sys (a ': xs) -> Sys a
+flowAssert :: (Show a, Show (Variant xs)) => Text -> Flow Sys (a ': xs) -> Sys a
 flowAssert text v = 
-   v  >.~=>   (\a -> sysLog LogInfo (printf "%s (succeeded with %s)" text (show a)))
-      >..~!!> (\xs -> sysError (printf "%s (failed with %s)" text (show xs)))
+   v  >.~=>   (\a -> sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a))
+      >..~!!> (\xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs))
      
-assertShow :: Show a => String -> a -> Sys ()
+assertShow :: Show a => Text -> a -> Sys ()
 assertShow text v = do
-   let msg = printf "%s (failed with %s)" text (show v)
+   let msg = textFormat (stext % " (failed with " % shown % ")") text v
    sysError msg
 
-warningShow :: Show (Variant xs) => String -> Flow Sys (a ': xs) -> Sys ()
+warningShow :: Show (Variant xs) => Text -> Flow Sys (a ': xs) -> Sys ()
 warningShow text f = do
    f >..~!> (\v ->
-      sysWarning (printf "%s (failed with %s)" text (show v)))
+      sysWarning (textFormat (stext % " (failed with " % shown % ")") text v))

@@ -20,8 +20,7 @@ import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Put
 import Haskus.Format.Binary.Endianness
 import Haskus.Utils.Flow (when)
-
-import Text.Printf
+import Haskus.Format.Text (textFormat,hex,(%),unpack)
 
 -- | Pre-header
 data PreHeader = PreHeader
@@ -42,7 +41,7 @@ getPreHeader = do
    -- check magic number (0x7F + "ELF")
    magic <- getWord32be
    when (magic /= 0x7F454C46) $
-      error $ printf "Not a ELF file (invalid magic number: %x)" magic
+      error $ unpack $ textFormat("Not a ELF file (invalid magic number: " % hex % ")") magic
 
    PreHeader
       <$> (getWord8 >>= \case

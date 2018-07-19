@@ -29,6 +29,7 @@ import Haskus.System.Event
 import Haskus.Format.Binary.BitSet (CBitSet(..), BitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
+import Haskus.Format.Text (textFormat,shown,(%))
 import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
@@ -342,4 +343,4 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 setClientCapabilityWarn :: Handle -> ClientCapability -> Bool -> Sys ()
 setClientCapabilityWarn hdl cap b =
    setClientCapability hdl cap b
-      |> warningShow ("Set client capability " ++ show cap)
+      |> warningShow (textFormat ("Set client capability " % shown) cap)

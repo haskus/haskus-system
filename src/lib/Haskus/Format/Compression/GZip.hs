@@ -12,7 +12,6 @@ module Haskus.Format.Compression.GZip
 where
 
 import Data.Foldable (toList)
-import Text.Printf
 
 import qualified Haskus.Format.Compression.Algorithms.Deflate as D
 import Haskus.Format.Binary.Get as Get
@@ -22,7 +21,8 @@ import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text,getTextUtf8Nul)
+import Haskus.Format.Text (Text,getTextUtf8Nul,unpack)
+import Haskus.Format.Text (textFormat,shown,hex,(%))
 import Haskus.Utils.Flow (when)
 
 -- | Member file
@@ -62,7 +62,7 @@ getMember = do
    id1   <- getWord8
    id2   <- getWord8
    when (id1 /= 0x1f || id2 /= 0x8b) $
-      error $ printf "Invalid archive file: %x %x" id1 id2
+      error $ unpack $ textFormat ("Invalid archive file: " % hex % " " % hex) id1 id2
 
    comp  <- getWord8
    when (comp /= 8) $

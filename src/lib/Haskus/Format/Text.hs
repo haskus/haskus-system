@@ -6,9 +6,9 @@ module Haskus.Format.Text
    , stringEncodeUtf8
    -- * Formatting
    , textFormat
-   , T.Only (..)
-   , T.hex
-   , printf
+   , F.Format
+   , (F.%)
+   , module Formatting.Formatters
    -- * Parsing
    , textParseHexadecimal
    -- * Get/Put
@@ -20,15 +20,13 @@ module Haskus.Format.Text
    )
 where
 
-import Data.Text
+import Data.Text hiding (center)
 import qualified Data.Text.Encoding as T
 import qualified Data.Text          as T
 import qualified Data.Text.IO       as T
-import Data.Text.Lazy (toStrict)
-import Data.Text.Format             as T
-import Data.Text.Format.Params      as T
+import Formatting                   as F
+import Formatting.Formatters
 import Data.Text.Read               as T
-import Text.Printf
 
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Put
@@ -46,9 +44,9 @@ textEncodeUtf8 = Buffer . T.encodeUtf8
 stringEncodeUtf8 :: String -> Buffer
 stringEncodeUtf8 = textEncodeUtf8 . T.pack
 
--- | Format a text
-textFormat :: (T.Params ps) => Format -> ps -> Text
-textFormat fmt ps = toStrict (T.format fmt ps)
+-- | Format a text (strict)
+textFormat :: Format Text a -> a
+textFormat = F.sformat
 
 -- | Parse an hexadecimal number
 -- FIXME: use a real parser (MegaParsec, etc.)

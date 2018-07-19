@@ -5,7 +5,6 @@ module Haskus.Apps.System.Info.CmdLine
 where
 
 import Options.Applicative
-import Data.Monoid
 
 data Options = Options
    { optport    :: Int

@@ -1,13 +1,5 @@
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Haskus.System.FileSystem
    ( withOpenAt
    , atomicReadBuffer
@@ -29,8 +21,7 @@ import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.System.Sys
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.List
-
-import Text.Printf
+import Haskus.Format.Text
 
 -- | Open at
 withOpenAt :: forall xs zs m.
@@ -59,8 +50,8 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
          -- use 0 offset to read from the beginning
          handleReadBuffer fd (Just 0) sz
             >..~=> (\err -> do
-               let msg = "Atomic read file (failed with %s)"
-               sysLog LogWarning (printf msg (show err)))
+               let msg = textFormat ("Atomic read file (failed with " % shown % ")") err
+               sysLog LogWarning msg)
             >.~^> (\buf ->
                if fromIntegral (bufferSize buf) == sz
                   then go (sz*2) fd
