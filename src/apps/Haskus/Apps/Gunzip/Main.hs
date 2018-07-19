@@ -1,5 +1,4 @@
 import Options.Applicative
-import Data.Monoid
 import System.FilePath (replaceExtension)
 
 import Haskus.Utils.List (isSuffixOf)

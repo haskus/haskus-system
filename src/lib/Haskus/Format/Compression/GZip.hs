@@ -22,7 +22,7 @@ import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text,getTextUtf8Nul,unpack)
-import Haskus.Format.Text (textFormat,shown,hex,(%))
+import Haskus.Format.Text (textFormat,hex,(%))
 import Haskus.Utils.Flow (when)
 
 -- | Member file
