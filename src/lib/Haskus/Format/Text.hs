@@ -8,6 +8,7 @@ module Haskus.Format.Text
    , textFormat
    , F.Format
    , (F.%)
+   , (F.%.)
    , module Formatting.Formatters
    -- * Parsing
    , textParseHexadecimal

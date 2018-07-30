@@ -22,10 +22,13 @@ ghc-options:
    "haskus-system": -fobject-code -freverse-errors
    # -fobject-code       -- GHCI needs it because of the foreign primops
 
-# Allow a newer minor version of GHC than the snapshot specifies
-# compiler-check: newer-minor
-#
-# To test with GHC head, uncomment this and add "ghc-stage2" aliased as "ghc" in
-# the PATH
-#compiler: ghc-8.0.1.20161117
-#system-ghc: true
+
+compiler: ghc-8.4.3
+ghc-variant: bugfix
+# allow-newer: true
+
+setup-info:
+  ghc:
+     linux64-custom-bugfix-tinfo6:
+        8.4.3:
+           url: "http://haskus.org/downloads/ghc-8.4.3-x86_64-bugfix-linux.tar.xz"

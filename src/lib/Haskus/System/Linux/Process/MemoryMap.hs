@@ -56,13 +56,13 @@ data Perm
    = PermRead  -- ^ Read allowed
    | PermWrite -- ^ Write allowed
    | PermExec  -- ^ Execute allowed
-   deriving (Show)
+   deriving (Eq,Show)
 
 -- | Memory sharing
 data Sharing
    = Shared    -- ^ Shared
    | Private   -- ^ Private (copy-on-write)
-   deriving (Show)
+   deriving (Eq,Show)
 
 -- | Read /proc/[pid]/maps files
 readMemoryMap :: FilePath -> IO [MemoryMapEntry]
