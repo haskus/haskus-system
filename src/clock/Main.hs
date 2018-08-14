@@ -21,6 +21,9 @@ import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (rasterizeDiagram,mkWidth)
 import Data.Maybe (fromJust)
 import Haskus.Utils.Variant
+import Haskus.Utils.Maybe
+import Haskus.Format.Text ((%),left,center,stext,text,hex,textFormat,char)
+import Formatting ((%.))
 import qualified Haskus.Utils.Map as Map
 
 import Codec.Picture.Types
@@ -30,6 +33,10 @@ main = runSys' <| do
 
    term <- defaultTerminal
    sys  <- defaultSystemInit
+
+   getProcessMemoryMap sys
+      >.~!> showProcessMemoryMap term
+
    cards <- loadGraphicCards (systemDeviceManager sys)
 
    forM_ cards <| \card -> do
@@ -67,11 +74,21 @@ main = runSys' <| do
          gfb1@(GenericFrame fb1 [buf]) <- initGenericFrameBuffer card mode fmt
          gfb2@(GenericFrame _ [_])   <- initGenericFrameBuffer card mode fmt
 
-         let Just ctrl = do
+         let defaultCtrl = do
                encId  <- connectorEncoderID conn
                enc    <- Map.lookup encId (graphicsEncoders state)
                ctrlId <- encoderControllerID enc
                Map.lookup ctrlId (graphicsControllers state)
+
+             Just ctrl = case defaultCtrl of
+               -- we already have a connected controller, use it
+               Just c  -> Just c
+               -- we need to select a controller and an encoder
+               Nothing -> do
+                  encId  <- headMaybe (connectorPossibleEncoderIDs conn)
+                  enc    <- Map.lookup encId (graphicsEncoders state)
+                  ctrlId <- headMaybe (encoderPossibleControllers enc)
+                  Map.lookup ctrlId (graphicsControllers state)
 
          writeStrLn term (show (surfacePitch (mappedSurfaceInfo buf)))
 
@@ -116,5 +133,63 @@ main = runSys' <| do
 
       return ()
 
+   sysLogPrint
+
    waitForKey term
    powerOff
+
+showProcessMemoryMap :: Terminal -> [MemoryMapEntry] -> Sys ()
+showProcessMemoryMap term x = do
+   writeTextLn term (textFormat
+      ( (center 25 ' ' %. text)
+      % " "
+      % text
+      % " "
+      % text
+      )
+      "Memory range"
+      "Flgs"
+      "Mapping"
+      )
+
+   let hasReadPerm [] = False
+       hasReadPerm (PermRead:_) = True
+       hasReadPerm (_:xs) = hasReadPerm xs
+
+   let hasWritePerm [] = False
+       hasWritePerm (PermWrite:_) = True
+       hasWritePerm (_:xs) = hasWritePerm xs
+
+   let hasExecPerm [] = False
+       hasExecPerm (PermExec:_) = True
+       hasExecPerm (_:xs) = hasExecPerm xs
+
+   forM_ x <| \y -> do
+      writeTextLn term (textFormat
+         ((left 12 '0' %. hex)
+         % "-"
+         % (left 12 '0' %. hex)
+         % " "
+         % char % char % char % char
+         % " "
+         % stext
+         )
+         (entryStartAddr y)
+         (entryStopAddr y)
+         (if hasReadPerm (entryPerms y) then 'r' else '-')
+         (if hasWritePerm (entryPerms y) then 'w' else '-')
+         (if hasExecPerm (entryPerms y) then 'x' else '-')
+         (case entrySharing y of
+            Private -> 'p'
+            Shared  -> 's'
+         )
+         (case entryType y of
+            AnonymousMapping  -> ""
+            NamedMapping s    -> textFormat ("[" % stext % "]") s
+            fm@FileMapping {} -> textFormat (stext % " @ " % hex)
+                                 (fileMappingPath fm)
+                                 (fileMappingOffset fm)
+         )
+         )
+   writeStrLn term (show x)
+

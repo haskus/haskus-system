@@ -76,6 +76,7 @@ executables:
          - JuicyPixels
          - stm
          - lens
+         - formatting
 
    VSDO:
       main: Main.hs

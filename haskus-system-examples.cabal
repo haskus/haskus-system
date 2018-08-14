@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 601482b8a7288adfcf85b10be53186ea70553743a40e53e75210b0b84220611d
+-- hash: 94b3411a7fd240480168bc67e680d5237aefedb0997cd154cdab09940704299c
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -37,6 +37,7 @@ executable Clock
       JuicyPixels
     , base >=4.8 && <5
     , bytestring
+    , formatting
     , haskus-binary
     , haskus-system
     , haskus-utils

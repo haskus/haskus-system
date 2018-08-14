@@ -1,4 +1,4 @@
-resolver: lts-12.1
+resolver: lts-12.6
 
 flags: {}
 
@@ -18,3 +18,13 @@ extra-deps:
 ghc-options:
    "haskus-system": -fobject-code
    "$locals": -fhide-source-paths
+
+compiler: ghc-8.4.3
+ghc-variant: bugfix
+# allow-newer: true
+
+setup-info:
+  ghc:
+     linux64-custom-bugfix-tinfo6:
+        8.4.3:
+           url: "http://haskus.org/downloads/ghc-8.4.3-x86_64-bugfix-linux.tar.xz"
