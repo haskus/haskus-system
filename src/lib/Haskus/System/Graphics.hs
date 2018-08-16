@@ -43,7 +43,7 @@ import Haskus.System.Linux.Memory
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Capability
-import Haskus.System.Linux.Graphics.GenericBuffer
+import Haskus.System.Linux.Graphics.HostBuffer
 import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Entities
@@ -113,8 +113,8 @@ newEventWaiterThread h = do
 
 
 data MappedSurface = MappedSurface
-   { mappedSurfaceBuffer  :: GenericBuffer
-   , mappedSurfaceMapping :: GenericBufferMap
+   { mappedSurfaceBuffer  :: HostBuffer
+   , mappedSurfaceMapping :: HostBufferMap
    , mappedSurfacePointer :: Ptr ()
    , mappedSurfaceInfo    :: PixelSource
    }
@@ -136,10 +136,10 @@ initGenericFrameBuffer card mode pixfmt = do
       flags  = 0
 
    mappedPlanes <- forM bpps $ \bpp -> do
-      buf <- createGenericBuffer hdl width height bpp flags
+      buf <- createHostBuffer hdl width height bpp flags
                |> flowAssert "Create a generic buffer"
 
-      bufKerMap <- mapGenericBuffer hdl buf
+      bufKerMap <- mapHostBuffer hdl buf
                      |> flowAssert "Map generic buffer"
 
       addr <- flowAssert "Map generic buffer in user space" <|
@@ -173,7 +173,7 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
          |> flowAssert "Unmap generic buffer from user space"
 
       -- destroy the generic buffer
-      flowAssert "Destroy generic buffer" <| destroyGenericBuffer hdl buf
+      flowAssert "Destroy generic buffer" <| destroyHostBuffer hdl buf
 
 
    -- remove the framebuffer
@@ -208,7 +208,7 @@ data FrameWait
 
 -- | Init the rendering engine
 --
--- TODO: indicate failure (GenericBuffer not supported, framebuffer allocation
+-- TODO: indicate failure (HostBuffer not supported, framebuffer allocation
 -- error, etc.)
 -- TODO: support multiple controllers/connectors
 -- TODO: support connections/disconnections
@@ -222,8 +222,8 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       -- Check support for generic buffers
       let fd    = graphicCardHandle card
       sysLogSequence "Load graphic card" $ do
-         cap  <- (fd `supports` CapGenericBuffer)
-                  |> flowAssert "Get GenericBuffer capability" 
+         cap  <- (fd `supports` CapHostBuffer)
+                  |> flowAssert "Get HostBuffer capability" 
          sysAssert "Generic buffer capability supported" cap
 
       -- TODO: support other formats

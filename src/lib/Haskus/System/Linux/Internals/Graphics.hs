@@ -108,9 +108,9 @@ module Haskus.System.Linux.Internals.Graphics
    , ioctlGetBlob
    , ioctlPageFlip
    , ioctlDirtyFrameBuffer
-   , ioctlCreateGenericBuffer
-   , ioctlMapGenericBuffer
-   , ioctlDestroyGenericBuffer
+   , ioctlCreateHostBuffer
+   , ioctlMapHostBuffer
+   , ioctlDestroyHostBuffer
    , ioctlGetPlaneResources
    , ioctlGetPlane
    , ioctlSetPlane
@@ -876,7 +876,7 @@ data Clip = Clip
 
 -- | Capability
 data Capability
-   = CapGenericBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
+   = CapHostBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
    | CapVBlankHighController
    | CapGenericPreferredDepth
    | CapGenericPreferShadow
@@ -1001,14 +1001,14 @@ ioctlPageFlip = drmIoctl 0xB0
 ioctlDirtyFrameBuffer :: StructFrameBufferDirty -> Handle -> IOErr StructFrameBufferDirty
 ioctlDirtyFrameBuffer = drmIoctl 0xB1
 
-ioctlCreateGenericBuffer :: StructCreateDumb -> Handle -> IOErr StructCreateDumb
-ioctlCreateGenericBuffer = drmIoctl 0xB2
+ioctlCreateHostBuffer :: StructCreateDumb -> Handle -> IOErr StructCreateDumb
+ioctlCreateHostBuffer = drmIoctl 0xB2
 
-ioctlMapGenericBuffer :: StructMapDumb -> Handle -> IOErr StructMapDumb
-ioctlMapGenericBuffer = drmIoctl 0xB3
+ioctlMapHostBuffer :: StructMapDumb -> Handle -> IOErr StructMapDumb
+ioctlMapHostBuffer = drmIoctl 0xB3
 
-ioctlDestroyGenericBuffer :: StructDestroyDumb -> Handle -> IOErr StructDestroyDumb
-ioctlDestroyGenericBuffer = drmIoctl 0xB4
+ioctlDestroyHostBuffer :: StructDestroyDumb -> Handle -> IOErr StructDestroyDumb
+ioctlDestroyHostBuffer = drmIoctl 0xB4
 
 ioctlGetPlaneResources :: StructGetPlaneRes -> Handle -> IOErr StructGetPlaneRes
 ioctlGetPlaneResources = drmIoctl 0xB5

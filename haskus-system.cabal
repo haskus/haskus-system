@@ -104,7 +104,7 @@ library
     Haskus.System.Linux.Graphics.Capability
     Haskus.System.Linux.Graphics.Event
     Haskus.System.Linux.Graphics.FrameSource
-    Haskus.System.Linux.Graphics.GenericBuffer
+    Haskus.System.Linux.Graphics.HostBuffer
     Haskus.System.Linux.Graphics.Mode
     Haskus.System.Linux.Graphics.Object
     Haskus.System.Linux.Graphics.PixelFormat
