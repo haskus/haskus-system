@@ -123,6 +123,7 @@ library
     Haskus.System.Graphics.Drawing
     Haskus.System.Graphics.Diagrams
     Haskus.System.Graphics.Colour
+    Haskus.System.Graphics.Config
     Haskus.System.Input
     Haskus.System.Terminal
     Haskus.System.Process

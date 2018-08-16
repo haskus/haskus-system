@@ -21,6 +21,8 @@ module Haskus.System.Linux.Graphics.Entities
    , Frame (..)
    -- * Plane
    , Plane (..)
+   , DestRect (..)
+   , SrcRect (..)
    -- * Frame source
    , FrameSource (..)
    , PixelSource (..)
@@ -29,6 +31,7 @@ where
 
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
+import Haskus.Format.Binary.FixedPoint
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.Mode
@@ -111,7 +114,7 @@ data Encoder = Encoder
 data Controller = Controller
    { controllerID             :: ControllerID  -- ^ Controller identifier
    , controllerMode           :: Maybe Mode
-   , controllerFrameBuffer    :: Maybe Frame   -- ^ Associated frame buffer and its position (x,y)
+   , controllerFrame          :: Maybe Frame   -- ^ Associated frame source and its position (x,y)
    , controllerGammaTableSize :: Word32
    , controllerHandle         :: Handle
    } deriving (Show)
@@ -136,6 +139,27 @@ data Plane = Plane
    , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
    }
    deriving (Show)
+
+type FP16 = FixedPoint Word32 16 16
+
+-- | Destination rectangle
+data DestRect = DestRect
+   { destX      :: Int32
+   , destY      :: Int32
+   , destWidth  :: Word32
+   , destHeight :: Word32
+   }
+   deriving (Show,Eq)
+
+-- | Source rectangle
+data SrcRect = SrcRect
+   { srcX      :: FP16
+   , srcY      :: FP16
+   , srcWidth  :: FP16
+   , srcHeight :: FP16
+   }
+   deriving (Show,Eq)
+
 
 -------------------------------------------------------------------------------
 -- Frame source

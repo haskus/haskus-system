@@ -42,8 +42,6 @@ module Haskus.System.Linux.Graphics.State
    , getPlane
    , setPlane
    , disablePlane
-   , DestRect (..)
-   , SrcRect (..)
    , InvalidDestRect (..)
    , InvalidSrcRect (..)
    )
@@ -526,26 +524,6 @@ getPlane hdl pid = getCount >.~^> getInfo
                   , planeGammaSize           = gpGammaSize
                   , planeFormats             = fmts
                   }
-
-type FP16 = FixedPoint Word32 16 16
-
--- | Destination rectangle
-data DestRect = DestRect
-   { destX      :: Int32
-   , destY      :: Int32
-   , destWidth  :: Word32
-   , destHeight :: Word32
-   }
-   deriving (Show,Eq)
-
--- | Source rectangle
-data SrcRect = SrcRect
-   { srcX      :: FP16
-   , srcY      :: FP16
-   , srcWidth  :: FP16
-   , srcHeight :: FP16
-   }
-   deriving (Show,Eq)
 
 -- | Invalid destination rectangle
 data InvalidDestRect = InvalidDestRect deriving (Show,Eq)
