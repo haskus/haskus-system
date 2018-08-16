@@ -28,7 +28,7 @@ import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Buffer as B
 import Haskus.System.Graphics
-import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.PixelFormat
 
 -- | Blanding method
@@ -59,9 +59,9 @@ loadPng bs = img
 
 
 -- | check framebuffer pixel format
-checkPixelFormat :: FrameBuffer -> IO ()
-checkPixelFormat fb = do
-   let pixFmt = fbPixelFormat fb
+checkPixelFormat :: FrameSource -> IO ()
+checkPixelFormat fs = do
+   let pixFmt = framePixelFormat fs
 
    case formatFormat pixFmt of
       ARGB8888 -> return ()
@@ -82,8 +82,8 @@ fillFrame gfb color = do
       addr  = mappedSurfacePointer buf
       pitch = surfacePitch (mappedSurfaceInfo buf)
 
-   forLoop 0 (< fromIntegral (fbHeight fb)) (+1) $ \y ->
-      forLoop 0 (< fromIntegral (fbWidth fb)) (+1) $ \x -> do
+   forLoop 0 (< fromIntegral (frameHeight fb)) (+1) $ \y ->
+      forLoop 0 (< fromIntegral (frameWidth fb)) (+1) $ \x -> do
          let !off = x*4 + y*fromIntegral pitch
          pokeByteOff (castPtr addr) off (color :: Word32)
 
@@ -104,7 +104,7 @@ blendImage gfb img op pos clp = do
 
    -- compute drawing rect
    let
-      (w,h)         = (fbWidth fb, fbHeight fb)
+      (w,h)         = (frameWidth fb, frameHeight fb)
       pitch         = surfacePitch (mappedSurfaceInfo buf)
       (cx,cy,cw,ch) = clp
       clip'         = (cx,cy, min (imageWidth img - cx) cw, min (imageHeight img - cy) ch)

@@ -16,7 +16,7 @@ module Haskus.System.Linux.Graphics.Object
    )
 where
 
-import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.IDs
@@ -40,7 +40,7 @@ data ObjectType
    | ObjectEncoder
    | ObjectMode
    | ObjectProperty
-   | ObjectFrameBuffer
+   | ObjectFrameSource
    | ObjectBlob
    | ObjectPlane
    deriving (Show,Eq,Ord,Enum)
@@ -52,7 +52,7 @@ instance CEnum ObjectType where
       0xe0e0e0e0 -> ObjectEncoder
       0xdededede -> ObjectMode
       0xb0b0b0b0 -> ObjectProperty
-      0xfbfbfbfb -> ObjectFrameBuffer
+      0xfbfbfbfb -> ObjectFrameSource
       0xbbbbbbbb -> ObjectBlob
       0xeeeeeeee -> ObjectPlane
       _          -> error "Invalid object type"
@@ -63,7 +63,7 @@ instance CEnum ObjectType where
       ObjectEncoder      -> 0xe0e0e0e0 
       ObjectMode         -> 0xdededede 
       ObjectProperty     -> 0xb0b0b0b0 
-      ObjectFrameBuffer  -> 0xfbfbfbfb 
+      ObjectFrameSource  -> 0xfbfbfbfb 
       ObjectBlob         -> 0xbbbbbbbb 
       ObjectPlane        -> 0xeeeeeeee 
 
@@ -91,10 +91,10 @@ instance Object Mode where
    getObjectType _ = ObjectMode
    getObjectID _   = error "getObjectID unsupported for Mode objects"
 
-instance Object FrameBuffer where
-   getObjectType _ = ObjectFrameBuffer
+instance Object FrameSource where
+   getObjectType _ = ObjectFrameSource
    getObjectID x   = y
-      where FrameBufferID y = fbID x
+      where FrameSourceID y = frameID x
 
 instance Object Plane where
    getObjectType _ = ObjectPlane

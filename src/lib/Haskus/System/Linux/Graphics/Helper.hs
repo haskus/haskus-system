@@ -2,42 +2,43 @@
 
 -- | Helpers for the graphics API
 module Haskus.System.Linux.Graphics.Helper
-   ( FBConfig (..)
+   ( FrameSourceAction (..)
    , setController
-   , switchFrameBuffer
+   , switchFrameSource
    )
 where
 
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.IDs
 import Haskus.System.Linux.ErrorCode
 import Haskus.Format.Binary.Word
 import Haskus.Utils.Flow
 
-data FBConfig
-   = SetFB FrameBuffer
-   | ReuseFB
-   | ReleaseFB
+-- | How to configure frame source with setController
+data FrameSourceAction
+   = SetSource FrameSource -- ^ Use this given source
+   | ReuseSource           -- ^ Use the already set one
+   | ReleaseSource         -- ^ Release the set source
    deriving (Show)
 
 -- | Configure a controller
 --
--- A connected framebuffer is required to set a mode: if ReuseFB is passed, the
+-- A connected frame source is required to set a mode: if ReuseSource is passed, the
 -- connected one is used.
-setController :: MonadInIO m => Controller -> FBConfig -> [Connector] -> Maybe Mode -> Flow m '[(),ErrorCode]
-setController ctrl fbconf conns mode = do
+setController :: MonadInIO m => Controller -> FrameSourceAction -> [Connector] -> Maybe Mode -> Flow m '[(),ErrorCode]
+setController ctrl frameSourceAction conns mode = do
    let 
-      fbpos = case fbconf of
-         SetFB fb  -> Just $ FrameBufferPos (fbID fb) 0 0
-         ReuseFB   -> Just $ FrameBufferPos (FrameBufferID maxBound) 0 0
-         ReleaseFB -> Nothing
+      mframe = case frameSourceAction of
+         SetSource fs  -> Just $ Frame (frameID fs) 0 0
+         ReuseSource   -> Just $ Frame (FrameSourceID maxBound) 0 0
+         ReleaseSource -> Nothing
       hdl  = controllerHandle ctrl
-   setController' hdl (controllerID ctrl) fbpos (fmap connectorID conns) mode
+   setController' hdl (controllerID ctrl) mframe (fmap connectorID conns) mode
 
--- | Switch to another framebuffer for the given controller
--- without doing a full mode change
-switchFrameBuffer :: MonadIO m => Controller -> FrameBuffer -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
-switchFrameBuffer ctrl fb flags udata =
-   switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (fbID fb) flags udata
+-- | Switch to another frame source for the given controller without doing a
+-- full mode change
+switchFrameSource :: MonadIO m => Controller -> FrameSource -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
+switchFrameSource ctrl fs flags udata =
+   switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (frameID fs) flags udata

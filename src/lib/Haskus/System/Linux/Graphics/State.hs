@@ -15,7 +15,7 @@ module Haskus.System.Linux.Graphics.State
    , Controller (..)
    , Encoder(..)
    , EncoderType(..)
-   , FrameBufferPos (..)
+   , Frame (..)
    , Connector (..)
    , Connection (..)
    , ConnectedDevice (..)
@@ -52,7 +52,7 @@ where
 import Haskus.System.Linux.Graphics.IDs
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Property
-import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
@@ -79,12 +79,12 @@ data GraphicsState = GraphicsState
    , graphicsEncoders     :: Map EncoderID     Encoder    -- ^ Encoders
    , graphicsControllers  :: Map ControllerID  Controller -- ^ Controllers
    , graphicsPlanes       :: Map PlaneID       Plane      -- ^ Planes
-   , graphicsFrameBuffers :: [FrameBufferID]              -- ^ Framebuffers
+   , graphicsFrameBuffers :: [FrameSourceID]              -- ^ Frame sources
    } deriving (Show)
 
 -- | Graphic card ressources
 data Resources = Resources
-   { resFrameBufferIDs  :: [FrameBufferID]   -- ^ Frame buffer IDs
+   { resFrameSourceIDs  :: [FrameSourceID]   -- ^ Frame source IDs
    , resControllerIDs   :: [ControllerID]    -- ^ Controller IDs
    , resConnectorIDs    :: [ConnectorID]     -- ^ Connector IDs
    , resEncoderIDs      :: [EncoderID]       -- ^ Encoder IDs
@@ -116,13 +116,13 @@ data Encoder = Encoder
 data Controller = Controller
    { controllerID             :: ControllerID         -- ^ Controller identifier
    , controllerMode           :: Maybe Mode
-   , controllerFrameBuffer    :: Maybe FrameBufferPos -- ^ Associated frame buffer and its position (x,y)
+   , controllerFrameBuffer    :: Maybe Frame -- ^ Associated frame buffer and its position (x,y)
    , controllerGammaTableSize :: Word32
    , controllerHandle         :: Handle
    } deriving (Show)
 
-data FrameBufferPos = FrameBufferPos
-   { frameBufferPosID :: FrameBufferID        -- ^ Framebuffer identifier
+data Frame = Frame
+   { frameBufferPosID :: FrameSourceID        -- ^ Framebuffer identifier
    , frameBufferPosX  :: Word32
    , frameBufferPosY  :: Word32
    } deriving (Show)
@@ -159,7 +159,7 @@ data Connector = Connector
 data Plane = Plane
    { planeID                  :: PlaneID              -- ^ Plane identifier
    , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
-   , planeFrameBufferId       :: Maybe FrameBufferID  -- ^ Connected framebuffer
+   , planeFrameBufferId       :: Maybe FrameSourceID  -- ^ Connected framebuffer
    , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
    , planeGammaSize           :: Word32               -- ^ Size of the gamma table
    , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
@@ -175,7 +175,7 @@ readGraphicsState hdl = do
    case popVariant @Resources mres of
       Left xs   -> return (liftVariant xs)
       Right res -> do
-         let fbs = resFrameBufferIDs res
+         let fbs = resFrameSourceIDs res
          -- read connectors, encoders and controllers
          mconns <- flowTraverse (getConnectorFromID hdl) (resConnectorIDs res)
          mencs  <- flowTraverse (getEncoderFromID hdl res) (resEncoderIDs res)
@@ -195,7 +195,7 @@ readGraphicsState hdl = do
 
 
 -- | Build GraphicsState
-buildGraphicsState :: [Connector] -> [Encoder] -> [Controller] -> [Plane] -> [FrameBufferID] -> GraphicsState
+buildGraphicsState :: [Connector] -> [Encoder] -> [Controller] -> [Plane] -> [FrameSourceID] -> GraphicsState
 buildGraphicsState conns encs ctrls planes fbs = GraphicsState conns' encs' ctrls' planes' fbs
    where
       encs'   = Map.fromList <| fmap (\e -> (encoderID e, e))    encs
@@ -244,7 +244,7 @@ fromStructController hdl StructController{..} =
          then Just (fromStructMode contModeInfo)
          else Nothing)
       (if contFbID /= 0 
-         then Just (FrameBufferPos (FrameBufferID contFbID) contFbX contFbY)
+         then Just (Frame (FrameSourceID contFbID) contFbX contFbY)
          else Nothing)
       contGammaSize
       hdl
@@ -263,7 +263,7 @@ getControllerFromID hdl crtcid = liftIO (ioctlGetController crtc hdl)
       crtc             = emptyStructController { contID = cid }
 
 
-setController' :: MonadInIO m => Handle -> ControllerID -> Maybe FrameBufferPos -> [ConnectorID] -> Maybe Mode -> Flow m '[(),ErrorCode]
+setController' :: MonadInIO m => Handle -> ControllerID -> Maybe Frame -> [ConnectorID] -> Maybe Mode -> Flow m '[(),ErrorCode]
 setController' hdl crtcid fb conns mode = do
    let
       ControllerID cid = crtcid
@@ -271,7 +271,7 @@ setController' hdl crtcid fb conns mode = do
 
       (fbid,fbx,fby) = case fb of
          Nothing -> (0,0,0)
-         Just (FrameBufferPos (FrameBufferID z) x y) -> (z,x,y)
+         Just (Frame (FrameSourceID z) x y) -> (z,x,y)
 
    withArray conns' $ \conArray -> do
       let
@@ -297,11 +297,11 @@ setController' hdl crtcid fb conns mode = do
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: MonadIO m => Handle -> ControllerID -> FrameBufferID -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
+switchFrameBuffer' :: MonadIO m => Handle -> ControllerID -> FrameSourceID -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
 switchFrameBuffer' hdl crtcid fb flags udata = do
    let
       ControllerID cid = crtcid
-      FrameBufferID fid = fb
+      FrameSourceID fid = fb
       s = StructPageFlip cid fid flags 0 udata
 
    liftIO (ioctlPageFlip s hdl) >.-.> const ()
@@ -491,7 +491,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             arraySizes = extractSize r
          [fbs,ctrls,conns,encs] <- peekArrays arraySizes as'
          flowSetN @0 $ Resources
-               (fmap FrameBufferID fbs)
+               (fmap FrameSourceID fbs)
                (fmap ControllerID  ctrls)
                (fmap ConnectorID   conns)
                (fmap EncoderID     encs)
@@ -600,7 +600,7 @@ getPlane hdl pid = getCount >.~^> getInfo
                flowSet Plane
                   { planeID                  = pid
                   , planeControllerId        = toMaybe ControllerID gpCrtcId
-                  , planeFrameBufferId       = toMaybe FrameBufferID gpFbId
+                  , planeFrameBufferId       = toMaybe FrameSourceID gpFbId
                   , planePossibleControllers = pickControllers res gpPossibleCrtcs
                   , planeGammaSize           = gpGammaSize
                   , planeFormats             = fmts
@@ -639,18 +639,18 @@ data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 --
 -- The fractional part in SrcRect is for devices supporting sub-pixel plane
 -- coordinates.
-setPlane :: MonadIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameBufferID, SrcRect, DestRect) -> Flow m '[(),InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect]
+setPlane :: MonadIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameSourceID, SrcRect, DestRect) -> Flow m '[(),InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect]
 setPlane hdl (PlaneID pid) opts = do
 
    let 
-      makeS (ControllerID cid) (FrameBufferID fbid) =
+      makeS (ControllerID cid) (FrameSourceID fbid) =
          StructSetPlane pid cid fbid BitSet.empty
 
       e16 = toFixedPoint (0 :: Float)
 
       s = case opts of
             Nothing -> -- disable the plane
-               makeS (ControllerID 0) (FrameBufferID 0)
+               makeS (ControllerID 0) (FrameSourceID 0)
                   0 0 0 0 e16 e16 e16 e16
 
             Just (cid,fbid,SrcRect{..},DestRect{..}) ->

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Haskus.System.Linux.Graphics.IDs
-   ( FrameBufferID(..)
+   ( FrameSourceID(..)
    , ControllerID(..)
    , ConnectorID(..)
    , EncoderID(..)
@@ -12,9 +12,9 @@ where
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 
--- | Framebuffer ID
-newtype FrameBufferID
-   = FrameBufferID Word32
+-- | FrameSource ID
+newtype FrameSourceID
+   = FrameSourceID Word32
    deriving (Show,Eq,Storable,Ord)
 
 -- | Connector ID

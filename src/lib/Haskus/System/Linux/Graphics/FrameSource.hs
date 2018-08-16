@@ -2,13 +2,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- | Frame buffer management
-module Haskus.System.Linux.Graphics.FrameBuffer
-   ( Surface(..)
-   , FrameBuffer(..)
-   , addFrameBuffer
-   , removeFrameBuffer
-   , dirtyFrameBuffer
+-- | Pixel source
+module Haskus.System.Linux.Graphics.FrameSource
+   ( -- * Frame source
+     FrameSource(..)
+   , addFrameSource
+   , removeFrameSource
+   , dirtyFrameSource
+   -- * Pixel source
+   , PixelSource(..)
+   -- * Flip, Clip, Dirty
    , PageFlipFlag (..)
    , PageFlipFlags
    , DirtyAnnotation (..)
@@ -29,74 +32,74 @@ import Haskus.Utils.Tuple
 import Haskus.Utils.Flow
 import Haskus.Utils.List (zip4)
 
--- | Surface
-data Surface = Surface
+-- | Pixel source
+data PixelSource = PixelSource
    { surfaceHandle    :: Word32 -- ^ Handle of the surface
    , surfacePitch     :: Word32 -- ^ Pitch of the surface
    , surfaceOffset    :: Word32 -- ^ Offset of the surface
    , surfaceModifiers :: Word64 -- ^ Modifiers for the surface
    } deriving (Show)
 
--- | Frame buffer
-data FrameBuffer = FrameBuffer
-   { fbID          :: FrameBufferID    -- ^ Frame buffer identifier
-   , fbWidth       :: Word32           -- ^ Frame buffer width
-   , fbHeight      :: Word32           -- ^ Frame buffer height
-   , fbPixelFormat :: PixelFormat      -- ^ Pixel format
-   , fbFlags       :: FrameBufferFlags -- ^ Flags
-   , fbSurfaces    :: [Surface]        -- ^ Data sources (up to four)
+-- | Abstract frame source
+data FrameSource = FrameSource
+   { frameID          :: FrameSourceID    -- ^ Frame buffer identifier
+   , frameWidth       :: Word32           -- ^ Frame buffer width
+   , frameHeight      :: Word32           -- ^ Frame buffer height
+   , framePixelFormat :: PixelFormat      -- ^ Pixel format
+   , frameFlags       :: FrameBufferFlags -- ^ Flags
+   , frameSources     :: [PixelSource]    -- ^ Data sources (up to four)
    } deriving (Show)
 
-fromFrameBuffer :: FrameBuffer -> StructFrameBufferCommand
-fromFrameBuffer FrameBuffer{..} = s
+fromFrameSource :: FrameSource -> StructFrameBufferCommand
+fromFrameSource FrameSource{..} = s
    where
-      FrameBufferID fbid = fbID
-      g :: (Num a,Storable a) => (Surface -> a) -> Vector 4 a
-      g f = Vector.fromFilledList 0 (fmap f fbSurfaces)
+      FrameSourceID fbid = frameID
+      g :: (Num a,Storable a) => (PixelSource -> a) -> Vector 4 a
+      g f = Vector.fromFilledList 0 (fmap f frameSources)
       s   = StructFrameBufferCommand fbid
-               fbWidth fbHeight fbPixelFormat fbFlags
+               frameWidth frameHeight framePixelFormat frameFlags
                (g surfaceHandle) (g surfacePitch)
                (g surfaceOffset) (g surfaceModifiers)
 
-toFrameBuffer :: StructFrameBufferCommand -> FrameBuffer
-toFrameBuffer StructFrameBufferCommand{..} = s
+toFrameSource :: StructFrameBufferCommand -> FrameSource
+toFrameSource StructFrameBufferCommand{..} = s
    where
-      bufs = uncurry4 Surface <$> zip4
+      bufs = uncurry4 PixelSource <$> zip4
                (Vector.toList fc2Handles)
                (Vector.toList fc2Pitches)
                (Vector.toList fc2Offsets)
                (Vector.toList fc2Modifiers)
-      s = FrameBuffer (FrameBufferID fc2FbId)
+      s = FrameSource (FrameSourceID fc2FbId)
             fc2Width fc2Height fc2PixelFormat fc2Flags bufs
 
 
 -- | Create a framebuffer
-addFrameBuffer :: MonadIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [Surface] -> Flow m '[FrameBuffer,ErrorCode]
-addFrameBuffer hdl width height fmt flags buffers = do
+addFrameSource :: MonadIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [PixelSource] -> Flow m '[FrameSource,ErrorCode]
+addFrameSource hdl width height fmt flags buffers = do
    
-   let s = FrameBuffer (FrameBufferID 0) width height
+   let s = FrameSource (FrameSourceID 0) width height
                fmt flags buffers
 
-   liftIO (ioctlAddFrameBuffer (fromFrameBuffer s) hdl)
-      >.-.> toFrameBuffer
+   liftIO (ioctlAddFrameBuffer (fromFrameSource s) hdl)
+      >.-.> toFrameSource
 
 -- | Release a frame buffer
-removeFrameBuffer :: MonadIO m => Handle -> FrameBuffer -> Flow m '[(),ErrorCode]
-removeFrameBuffer hdl fb = do
-   let FrameBufferID fbid = fbID fb
+removeFrameSource :: MonadIO m => Handle -> FrameSource -> Flow m '[(),ErrorCode]
+removeFrameSource hdl fs = do
+   let FrameSourceID fbid = frameID fs
    liftIO (ioctlRemoveFrameBuffer fbid hdl)
       >.-.> const ()
 
 
--- | Indicate dirty parts of a framebuffer
-dirtyFrameBuffer :: MonadInIO m => Handle -> FrameBuffer -> DirtyAnnotation -> Flow m '[(),ErrorCode]
-dirtyFrameBuffer hdl fb mode = do
+-- | Indicate dirty parts of a frame source
+dirtyFrameSource :: MonadInIO m => Handle -> FrameSource -> DirtyAnnotation -> Flow m '[(),ErrorCode]
+dirtyFrameSource hdl fs mode = do
    let
       (color,flags,clips) = case mode of
          Dirty     cs   -> (0,0,cs)
          DirtyCopy cs   -> (0,1, concatMap (\(a,b) -> [a,b]) cs)
          DirtyFill c cs -> (c,2,cs)
-      FrameBufferID fbid = fbID fb
+      FrameSourceID fbid = frameID fs
 
    withArray clips $ \clipPtr -> do
       let s = StructFrameBufferDirty

@@ -47,7 +47,7 @@ import Haskus.System.Linux.Graphics.GenericBuffer
 import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.IDs
-import Haskus.System.Linux.Graphics.FrameBuffer
+import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Event as Graphics
 
@@ -115,11 +115,11 @@ data MappedSurface = MappedSurface
    { mappedSurfaceBuffer  :: GenericBuffer
    , mappedSurfaceMapping :: GenericBufferMap
    , mappedSurfacePointer :: Ptr ()
-   , mappedSurfaceInfo    :: Surface
+   , mappedSurfaceInfo    :: PixelSource
    }
 
 data GenericFrame = GenericFrame
-   { genericFrameBuffer  :: FrameBuffer
+   { genericFrameBuffer  :: FrameSource
    , genericFrameBuffers :: [MappedSurface]
    }
 
@@ -149,13 +149,13 @@ initGenericFrameBuffer card mode pixfmt = do
             Nothing
             (Just (hdl, mdOffset bufKerMap))
 
-      let plane = Surface (cdHandle buf) (cdPitch buf) 0 0
+      let plane = PixelSource (cdHandle buf) (cdPitch buf) 0 0
 
       return (MappedSurface buf bufKerMap addr plane)
    
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
-   fb <- addFrameBuffer hdl width height pixfmt BitSet.empty planes
+   fb <- addFrameSource hdl width height pixfmt BitSet.empty planes
          |> flowAssert "Add frame buffer"
 
    return $ GenericFrame fb mappedPlanes
@@ -176,7 +176,7 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
 
    -- remove the framebuffer
-   flowAssert "Remove framebuffer" <| removeFrameBuffer hdl fb
+   flowAssert "Remove framebuffer" <| removeFrameSource hdl fb
 
 
 -----------------------------------------------------------------------
@@ -233,7 +233,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       -- perform initial mode-setting
       let initFB = genericFrameBuffer (head bufs)
-      setController ctrl (SetFB initFB) [conn] (Just mode)
+      setController ctrl (SetSource initFB) [conn] (Just mode)
          |> flowAssertQuiet "Perform initial mode-setting"
 
       -- page flip
@@ -291,7 +291,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
-         switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent]) ctrlId
+         switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) ctrlId
             |> flowAssertQuiet "Switch framebuffer"
             
 
@@ -327,7 +327,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             yield
 
       -- Force the generation of the first page-flip event
-      switchFrameBuffer ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) ctrlId
+      switchFrameSource ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) ctrlId
          |> flowAssertQuiet "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
