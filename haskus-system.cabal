@@ -100,7 +100,7 @@ library
     Haskus.System.Linux.Process.Auxiliary
 
     Haskus.System.Linux.Graphics.Entities
-    Haskus.System.Linux.Graphics.Config
+    Haskus.System.Linux.Graphics.AtomicConfig
     Haskus.System.Linux.Graphics.Capability
     Haskus.System.Linux.Graphics.Event
     Haskus.System.Linux.Graphics.FrameSource

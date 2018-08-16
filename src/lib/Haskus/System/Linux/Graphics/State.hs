@@ -521,7 +521,7 @@ getPlane hdl pid = getCount >.~^> getInfo
                flowSet Plane
                   { planeID                  = pid
                   , planeControllerId        = toMaybe EntityID gpCrtcId
-                  , planeFrameBufferId       = toMaybe EntityID gpFbId
+                  , planeFrameSourceId       = toMaybe EntityID gpFbId
                   , planePossibleControllers = pickControllers res gpPossibleCrtcs
                   , planeGammaSize           = gpGammaSize
                   , planeFormats             = fmts

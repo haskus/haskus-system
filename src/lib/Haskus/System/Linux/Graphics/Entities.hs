@@ -109,9 +109,9 @@ data Encoder = Encoder
 -- A controller is used to configure what is displayed on the screen
 -- Controllers are called CRTC in original terminology
 data Controller = Controller
-   { controllerID             :: ControllerID         -- ^ Controller identifier
+   { controllerID             :: ControllerID  -- ^ Controller identifier
    , controllerMode           :: Maybe Mode
-   , controllerFrameBuffer    :: Maybe Frame -- ^ Associated frame buffer and its position (x,y)
+   , controllerFrameBuffer    :: Maybe Frame   -- ^ Associated frame buffer and its position (x,y)
    , controllerGammaTableSize :: Word32
    , controllerHandle         :: Handle
    } deriving (Show)
@@ -130,7 +130,7 @@ data Frame = Frame
 data Plane = Plane
    { planeID                  :: PlaneID              -- ^ Plane identifier
    , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
-   , planeFrameBufferId       :: Maybe FrameSourceID  -- ^ Connected framebuffer
+   , planeFrameSourceId       :: Maybe FrameSourceID  -- ^ Connected frame source
    , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
    , planeGammaSize           :: Word32               -- ^ Size of the gamma table
    , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats

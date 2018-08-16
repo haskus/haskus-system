@@ -16,9 +16,8 @@
 -- intermediate states. Legacy object properties are accessible through object
 -- properties. An atomic modification is a list of (object, property, value)
 -- tuples.
-module Haskus.System.Linux.Graphics.Config
-   ( ConfigM
-   , Atomic (..)
+module Haskus.System.Linux.Graphics.AtomicConfig
+   ( Atomic (..)
    , CommitOrTest (..)
    , AsyncMode (..)
    , ModesetMode (..)
