@@ -99,7 +99,7 @@ library
     Haskus.System.Linux.Process.ControlGroup
     Haskus.System.Linux.Process.Auxiliary
 
-    Haskus.System.Linux.Graphics.IDs
+    Haskus.System.Linux.Graphics.Entities
     Haskus.System.Linux.Graphics.Config
     Haskus.System.Linux.Graphics.Capability
     Haskus.System.Linux.Graphics.Event

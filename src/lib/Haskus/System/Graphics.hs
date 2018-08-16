@@ -46,7 +46,8 @@ import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.GenericBuffer
 import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.IDs
+import Haskus.System.Linux.Graphics.Entities
+import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Event as Graphics
@@ -247,8 +248,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       fps <- newTVarIO (0 :: Word)
 
       -- get controller ID as Word64, used as user_data with the page flip event
-      let ControllerID ctrlId' = controllerID ctrl
-          ctrlId = fromIntegral ctrlId'
+      let ctrlId = fromIntegral (getObjectID ctrl)
 
       -- on page flip complete
       onEvent (graphicCardChan card) $ \case

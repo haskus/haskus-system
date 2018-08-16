@@ -49,11 +49,11 @@ module Haskus.System.Linux.Graphics.State
    )
 where
 
-import Haskus.System.Linux.Graphics.IDs
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Error
@@ -94,77 +94,6 @@ data Resources = Resources
    , resMaxHeight       :: Word32            -- ^ Maximal height
    } deriving (Show)
 
--- | An encoder
---
--- An encoder converts data obtained from the controller (i.e. from the frame
--- buffer associated with the controller) into suitable data for the connector
--- (i.e. for the device connected to the connector). Hence it only supports a
--- set of connectors. In addition, it may not work with all controllers.
-data Encoder = Encoder
-   { encoderID                  :: EncoderID          -- ^ Encoder identifier
-   , encoderType                :: EncoderType        -- ^ Type of the encoder
-   , encoderControllerID        :: Maybe ControllerID -- ^ Associated controller
-   , encoderPossibleControllers :: [ControllerID]     -- ^ Valid controllers
-   , encoderPossibleClones      :: [EncoderID]        -- ^ Valid clone encoders
-   , encoderHandle              :: Handle             -- ^ Graphic card
-   } deriving (Show)
-
--- | Video controller
---
--- A controller is used to configure what is displayed on the screen
--- Controllers are called CRTC in original terminology
-data Controller = Controller
-   { controllerID             :: ControllerID         -- ^ Controller identifier
-   , controllerMode           :: Maybe Mode
-   , controllerFrameBuffer    :: Maybe Frame -- ^ Associated frame buffer and its position (x,y)
-   , controllerGammaTableSize :: Word32
-   , controllerHandle         :: Handle
-   } deriving (Show)
-
-data Frame = Frame
-   { frameBufferPosID :: FrameSourceID        -- ^ Framebuffer identifier
-   , frameBufferPosX  :: Word32
-   , frameBufferPosY  :: Word32
-   } deriving (Show)
-
--- | Indicate if a cable is plugged in the connector
-data Connection
-   = Connected ConnectedDevice -- ^ The connector is connected to a displaying device
-   | Disconnected              -- ^ The connector is disconnected
-   | ConnectionUnknown         -- ^ The connection state cannot be determined
-   deriving (Show)
-
--- | Information about the connected device
-data ConnectedDevice = ConnectedDevice
-   { connectedDeviceModes        :: [Mode]     -- ^ Supported modes
-   , connectedDeviceWidth        :: Word32     -- ^ Width (in millimeters)
-   , connectedDeviceHeight       :: Word32     -- ^ Height (in millimeters)
-   , connectedDeviceSubPixel     :: SubPixel   -- ^ Sub-pixel structure
-   , connectedDeviceProperties   :: [Property] -- ^ Properties of the connector
-   } deriving (Show)
-   
-
--- | A connector on the graphic card
-data Connector = Connector
-   { connectorID                 :: ConnectorID     -- ^ Connector identifier
-   , connectorType               :: ConnectorType   -- ^ Type of connector
-   , connectorByTypeIndex        :: Word32          -- ^ Identifier within connectors of the same type
-   , connectorState              :: Connection      -- ^ Connection state
-   , connectorPossibleEncoderIDs :: [EncoderID]     -- ^ IDs of the encoders that can work with this connector
-   , connectorEncoderID          :: Maybe EncoderID -- ^ Currently used encoder
-   , connectorHandle             :: Handle          -- ^ Graphic card
-   } deriving (Show)
-
--- | A plane
-data Plane = Plane
-   { planeID                  :: PlaneID              -- ^ Plane identifier
-   , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
-   , planeFrameBufferId       :: Maybe FrameSourceID  -- ^ Connected framebuffer
-   , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
-   , planeGammaSize           :: Word32               -- ^ Size of the gamma table
-   , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
-   }
-   deriving (Show)
 
 
 -- | Get the current graphics state from the kernel
@@ -207,25 +136,25 @@ buildGraphicsState conns encs ctrls planes fbs = GraphicsState conns' encs' ctrl
 fromStructGetEncoder :: Resources -> Handle -> StructGetEncoder -> Encoder
 fromStructGetEncoder res hdl StructGetEncoder{..} =
       Encoder
-         (EncoderID geEncoderId)
+         (EntityID geEncoderId)
          (fromEnumField geEncoderType)
          (if geCrtcId == 0
             then Nothing
-            else Just (ControllerID geCrtcId))
+            else Just (EntityID geCrtcId))
          (pickControllers res gePossibleCrtcs)
          (pickEncoders    res gePossibleClones)
          hdl
 
 -- | Get an encoder from its ID
 getEncoderFromID :: MonadIO m => Handle -> Resources -> EncoderID -> Flow m '[Encoder,EntryNotFound,InvalidHandle]
-getEncoderFromID hdl res (EncoderID encId) = liftIO (ioctlGetEncoder enc hdl)
+getEncoderFromID hdl res encId = liftIO (ioctlGetEncoder enc hdl)
       >.-.> fromStructGetEncoder res hdl
       >%~^> \case
          EINVAL -> flowSet InvalidHandle
          ENOENT -> flowSet EntryNotFound
          e      -> unhdlErr "getEncoder" e
    where
-      enc = StructGetEncoder encId (toEnumField EncoderTypeNone)
+      enc = StructGetEncoder (unEntityID encId) (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
 
 -- | Get encoders (discard errors)
@@ -239,12 +168,12 @@ emptyStructController = StructController 0 0 0 0 0 0 0 0 emptyStructMode
 fromStructController :: Handle -> StructController -> Controller
 fromStructController hdl StructController{..} =
    Controller
-      (ControllerID contID)
+      (EntityID contID)
       (if contModeValid /= 0
          then Just (fromStructMode contModeInfo)
          else Nothing)
       (if contFbID /= 0 
-         then Just (Frame (FrameSourceID contFbID) contFbX contFbY)
+         then Just (Frame (EntityID contFbID) contFbX contFbY)
          else Nothing)
       contGammaSize
       hdl
@@ -252,31 +181,29 @@ fromStructController hdl StructController{..} =
       
 -- | Get Controller
 getControllerFromID :: MonadIO m => Handle -> ControllerID -> Flow m '[Controller,EntryNotFound, InvalidHandle]
-getControllerFromID hdl crtcid = liftIO (ioctlGetController crtc hdl)
+getControllerFromID hdl eid = liftIO (ioctlGetController crtc hdl)
       >.-.> fromStructController hdl
       >%~^> \case
          EINVAL -> flowSet InvalidHandle
          ENOENT -> flowSet EntryNotFound
          e      -> unhdlErr "getController" e
    where
-      ControllerID cid = crtcid
-      crtc             = emptyStructController { contID = cid }
+      crtc = emptyStructController { contID = unEntityID eid }
 
 
 setController' :: MonadInIO m => Handle -> ControllerID -> Maybe Frame -> [ConnectorID] -> Maybe Mode -> Flow m '[(),ErrorCode]
-setController' hdl crtcid fb conns mode = do
+setController' hdl eid fb conns mode = do
    let
-      ControllerID cid = crtcid
-      conns' = fmap (\(ConnectorID i) -> i) conns
+      conns' = fmap unEntityID conns
 
       (fbid,fbx,fby) = case fb of
          Nothing -> (0,0,0)
-         Just (Frame (FrameSourceID z) x y) -> (z,x,y)
+         Just (Frame (EntityID z) x y) -> (z,x,y)
 
    withArray conns' $ \conArray -> do
       let
          crtc = StructController
-            { contID = cid
+            { contID   = unEntityID eid
             , contFbID = fbid
             , contFbX  = fbx
             , contFbY  = fby
@@ -298,11 +225,9 @@ setController' hdl crtcid fb conns mode = do
 --
 -- Called "mode_page_flip" in the original terminology
 switchFrameBuffer' :: MonadIO m => Handle -> ControllerID -> FrameSourceID -> PageFlipFlags -> Word64 -> Flow m '[(),ErrorCode]
-switchFrameBuffer' hdl crtcid fb flags udata = do
+switchFrameBuffer' hdl cid fsid flags udata = do
    let
-      ControllerID cid = crtcid
-      FrameSourceID fid = fb
-      s = StructPageFlip cid fid flags 0 udata
+      s = StructPageFlip (unEntityID cid) (unEntityID fsid) flags 0 udata
 
    liftIO (ioctlPageFlip s hdl) >.-.> const ()
 
@@ -316,10 +241,9 @@ getControllers hdl = getResources hdl
 getControllerGamma :: MonadInIO m => Controller -> Flow m '[([Word16],[Word16],[Word16]),ErrorCode]
 getControllerGamma c = do
    let 
-      hdl                = controllerHandle c
-      (ControllerID cid) = controllerID c
-      sz                 = controllerGammaTableSize c
-      s                  = StructControllerLut cid sz
+      hdl = controllerHandle c
+      sz  = controllerGammaTableSize c
+      s   = StructControllerLut (unEntityID (controllerID c)) sz
 
    allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
       let f = fromIntegral . ptrToWordPtr
@@ -332,12 +256,11 @@ getControllerGamma c = do
 setControllerGamma :: MonadInIO m => Controller -> ([Word16],[Word16],[Word16]) -> Flow m '[(),ErrorCode]
 setControllerGamma c (rs,gs,bs) = do
    let 
-      hdl                = controllerHandle c
-      (ControllerID cid) = controllerID c
-      sz'                = controllerGammaTableSize c
-      sz                 = fromIntegral sz'
-      s                  = StructControllerLut cid sz'
-      ss                 = [take sz rs,take sz gs, take sz bs]
+      hdl = controllerHandle c
+      sz' = controllerGammaTableSize c
+      sz  = fromIntegral sz'
+      s   = StructControllerLut (unEntityID (controllerID c)) sz'
+      ss  = [take sz rs,take sz gs, take sz bs]
 
    withArrays ss $ \[r,g,b] -> do
       let f = fromIntegral . ptrToWordPtr
@@ -352,9 +275,9 @@ getConnector' hdl r = liftIO (ioctlGetConnector r hdl) >%~^> \case
 
 -- | Get connector
 getConnectorFromID :: forall m. MonadInIO m => Handle -> ConnectorID -> Flow m '[Connector,InvalidParam,EntryNotFound,InvalidProperty]
-getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~^> getValues
+getConnectorFromID hdl eid = getConnector' hdl res >.~^> getValues
    where
-      res = StructGetConnector 0 0 0 0 0 0 0 0 cid
+      res = StructGetConnector 0 0 0 0 0 0 0 0 (unEntityID eid)
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
                (toEnumField SubPixelNone)
 
@@ -368,7 +291,7 @@ getConnectorFromID hdl connId@(ConnectorID cid) = getConnector' hdl res >.~^> ge
                if   connModesCount    res2 < connModesCount    rawRes
                  || connPropsCount    res2 < connPropsCount    rawRes
                  || connEncodersCount res2 < connEncodersCount rawRes
-                  then getConnectorFromID hdl connId
+                  then getConnectorFromID hdl eid
                   else flowSetN @0 conn
 
 rawGet :: forall m. MonadInIO m => Handle -> StructGetConnector -> Flow m '[(StructGetConnector,Connector),InvalidParam,InvalidProperty,EntryNotFound]
@@ -429,15 +352,15 @@ parseRes hdl res2 res4 = do
       2 -> flowSetN @0 Disconnected
       _ -> flowSetN @0 ConnectionUnknown
 
-   encs  <- fmap EncoderID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
+   encs  <- fmap EntityID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
 
    state .-.> \st -> Connector
-         (ConnectorID (connConnectorID_ res4))
+         (EntityID (connConnectorID_ res4))
          (fromEnumField (connConnectorType_ res4))
          (connConnectorTypeID_ res4)
          st
          encs
-         (EncoderID <$> wrapZero (connEncoderID_ res4))
+         (EntityID <$> wrapZero (connEncoderID_ res4))
          hdl
 
 
@@ -491,10 +414,10 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             arraySizes = extractSize r
          [fbs,ctrls,conns,encs] <- peekArrays arraySizes as'
          flowSetN @0 $ Resources
-               (fmap FrameSourceID fbs)
-               (fmap ControllerID  ctrls)
-               (fmap ConnectorID   conns)
-               (fmap EncoderID     encs)
+               (fmap EntityID fbs)
+               (fmap EntityID ctrls)
+               (fmap EntityID conns)
+               (fmap EntityID encs)
                (csMinWidth  r)
                (csMaxWidth  r)
                (csMinHeight r)
@@ -562,7 +485,7 @@ getPlaneResources hdl = getCount >.~^> getIDs
             >..%~^> \case
                EINVAL -> flowSet InvalidHandle
                e      -> unhdlErr "getPlaneResources" e
-            >.~.> \_ -> fmap PlaneID <$> peekArray (fromIntegral n) p
+            >.~.> \_ -> fmap EntityID <$> peekArray (fromIntegral n) p
 
 -- | Get plane information
 getPlane :: forall m. MonadInIO m => Handle -> PlaneID -> Flow m '[Plane,InvalidHandle,InvalidPlane]
@@ -573,17 +496,15 @@ getPlane hdl pid = getCount >.~^> getInfo
       gpr s = liftIO (ioctlGetPlane s hdl)
          >..%~^> \case
             EINVAL -> flowSet InvalidHandle
-            ENOENT -> flowSet (InvalidPlane (PlaneID (gpPlaneId s)))
+            ENOENT -> flowSet (InvalidPlane (EntityID (gpPlaneId s)))
             e      -> unhdlErr "getPlane" e
-
-      PlaneID pid' = pid
 
       toMaybe _ 0 = Nothing
       toMaybe f x = Just (f x)
 
       -- get the number of formats (invariant for a given plane)
       getCount :: Flow m '[Word32,InvalidHandle,InvalidPlane]
-      getCount = gpr (StructGetPlane pid' 0 0 BitSet.empty 0 0 0)
+      getCount = gpr (StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 0 0)
          >.-.> gpCountFmtTypes 
 
       -- get the plane info (invariant for a given plane)
@@ -591,7 +512,7 @@ getPlane hdl pid = getCount >.~^> getInfo
       getInfo n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
-            si = StructGetPlane pid' 0 0 BitSet.empty 0 n p'
+            si = StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 n p'
          gpr si
             >.~^> \StructGetPlane{..} -> getResources hdl >.~^> \res -> do
                -- TODO: controllers are invariant, we should store them
@@ -599,8 +520,8 @@ getPlane hdl pid = getCount >.~^> getInfo
                fmts <- fmap (PixelFormat . BitFields) <$> peekArray (fromIntegral n) p
                flowSet Plane
                   { planeID                  = pid
-                  , planeControllerId        = toMaybe ControllerID gpCrtcId
-                  , planeFrameBufferId       = toMaybe FrameSourceID gpFbId
+                  , planeControllerId        = toMaybe EntityID gpCrtcId
+                  , planeFrameBufferId       = toMaybe EntityID gpFbId
                   , planePossibleControllers = pickControllers res gpPossibleCrtcs
                   , planeGammaSize           = gpGammaSize
                   , planeFormats             = fmts
@@ -640,17 +561,17 @@ data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 -- The fractional part in SrcRect is for devices supporting sub-pixel plane
 -- coordinates.
 setPlane :: MonadIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameSourceID, SrcRect, DestRect) -> Flow m '[(),InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect]
-setPlane hdl (PlaneID pid) opts = do
+setPlane hdl pid opts = do
 
    let 
-      makeS (ControllerID cid) (FrameSourceID fbid) =
-         StructSetPlane pid cid fbid BitSet.empty
+      makeS cid fsid = StructSetPlane (unEntityID pid) (unEntityID cid)
+                                      (unEntityID fsid) BitSet.empty
 
       e16 = toFixedPoint (0 :: Float)
 
       s = case opts of
             Nothing -> -- disable the plane
-               makeS (ControllerID 0) (FrameSourceID 0)
+               makeS (EntityID 0) (EntityID 0)
                   0 0 0 0 e16 e16 e16 e16
 
             Just (cid,fbid,SrcRect{..},DestRect{..}) ->

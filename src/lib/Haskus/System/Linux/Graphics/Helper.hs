@@ -11,7 +11,7 @@ where
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.FrameSource
-import Haskus.System.Linux.Graphics.IDs
+import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.ErrorCode
 import Haskus.Format.Binary.Word
 import Haskus.Utils.Flow
@@ -32,7 +32,7 @@ setController ctrl frameSourceAction conns mode = do
    let 
       mframe = case frameSourceAction of
          SetSource fs  -> Just $ Frame (frameID fs) 0 0
-         ReuseSource   -> Just $ Frame (FrameSourceID maxBound) 0 0
+         ReuseSource   -> Just $ Frame (EntityID maxBound) 0 0
          ReleaseSource -> Nothing
       hdl  = controllerHandle ctrl
    setController' hdl (controllerID ctrl) mframe (fmap connectorID conns) mode

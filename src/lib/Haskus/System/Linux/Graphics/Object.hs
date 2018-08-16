@@ -19,7 +19,7 @@ where
 import Haskus.System.Linux.Graphics.FrameSource
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.IDs
+import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
@@ -74,18 +74,15 @@ class Object a where
 
 instance Object Controller where
    getObjectType _ = ObjectController
-   getObjectID x   = y
-      where ControllerID y = controllerID x
+   getObjectID     = unEntityID . controllerID
 
 instance Object Connector where
    getObjectType _ = ObjectConnector
-   getObjectID x   = y
-      where ConnectorID y = connectorID x
+   getObjectID     = unEntityID . connectorID
 
 instance Object Encoder where
    getObjectType _ = ObjectEncoder
-   getObjectID x   = y
-      where EncoderID y = encoderID x
+   getObjectID     = unEntityID . encoderID
 
 instance Object Mode where
    getObjectType _ = ObjectMode
@@ -93,13 +90,11 @@ instance Object Mode where
 
 instance Object FrameSource where
    getObjectType _ = ObjectFrameSource
-   getObjectID x   = y
-      where FrameSourceID y = frameID x
+   getObjectID     = unEntityID . frameID
 
 instance Object Plane where
    getObjectType _ = ObjectPlane
-   getObjectID x   = y
-      where PlaneID y = planeID x
+   getObjectID     = unEntityID . planeID
 
 
 -- | Get object's number of properties
