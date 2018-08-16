@@ -73,7 +73,7 @@ setConfigLegacy card config = do
    -- FIXME: we should perform error checking and report errors to the caller
 
    ----------------------------------------------------------------------
-   -- disconnect entities being modified and then reconnect them in order
+   -- disconnect entities being modified....
    ----------------------------------------------------------------------
 
    -- disable planes
@@ -81,7 +81,7 @@ setConfigLegacy card config = do
       void <| setPlane hdl pid Nothing
 
    ----------------------------------------------------------------------
-   -- perform mode setting and reattach planes
+   -- ...and then reconnect them in order and set properties
    ----------------------------------------------------------------------
 
    -- configure controllers
