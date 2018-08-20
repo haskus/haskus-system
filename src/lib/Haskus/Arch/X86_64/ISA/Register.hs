@@ -1111,7 +1111,7 @@ famSizes = orderedNonTerminal
 
 -- | AX,AX,EAX,RAX depending on the operand-size
 --
--- This on is used to encode AX, DX:AX, EDX:EAX, RDX:RAX
+-- This one is used to encode AX, DX:AX, EDX:EAX, RDX:RAX
 regFamAX' :: X86RegFamP
 regFamAX' = (pRegFamFromReg R_AX)
    { regFamSize   = pOpSize64 (Singleton 16) (Singleton 16) (Singleton 32) (Singleton 64)
