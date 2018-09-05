@@ -327,12 +327,12 @@ sysLogInfoShow text a = sysLogInfo (text <> ": " <> pack (show a))
 ----------------------
 
 -- | Assert a successful result, and log the error otherwise
-flowAssertQuiet :: (Show (Variant xs)) => Text -> Flow Sys (a ': xs) -> Sys a
+flowAssertQuiet :: (Show (V xs)) => Text -> Flow Sys (a ': xs) -> Sys a
 flowAssertQuiet text v = 
    v >..~!!> (\a -> sysError (textFormat (stext % " (failed with " % shown % ")") text a))
 
 -- | Assert a successful result, log on error and on success
-flowAssert :: (Show a, Show (Variant xs)) => Text -> Flow Sys (a ': xs) -> Sys a
+flowAssert :: (Show a, Show (V xs)) => Text -> Flow Sys (a ': xs) -> Sys a
 flowAssert text v = 
    v  >.~=>   (\a -> sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a))
       >..~!!> (\xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs))
@@ -342,7 +342,7 @@ assertShow text v = do
    let msg = textFormat (stext % " (failed with " % shown % ")") text v
    sysError msg
 
-warningShow :: Show (Variant xs) => Text -> Flow Sys (a ': xs) -> Sys ()
+warningShow :: Show (V xs) => Text -> Flow Sys (a ': xs) -> Sys ()
 warningShow text f = do
    f >..~!> (\v ->
       sysWarning (textFormat (stext % " (failed with " % shown % ")") text v))

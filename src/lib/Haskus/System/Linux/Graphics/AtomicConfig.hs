@@ -92,7 +92,7 @@ graphicsConfig handle (ConfigM f) = evalStateT f s
       s = ConfigState handle Map.empty Map.empty
 
 -- | Get property meta-data
-getPropertyMetaM :: MonadInIO m => PropertyMetaID -> ConfigM m (Variant '[PropertyMeta,InvalidParam,InvalidProperty])
+getPropertyMetaM :: MonadInIO m => PropertyMetaID -> ConfigM m (V '[PropertyMeta,InvalidParam,InvalidProperty])
 getPropertyMetaM pid = ConfigM $ do
    s <- get
    let meta = configMeta s
@@ -121,7 +121,7 @@ setPropertyM obj prop val = ConfigM $ do
 getPropertyM ::
    ( MonadInIO m
    , Object o
-   ) => o -> ConfigM m (Variant '[[Property],ObjectNotFound,InvalidParam])
+   ) => o -> ConfigM m (V '[[Property],ObjectNotFound,InvalidParam])
 getPropertyM obj = do
    s <- getConfig
    getObjectProperties (configHandle s) obj
@@ -134,7 +134,7 @@ getPropertyM obj = do
 
 
 -- | Commit atomic state
-commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> ConfigM m (Variant (() ': AtomicErrors))
+commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> ConfigM m (V (() ': AtomicErrors))
 commitConfig atomic testMode asyncMode modesetMode = ConfigM $ do
    s <- get
 

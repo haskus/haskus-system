@@ -18,21 +18,21 @@ import Haskus.Utils.Variant
 import Haskus.System.Linux.Internals.Error
 
 -- | Convert negative values into error codes
-toErrorCode :: Int64 -> Variant '[Int64,ErrorCode]
+toErrorCode :: Int64 -> V '[Int64,ErrorCode]
 {-# INLINE toErrorCode #-}
 toErrorCode r
    | r < 0     = toVariantAt @1 (toCEnum (abs r))
    | otherwise = toVariantAt @0 r
 
 -- | Convert negative values into error codes, return () otherwise
-toErrorCodeVoid :: Int64 -> Variant '[(),ErrorCode]
+toErrorCodeVoid :: Int64 -> V '[(),ErrorCode]
 {-# INLINE toErrorCodeVoid #-}
 toErrorCodeVoid r
    | r < 0     = toVariantAt @1 (toCEnum (abs r))
    | otherwise = toVariantAt @0 ()
 
 -- | Convert negative values into error codes, return `f r` otherwise
-toErrorCodePure :: (Int64 -> a) -> Int64 -> Variant '[a,ErrorCode]
+toErrorCodePure :: (Int64 -> a) -> Int64 -> V '[a,ErrorCode]
 {-# INLINE toErrorCodePure #-}
 toErrorCodePure f r
    | r < 0     = toVariantAt @1 (toCEnum (abs r))
