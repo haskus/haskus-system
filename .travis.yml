@@ -33,9 +33,18 @@ before_install:
 
 install:
 # Build dependencies
-- stack --no-terminal --install-ghc test --only-dependencies
+- (cd haskus-system ; stack --no-terminal --install-ghc test --only-dependencies)
 
-script:
-# Build the package, its tests, and its docs and run the tests
-- stack --no-terminal test --haddock --no-haddock-deps
+jobs:
+   include:
+      - stage: Library
+      - script:
+         # Build the package, its tests, and its docs and run the tests
+         - (cd haskus-system ; stack --no-terminal test --haddock --no-haddock-deps)
+      - stage: Tools
+      - script:
+         - (cd haskus-system-tools ; stack --no-terminal test --haddock --no-haddock-deps)
 
+stages:
+   - Library
+   - Tools

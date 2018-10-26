@@ -3,11 +3,19 @@ packages:
 - '.'
 
 extra-deps:
-- haskus-utils-1.0
-- haskus-utils-types-1.0
-- haskus-utils-data-1.0
-- haskus-utils-variant-1.0
+  #- haskus-utils-1.0
+  #- haskus-utils-types-1.0
+  #- haskus-utils-data-1.0
+  # - haskus-utils-variant-1.0
 - haskus-binary-1.0
+- git: https://github.com/haskus/haskus-utils.git
+  commit: 77b53bf1a3fc155af7eab76bad4407897796f5ac
+  subdirs:
+     - haskus-utils-variant
+     - haskus-utils-types
+     - haskus-utils-data
+     - haskus-utils
+- '../haskus-system'
 
 #allow-newer: true
 
@@ -19,9 +27,6 @@ extra-package-dbs: []
 
 ghc-options:
    "$locals": -fhide-source-paths
-   "haskus-system": -fobject-code -freverse-errors
-   # -fobject-code       -- GHCI needs it because of the foreign primops
-
 
 compiler: ghc-8.4.3
 ghc-variant: bugfix

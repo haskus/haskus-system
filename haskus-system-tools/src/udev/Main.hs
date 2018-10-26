@@ -1,3 +1,5 @@
+module Main where
+
 import Haskus.System.Sys
 import Haskus.System.Network
 import Haskus.Utils.Flow

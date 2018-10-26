@@ -1,4 +1,4 @@
-module Haskus.Apps.System.Info.CmdLine
+module CmdLine
    ( Options(..)
    , getOptions
    )

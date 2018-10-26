@@ -1,3 +1,5 @@
+module Main where
+
 import Text.Printf
 
 import Haskus.Format.Compression.Algorithms.Huffman

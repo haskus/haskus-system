@@ -1,0 +1,74 @@
+name:                haskus-system-tools
+version:             0.8
+github:              "haskus/haskus-system"
+license:             BSD3
+author:              "Sylvain HENRY"
+maintainer:          "sylvain@haskus.fr"
+copyright:           "Sylvain HENRY 2018"
+
+extra-source-files:
+- README.rst
+
+# Metadata used when publishing your package
+synopsis:            System tools (x86 disassembler, etc.)
+category:            System
+
+description:         Please see the README on Github at <https://github.com/haskus/haskus-system/haskus-system-tools#readme>
+
+dependencies:
+- base >= 4.8 && < 5
+- haskus-system
+- haskus-utils
+- haskus-binary
+- optparse-applicative
+- happstack-server
+- lucid
+- blaze-markup
+- blaze-html
+- containers
+- bytestring
+- vector
+- transformers
+
+ghc-options: -Wall -O2 -threaded
+
+executables:
+   haskus-system-info:
+      main: Main
+      source-dirs: src/system-info
+      other-modules:
+         - CmdLine
+      dependencies: 
+         - network
+         - HTTP
+
+   haskus-elf:
+      main: Main
+      source-dirs: src/elf
+      other-modules:       
+         - CmdLine
+      dependencies: 
+         - text
+         - formatting
+
+   haskus-huffman:
+      main: Main
+      source-dirs: src/huffman
+
+   haskus-gunzip:
+      main: Main
+      source-dirs: src/gunzip
+      dependencies: 
+         - filepath
+
+   haskus-udev:
+      main: Main
+      source-dirs: src/udev
+
+   haskus-disassembler:
+      main: Main
+      source-dirs: src/disassembler
+
+   haskus-keys:
+      main: Main
+      source-dirs: src/keys

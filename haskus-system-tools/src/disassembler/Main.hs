@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
+module Main where
+
 import System.Environment
 import Control.Monad (forM_)
 

@@ -1,4 +1,4 @@
-module Haskus.Apps.Elf.CmdLine
+module CmdLine
    ( Options(..)
    , getOptions
    )

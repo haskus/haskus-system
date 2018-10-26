@@ -1,3 +1,5 @@
+module Main where
+
 import Haskus.System.Input
 import Haskus.System.Event
 import Haskus.System.Sys

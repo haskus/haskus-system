@@ -5,7 +5,9 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import Haskus.Apps.System.Info.CmdLine (Options(..), getOptions)
+module Main where
+
+import CmdLine (Options(..), getOptions)
 
 import qualified Haskus.Arch.X86_64.ISA.Insn             as X86
 import qualified Haskus.Arch.X86_64.ISA.Insns            as X86
@@ -70,7 +72,7 @@ server conf = do
       ]
 
 css :: Response
-css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/apps/Haskus/Apps/System/Info/style.css"))
+css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/system-info/style.css"))
 
 -- | Template of all pages
 appTemplate :: String -> Html -> Html
