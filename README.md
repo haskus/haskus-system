@@ -7,7 +7,7 @@ system: input, display, sound, network, etc.
 
 Website: http://www.haskus.org/system
 
-Documentation: http://doc.haskus.org/manual/ 
+Documentation: https://docs.haskus.org/system.html
 
 # Building systems
 
