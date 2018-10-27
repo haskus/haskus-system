@@ -662,10 +662,8 @@ readOperands mode ps oc enc = do
    let ops' = fmap (fromJust . opFamToOp) ops''
 
    -- reverse operands (FPU dest, reversable bit)
-   let fops = case (encReversableBit enc, encFPUDestBit enc) of
-               (Just b, Nothing)
-                  | testBit (opcodeByte oc) b -> reverse ops'
-               (Nothing, Just b)
+   let fops = case encReversableBit enc <|> encFPUDestBit enc of
+               Just b
                   | testBit (opcodeByte oc) b -> reverse ops'
                _                              -> ops'
 
