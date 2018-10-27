@@ -22,6 +22,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    , encRequiredExtensions
    , encSupportExtensions
    , encSupportExecMode
+   , encSupportPrefix
    , encValidModRMMode
    , encAllowPrefix66
    , encMayHaveMemoryOperand
@@ -47,6 +48,7 @@ module Haskus.Arch.X86_64.ISA.Encoding
    -- * Legacy prefixes
    , LegacyPrefix (..)
    , toLegacyPrefix
+   , fromLegacyPrefix
    , legacyPrefixGroup
    -- * REX prefix
    , Rex (..)
@@ -349,6 +351,37 @@ encGenerateOpcodes e = nub ocs
                then [o + i | o <- ocs', i <- [0..7]]
                else ocs'
 
+-- | Test if an encoding support a given prefix
+encSupportPrefix :: Encoding -> LegacyPrefix -> Bool
+encSupportPrefix e x =
+   Just x == encMandatoryPrefix e || case x of
+      -- operand-size prefix
+      LegacyPrefix66 -> encAllowPrefix66 e
+      -- address-size prefix
+      LegacyPrefix67 -> encMayHaveMemoryOperand e
+      -- CS segment override / Branch not taken hint
+      LegacyPrefix2E -> encMayHaveMemoryOperand e
+                        || encBranchHintable e
+      -- DS segment override / Branch taken hint
+      LegacyPrefix3E -> encMayHaveMemoryOperand e
+                        || encBranchHintable e
+      -- ES segment override
+      LegacyPrefix26 -> encMayHaveMemoryOperand e
+      -- FS segment override
+      LegacyPrefix64 -> encMayHaveMemoryOperand e
+      -- GS segment override
+      LegacyPrefix65 -> encMayHaveMemoryOperand e
+      -- SS segment override
+      LegacyPrefix36 -> encMayHaveMemoryOperand e
+      -- LOCK prefix
+      LegacyPrefixF0 -> encLockable e
+      -- REPZ / XRELEASE
+      LegacyPrefixF3 -> encRepeatable e
+                        || encSupportHLE XRelease e
+      -- REPNZ / XACQUIRE
+      LegacyPrefixF2 -> encRepeatable e
+                        || encSupportHLE XAcquire e
+
 -------------------------------------------------------------------
 -- Generic opcode
 -------------------------------------------------------------------
@@ -374,7 +407,6 @@ data LegacyMap
    | Map0F38
    | Map0F3A
    | Map3DNow
-   | MapX87
    deriving (Show,Eq,Ord)
 
 
@@ -510,6 +542,20 @@ toLegacyPrefix = \case
    0xF3 -> Just LegacyPrefixF3
    0xF2 -> Just LegacyPrefixF2
    _    -> Nothing
+
+fromLegacyPrefix :: LegacyPrefix -> Word8
+fromLegacyPrefix = \case
+   LegacyPrefix66 -> 0x66
+   LegacyPrefix67 -> 0x67
+   LegacyPrefix2E -> 0x2E
+   LegacyPrefix3E -> 0x3E
+   LegacyPrefix26 -> 0x26
+   LegacyPrefix64 -> 0x64
+   LegacyPrefix65 -> 0x65
+   LegacyPrefix36 -> 0x36
+   LegacyPrefixF0 -> 0xF0
+   LegacyPrefixF3 -> 0xF3
+   LegacyPrefixF2 -> 0xF2
 
 -- | Get the legacy prefix group
 legacyPrefixGroup :: LegacyPrefix -> Int

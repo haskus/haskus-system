@@ -81,36 +81,7 @@ getInstruction mode = consumeAtMost 15 $ do
 
          -- check prefixes
          let
-            isPrefixValid e x = Just x == encMandatoryPrefix e
-               || case x of
-                  -- operand-size prefix
-                  LegacyPrefix66 -> encAllowPrefix66 e
-                  -- address-size prefix
-                  LegacyPrefix67 -> encMayHaveMemoryOperand e
-                  -- CS segment override / Branch not taken hint
-                  LegacyPrefix2E -> encMayHaveMemoryOperand e
-                                    || encBranchHintable e
-                  -- DS segment override / Branch taken hint
-                  LegacyPrefix3E -> encMayHaveMemoryOperand e
-                                    || encBranchHintable e
-                  -- ES segment override
-                  LegacyPrefix26 -> encMayHaveMemoryOperand e 
-                  -- FS segment override
-                  LegacyPrefix64 -> encMayHaveMemoryOperand e 
-                  -- GS segment override
-                  LegacyPrefix65 -> encMayHaveMemoryOperand e 
-                  -- SS segment override
-                  LegacyPrefix36 -> encMayHaveMemoryOperand e 
-                  -- LOCK prefix
-                  LegacyPrefixF0 -> encLockable e
-                  -- REPZ / XRELEASE
-                  LegacyPrefixF3 -> encRepeatable e
-                                    || encSupportHLE XRelease e
-                  -- REPNZ / XACQUIRE
-                  LegacyPrefixF2 -> encRepeatable e
-                                    || encSupportHLE XAcquire e
-
-            arePrefixesValid c = all (isPrefixValid (entryEncoding c)) ps
+            arePrefixesValid c = all (encSupportPrefix (entryEncoding c)) ps
 
             cs2 = filter (\c -> hasMandatoryPrefix c && arePrefixesValid c) cs
             hasMandatoryPrefix i = case (encMandatoryPrefix (entryEncoding i), oc) of
