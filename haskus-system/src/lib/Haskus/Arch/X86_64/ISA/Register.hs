@@ -181,7 +181,7 @@ data RegType
 
 -- | Sub register type
 data SubRegType
-   = SubLow  !Word  -- ^ Low  n-bit of a register
+   = SubLow  !Word -- ^ Low  n-bit of a register
    | SubHigh !Word -- ^ High n-bit of a register
    | SubEven !Word -- ^ [n-1:0] and [3n-1:2n], etc.
    | SubOdd  !Word -- ^ [2n-1:n] and [4n-1:3n], etc.
@@ -364,23 +364,24 @@ getModeRegisters mode = Set.unions $ fmap Set.fromList regSets
 --
 -- To clean up the naming mess, we use the following representation:
 --
---    Reg b n s o
---       where b = Bank
---             n = register id
---             s = size
---             o = offset
+--    Reg bank id size offset mask
 --
---    E.g.,
---       G is for general purpose register
---       V is for vector registers
+--    Bank can be:
+--       G for general purpose register
+--       V for vector registers
+--       FP for the FP stack
+--       ...
 --
---    R G 0 32 0  = EAX
---    R G 1 64 0  = RCX (yes B,C and D are shuffled in X86's encoding)
---    R G 2 16 0  = DX
---    R G 3 8  0  = BL
---    R G 3 8  8  = BH
---    R V 0 128 0 = XMM0
---    R V 1 256 0 = YMM1
+--    Mask is used to refer to a subset of the bits in the register, e.g.
+--    some low/high order bits or some even/odd words (for vector registers).
+--
+--    R G 0 32 0  Full = EAX
+--    R G 1 64 0  Full = RCX (yes B,C and D are shuffled in X86's encoding)
+--    R G 2 16 0  Full = DX
+--    R G 3 8  0  Full = BL
+--    R G 3 8  8  Full = BH
+--    R V 0 128 0 Full = XMM0
+--    R V 1 256 0 Full = YMM1
 --
 -- So hopefully we can forget about the crazy inherited naming.
 --
