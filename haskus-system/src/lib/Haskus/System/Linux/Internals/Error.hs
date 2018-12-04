@@ -160,7 +160,7 @@ data ErrorCode
    | ENOTRECOVERABLE    -- ^ State not recoverable 
    | ERFKILL            -- ^ Operation not possible due to RF-kill 
    | EHWPOISON          -- ^ Memory page has hardware error
-   | ECustom Word64     -- ^ Custom error code
+   | EOTHER Word64      -- ^ Other error code
    deriving (Eq,Show,Data)
 
 errorTablePtr :: Ptr Word8
@@ -173,7 +173,9 @@ instance CEnum ErrorCode where
    toCEnum x
       | x <= fromIntegral errorTableMax
       , Just r <- makeEnumMaybe @ErrorCode (peekErrorTable x) = r
-      | otherwise = ECustom (fromIntegral x)
+      | otherwise = EOTHER (fromIntegral x)
       where
       
-   fromCEnum = error "fromCEnumm not implemented for ErrorCode" --TODO
+   fromCEnum = \case
+      EOTHER x -> fromIntegral x
+      _        -> error "fromCEnumm not implemented for ErrorCode" --TODO
