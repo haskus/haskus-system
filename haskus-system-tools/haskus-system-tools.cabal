@@ -1,0 +1,198 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: a91166fca8317bf53cac3d039099450a946718dd5fddb643c295f4127f7df867
+
+name:           haskus-system-tools
+version:        0.8
+synopsis:       System tools (x86 disassembler, etc.)
+description:    Please see the README on Github at <https://github.com/haskus/haskus-system/haskus-system-tools#readme>
+category:       System
+homepage:       https://github.com/haskus/haskus-system#readme
+bug-reports:    https://github.com/haskus/haskus-system/issues
+author:         Sylvain HENRY
+maintainer:     sylvain@haskus.fr
+copyright:      Sylvain HENRY 2018
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    README.rst
+
+source-repository head
+  type: git
+  location: https://github.com/haskus/haskus-system
+
+executable haskus-disassembler
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_tools
+  hs-source-dirs:
+      src/disassembler
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , optparse-applicative
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-elf
+  main-is: Main.hs
+  other-modules:
+      CmdLine
+  hs-source-dirs:
+      src/elf
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , formatting
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , optparse-applicative
+    , text
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-gunzip
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_tools
+  hs-source-dirs:
+      src/gunzip
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , filepath
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , optparse-applicative
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-huffman
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_tools
+  hs-source-dirs:
+      src/huffman
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , optparse-applicative
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-keys
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_tools
+  hs-source-dirs:
+      src/keys
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , optparse-applicative
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-system-info
+  main-is: Main.hs
+  other-modules:
+      CmdLine
+  hs-source-dirs:
+      src/system-info
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      HTTP
+    , base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , network
+    , optparse-applicative
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-udev
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_tools
+  hs-source-dirs:
+      src/udev
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , blaze-html
+    , blaze-markup
+    , bytestring
+    , containers
+    , happstack-server
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-data
+    , lucid
+    , optparse-applicative
+    , transformers
+    , vector
+  default-language: Haskell2010

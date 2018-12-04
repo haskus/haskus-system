@@ -19,6 +19,7 @@ dependencies:
 - base >= 4.8 && < 5
 - haskus-system
 - haskus-utils
+- haskus-utils-data
 - haskus-binary
 - optparse-applicative
 - happstack-server

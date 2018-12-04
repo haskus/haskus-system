@@ -22,8 +22,7 @@ main = runSys' <| do
       (devpath:_) -> do
          let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
          hdl <- open Nothing devpath flgs BitSet.empty
-                  >..~!!> \err ->
-                     error ( "Unable to open device: " ++ show err)
+                  |> evalCatchFlowT (\err -> error ( "Unable to open device: " ++ show err))
 
          eventChannel  <- newEventReader hdl
 
