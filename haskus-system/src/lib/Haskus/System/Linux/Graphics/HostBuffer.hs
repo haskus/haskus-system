@@ -28,19 +28,19 @@ type HostBuffer = StructCreateDumb
 type HostBufferMap = StructMapDumb
 
 -- | Create a host buffer
-createHostBuffer :: MonadIO m => Handle -> Word32 -> Word32 -> Word32 -> Word32 -> Flow m '[HostBuffer,ErrorCode]
+createHostBuffer :: MonadInIO m => Handle -> Word32 -> Word32 -> Word32 -> Word32 -> FlowT '[ErrorCode] m HostBuffer
 createHostBuffer hdl width height bpp flags = do
    let s = StructCreateDumb height width bpp flags 0 0 0
-   liftIO (ioctlCreateHostBuffer s hdl)
+   ioctlCreateHostBuffer s hdl
 
 -- | Destroy a host buffer
-destroyHostBuffer :: MonadIO m => Handle -> HostBuffer -> Flow m '[(),ErrorCode]
+destroyHostBuffer :: MonadInIO m => Handle -> HostBuffer -> FlowT '[ErrorCode] m ()
 destroyHostBuffer hdl buffer = do
    let s = StructDestroyDumb (cdHandle buffer)
-   liftIO (ioctlDestroyHostBuffer s hdl) >.-.> const ()
+   void (ioctlDestroyHostBuffer s hdl)
 
 -- | Map a host buffer
-mapHostBuffer :: MonadIO m => Handle -> HostBuffer -> Flow m '[HostBufferMap,ErrorCode]
+mapHostBuffer :: MonadInIO m => Handle -> HostBuffer -> FlowT '[ErrorCode] m HostBufferMap
 mapHostBuffer hdl buffer = do
    let s = StructMapDumb (cdHandle buffer) 0 0
-   liftIO (ioctlMapHostBuffer s hdl)
+   ioctlMapHostBuffer s hdl

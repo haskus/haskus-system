@@ -20,7 +20,7 @@ where
 import Haskus.System.Devices
 import Haskus.System.Event
 import Haskus.System.Graphics
-import Haskus.System.Input
+import Haskus.System.Input hiding (V)
 import Haskus.System.Process
 import Haskus.System.Sys
 import Haskus.System.System

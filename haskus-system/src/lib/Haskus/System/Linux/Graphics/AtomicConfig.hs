@@ -30,7 +30,6 @@ module Haskus.System.Linux.Graphics.AtomicConfig
 where
 
 import Haskus.Utils.Flow
-import Haskus.Utils.Variant
 import Haskus.Utils.Monad
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Internals.Graphics
@@ -91,17 +90,29 @@ graphicsConfig handle (ConfigM f) = evalStateT f s
    where
       s = ConfigState handle Map.empty Map.empty
 
--- | Get property meta-data
-getPropertyMetaM :: MonadInIO m => PropertyMetaID -> ConfigM m (V '[PropertyMeta,InvalidParam,InvalidProperty])
-getPropertyMetaM pid = ConfigM $ do
+-- | Lookup in the property meta cache
+getPropertyFromCache :: MonadInIO m => PropertyMetaID -> ConfigM m (Maybe PropertyMeta)
+getPropertyFromCache pid = ConfigM <| do
    s <- get
-   let meta = configMeta s
-   -- lookup in the cache
-   case Map.lookup pid meta of
-      Just x  -> flowSet x
-      Nothing -> liftIO (getPropertyMeta (configHandle s) pid)
-         -- add the result to the cache
-         >.~=> (\r -> modify (\st -> st { configMeta = Map.insert pid r meta }))
+   return (Map.lookup pid (configMeta s))
+
+-- | Store in the property meta cache
+storePropertyIntoCache :: MonadInIO m => PropertyMetaID -> PropertyMeta -> ConfigM m ()
+storePropertyIntoCache pid val = ConfigM <|
+   modify (\st -> st { configMeta = Map.insert pid val (configMeta st) })
+
+
+-- | Get property meta-data
+getPropertyMetaM :: MonadInIO m => PropertyMetaID -> FlowT '[InvalidParam, InvalidProperty] (ConfigM m) PropertyMeta
+getPropertyMetaM pid = do
+   mp <- lift (getPropertyFromCache pid)
+   case mp of
+      Just x  -> return x
+      Nothing -> do
+         s <- lift getConfig
+         r <- getPropertyMeta (configHandle s) pid
+         lift (storePropertyIntoCache pid r)
+         return r
 
 
 -- | Set property
@@ -116,27 +127,31 @@ setPropertyM obj prop val = ConfigM $ do
          props = Map.insert key val (configProps s)
       in s { configProps = props })
 
-
 -- | Get properties
-getPropertyM ::
+getPropertyM :: forall m o.
    ( MonadInIO m
    , Object o
-   ) => o -> ConfigM m (V '[[Property],ObjectNotFound,InvalidParam])
+   ) => o -> FlowT '[InvalidParam,ObjectNotFound] (ConfigM m) [Property]
 getPropertyM obj = do
-   s <- getConfig
-   getObjectProperties (configHandle s) obj
-      >.~.> (mapMaybeM (\(RawProperty x y) ->
-         getPropertyMetaM x
-            >.-.> (\m -> Just (Property m y))
-            >..-.> const Nothing
-         )
-      )
+   s <- lift getConfig
+   props <- getObjectProperties (configHandle s) obj
+   let
+      getPropertyFromRaw :: RawProperty -> FlowT '[InvalidParam,InvalidProperty] (ConfigM m) (Maybe Property)
+      getPropertyFromRaw (RawProperty x y) = getPropertyMetaM x ||> (\m -> Just (Property m y))
+
+      fromRawProp :: RawProperty -> ConfigM m (Maybe Property)
+      fromRawProp p = getPropertyFromRaw p
+                        -- in case of failure to get the meta, we just skip the property
+                        -- (i.e. we return Nothing)
+                        |> evalCatchFlowT (const (return Nothing))
+
+   mapMaybeM (\x -> lift (fromRawProp x)) props
 
 
 -- | Commit atomic state
-commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> ConfigM m (V (() ': AtomicErrors))
-commitConfig atomic testMode asyncMode modesetMode = ConfigM $ do
-   s <- get
+commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> FlowT (ObjectNotFound ': AtomicErrors) (ConfigM m) ()
+commitConfig atomic testMode asyncMode modesetMode = do
+   s <- lift getConfig
 
    let hdl = configHandle s
 
@@ -159,9 +174,8 @@ commitConfig atomic testMode asyncMode modesetMode = ConfigM $ do
                      ||> (\((_objType,objId,propId),val) -> (objId,[(propId,val)]))
                      |> Map.fromListWith (++)
 
-         liftIO <| setAtomic hdl flags props
+         liftFlowT <| setAtomic hdl flags props
 
       NonAtomic -> do
          forM_ (Map.toList (configProps s)) <| \((objType,objId,propId),val) -> do
-            void (setObjectProperty' hdl objId objType propId val)
-         flowSet ()
+            void (liftFlowT <| setObjectProperty' hdl objId objType propId val)

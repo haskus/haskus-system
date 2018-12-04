@@ -29,13 +29,12 @@ newEventReader h = do
       nb  = 50 -- number of events read at once
 
    ch <- newBroadcastTChanIO
-   sysFork "Event reader" $ allocaArray nb $ \ptr -> forever $ do
+   sysFork "Event reader" <| allocaArray nb <| \ptr -> forever <| runFlowT <| do
       threadWaitRead h
-      sysRead h (castPtr ptr) (fromIntegral sz * fromIntegral nb)
-         >.~!> \sz2 -> do
-            -- FIXME: we should somehow signal that an error occured
-            evs <- peekArray (fromIntegral sz2 `div` fromIntegral sz) ptr
-            atomically (mapM_ (writeTChan ch) evs)
+      sz2 <- sysRead h (castPtr ptr) (fromIntegral sz * fromIntegral nb)
+      -- FIXME: we should somehow signal if an error occured
+      evs <- peekArray (fromIntegral sz2 `div` fromIntegral sz) ptr
+      atomically (mapM_ (writeTChan ch) evs)
    return ch
 
 -- | Read events in the given channel forever

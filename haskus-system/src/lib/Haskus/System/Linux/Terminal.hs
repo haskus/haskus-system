@@ -34,18 +34,18 @@ stderr :: Handle
 stderr = Handle 2
 
 -- | Write a String in the given file descriptor
-writeStr :: MonadInIO m => Handle -> String -> Flow m '[(),ErrorCode]
+writeStr :: MonadInIO m => Handle -> String -> FlowT '[ErrorCode] m ()
 writeStr fd = writeBuffer fd . stringEncodeUtf8
 
 -- | Write a String with a newline character in the given
 -- file descriptor
-writeStrLn :: MonadInIO m => Handle -> String -> Flow m '[(),ErrorCode]
+writeStrLn :: MonadInIO m => Handle -> String -> FlowT '[ErrorCode] m ()
 writeStrLn fd = writeBuffer fd . stringEncodeUtf8 . (++ "\n")
 
 -- | Read a single character
 --
 -- Warning: only the first byte of multi-byte characters (e.g. utf8) will be
 -- read
-readChar :: MonadInIO m => Handle -> Flow m (Char ': ReadErrors')
+readChar :: MonadInIO m => Handle -> FlowT ReadErrors' m Char
 readChar fd = handleReadBuffer fd Nothing 1
-   >.-.> (castCCharToChar . bufferPeekStorable)
+   ||> (castCCharToChar . bufferPeekStorable)

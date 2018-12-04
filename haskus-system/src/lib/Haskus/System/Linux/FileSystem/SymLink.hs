@@ -33,26 +33,26 @@ type ReadSymLinkErrors
       ]
 
 -- | Read the path in a symbolic link
-readSymbolicLink :: MonadInIO m => Maybe Handle -> FilePath -> Flow m (String ': ReadSymLinkErrors)
+readSymbolicLink :: MonadInIO m => Maybe Handle -> FilePath -> FlowT ReadSymLinkErrors m String
 readSymbolicLink hdl path = do
    sysReadLinkAt hdl path
-      >%~^> \case
-         EACCES       -> flowSet NotAllowed
-         EINVAL       -> flowSet NotSymbolicLink
-         EIO          -> flowSet FileSystemIOError
-         ELOOP        -> flowSet SymbolicLinkLoop
-         ENAMETOOLONG -> flowSet TooLongPathName
-         ENOENT       -> flowSet FileNotFound
-         ENOMEM       -> flowSet OutOfKernelMemory
-         ENOTDIR      -> flowSet InvalidPathComponent
+      `catchLiftLeft` \case
+         EACCES       -> throwE NotAllowed
+         EINVAL       -> throwE NotSymbolicLink
+         EIO          -> throwE FileSystemIOError
+         ELOOP        -> throwE SymbolicLinkLoop
+         ENAMETOOLONG -> throwE TooLongPathName
+         ENOENT       -> throwE FileNotFound
+         ENOMEM       -> throwE OutOfKernelMemory
+         ENOTDIR      -> throwE InvalidPathComponent
          EBADF        -> error "readSymbolicLink: invalid handle"
-         -- EFAULT: shouldn't happen (or is a Haskus bug)
+         -- EFAULT: shouldn't happen (or is a haskus-system bug)
          e            -> unhdlErr "readSymbolicLink" e
 
 
 -- | Wrapper for readlinkat syscall
-sysReadLinkAt :: MonadInIO m => Maybe Handle -> FilePath -> Flow m '[String,ErrorCode]
-sysReadLinkAt hdl path = go' 2048
+sysReadLinkAt :: MonadInIO m => Maybe Handle -> FilePath -> FlowT '[ErrorCode] m String
+sysReadLinkAt hdl path = tryReadLinkAt 2048
    where
       -- if no handle is passed, we assume the path is absolute and we give a
       -- (-1) file descriptor which should be ignored. If the path is relative,
@@ -61,25 +61,21 @@ sysReadLinkAt hdl path = go' 2048
             Just (Handle x) -> x
             Nothing         -> maxBound
 
-      go' size = go size >.~^> \case
-                  Nothing -> go' (2*size)
-                  Just s  -> flowSetN @0 s
-
-      go size =
-         allocaBytes size $ \ptr ->
-            withCString path $ \path' ->
-               liftIO (syscall_readlinkat fd path' ptr (fromIntegral size))
-                  ||> toErrorCode
-                  >.~.> (\n ->
+      -- allocate a buffer and try to readlinkat.
+      tryReadLinkAt size = do
+         mv <- allocaBytes size $ \ptr ->
+                  withCString path $ \path' -> do
+                     n <- checkErrorCode =<< liftIO (syscall_readlinkat fd path' ptr (fromIntegral size))
                      if fromIntegral n == size
                         then return Nothing
-                        else Just <$> peekCStringLen (fromIntegral n) ptr)
+                        else Just <$> peekCStringLen (fromIntegral n) ptr
+         case mv of
+            Nothing -> tryReadLinkAt (2*size) -- retry with double buffer size
+            Just v  -> return v
 
 -- | Create a symbolic link
-sysSymlink :: MonadInIO m => FilePath -> FilePath -> Flow m '[(),ErrorCode]
+sysSymlink :: MonadInIO m => FilePath -> FilePath -> FlowT '[ErrorCode] m ()
 sysSymlink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         liftIO (syscall_symlink src' dest')
-            ||> toErrorCodeVoid
-
+         checkErrorCode_ =<< liftIO (syscall_symlink src' dest')

@@ -56,24 +56,23 @@ toFrameSource StructFrameBufferCommand{..} = s
 
 
 -- | Create a framebuffer
-addFrameSource :: MonadIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [PixelSource] -> Flow m '[FrameSource,ErrorCode]
+addFrameSource :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [PixelSource] -> FlowT '[ErrorCode] m FrameSource
 addFrameSource hdl width height fmt flags buffers = do
    
    let s = FrameSource (EntityID 0) width height
                fmt flags buffers
 
-   liftIO (ioctlAddFrameBuffer (fromFrameSource s) hdl)
-      >.-.> toFrameSource
+   ioctlAddFrameBuffer (fromFrameSource s) hdl
+      ||> toFrameSource
 
 -- | Release a frame buffer
-removeFrameSource :: MonadIO m => Handle -> FrameSource -> Flow m '[(),ErrorCode]
+removeFrameSource :: MonadInIO m => Handle -> FrameSource -> FlowT '[ErrorCode] m ()
 removeFrameSource hdl fs = do
-   liftIO (ioctlRemoveFrameBuffer (unEntityID (frameID fs)) hdl)
-      >.-.> const ()
+   void (ioctlRemoveFrameBuffer (unEntityID (frameID fs)) hdl)
 
 
 -- | Indicate dirty parts of a frame source
-dirtyFrameSource :: MonadInIO m => Handle -> FrameSource -> DirtyAnnotation -> Flow m '[(),ErrorCode]
+dirtyFrameSource :: MonadInIO m => Handle -> FrameSource -> DirtyAnnotation -> FlowT '[ErrorCode] m ()
 dirtyFrameSource hdl fs mode = do
    let
       (color,flags,clips) = case mode of
@@ -81,7 +80,7 @@ dirtyFrameSource hdl fs mode = do
          DirtyCopy cs   -> (0,1, concatMap (\(a,b) -> [a,b]) cs)
          DirtyFill c cs -> (c,2,cs)
 
-   withArray clips $ \clipPtr -> do
+   void $ withArray clips $ \clipPtr -> do
       let s = StructFrameBufferDirty
                { fdFbId     = unEntityID (frameID fs)
                , fdFlags    = flags
@@ -89,6 +88,6 @@ dirtyFrameSource hdl fs mode = do
                , fdNumClips = fromIntegral (length clips)
                , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
                }
-      liftIO (ioctlDirtyFrameBuffer s hdl) >.-.> const ()
+      ioctlDirtyFrameBuffer s hdl
 
 

@@ -16,12 +16,10 @@ import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
 
 -- | Create a pipe
-createPipe :: MonadInIO m => Flow m '[(Handle, Handle),ErrorCode]
+createPipe :: MonadInIO m => FlowT '[ErrorCode] m (Handle, Handle)
 createPipe =
-   allocaArray 2 $ \(ptr :: Ptr Word) ->
-      liftIO (syscall_pipe (castPtr ptr))
-         ||> toErrorCode
-         >.~.> (const ((,)
-            <$> (Handle <$> peekElemOff ptr 0)
-            <*> (Handle <$> peekElemOff ptr 1)))
+   allocaArray 2 $ \(ptr :: Ptr Word) -> do
+      checkErrorCode_ =<< liftIO (syscall_pipe (castPtr ptr))
+      (,) <$> (Handle <$> peekElemOff ptr 0)
+          <*> (Handle <$> peekElemOff ptr 1)
       

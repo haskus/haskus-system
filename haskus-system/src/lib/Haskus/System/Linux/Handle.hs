@@ -28,29 +28,28 @@ import Haskus.Format.Binary.Enum
 import Haskus.Utils.Flow
 
 -- | Fcntl syscall
-sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> Flow m '[Int64,ErrorCode]
+sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> FlowT '[ErrorCode] m Int64
 sysFcntl (Handle fd) cmd arg =
-   liftIO (syscall_fcntl fd (fromCEnum cmd) (toArg arg))
-      ||> toErrorCode
+   checkErrorCode =<< liftIO (syscall_fcntl fd (fromCEnum cmd) (toArg arg))
 
 
 -- | Get descriptor flags
-getHandleFlags :: MonadIO m => Handle -> Flow m '[HandleFlags,InvalidHandle]
-getHandleFlags hdl =
-   sysFcntl hdl FcntlGetFlags (0 :: Int)
-      >.-.> (BitSet.fromBits . fromIntegral)
-      >..%~^> \case
-         EBADF -> flowSet InvalidHandle
-         e     -> unhdlErr "getHandleFlags" e
+getHandleFlags :: MonadIO m => Handle -> FlowT '[InvalidHandle] m HandleFlags
+getHandleFlags hdl = do
+   r <- sysFcntl hdl FcntlGetFlags (0 :: Int)
+         `catchLiftBoth` \case
+            EBADF -> failure InvalidHandle
+            e     -> unhdlErr "getHandleFlags" e
+   return (BitSet.fromBits (fromIntegral r))
 
 -- | Set descriptor flags
-setHandleFlags :: MonadIO m => Handle -> HandleFlags -> Flow m '[(),InvalidHandle]
+setHandleFlags :: MonadIO m => Handle -> HandleFlags -> FlowT '[InvalidHandle] m ()
 setHandleFlags hdl flgs =
-   sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs)
-      >.-.> const ()
-      >%~^> \case
-         EBADF -> flowSet InvalidHandle
+   void (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
+      `catchLiftBoth` \case
+         EBADF -> failure InvalidHandle
          e     -> unhdlErr "setHandleFlags" e
+
 
 -- | Handle flags 
 data HandleFlag

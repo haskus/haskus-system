@@ -32,41 +32,35 @@ import Haskus.Utils.Memory
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
-sysPause :: MonadIO m => Flow m '[(),ErrorCode]
-sysPause = liftIO (syscall_pause) ||> toErrorCodeVoid
+sysPause :: MonadIO m => FlowT '[ErrorCode] m ()
+sysPause = checkErrorCode_ =<< liftIO (syscall_pause)
 
 -- | Alarm
-sysAlarm :: MonadIO m => Word-> Flow m '[Word,ErrorCode]
-sysAlarm seconds = liftIO (syscall_alarm seconds)
-   ||> toErrorCodePure fromIntegral
+sysAlarm :: MonadIO m => Word-> FlowT '[ErrorCode] m Word
+sysAlarm seconds = fromIntegral <$> (checkErrorCode =<< liftIO (syscall_alarm seconds))
 
 -- | Kill syscall
-sysSendSignal :: MonadIO m => ProcessID -> Int -> Flow m '[(),ErrorCode]
+sysSendSignal :: MonadIO m => ProcessID -> Int -> FlowT '[ErrorCode] m ()
 sysSendSignal (ProcessID pid) sig =
-   liftIO (syscall_kill (fromIntegral pid) sig)
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_kill (fromIntegral pid) sig)
 
 -- | Send a signal to every process in the process group of the calling process
-sysSendSignalGroup :: MonadIO m => Int -> Flow m '[(),ErrorCode]
-sysSendSignalGroup sig =
-   liftIO (syscall_kill 0 sig)
-      ||> toErrorCodeVoid
+sysSendSignalGroup :: MonadIO m => Int -> FlowT '[ErrorCode] m ()
+sysSendSignalGroup sig = checkErrorCode_ =<< liftIO (syscall_kill 0 sig)
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
-sysSendSignalAll :: MonadIO m => Int -> Flow m '[(),ErrorCode]
-sysSendSignalAll sig =
-   liftIO (syscall_kill (-1) sig)
-      ||> toErrorCodeVoid
+sysSendSignalAll :: MonadIO m => Int -> FlowT '[ErrorCode] m ()
+sysSendSignalAll sig = checkErrorCode_ =<< liftIO (syscall_kill (-1) sig)
 
 -- | Check if a given process or process group exists
 --
--- Send signal "0" the given process
-sysCheckProcess :: MonadIO m => ProcessID -> Flow m '[Bool,ErrorCode]
-sysCheckProcess pid = sysSendSignal pid 0
-   >.-.> const True
-   >%~$> \case
-      ESRCH -> flowSet False
-      e     -> flowSet e
+-- Send signal "0" to the given process/process group
+sysCheckProcess :: MonadIO m => ProcessID -> FlowT '[ErrorCode] m Bool
+sysCheckProcess pid = 
+   (sysSendSignal pid 0 >> return True)
+      -- ESRCH indicates that the process wasn't found
+      -- Other errors are left unchanged
+      `catchE` (\ESRCH -> success False)
 
 -- | Signal actions
 data ChangeSignals
@@ -76,10 +70,10 @@ data ChangeSignals
    deriving (Show,Eq,Enum)
 
 -- | Change signal mask
-sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> Flow m '[SignalSet,ErrorCode]
+sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> FlowT '[ErrorCode] m SignalSet
 sysChangeSignalMask act set =
    withMaybeOrNull set $ \x ->
-      alloca $ \(ret :: Ptr SignalSet) ->
-         liftIO (syscall_rt_sigprocmask (fromEnum act) (castPtr x) (castPtr ret))
-            ||>   toErrorCode
-            >.~.> (const $ peek ret)
+      alloca $ \(ret :: Ptr SignalSet) -> do
+         r <- liftIO (syscall_rt_sigprocmask (fromEnum act) (castPtr x) (castPtr ret))
+         checkErrorCode_ r
+         liftIO (peek ret)

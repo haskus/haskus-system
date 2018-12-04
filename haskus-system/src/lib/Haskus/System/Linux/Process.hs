@@ -54,13 +54,13 @@ sysExit :: Int64 -> IO ()
 sysExit n = void (syscall_exit n)
 
 -- | Get CPU and NUMA node executing the current process
-sysGetCPU :: MonadInIO m => Flow m '[(Word,Word),ErrorCode]
+sysGetCPU :: MonadInIO m => FlowT '[ErrorCode] m (Word,Word)
 sysGetCPU =
    alloca $ \cpu ->
-      alloca $ \node ->
-         liftIO (syscall_getcpu (cpu :: Ptr Word) (node :: Ptr Word) nullPtr)
-            ||>   toErrorCode
-            >.~.> (const ((,) <$> peek cpu <*> peek node))
+      alloca $ \node -> do
+         r <- liftIO (syscall_getcpu (cpu :: Ptr Word) (node :: Ptr Word) nullPtr)
+         checkErrorCode_ r
+         (,) <$> peek cpu <*> peek node
 
 -- | Return process ID
 sysGetProcessID :: IO ProcessID
@@ -83,9 +83,8 @@ sysGetEffectiveUserID :: IO UserID
 sysGetEffectiveUserID = UserID . fromIntegral <$> syscall_geteuid
 
 -- | Set effective user ID of the calling process
-sysSetEffectiveUserID :: MonadIO m => UserID -> Flow m '[(),ErrorCode]
-sysSetEffectiveUserID (UserID uid) = liftIO (syscall_setuid uid)
-   ||> toErrorCodeVoid
+sysSetEffectiveUserID :: MonadIO m => UserID -> FlowT '[ErrorCode] m ()
+sysSetEffectiveUserID (UserID uid) = checkErrorCode_ =<< liftIO (syscall_setuid uid)
 
 -- | Get real group ID of the calling process
 sysGetRealGroupID :: IO GroupID
@@ -96,21 +95,22 @@ sysGetEffectiveGroupID :: IO GroupID
 sysGetEffectiveGroupID = GroupID . fromIntegral <$> syscall_getegid
 
 -- | Set effective group ID of the calling process
-sysSetEffectiveGroupID :: MonadIO m => GroupID -> Flow m '[(),ErrorCode]
-sysSetEffectiveGroupID (GroupID gid) = liftIO (syscall_setgid gid)
-   ||> toErrorCodeVoid
+sysSetEffectiveGroupID :: MonadIO m => GroupID -> FlowT '[ErrorCode] m ()
+sysSetEffectiveGroupID (GroupID gid) = checkErrorCode_ =<< liftIO (syscall_setgid gid)
 
 -- | Create a child process
-sysFork :: MonadIO m => Flow m '[ProcessID,ErrorCode]
-sysFork = liftIO (syscall_fork)
-   ||> toErrorCodePure (ProcessID . fromIntegral)
+sysFork :: MonadIO m => FlowT '[ErrorCode] m ProcessID
+sysFork = do
+   v <- checkErrorCode =<< liftIO (syscall_fork)
+   return (ProcessID (fromIntegral v))
 
 -- | Create a child process and block parent
-sysVFork :: MonadIO m => Flow m '[ProcessID,ErrorCode]
-sysVFork = liftIO (syscall_vfork)
-   ||> toErrorCodePure (ProcessID . fromIntegral)
+sysVFork :: MonadIO m => FlowT '[ErrorCode] m ProcessID
+sysVFork = do
+   v <- checkErrorCode =<< liftIO (syscall_vfork)
+   return (ProcessID (fromIntegral v))
 
 -- | Yield the processor
-sysSchedulerYield :: MonadIO m => Flow m '[(),ErrorCode]
-sysSchedulerYield = liftIO (syscall_sched_yield) ||> toErrorCodeVoid
+sysSchedulerYield :: MonadIO m => FlowT '[ErrorCode] m ()
+sysSchedulerYield = checkErrorCode_ =<< liftIO (syscall_sched_yield)
 

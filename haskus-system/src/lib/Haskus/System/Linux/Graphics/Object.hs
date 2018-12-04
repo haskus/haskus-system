@@ -98,28 +98,26 @@ instance Object Plane where
 
 
 -- | Get object's number of properties
-getObjectPropertyCount :: (MonadIO m, Object o) => Handle -> o -> Flow m '[Word32, ErrorCode]
-getObjectPropertyCount hdl o = do
-      liftIO (ioctlGetObjectProperties s hdl)
-         >.-.> gopCountProps
+getObjectPropertyCount :: (MonadInIO m, Object o) => Handle -> o -> FlowT '[ErrorCode] m Word32
+getObjectPropertyCount hdl o = ioctlGetObjectProperties s hdl ||> gopCountProps
    where
       s = StructGetObjectProperties 0 0 0
             (getObjectID o)
             (fromCEnum (getObjectType o))
 
 -- | Return object properties
-getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Flow m '[[RawProperty],ObjectNotFound,InvalidParam]
+getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> FlowT '[InvalidParam,ObjectNotFound] m [RawProperty]
 getObjectProperties hdl o =
        -- we assume 20 entries is usually enough and we adapt if it isn't. By
        -- using an initial value we avoid a syscall in most cases.
       fixCount go 20
    where
-      fixCount f n = f n >%~^> \(InvalidCount n') -> fixCount f n'
+      fixCount f n = f n `catchRemove` (\(InvalidCount n') -> fixCount f n')
 
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      go :: Int -> Flow m '[[RawProperty],InvalidCount,InvalidParam,ObjectNotFound]
+      go :: Int -> FlowT '[InvalidCount,InvalidParam,ObjectNotFound] m [RawProperty]
       go n =
          allocaArray' n $ \(propsPtr :: Ptr Word32) ->
          allocaArray' n $ \(valsPtr :: Ptr Word64) -> do
@@ -130,15 +128,16 @@ getObjectProperties hdl o =
                      (fromIntegral n)
                      (getObjectID o)
                      (fromCEnum (getObjectType o))
-            getObjectProperties' s
-               >.~|> checkCount n
-               >.~.> extractProperties
+            ps <- liftFlowT (getObjectProperties' s)
+            liftFlowT (checkCount n ps)
+            lift (extractProperties ps)
 
-      getObjectProperties' :: StructGetObjectProperties -> Flow m '[StructGetObjectProperties,InvalidParam,ObjectNotFound]
-      getObjectProperties' s = liftIO (ioctlGetObjectProperties s hdl) >%~^> \case
-         EINVAL -> flowSet InvalidParam
-         ENOENT -> flowSet ObjectNotFound
-         e      -> unhdlErr "getObjectProperties" e
+      getObjectProperties' :: StructGetObjectProperties -> FlowT '[InvalidParam,ObjectNotFound] m StructGetObjectProperties
+      getObjectProperties' s = ioctlGetObjectProperties s hdl
+                                 `catchLiftLeft` \case
+                                    EINVAL -> throwE InvalidParam
+                                    ENOENT -> throwE ObjectNotFound
+                                    e      -> unhdlErr "getObjectProperties" e
 
       extractProperties :: StructGetObjectProperties -> m [RawProperty]
       extractProperties s = do
@@ -152,30 +151,29 @@ getObjectProperties hdl o =
          return (zipWith RawProperty ps vs)
 
       -- check that we have allocated enough entries to store the properties
-      checkCount :: Int -> StructGetObjectProperties -> Flow m '[StructGetObjectProperties,InvalidCount]
+      checkCount :: Int -> StructGetObjectProperties -> FlowT '[InvalidCount] m ()
       checkCount n s = do
          let n' = fromIntegral (gopCountProps s)
          if n' > n
-            then flowSet (InvalidCount n)
-            else flowSet s
+            then failure (InvalidCount n)
+            else return ()
 
 -- | Set an object property
 setObjectProperty ::
    ( Object o
    , MonadInIO m
-   ) => Handle -> o -> PropID -> PropValue -> Flow m '[(),InvalidParam,ObjectNotFound]
+   ) => Handle -> o -> PropID -> PropValue -> FlowT '[InvalidParam,ObjectNotFound] m ()
 setObjectProperty hdl o prop val =
    setObjectProperty' hdl (getObjectID o) (getObjectType o) prop val
 
 -- | Set an object property
 setObjectProperty' ::
    ( MonadInIO m
-   ) => Handle -> ObjectID -> ObjectType -> PropID -> PropValue -> Flow m '[(),InvalidParam,ObjectNotFound]
+   ) => Handle -> ObjectID -> ObjectType -> PropID -> PropValue -> FlowT '[InvalidParam,ObjectNotFound] m ()
 setObjectProperty' hdl oid otyp prop val = do
    let s = StructSetObjectProperty val prop oid (fromCEnum otyp)
-   liftIO (ioctlSetObjectProperty s hdl)
-      >.-.> const ()
-      >%~^> \case
-         EINVAL -> flowSet InvalidParam
-         ENOENT -> flowSet ObjectNotFound
+   void (ioctlSetObjectProperty s hdl)
+      `catchLiftLeft` \case
+         EINVAL -> throwE InvalidParam
+         ENOENT -> throwE ObjectNotFound
          e      -> unhdlErr "setObjectProperty" e

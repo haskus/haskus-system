@@ -53,8 +53,8 @@ defaultTerminal = do
    let flgs = BitSet.fromList [ HandleNonBlocking
                               , HandleCloseOnExec
                               ]
-   _ <- setHandleFlags stdin  flgs
-   _ <- setHandleFlags stdout flgs
+   runFlowT_ <| setHandleFlags stdin  flgs
+   runFlowT_ <| setHandleFlags stdout flgs
 
    -- TODO: set terminal buffering mode?
 
@@ -214,13 +214,13 @@ outputThread s = go [] 0 0
       h = outputHandle s
 
       -- writeMany handling EAGAIN
-      wrt :: [(Ptr a, Word64)] -> Flow Sys '[Word64,ErrorCode]
+      wrt :: [(Ptr a, Word64)] -> FlowT '[ErrorCode] Sys Word64
       wrt ps = sysWriteMany h ps
-                  >..%~$> \case
+                  `catchLiftLeft` \case
                      -- TODO: we should retry without having to rebuild the
                      -- parameter array (i.e. do it in sysWriteMany)
                      EAGAIN -> threadWaitWrite h >> wrt ps
-                     err    -> flowSet err
+                     err    -> failure err
 
 
       go :: [(IOBuffer, FutureSource ())] -> Word -> Word -> Sys ()
@@ -251,7 +251,7 @@ outputThread s = go [] 0 0
 
          -- write the buffers
          size <- wrt ps
-                  >..~!!> assertShow (textFormat ("Write bytes to " % shown) h)
+                  |> evalCatchFlowT (assertShow (textFormat ("Write bytes to " % shown) h))
 
          let
             sig xs nb 0 = go xs nb 0

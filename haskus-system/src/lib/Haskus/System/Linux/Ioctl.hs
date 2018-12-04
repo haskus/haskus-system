@@ -62,27 +62,26 @@ import Haskus.Utils.Flow
 ---------------------------------------------------
 
 -- | Send a custom command to a device
-ioctl :: (Arg a, MonadIO m) => Command -> a -> Handle -> Flow m '[Int64,ErrorCode]
+ioctl :: (Arg a, MonadIO m) => Command -> a -> Handle -> FlowT '[ErrorCode] m Int64
 ioctl (Command cmd) arg (Handle fd) =
-   liftIO (syscall_ioctl fd (fromIntegral (bitFieldsBits cmd)) (toArg arg))
-      ||> toErrorCode
+   checkErrorCode =<< liftIO (syscall_ioctl fd (fromIntegral (bitFieldsBits cmd)) (toArg arg))
 
 -----------------------------------------------------------------------------
 -- Write/Read
 -----------------------------------------------------------------------------
 
 -- | Write and read a storable, use an arbitrary command
-ioctlWriteReadCmdRet :: (Storable a, MonadInIO m) => Command -> a -> Handle -> Flow m '[(Int64,a),ErrorCode]
+ioctlWriteReadCmdRet :: (Storable a, MonadInIO m) => Command -> a -> Handle -> FlowT '[ErrorCode] m (Int64,a)
 ioctlWriteReadCmdRet cmd a fd =
-   with a $ \pa ->
-      ioctl cmd pa fd >.~.> \r ->
-         (r,) <$> peek pa
+   with a $ \pa -> do
+      r <- ioctl cmd pa fd
+      (r,) <$> peek pa
 
 -- | Write and read a storable, return the valid returned value
 ioctlWriteReadRet :: forall a m.
    ( MonadInIO m
    , Storable a
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[(Int64,a),ErrorCode]
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m (Int64,a)
 ioctlWriteReadRet typ nr = ioctlWriteReadCmdRet cmd
    where
       cmd = ioctlCommand WriteRead typ nr (sizeOfT' @a)
@@ -91,15 +90,15 @@ ioctlWriteReadRet typ nr = ioctlWriteReadCmdRet cmd
 ioctlWriteRead ::
    ( Storable a
    , MonadInIO m
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[a,ErrorCode]
-ioctlWriteRead typ nr a fd = ioctlWriteReadRet typ nr a fd >.-.> snd
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m a
+ioctlWriteRead typ nr a fd = snd <$> ioctlWriteReadRet typ nr a fd
 
 -- | Write and read a storable, use an arbitrary command
 ioctlWriteReadCmd ::
    ( MonadInIO m
    , Storable a
-   ) => Command -> a -> Handle -> Flow m '[a,ErrorCode]
-ioctlWriteReadCmd cmd a fd = ioctlWriteReadCmdRet cmd a fd >.-.> snd
+   ) => Command -> a -> Handle -> FlowT '[ErrorCode] m a
+ioctlWriteReadCmd cmd a fd = snd <$> ioctlWriteReadCmdRet cmd a fd
       
 -----------------------------------------------------------------------------
 -- Read
@@ -109,17 +108,17 @@ ioctlWriteReadCmd cmd a fd = ioctlWriteReadCmdRet cmd a fd >.-.> snd
 ioctlReadCmdRet ::
    ( MonadInIO m
    , Storable a
-   ) => Command -> Handle -> Flow m '[(Int64,a),ErrorCode]
+   ) => Command -> Handle -> FlowT '[ErrorCode] m (Int64,a)
 ioctlReadCmdRet cmd fd =
    alloca $ \pa -> do
-      ioctl cmd pa fd >.~.> \r ->
-         (r,) <$> peek pa
+      r <- ioctl cmd pa fd
+      (r,) <$> peek pa
 
 -- | Read a storable, return the valid returned value
 ioctlReadRet :: forall a m.
    ( MonadInIO m
    , Storable a
-   ) => CommandType -> CommandNumber -> Handle -> Flow m '[(Int64,a),ErrorCode]
+   ) => CommandType -> CommandNumber -> Handle -> FlowT '[ErrorCode] m (Int64,a)
 ioctlReadRet typ nr = ioctlReadCmdRet cmd
    where
       cmd = ioctlCommand Read typ nr (sizeOfT' @a)
@@ -128,15 +127,15 @@ ioctlReadRet typ nr = ioctlReadCmdRet cmd
 ioctlRead ::
    ( Storable a
    , MonadInIO m
-   ) => CommandType -> CommandNumber -> Handle -> Flow m '[a,ErrorCode]
-ioctlRead typ nr fd = ioctlReadRet typ nr fd >.-.> snd
+   ) => CommandType -> CommandNumber -> Handle -> FlowT '[ErrorCode] m a
+ioctlRead typ nr fd = snd <$> ioctlReadRet typ nr fd
 
 -- | Read a storable, use an arbitrary command
 ioctlReadCmd ::
    ( Storable a
    , MonadInIO m
-   ) => Command -> Handle -> Flow m '[a,ErrorCode]
-ioctlReadCmd cmd fd = ioctlReadCmdRet cmd fd >.-.> snd
+   ) => Command -> Handle -> FlowT '[ErrorCode] m a
+ioctlReadCmd cmd fd = snd <$> ioctlReadCmdRet cmd fd
 
 -----------------------------------------------------------------------------
 -- Write
@@ -146,7 +145,7 @@ ioctlReadCmd cmd fd = ioctlReadCmdRet cmd fd >.-.> snd
 ioctlWriteCmdRet ::
    ( Storable a
    , MonadInIO m
-   ) => Command -> a -> Handle -> Flow m '[Int64,ErrorCode]
+   ) => Command -> a -> Handle -> FlowT '[ErrorCode] m Int64
 ioctlWriteCmdRet cmd a fd =
    with a $ \pa -> ioctl cmd pa fd
 
@@ -154,7 +153,7 @@ ioctlWriteCmdRet cmd a fd =
 ioctlWriteRet :: forall a m.
    ( Storable a
    , MonadInIO m
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[Int64,ErrorCode]
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m Int64
 ioctlWriteRet typ nr = ioctlWriteCmdRet cmd
    where
       cmd = ioctlCommand Write typ nr (sizeOfT' @a)
@@ -163,15 +162,15 @@ ioctlWriteRet typ nr = ioctlWriteCmdRet cmd
 ioctlWrite ::
    ( Storable a
    , MonadInIO m
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[(),ErrorCode]
-ioctlWrite typ nr a fd = ioctlWriteRet typ nr a fd >.-.> const ()
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m ()
+ioctlWrite typ nr a fd = void (ioctlWriteRet typ nr a fd)
 
 -- | Write a storable, use an arbitrary command
 ioctlWriteCmd ::
    ( Storable a
    , MonadInIO m
-   ) => Command -> a -> Handle -> Flow m '[(),ErrorCode]
-ioctlWriteCmd cmd a fd = ioctlWriteCmdRet cmd a fd >.-.> const ()
+   ) => Command -> a -> Handle -> FlowT '[ErrorCode] m ()
+ioctlWriteCmd cmd a fd = void (ioctlWriteCmdRet cmd a fd)
 
 -- | Build a Write IOCTL where the value is directly passed in the `arg`
 -- parameter.
@@ -179,10 +178,10 @@ ioctlWriteValue ::
    ( Storable a
    , Arg a
    , MonadIO m
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[(),ErrorCode]
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m ()
 ioctlWriteValue typ nr arg fd = do
    let cmd = ioctlCommand Write typ nr (sizeOf' arg)
-   ioctl cmd arg fd >.-.> const ()
+   void (ioctl cmd arg fd)
 
 -----------------------------------------------------------------------------
 -- signal (Direction = None)
@@ -192,29 +191,29 @@ ioctlWriteValue typ nr arg fd = do
 ioctlSignalCmdRet ::
    ( Arg a
    , MonadIO m
-   ) => Command -> a -> Handle -> Flow m '[Int64,ErrorCode]
+   ) => Command -> a -> Handle -> FlowT '[ErrorCode] m Int64
 ioctlSignalCmdRet cmd a fd = ioctl cmd a fd
 
 -- | Signal, return the valid returned value
 ioctlSignalRet ::
    ( Arg a
    , MonadIO m
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[Int64,ErrorCode]
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m Int64
 ioctlSignalRet typ nr = ioctlSignalCmdRet (ioctlCommand None typ nr 0)
 
 -- | Signal
 ioctlSignal ::
    ( Arg a
    , MonadIO m
-   ) => CommandType -> CommandNumber -> a -> Handle -> Flow m '[(),ErrorCode]
-ioctlSignal typ nr a fd = ioctlSignalRet typ nr a fd >.-.> const ()
+   ) => CommandType -> CommandNumber -> a -> Handle -> FlowT '[ErrorCode] m ()
+ioctlSignal typ nr a fd = void (ioctlSignalRet typ nr a fd)
 
 -- | Signal, use an arbitrary command
 ioctlSignalCmd ::
    ( Arg a
    , MonadIO m
-   ) => Command -> a -> Handle -> Flow m '[(),ErrorCode]
-ioctlSignalCmd cmd a fd = ioctlSignalCmdRet cmd a fd >.-.> const ()
+   ) => Command -> a -> Handle -> FlowT '[ErrorCode] m ()
+ioctlSignalCmd cmd a fd = void (ioctlSignalCmdRet cmd a fd)
 
 
 -----------------------------------------------------------------------------
@@ -222,31 +221,34 @@ ioctlSignalCmd cmd a fd = ioctlSignalCmdRet cmd a fd >.-.> const ()
 -----------------------------------------------------------------------------
 
 -- | Build a Read ioctl that reads the given number of bytes
-ioctlReadBytes :: MonadIO m => CommandType -> CommandNumber -> Word -> Ptr a -> Handle -> Flow m '[Int64,ErrorCode]
+ioctlReadBytes :: MonadIO m => CommandType -> CommandNumber -> Word -> Ptr a -> Handle -> FlowT '[ErrorCode] m Int64
 ioctlReadBytes typ nr n ptr fd = do
    let cmd = ioctlCommand Read typ nr n
    ioctl cmd ptr fd
 
 -- | Build a Read ioctl that reads the given number of bytes and return them in
 -- a Buffer
-ioctlReadBuffer :: MonadInIO m => CommandType -> CommandNumber -> Word -> Handle -> Flow m '[(Int64, Buffer),ErrorCode]
+ioctlReadBuffer :: MonadInIO m => CommandType -> CommandNumber -> Word -> Handle -> FlowT '[ErrorCode] m (Int64, Buffer)
 ioctlReadBuffer typ nr n fd =
-   allocaBytes n $ \ptr ->
-      ioctlReadBytes typ nr n ptr fd >.~.> \v ->
-         (v,) <$> liftIO (bufferPackPtr (fromIntegral n) ptr)
+   allocaBytes n $ \ptr -> do
+      v <- ioctlReadBytes typ nr n ptr fd
+      (v,) <$> liftIO (bufferPackPtr (fromIntegral n) ptr)
 
 -- | Build a Read ioctl for variable sized buffers. We expect the ioctl to
 -- return the length of the data that can be read. We first try to read with a
 -- buffer of `defn` bytes. If there are data left, we retry with a buffer of the
 -- appropriate size.
 ioctlReadVariableBuffer ::
-   ( Liftable '[ErrorCode] '[b,ErrorCode]
-   , MonadInIO m
-   ) => CommandType -> CommandNumber -> (Word -> Ptr a -> m b) -> Word -> Handle -> Flow m '[b,ErrorCode]
-ioctlReadVariableBuffer typ nr f n fd = allocaBytes n $ \ptr ->
-   ioctlReadBytes typ nr n ptr fd
-      >.~^> \len ->
-         if len <= fromIntegral n
-            then flowSet =<< f n ptr
-            -- try with the returned buffer size
-            else ioctlReadVariableBuffer typ nr f (fromIntegral len) fd
+   ( MonadInIO m
+   ) => CommandType -> CommandNumber -> (Word -> Ptr a -> m b) -> Word -> Handle -> FlowT '[ErrorCode] m b
+ioctlReadVariableBuffer typ nr f n fd = do
+   r <- allocaBytes n $ \ptr -> do
+      len <- ioctlReadBytes typ nr n ptr fd
+      if len <= fromIntegral n
+         then Right <$> lift (f n ptr)
+         else return (Left len)
+
+   case r of
+      Right b  -> return b
+      -- try with the returned buffer size
+      Left len -> ioctlReadVariableBuffer typ nr f (fromIntegral len) fd

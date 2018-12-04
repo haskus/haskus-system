@@ -95,14 +95,13 @@ data FilePermission
 type FilePermissions = BitSet Word FilePermission
 
 -- | Reposition read/write file offset, return the new position
-sysSeek :: MonadIO m => Handle -> Int64 -> SeekWhence -> Flow m '[Int64,ErrorCode]
+sysSeek :: MonadIO m => Handle -> Int64 -> SeekWhence -> FlowT '[ErrorCode] m Int64
 sysSeek (Handle fd) off whence =
-   liftIO (syscall_lseek fd off (fromEnum whence))
-      ||> toErrorCode
+   checkErrorCode =<< liftIO (syscall_lseek fd off (fromEnum whence))
 
 -- | Reposition read/write file offset
-sysSeek' :: MonadIO m => Handle -> Int64 -> SeekWhence -> Flow m '[(),ErrorCode]
-sysSeek' fd off whence = sysSeek fd off whence >.-.> const ()
+sysSeek' :: MonadIO m => Handle -> Int64 -> SeekWhence -> FlowT '[ErrorCode] m ()
+sysSeek' fd off whence = void (sysSeek fd off whence)
 
 
 -- | Access mode
@@ -116,52 +115,48 @@ data AccessMode
 
 type AccessModes = BitSet Word64 AccessMode
 
-sysAccess :: MonadInIO m => FilePath -> AccessModes -> Flow m '[(),ErrorCode]
+sysAccess :: MonadInIO m => FilePath -> AccessModes -> FlowT '[ErrorCode] m ()
 sysAccess path mode = withCString path $ \path' ->
-   liftIO (syscall_access path' (BitSet.toBits mode))
-      ||> toErrorCodeVoid
+   (checkErrorCode_ =<< liftIO (syscall_access path' (BitSet.toBits mode)))
 
 
-sysDup :: MonadIO m => Handle -> Flow m '[Handle,ErrorCode]
-sysDup (Handle oldfd) = 
-   liftIO (syscall_dup oldfd)
-      ||> toErrorCodePure (Handle . fromIntegral)
+sysDup :: MonadIO m => Handle -> FlowT '[ErrorCode] m Handle
+sysDup (Handle oldfd) = do
+   n <- checkErrorCode =<< liftIO (syscall_dup oldfd)
+   return (Handle (fromIntegral n))
 
-sysDup2 :: MonadIO m => Handle -> Handle -> Flow m '[Handle,ErrorCode]
-sysDup2 (Handle oldfd) (Handle newfd) = 
-   liftIO (syscall_dup2 oldfd newfd)
-      ||> toErrorCodePure (Handle . fromIntegral)
+sysDup2 :: MonadIO m => Handle -> Handle -> FlowT '[ErrorCode] m Handle
+sysDup2 (Handle oldfd) (Handle newfd) = do
+   n <- checkErrorCode =<< liftIO (syscall_dup2 oldfd newfd)
+   return (Handle (fromIntegral n))
 
-sysSetCurrentDirectoryPath :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
+sysSetCurrentDirectoryPath :: MonadInIO m => FilePath -> FlowT '[ErrorCode] m ()
 sysSetCurrentDirectoryPath path = withCString path $ \path' ->
-   liftIO (syscall_chdir path')
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_chdir path')
 
-sysSetCurrentDirectory :: MonadIO m => Handle -> Flow m '[(),ErrorCode]
+sysSetCurrentDirectory :: MonadIO m => Handle -> FlowT '[ErrorCode] m ()
 sysSetCurrentDirectory (Handle fd) = 
-   liftIO (syscall_fchdir fd)
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_fchdir fd)
 
-sysGetCurrentDirectory :: MonadInIO m => Flow m '[FilePath,ErrorCode]
+sysGetCurrentDirectory :: MonadInIO m => FlowT '[ErrorCode] m FilePath
 sysGetCurrentDirectory = go 128
    where
-      go n = allocaArray n $ \ptr -> do
-         liftIO (syscall_getcwd ptr (fromIntegral n))
-            ||>   toErrorCode
-            >.~.> const (peekCString ptr)
-            >%~^> \case
+      tryGetCwd n = 
+         allocaArray n $ \ptr -> do
+            checkErrorCode_ =<< liftIO (syscall_getcwd ptr (fromIntegral n))
+            peekCString ptr
+      go n = tryGetCwd n `catchLiftLeft` \case
                ERANGE -> go (2 * n)
-               e      -> flowSet e
+               e      -> throwE e
 
 data FileLock =
      SharedLock
    | ExclusiveLock
    | RemoveLock
 
-sysFileLock :: MonadIO m => Handle -> FileLock -> Bool -> Flow m '[(),ErrorCode]
+sysFileLock :: MonadIO m => Handle -> FileLock -> Bool -> FlowT '[ErrorCode] m ()
 sysFileLock (Handle fd) mode nonBlocking =
-   liftIO (syscall_flock fd (mode' .|. nb :: Int64))
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_flock fd (mode' .|. nb :: Int64))
    where
       mode' = case mode of
          SharedLock     -> 1
@@ -169,48 +164,41 @@ sysFileLock (Handle fd) mode nonBlocking =
          RemoveLock     -> 8
       nb = if nonBlocking then 4 else 0
 
-sysTruncatePath :: MonadInIO m => FilePath -> Word64 -> Flow m '[(),ErrorCode]
+sysTruncatePath :: MonadInIO m => FilePath -> Word64 -> FlowT '[ErrorCode] m ()
 sysTruncatePath path size = withCString path $ \path' ->
-   liftIO (syscall_truncate path' size)
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_truncate path' size)
 
-sysTruncate :: MonadIO m => Handle -> Word64 -> Flow m '[(),ErrorCode]
+sysTruncate :: MonadIO m => Handle -> Word64 -> FlowT '[ErrorCode]  m ()
 sysTruncate (Handle fd) size =
-   liftIO (syscall_ftruncate fd size)
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_ftruncate fd size)
 
-sysLink :: MonadInIO m => FilePath -> FilePath -> Flow m '[(),ErrorCode]
+sysLink :: MonadInIO m => FilePath -> FilePath -> FlowT '[ErrorCode] m ()
 sysLink src dest =
    withCString src $ \src' ->
       withCString dest $ \dest' ->
-         liftIO (syscall_link src' dest')
-            ||> toErrorCodeVoid
+         (checkErrorCode_ =<< liftIO (syscall_link src' dest'))
 
-sysUnlink :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
+sysUnlink :: MonadInIO m => FilePath -> FlowT '[ErrorCode] m ()
 sysUnlink path = withCString path $ \path' ->
-   liftIO (syscall_unlink path')
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_unlink path')
 
-sysUnlinkAt :: MonadInIO m => Handle -> FilePath -> Bool -> Flow m '[(),ErrorCode]
+sysUnlinkAt :: MonadInIO m => Handle -> FilePath -> Bool -> FlowT '[ErrorCode] m ()
 sysUnlinkAt (Handle fd) path rmdir = withCString path $ \path' ->
-   liftIO (syscall_unlinkat fd path' (if rmdir then 0x200 else 0))
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_unlinkat fd path' (if rmdir then 0x200 else 0))
 
 
-sysChangePermissionPath :: MonadInIO m => FilePath -> FilePermissions -> Flow m '[(),ErrorCode]
+sysChangePermissionPath :: MonadInIO m => FilePath -> FilePermissions -> FlowT '[ErrorCode] m ()
 sysChangePermissionPath path mode = withCString path $ \path' ->
-   liftIO (syscall_chmod path' (BitSet.toBits mode))
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_chmod path' (BitSet.toBits mode))
 
-sysChangePermission :: MonadIO m => Handle -> FilePermissions -> Flow m '[(),ErrorCode]
+sysChangePermission :: MonadIO m => Handle -> FilePermissions -> FlowT '[ErrorCode] m ()
 sysChangePermission (Handle fd) mode = 
-   liftIO (syscall_fchmod fd (BitSet.toBits mode))
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_fchmod fd (BitSet.toBits mode))
 
 
 -- | Avoid duplication in *chown syscalls
-chownEx :: MonadInIO m => (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
-chownEx sc a uid gid = liftIO (sc a uid' gid') ||> toErrorCodeVoid
+chownEx :: MonadInIO m => (x -> Word32 -> Word32 -> IO Int64) -> x -> Maybe UserID -> Maybe GroupID -> FlowT '[ErrorCode] m ()
+chownEx sc a uid gid = liftIO (sc a uid' gid') >>= checkErrorCode_
    where
       fuid (UserID x) = x
       fgid (GroupID x) = x
@@ -219,22 +207,22 @@ chownEx sc a uid gid = liftIO (sc a uid' gid') ||> toErrorCodeVoid
 
 
 -- | chown
-sysChangeOwnershipPath :: MonadInIO m => FilePath -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
+sysChangeOwnershipPath :: MonadInIO m => FilePath -> Maybe UserID -> Maybe GroupID -> FlowT '[ErrorCode] m ()
 sysChangeOwnershipPath path uid gid = withCString path (\p -> chownEx (syscall_chown) p uid gid)
 
 -- | lchown
-sysChangeLinkOwnershipPath :: MonadInIO m => FilePath -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
+sysChangeLinkOwnershipPath :: MonadInIO m => FilePath -> Maybe UserID -> Maybe GroupID -> FlowT '[ErrorCode] m ()
 sysChangeLinkOwnershipPath path uid gid = withCString path (\p -> chownEx (syscall_lchown) p uid gid)
 
 -- | fchown
-sysChangeOwnership :: MonadInIO m => Handle -> Maybe UserID -> Maybe GroupID -> Flow m '[(),ErrorCode]
+sysChangeOwnership :: MonadInIO m => Handle -> Maybe UserID -> Maybe GroupID -> FlowT '[ErrorCode] m ()
 sysChangeOwnership (Handle fd) = chownEx (syscall_fchown) fd
 
 -- | umask
-sysSetProcessUMask :: MonadIO m => FilePermissions -> Flow m '[FilePermissions,ErrorCode]
-sysSetProcessUMask mode =
-   liftIO (syscall_umask (BitSet.toBits mode))
-      ||> toErrorCodePure (fromBits . fromIntegral)
+sysSetProcessUMask :: MonadIO m => FilePermissions -> FlowT '[ErrorCode] m FilePermissions
+sysSetProcessUMask mode = do
+   n <- checkErrorCode =<< liftIO (syscall_umask (BitSet.toBits mode))
+   return (fromBits (fromIntegral n))
 
 -- | File type
 data FileType
@@ -363,31 +351,27 @@ toStat (StatStruct {..}) = Stat
 --
 -- If the path targets a symbolic link and followLink is false, then returned
 -- information are about the link itself
-sysFileStat :: MonadInIO m => FilePath -> Bool -> Flow m '[Stat,ErrorCode]
+sysFileStat :: MonadInIO m => FilePath -> Bool -> FlowT '[ErrorCode] m Stat
 sysFileStat path followLink = do
    withCString path $ \path' ->
-      allocaBytes (sizeOfT' @StatStruct) $ \s ->
-         let
-            -- select between stat and lstat syscalls
-            sc = if followLink then syscall_stat else syscall_lstat
-         in
-         liftIO (sc path' (castPtr s))
-            ||>   toErrorCode
-            >.~.> (const (toStat <$> peek s))
+      allocaBytes (sizeOfT' @StatStruct) $ \s -> do
+         -- select between stat and lstat syscalls
+         let sc = if followLink then syscall_stat else syscall_lstat
+         checkErrorCode_ =<< liftIO (sc path' (castPtr s))
+         toStat <$> peek s
 
 -- | Stat on file descriptor
-sysHandleStat :: MonadInIO m => Handle -> Flow m '[Stat,ErrorCode]
+sysHandleStat :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Stat
 sysHandleStat (Handle fd) =
-   allocaBytes (sizeOfT' @StatStruct) $ \s ->
-      liftIO (syscall_fstat fd (castPtr s))
-         ||>   toErrorCode
-         >.~.> (const (toStat <$> peek s))
+   allocaBytes (sizeOfT' @StatStruct) $ \s -> do
+      checkErrorCode_ =<< liftIO (syscall_fstat fd (castPtr s))
+      toStat <$> peek s
 
 
 -- | Create a special file
 --
 -- mknodat syscall. 
-sysCreateSpecialFile :: MonadInIO m => Maybe Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> Flow m '[(),ErrorCode]
+sysCreateSpecialFile :: MonadInIO m => Maybe Handle -> FilePath -> FileType -> FilePermissions -> Maybe DeviceID -> FlowT '[ErrorCode] m ()
 sysCreateSpecialFile hdl path typ perm dev = do
    let 
       mode = fromIntegral (toBits perm) .|. fromFileType typ :: Word64
@@ -398,8 +382,7 @@ sysCreateSpecialFile hdl path typ perm dev = do
                   Nothing         -> maxBound
    withCString path $ \path' ->
       withDeviceID dev' $ \dev'' ->
-         liftIO (syscall_mknodat fd path' mode dev'')
-            ||> toErrorCodeVoid
+         (checkErrorCode_ =<< liftIO (syscall_mknodat fd path' mode dev''))
 
 -----------------------------------------------------------------------
 -- Open / Close
@@ -433,52 +416,51 @@ type OpenErrors
       ]
 
 -- | Open and possibly create a file
-open :: MonadInIO m => Maybe Handle -> FilePath -> HandleFlags -> FilePermissions -> Flow m (Handle ': OpenErrors)
+open :: MonadInIO m => Maybe Handle -> FilePath -> HandleFlags -> FilePermissions -> FlowT OpenErrors m Handle
 open mhdl path flags mode = do
    let call = case mhdl of
                   Nothing          -> syscall_open
                   Just (Handle fd) -> syscall_openat fd
-   withCString path
-      (\path' -> liftIO (call path' (BitSet.toBits flags) (BitSet.toBits mode)))
-      ||> toErrorCodePure (Handle . fromIntegral)
-      >..%~^> \case
-         EACCES       -> flowSet NotAllowed
-         EDQUOT       -> flowSet ExhaustedQuota
-         EEXIST       -> flowSet FileAlreadyExists
-         EFAULT       -> flowSet MemoryError
-         EFBIG        -> flowSet Overflow
-         EINTR        -> flowSet Interrupted
-         EINVAL       -> flowSet InvalidParam
-         EISDIR       -> flowSet InvalidIsDirectory
-         ELOOP        -> flowSet SymbolicLinkLoop
-         EMFILE       -> flowSet TooManyProcessHandles
-         ENAMETOOLONG -> flowSet TooLongPathName
-         ENFILE       -> flowSet TooManySystemHandles
-         ENODEV       -> flowSet DeviceNotFound
-         ENOENT       -> flowSet InvalidPathComponent
-         ENOMEM       -> flowSet OutOfKernelMemory
-         ENOSPC       -> flowSet OutOfSpace
-         ENOTDIR      -> flowSet NotADirectory
-         ENXIO        -> flowSet FileSystemIOError
-         EOPNOTSUPP   -> flowSet TempFileNotSupported
-         EPERM        -> flowSet NotAllowed
-         EROFS        -> flowSet ReadOnlyFileSystem
-         ETXTBSY      -> flowSet CannotWriteExecutedImage
-         EAGAIN       -> flowSet RetryLater
-         EBADF        -> flowSet InvalidHandle
-         EBUSY        -> flowSet Busy
-         err          -> unhdlErr "open" err
+   withCString path <| \path' -> do
+      n <- (checkErrorCode =<< liftIO (call path' (BitSet.toBits flags) (BitSet.toBits mode)))
+            `catchLiftLeft` \case
+               EACCES       -> throwE NotAllowed
+               EDQUOT       -> throwE ExhaustedQuota
+               EEXIST       -> throwE FileAlreadyExists
+               EFAULT       -> throwE MemoryError
+               EFBIG        -> throwE Overflow
+               EINTR        -> throwE Interrupted
+               EINVAL       -> throwE InvalidParam
+               EISDIR       -> throwE InvalidIsDirectory
+               ELOOP        -> throwE SymbolicLinkLoop
+               EMFILE       -> throwE TooManyProcessHandles
+               ENAMETOOLONG -> throwE TooLongPathName
+               ENFILE       -> throwE TooManySystemHandles
+               ENODEV       -> throwE DeviceNotFound
+               ENOENT       -> throwE InvalidPathComponent
+               ENOMEM       -> throwE OutOfKernelMemory
+               ENOSPC       -> throwE OutOfSpace
+               ENOTDIR      -> throwE NotADirectory
+               ENXIO        -> throwE FileSystemIOError
+               EOPNOTSUPP   -> throwE TempFileNotSupported
+               EPERM        -> throwE NotAllowed
+               EROFS        -> throwE ReadOnlyFileSystem
+               ETXTBSY      -> throwE CannotWriteExecutedImage
+               EAGAIN       -> throwE RetryLater
+               EBADF        -> throwE InvalidHandle
+               EBUSY        -> throwE Busy
+               err          -> unhdlErr "open" err
+      return (Handle (fromIntegral n))
 
 
 -- | Close a file descriptor
-close :: MonadIO m => Handle -> Flow m '[(),InvalidHandle,Interrupted,FileSystemIOError]
+close :: MonadIO m => Handle -> FlowT '[InvalidHandle,Interrupted,FileSystemIOError] m ()
 close (Handle fd) =
-   liftIO (syscall_close fd)
-      ||> toErrorCodeVoid
-      >..%~^> \case
-         EBADF -> flowSet InvalidHandle
-         EINTR -> flowSet Interrupted
-         EIO   -> flowSet FileSystemIOError
+   (checkErrorCode_ =<< liftIO (syscall_close fd))
+      `catchLiftLeft`\case
+         EBADF -> throwE InvalidHandle
+         EINTR -> throwE Interrupted
+         EIO   -> throwE FileSystemIOError
          err   -> unhdlErr "close" err
 
 
@@ -488,18 +470,16 @@ close (Handle fd) =
 
 -- | Causes all pending modifications to file system metadata and cached file
 -- data to be written to the underlying filesystems
-syncAll :: MonadIO m => m ()
-syncAll = liftIO (syscall_sync)
-   ||> toErrorCodeVoid
-   >..~!!> unhdlErr "syncAll"
+syncAll :: MonadIO m => FlowT '[] m ()
+syncAll = (liftIO (syscall_sync) >>= checkErrorCode_)
+            `catchDie` unhdlErr @ErrorCode "syncAll"
 
 -- | Causes all pending modifications to file system metadata and cached file
 -- data to be written to the underlying filesystem containg the open handle `fd`
-syncAllByHandle :: MonadIO m => Handle -> Flow m '[(),InvalidHandle]
-syncAllByHandle (Handle fd) = liftIO (syscall_syncfs fd)
-   ||> toErrorCodeVoid
-   >..%~^> \case
-      EBADF -> flowSet InvalidHandle
+syncAllByHandle :: MonadIO m => Handle -> FlowT '[InvalidHandle] m ()
+syncAllByHandle (Handle fd) = (liftIO (syscall_syncfs fd) >>= checkErrorCode_)
+   `catchLiftLeft` \case
+      EBADF -> throwE InvalidHandle
       err   -> unhdlErr "syncAllByHandle" err
 
 -- | Flushes all modified in-core of the file referred by the handle to the disk
@@ -512,15 +492,14 @@ syncAllByHandle (Handle fd) = liftIO (syscall_syncfs fd)
 -- If the `flushMetadata` is False, only the contents of the file and the
 -- metadata required to retrieve it (e.g., the file size) are flushed on disk.
 -- Otherwise, all the metadata are flushed.
-syncHandle :: MonadIO m => Bool -> Handle -> Flow m '[(),InvalidHandle,FileSystemIOError, InvalidParam]
+syncHandle :: MonadIO m => Bool -> Handle -> FlowT '[InvalidHandle,FileSystemIOError, InvalidParam] m ()
 syncHandle flushMetadata (Handle fd) =
-      call
-         ||> toErrorCodeVoid
-         >..%~^> \case
-            EBADF  -> flowSet InvalidHandle
-            EIO    -> flowSet FileSystemIOError
-            EROFS  -> flowSet InvalidParam
-            EINVAL -> flowSet InvalidParam
+      (call >>= checkErrorCode_)
+         `catchLiftLeft` \case
+            EBADF  -> throwE InvalidHandle
+            EIO    -> throwE FileSystemIOError
+            EROFS  -> throwE InvalidParam
+            EINVAL -> throwE InvalidParam
             err    -> unhdlErr "syncHandle" err
    where
       call = if flushMetadata
@@ -553,7 +532,7 @@ type RenameErrors
 
 
 -- | Change or exchange the name or location of a file
-rename :: MonadInIO m => Maybe Handle -> FilePath -> Maybe Handle -> FilePath -> [RenameFlag] -> Flow m (() ': RenameErrors)
+rename :: MonadInIO m => Maybe Handle -> FilePath -> Maybe Handle -> FilePath -> [RenameFlag] -> FlowT RenameErrors m ()
 rename mohdl oldPath mnhdl newPath flags = do
    let
       flags'              = BitSet.fromList flags
@@ -563,29 +542,29 @@ rename mohdl oldPath mnhdl newPath flags = do
       noreplace           = BitSet.member flags' RenameNoReplace
    withCString oldPath $ \old' ->
       withCString newPath $ \new' ->
-         liftIO (syscall_renameat2 mohdl' old' mnhdl' new'
+         (liftIO (syscall_renameat2 mohdl' old' mnhdl' new'
                                       (BitSet.toBits flags'))
-            ||> toErrorCodeVoid
-            >..%~^> \case
-               EACCES                   -> flowSet NotAllowed
-               EBUSY                    -> flowSet BusyDirectory
-               EDQUOT                   -> flowSet ExhaustedQuota
-               EINVAL                   -> flowSet InvalidParam
-               EISDIR                   -> flowSet InvalidIsDirectory
-               ELOOP                    -> flowSet SymbolicLinkLoop
-               EMLINK                   -> flowSet TooManyLinks
-               ENAMETOOLONG             -> flowSet TooLongPathName
-               ENOENT                   -> flowSet InvalidPathComponent
-               ENOMEM                   -> flowSet OutOfKernelMemory
-               ENOSPC                   -> flowSet OutOfSpace
-               ENOTDIR                  -> flowSet NotADirectory
-               ENOTEMPTY                -> flowSet NotEmptyDirectory
-               EEXIST | noreplace       -> flowSet FileAlreadyExists
-                      | otherwise       -> flowSet NotEmptyDirectory
-               EPERM                    -> flowSet NotAllowed
-               EROFS                    -> flowSet ReadOnlyFileSystem
-               EXDEV                    -> flowSet NotTheSameFileSystem
-               EBADF                    -> flowSet InvalidHandle
+            >>= checkErrorCode_)
+            `catchLiftLeft` \case
+               EACCES                   -> throwE NotAllowed
+               EBUSY                    -> throwE BusyDirectory
+               EDQUOT                   -> throwE ExhaustedQuota
+               EINVAL                   -> throwE InvalidParam
+               EISDIR                   -> throwE InvalidIsDirectory
+               ELOOP                    -> throwE SymbolicLinkLoop
+               EMLINK                   -> throwE TooManyLinks
+               ENAMETOOLONG             -> throwE TooLongPathName
+               ENOENT                   -> throwE InvalidPathComponent
+               ENOMEM                   -> throwE OutOfKernelMemory
+               ENOSPC                   -> throwE OutOfSpace
+               ENOTDIR                  -> throwE NotADirectory
+               ENOTEMPTY                -> throwE NotEmptyDirectory
+               EEXIST | noreplace       -> throwE FileAlreadyExists
+                      | otherwise       -> throwE NotEmptyDirectory
+               EPERM                    -> throwE NotAllowed
+               EROFS                    -> throwE ReadOnlyFileSystem
+               EXDEV                    -> throwE NotTheSameFileSystem
+               EBADF                    -> throwE InvalidHandle
                err                      -> unhdlErr "rename" err
 
 

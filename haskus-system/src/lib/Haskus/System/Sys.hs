@@ -23,6 +23,7 @@ module Haskus.System.Sys
    , sysLog
    , sysLogPrint
    , sysLogSequence
+   , sysLogSequenceL
    , setLogStatus
    , sysAssert
    , sysAssertQuiet
@@ -47,7 +48,6 @@ import Haskus.Utils.Monad
 import Haskus.Utils.STM
 import Haskus.Utils.STM.Future
 import Haskus.Utils.Flow
-import Haskus.Utils.Variant
 import Haskus.Format.Text ((%),stext, textFormat,Text,pack,shown)
 import qualified Haskus.Format.Text as Text
 
@@ -215,6 +215,14 @@ sysLogSequence text act = do
    sysLogEnd
    return r
 
+-- | Add a new sequence of actions to the log
+sysLogSequenceL :: (MonadTrans t, Monad (t Sys)) => Text -> t Sys a -> t Sys a
+sysLogSequenceL text act = do
+   lift (sysLogBegin text)
+   r <- act
+   lift sysLogEnd
+   return r
+
 
 -- | Start a new log sequence
 sysLogBegin :: Text -> Sys ()
@@ -327,22 +335,28 @@ sysLogInfoShow text a = sysLogInfo (text <> ": " <> pack (show a))
 ----------------------
 
 -- | Assert a successful result, and log the error otherwise
-flowAssertQuiet :: (Show (V xs)) => Text -> Flow Sys (a ': xs) -> Sys a
-flowAssertQuiet text v = 
-   v >..~!!> (\a -> sysError (textFormat (stext % " (failed with " % shown % ")") text a))
-
+flowAssertQuiet :: (Show (V xs)) => Text -> FlowT xs Sys a -> Sys a
+flowAssertQuiet text v = do
+   r <- runFlowT v
+   case popVariantHead r of
+      Right a -> return a
+      Left xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
+      
 -- | Assert a successful result, log on error and on success
-flowAssert :: (Show a, Show (V xs)) => Text -> Flow Sys (a ': xs) -> Sys a
-flowAssert text v = 
-   v  >.~=>   (\a -> sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a))
-      >..~!!> (\xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs))
+flowAssert :: (Show a, Show (V xs)) => Text -> FlowT xs Sys a -> Sys a
+flowAssert text v = do
+   r <- runFlowT v
+   case popVariantHead r of
+      Right a -> do
+         sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a)
+         return a
+      Left xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
      
-assertShow :: Show a => Text -> a -> Sys ()
+assertShow :: Show a => Text -> a -> Sys b
 assertShow text v = do
    let msg = textFormat (stext % " (failed with " % shown % ")") text v
    sysError msg
 
-warningShow :: Show (V xs) => Text -> Flow Sys (a ': xs) -> Sys ()
-warningShow text f = do
-   f >..~!> (\v ->
-      sysWarning (textFormat (stext % " (failed with " % shown % ")") text v))
+warningShow :: Show (V xs) => Text -> FlowT xs Sys a -> Sys ()
+warningShow text f = void <| runFlowT <|
+   f `onFlowError` (\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))

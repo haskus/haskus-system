@@ -34,7 +34,7 @@ import Haskus.System.Linux.FileSystem
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.Generics (Generic)
 
-sysCreateDirectory :: MonadInIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> Flow m '[(),ErrorCode]
+sysCreateDirectory :: MonadInIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> FlowT '[ErrorCode] m ()
 sysCreateDirectory fd path perm sticky = do
    let
       opt        = if sticky
@@ -45,13 +45,12 @@ sysCreateDirectory fd path perm sticky = do
          Nothing           -> liftIO $ syscall_mkdir path' mode
          Just (Handle fd') -> liftIO $ syscall_mkdirat fd' path' mode
 
-   withCString path call ||> toErrorCodeVoid
+   withCString path call >>= checkErrorCode_
 
 
-sysRemoveDirectory :: MonadInIO m => FilePath -> Flow m '[(),ErrorCode]
+sysRemoveDirectory :: MonadInIO m => FilePath -> FlowT '[ErrorCode] m ()
 sysRemoveDirectory path = withCString path $ \path' ->
-   liftIO (syscall_rmdir path')
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_rmdir path')
 
 
 data DirectoryEntryHeader = DirectoryEntryHeader
@@ -113,7 +112,7 @@ instance CEnum DirectoryEntryType where
 --
 -- TODO: propose a "pgetdents64" syscall for Linux with an additional offset
 -- (like pread, pwrite)
-sysGetDirectoryEntries :: MonadInIO m => Handle -> Word -> Flow m '[[DirectoryEntry],ErrorCode]
+sysGetDirectoryEntries :: MonadInIO m => Handle -> Word -> FlowT '[ErrorCode] m [DirectoryEntry]
 sysGetDirectoryEntries (Handle fd) buffersize = do
 
    let
@@ -136,15 +135,14 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                   else return xs
 
    allocaArray buffersize $ \(ptr :: Ptr Word8) -> do
-      liftIO (syscall_getdents64 fd (castPtr ptr) (fromIntegral buffersize))
-         ||> toErrorCode
-         >.~.> (\nread -> readEntries (castPtr ptr) (fromIntegral nread))
+      nread <- checkErrorCode =<< liftIO (syscall_getdents64 fd (castPtr ptr) (fromIntegral buffersize))
+      readEntries (castPtr ptr) (fromIntegral nread)
 
 -- | Return the content of a directory
 --
 -- Warning: reading concurrently the same file descriptor returns mixed up
 -- results because of the stateful kernel interface
-listDirectory :: MonadInIO m => Handle -> Flow m '[[DirectoryEntry],ErrorCode]
+listDirectory :: MonadInIO m => Handle -> FlowT '[ErrorCode] m [DirectoryEntry]
 listDirectory fd = do
       -- Return at the beginning of the directory
       sysSeek' fd 0 SeekSet
@@ -152,7 +150,7 @@ listDirectory fd = do
       -- If another thread changes the current position in the directory file
       -- descriptor, the returned list can be corrupted (redundant entries or
       -- missing ones)
-      >.~^> const (rec [])
+      rec []
    where
       bufferSize = 2 * 1024 * 1024
 
@@ -160,8 +158,8 @@ listDirectory fd = do
       filtr x = nam /= "." && nam /= ".."
          where nam = entryName x
 
-      rec xs = sysGetDirectoryEntries fd bufferSize
-         >.~$> \case
-            [] -> flowSetN @0 xs
+      rec xs = do
+         sysGetDirectoryEntries fd bufferSize >>= \case
+            [] -> return xs
             ks -> rec (filter filtr ks ++ xs)
 

@@ -62,9 +62,9 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 
    -- create root path (allowed to fail if it already exists)
    flowAssert "Create root directory" <| do
-      createDir path >..%~$> \case
-         EEXIST -> flowSetN @0 ()
-         e      -> flowSet e
+      createDir path `catchLiftLeft` \case
+         EEXIST -> return ()
+         e      -> failure e
 
    -- mount a tmpfs in root path
    flowAssert "Mount tmpfs" <| mountTmpFS sysMount path
@@ -96,7 +96,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       }
 
 -- | Get process memory mappings
-getProcessMemoryMap :: System -> Flow Sys ([MemoryMapEntry] ': Union ReadErrors' OpenErrors)
+getProcessMemoryMap :: System -> FlowT (Union ReadErrors' OpenErrors) Sys [MemoryMapEntry]
 getProcessMemoryMap sys =
    atomicReadBuffer (systemProcFS sys) "self/maps"
-   >.-.> parseMemoryMap
+      ||> parseMemoryMap

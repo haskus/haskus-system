@@ -93,44 +93,39 @@ instance Enum Clock where
       _  -> error "Unknown clock"
 
 -- | Retrieve clock time
-sysClockGetTime :: MonadInIO m => Clock -> Flow m '[TimeSpec,ErrorCode]
+sysClockGetTime :: MonadInIO m => Clock -> FlowT '[ErrorCode] m TimeSpec
 sysClockGetTime clk =
-   alloca $ \(t :: Ptr TimeSpec) ->
-      liftIO (syscall_clock_gettime (fromEnum clk) (castPtr t))
-         ||>   toErrorCode
-         >.~.> (const $ peek t)
+   alloca $ \(t :: Ptr TimeSpec) -> do
+      checkErrorCode_ =<< liftIO (syscall_clock_gettime (fromEnum clk) (castPtr t))
+      peek t
 
 -- | Set clock time
-sysClockSetTime :: MonadInIO m => Clock -> TimeSpec -> Flow m '[(),ErrorCode]
+sysClockSetTime :: MonadInIO m => Clock -> TimeSpec -> FlowT '[ErrorCode] m ()
 sysClockSetTime clk time =
-   with time $ \(t :: Ptr TimeSpec) ->
-      liftIO (syscall_clock_settime (fromEnum clk) (castPtr t))
-         ||> toErrorCodeVoid
+   with time $ \(t :: Ptr TimeSpec) -> do
+      checkErrorCode_ =<< liftIO (syscall_clock_settime (fromEnum clk) (castPtr t))
 
 -- | Retrieve clock resolution
-sysClockGetResolution :: MonadInIO m => Clock -> Flow m '[TimeSpec,ErrorCode]
+sysClockGetResolution :: MonadInIO m => Clock -> FlowT '[ErrorCode] m TimeSpec
 sysClockGetResolution clk =
-   alloca $ \(t :: Ptr TimeSpec) ->
-      liftIO (syscall_clock_getres (fromEnum clk) (castPtr t))
-         ||>   toErrorCode
-         >.~.> (const $ peek t)
+   alloca $ \(t :: Ptr TimeSpec) -> do
+      checkErrorCode_ =<< liftIO (syscall_clock_getres (fromEnum clk) (castPtr t))
+      peek t
 
 -- | Retrieve time of day
-sysGetTimeOfDay :: MonadInIO m => Flow m '[TimeVal,ErrorCode]
+sysGetTimeOfDay :: MonadInIO m => FlowT '[ErrorCode] m TimeVal
 sysGetTimeOfDay =
-   alloca $ \(tv :: Ptr TimeVal) ->
+   alloca $ \(tv :: Ptr TimeVal) -> do
       -- timezone arg is deprecated (NULL passed instead)
-      liftIO (syscall_gettimeofday (castPtr tv) nullPtr)
-         ||>   toErrorCode
-         >.~.> (const $ peek tv)
+      checkErrorCode_ =<< liftIO (syscall_gettimeofday (castPtr tv) nullPtr)
+      peek tv
 
 -- | Set time of day
-sysSetTimeOfDay :: MonadInIO m => TimeVal -> Flow m '[(),ErrorCode]
+sysSetTimeOfDay :: MonadInIO m => TimeVal -> FlowT '[ErrorCode] m ()
 sysSetTimeOfDay tv =
-   with tv $ \ptv ->
+   with tv $ \ptv -> do
       -- timezone arg is deprecated (NULL passed instead)
-      liftIO (syscall_settimeofday (castPtr ptv) nullPtr)
-         ||> toErrorCodeVoid
+      checkErrorCode_ =<< liftIO (syscall_settimeofday (castPtr ptv) nullPtr)
 
 -- | Result of a sleep
 data SleepResult
@@ -141,21 +136,21 @@ data SleepResult
 -- | Suspend the calling thread for the specified amount of time
 --
 -- Can be interrupted by a signal (in this case it returns the remaining time)
-sysNanoSleep :: MonadInIO m => TimeSpec -> Flow m '[SleepResult,ErrorCode]
+sysNanoSleep :: MonadInIO m => TimeSpec -> FlowT '[ErrorCode] m SleepResult
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
-         liftIO (syscall_nanosleep (castPtr ts') (castPtr rem'))
-            ||> toErrorCodePure (const CompleteSleep)
-            >%~$> \case
-               EINTR -> flowSet =<< (WokenUp <$> peek rem')
-               err   -> flowSet err
+         (liftIO (syscall_nanosleep (castPtr ts') (castPtr rem'))
+            >>= checkErrorCode_
+            >> return CompleteSleep)
+               `catchLiftLeft` \case
+                  EINTR -> WokenUp <$> peek rem'
+                  err   -> throwE err
 
 -- | Suspend the calling thread for the specified amount of time
 --
 -- When interrupted by a signal, suspend again for the remaining amount of time
-nanoSleep :: MonadInIO m => TimeSpec -> Flow m '[(),ErrorCode]
-nanoSleep ts = sysNanoSleep ts
-   >.~^> \case
-      CompleteSleep -> flowSet ()
-      (WokenUp r)   -> nanoSleep r
+nanoSleep :: MonadInIO m => TimeSpec -> FlowT '[ErrorCode] m ()
+nanoSleep ts = sysNanoSleep ts >>= \case
+      CompleteSleep -> return ()
+      WokenUp r     -> nanoSleep r

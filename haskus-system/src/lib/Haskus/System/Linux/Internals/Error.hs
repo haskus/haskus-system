@@ -5,8 +5,7 @@
 
 -- | System calls error codes
 module Haskus.System.Linux.Internals.Error
-   ( IOErr
-   , ErrorCode (..)
+   ( ErrorCode (..)
    )
 where
 
@@ -17,12 +16,8 @@ import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Enum
-import Haskus.Utils.Flow
 import Haskus.Utils.Embed
 import Haskus.System.Linux.Internals.Tables
-
--- | Syscall return type
-type IOErr a = Flow IO '[a,ErrorCode]
 
 -- =============================================================
 --    From linux/include/uapi/asm-generic/errno-base.h

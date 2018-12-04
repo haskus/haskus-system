@@ -79,8 +79,8 @@ data DeviceType
    deriving (Show,Eq,Ord)
 
 -- | Create a device special file
-createDeviceFile :: MonadIO m => Maybe Handle -> FilePath -> Device -> FilePermissions -> Flow m '[(),ErrorCode]
-createDeviceFile hdl path dev perm = liftIO $ sysCreateSpecialFile hdl path typ perm (Just devid)
+createDeviceFile :: MonadInIO m => Maybe Handle -> FilePath -> Device -> FilePermissions -> FlowT '[ErrorCode] m ()
+createDeviceFile hdl path dev perm = sysCreateSpecialFile hdl path typ perm (Just devid)
    where
       devid = deviceID dev
       typ   = case deviceType dev of
@@ -98,31 +98,30 @@ parseDevFile = do
    return (DeviceID major minor)
 
 -- | Read device major and minor in "dev" file
-sysfsReadDevFile' :: MonadIO m => Handle -> Flow m (DeviceID ': ReadErrors')
-sysfsReadDevFile' devfd =
+sysfsReadDevFile' :: MonadIO m => Handle -> FlowT ReadErrors' m DeviceID
+sysfsReadDevFile' devfd = do
    -- 16 bytes should be enough
-   handleReadBuffer devfd Nothing 16
-      >.-.> (\content -> do
-         case parse parseDevFile "" (Text.bufferDecodeUtf8 content) of
-            Right x -> x
-            --FIXME: return a ParseError instead
-            Left _  -> error "Invalid dev file format")
+   content <- handleReadBuffer devfd Nothing 16
+   case parse parseDevFile "" (Text.bufferDecodeUtf8 content) of
+      Right x -> return x
+      --FIXME: return a ParseError instead
+      Left _  -> error "Invalid dev file format"
 
 -- | Read device major and minor from device path
 sysfsReadDevFile :: MonadInIO m => Handle -> FilePath -> m (Maybe DeviceID)
 sysfsReadDevFile hdl path = do
    withOpenAt hdl (path </> "dev") BitSet.empty BitSet.empty sysfsReadDevFile'
-      >.-.> Just
-      >..-.> const Nothing
+      ||> Just
+      |> evalCatchFlowT (const (return Nothing))
 
 -- | Read subsystem link
 sysfsReadSubsystem :: MonadInIO m => Handle -> FilePath -> m (Maybe Text)
 sysfsReadSubsystem hdl path = do
    readSymbolicLink (Just hdl) (path </> "subsystem")
       -- on success, only keep the basename as it is the subsystem name
-      >.-.> Just . Text.pack . takeBaseName
+      ||> Just . Text.pack . takeBaseName
       -- otherwise
-      >..-.> const Nothing
+      |> evalCatchFlowT (const (return Nothing))
 
 -- | Make a Device from a subsystem and a DeviceID
 sysfsMakeDev :: Text -> DeviceID -> Device

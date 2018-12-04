@@ -120,21 +120,26 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
          Nothing -> Nothing
          Just x  -> Just (p,x)
       devs' = filter isEvent (mapMaybe hasDevice devs)
-   flowForFilter devs' $ \(devpath,dev) -> do
-      getDeviceHandle dm dev
+
+      readDevInfo devpath dev = do
+         hdl <- getDeviceHandle dm dev
          -- try to read infos and return InputDevice
-         >.~|> (\hdl -> do
-                  eventChannel  <- newEventReader hdl
-                  bundleChannel <- newInputEventHandler eventChannel
-                  InputDevice devpath dev hdl
-                     <$< liftIO (Input.getDeviceName hdl)
-                     <*< liftIO (Input.getDeviceInfo hdl)
-                     <|< flowSingle eventChannel
-                     <|< flowSingle bundleChannel
-               )
+         eventChannel  <- lift (newEventReader hdl)
+         bundleChannel <- lift (newInputEventHandler eventChannel)
+         InputDevice devpath dev hdl
+            <$> liftFlowT (Input.getDeviceName hdl)
+            <*> liftFlowT (Input.getDeviceInfo hdl)
+            <*> return eventChannel
+            <*> return bundleChannel
+
+   forMaybeM devs' <| \(devpath,dev) ->
+      readDevInfo devpath dev
+         ||> Just
+         |> evalCatchFlowT (const (return Nothing))
+
 
 -- | Configure auto-repeat delay
-inputSetAutoRepeatDelay :: MonadInIO m => Handle -> Word32 -> Flow m '[Word64,ErrorCode]
+inputSetAutoRepeatDelay :: MonadInIO m => Handle -> Word32 -> FlowT '[ErrorCode] m Word64
 inputSetAutoRepeatDelay hdl delay = do
    let
       tv = TimeVal 0 0
@@ -143,7 +148,7 @@ inputSetAutoRepeatDelay hdl delay = do
       sysWrite hdl pev (sizeOfT' @Input.Event)
 
 -- | Configure auto-repeat period
-inputSetAutoRepeatPeriod :: MonadInIO m => Handle -> Word32 -> Flow m '[Word64,ErrorCode]
+inputSetAutoRepeatPeriod :: MonadInIO m => Handle -> Word32 -> FlowT '[ErrorCode] m Word64
 inputSetAutoRepeatPeriod hdl period = do
    let
       tv = TimeVal 0 0

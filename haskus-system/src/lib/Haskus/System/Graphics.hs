@@ -79,18 +79,22 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          Nothing -> Nothing
          Just x  -> Just (p,x)
       devs' = filter isCard (mapMaybe hasDevice devs)
-   flowForFilter devs' $ \(devpath,dev) -> do
-      let cardID = read (drop 4 (takeBaseName (Text.unpack devpath)))
-      getDeviceHandle dm dev
-         >.~.> (\hdl -> do
-            -- We support these capabilities
-            setClientCapabilityWarn hdl ClientCapStereo3D        True
-            setClientCapabilityWarn hdl ClientCapUniversalPlanes True
-            setClientCapabilityWarn hdl ClientCapAtomic          True
-            -- Create the DRM event reader thread
-            GraphicCard devpath dev cardID hdl
-               <$> newEventWaiterThread hdl
-            )
+
+      readDevInfo devpath dev = do
+         let cardID = read (drop 4 (takeBaseName (Text.unpack devpath)))
+         hdl <- getDeviceHandle dm dev
+         -- We support these capabilities
+         lift <| setClientCapabilityWarn hdl ClientCapStereo3D        True
+         lift <| setClientCapabilityWarn hdl ClientCapUniversalPlanes True
+         lift <| setClientCapabilityWarn hdl ClientCapAtomic          True
+         -- Create the DRM event reader thread
+         GraphicCard devpath dev cardID hdl
+            <$> lift (newEventWaiterThread hdl)
+
+   forMaybeM devs' <| \(devpath,dev) -> do
+      readDevInfo devpath dev
+         ||> Just
+         |> evalCatchFlowT (const (return Nothing))
 
 
 -- | Create a new thread reading input events and putting them in a TChan
@@ -100,15 +104,14 @@ newEventWaiterThread h = do
       bufsz = 1000 -- buffer size
 
    ch <- newBroadcastTChanIO
-   sysFork "Graphics event reader" $ 
-      allocaBytes bufsz $ \ptr -> forever $ do
+   sysFork "Graphics event reader" <|
+      allocaBytes bufsz <| \ptr -> forever <| runFlowT <| do
          threadWaitRead h
-         sysRead h ptr (fromIntegral bufsz)
-            >.~!> \sz2 -> do
-            -- FIXME: we should somehow signal that an error occured and
-            -- that we won't report future events (if any)
-            evs <- peekEvents ptr (fromIntegral sz2)
-            atomically $ mapM_ (writeTChan ch) evs
+         sz2 <- sysRead h ptr (fromIntegral bufsz)
+         -- FIXME: we should somehow signal that an error occured and
+         -- that we won't report future events (if any)
+         evs <- peekEvents ptr (fromIntegral sz2)
+         atomically $ mapM_ (writeTChan ch) evs
    return ch
 
 

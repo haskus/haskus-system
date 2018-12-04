@@ -1,22 +1,20 @@
-resolver: lts-12.6
+resolver: lts-12.19
 packages:
 - '.'
 
 extra-deps:
-  #- haskus-utils-1.0
-  #- haskus-utils-types-1.0
-  #- haskus-utils-data-1.0
-  # - haskus-utils-variant-1.0
-- haskus-binary-1.0
+   #- haskus-utils-variant-2.4
+   #- haskus-utils-1.3
+- haskus-utils-data-1.1
+- haskus-utils-types-1.3
+- haskus-binary-1.1
 - git: https://github.com/haskus/haskus-utils.git
-  commit: 77b53bf1a3fc155af7eab76bad4407897796f5ac
+  commit: 4b00a96cee23ba0bf658834709703368b02f7e30
   subdirs:
      - haskus-utils-variant
-     - haskus-utils-types
-     - haskus-utils-data
      - haskus-utils
-
-#allow-newer: true
+  #     - haskus-utils-types
+  #     - haskus-utils-data
 
 flags:
    diagrams:
@@ -30,12 +28,12 @@ ghc-options:
    # -fobject-code       -- GHCI needs it because of the foreign primops
 
 
-compiler: ghc-8.4.3
-ghc-variant: bugfix
-# allow-newer: true
+#compiler: ghc-8.4.3
+#ghc-variant: bugfix
+#allow-newer: true
 
-setup-info:
-  ghc:
-     linux64-custom-bugfix-tinfo6:
-        8.4.3:
-           url: "http://haskus.org/downloads/ghc-8.4.3-x86_64-bugfix-linux.tar.xz"
+#setup-info:
+#  ghc:
+#     linux64-custom-bugfix-tinfo6:
+#        8.4.3:
+#           url: "http://haskus.org/downloads/ghc-8.4.3-x86_64-bugfix-linux.tar.xz"

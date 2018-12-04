@@ -40,25 +40,23 @@ data ShutFlag
    deriving (Enum,Show)
 
 -- | Shut down part of a full-duplex connection
-sysShutdown :: MonadIO m => Handle -> ShutFlag -> Flow m '[(),ErrorCode]
+sysShutdown :: MonadIO m => Handle -> ShutFlag -> FlowT '[ErrorCode] m ()
 sysShutdown (Handle fd) flag =
-   liftIO (syscall_shutdown fd (fromEnum flag))
-      ||> toErrorCodeVoid
+   checkErrorCode_ =<< liftIO (syscall_shutdown fd (fromEnum flag))
 
 -- | Call sendfile using implicit file cursor for input
-sysSendFile :: MonadIO m => Handle -> Handle -> Word64 -> Flow m '[Word64,ErrorCode]
-sysSendFile (Handle outfd) (Handle infd) count =
-   liftIO (syscall_sendfile outfd infd nullPtr count)
-      ||> toErrorCodePure fromIntegral
+sysSendFile :: MonadIO m => Handle -> Handle -> Word64 -> FlowT '[ErrorCode] m Word64
+sysSendFile (Handle outfd) (Handle infd) count = do
+   r <- checkErrorCode =<< liftIO (syscall_sendfile outfd infd nullPtr count)
+   return (fromIntegral r)
 
 -- | Call sendFile using explicit input offset, returns new offset
-sysSendFileWithOffset :: MonadInIO m => Handle -> Handle -> Word64 -> Word64 -> Flow m '[(Word64,Word64),ErrorCode]
+sysSendFileWithOffset :: MonadInIO m => Handle -> Handle -> Word64 -> Word64 -> FlowT '[ErrorCode] m (Word64,Word64)
 sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
-   with offset $ \off -> liftIO (syscall_sendfile outfd infd off count)
-      ||> toErrorCode
-      >.~.> (\x -> do
-         newOff <- peek off
-         return (fromIntegral x, newOff))
+   with offset $ \off -> do
+      x <- checkErrorCode =<< liftIO (syscall_sendfile outfd infd off count)
+      newOff <- peek off
+      return (fromIntegral x, newOff)
 
 -- | Socket protocol family
 data SocketProtocol
@@ -153,30 +151,30 @@ instance Enum SocketOption where
 -- | Create a socket (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocket' :: MonadIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow m '[Handle,ErrorCode]
-sysSocket' typ protocol subprotocol opts =
-   liftIO (syscall_socket (fromEnum protocol) typ' subprotocol)
-      ||> toErrorCodePure (Handle . fromIntegral)
-   where
+sysSocket' :: MonadIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> FlowT '[ErrorCode] m Handle
+sysSocket' typ protocol subprotocol opts = do
+   let
       f :: Enum a => a -> Word64
       f = fromIntegral . fromEnum
       typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
+   r <- checkErrorCode =<< liftIO (syscall_socket (fromEnum protocol) typ' subprotocol)
+   return (Handle (fromIntegral r))
 
 -- | Create a socket pair (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocketPair' :: MonadInIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
+sysSocketPair' :: MonadInIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> FlowT '[ErrorCode] m (Handle,Handle)
 sysSocketPair' typ protocol subprotocol opts =
-   allocaArray 2 $ \ptr ->
-      liftIO (syscall_socketpair (fromEnum protocol) typ' subprotocol (castPtr ptr))
-         ||>   toErrorCode
-         >.~.> (const $ toTuple . fmap Handle <$> peekArray 2 ptr)
-   where
-      f :: Enum a => a -> Word64
-      f = fromIntegral . fromEnum
-      typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
-      toTuple [x,y] = (x,y)
-      toTuple _     = error "Invalid tuple"
+   allocaArray 2 $ \ptr -> do
+      let
+         f :: Enum a => a -> Word64
+         f = fromIntegral . fromEnum
+         typ' = f typ .|. foldl' (\x y -> x .|. f y) 0 opts
+         toTuple [x,y] = (x,y)
+         toTuple _     = error "Invalid tuple"
+
+      checkErrorCode_ =<< liftIO (syscall_socketpair (fromEnum protocol) typ' subprotocol (castPtr ptr))
+      (toTuple . fmap Handle) <$> peekArray 2 ptr
 
 -- | IP type
 data IPType
@@ -192,7 +190,7 @@ data SocketType
    deriving (Show,Eq)
 
 -- | Create a socket
-sysSocket :: MonadIO m => SocketType -> [SocketOption] -> Flow m '[Handle,ErrorCode]
+sysSocket :: MonadIO m => SocketType -> [SocketOption] -> FlowT '[ErrorCode] m Handle
 sysSocket typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocket' SockRawTypeStream SockProtIPv4 0 opts
@@ -202,7 +200,7 @@ sysSocket typ opts =
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Create a socket pair
-sysSocketPair :: MonadInIO m => SocketType -> [SocketOption] -> Flow m '[(Handle,Handle),ErrorCode]
+sysSocketPair :: MonadInIO m => SocketType -> [SocketOption] -> FlowT '[ErrorCode] m (Handle,Handle)
 sysSocketPair typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocketPair' SockRawTypeStream SockProtIPv4 0 opts
@@ -212,48 +210,44 @@ sysSocketPair typ opts =
       SockTypeNetlink nt -> sysSocketPair' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Bind a socket
-sysBind :: (MonadInIO m, Storable a) => Handle -> a -> Flow m '[(),ErrorCode]
+sysBind :: (MonadInIO m, Storable a) => Handle -> a -> FlowT '[ErrorCode] m ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
-      liftIO (syscall_bind fd (castPtr addr') (sizeOf' addr))
-         ||> toErrorCodeVoid
+      checkErrorCode_ =<< liftIO (syscall_bind fd (castPtr addr') (sizeOf' addr))
 
 -- | Connect a socket
-sysConnect :: (MonadInIO m, Storable a) => Handle -> a -> Flow m '[(),ErrorCode]
+sysConnect :: (MonadInIO m, Storable a) => Handle -> a -> FlowT '[ErrorCode] m ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
-      liftIO (syscall_connect fd (castPtr addr') (sizeOf' addr))
-         ||> toErrorCodeVoid
+      checkErrorCode_ =<< liftIO (syscall_connect fd (castPtr addr') (sizeOf' addr))
 
 -- | Accept a connection on a socket
 --
 -- We use accept4 (288) instead of accept (43) to support socket options
 --
-sysAccept :: (MonadInIO m, Storable a) => Handle -> a -> [SocketOption] -> Flow m '[Handle,ErrorCode]
+sysAccept :: (MonadInIO m, Storable a) => Handle -> a -> [SocketOption] -> FlowT '[ErrorCode] m Handle
 sysAccept (Handle fd) addr opts =
    let 
       f :: Enum a => a -> Word64
       f = fromIntegral . fromEnum
       opts' = foldl' (\x y -> x .|. f y) 0 opts
    in
-   with addr $ \addr' ->
-      liftIO (syscall_accept4 fd (castPtr addr') (sizeOf' addr) opts')
-         ||> toErrorCodePure (Handle . fromIntegral)
+   with addr $ \addr' -> do
+      r <- checkErrorCode =<< liftIO (syscall_accept4 fd (castPtr addr') (sizeOf' addr) opts')
+      return (Handle (fromIntegral r))
 
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
-sysListen :: MonadIO m => Handle -> Word64 -> Flow m '[(),ErrorCode]
+sysListen :: MonadIO m => Handle -> Word64 -> FlowT '[ErrorCode] m ()
 sysListen (Handle fd) backlog =
-   liftIO (syscall_listen fd backlog)
-      ||> toErrorCodeVoid
-
+   checkErrorCode_ =<< liftIO (syscall_listen fd backlog)
 
 
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
-sysBindNetlink :: MonadInIO m => Handle -> Word32 -> Word32 -> Flow m '[(),ErrorCode]
+sysBindNetlink :: MonadInIO m => Handle -> Word32 -> Word32 -> FlowT '[ErrorCode] m ()
 sysBindNetlink fd portID groups = sysBind fd <| NetlinkSocket
    { netlinkSocketFamily = fromIntegral (fromEnum SockProtNETLINK)
    , netlinkSocketPortID = portID

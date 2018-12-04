@@ -83,8 +83,8 @@ import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Ptr
-import Haskus.Utils.Flow
 import Haskus.Utils.Types.Generics (Generic)
+import Haskus.Utils.Flow
 
 -- =============================================================
 --    From linux/include/uapi/linux/uio.h
@@ -308,43 +308,42 @@ instance CBitSet XFlag where
 csize :: Word
 csize = sizeOfT' @CSize
 
--- blkIoctl :: Word8 -> Int64 -> Handle -> IOErr Int64
+-- blkIoctl :: MonadInIO m => Word8 -> Int64 -> Handle -> FlowT '[ErrorCode] m Int64
 -- blkIoctl n = ioctlSignalValue 0x12 n
 -- 
--- blkIoctlS' :: Word8 -> Int64 -> Handle -> IOErr ()
+-- blkIoctlS' :: MonadInIO m => Word8 -> Int64 -> Handle -> FlowT '[ErrorCode] m ()
 -- blkIoctlS' n b fd = do
 --    r <- ioctlSignalValue 0x12 n b fd
 --    return $ case r of
 --       Left err -> Left err
 --       Right _  -> Right ()
 -- 
--- blkIoctlS :: Word8 -> Handle -> IOErr ()
+-- blkIoctlS :: MonadInIO m => Word8 -> Handle -> FlowT '[ErrorCode] m ()
 -- blkIoctlS n = ioctlSignal 0x12 n
 -- 
--- blkIoctlR :: Storable a => Word8 -> Handle -> IOErr a
+-- blkIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> FlowT '[ErrorCode] m a
 -- blkIoctlR n = ioctlRead 0x12 n
 -- 
--- blkIoctlW :: Storable a => Word8 -> Handle -> a -> IOErr ()
+-- blkIoctlW :: (MonadInIO m, Storable a) => Word8 -> Handle -> a -> FlowT '[ErrorCode] m ()
 -- blkIoctlW n = ioctlWrite 0x12 n
 -- 
 
 -- | BLKROSET set device read-only (0 = read-write)
-ioctlSetReadOnlyStatus :: Bool -> Handle -> IOErr ()
+ioctlSetReadOnlyStatus :: MonadInIO m => Bool -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetReadOnlyStatus b =
    ioctlWriteCmd (ioctlCommand None 0x12 93 0) (if b then 1 else 0 :: Int)
 
 -- | BLKROGET get read-only status (0 = read_write)
-ioctlGetReadOnlyStatus :: Handle -> IOErr Bool
-ioctlGetReadOnlyStatus fd =
-   ioctlReadCmd (ioctlCommand None 0x12 94 0) fd >.-.> (/= (0 :: Int))
+ioctlGetReadOnlyStatus :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Bool
+ioctlGetReadOnlyStatus fd = (/= (0 :: Int)) <$> ioctlReadCmd (ioctlCommand None 0x12 94 0) fd
 
 -- | BLKRRPART re-read partition table
-ioctlReReadPartitionTable :: Handle -> IOErr ()
+ioctlReReadPartitionTable :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
 ioctlReReadPartitionTable = ioctlSignal 0x12 95 (0 :: Int)
 
 -- | BLKGETSIZE return device size /512 (long *arg)
 -- Use the 64-bit version instead
---ioctlGetDeviceSize32 :: Handle -> IOErr CLong
+--ioctlGetDeviceSize32 :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CLong
 --ioctlGetDeviceSize32 fd =
 --   with 0 $ \(p :: Ptr CLong) ->
 --      blkIoctl 96 0 fd
@@ -352,15 +351,15 @@ ioctlReReadPartitionTable = ioctlSignal 0x12 95 (0 :: Int)
 --       >.~.> (const $ peek p)
 
 -- | BLKFLSBUF  flush buffer cache
-ioctlFlushBuferCache :: Handle -> IOErr ()
+ioctlFlushBuferCache :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
 ioctlFlushBuferCache = ioctlSignal 0x12 97 (0 :: Int)
 
 -- | BLKRASET set read ahead for block device
-ioctlSetReadAhead :: Int64 -> Handle -> IOErr ()
+ioctlSetReadAhead :: MonadInIO m => Int64 -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetReadAhead = ioctlSignal 0x12 98
 
 -- | BLKRAGET get current read ahead setting
-ioctlGetReadAhead :: Handle -> IOErr CLong
+ioctlGetReadAhead :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CLong
 ioctlGetReadAhead = ioctlReadCmd (ioctlCommand None 0x12 99 0)
 
 -- Linux aliases BLKRAGET/BLKRASET and BLKFRAGET/BLKFRASET
@@ -371,42 +370,42 @@ ioctlGetReadAhead = ioctlReadCmd (ioctlCommand None 0x12 99 0)
 -- | BLKSECTSET set max sectors per request
 --
 -- Doesn't seem to be supported by Linux (cf block/ioctl.c)
-ioctlSetMaxSectors :: CUShort -> Handle -> IOErr ()
+ioctlSetMaxSectors :: MonadInIO m => CUShort -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetMaxSectors = ioctlSignal 0x12 102
 
 -- | BLKSECTGET get max sectors per request
-ioctlGetMaxSectors :: Handle -> IOErr CUShort
+ioctlGetMaxSectors :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CUShort
 ioctlGetMaxSectors = ioctlReadCmd (ioctlCommand None 0x12 103 0)
 
 -- | BLKSSZGET get block device logical block size
-ioctlGetLogicalBlockSize :: Handle -> IOErr Int
+ioctlGetLogicalBlockSize :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
 ioctlGetLogicalBlockSize = ioctlReadCmd (ioctlCommand None 0x12 104 0)
 
 -- | BLKBSZGET get block device soft block size
-ioctlGetSoftBlockSize :: Handle -> IOErr Int
+ioctlGetSoftBlockSize :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
 ioctlGetSoftBlockSize = ioctlReadCmd (ioctlCommand Read 0x12 112 csize)
 
 -- | BLKBSZSET set block device soft block size
-ioctlSetSoftBlockSize :: Int -> Handle -> IOErr ()
+ioctlSetSoftBlockSize :: MonadInIO m => Int -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetSoftBlockSize = ioctlWriteCmd (ioctlCommand Write 0x12 113 csize)
 
 -- | BLKGETSIZE64 return device size in bytes
-ioctlGetSize :: Handle -> IOErr Word64
+ioctlGetSize :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Word64
 ioctlGetSize = ioctlReadCmd (ioctlCommand Read 0x12 114 csize)
 
 -- We haven't defined struct user_trace_setup yet
 -- #define BLKTRACESETUP _IOWR(0x12,115,struct blk_user_trace_setup)
 
 -- | BLKTRACESTART
-ioctlTraceStart :: Handle -> IOErr ()
+ioctlTraceStart :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
 ioctlTraceStart = ioctlSignal 0x12 116 (0 :: Int)
 
 -- | BLKTRACESTOP
-ioctlTraceStop :: Handle -> IOErr ()
+ioctlTraceStop :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
 ioctlTraceStop = ioctlSignal 0x12 117 (0 :: Int)
 
 -- | BLKTRACETEARDOWN
-ioctlTraceTearDown :: Handle -> IOErr ()
+ioctlTraceTearDown :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
 ioctlTraceTearDown = ioctlSignal 0x12 118 (0 :: Int)
 
 data Range = Range
@@ -415,43 +414,43 @@ data Range = Range
    } deriving (Generic,Storable)
 
 -- | BLKDISCARD
-ioctlDiscard :: Range -> Handle -> IOErr ()
+ioctlDiscard :: MonadInIO m => Range -> Handle -> FlowT '[ErrorCode] m ()
 ioctlDiscard = ioctlWriteCmd (ioctlCommand None 0x12 119 0)
 
 -- | BLKIOMIN
-ioctlGetIOMin :: Handle -> IOErr CUInt
+ioctlGetIOMin :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CUInt
 ioctlGetIOMin = ioctlReadCmd (ioctlCommand None 0x12 120 0)
 
 -- | BLKIOOPT
-ioctlGetIOOpt :: Handle -> IOErr CUInt
+ioctlGetIOOpt :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CUInt
 ioctlGetIOOpt = ioctlReadCmd (ioctlCommand None 0x12 121 0)
 
 -- | BLKALIGNOFF
-ioctlGetAlignmentOffset :: Handle -> IOErr Int
+ioctlGetAlignmentOffset :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
 ioctlGetAlignmentOffset = ioctlReadCmd (ioctlCommand None 0x12 122 0)
 
 -- | BLKPBSZGET get block device physical block size
-ioctlGetPhysicalBlockSize :: Handle -> IOErr CUInt
+ioctlGetPhysicalBlockSize :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CUInt
 ioctlGetPhysicalBlockSize = ioctlReadCmd (ioctlCommand None 0x12 123 0)
 
 -- | BLKDISCARDZEROES
-ioctlDiscardZeroes :: Handle -> IOErr CUInt
+ioctlDiscardZeroes :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CUInt
 ioctlDiscardZeroes = ioctlReadCmd (ioctlCommand None 0x12 124 0)
 
 -- | BLKSECDISCARD
-ioctlDiscardSecure :: Range -> Handle -> IOErr ()
+ioctlDiscardSecure :: MonadInIO m => Range -> Handle -> FlowT '[ErrorCode] m ()
 ioctlDiscardSecure = ioctlWriteCmd (ioctlCommand None 0x12 125 0)
 
 -- | BLKROTATIONAL
-ioctlGetRotational :: Handle -> IOErr CUShort
+ioctlGetRotational :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CUShort
 ioctlGetRotational = ioctlReadCmd (ioctlCommand None 0x12 126 0)
 
 -- | BLKZEROOUT
-ioctlZeroOut :: Range -> Handle -> IOErr()
+ioctlZeroOut :: MonadInIO m => Range -> Handle -> FlowT '[ErrorCode] m()
 ioctlZeroOut = ioctlWriteCmd (ioctlCommand None 0x12 127 0)
 
 -- | BLKDAXGET
-ioctlGetDAX :: Handle -> IOErr Int
+ioctlGetDAX :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
 ioctlGetDAX  = ioctlReadCmd (ioctlCommand None 0x12 129 0)
 
 -- #define FIBMAP     _IO(0x00,1)  /* bmap access */
@@ -459,23 +458,23 @@ ioctlGetDAX  = ioctlReadCmd (ioctlCommand None 0x12 129 0)
 -- #define FS_IOC_FIEMAP                   _IOWR('f', 11, struct fiemap)
 
 -- | Freeze (FIFREEZE)
-ioctlFreeze :: Int -> Handle -> IOErr Int
+ioctlFreeze :: MonadInIO m => Int -> Handle -> FlowT '[ErrorCode] m Int
 ioctlFreeze = ioctlWriteRead 88 119
 
 -- | Thaw (FITHAW)
-ioctlThaw :: Int -> Handle -> IOErr Int
+ioctlThaw :: MonadInIO m => Int -> Handle -> FlowT '[ErrorCode] m Int
 ioctlThaw = ioctlWriteRead 88 120
 
 -- | Trim (FITRIM)
-ioctlTrim :: TrimRange -> Handle -> IOErr TrimRange
+ioctlTrim :: MonadInIO m => TrimRange -> Handle -> FlowT '[ErrorCode] m TrimRange
 ioctlTrim = ioctlWriteRead 88 121
 
 -- | Clone (FICLONE)
-ioctlClone :: Int -> Handle -> IOErr ()
+ioctlClone :: MonadInIO m => Int -> Handle -> FlowT '[ErrorCode] m ()
 ioctlClone = ioctlWrite 0x94 9
 
 -- | Clone range (FICLONERANGE)
-ioctlCloneRange :: FileCloneRange -> Handle -> IOErr ()
+ioctlCloneRange :: MonadInIO m => FileCloneRange -> Handle -> FlowT '[ErrorCode] m ()
 ioctlCloneRange = ioctlWrite 0x94 13
 
 -- | FIDEDUPERANGE
@@ -483,49 +482,49 @@ ioctlCloneRange = ioctlWrite 0x94 13
 -- but the actual object is a FileDedupeRangeHeader followed by an array of
 -- FileDedupeRangeInfo structures...
 --
---ioctlDedupeRange :: Handle -> FileDe -> IOErr ()
+--ioctlDedupeRange :: MonadInIO m => Handle -> FileDe -> FlowT '[ErrorCode] m ()
 --ioctlDedupeRange = ioctlWrite 0x94 54
 
 
 -- | FS_IOC_GETFLAGS
-ioctlGetFlags :: Handle -> IOErr CLong
+ioctlGetFlags :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CLong
 ioctlGetFlags = ioctlRead 102 1
 
 -- | FS_IOC_SETFLAGS
-ioctlSetFlags :: CLong -> Handle -> IOErr ()
+ioctlSetFlags :: MonadInIO m => CLong -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetFlags = ioctlWrite 102 2
 
 -- | FS_IOC_GETVERSION
-ioctlGetVersion :: Handle -> IOErr CLong
+ioctlGetVersion :: MonadInIO m => Handle -> FlowT '[ErrorCode] m CLong
 ioctlGetVersion = ioctlRead 118 1
 
 -- | FS_IOC_SETVERSION
-ioctlSetVersion :: CLong -> Handle -> IOErr ()
+ioctlSetVersion :: MonadInIO m => CLong -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetVersion = ioctlWrite 118 2
 
 
 -- | FS_IOC32_GETFLAGS
-ioctlGetFlags32 :: Handle -> IOErr Int
+ioctlGetFlags32 :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
 ioctlGetFlags32 = ioctlRead 102 1
 
 -- | FS_IOC32_SETFLAGS
-ioctlSetFlags32 :: Int -> Handle -> IOErr ()
+ioctlSetFlags32 :: MonadInIO m => Int -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetFlags32 = ioctlWrite 102 2
 
 -- | FS_IOC32_GETVERSION
-ioctlGetVersion32 :: Handle -> IOErr Int
+ioctlGetVersion32 :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
 ioctlGetVersion32 = ioctlRead 118 1
 
 -- | FS_IOC32_SETVERSION
-ioctlSetVersion32 :: Int -> Handle -> IOErr ()
+ioctlSetVersion32 :: MonadInIO m => Int -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetVersion32 = ioctlWrite 118 2
 
 -- | FS_IOC_FSGETXATTR
-ioctlGetXAttr :: Handle -> IOErr FsxAttr
+ioctlGetXAttr :: MonadInIO m => Handle -> FlowT '[ErrorCode] m FsxAttr
 ioctlGetXAttr = ioctlRead 88 31
 
 -- | FS_IOC_FSSETXATTR
-ioctlSetXAttr :: FsxAttr -> Handle -> IOErr ()
+ioctlSetXAttr :: MonadInIO m => FsxAttr -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetXAttr = ioctlWrite 88 32
 
 ---------------------------------
@@ -543,15 +542,15 @@ data FSCryptPolicy = FSCryptPolicy
    } deriving (Show,Generic,Storable)
 
 -- | FS_IOC_SET_ENCRYPTION_POLICY
-ioctlSetEncryptionPolicy :: FSCryptPolicy -> Handle -> IOErr ()
+ioctlSetEncryptionPolicy :: MonadInIO m => FSCryptPolicy -> Handle -> FlowT '[ErrorCode] m ()
 ioctlSetEncryptionPolicy = ioctlWriteCmd (ioctlCommand Read 102 19 (sizeOfT' @FSCryptPolicy))
 
 -- | FS_IOC_GET_ENCRYPTION_PWSALT
-ioctlGetEncryptionPWSalt :: Handle -> IOErr (Vector 16 Word8)
+ioctlGetEncryptionPWSalt :: MonadInIO m => Handle -> FlowT '[ErrorCode] m (Vector 16 Word8)
 ioctlGetEncryptionPWSalt = ioctlReadCmd (ioctlCommand Write 102 20 16)
 
 -- | FS_IOC_GET_ENCRYPTION_POLICY
-ioctlGetEncryptionPolicy :: Handle -> IOErr FSCryptPolicy
+ioctlGetEncryptionPolicy :: MonadInIO m => Handle -> FlowT '[ErrorCode] m FSCryptPolicy
 ioctlGetEncryptionPolicy = ioctlReadCmd (ioctlCommand Write 102 21 (sizeOfT' @FSCryptPolicy))
 
 -- | Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)

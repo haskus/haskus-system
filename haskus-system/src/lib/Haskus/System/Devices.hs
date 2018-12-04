@@ -254,34 +254,34 @@ initDeviceManager sysfs devfs = do
       -- recursively from it. The current directory is already opened and the
       -- handle is passed (alongside the name and fullname).
       -- Return Nothing if it fails for any reason.
-      readSysfsDir :: Text -> Handle -> Flow Sys '[()]
+      readSysfsDir :: Text -> Handle -> FlowT '[] Sys ()
       readSysfsDir path hdl = do
          
          unless (Text.null path) $
-            deviceAdd dm path Nothing
+            lift (deviceAdd dm path Nothing)
 
          -- list directories (sub-devices) that are *not* symlinks
-         dirs <- listDirectory hdl
-                 -- filter to keep only directories (sysfs fills the type field)
-                 >.-.> filter (\entry -> entryType entry == TypeDirectory)
-                 -- only keep the directory name
-                 >.-.> fmap entryName
+         dirs <- (listDirectory hdl
+                    -- filter to keep only directories (sysfs fills the type field)
+                    ||> filter (\entry -> entryType entry == TypeDirectory)
+                    -- only keep the directory name
+                    ||> fmap entryName
                  -- return an empty directory list on error
-                 >..-.> const []
+                 ) `catchAllE` (\_ -> success [])
 
          -- recursively try to create a tree for each sub-dir
-         void $ flowFor dirs $ \dir -> do
+         forM_ dirs $ \dir -> do
             let path' = Text.concat [path, Text.pack "/", Text.pack dir]
             withDevDir hdl dir (readSysfsDir path')
+               `catchAllE` (\_ -> success ())
 
-         flowSet ()
+         return ()
 
 
    -- list devices in /devices
-   void (withDevDir sysfs "devices" (readSysfsDir Text.empty)
-            >..~!!> (\err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err))
-        )
-   
+   withDevDir sysfs "devices" (readSysfsDir Text.empty)
+      |> evalCatchFlowT (\err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err))
+      |> void
 
    -- launch handling thread
    sysFork "Kernel sysfs event handler" $ eventThread ch dm
@@ -606,12 +606,12 @@ newKernelEventReader = do
 
 
 -- | Get device handle by name (i.e., sysfs path)
-getDeviceHandleByName :: DeviceManager -> String -> Flow Sys (Handle ': ErrorCode ': OpenErrors)
+getDeviceHandleByName :: DeviceManager -> String -> FlowT (ErrorCode ': OpenErrors) Sys Handle
 getDeviceHandleByName dm path = do
-   dev <- deviceLookup dm (Text.pack path)
+   dev <- lift <| deviceLookup dm (Text.pack path)
    case dev >>= deviceDevice of
       Just d  -> getDeviceHandle dm d
-      Nothing -> flowSet DeviceNotFound
+      Nothing -> throwE DeviceNotFound
 
 -- | Get a handle on a device
 --
@@ -619,7 +619,7 @@ getDeviceHandleByName dm path = do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: DeviceManager -> Device -> Flow Sys (Handle ': ErrorCode ': OpenErrors)
+getDeviceHandle :: DeviceManager -> Device -> FlowT (ErrorCode ': OpenErrors) Sys Handle
 getDeviceHandle dm dev = do
 
    -- get a fresh device number
@@ -634,27 +634,26 @@ getDeviceHandle dm dev = do
       logS    = textFormat ("Opening device " % string % " into " % string)
                   (showDevice dev) devname
 
-   sysLogSequence logS $ do
+   sysLogSequenceL logS <| do
       -- create special file in device fs
-      createDeviceFile (Just devfd) devname dev BitSet.empty
-         >.~~^^> do
-            -- on success, try to open it
-            let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
-            hdl <- open (Just devfd) devname flgs BitSet.empty
-            -- then remove it
-            sysUnlinkAt devfd devname False
-               >..~!> sysWarningShow "Unlinking special device file failed"
-            return hdl
+      liftFlowT <| createDeviceFile (Just devfd) devname dev BitSet.empty
+      -- on success, try to open it
+      let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
+      hdl <- liftFlowT <| open (Just devfd) devname flgs BitSet.empty
+      -- then remove it
+      liftFlowT <| sysUnlinkAt devfd devname False
+         `onFlowError` sysWarningShow "Unlinking special device file failed"
+      return hdl
 
 -- | Release a device handle
 releaseDeviceHandle :: Handle -> Sys ()
 releaseDeviceHandle fd = close fd
-   >..~!!> \err -> do
+   |> evalCatchFlowT (\err -> do
       let msg = textFormat ("close (failed with " % shown % ")") err
-      sysLog LogWarning msg
+      sysLog LogWarning msg)
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: DeviceManager -> Device -> Flow Sys (Handle ': OpenErrors)
+openDeviceDir :: DeviceManager -> Device -> FlowT OpenErrors Sys Handle
 openDeviceDir dm dev = open (Just (dmDevFS dm)) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids

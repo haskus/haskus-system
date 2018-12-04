@@ -27,64 +27,71 @@ import Haskus.Format.Binary.Ptr (nullPtr)
 import Haskus.Utils.Flow
 
 -- | reboot syscall
-sysPower :: MonadInIO m => PowerCommand -> Flow m '[(),ErrorCode]
+sysPower :: MonadInIO m => PowerCommand -> FlowT '[ErrorCode] m ()
 sysPower cmd = case cmd of
       PowerRestartCommand cmdPath -> withCString cmdPath f
       _                           -> f nullPtr
    where
-      f path = liftIO (syscall_reboot magic1 magic2 cmd' path)
-                  ||> toErrorCodeVoid
+      f path = checkErrorCode_ =<< liftIO (syscall_reboot magic1 magic2 cmd' path)
       magic1 = 0xfee1dead :: Word64
       magic2 = 0x28121969 :: Word64
       cmd'   = powerCommandNumber cmd
 
 
 -- | Ctrl-Alt-Del sequence sends SIGINT to init task.
-disableRebootKeys :: MonadInIO m => Flow m '[(),NotAllowed]
-disableRebootKeys = sysPower PowerDisableRebootKeys >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "disableRebootKeys" e
+disableRebootKeys :: MonadInIO m => FlowT '[NotAllowed] m ()
+disableRebootKeys = sysPower PowerDisableRebootKeys
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "disableRebootKeys" e
 
 -- | Ctrl-Alt-Del sequence causes RESTART command.
-enableRebootKeys :: MonadInIO m => Flow m '[(),NotAllowed]
-enableRebootKeys = sysPower PowerEnableRebootKeys >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "enableRebootKeys" e
+enableRebootKeys :: MonadInIO m => FlowT '[NotAllowed] m ()
+enableRebootKeys = sysPower PowerEnableRebootKeys
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "enableRebootKeys" e
 
 -- | Stop OS and give system control to ROM monitor, if any.
-halt :: MonadInIO m => Flow m '[(),NotAllowed]
-halt = sysPower PowerHalt >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "halt" e
+halt :: MonadInIO m => FlowT '[NotAllowed] m ()
+halt = sysPower PowerHalt
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "halt" e
 
 -- | Restart system using a previously loaded Linux kernel
-executeLoadedKernel :: MonadInIO m => Flow m '[(),NotAllowed]
-executeLoadedKernel = sysPower PowerKernelExec >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "executeLoadedKernel" e
+executeLoadedKernel :: MonadInIO m => FlowT '[NotAllowed] m ()
+executeLoadedKernel = sysPower PowerKernelExec
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "executeLoadedKernel" e
 
 -- | Stop OS and remove all power from system, if possible.
-powerOff :: MonadInIO m => Flow m '[(),NotAllowed]
-powerOff = sysPower PowerOff >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "powerOff" e
+powerOff :: MonadInIO m => FlowT '[NotAllowed] m ()
+powerOff = sysPower PowerOff
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "powerOff" e
 
 -- | Restart system using default command and mode.
-restart :: MonadInIO m => Flow m '[(),NotAllowed]
-restart = sysPower PowerRestart >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "restart" e
+restart :: MonadInIO m => FlowT '[NotAllowed] m ()
+restart = sysPower PowerRestart
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "restart" e
 
 -- | Restart system using given command string.
-restartWithCommand :: MonadInIO m => String -> Flow m '[(),NotAllowed,MemoryError,InvalidRestartCommand]
-restartWithCommand cmd = sysPower (PowerRestartCommand cmd) >%~^> \case
-   EPERM  -> flowSet NotAllowed
-   EFAULT -> flowSet MemoryError
-   EINVAL -> flowSet InvalidRestartCommand
-   e      -> unhdlErr "restartWithCommand" e
+restartWithCommand :: MonadInIO m => String -> FlowT '[NotAllowed,MemoryError,InvalidRestartCommand] m ()
+restartWithCommand cmd = sysPower (PowerRestartCommand cmd)
+   `catchLiftLeft` \case
+      EPERM  -> throwE NotAllowed
+      EFAULT -> throwE MemoryError
+      EINVAL -> throwE InvalidRestartCommand
+      e      -> unhdlErr "restartWithCommand" e
 
 -- | Suspend system using software suspend if compiled in.
-softSuspend :: MonadInIO m => Flow m '[(),NotAllowed]
-softSuspend = sysPower PowerSoftSuspend >%~^> \case
-   EPERM -> flowSet NotAllowed
-   e     -> unhdlErr "softSuspend" e
+softSuspend :: MonadInIO m => FlowT '[NotAllowed] m ()
+softSuspend = sysPower PowerSoftSuspend
+   `catchLiftBoth` \case
+      EPERM -> failure NotAllowed
+      e     -> unhdlErr "softSuspend" e
