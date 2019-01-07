@@ -59,7 +59,7 @@ parseLines = do
          notFollowedBy (char 'C')
          vid <- hexadecimal
          someSpace
-         vname <- anyChar `manyTill` end
+         vname <- anySingle `manyTill` end
          devs  <- many device
          skipUseless
          return $ TupE
@@ -75,7 +75,7 @@ parseLines = do
          void (char '\t')
          did <- hexadecimal
          someSpace
-         dname <- anyChar `manyTill` end
+         dname <- anySingle `manyTill` end
          subs  <- many subdevice
          return $ TupE
             [ LitE $ IntegerL did
@@ -93,7 +93,7 @@ parseLines = do
          someSpace
          did <- hexadecimal
          someSpace
-         dname <- anyChar `manyTill` end
+         dname <- anySingle `manyTill` end
          return $ TupE
             [ LitE $ IntegerL $ (vid `shiftL` 16) .|. did
             , LitE $ StringL $ dname
@@ -109,7 +109,7 @@ parseLines = do
          someSpace
          cid <- hexadecimal
          someSpace
-         cname <- anyChar `manyTill` end
+         cname <- anySingle `manyTill` end
          devs  <- many subclass
          skipUseless
          return $ TupE
@@ -124,7 +124,7 @@ parseLines = do
          void (char '\t')
          cid <- hexadecimal
          someSpace
-         cname <- anyChar `manyTill` end
+         cname <- anySingle `manyTill` end
          subs  <- many progInterface
          return $ TupE
             [ LitE $ IntegerL cid
@@ -140,7 +140,7 @@ parseLines = do
          void (char '\t')
          cid <- hexadecimal
          someSpace
-         cname <- anyChar `manyTill` end
+         cname <- anySingle `manyTill` end
          return $ TupE
             [ LitE $ IntegerL $ cid
             , LitE $ StringL $ cname
@@ -153,5 +153,5 @@ parseLines = do
 
       comment = do
          void (string "#")
-         anyChar `manyTill` end
+         anySingle `manyTill` end
 

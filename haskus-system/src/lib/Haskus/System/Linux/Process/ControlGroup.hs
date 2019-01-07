@@ -46,7 +46,7 @@ parseControlGroup = parseFile
       parseLine = do
          hier <- decimal
          void (char ':')
-         subs <- Text.splitOn (Text.pack ",") . Text.pack <$> someTill anyChar (char ':')
+         subs <- Text.splitOn (Text.pack ",") . Text.pack <$> someTill anySingle (char ':')
          void (char ':')
-         own  <- Text.pack <$> manyTill anyChar eol
+         own  <- Text.pack <$> manyTill anySingle eol
          return $ ControlGroupEntry hier subs own

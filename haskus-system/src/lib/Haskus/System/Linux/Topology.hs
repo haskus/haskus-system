@@ -63,7 +63,7 @@ parseMemInfo = parseFile
          void (string "Node ")
          void (decimal :: Parser Int)
          void (char ' ')
-         lbl <- someTill anyChar (char ':')
+         lbl <- someTill anySingle (char ':')
          space
          value <- decimal
          kb <- (string " kB" *> return (*1024)) <|> return id

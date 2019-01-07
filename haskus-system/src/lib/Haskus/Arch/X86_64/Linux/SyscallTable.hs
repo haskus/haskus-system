@@ -102,4 +102,4 @@ parseLines = catMaybes <$> lines'
 
       comment = do
          void (string "--")
-         anyChar `manyTill` lookAhead end
+         anySingle `manyTill` lookAhead end

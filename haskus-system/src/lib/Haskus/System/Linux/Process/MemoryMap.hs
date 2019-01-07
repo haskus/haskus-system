@@ -103,7 +103,7 @@ memoryMapParser = parseFile
          void spaceChar
          inode <- decimal
          void (many (char ' '))
-         pth <- Text.pack <$> manyTill anyChar eol
+         pth <- Text.pack <$> manyTill anySingle eol
          let typ = case (inode, Text.null pth) of
                      (0,True)  -> AnonymousMapping
                      (0,False) -> NamedMapping pth
