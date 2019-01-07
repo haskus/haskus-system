@@ -6,6 +6,10 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 
+#if MIN_VERSION_GLASGOW_HASKELL (8,6,0,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
+
 #ifdef __GLASGOW_HASKELL__
 {-# LANGUAGE GHCForeignImportPrim, 
              MagicHash, 
