@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a91166fca8317bf53cac3d039099450a946718dd5fddb643c295f4127f7df867
+-- hash: faa061018ce5cb0038570243265181b6778fb7bf622a453020451843908f226d
 
 name:           haskus-system-tools
 version:        0.8
@@ -16,7 +18,6 @@ maintainer:     sylvain@haskus.fr
 copyright:      Sylvain HENRY 2018
 license:        BSD3
 build-type:     Simple
-cabal-version:  >= 1.10
 extra-source-files:
     README.rst
 
