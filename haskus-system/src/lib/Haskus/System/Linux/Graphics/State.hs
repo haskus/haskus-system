@@ -246,7 +246,7 @@ getControllerGamma c = do
    allocaArrays [sz,sz,sz] $ \(as@[r,g,b] :: [Ptr Word16]) -> do
       let f = fromIntegral . ptrToWordPtr
       void (ioctlGetGamma (s (f r) (f g) (f b)) hdl)
-      [rs,gs,bs] <- liftIO <| peekArrays [sz,sz,sz] as
+      ~[rs,gs,bs] <- liftIO <| peekArrays [sz,sz,sz] as
       return (rs,gs,bs)
 
 -- | Set controller gama look-up table
@@ -411,7 +411,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
             as' = fmap (wordPtrToPtr . fromIntegral) as
             arraySizes = extractSize r
-         [fbs,ctrls,conns,encs] <- peekArrays arraySizes as'
+         ~[fbs,ctrls,conns,encs] <- peekArrays arraySizes as'
          return $ Resources
                (fmap EntityID fbs)
                (fmap EntityID ctrls)
