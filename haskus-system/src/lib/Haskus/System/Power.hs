@@ -5,7 +5,9 @@ module Haskus.System.Power
    , halt
    , executeLoadedKernel
    , powerOff
+   , powerOff_
    , restart
+   , restart_
    , restartWithCommand
    , softSuspend
    )
@@ -35,9 +37,17 @@ executeLoadedKernel = runFlowT L.executeLoadedKernel
 powerOff :: MonadInIO m => m (V '[(),NotAllowed])
 powerOff = runFlowT L.powerOff
 
+-- | Stop OS and remove all power from system, if possible.
+powerOff_ :: MonadInIO m => m ()
+powerOff_ = void powerOff
+
 -- | Restart system using default command and mode.
 restart :: MonadInIO m => m (V '[(),NotAllowed])
 restart = runFlowT L.restart
+
+-- | Restart system using default command and mode.
+restart_ :: MonadInIO m => m ()
+restart_ = void restart
 
 -- | Restart system using given command string.
 restartWithCommand :: MonadInIO m => String -> m (V '[(),NotAllowed,MemoryError,InvalidRestartCommand])
