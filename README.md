@@ -14,7 +14,7 @@ Documentation: https://docs.haskus.org/system.html
 The [haskus-system-build](https://github.com/haskus/haskus-system-build.git)
 tool (in the package of the same name) is the preferred way to build systems.
 
-Install it with:
+You can install it from source with:
 
 ```bash
 $ git clone https://github.com/haskus/haskus-system.git
