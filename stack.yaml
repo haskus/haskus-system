@@ -1,4 +1,4 @@
-resolver: lts-13.1
+resolver: lts-13.10
 packages:
 - 'haskus-system'
 - 'haskus-system-build'
