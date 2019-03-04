@@ -1,5 +1,5 @@
 name:                haskus-system-build
-version:             1.0
+version:             1.1
 synopsis:            Haskus system build tool
 license:             BSD3
 license-file:        LICENSE
@@ -36,7 +36,7 @@ executable haskus-system-build
       Haskus.Apps.System.Build.Download
       Paths_haskus_system_build
    build-depends:
-         base                    >= 4.9
+         base                    >= 4.9 && < 5.0
       ,  process                 >= 1.4
       ,  yaml                    >= 0.8
       ,  text                    >= 1.2
