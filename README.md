@@ -38,20 +38,10 @@ gzip, etc.) for these commands to succeed. See the
 
 # Hacking on haskus-system
 
-Use stack commands to build the ``haskus-system`` package:
+Use ``stack`` commands to build the ``haskus-system`` package:
 
-Build:
 ```bash
-$ stack setup
-$ stack build
-```
-
-Tests:
-```bash
-$ stack test
-```
-
-Benchmarks:
-```bash
-$ stack bench
+$ stack build # build
+$ stack test  # run tests
+$ stack bench # run benchmarks
 ```
