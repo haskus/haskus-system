@@ -29,6 +29,6 @@ flags:
 extra-package-dbs: []
 
 ghc-options:
-   "$locals": -fhide-source-paths
-   "haskus-system": -fobject-code -freverse-errors
+   "$locals": -fhide-source-paths -freverse-errors
+   "haskus-system": -fobject-code
    # -fobject-code       -- GHCI needs it because of the foreign primops

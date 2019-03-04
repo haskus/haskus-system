@@ -33,7 +33,7 @@ $ haskus-system-build test       # download, build and test system in QEMU
 
 You may have to install missing programs (cpio, lzip, qemu, make, gcc, binutils,
 gzip, etc.) for these commands to succeed. See the
-[documentation](http://doc.haskus.org/manual/system/volume1/automatic_building.html).
+[documentation](https://docs.haskus.org/system/building/automatic_building.html#building-and-testing).
 
 
 # Hacking on haskus-system
