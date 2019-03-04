@@ -76,9 +76,19 @@ linuxMain config = do
                showStep "Copying modules..."
                shellInErr fp2 ("make modules_install INSTALL_MOD_PATH="++tgtmod') $
                   failWith "Cannot copy Linux modules"
-               renameDirectory
-                  (tgtmod' </> "lib" </> "modules" </> Text.unpack version)
-                  tgtmod
+               -- modules are usually in lib/modules/<kernel_version> but for some
+               -- versions the path is incorrect
+               --    e.g. "5.0" => "/lib/modules/5.0.0"
+               -- So we try to find the only directory in "/lib/modules" instead
+               let
+                  modPathPrefix = tgtmod' </> "lib" </> "modules"
+                  tgtModPath   = modPathPrefix </> Text.unpack version
+               doesDirectoryExist tgtModPath >>= \case
+                  True  -> renameDirectory tgtModPath tgtmod
+                  False -> listDirectory modPathPrefix >>= \case
+                     [r] -> renameDirectory (modPathPrefix </> r) tgtmod
+                     []  -> return ()
+                     rs  -> putStrLn $ "Warning: found several module directories!?\n" ++ show rs
                removeDirectory (tgtmod' </> "lib" </> "modules")
                removeDirectory (tgtmod' </> "lib")
                removeDirectory tgtmod'
