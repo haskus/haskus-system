@@ -17,9 +17,9 @@ tool (in the package of the same name) is the preferred way to build systems.
 Install it with:
 
 ```bash
-$ git clone https://github.com/haskus/haskus-system-build.git
-$ cd haskus-system-build
-$ stack install --install-ghc
+$ git clone https://github.com/haskus/haskus-system.git
+$ cd haskus-system
+$ stack install haskus-system-build
 ```
 
 It will install the program into ~/.local/bin. Be sure to add this path to your
