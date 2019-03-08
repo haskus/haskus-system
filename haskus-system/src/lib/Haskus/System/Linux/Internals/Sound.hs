@@ -184,7 +184,7 @@ module Haskus.System.Linux.Internals.Sound
 where
 
 import Haskus.Utils.Types.Generics (Generic)
-import Haskus.Utils.Types
+import Haskus.Utils.Types hiding (Union)
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.Vector (Vector, vectorReverse)
 import Haskus.Format.Binary.Union

@@ -43,7 +43,7 @@ import Haskus.Format.Binary.Bits
 import Haskus.Format.String
 import Haskus.Format.Text as Text
 import Haskus.Utils.Tuple (fromTuple4)
-import Haskus.Utils.Types
+import Haskus.Utils.Types hiding (Union)
 
 #ifdef __GLASGOW_HASKELL__
 
