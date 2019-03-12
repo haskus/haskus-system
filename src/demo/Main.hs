@@ -19,7 +19,7 @@ import Haskus.System.Linux.Graphics.AtomicConfig
 import qualified Haskus.System.Linux.Internals.Input as Key
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
-import Haskus.Utils.Embed
+import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.STM
 import Haskus.Utils.Maybe
 import Haskus.Format.String
@@ -36,19 +36,7 @@ import Demo.Graphics
 import Demo.Art
 
 rawlogo :: B.Buffer
-rawlogo = B.Buffer $(embedFile "src/image/logo_transparent.png")
-
-rawFontNormal :: B.Buffer
-rawFontNormal = B.Buffer $(embedFile "src/demo/VeraMono.ttf")
-
-rawFontBold :: B.Buffer
-rawFontBold = B.Buffer $(embedFile "src/demo/VeraMoBd.ttf")
-
-rawFontItalic :: B.Buffer
-rawFontItalic = B.Buffer $(embedFile "src/demo/VeraMoIt.ttf")
-
-rawFontBoldItalic :: B.Buffer
-rawFontBoldItalic = B.Buffer $(embedFile "src/demo/VeraMoBI.ttf")
+rawlogo = B.Buffer $(embedBSFile "src/image/logo_transparent.png")
 
 data Page
    = PageNone
@@ -66,11 +54,11 @@ main = runSys' <| do
 
    let
    -- fonts
-      loadFont             = decodeFont . LBS.fromStrict . B.bufferUnpackByteString
-      Right fontNormal     = loadFont rawFontNormal
-      Right fontBold       = loadFont rawFontBold
-      Right fontBoldItalic = loadFont rawFontBoldItalic
-      Right fontItalic     = loadFont rawFontItalic
+      loadFont             = decodeFont . LBS.fromStrict
+      Right fontNormal     = loadFont $(embedBSFile "src/demo/VeraMono.ttf")
+      Right fontBold       = loadFont $(embedBSFile "src/demo/VeraMoBd.ttf")
+      Right fontBoldItalic = loadFont $(embedBSFile "src/demo/VeraMoBI.ttf")
+      Right fontItalic     = loadFont $(embedBSFile "src/demo/VeraMoIt.ttf")
    
    let blackTexture = Just . uniformTexture $ PixelRGBA8 0 0 0 255
        redTexture   = Just . uniformTexture $ PixelRGBA8 255 0 0 255
@@ -84,7 +72,7 @@ main = runSys' <| do
    sys  <- defaultSystemInit
    let dm = systemDeviceManager sys
 
-   info <- fromVariantHead <$> runFlowT systemInfo
+   info <- runFlow systemInfo
 
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
@@ -183,11 +171,11 @@ main = runSys' <| do
             "uname" -> do
                
                let res = case info of
-                     Just info' -> fromCStringBuffer (systemName info') ++ " " 
+                     VRight info' -> fromCStringBuffer (systemName info') ++ " " 
                            ++ fromCStringBuffer (systemRelease info')
                            ++ " (" ++ fromCStringBuffer (systemMachine info') ++ ") - "
                            ++ fromCStringBuffer (systemVersion info')
-                     Nothing -> "Information unavailable"
+                     VLeft _ -> "Information unavailable"
                termAppendStyled (TextRange fontItalic (PointSize 12) res blackTexture)
                termNewLine
             _       -> do
@@ -359,7 +347,7 @@ main = runSys' <| do
          infoPage = makeInfoPage <$> info
 
       dpmsProp <- graphicsConfig (graphicCardHandle card) <| do
-         evalCatchFlowT (const (return []))
+         evalCatchFlow (const (return []))
             <|  filter (\p -> propertyName (propertyMeta p) == "DPMS")
             <|| getPropertyM conn
 
@@ -378,7 +366,7 @@ main = runSys' <| do
             forM_ dpmsProp $ \prop -> do
                setPropertyM conn (propertyID (propertyMeta prop)) s
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
-               |> evalCatchFlowT (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
+               |> evalCatchFlow (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
 
 
       initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
@@ -406,10 +394,10 @@ main = runSys' <| do
                PageNone -> liftIO <| blendImage gfb logo BlendAlpha (centerPos logo) (fullImg logo)
 
                PageInfo -> case infoPage of
-                  Just d  -> liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
-                  Nothing -> return ()
+                  VRight d -> liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
+                  VLeft _  -> return ()
 
-               PageGraphics -> runFlowT_ <| do
+               PageGraphics -> runFlow_ <| do
                   diag <- graphicsPage card
                   let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
                   liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)

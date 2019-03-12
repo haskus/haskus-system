@@ -17,7 +17,7 @@ import qualified Haskus.Utils.Map as Map
 
 data DisconnectedCard = DisconnectedCard
 
-graphicsPage :: MonadInIO m => GraphicCard -> FlowT '[DisconnectedCard] m VDiagram
+graphicsPage :: MonadInIO m => GraphicCard -> Flow '[DisconnectedCard] m VDiagram
 graphicsPage card = do
    diag <- readGraphicsState (graphicCardHandle card)
             |> (`catchLiftBoth` (\InvalidHandle -> failure DisconnectedCard))

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cd5e7ead6a6402bdbb252b8b08f61a082652219d60046cf0c79c66a360723636
+-- hash: 667a0354d3315988f6aea05976bb67c16dd38b30fa399acdd394e9b7c92f5e9e
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -42,6 +42,7 @@ executable Clock
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -74,6 +75,7 @@ executable Demo
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -98,6 +100,7 @@ executable DisplayModes
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -119,6 +122,7 @@ executable DisplayProperties
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -140,6 +144,7 @@ executable DisplayState
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -161,6 +166,7 @@ executable HelloWorld
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -182,6 +188,7 @@ executable KernelEvent
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -203,6 +210,7 @@ executable ListDevices
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -224,6 +232,7 @@ executable OpenDevice
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -246,6 +255,7 @@ executable Sound
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -271,6 +281,7 @@ executable Test
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
@@ -296,6 +307,7 @@ executable VDSO
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant

@@ -6,17 +6,26 @@ packages:
 - '.'
 
 extra-deps:
-- haskus-utils-variant-2.6.1
-- haskus-utils-1.4
-- haskus-utils-data-1.1.1
-- haskus-utils-types-1.4.1
-- haskus-binary-1.4
+   #- haskus-utils-variant-2.6.1
+   #- haskus-utils-1.4
+   #- haskus-utils-data-1.1.1
+   #- haskus-utils-types-1.4.1
+   #- haskus-binary-1.4
+- haskus-utils-compat-1.0
 - stm-containers-1.1.0.2
 - stm-hamt-1.2.0.2
 - primitive-extras-0.7.1
 - hsnoise-0.0.2
+- git: https://github.com/haskus/packages.git
+  commit: d52d3a9da77ef80562e1b09fb1b75768cb34d56a
+  subdirs:
+     - haskus-utils-variant
+     - haskus-utils
+     - haskus-utils-types
+     - haskus-utils-data
+     - haskus-binary
 - git: https://github.com/haskus/haskus-system.git
-  commit: 374e70c7bfc5d6ea96110d66c3df508b2c199bd9
+  commit: 358a8f7233e6e8bcda6587b557f87f7597197874
   subdirs:
       - haskus-system
 

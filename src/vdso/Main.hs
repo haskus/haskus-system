@@ -2,13 +2,13 @@
 
 import Haskus.System
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text ((%),shown,textFormat)
 import Haskus.Format.Elf
 import Haskus.Format.Elf.Symbol
 import Haskus.Utils.Maybe
 import Haskus.Apps.Disassembler
+import Foreign.Ptr
 
 main :: IO ()
 main = runSys' <| do
@@ -17,7 +17,7 @@ main = runSys' <| do
    term <- defaultTerminal
 
    -- get the list of memory mappings for our own process
-   maps <- evalCatchFlowT (\xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs))
+   maps <- evalCatchFlow (\xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs))
             <| getProcessMemoryMap sys
 
    let 

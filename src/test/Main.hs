@@ -27,7 +27,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Graphics.Drawing
 import qualified Haskus.System.Graphics.Diagrams as D
 import Haskus.System.Graphics.Diagrams ((#),fc,lw,rasterizeDiagram,mkWidth,none)
-import Haskus.Utils.Embed
+import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.STM
 import qualified Haskus.Utils.Map as Map
 
@@ -40,7 +40,7 @@ import Data.ByteString (ByteString)
 import Codec.Picture.Types
 
 rawlogo :: ByteString
-rawlogo = $(embedFile "src/image/logo.png")
+rawlogo = $(embedBSFile "src/image/logo.png")
 
 
 main :: IO ()
@@ -268,8 +268,8 @@ main = runSys' <| do
 listDir :: Terminal -> FilePath -> Sys ()
 listDir term path = do
    dls <- flowAssertQuiet @(ErrorCode : OpenErrors) "List directory" <| do
-      rt <- liftFlowT <| open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
-      ls <- liftFlowT <| listDirectory rt
-      void <| liftFlowT (close rt)
+      rt <- liftFlow <| open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
+      ls <- liftFlow <| listDirectory rt
+      void <| liftFlow (close rt)
       return ls
    writeStrLn term (concat . intersperse "\n" . fmap entryName <| dls)

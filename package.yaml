@@ -22,6 +22,7 @@ dependencies:
 - haskus-utils-data
 - haskus-utils-types
 - haskus-utils-variant
+- haskus-utils-compat
 - haskus-binary
 
 ghc-options: -Wall -O2 -static -threaded
