@@ -23,39 +23,39 @@ import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Process
 import Haskus.Format.Binary.Vector (Vector)
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
-import Haskus.Utils.Memory
+import Haskus.Memory.Utils
 
 -- | Signal set
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
-sysPause :: MonadIO m => FlowT '[ErrorCode] m ()
+sysPause :: MonadIO m => Flow '[ErrorCode] m ()
 sysPause = checkErrorCode_ =<< liftIO (syscall_pause)
 
 -- | Alarm
-sysAlarm :: MonadIO m => Word-> FlowT '[ErrorCode] m Word
+sysAlarm :: MonadIO m => Word-> Flow '[ErrorCode] m Word
 sysAlarm seconds = fromIntegral <$> (checkErrorCode =<< liftIO (syscall_alarm seconds))
 
 -- | Kill syscall
-sysSendSignal :: MonadIO m => ProcessID -> Int -> FlowT '[ErrorCode] m ()
+sysSendSignal :: MonadIO m => ProcessID -> Int -> Flow '[ErrorCode] m ()
 sysSendSignal (ProcessID pid) sig =
    checkErrorCode_ =<< liftIO (syscall_kill (fromIntegral pid) sig)
 
 -- | Send a signal to every process in the process group of the calling process
-sysSendSignalGroup :: MonadIO m => Int -> FlowT '[ErrorCode] m ()
+sysSendSignalGroup :: MonadIO m => Int -> Flow '[ErrorCode] m ()
 sysSendSignalGroup sig = checkErrorCode_ =<< liftIO (syscall_kill 0 sig)
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
-sysSendSignalAll :: MonadIO m => Int -> FlowT '[ErrorCode] m ()
+sysSendSignalAll :: MonadIO m => Int -> Flow '[ErrorCode] m ()
 sysSendSignalAll sig = checkErrorCode_ =<< liftIO (syscall_kill (-1) sig)
 
 -- | Check if a given process or process group exists
 --
 -- Send signal "0" to the given process/process group
-sysCheckProcess :: MonadIO m => ProcessID -> FlowT '[ErrorCode] m Bool
+sysCheckProcess :: MonadIO m => ProcessID -> Flow '[ErrorCode] m Bool
 sysCheckProcess pid = 
    (sysSendSignal pid 0 >> return True)
       -- ESRCH indicates that the process wasn't found
@@ -70,7 +70,7 @@ data ChangeSignals
    deriving (Show,Eq,Enum)
 
 -- | Change signal mask
-sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> FlowT '[ErrorCode] m SignalSet
+sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> Flow '[ErrorCode] m SignalSet
 sysChangeSignalMask act set =
    withMaybeOrNull set $ \x ->
       alloca $ \(ret :: Ptr SignalSet) -> do

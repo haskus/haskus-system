@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Haskus.System.Input
@@ -21,8 +23,7 @@ main = runSys' <| do
    case args of
       (devpath:_) -> do
          let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
-         hdl <- open Nothing devpath flgs BitSet.empty
-                  |> evalCatchFlowT (\err -> error ( "Unable to open device: " ++ show err))
+         hdl <- flowAssert "Open devices" <| open Nothing devpath flgs BitSet.empty
 
          eventChannel  <- newEventReader hdl
 

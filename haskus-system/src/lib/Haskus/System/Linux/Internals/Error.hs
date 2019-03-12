@@ -14,7 +14,7 @@ import System.IO.Unsafe
 
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
+import GHC.Ptr
 import Haskus.Format.Binary.Enum
 import Haskus.Utils.Embed
 import Haskus.System.Linux.Internals.Tables

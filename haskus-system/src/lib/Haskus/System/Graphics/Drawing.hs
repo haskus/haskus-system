@@ -25,7 +25,7 @@ import Control.Loop (forLoop)
 import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Buffer as B
 import Haskus.System.Graphics
 import Haskus.System.Linux.Graphics.FrameSource

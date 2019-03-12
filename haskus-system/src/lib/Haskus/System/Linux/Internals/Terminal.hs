@@ -390,26 +390,26 @@ data WindowSize = WindowSize
 -- | Get serial port settings
 --
 -- TCGETS
-ttyGetConfig :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m TermConfig
+ttyGetConfig :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m TermConfig
 ttyGetConfig = ioctlReadCmd (rawIoctlCommand 0x5401)
 
 -- | Set serial port settings
 --
 -- TCSETS
-ttySetConfig :: (MonadInIO m) => TermConfig -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfig :: (MonadInIO m) => TermConfig -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfig = ioctlWriteCmd (rawIoctlCommand 0x5402)
 
 -- | Allow the output buffer to drain, and set serial port settings
 --
 -- TCSETSW
-ttySetConfigDrain :: (MonadInIO m) => TermConfig -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfigDrain :: (MonadInIO m) => TermConfig -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfigDrain = ioctlWriteCmd (rawIoctlCommand 0x5403)
 
 -- | Allow the output buffer to drain, discard pending input, and set serial
 -- port settings
 --
 -- TCSETSF
-ttySetConfigFlush :: (MonadInIO m) => TermConfig -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfigFlush :: (MonadInIO m) => TermConfig -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfigFlush = ioctlWriteCmd (rawIoctlCommand 0x5404)
 
 -- Skipped:
@@ -428,7 +428,7 @@ ttySetConfigFlush = ioctlWriteCmd (rawIoctlCommand 0x5404)
 -- by handle has been transmitted.
 -- 
 -- TCSBRK
-ttyDrain :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttyDrain :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttyDrain = ioctlSignalCmd (rawIoctlCommand 0x5409)
 
 -- | Drain for the given amount of deciseconds
@@ -438,7 +438,7 @@ ttyDrain = ioctlSignalCmd (rawIoctlCommand 0x5409)
 -- not support breaks.
 --
 -- TCSBRKP
-ttyDrainDuration :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttyDrainDuration :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttyDrainDuration = ioctlSignalCmd (rawIoctlCommand 0x5425)
 
 -- | Start draining
@@ -446,7 +446,7 @@ ttyDrainDuration = ioctlSignalCmd (rawIoctlCommand 0x5425)
 -- Turn break on, that is, start sending zero bits.
 --
 -- TCSSBRK
-ttyDrainStart :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m ()
+ttyDrainStart :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m ()
 ttyDrainStart = ioctlSignalCmd (rawIoctlCommand 0x5427) False
 
 -- | Stop draining
@@ -454,14 +454,14 @@ ttyDrainStart = ioctlSignalCmd (rawIoctlCommand 0x5427) False
 -- Turn break off, that is, stop sending zero bits.
 --
 -- TCSCBRK
-ttyDrainStop :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m ()
+ttyDrainStop :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m ()
 ttyDrainStop = ioctlSignalCmd (rawIoctlCommand 0x5428) False
 
 -- | Suspends transmission or reception of data on the object referred to by
 -- handle
 --
 -- TCXONC
-ttyFlowControl :: (MonadInIO m) => FlowControl -> Handle -> FlowT '[ErrorCode] m ()
+ttyFlowControl :: (MonadInIO m) => FlowControl -> Handle -> Flow '[ErrorCode] m ()
 ttyFlowControl e = ioctlSignalCmd (rawIoctlCommand 0x540A) (fromEnum e)
 
 
@@ -469,7 +469,7 @@ ttyFlowControl e = ioctlSignalCmd (rawIoctlCommand 0x540A) (fromEnum e)
 -- transmitted, or data received but not read
 --
 -- TCFLSH
-ttyFlush :: (MonadInIO m) => FlushArg -> Handle -> FlowT '[ErrorCode] m ()
+ttyFlush :: (MonadInIO m) => FlushArg -> Handle -> Flow '[ErrorCode] m ()
 ttyFlush e = ioctlSignalCmd (rawIoctlCommand 0x540B) (fromEnum e)
 
 -- | Put the terminal into exclusive mode.  No further open(2) operations on the
@@ -477,19 +477,19 @@ ttyFlush e = ioctlSignalCmd (rawIoctlCommand 0x540B) (fromEnum e)
 -- with the CAP_SYS_ADMIN capability.)
 --
 -- TIOCEXCL
-ttyEnableExclusive :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m ()
+ttyEnableExclusive :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m ()
 ttyEnableExclusive = ioctlSignalCmd (rawIoctlCommand 0x540C) (0 :: Int)
 
 -- | Indicate if the terminal is currently in exclusive mode (since Linux 3.8).
 --
 -- TIOCGEXCL
-ttyIsExclusive :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Bool
+ttyIsExclusive :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Bool
 ttyIsExclusive fd = ioctlRead 0x54 0x40 fd ||> (/= (0::Int))
 
 -- | Disable exclusive mode.
 --
 -- TIOCNXCL
-ttyDisableExclusive :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m ()
+ttyDisableExclusive :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m ()
 ttyDisableExclusive = ioctlSignalCmd (rawIoctlCommand 0x540D) (0 :: Int)
 
 -- | Set controlling terminal
@@ -506,7 +506,7 @@ ttyDisableExclusive = ioctlSignalCmd (rawIoctlCommand 0x540D) (0 :: Int)
 -- 
 --
 -- TIOCSCTTY
-ttySetControllingTerminal :: (MonadInIO m) => Bool -> Handle -> FlowT '[ErrorCode] m ()
+ttySetControllingTerminal :: (MonadInIO m) => Bool -> Handle -> Flow '[ErrorCode] m ()
 ttySetControllingTerminal allowStealing = ioctlSignalCmd (rawIoctlCommand 0x540E) allowStealing
 
 
@@ -518,19 +518,19 @@ ttySetControllingTerminal allowStealing = ioctlSignalCmd (rawIoctlCommand 0x540E
 -- the current session lose their controlling terminal.
 --
 -- TIOCNOTTY
-ttyRemoveControllingTerminal :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m ()
+ttyRemoveControllingTerminal :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m ()
 ttyRemoveControllingTerminal = ioctlSignalCmd (rawIoctlCommand 0x5422) False
 
 -- | Get the process group ID of the foreground process group on this terminal.
 --
 -- TIOCGPGRP
-ttyGetForegroundProcessGroupId :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m GroupID
+ttyGetForegroundProcessGroupId :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m GroupID
 ttyGetForegroundProcessGroupId fd = ioctlReadCmd (rawIoctlCommand 0x540F) fd ||> GroupID
 
 -- | Set the foreground process group ID of this terminal.
 --
 -- TIOCSPGRP
-ttySetForegroundProcessGroupId :: (MonadInIO m) => GroupID -> Handle -> FlowT '[ErrorCode] m ()
+ttySetForegroundProcessGroupId :: (MonadInIO m) => GroupID -> Handle -> Flow '[ErrorCode] m ()
 ttySetForegroundProcessGroupId (GroupID x) = ioctlWriteCmd (rawIoctlCommand 0x5410) x
 
 -- | Get  the session ID of the given terminal.  This will fail with ENOTTY in
@@ -538,64 +538,64 @@ ttySetForegroundProcessGroupId (GroupID x) = ioctlWriteCmd (rawIoctlCommand 0x54
 -- terminal.  Strange.
 --
 -- TIOCGSID
-ttyGetSessionId :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m SessionID
+ttyGetSessionId :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m SessionID
 ttyGetSessionId fd = ioctlReadCmd (rawIoctlCommand 0x5429) fd ||> SessionID
 
 
 -- | Get the number of bytes in the input buffer
 --
 -- FIONREAD/TIOCINQ
-ttyGetInputSize :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Int
+ttyGetInputSize :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Int
 ttyGetInputSize = ioctlReadCmd (rawIoctlCommand 0x541B)
 
 -- | Get the number of bytes in the output buffer
 --
 -- TIOCOUTQ
-ttyGetOutputSize :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Int
+ttyGetOutputSize :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Int
 ttyGetOutputSize = ioctlReadCmd (rawIoctlCommand 0x5411)
 
 -- | Insert the given byte in the input queue
 --
 -- TIOCSTI
-ttyFakeInput :: (MonadInIO m) => Word8 -> Handle -> FlowT '[ErrorCode] m ()
+ttyFakeInput :: (MonadInIO m) => Word8 -> Handle -> Flow '[ErrorCode] m ()
 ttyFakeInput = ioctlWriteCmd (rawIoctlCommand 0x5412)
 
 
 -- | Get window size
 --
 -- TIOCGWINSZ
-ttyGetWindowSize :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m WindowSize
+ttyGetWindowSize :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m WindowSize
 ttyGetWindowSize = ioctlReadCmd (rawIoctlCommand 0x5413)
 
 -- | Set window size
 --
 -- TIOCSWINSZ
-ttySetWindowSize :: (MonadInIO m) => WindowSize -> Handle -> FlowT '[ErrorCode] m ()
+ttySetWindowSize :: (MonadInIO m) => WindowSize -> Handle -> Flow '[ErrorCode] m ()
 ttySetWindowSize = ioctlWriteCmd (rawIoctlCommand 0x5414)
 
 -- | Get modem bits
 --
 -- TIOCMGET
-ttyGetModemBits :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Int
+ttyGetModemBits :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Int
 ttyGetModemBits = ioctlReadCmd (rawIoctlCommand 0x5415)
 
 -- | Set modem bits
 --
 -- TIOCMSET
-ttySetModemBits :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttySetModemBits :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttySetModemBits = ioctlWriteCmd (rawIoctlCommand 0x5418)
 
 
 -- | Clear the indicated modem bits
 --
 -- TIOCMBIC
-ttyClearSomeModemBits :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttyClearSomeModemBits :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttyClearSomeModemBits = ioctlWriteCmd (rawIoctlCommand 0x5417)
 
 -- | Set the indicated modem bits
 --
 -- TIOCMBIS
-ttySetSomeModemBits :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttySetSomeModemBits :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttySetSomeModemBits = ioctlWriteCmd (rawIoctlCommand 0x5416)
 
 -- | Wait for any of the 4 modem bits (DCD, RI, DSR, CTS) to change. The bits
@@ -606,7 +606,7 @@ ttySetSomeModemBits = ioctlWriteCmd (rawIoctlCommand 0x5416)
 -- TIOCMIWAIT
 --
 -- FIXME: blocking call!
-ttyModemWait :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttyModemWait :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttyModemWait = ioctlWriteCmd (rawIoctlCommand 0x545C)
 
 
@@ -616,7 +616,7 @@ ttyModemWait = ioctlWriteCmd (rawIoctlCommand 0x545C)
 -- structure.
 --
 -- TIOCGSOFTCAR
-ttyGetSoftwareCarrierFlag :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Int
+ttyGetSoftwareCarrierFlag :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Int
 ttyGetSoftwareCarrierFlag = ioctlReadCmd (rawIoctlCommand 0x5419)
 
 -- | Set software carrier flag
@@ -625,7 +625,7 @@ ttyGetSoftwareCarrierFlag = ioctlReadCmd (rawIoctlCommand 0x5419)
 -- clear it otherwise.
 --
 -- TIOCSSOFTCAR
-ttySetSoftwareCarrierFlag :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttySetSoftwareCarrierFlag :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttySetSoftwareCarrierFlag = ioctlWriteCmd (rawIoctlCommand 0x541A)
 
 -- | Redirect console output
@@ -639,89 +639,89 @@ ttySetSoftwareCarrierFlag = ioctlWriteCmd (rawIoctlCommand 0x541A)
 -- pointing at /dev/con‐ sole or /dev/tty0.
 --
 -- TIOCCONS
-ttyRedirectConsole :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m ()
+ttyRedirectConsole :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m ()
 ttyRedirectConsole = ioctlSignalCmd (rawIoctlCommand 0x541D) False
 
 
 -- | Enable/disable packet mode
 --
 -- TIOCPKT
-ttySetPacketMode :: (MonadInIO m) => Bool -> Handle -> FlowT '[ErrorCode] m ()
+ttySetPacketMode :: (MonadInIO m) => Bool -> Handle -> Flow '[ErrorCode] m ()
 ttySetPacketMode b = ioctlWriteCmd (rawIoctlCommand 0x5420) (if b then 1 else 0 :: Int)
 
 -- | Get packet mode
 --
 -- TIOCGPKT
-ttyGetPacketMode :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Bool
+ttyGetPacketMode :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Bool
 ttyGetPacketMode fd = ioctlRead 0x54 0x38 fd ||> (/= (0 :: Int32))
 
 
 -- | Get the line discipline of the terminal
 --
 -- TIOCGETD
-ttyGetLineDiscipline :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Int
+ttyGetLineDiscipline :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Int
 ttyGetLineDiscipline = ioctlReadCmd (rawIoctlCommand 0x5424)
 
 
 -- | Set the line discipline of the terminal
 --
 -- TIOCSETD
-ttySetLineDiscipline :: (MonadInIO m) => Int -> Handle -> FlowT '[ErrorCode] m ()
+ttySetLineDiscipline :: (MonadInIO m) => Int -> Handle -> Flow '[ErrorCode] m ()
 ttySetLineDiscipline = ioctlWriteCmd (rawIoctlCommand 0x5423)
 
 -- | Get extended configuration
 --
 -- TCGETS2
-ttyGetConfigExt :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m TermConfigExt
+ttyGetConfigExt :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m TermConfigExt
 ttyGetConfigExt = ioctlRead 0x54 0x2A
 
 -- | Set extended configuration
 --
 -- TCSETS2
-ttySetConfigExt :: (MonadInIO m) => TermConfigExt -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfigExt :: (MonadInIO m) => TermConfigExt -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfigExt = ioctlWrite 0x54 0x2B
 
 -- | Set extended configuration, allow the output buffer to drain
 --
 -- TCSETSW2
-ttySetConfigDrainExt :: (MonadInIO m) => TermConfigExt -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfigDrainExt :: (MonadInIO m) => TermConfigExt -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfigDrainExt = ioctlWrite 0x54 0x2C
 
 -- | Set extended configuration, allow the output buffer to drain, discard
 -- pending input
 --
 -- TCSETSF2
-ttySetConfigFlushExt :: (MonadInIO m) => TermConfigExt -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfigFlushExt :: (MonadInIO m) => TermConfigExt -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfigFlushExt = ioctlWrite 0x54 0x2D
 
 -- | Get Pty number (of pty-mux device)
 --
 -- TIOCGPTN
-ttyGetPtyNumber :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Word32
+ttyGetPtyNumber :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Word32
 ttyGetPtyNumber = ioctlRead 0x54 0x30
 
 -- | Lock/unlock Pty
 --
 -- TIOCSPTLCK
-ttySetPtyLock :: (MonadInIO m) => Bool -> Handle -> FlowT '[ErrorCode] m ()
+ttySetPtyLock :: (MonadInIO m) => Bool -> Handle -> Flow '[ErrorCode] m ()
 ttySetPtyLock b = ioctlWrite 0x54 0x31 (if b then 1 else 0 :: Int)
 
 -- | Get Pty lock state
 --
 -- TIOCGPTLCK
-ttyGetPtyLock :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Bool
+ttyGetPtyLock :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Bool
 ttyGetPtyLock fd = ioctlRead 0x54 0x39 fd ||> (/= (0 :: Int32))
 
 -- | Get primary device node of /dev/console
 --
 -- TIOCGDEV
-ttyGetConsoleDevice :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m Word32
+ttyGetConsoleDevice :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m Word32
 ttyGetConsoleDevice = ioctlRead 0x54 0x32
 
 -- | pty: generate signal
 --
 -- TIOCSIG
-ttyGeneratePtySignal :: (MonadInIO m) => Int32 -> Handle -> FlowT '[ErrorCode] m ()
+ttyGeneratePtySignal :: (MonadInIO m) => Int32 -> Handle -> Flow '[ErrorCode] m ()
 ttyGeneratePtySignal = ioctlWrite 0x54 0x36
 
 -- | Get the locking status of the terminal attributes
@@ -730,7 +730,7 @@ ttyGeneratePtySignal = ioctlWrite 0x54 0x36
 -- indicating a locked value.
 --
 -- TIOCGLCKTRMIOS
-ttyGetConfigLock :: (MonadInIO m) => Handle -> FlowT '[ErrorCode] m TermConfig
+ttyGetConfigLock :: (MonadInIO m) => Handle -> Flow '[ErrorCode] m TermConfig
 ttyGetConfigLock = ioctlReadCmd (rawIoctlCommand 0x5456)
 
 -- | Lock/unlock terminal attributes
@@ -739,13 +739,13 @@ ttyGetConfigLock = ioctlReadCmd (rawIoctlCommand 0x5456)
 -- indicating a locked value.
 --
 -- TIOCSLCKTRMIOS
-ttySetConfigLock :: (MonadInIO m) => TermConfig -> Handle -> FlowT '[ErrorCode] m ()
+ttySetConfigLock :: (MonadInIO m) => TermConfig -> Handle -> Flow '[ErrorCode] m ()
 ttySetConfigLock = ioctlWriteCmd (rawIoctlCommand 0x5457)
 
 -- | Enable/disable non-blocking mode (disabled by default)
 --
 -- FIONBIO
-ttySetNonBlockingMode :: (MonadInIO m) => Bool -> Handle -> FlowT '[ErrorCode] m ()
+ttySetNonBlockingMode :: (MonadInIO m) => Bool -> Handle -> Flow '[ErrorCode] m ()
 ttySetNonBlockingMode b = ioctlWriteCmd (rawIoctlCommand 0x5421) (if b then 1 else 0 :: Word64)
 
 -- | Enable/disable asynchronous mode (disabled by default)
@@ -753,7 +753,7 @@ ttySetNonBlockingMode b = ioctlWriteCmd (rawIoctlCommand 0x5421) (if b then 1 el
 -- Sends SIGIO signals when I/O is possible.
 --
 -- FIOASYNC
-ttySetAsyncMode :: (MonadInIO m) => Bool -> Handle -> FlowT '[ErrorCode] m ()
+ttySetAsyncMode :: (MonadInIO m) => Bool -> Handle -> Flow '[ErrorCode] m ()
 ttySetAsyncMode b = ioctlWriteCmd (rawIoctlCommand 0x5452) (if b then 1 else 0 :: Word64)
 
 -- TODO:

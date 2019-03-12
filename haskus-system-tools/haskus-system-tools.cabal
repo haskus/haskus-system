@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: faa061018ce5cb0038570243265181b6778fb7bf622a453020451843908f226d
+-- hash: 7d4a54a14fb702cf01a399dfb625454c224565ae977cacd2d4f92b57b8163842
 
 name:           haskus-system-tools
 version:        0.8
@@ -42,6 +42,7 @@ executable haskus-disassembler
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , optparse-applicative
@@ -67,6 +68,7 @@ executable haskus-elf
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , optparse-applicative
@@ -93,6 +95,7 @@ executable haskus-gunzip
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , optparse-applicative
@@ -117,6 +120,7 @@ executable haskus-huffman
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , optparse-applicative
@@ -141,6 +145,7 @@ executable haskus-keys
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , optparse-applicative
@@ -166,6 +171,7 @@ executable haskus-system-info
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , network
@@ -191,6 +197,7 @@ executable haskus-udev
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-compat
     , haskus-utils-data
     , lucid
     , optparse-applicative

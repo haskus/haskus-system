@@ -10,7 +10,7 @@ module Haskus.System.Linux.Graphics.Event
 where
 
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Storable
 import Haskus.System.Linux.Internals.Graphics
@@ -29,7 +29,7 @@ peekEvents = go
       go _ 0 = return []
       go p r = do
          (ev,len) <- peekEvent p
-         evs <- go (p `indexPtr` fromIntegral len) (r - len)
+         evs <- go (p `plusPtr` fromIntegral len) (r - len)
          return (ev:evs)
 
       peekEvent :: Ptr () -> m (Event,Word32)
@@ -38,6 +38,6 @@ peekEvents = go
          v <- case toEventType (eventType e) of
             Just t  -> Event t <$> peek (castPtr ptr)
             Nothing -> CustomEvent (eventType e) <$>
-               bufferPackPtr (fromIntegral (eventLength e) - 8) (castPtr ptr `indexPtr` 8)
+               bufferPackPtr (fromIntegral (eventLength e) - 8) (castPtr ptr `plusPtr` 8)
                                
          return (v,eventLength e)

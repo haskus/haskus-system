@@ -23,7 +23,7 @@ import Haskus.Arch.Common.Memory
 
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
-import Haskus.Utils.Embed
+import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
 import Haskus.Format.Text (textFormat, (%), shown, string)
@@ -72,7 +72,7 @@ server conf = do
       ]
 
 css :: Response
-css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedFile "src/system-info/style.css"))
+css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedBSFile "src/system-info/style.css"))
 
 -- | Template of all pages
 appTemplate :: String -> Html -> Html

@@ -5,7 +5,7 @@ module Haskus.System.Linux.Internals.Arg
 where
 
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr (Ptr, ptrToWordPtr)
+import Foreign.Ptr (Ptr, ptrToWordPtr)
 
 
 -- | Parameters that can be directly passed to system calls

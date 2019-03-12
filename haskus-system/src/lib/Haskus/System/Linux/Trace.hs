@@ -18,7 +18,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Process (ProcessID(..))
 import Haskus.Format.Binary.BitSet
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Utils.Flow
 
 -- | Tracing request
@@ -193,6 +193,6 @@ data PeekSigInfoFlags
    
    
 -- | Trace a process
-sysTrace :: MonadIO m => TraceRequest -> ProcessID -> Ptr () -> Ptr () -> FlowT '[ErrorCode] m Int64
+sysTrace :: MonadIO m => TraceRequest -> ProcessID -> Ptr () -> Ptr () -> Flow '[ErrorCode] m Int64
 sysTrace req (ProcessID pid) addr dat =
    checkErrorCode =<< liftIO (syscall_ptrace (fromEnum req) pid addr dat)

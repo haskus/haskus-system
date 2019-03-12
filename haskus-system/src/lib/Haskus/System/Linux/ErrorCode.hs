@@ -47,11 +47,11 @@ unhdlErr str err =
    error ("Unhandled error "++ show err ++" returned by \""++str++"\". Report this as a Haskus bug.")
 
 -- | Convert negative values into error codes
-checkErrorCode :: Monad m => Int64 -> FlowT '[ErrorCode] m Int64
+checkErrorCode :: Monad m => Int64 -> Flow '[ErrorCode] m Int64
 {-# INLINE checkErrorCode #-}
-checkErrorCode r = variantToFlowT (toErrorCode r)
+checkErrorCode r = variantToFlow (toErrorCode r)
 
 -- | Convert negative values into error codes, return () otherwise
-checkErrorCode_ :: Monad m => Int64 -> FlowT '[ErrorCode] m ()
+checkErrorCode_ :: Monad m => Int64 -> Flow '[ErrorCode] m ()
 {-# INLINE checkErrorCode_ #-}
-checkErrorCode_ r = variantToFlowT (toErrorCodeVoid r)
+checkErrorCode_ r = variantToFlow (toErrorCodeVoid r)

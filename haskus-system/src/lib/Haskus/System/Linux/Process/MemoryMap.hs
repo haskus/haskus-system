@@ -17,7 +17,7 @@ import Prelude hiding (takeWhile)
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.BufferList
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr (wordPtrToPtr)
+import Foreign.Ptr (wordPtrToPtr)
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text,bufferDecodeUtf8)
 import Haskus.Utils.Flow

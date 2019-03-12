@@ -335,28 +335,28 @@ sysLogInfoShow text a = sysLogInfo (text <> ": " <> pack (show a))
 ----------------------
 
 -- | Assert a successful result, and log the error otherwise
-flowAssertQuiet :: (Show (V xs)) => Text -> FlowT xs Sys a -> Sys a
+flowAssertQuiet :: (Show (V xs)) => Text -> Flow xs Sys a -> Sys a
 flowAssertQuiet text v = do
-   r <- runFlowT v
-   case popVariantHead r of
-      Right a -> return a
-      Left xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
+   r <- runFlow v
+   case r of
+      VRight a -> return a
+      VLeft xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
       
 -- | Assert a successful result, log on error and on success
-flowAssert :: (Show a, Show (V xs)) => Text -> FlowT xs Sys a -> Sys a
+flowAssert :: (Show a, Show (V xs)) => Text -> Flow xs Sys a -> Sys a
 flowAssert text v = do
-   r <- runFlowT v
-   case popVariantHead r of
-      Right a -> do
+   r <- runFlow v
+   case  r of
+      VRight a -> do
          sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a)
          return a
-      Left xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
+      VLeft xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
      
 assertShow :: Show a => Text -> a -> Sys b
 assertShow text v = do
    let msg = textFormat (stext % " (failed with " % shown % ")") text v
    sysError msg
 
-warningShow :: Show (V xs) => Text -> FlowT xs Sys a -> Sys ()
-warningShow text f = void <| runFlowT <|
+warningShow :: Show (V xs) => Text -> Flow xs Sys a -> Sys ()
+warningShow text f = runFlow_ <|
    f `onFlowError` (\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))

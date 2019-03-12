@@ -23,7 +23,6 @@ where
 import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String
 
@@ -33,8 +32,9 @@ import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.FileSystem
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.Generics (Generic)
+import Foreign.Ptr
 
-sysCreateDirectory :: MonadInIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> FlowT '[ErrorCode] m ()
+sysCreateDirectory :: MonadInIO m => Maybe Handle -> FilePath -> FilePermissions -> Bool -> Flow '[ErrorCode] m ()
 sysCreateDirectory fd path perm sticky = do
    let
       opt        = if sticky
@@ -48,7 +48,7 @@ sysCreateDirectory fd path perm sticky = do
    withCString path call >>= checkErrorCode_
 
 
-sysRemoveDirectory :: MonadInIO m => FilePath -> FlowT '[ErrorCode] m ()
+sysRemoveDirectory :: MonadInIO m => FilePath -> Flow '[ErrorCode] m ()
 sysRemoveDirectory path = withCString path $ \path' ->
    checkErrorCode_ =<< liftIO (syscall_rmdir path')
 
@@ -112,7 +112,7 @@ instance CEnum DirectoryEntryType where
 --
 -- TODO: propose a "pgetdents64" syscall for Linux with an additional offset
 -- (like pread, pwrite)
-sysGetDirectoryEntries :: MonadInIO m => Handle -> Word -> FlowT '[ErrorCode] m [DirectoryEntry]
+sysGetDirectoryEntries :: MonadInIO m => Handle -> Word -> Flow '[ErrorCode] m [DirectoryEntry]
 sysGetDirectoryEntries (Handle fd) buffersize = do
 
    let
@@ -123,8 +123,8 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
                let 
                   len     = fromIntegral (dirLength hdr)
                   sizede  = sizeOfT @DirectoryEntryHeader
-                  namepos = p `indexPtr'` sizede
-                  nextpos = p `indexPtr'` len
+                  namepos = p `plusPtr` fromIntegral sizede
+                  nextpos = p `plusPtr` fromIntegral len
                   nextlen = n - len
                name <- peekCString (castPtr namepos)
                let x = DirectoryEntry (dirInod hdr) (toCEnum (dirFileTyp hdr)) name
@@ -142,7 +142,7 @@ sysGetDirectoryEntries (Handle fd) buffersize = do
 --
 -- Warning: reading concurrently the same file descriptor returns mixed up
 -- results because of the stateful kernel interface
-listDirectory :: MonadInIO m => Handle -> FlowT '[ErrorCode] m [DirectoryEntry]
+listDirectory :: MonadInIO m => Handle -> Flow '[ErrorCode] m [DirectoryEntry]
 listDirectory fd = do
       -- Return at the beginning of the directory
       sysSeek' fd 0 SeekSet

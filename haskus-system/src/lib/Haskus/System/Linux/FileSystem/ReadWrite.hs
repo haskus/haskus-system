@@ -29,7 +29,8 @@ module Haskus.System.Linux.FileSystem.ReadWrite
    )
 where
 
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
+import Foreign.Marshal.Alloc (mallocBytes,free)
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Word (Word64, Word32)
 import Haskus.Format.Binary.Bits (shiftR)
@@ -54,7 +55,7 @@ type ReadErrors
 
 -- | Read cound bytes from the given file descriptor and put them in "buf"
 -- Returns the number of bytes read or 0 if end of file
-sysRead :: MonadIO m => Handle -> Ptr () -> Word64 -> FlowT ReadErrors m Word64
+sysRead :: MonadIO m => Handle -> Ptr () -> Word64 -> Flow ReadErrors m Word64
 sysRead (Handle fd) ptr count = do
    n <- (checkErrorCode =<< liftIO (syscall_read fd ptr count))
          `catchLiftLeft` \case
@@ -84,7 +85,7 @@ type ReadErrors'
       ]
 
 -- | Read a file descriptor at a given position
-sysReadWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> FlowT ReadErrors' m Word64
+sysReadWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow ReadErrors' m Word64
 sysReadWithOffset (Handle fd) offset ptr count = do
    n <- (checkErrorCode =<< liftIO (syscall_pread64 fd ptr count offset))
          `catchLiftLeft` \case
@@ -106,23 +107,23 @@ sysReadWithOffset (Handle fd) offset ptr count = do
 -- | Read "count" bytes from a handle (starting at optional "offset") and put
 -- them at "ptr" (allocated memory should be large enough).  Returns the number
 -- of bytes read or 0 if end of file
-handleRead :: MonadIO m => Handle -> Maybe Word64 -> Ptr () -> Word64 -> FlowT ReadErrors' m Word64
-handleRead hdl Nothing ptr sz       = liftFlowT <| sysRead hdl ptr sz
+handleRead :: MonadIO m => Handle -> Maybe Word64 -> Ptr () -> Word64 -> Flow ReadErrors' m Word64
+handleRead hdl Nothing ptr sz       = liftFlow <| sysRead hdl ptr sz
 handleRead hdl (Just offset) ptr sz = sysReadWithOffset hdl offset ptr sz
 
 -- | Read n bytes in a buffer
-handleReadBuffer :: MonadIO m => Handle -> Maybe Word64 -> Word64 -> FlowT ReadErrors' m Buffer
+handleReadBuffer :: MonadIO m => Handle -> Maybe Word64 -> Word64 -> Flow ReadErrors' m Buffer
 handleReadBuffer hdl offset size = do
-   b <- mallocBytes (fromIntegral size)
+   b <- liftIO <| mallocBytes (fromIntegral size)
    sz <- handleRead hdl offset b (fromIntegral size)
          -- free the pointer on error
-         `onFlowError_` free b
+         `onFlowError_` liftIO (free b)
    -- otherwise return the buffer
    bufferUnsafePackPtr (fromIntegral sz) (castPtr b)
 
 
 -- | Like read but uses several buffers
-sysReadMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> FlowT '[ErrorCode] m Word64
+sysReadMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> Flow '[ErrorCode] m Word64
 sysReadMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -133,7 +134,7 @@ sysReadMany (Handle fd) bufs =
       return (fromIntegral n)
 
 -- | Like readMany, with additional offset in file
-sysReadManyWithOffset :: MonadInIO m => Handle -> Word64 -> [(Ptr a, Word64)] -> FlowT '[ErrorCode] m Word64
+sysReadManyWithOffset :: MonadInIO m => Handle -> Word64 -> [(Ptr a, Word64)] -> Flow '[ErrorCode] m Word64
 sysReadManyWithOffset (Handle fd) offset bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -148,20 +149,20 @@ sysReadManyWithOffset (Handle fd) offset bufs =
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
-sysWrite :: MonadIO m => Handle -> Ptr a -> Word64 -> FlowT '[ErrorCode] m Word64
+sysWrite :: MonadIO m => Handle -> Ptr a -> Word64 -> Flow '[ErrorCode] m Word64
 sysWrite (Handle fd) buf count = do
    n <- checkErrorCode =<< liftIO (syscall_write fd (castPtr buf) count)
    return (fromIntegral n)
 
 -- | Write a file descriptor at a given position
-sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> FlowT '[ErrorCode] m Word64
+sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Flow '[ErrorCode] m Word64
 sysWriteWithOffset (Handle fd) offset buf count = do
    n <- checkErrorCode =<< liftIO (syscall_pwrite64 fd buf count offset)
    return (fromIntegral n)
 
 
 -- | Like write but uses several buffers
-sysWriteMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> FlowT '[ErrorCode] m Word64
+sysWriteMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> Flow '[ErrorCode] m Word64
 sysWriteMany (Handle fd) bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -172,7 +173,7 @@ sysWriteMany (Handle fd) bufs =
       return (fromIntegral n)
 
 -- | Like writeMany, with additional offset in file
-sysWriteManyWithOffset :: MonadInIO m => Handle -> Word64 -> [(Ptr a, Word64)] -> FlowT '[ErrorCode] m Word64
+sysWriteManyWithOffset :: MonadInIO m => Handle -> Word64 -> [(Ptr a, Word64)] -> Flow '[ErrorCode] m Word64
 sysWriteManyWithOffset (Handle fd) offset bufs =
    let
       toVec (p,s) = IOVec (castPtr p) s
@@ -186,11 +187,11 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       return (fromIntegral n)
 
 -- | Write a buffer
-writeBuffer :: MonadInIO m => Handle -> Buffer -> FlowT '[ErrorCode] m ()
+writeBuffer :: MonadInIO m => Handle -> Buffer -> Flow '[ErrorCode] m ()
 writeBuffer fd bs = bufferUnsafeUsePtr bs go
    where
       go _ 0     = return ()
       go ptr len = do
          c <- sysWrite fd ptr (fromIntegral len)
          -- if we are interrupted, continue with the remaining bytes to write
-         go (ptr `indexPtr` fromIntegral c) (len - fromIntegral c)
+         go (ptr `plusPtr` fromIntegral c) (len - fromIntegral c)

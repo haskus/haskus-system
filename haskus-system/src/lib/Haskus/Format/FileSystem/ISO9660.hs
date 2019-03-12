@@ -39,11 +39,11 @@ import Haskus.Format.Binary.Vector
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Endianness
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String
 import Haskus.Utils.Types
 import Haskus.Utils.Types.Generics (Generic)
+import Foreign.Ptr
 
 -- | String with characters: A-Z 0-9 _ * " % & ' ( ) * + , - . / : ; < = > ?
 newtype StringA (n :: Nat) = StringA (CStringBuffer n) deriving (Show,Generic,Storable)

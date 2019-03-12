@@ -8,7 +8,7 @@ module Haskus.System.Posix.Malloc
    )
 where
 
-import Haskus.Format.Binary.Ptr (Ptr, nullPtr)
+import Foreign.Ptr (Ptr, nullPtr)
 import Haskus.Format.Binary.Word
 
 

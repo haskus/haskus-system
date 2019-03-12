@@ -30,7 +30,7 @@ import Haskus.Format.Binary.BitSet (CBitSet(..), BitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (textFormat,shown,(%))
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
 import Haskus.Utils.List (isPrefixOf)
@@ -94,7 +94,7 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
    forMaybeM devs' <| \(devpath,dev) -> do
       readDevInfo devpath dev
          ||> Just
-         |> evalCatchFlowT (const (return Nothing))
+         |> evalCatchFlow (const (return Nothing))
 
 
 -- | Create a new thread reading input events and putting them in a TChan
@@ -105,7 +105,7 @@ newEventWaiterThread h = do
 
    ch <- newBroadcastTChanIO
    sysFork "Graphics event reader" <|
-      allocaBytes bufsz <| \ptr -> forever <| runFlowT <| do
+      allocaBytes bufsz <| \ptr -> forever <| runFlow <| do
          threadWaitRead h
          sz2 <- sysRead h ptr (fromIntegral bufsz)
          -- FIXME: we should somehow signal that an error occured and

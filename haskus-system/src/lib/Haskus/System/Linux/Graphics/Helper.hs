@@ -27,7 +27,7 @@ data FrameSourceAction
 --
 -- A connected frame source is required to set a mode: if ReuseSource is passed, the
 -- connected one is used.
-setController :: MonadInIO m => Controller -> FrameSourceAction -> [Connector] -> Maybe Mode -> FlowT '[ErrorCode] m ()
+setController :: MonadInIO m => Controller -> FrameSourceAction -> [Connector] -> Maybe Mode -> Flow '[ErrorCode] m ()
 setController ctrl frameSourceAction conns mode = do
    let 
       mframe = case frameSourceAction of
@@ -39,6 +39,6 @@ setController ctrl frameSourceAction conns mode = do
 
 -- | Switch to another frame source for the given controller without doing a
 -- full mode change
-switchFrameSource :: MonadInIO m => Controller -> FrameSource -> PageFlipFlags -> Word64 -> FlowT '[ErrorCode] m ()
+switchFrameSource :: MonadInIO m => Controller -> FrameSource -> PageFlipFlags -> Word64 -> Flow '[ErrorCode] m ()
 switchFrameSource ctrl fs flags udata =
    switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (frameID fs) flags udata

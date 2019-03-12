@@ -18,7 +18,7 @@ where
 import Haskus.Format.Binary.BitField
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr (castPtr)
+import Foreign.Ptr (castPtr)
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String
 import Haskus.System.Linux.Internals.Graphics

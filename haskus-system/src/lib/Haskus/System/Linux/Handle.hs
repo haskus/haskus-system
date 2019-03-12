@@ -28,13 +28,13 @@ import Haskus.Format.Binary.Enum
 import Haskus.Utils.Flow
 
 -- | Fcntl syscall
-sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> FlowT '[ErrorCode] m Int64
+sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> Flow '[ErrorCode] m Int64
 sysFcntl (Handle fd) cmd arg =
    checkErrorCode =<< liftIO (syscall_fcntl fd (fromCEnum cmd) (toArg arg))
 
 
 -- | Get descriptor flags
-getHandleFlags :: MonadIO m => Handle -> FlowT '[InvalidHandle] m HandleFlags
+getHandleFlags :: MonadIO m => Handle -> Flow '[InvalidHandle] m HandleFlags
 getHandleFlags hdl = do
    r <- sysFcntl hdl FcntlGetFlags (0 :: Int)
          `catchLiftBoth` \case
@@ -43,7 +43,7 @@ getHandleFlags hdl = do
    return (BitSet.fromBits (fromIntegral r))
 
 -- | Set descriptor flags
-setHandleFlags :: MonadIO m => Handle -> HandleFlags -> FlowT '[InvalidHandle] m ()
+setHandleFlags :: MonadIO m => Handle -> HandleFlags -> Flow '[InvalidHandle] m ()
 setHandleFlags hdl flgs =
    void (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
       `catchLiftBoth` \case

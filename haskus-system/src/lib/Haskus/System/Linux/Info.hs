@@ -13,7 +13,7 @@ where
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
 import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.String
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow
@@ -28,7 +28,7 @@ data SystemInfo = SystemInfo
    } deriving (Show,Generic,Storable)
 
 -- | "uname" syscall
-systemInfo :: MonadInIO m => FlowT '[ErrorCode] m SystemInfo
+systemInfo :: MonadInIO m => Flow '[ErrorCode] m SystemInfo
 systemInfo = alloca $ \(ptr :: Ptr SystemInfo) -> do
    checkErrorCode_ =<< liftIO (syscall_uname (castPtr ptr))
    peek ptr

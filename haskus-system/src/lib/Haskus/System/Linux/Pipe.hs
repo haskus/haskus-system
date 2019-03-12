@@ -11,12 +11,12 @@ where
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
 
 -- | Create a pipe
-createPipe :: MonadInIO m => FlowT '[ErrorCode] m (Handle, Handle)
+createPipe :: MonadInIO m => Flow '[ErrorCode] m (Handle, Handle)
 createPipe =
    allocaArray 2 $ \(ptr :: Ptr Word) -> do
       checkErrorCode_ =<< liftIO (syscall_pipe (castPtr ptr))

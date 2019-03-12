@@ -18,7 +18,7 @@ import Haskus.Utils.Flow
 import Haskus.Utils.STM
 import Haskus.System.Sys
 import Haskus.System.Process
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 
 -- | Create a new thread reading events and putting them in a TChan
@@ -29,7 +29,7 @@ newEventReader h = do
       nb  = 50 -- number of events read at once
 
    ch <- newBroadcastTChanIO
-   sysFork "Event reader" <| allocaArray nb <| \ptr -> forever <| runFlowT <| do
+   sysFork "Event reader" <| allocaArray nb <| \ptr -> forever <| runFlow <| do
       threadWaitRead h
       sz2 <- sysRead h (castPtr ptr) (fromIntegral sz * fromIntegral nb)
       -- FIXME: we should somehow signal if an error occured

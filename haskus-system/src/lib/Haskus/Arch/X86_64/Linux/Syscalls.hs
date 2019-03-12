@@ -7,7 +7,7 @@ module Haskus.Arch.X86_64.Linux.Syscalls where
 import Haskus.Arch.X86_64.Linux.Syscall
 import Haskus.Format.Binary.Word
 import Haskus.Format.String (CString)
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Arch.X86_64.Linux.SyscallTable
 
 type FD = Word -- file descriptor alias

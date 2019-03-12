@@ -29,16 +29,18 @@ import Haskus.System.Linux.Terminal (stdin,stdout)
 import Haskus.System.Linux.FileSystem.ReadWrite hiding (writeBuffer)
 import Haskus.Utils.STM.TList as TList
 import Haskus.Utils.STM.Future
-import Haskus.Utils.Memory
+import Haskus.Memory.Utils
 import Haskus.Utils.Flow
 import Haskus.Utils.STM
 import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Text
 import Haskus.Format.String (withCStringLen)
+
+import Foreign.Ptr
+import Foreign.Marshal.Alloc(mallocBytes)
 
 -- | Terminal (input and output, no error output)
 data Terminal = Terminal
@@ -53,8 +55,8 @@ defaultTerminal = do
    let flgs = BitSet.fromList [ HandleNonBlocking
                               , HandleCloseOnExec
                               ]
-   runFlowT_ <| setHandleFlags stdin  flgs
-   runFlowT_ <| setHandleFlags stdout flgs
+   runFlow_ <| setHandleFlags stdin  flgs
+   runFlow_ <| setHandleFlags stdout flgs
 
    -- TODO: set terminal buffering mode?
 
@@ -129,7 +131,7 @@ inputThread s = forever $ do
                      then setFuture () semsrc
                      -- we update the remaining number of bytes to read
                      else do
-                        let buf' = IOBuffer (ptr `indexPtr` fromIntegral size')
+                        let buf' = IOBuffer (ptr `plusPtr` fromIntegral size')
                                             (size-size')
                         TList.append_ (buf',semsrc) (inputRequests s)
             return (after,size,ptr)
@@ -139,7 +141,7 @@ inputThread s = forever $ do
             b <- takeTMVar (ringBuffer s)
             let
                size = ringBufferSize b - ringBufferStop b
-               ptr  = ringBufferPtr b `indexPtr` fromIntegral (ringBufferStop b)
+               ptr  = ringBufferPtr b `plusPtr` fromIntegral (ringBufferStop b)
                after size' = do
                   let
                      b' = b { ringBufferStop = ringBufferStop b + size' }
@@ -178,7 +180,7 @@ readFromHandle s sz ptr = do
                               }
                      else b { ringBufferStart = start' }
          after  = putTMVar (ringBuffer s) b'
-      return (after, size', ringBufferPtr b `indexPtr` fromIntegral (ringBufferStart b))
+      return (after, size', ringBufferPtr b `plusPtr` fromIntegral (ringBufferStart b))
 
    when (bsz /= 0) $
       memCopy ptr bptr (fromIntegral bsz)
@@ -193,7 +195,7 @@ readFromHandle s sz ptr = do
          then setFuture () semsrc
          else do
             -- if we haven't read everything, register
-            let b = IOBuffer (ptr `indexPtr` fromIntegral bsz) (sz - bsz)
+            let b = IOBuffer (ptr `plusPtr` fromIntegral bsz) (sz - bsz)
             TList.prepend_ (b,semsrc) (inputRequests s)
       return sem
 
@@ -202,7 +204,7 @@ readFromHandle s sz ptr = do
 -- | New buffered input with given buffer size
 newInputState :: MonadIO m => Word64 -> Handle -> m InputState
 newInputState size fd = do
-   ptr <- mallocBytes (fromIntegral size)
+   ptr <- liftIO (mallocBytes (fromIntegral size))
    req <- atomically TList.empty
    mv  <- newTMVarIO (RingBuffer ptr size 0 0)
    return $ InputState req mv fd
@@ -214,7 +216,7 @@ outputThread s = go [] 0 0
       h = outputHandle s
 
       -- writeMany handling EAGAIN
-      wrt :: [(Ptr a, Word64)] -> FlowT '[ErrorCode] Sys Word64
+      wrt :: [(Ptr a, Word64)] -> Flow '[ErrorCode] Sys Word64
       wrt ps = sysWriteMany h ps
                   `catchLiftLeft` \case
                      -- TODO: we should retry without having to rebuild the
@@ -245,13 +247,13 @@ outputThread s = go [] 0 0
             -- uses the offset "off", the others are fully considered.
             ps = case fmap fst bs of
                []                   -> []
-               (IOBuffer p sz : xs) -> (p `indexPtr` fromIntegral off, sz - fromIntegral off) : fmap f xs
+               (IOBuffer p sz : xs) -> (p `plusPtr` fromIntegral off, sz - fromIntegral off) : fmap f xs
                   where
                      f (IOBuffer ptr siz) = (ptr,siz)
 
          -- write the buffers
          size <- wrt ps
-                  |> evalCatchFlowT (assertShow (textFormat ("Write bytes to " % shown) h))
+                  |> evalCatchFlow (assertShow (textFormat ("Write bytes to " % shown) h))
 
          let
             sig xs nb 0 = go xs nb 0

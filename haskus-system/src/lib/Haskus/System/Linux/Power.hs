@@ -23,11 +23,11 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.ErrorCode
 import Haskus.Format.Binary.Word (Word64)
 import Haskus.Format.String (withCString)
-import Haskus.Format.Binary.Ptr (nullPtr)
+import Foreign.Ptr (nullPtr)
 import Haskus.Utils.Flow
 
 -- | reboot syscall
-sysPower :: MonadInIO m => PowerCommand -> FlowT '[ErrorCode] m ()
+sysPower :: MonadInIO m => PowerCommand -> Flow '[ErrorCode] m ()
 sysPower cmd = case cmd of
       PowerRestartCommand cmdPath -> withCString cmdPath f
       _                           -> f nullPtr
@@ -39,49 +39,49 @@ sysPower cmd = case cmd of
 
 
 -- | Ctrl-Alt-Del sequence sends SIGINT to init task.
-disableRebootKeys :: MonadInIO m => FlowT '[NotAllowed] m ()
+disableRebootKeys :: MonadInIO m => Flow '[NotAllowed] m ()
 disableRebootKeys = sysPower PowerDisableRebootKeys
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed
       e     -> unhdlErr "disableRebootKeys" e
 
 -- | Ctrl-Alt-Del sequence causes RESTART command.
-enableRebootKeys :: MonadInIO m => FlowT '[NotAllowed] m ()
+enableRebootKeys :: MonadInIO m => Flow '[NotAllowed] m ()
 enableRebootKeys = sysPower PowerEnableRebootKeys
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed
       e     -> unhdlErr "enableRebootKeys" e
 
 -- | Stop OS and give system control to ROM monitor, if any.
-halt :: MonadInIO m => FlowT '[NotAllowed] m ()
+halt :: MonadInIO m => Flow '[NotAllowed] m ()
 halt = sysPower PowerHalt
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed
       e     -> unhdlErr "halt" e
 
 -- | Restart system using a previously loaded Linux kernel
-executeLoadedKernel :: MonadInIO m => FlowT '[NotAllowed] m ()
+executeLoadedKernel :: MonadInIO m => Flow '[NotAllowed] m ()
 executeLoadedKernel = sysPower PowerKernelExec
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed
       e     -> unhdlErr "executeLoadedKernel" e
 
 -- | Stop OS and remove all power from system, if possible.
-powerOff :: MonadInIO m => FlowT '[NotAllowed] m ()
+powerOff :: MonadInIO m => Flow '[NotAllowed] m ()
 powerOff = sysPower PowerOff
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed
       e     -> unhdlErr "powerOff" e
 
 -- | Restart system using default command and mode.
-restart :: MonadInIO m => FlowT '[NotAllowed] m ()
+restart :: MonadInIO m => Flow '[NotAllowed] m ()
 restart = sysPower PowerRestart
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed
       e     -> unhdlErr "restart" e
 
 -- | Restart system using given command string.
-restartWithCommand :: MonadInIO m => String -> FlowT '[NotAllowed,MemoryError,InvalidRestartCommand] m ()
+restartWithCommand :: MonadInIO m => String -> Flow '[NotAllowed,MemoryError,InvalidRestartCommand] m ()
 restartWithCommand cmd = sysPower (PowerRestartCommand cmd)
    `catchLiftLeft` \case
       EPERM  -> throwE NotAllowed
@@ -90,7 +90,7 @@ restartWithCommand cmd = sysPower (PowerRestartCommand cmd)
       e      -> unhdlErr "restartWithCommand" e
 
 -- | Suspend system using software suspend if compiled in.
-softSuspend :: MonadInIO m => FlowT '[NotAllowed] m ()
+softSuspend :: MonadInIO m => Flow '[NotAllowed] m ()
 softSuspend = sysPower PowerSoftSuspend
    `catchLiftBoth` \case
       EPERM -> failure NotAllowed

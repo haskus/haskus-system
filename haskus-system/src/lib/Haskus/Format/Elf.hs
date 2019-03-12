@@ -60,7 +60,7 @@ import Control.Arrow (second)
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text)
 import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Get
 import qualified Haskus.Format.Binary.BitSet as BitSet

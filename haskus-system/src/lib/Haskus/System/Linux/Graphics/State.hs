@@ -56,10 +56,9 @@ import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Error
 import Haskus.System.Linux.Handle
-import Haskus.Utils.Memory (peekArrays,allocaArrays,withArrays)
+import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Enum
@@ -68,6 +67,7 @@ import Haskus.Format.Binary.FixedPoint
 import Control.Monad (liftM2)
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Foreign.Ptr
 
 
 -- | Graph of graphics entities
@@ -94,7 +94,7 @@ data Resources = Resources
 
 
 -- | Get the current graphics state from the kernel
-readGraphicsState :: MonadInIO m => Handle -> FlowT '[InvalidHandle] m GraphicsState
+readGraphicsState :: MonadInIO m => Handle -> Flow '[InvalidHandle] m GraphicsState
 readGraphicsState hdl = go 5
    where
       go n = do
@@ -102,16 +102,16 @@ readGraphicsState hdl = go 5
          res <- getResources hdl
          let fbs = resFrameSourceIDs res
          -- read connectors, encoders and controllers
-         mconns <- runFlowT <| traverse (getConnectorFromID hdl) (resConnectorIDs res)
-         mencs  <- runFlowT <| traverse (getEncoderFromID hdl res) (resEncoderIDs res)
-         mctrls <- runFlowT <| traverse (getControllerFromID hdl) (resControllerIDs res)
+         mconns <- runFlow <| traverse (getConnectorFromID hdl) (resConnectorIDs res)
+         mencs  <- runFlow <| traverse (getEncoderFromID hdl res) (resEncoderIDs res)
+         mctrls <- runFlow <| traverse (getControllerFromID hdl) (resControllerIDs res)
          -- read planes
-         mplanes <- runFlowT <| (traverse (getPlane hdl) =<< liftFlowT (getPlaneResources hdl))
+         mplanes <- runFlow <| (traverse (getPlane hdl) =<< liftFlow (getPlaneResources hdl))
                                  -- shouldn't happen, planes are invariant
                                  `catchDie` (\(InvalidPlane _)  -> error "Invalid plane" )
 
-         case (fromVariantHead mconns, fromVariantHead mencs, fromVariantHead mctrls, fromVariantHead mplanes) of
-            (Just conns, Just encs, Just ctrls, Just planes) ->
+         case (mconns, mencs, mctrls, mplanes) of
+            (VRight conns, VRight encs, VRight ctrls, VRight planes) ->
                return (buildGraphicsState conns encs ctrls planes fbs)
             -- on failure we restart the process
             -- (we check that we don't loop indefinitely)
@@ -143,7 +143,7 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
          hdl
 
 -- | Get an encoder from its ID
-getEncoderFromID :: MonadInIO m => Handle -> Resources -> EncoderID -> FlowT '[EntryNotFound,InvalidHandle] m Encoder
+getEncoderFromID :: MonadInIO m => Handle -> Resources -> EncoderID -> Flow '[EntryNotFound,InvalidHandle] m Encoder
 getEncoderFromID hdl res encId =
    (ioctlGetEncoder enc hdl ||> fromStructGetEncoder res hdl)
       `catchLiftLeft` \case
@@ -155,9 +155,9 @@ getEncoderFromID hdl res encId =
                0 BitSet.empty BitSet.empty
 
 -- | Get encoders (discard errors)
-getEncoders :: MonadInIO m => Handle -> FlowT '[EntryNotFound,InvalidHandle] m [Encoder]
+getEncoders :: MonadInIO m => Handle -> Flow '[EntryNotFound,InvalidHandle] m [Encoder]
 getEncoders hdl = do
-   res <- liftFlowT <| getResources hdl
+   res <- liftFlow <| getResources hdl
    traverse (getEncoderFromID hdl res) (resEncoderIDs res)
 
 emptyStructController :: StructController
@@ -178,7 +178,7 @@ fromStructController hdl StructController{..} =
 
       
 -- | Get Controller
-getControllerFromID :: MonadInIO m => Handle -> ControllerID -> FlowT '[EntryNotFound,InvalidHandle] m Controller
+getControllerFromID :: MonadInIO m => Handle -> ControllerID -> Flow '[EntryNotFound,InvalidHandle] m Controller
 getControllerFromID hdl eid =
    (ioctlGetController crtc hdl ||> fromStructController hdl)
       `catchLiftLeft` \case
@@ -189,7 +189,7 @@ getControllerFromID hdl eid =
       crtc = emptyStructController { contID = unEntityID eid }
 
 
-setController' :: MonadInIO m => Handle -> ControllerID -> Maybe Frame -> [ConnectorID] -> Maybe Mode -> FlowT '[ErrorCode] m ()
+setController' :: MonadInIO m => Handle -> ControllerID -> Maybe Frame -> [ConnectorID] -> Maybe Mode -> Flow '[ErrorCode] m ()
 setController' hdl eid fb conns mode = do
    let
       conns' = fmap unEntityID conns
@@ -222,7 +222,7 @@ setController' hdl eid fb conns mode = do
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: MonadInIO m => Handle -> ControllerID -> FrameSourceID -> PageFlipFlags -> Word64 -> FlowT '[ErrorCode] m ()
+switchFrameBuffer' :: MonadInIO m => Handle -> ControllerID -> FrameSourceID -> PageFlipFlags -> Word64 -> Flow '[ErrorCode] m ()
 switchFrameBuffer' hdl cid fsid flags udata = do
    let
       s = StructPageFlip (unEntityID cid) (unEntityID fsid) flags 0 udata
@@ -230,13 +230,13 @@ switchFrameBuffer' hdl cid fsid flags udata = do
    void <| ioctlPageFlip s hdl
 
 -- | Get controllers
-getControllers :: MonadInIO m => Handle -> FlowT '[EntryNotFound,InvalidHandle] m [Controller]
+getControllers :: MonadInIO m => Handle -> Flow '[EntryNotFound,InvalidHandle] m [Controller]
 getControllers hdl = do
-   res <- liftFlowT <| getResources hdl
+   res <- liftFlow <| getResources hdl
    traverse (getControllerFromID hdl) (resControllerIDs res)
 
 -- | Get controller gama look-up table
-getControllerGamma :: MonadInIO m => Controller -> FlowT '[ErrorCode] m ([Word16],[Word16],[Word16])
+getControllerGamma :: MonadInIO m => Controller -> Flow '[ErrorCode] m ([Word16],[Word16],[Word16])
 getControllerGamma c = do
    let 
       hdl = controllerHandle c
@@ -250,7 +250,7 @@ getControllerGamma c = do
       return (rs,gs,bs)
 
 -- | Set controller gama look-up table
-setControllerGamma :: MonadInIO m => Controller -> ([Word16],[Word16],[Word16]) -> FlowT '[ErrorCode] m ()
+setControllerGamma :: MonadInIO m => Controller -> ([Word16],[Word16],[Word16]) -> Flow '[ErrorCode] m ()
 setControllerGamma c (rs,gs,bs) = do
    let 
       hdl = controllerHandle c
@@ -263,7 +263,7 @@ setControllerGamma c (rs,gs,bs) = do
       let f = fromIntegral . ptrToWordPtr
       ioctlSetGamma (s (f r) (f g) (f b)) hdl
 
-getConnector' :: MonadInIO m => Handle -> StructGetConnector -> FlowT '[EntryNotFound,InvalidParam] m StructGetConnector
+getConnector' :: MonadInIO m => Handle -> StructGetConnector -> Flow '[EntryNotFound,InvalidParam] m StructGetConnector
 getConnector' hdl r =
    ioctlGetConnector r hdl
       `catchLiftLeft` \case
@@ -272,16 +272,16 @@ getConnector' hdl r =
          e      -> unhdlErr "getConnector" e
 
 -- | Get connector
-getConnectorFromID :: forall m. MonadInIO m => Handle -> ConnectorID -> FlowT '[InvalidParam,EntryNotFound,InvalidProperty] m Connector
-getConnectorFromID hdl eid = liftFlowT (getConnector' hdl res) >>= getValues
+getConnectorFromID :: forall m. MonadInIO m => Handle -> ConnectorID -> Flow '[InvalidParam,EntryNotFound,InvalidProperty] m Connector
+getConnectorFromID hdl eid = liftFlow (getConnector' hdl res) >>= getValues
    where
       res = StructGetConnector 0 0 0 0 0 0 0 0 (unEntityID eid)
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
                (toEnumField SubPixelNone)
 
-      getValues :: StructGetConnector -> FlowT '[InvalidParam,EntryNotFound,InvalidProperty] m Connector
+      getValues :: StructGetConnector -> Flow '[InvalidParam,EntryNotFound,InvalidProperty] m Connector
       getValues res2 = do
-            (rawRes,conn) <- liftFlowT (rawGet hdl res2)
+            (rawRes,conn) <- liftFlow (rawGet hdl res2)
             -- we need to check that the number of resources is still the same (as
             -- resources may have appeared between the time we get the number of
             -- resources and the time we get them...)
@@ -292,7 +292,7 @@ getConnectorFromID hdl eid = liftFlowT (getConnector' hdl res) >>= getValues
                then getConnectorFromID hdl eid
                else return conn
 
-rawGet :: MonadInIO m => Handle -> StructGetConnector -> FlowT '[InvalidParam,InvalidProperty,EntryNotFound] m (StructGetConnector,Connector)
+rawGet :: MonadInIO m => Handle -> StructGetConnector -> Flow '[InvalidParam,InvalidProperty,EntryNotFound] m (StructGetConnector,Connector)
 rawGet hdl res2 = do
 
    let
@@ -312,11 +312,11 @@ rawGet hdl res2 = do
                               , connPropValuesPtr = cv pvs
                               }
 
-               res4 <- liftFlowT <| getConnector' hdl res3 
-               (res4,) <|| liftFlowT <| parseRes hdl res2 res4
+               res4 <- liftFlow <| getConnector' hdl res3 
+               (res4,) <|| liftFlow <| parseRes hdl res2 res4
 
 
-parseRes :: MonadInIO m => Handle -> StructGetConnector -> StructGetConnector -> FlowT '[InvalidParam,InvalidProperty] m Connector
+parseRes :: MonadInIO m => Handle -> StructGetConnector -> StructGetConnector -> Flow '[InvalidParam,InvalidProperty] m Connector
 parseRes hdl res2 res4 = do
    let
       cv = wordPtrToPtr . fromIntegral
@@ -363,10 +363,10 @@ parseRes hdl res2 res4 = do
 
 
 -- | Get graphic card resources
-getResources :: forall m. MonadInIO m => Handle -> FlowT '[InvalidHandle] m Resources
+getResources :: forall m. MonadInIO m => Handle -> Flow '[InvalidHandle] m Resources
 getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
-      getRes :: StructCardRes -> FlowT '[InvalidHandle] m StructCardRes
+      getRes :: StructCardRes -> Flow '[InvalidHandle] m StructCardRes
       getRes r = ioctlGetResources r hdl
                   `catchLiftLeft` \case
                      EINVAL -> throwE InvalidHandle
@@ -374,7 +374,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
-      getValues :: [Word32] -> FlowT '[InvalidHandle] m Resources
+      getValues :: [Word32] -> Flow '[InvalidHandle] m Resources
       getValues arraySizes = liftWith (allocaArrays arraySizes) $ 
          \([fs,crs,cs,es] :: [Ptr Word32]) -> do
             let 
@@ -401,11 +401,11 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
             -- and the time we get them...) If not, we redo the whole
             -- process
             if all (uncurry (>)) (arraySizes `zip` extractSize r)
-               then liftFlowT <| extractValues r
+               then liftFlow <| extractValues r
                else getValues (extractSize r)
 
 
-      extractValues :: StructCardRes -> FlowT '[] m Resources
+      extractValues :: StructCardRes -> Flow '[] m Resources
       extractValues r = do
          let 
             as  = [csFbIdPtr, csCrtcIdPtr, csConnIdPtr, csEncIdPtr] <*> [r]
@@ -426,7 +426,7 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 -- | Internal function to retreive card entities from their identifiers
 getEntities :: MonadInIO m => (Resources -> [a]) -> (Handle -> a -> m (Either x b)) -> Handle -> m [b]
 getEntities getIDs getEntityFromID hdl = do
-   res <- variantToValue <|| runFlowT <|
+   res <- evalFlow <|
             (getResources hdl `catchDie` (\InvalidHandle -> error "getEntities: invalid handle"))
    let 
       f (Left _)  xs = xs
@@ -461,20 +461,20 @@ pickEncoders res = pickResources (resEncoderIDs res)
 data InvalidPlane = InvalidPlane PlaneID deriving (Show)
 
 -- | Get the IDs of the supported planes
-getPlaneResources :: forall m. MonadInIO m => Handle -> FlowT '[InvalidHandle] m [PlaneID]
+getPlaneResources :: forall m. MonadInIO m => Handle -> Flow '[InvalidHandle] m [PlaneID]
 getPlaneResources hdl = getCount >>= getIDs
    where
       gpr s = ioctlGetPlaneResources s hdl
 
       -- get the number of planes (invariant for a given device)
-      getCount :: FlowT '[InvalidHandle] m Word32
+      getCount :: Flow '[InvalidHandle] m Word32
       getCount = (gpr (StructGetPlaneRes 0 0) ||> gprsCountPlanes)
                   `catchLiftLeft` \case
                      EINVAL -> throwE InvalidHandle
                      e      -> unhdlErr "getPlaneResources" e
    
       -- get the plane IDs (invariant for a given device)
-      getIDs :: Word32 -> FlowT '[InvalidHandle] m [PlaneID]
+      getIDs :: Word32 -> Flow '[InvalidHandle] m [PlaneID]
       getIDs 0 = return []
       getIDs n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
@@ -485,11 +485,11 @@ getPlaneResources hdl = getCount >>= getIDs
          fmap EntityID <$> peekArray (fromIntegral n) p
 
 -- | Get plane information
-getPlane :: forall m. MonadInIO m => Handle -> PlaneID -> FlowT '[InvalidHandle,InvalidPlane] m Plane
+getPlane :: forall m. MonadInIO m => Handle -> PlaneID -> Flow '[InvalidHandle,InvalidPlane] m Plane
 getPlane hdl pid = getCount >>= getInfo
    where
 
-      gpr :: StructGetPlane -> FlowT '[InvalidHandle,InvalidPlane] m StructGetPlane
+      gpr :: StructGetPlane -> Flow '[InvalidHandle,InvalidPlane] m StructGetPlane
       gpr s = ioctlGetPlane s hdl
                `catchLiftLeft` \case
                   EINVAL -> throwE InvalidHandle
@@ -500,17 +500,17 @@ getPlane hdl pid = getCount >>= getInfo
       toMaybe f x = Just (f x)
 
       -- get the number of formats (invariant for a given plane)
-      getCount :: FlowT '[InvalidHandle,InvalidPlane] m Word32
+      getCount :: Flow '[InvalidHandle,InvalidPlane] m Word32
       getCount = gpr (StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 0 0)
                   ||> gpCountFmtTypes 
 
       -- get the plane info (invariant for a given plane)
-      getInfo :: Word32 -> FlowT '[InvalidHandle,InvalidPlane] m Plane
+      getInfo :: Word32 -> Flow '[InvalidHandle,InvalidPlane] m Plane
       getInfo n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
             si = StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 n p'
-         gpr si >>= \StructGetPlane{..} -> liftFlowT (getResources hdl) >>= \res -> do
+         gpr si >>= \StructGetPlane{..} -> liftFlow (getResources hdl) >>= \res -> do
                -- TODO: controllers are invariant, we should store them
                -- somewhere to avoid getResources
                fmts <- fmap (PixelFormat . BitFields) <$> peekArray (fromIntegral n) p
@@ -536,7 +536,7 @@ data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 --
 -- The fractional part in SrcRect is for devices supporting sub-pixel plane
 -- coordinates.
-setPlane :: MonadInIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameSourceID, SrcRect, DestRect) -> FlowT '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] m ()
+setPlane :: MonadInIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameSourceID, SrcRect, DestRect) -> Flow '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] m ()
 setPlane hdl pid opts = do
 
    let 
@@ -564,7 +564,7 @@ setPlane hdl pid opts = do
          e      -> unhdlErr "setPlane" e
 
 -- | Disable a plane
-disablePlane :: MonadInIO m => Handle -> PlaneID -> FlowT '[InvalidParam,EntryNotFound] m ()
+disablePlane :: MonadInIO m => Handle -> PlaneID -> Flow '[InvalidParam,EntryNotFound] m ()
 disablePlane hdl p = setPlane hdl p Nothing
    -- these errors should not be triggered when we disable a plane
    `catchDie` (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)

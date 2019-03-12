@@ -17,7 +17,7 @@ import Haskus.Utils.Flow
 
 -- | Call getDeviceBits until the buffer is large enough to contain all the
 -- event codes. Initial buffer size should be sensible size in *bits*.
-getDeviceBits :: MonadInIO m => Handle -> Maybe EventType -> Word -> FlowT '[ErrorCode] m Buffer
+getDeviceBits :: MonadInIO m => Handle -> Maybe EventType -> Word -> Flow '[ErrorCode] m Buffer
 getDeviceBits hdl ev bitSize = go ((bitSize + 7) `div` 8)
    where
       go sz = do
@@ -30,6 +30,6 @@ getDeviceBits hdl ev bitSize = go ((bitSize + 7) `div` 8)
 
 
 -- | Return the event types supported by the input device
-getSupportedEvents :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Buffer
+getSupportedEvents :: MonadInIO m => Handle -> Flow '[ErrorCode] m Buffer
 getSupportedEvents hdl = do
    getDeviceBits hdl Nothing 0x20

@@ -26,7 +26,7 @@ import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.Format.Binary.Vector as Vector
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Tuple
 import Haskus.Utils.Flow
@@ -56,7 +56,7 @@ toFrameSource StructFrameBufferCommand{..} = s
 
 
 -- | Create a framebuffer
-addFrameSource :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [PixelSource] -> FlowT '[ErrorCode] m FrameSource
+addFrameSource :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameBufferFlags -> [PixelSource] -> Flow '[ErrorCode] m FrameSource
 addFrameSource hdl width height fmt flags buffers = do
    
    let s = FrameSource (EntityID 0) width height
@@ -66,13 +66,13 @@ addFrameSource hdl width height fmt flags buffers = do
       ||> toFrameSource
 
 -- | Release a frame buffer
-removeFrameSource :: MonadInIO m => Handle -> FrameSource -> FlowT '[ErrorCode] m ()
+removeFrameSource :: MonadInIO m => Handle -> FrameSource -> Flow '[ErrorCode] m ()
 removeFrameSource hdl fs = do
    void (ioctlRemoveFrameBuffer (unEntityID (frameID fs)) hdl)
 
 
 -- | Indicate dirty parts of a frame source
-dirtyFrameSource :: MonadInIO m => Handle -> FrameSource -> DirtyAnnotation -> FlowT '[ErrorCode] m ()
+dirtyFrameSource :: MonadInIO m => Handle -> FrameSource -> DirtyAnnotation -> Flow '[ErrorCode] m ()
 dirtyFrameSource hdl fs mode = do
    let
       (color,flags,clips) = case mode of

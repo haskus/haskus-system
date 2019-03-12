@@ -81,7 +81,6 @@ import Haskus.Format.Binary.Vector (Vector)
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String (peekCString)
 import Haskus.System.Linux.Internals.Tables
@@ -94,6 +93,7 @@ import Haskus.Utils.Maybe
 import Haskus.Utils.Embed
 import Haskus.Utils.Types.Generics (Generic)
 
+import GHC.Ptr
 import Data.Data
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -1051,13 +1051,13 @@ data EventMask = EventMask
 -- | Get version
 --
 -- EVIOCGVERSION
-getVersion :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
+getVersion :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int
 getVersion = ioctlRead 0x45 0x01
 
 -- | Get device info
 --
 -- EVIOCGID
-getDeviceInfo :: MonadInIO m => Handle -> FlowT '[ErrorCode] m DeviceInfo
+getDeviceInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m DeviceInfo
 getDeviceInfo = ioctlRead 0x45 0x02
 
 -- | Repeat settings
@@ -1072,50 +1072,50 @@ data RepeatSettings = RepeatSettings
 -- | Get repeat settings
 --
 -- EVIOCGREP
-getRepeatSettings :: MonadInIO m => Handle -> FlowT '[ErrorCode] m RepeatSettings
+getRepeatSettings :: MonadInIO m => Handle -> Flow '[ErrorCode] m RepeatSettings
 getRepeatSettings = ioctlRead 0x45 0x03
 
 -- | Set repeat settings
 --
 -- EVIOCSREP
-setRepeatSettings :: MonadInIO m => RepeatSettings -> Handle -> FlowT '[ErrorCode] m ()
+setRepeatSettings :: MonadInIO m => RepeatSettings -> Handle -> Flow '[ErrorCode] m ()
 setRepeatSettings = ioctlWrite 0x45 0x03
 
 
 -- | Get key code
 --
 -- EVIOCGKEYCODE_V2
-getKeyCode :: MonadInIO m => Handle -> FlowT '[ErrorCode] m KeymapEntry
+getKeyCode :: MonadInIO m => Handle -> Flow '[ErrorCode] m KeymapEntry
 getKeyCode = ioctlRead 0x45 0x04
 
 -- | Set key code
 --
 -- EVIOCSKEYCODE_V2
-setKeyCode :: MonadInIO m => KeymapEntry -> Handle -> FlowT '[ErrorCode] m ()
+setKeyCode :: MonadInIO m => KeymapEntry -> Handle -> Flow '[ErrorCode] m ()
 setKeyCode = ioctlWrite 0x45 0x04
 
 -- | Get device name
 --
 -- EVIOCGNAME
-getDeviceName :: MonadInIO m => Handle -> FlowT '[ErrorCode] m String
+getDeviceName :: MonadInIO m => Handle -> Flow '[ErrorCode] m String
 getDeviceName = ioctlReadVariableBuffer 0x45 0x06 (const peekCString) 256
 
 -- | Get physical location
 --
 -- EVIOCGPHYS
-getDevicePhysicalLocation :: MonadInIO m => Handle -> FlowT '[ErrorCode] m String
+getDevicePhysicalLocation :: MonadInIO m => Handle -> Flow '[ErrorCode] m String
 getDevicePhysicalLocation = ioctlReadVariableBuffer 0x45 0x07 (const peekCString) 256
 
 -- | Get unique identifier
 --
 -- EVIOCGUNIQ
-getDeviceUniqueID :: MonadInIO m => Handle -> FlowT '[ErrorCode] m String
+getDeviceUniqueID :: MonadInIO m => Handle -> Flow '[ErrorCode] m String
 getDeviceUniqueID = ioctlReadVariableBuffer 0x45 0x08 (const peekCString) 256
 
 -- | Get device properties
 --
 -- EVIOCGPROP
-getDeviceProperties :: MonadInIO m => Handle -> FlowT '[ErrorCode] m String
+getDeviceProperties :: MonadInIO m => Handle -> Flow '[ErrorCode] m String
 getDeviceProperties = ioctlReadVariableBuffer 0x45 0x09 (const peekCString) 256
 
 -- | Get multi-touch slots
@@ -1142,36 +1142,36 @@ getDeviceProperties = ioctlReadVariableBuffer 0x45 0x09 (const peekCString) 256
 -- ABS_MT code.
 -- 
 -- If the request code is not an ABS_MT value, -EINVAL is returned.
-getDeviceMultiTouchSlots :: MonadInIO m => Word32 -> Word -> Handle -> FlowT '[ErrorCode] m [Int32]
+getDeviceMultiTouchSlots :: MonadInIO m => Word32 -> Word -> Handle -> Flow '[ErrorCode] m [Int32]
 getDeviceMultiTouchSlots code nSlots fd = do
    let sz = 4 * (nSlots + 1)
    allocaBytes (fromIntegral sz) $ \ptr -> do
       pokeByteOff ptr 0 code
       void <| ioctlReadBytes 0x45 0x0a (fromIntegral sz) ptr fd
-      peekArray nSlots (castPtr ptr `indexPtr` 4)
+      peekArray nSlots (castPtr ptr `plusPtr` 4)
 
 -- | Get global key state (one bit per pressed key)
 --
 -- EVIOCGKEY
-getDeviceKeys :: MonadInIO m => Word -> Handle -> FlowT '[ErrorCode] m Buffer
+getDeviceKeys :: MonadInIO m => Word -> Handle -> Flow '[ErrorCode] m Buffer
 getDeviceKeys n fd = ioctlReadBuffer 0x45 0x18 ((n `div` 8) + 1) fd ||> snd
 
 -- | Get all leds (one bit per led)
 --
 -- EVIOCGLED
-getDeviceLEDs :: MonadInIO m => Word -> Handle -> FlowT '[ErrorCode] m Buffer
+getDeviceLEDs :: MonadInIO m => Word -> Handle -> Flow '[ErrorCode] m Buffer
 getDeviceLEDs n fd = ioctlReadBuffer 0x45 0x19 ((n `div` 8) + 1) fd ||> snd
 
 -- | Get sound status (one bit per sound)
 --
 -- EVIOCGSND
-getDeviceSoundStatus :: MonadInIO m => Word -> Handle -> FlowT '[ErrorCode] m Buffer
+getDeviceSoundStatus :: MonadInIO m => Word -> Handle -> Flow '[ErrorCode] m Buffer
 getDeviceSoundStatus n fd = ioctlReadBuffer 0x45 0x1a ((n `div` 8) + 1) fd ||> snd
 
 -- | Get switch status (one bit per switch)
 --
 -- EVIOCGSW
-getDeviceSwitchStatus :: MonadInIO m => Word -> Handle -> FlowT '[ErrorCode] m Buffer
+getDeviceSwitchStatus :: MonadInIO m => Word -> Handle -> Flow '[ErrorCode] m Buffer
 getDeviceSwitchStatus n fd = ioctlReadBuffer 0x45 0x1b ((n `div` 8) + 1) fd ||> snd
 
 -- | Return a bitset of the supported event codes for the given event type.
@@ -1181,7 +1181,7 @@ getDeviceSwitchStatus n fd = ioctlReadBuffer 0x45 0x1b ((n `div` 8) + 1) fd ||> 
 -- Return the size of the written *bytes*
 --
 -- EVIOCGBIT
-ioctlGetDeviceBits :: MonadInIO m => Maybe EventType -> Word -> Handle -> FlowT '[ErrorCode] m (Int64, Buffer)
+ioctlGetDeviceBits :: MonadInIO m => Maybe EventType -> Word -> Handle -> Flow '[ErrorCode] m (Int64, Buffer)
 ioctlGetDeviceBits ev n fd = do
    let code = fromMaybe 0 (fromCEnum <$> ev )
    ioctlReadBuffer 0x45 (0x20 + code) ((n `div` 8) + 1) fd
@@ -1189,13 +1189,13 @@ ioctlGetDeviceBits ev n fd = do
 -- | Get absolute info
 --
 -- EVIOCGABS
-getDeviceAbsoluteInfo :: MonadInIO m => Word8 -> Handle -> FlowT '[ErrorCode] m AbsoluteInfo
+getDeviceAbsoluteInfo :: MonadInIO m => Word8 -> Handle -> Flow '[ErrorCode] m AbsoluteInfo
 getDeviceAbsoluteInfo code = ioctlRead 0x45 (0x40 + code)
 
 -- | Set absolute info
 --
 -- EVIOCSABS
-setDeviceAbsoluteInfo :: MonadInIO m => Word8 -> AbsoluteInfo -> Handle -> FlowT '[ErrorCode] m ()
+setDeviceAbsoluteInfo :: MonadInIO m => Word8 -> AbsoluteInfo -> Handle -> Flow '[ErrorCode] m ()
 setDeviceAbsoluteInfo code = ioctlWrite 0x45 (0xc0 + code)
 
 -- | Send a force effect to a force feedback device
@@ -1203,39 +1203,39 @@ setDeviceAbsoluteInfo code = ioctlWrite 0x45 (0xc0 + code)
 -- TODO: we should return the effect ID
 --
 -- EVIOCSFF
-sendForceFeedback :: MonadInIO m => ForceFeedbackEffect -> Handle -> FlowT '[ErrorCode] m ()
+sendForceFeedback :: MonadInIO m => ForceFeedbackEffect -> Handle -> Flow '[ErrorCode] m ()
 sendForceFeedback = ioctlWrite 0x45 0x80
 
 -- | Erase a force effect
 --
 -- EVIOCRMFF
-removeForceFeedback :: MonadInIO m => Int64 -> Handle -> FlowT '[ErrorCode] m ()
+removeForceFeedback :: MonadInIO m => Int64 -> Handle -> Flow '[ErrorCode] m ()
 removeForceFeedback = ioctlWriteValue 0x45 0x81
 
 -- | Report the number of effects playable at the same time
 --
 -- EVIOCGEFFECTS
-supportedSimultaneousEffects :: MonadInIO m => Handle -> FlowT '[ErrorCode] m Int
+supportedSimultaneousEffects :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int
 supportedSimultaneousEffects = ioctlRead 0x45 0x84
 
 -- | Grab/release device
 --
 -- EVIOCGRAB
-grabReleaseDevice :: MonadInIO m => Bool -> Handle -> FlowT '[ErrorCode] m ()
+grabReleaseDevice :: MonadInIO m => Bool -> Handle -> Flow '[ErrorCode] m ()
 grabReleaseDevice grab = ioctlWriteValue 0x45 0x90 (if grab then 1 else 0:: Int)
 
 -- | Grab device
-grabDevice :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
+grabDevice :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
 grabDevice = grabReleaseDevice True
 
 -- | Release device
-releaseDevice :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
+releaseDevice :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
 releaseDevice = grabReleaseDevice False
 
 -- | Revoke device access
 --
 -- EVIOCREVOKE
-revokeDevice :: MonadInIO m => Handle -> FlowT '[ErrorCode] m ()
+revokeDevice :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
 revokeDevice = ioctlWriteValue 0x45 0x91 (0 :: Int)
 
 -- | Get event mask (filter by type)
@@ -1267,7 +1267,7 @@ revokeDevice = ioctlWriteValue 0x45 0x91 (0 :: Int)
 -- This ioctl may fail with ENODEV in case the file is revoked, EFAULT
 -- if the receive-buffer points to invalid memory, or EINVAL if the kernel
 -- does not implement the ioctl.
-getEventMask :: MonadInIO m => Handle -> FlowT '[ErrorCode] m EventMask
+getEventMask :: MonadInIO m => Handle -> Flow '[ErrorCode] m EventMask
 getEventMask = ioctlRead 0x45 0x92
 
 
@@ -1292,13 +1292,13 @@ getEventMask = ioctlRead 0x45 0x92
 -- This ioctl may fail with ENODEV in case the file is revoked. EFAULT is
 -- returned if the receive-buffer points to invalid memory. EINVAL is returned
 -- if the kernel does not implement the ioctl.
-setEventMask :: MonadInIO m => EventMask -> Handle -> FlowT '[ErrorCode] m ()
+setEventMask :: MonadInIO m => EventMask -> Handle -> Flow '[ErrorCode] m ()
 setEventMask = ioctlWrite 0x45 0x93
 
 -- | Set clock to use for timestamps
 --
 -- EVIOCCLOCKID
-setDeviceClock :: MonadInIO m => Clock -> Handle -> FlowT '[ErrorCode] m ()
+setDeviceClock :: MonadInIO m => Clock -> Handle -> Flow '[ErrorCode] m ()
 setDeviceClock clk = ioctlWrite 0x45 0xa0 (fromEnum clk :: Int)
 
 

@@ -31,7 +31,7 @@ import Haskus.System.Linux.Internals.Netlink
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 
 data ShutFlag
    = ShutRead
@@ -40,18 +40,18 @@ data ShutFlag
    deriving (Enum,Show)
 
 -- | Shut down part of a full-duplex connection
-sysShutdown :: MonadIO m => Handle -> ShutFlag -> FlowT '[ErrorCode] m ()
+sysShutdown :: MonadIO m => Handle -> ShutFlag -> Flow '[ErrorCode] m ()
 sysShutdown (Handle fd) flag =
    checkErrorCode_ =<< liftIO (syscall_shutdown fd (fromEnum flag))
 
 -- | Call sendfile using implicit file cursor for input
-sysSendFile :: MonadIO m => Handle -> Handle -> Word64 -> FlowT '[ErrorCode] m Word64
+sysSendFile :: MonadIO m => Handle -> Handle -> Word64 -> Flow '[ErrorCode] m Word64
 sysSendFile (Handle outfd) (Handle infd) count = do
    r <- checkErrorCode =<< liftIO (syscall_sendfile outfd infd nullPtr count)
    return (fromIntegral r)
 
 -- | Call sendFile using explicit input offset, returns new offset
-sysSendFileWithOffset :: MonadInIO m => Handle -> Handle -> Word64 -> Word64 -> FlowT '[ErrorCode] m (Word64,Word64)
+sysSendFileWithOffset :: MonadInIO m => Handle -> Handle -> Word64 -> Word64 -> Flow '[ErrorCode] m (Word64,Word64)
 sysSendFileWithOffset (Handle outfd) (Handle infd) offset count =
    with offset $ \off -> do
       x <- checkErrorCode =<< liftIO (syscall_sendfile outfd infd off count)
@@ -151,7 +151,7 @@ instance Enum SocketOption where
 -- | Create a socket (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocket' :: MonadIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> FlowT '[ErrorCode] m Handle
+sysSocket' :: MonadIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow '[ErrorCode] m Handle
 sysSocket' typ protocol subprotocol opts = do
    let
       f :: Enum a => a -> Word64
@@ -163,7 +163,7 @@ sysSocket' typ protocol subprotocol opts = do
 -- | Create a socket pair (low-level API)
 --
 -- `subprotocol` may be 0
-sysSocketPair' :: MonadInIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> FlowT '[ErrorCode] m (Handle,Handle)
+sysSocketPair' :: MonadInIO m => SocketRawType -> SocketProtocol -> Int -> [SocketOption] -> Flow '[ErrorCode] m (Handle,Handle)
 sysSocketPair' typ protocol subprotocol opts =
    allocaArray 2 $ \ptr -> do
       let
@@ -190,7 +190,7 @@ data SocketType
    deriving (Show,Eq)
 
 -- | Create a socket
-sysSocket :: MonadIO m => SocketType -> [SocketOption] -> FlowT '[ErrorCode] m Handle
+sysSocket :: MonadIO m => SocketType -> [SocketOption] -> Flow '[ErrorCode] m Handle
 sysSocket typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocket' SockRawTypeStream SockProtIPv4 0 opts
@@ -200,7 +200,7 @@ sysSocket typ opts =
       SockTypeNetlink nt -> sysSocket' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Create a socket pair
-sysSocketPair :: MonadInIO m => SocketType -> [SocketOption] -> FlowT '[ErrorCode] m (Handle,Handle)
+sysSocketPair :: MonadInIO m => SocketType -> [SocketOption] -> Flow '[ErrorCode] m (Handle,Handle)
 sysSocketPair typ opts =
    case typ of
       SockTypeTCP IPv4   -> sysSocketPair' SockRawTypeStream SockProtIPv4 0 opts
@@ -210,13 +210,13 @@ sysSocketPair typ opts =
       SockTypeNetlink nt -> sysSocketPair' SockRawTypeDatagram SockProtNETLINK (fromEnum nt) opts
 
 -- | Bind a socket
-sysBind :: (MonadInIO m, Storable a) => Handle -> a -> FlowT '[ErrorCode] m ()
+sysBind :: (MonadInIO m, Storable a) => Handle -> a -> Flow '[ErrorCode] m ()
 sysBind (Handle fd) addr =
    with addr $ \addr' ->
       checkErrorCode_ =<< liftIO (syscall_bind fd (castPtr addr') (sizeOf' addr))
 
 -- | Connect a socket
-sysConnect :: (MonadInIO m, Storable a) => Handle -> a -> FlowT '[ErrorCode] m ()
+sysConnect :: (MonadInIO m, Storable a) => Handle -> a -> Flow '[ErrorCode] m ()
 sysConnect (Handle fd) addr =
    with addr $ \addr' ->
       checkErrorCode_ =<< liftIO (syscall_connect fd (castPtr addr') (sizeOf' addr))
@@ -225,7 +225,7 @@ sysConnect (Handle fd) addr =
 --
 -- We use accept4 (288) instead of accept (43) to support socket options
 --
-sysAccept :: (MonadInIO m, Storable a) => Handle -> a -> [SocketOption] -> FlowT '[ErrorCode] m Handle
+sysAccept :: (MonadInIO m, Storable a) => Handle -> a -> [SocketOption] -> Flow '[ErrorCode] m Handle
 sysAccept (Handle fd) addr opts =
    let 
       f :: Enum a => a -> Word64
@@ -239,7 +239,7 @@ sysAccept (Handle fd) addr opts =
 -- | Listen on a socket
 --
 -- @ backlog is the number of incoming requests that are stored
-sysListen :: MonadIO m => Handle -> Word64 -> FlowT '[ErrorCode] m ()
+sysListen :: MonadIO m => Handle -> Word64 -> Flow '[ErrorCode] m ()
 sysListen (Handle fd) backlog =
    checkErrorCode_ =<< liftIO (syscall_listen fd backlog)
 
@@ -247,7 +247,7 @@ sysListen (Handle fd) backlog =
 -- | Bind a netlink socket
 --
 -- @groups@ is a group mask
-sysBindNetlink :: MonadInIO m => Handle -> Word32 -> Word32 -> FlowT '[ErrorCode] m ()
+sysBindNetlink :: MonadInIO m => Handle -> Word32 -> Word32 -> Flow '[ErrorCode] m ()
 sysBindNetlink fd portID groups = sysBind fd <| NetlinkSocket
    { netlinkSocketFamily = fromIntegral (fromEnum SockProtNETLINK)
    , netlinkSocketPortID = portID

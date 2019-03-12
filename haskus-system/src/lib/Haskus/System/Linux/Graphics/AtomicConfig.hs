@@ -103,7 +103,7 @@ storePropertyIntoCache pid val = ConfigM <|
 
 
 -- | Get property meta-data
-getPropertyMetaM :: MonadInIO m => PropertyMetaID -> FlowT '[InvalidParam, InvalidProperty] (ConfigM m) PropertyMeta
+getPropertyMetaM :: MonadInIO m => PropertyMetaID -> Flow '[InvalidParam, InvalidProperty] (ConfigM m) PropertyMeta
 getPropertyMetaM pid = do
    mp <- lift (getPropertyFromCache pid)
    case mp of
@@ -131,25 +131,25 @@ setPropertyM obj prop val = ConfigM $ do
 getPropertyM :: forall m o.
    ( MonadInIO m
    , Object o
-   ) => o -> FlowT '[InvalidParam,ObjectNotFound] (ConfigM m) [Property]
+   ) => o -> Flow '[InvalidParam,ObjectNotFound] (ConfigM m) [Property]
 getPropertyM obj = do
    s <- lift getConfig
    props <- getObjectProperties (configHandle s) obj
    let
-      getPropertyFromRaw :: RawProperty -> FlowT '[InvalidParam,InvalidProperty] (ConfigM m) (Maybe Property)
+      getPropertyFromRaw :: RawProperty -> Flow '[InvalidParam,InvalidProperty] (ConfigM m) (Maybe Property)
       getPropertyFromRaw (RawProperty x y) = getPropertyMetaM x ||> (\m -> Just (Property m y))
 
       fromRawProp :: RawProperty -> ConfigM m (Maybe Property)
       fromRawProp p = getPropertyFromRaw p
                         -- in case of failure to get the meta, we just skip the property
                         -- (i.e. we return Nothing)
-                        |> evalCatchFlowT (const (return Nothing))
+                        |> evalCatchFlow (const (return Nothing))
 
    mapMaybeM (\x -> lift (fromRawProp x)) props
 
 
 -- | Commit atomic state
-commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> FlowT (ObjectNotFound ': AtomicErrors) (ConfigM m) ()
+commitConfig :: MonadInIO m => Atomic -> CommitOrTest -> AsyncMode -> ModesetMode -> Flow (ObjectNotFound ': AtomicErrors) (ConfigM m) ()
 commitConfig atomic testMode asyncMode modesetMode = do
    s <- lift getConfig
 
@@ -174,8 +174,8 @@ commitConfig atomic testMode asyncMode modesetMode = do
                      ||> (\((_objType,objId,propId),val) -> (objId,[(propId,val)]))
                      |> Map.fromListWith (++)
 
-         liftFlowT <| setAtomic hdl flags props
+         liftFlow <| setAtomic hdl flags props
 
       NonAtomic -> do
          forM_ (Map.toList (configProps s)) <| \((objType,objId,propId),val) -> do
-            void (liftFlowT <| setObjectProperty' hdl objId objType propId val)
+            void (liftFlow <| setObjectProperty' hdl objId objType propId val)

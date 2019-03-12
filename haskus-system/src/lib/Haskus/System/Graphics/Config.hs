@@ -78,7 +78,7 @@ setConfigLegacy card config = do
 
    -- disable planes
    forM_ (configPlane config) <| \(pid,_) ->
-      runFlowT_ <| setPlane hdl pid Nothing
+      runFlow_ <| setPlane hdl pid Nothing
 
    ----------------------------------------------------------------------
    -- ...and then reconnect them in order and set properties
@@ -88,17 +88,17 @@ setConfigLegacy card config = do
    forM_ (configController config) <| \(cid,mmode,conns) ->
       case (mmode,conns) of
          (Nothing,[]) -> return () -- nothing to do
-         _            -> runFlowT_ <| setController' hdl cid Nothing conns mmode
+         _            -> runFlow_ <| setController' hdl cid Nothing conns mmode
 
    -- attach planes
    forM_ (configPlane config) <| \(pid,mopts) ->
       case mopts of
          Nothing -> return () -- nothing to do
-         _       -> runFlowT_ <| setPlane hdl pid mopts
+         _       -> runFlow_ <| setPlane hdl pid mopts
 
    -- set properties
    forM_ (configProperties config) <| \(oid,otype,propid,val) ->
-      runFlowT_ <| setObjectProperty' hdl oid otype propid val
+      runFlow_ <| setObjectProperty' hdl oid otype propid val
 
 -------------------------------------------------------------------------------
 -- Atomic config

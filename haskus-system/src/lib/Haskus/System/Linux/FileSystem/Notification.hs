@@ -19,7 +19,7 @@ import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Ptr
+import Foreign.Ptr
 import Haskus.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
@@ -95,7 +95,7 @@ data PollResult
 -- | Poll a set of file descriptors
 --
 -- Timeout in milliseconds
-sysPoll :: MonadInIO m => [PollEntry] -> Bool -> Maybe Int64 -> FlowT '[ErrorCode] m PollResult
+sysPoll :: MonadInIO m => [PollEntry] -> Bool -> Maybe Int64 -> Flow '[ErrorCode] m PollResult
 sysPoll entries blocking timeout = do
    
    let 

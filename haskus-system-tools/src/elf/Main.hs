@@ -35,7 +35,7 @@ import Haskus.Format.Text (Text,textFormat,int,stext,hex,(%))
 import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
-import Haskus.Utils.Embed
+import Haskus.Utils.Embed.ByteString
 
 import Control.Monad
 import Happstack.Server
@@ -865,5 +865,5 @@ appTemplate doc = do
 css :: Response
 css = toResponseBS
    (C.pack "text/css")
-   (LBS.fromStrict $(embedFile "src/elf/style.css"))
+   (LBS.fromStrict $(embedBSFile "src/elf/style.css"))
 
