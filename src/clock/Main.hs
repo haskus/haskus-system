@@ -12,15 +12,13 @@ import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.System.Linux.Time
 import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.FrameBuffer
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Helper
---import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.Entities
+import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (rasterizeDiagram,mkWidth)
-import Data.Maybe (fromJust)
-import Haskus.Utils.Variant
 import Haskus.Utils.Maybe
 import Haskus.Format.Text ((%),left,center,stext,text,hex,textFormat,char)
 import Formatting ((%.))
@@ -34,8 +32,9 @@ main = runSys' <| do
    term <- defaultTerminal
    sys  <- defaultSystemInit
 
-   getProcessMemoryMap sys
-      >.~!> showProcessMemoryMap term
+   memMap <- getProcessMemoryMap sys
+               |> flowAssertQuiet  "getProcessMemoryMap"
+   showProcessMemoryMap term memMap
 
    cards <- loadGraphicCards (systemDeviceManager sys)
 
@@ -43,12 +42,12 @@ main = runSys' <| do
       let fd    = graphicCardHandle card
 
       sysLogSequence "Load graphic card" <| do
-         cap  <- fd `supports` CapGenericBuffer
-                  >..~!!> assertShow "Card supports generic buffers"
-         sysAssert "Generic buffer capability supported" cap
+         cap  <- (fd `supports` CapHostBuffer)
+                     |> flowAssertQuiet "Cannot test card capabilities"
+         sysAssert "Card supports host buffers" cap
          
          state <- readGraphicsState fd
-                  >..~!!> assertShow "Cannot read graphics state"
+                     |> flowAssertQuiet "Cannot read graphics state"
 
          conns <- if Map.null (graphicsConnectors state)
             then sysError "No graphics connector found" 
@@ -71,8 +70,8 @@ main = runSys' <| do
             width  = fromIntegral <| modeHorizontalDisplay mode
             height = fromIntegral <| modeVerticalDisplay mode
 
-         gfb1@(GenericFrame fb1 [buf]) <- initGenericFrameBuffer card mode fmt
-         gfb2@(GenericFrame _ [_])   <- initGenericFrameBuffer card mode fmt
+         ~gfb1@(GenericFrame fb1 [buf]) <- initGenericFrameBuffer card mode fmt
+         ~gfb2@(GenericFrame _ [_])     <- initGenericFrameBuffer card mode fmt
 
          let defaultCtrl = do
                encId  <- connectorEncoderID conn
@@ -93,12 +92,12 @@ main = runSys' <| do
          writeStrLn term (show (surfacePitch (mappedSurfaceInfo buf)))
 
          -- set mode and connectors
-         setController ctrl (SetFB fb1) [conn] (Just mode)
+         setController ctrl (SetSource fb1) [conn] (Just mode)
             |> flowAssertQuiet "Set controller"
 
          -- page flip
          let 
-            setFb fb = switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent]) 0
+            setFb fb = switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0
                         |> flowAssertQuiet "Switch framebuffer"
 
             --clp        = Clip 0 0 (modeHorizontalDisplay mode - 1) (modeVerticalDisplay mode - 1)
@@ -111,7 +110,7 @@ main = runSys' <| do
             clockDiagram h m s = rasterizeDiagram (mkWidth width) (clockDiag width height h m s)
 
             mainLoop !b = do
-               tv <- (fromJust . fromVariantAt @0) <$> sysGetTimeOfDay
+               tv <- flowAssertQuiet "getTimeOfDay" sysGetTimeOfDay
                let
                   gfb = if b then gfb1 else gfb2
                   GenericFrame fb _ = gfb

@@ -8,7 +8,7 @@ where
 
 import Haskus.System.Graphics
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.IDs
+import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Handle
 import Haskus.System.Graphics.Diagrams
 import Haskus.Utils.Flow
@@ -17,11 +17,11 @@ import qualified Haskus.Utils.Map as Map
 
 data DisconnectedCard = DisconnectedCard
 
-graphicsPage :: MonadInIO m => GraphicCard -> Flow m '[VDiagram,DisconnectedCard]
+graphicsPage :: MonadInIO m => GraphicCard -> FlowT '[DisconnectedCard] m VDiagram
 graphicsPage card = do
-   readGraphicsState (graphicCardHandle card)
-      >..%~^> (\InvalidHandle -> flowSingle DisconnectedCard)
-      >.-.> drawGraphics
+   diag <- readGraphicsState (graphicCardHandle card)
+            |> (`catchLiftBoth` (\InvalidHandle -> failure DisconnectedCard))
+   return (drawGraphics diag)
 
 drawGraphics :: GraphicsState -> VDiagram
 drawGraphics state = diag
@@ -75,7 +75,7 @@ drawGraphics state = diag
                                      ]
            -- plane --> framebuffer arrows
            |> planeFbArrows [(e,c) | pl <- Map.elems (graphicsPlanes state)
-                                   , let c = planeFrameBufferId pl
+                                   , let c = planeFrameSourceId pl
                                    , let e = planeID pl
                                    ]
            -- encoders that can use the same controller at the same time
@@ -88,41 +88,41 @@ drawGraphics state = diag
 
       connEncArrows [] b = b
       connEncArrows ((_, Nothing):xs) b = connEncArrows xs b
-      connEncArrows ((ConnectorID co, Just (EncoderID en)):xs) b =
+      connEncArrows ((EntityID co, Just (EntityID en)):xs) b =
          connEncArrows xs (arrw ("conn"++show co++":left") ("enc"++show en++":right") b)
 
       encCtrlArrows [] b = b
       encCtrlArrows ((_, Nothing):xs) b = encCtrlArrows xs b
-      encCtrlArrows ((EncoderID en, Just (ControllerID ct)):xs) b =
+      encCtrlArrows ((EntityID en, Just (EntityID ct)):xs) b =
          encCtrlArrows xs (arrw ("enc"++show en++":left") ("ctrl"++show ct++":right") b)
 
       planeCtrlArrows [] b = b
       planeCtrlArrows ((_, Nothing):xs) b = planeCtrlArrows xs b
-      planeCtrlArrows ((PlaneID pl, Just (ControllerID ct)):xs) b =
+      planeCtrlArrows ((EntityID pl, Just (EntityID ct)):xs) b =
          planeCtrlArrows xs (arrw ("ctrl"++show ct++":left") ("plane"++show pl++":right") b)
 
       planeFbArrows [] b = b
       planeFbArrows ((_, Nothing):xs) b = planeFbArrows xs b
-      planeFbArrows ((PlaneID pl, Just (FrameBufferID fb)):xs) b =
+      planeFbArrows ((EntityID pl, Just (EntityID fb)):xs) b =
          planeFbArrows xs (arrw ("plane"++show pl++":left") ("fb"++show fb++":right") b)
 
       cloneArrows [] b           = b
       cloneArrows ((e1,e2):xs) b = cloneArrows xs (arrw ("enc"++show e1++":left") ("enc"++show e2++":left") b)
 
       conns  = boxCol [ ("conn"++ show x, "Connector "++show x)
-                      | ConnectorID x <- connsIds
+                      | EntityID x <- connsIds
                       ]
       encs   = boxCol [ ("enc"++show x, "Encoder "++show x)
-                      | EncoderID x <- encsIds
+                      | EntityID x <- encsIds
                       ]
       ctrls  = boxCol [ ("ctrl"++show x, "Controller "++show x)
-                      | ControllerID x <- ctrlsIds
+                      | EntityID x <- ctrlsIds
                       ]
       planes = boxCol [ ("plane"++show x, "Plane "++show x)
-                      | PlaneID x <- planesIds
+                      | EntityID x <- planesIds
                       ]
       fbs    = boxCol [ ("fb"++show x, "FrameBuffer "++show x)
-                      | FrameBufferID x <- fbIds
+                      | EntityID x <- fbIds
                       ]
 
       arrw dst src = connect' (with |> arrowHead .~ spike) src dst

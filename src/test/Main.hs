@@ -5,6 +5,9 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
 
 import Haskus.System
 
@@ -16,10 +19,11 @@ import qualified Haskus.Format.Binary.BitSet as BitSet
 
 import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.FrameBuffer
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Helper
+import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.ErrorCode
 import Haskus.System.Graphics.Drawing
 import qualified Haskus.System.Graphics.Diagrams as D
 import Haskus.System.Graphics.Diagrams ((#),fc,lw,rasterizeDiagram,mkWidth,none)
@@ -103,12 +107,12 @@ main = runSys' <| do
          
 
       sysLogSequence "Load graphic card" <| do
-         cap  <- fd `supports` CapGenericBuffer
+         cap  <- fd `supports` CapHostBuffer
                   |> flowAssert "Get generic buffer capability"
          sysAssert "Generic buffer capability supported" cap
          
-         state <- readGraphicsState fd
-                  >..~!!> assertShow "Cannot read graphics state"
+         state <- flowAssertQuiet "Read graphics state"
+                     <| readGraphicsState fd
 
          conns <- if Map.null (graphicsConnectors state)
             then sysError "No graphics connector found" 
@@ -144,7 +148,7 @@ main = runSys' <| do
 
 
          -- set mode and connectors
-         setController ctrl (SetFB fb1) [conn] (Just mode)
+         setController ctrl (SetSource fb1) [conn] (Just mode)
             |> flowAssertQuiet "Set controller"
 
          -- let 
@@ -155,7 +159,7 @@ main = runSys' <| do
          -- writeStrLn term (show ga)
 
          -- page flip
-         let setFb fb = switchFrameBuffer ctrl fb (BitSet.fromList [PageFlipEvent]) 0
+         let setFb fb = switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0
                         |> flowAssertQuiet "Switch framebuffer"
 
          setFb fb1
@@ -263,9 +267,9 @@ main = runSys' <| do
 
 listDir :: Terminal -> FilePath -> Sys ()
 listDir term path = do
-   open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
-      >.~.> (\rt -> do
-            ls <- listDirectory rt |> flowAssert "List directory"
-            void <| close rt
-            writeStrLn term (concat . intersperse "\n" . fmap entryName <| ls))
-      |> void
+   dls <- flowAssertQuiet @(ErrorCode : OpenErrors) "List directory" <| do
+      rt <- liftFlowT <| open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
+      ls <- liftFlowT <| listDirectory rt
+      void <| liftFlowT (close rt)
+      return ls
+   writeStrLn term (concat . intersperse "\n" . fmap entryName <| dls)

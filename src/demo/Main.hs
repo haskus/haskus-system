@@ -15,14 +15,13 @@ import Haskus.System.Linux.Info
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Property
-import Haskus.System.Linux.Graphics.Config
+import Haskus.System.Linux.Graphics.AtomicConfig
 import qualified Haskus.System.Linux.Internals.Input as Key
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed
 import Haskus.Utils.STM
 import Haskus.Utils.Maybe
-import Haskus.Utils.Monad
 import Haskus.Format.String
 import Haskus.Format.Text (textFormat,(%),shown)
 import qualified Haskus.Utils.Map as Map
@@ -85,9 +84,7 @@ main = runSys' <| do
    sys  <- defaultSystemInit
    let dm = systemDeviceManager sys
 
-   info <- systemInfo
-      >.-.> Just
-      >..~.> const (return Nothing)
+   info <- fromVariantHead <$> runFlowT systemInfo
 
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
@@ -298,8 +295,8 @@ main = runSys' <| do
 
    forM_ cards <| \card -> do
 
-      state <- readGraphicsState (graphicCardHandle card)
-               >..~!!> assertShow "Cannot read graphics state"
+      state <- flowAssertQuiet "Read graphics state"
+                  <| readGraphicsState (graphicCardHandle card)
 
       -- get connectors
       conns <- if Map.null (graphicsConnectors state)
@@ -362,9 +359,9 @@ main = runSys' <| do
          infoPage = makeInfoPage <$> info
 
       dpmsProp <- graphicsConfig (graphicCardHandle card) <| do
-         getPropertyM conn
-            >.-.> filter (\p -> propertyName (propertyMeta p) == "DPMS")
-            >..-.> const []
+         evalCatchFlowT (const (return []))
+            <|  filter (\p -> propertyName (propertyMeta p) == "DPMS")
+            <|| getPropertyM conn
 
       let 
          dpmsPage = rasterizeDiagram (mkWidth 200)
@@ -381,7 +378,7 @@ main = runSys' <| do
             forM_ dpmsProp $ \prop -> do
                setPropertyM conn (propertyID (propertyMeta prop)) s
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
-               >..~!> (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
+               |> evalCatchFlowT (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
 
 
       initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
@@ -412,10 +409,10 @@ main = runSys' <| do
                   Just d  -> liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
                   Nothing -> return ()
 
-               PageGraphics -> do
-                  graphicsPage card >.~!> \diag -> do
-                     let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
-                     liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
+               PageGraphics -> runFlowT_ <| do
+                  diag <- graphicsPage card
+                  let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
+                  liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
 
                PageArt -> do
                   let d = makeArt 1520476193207 60 60 12

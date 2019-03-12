@@ -10,8 +10,8 @@ main = runSys <| do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards <| \card -> do
-      state <- readGraphicsState (graphicCardHandle card)
-               >..~!!> assertShow "Cannot read graphics state"
+      state <- flowAssertQuiet "Read graphics state"
+                  <| readGraphicsState (graphicCardHandle card)
 
       writeStrLn term (show state)
 

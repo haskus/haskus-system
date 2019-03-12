@@ -19,6 +19,9 @@ dependencies:
 - base >= 4.8 && < 5
 - haskus-system
 - haskus-utils
+- haskus-utils-data
+- haskus-utils-types
+- haskus-utils-variant
 - haskus-binary
 
 ghc-options: -Wall -O2 -static -threaded
@@ -78,7 +81,7 @@ executables:
          - lens
          - formatting
 
-   VSDO:
+   VDSO:
       main: Main.hs
       source-dirs: src/vdso
       dependencies:

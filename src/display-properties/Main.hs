@@ -2,7 +2,7 @@
 
 import Haskus.System
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.Config
+import Haskus.System.Linux.Graphics.AtomicConfig
 import qualified Haskus.Utils.Map as Map
 
 
@@ -16,13 +16,15 @@ main = runSys' <| do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards <| \card -> do
-      state <- readGraphicsState (graphicCardHandle card)
-               >..~!!> assertShow "Cannot read graphics state"
+      state <- evalCatchFlowT (assertShow "Cannot read graphics state")
+                  <| readGraphicsState (graphicCardHandle card)
 
       let
-         showProps o =
-            graphicsConfig (graphicCardHandle card) (getPropertyM o)
-            >.~!> (\props -> writeStrLn term ("  * Properties: " ++ show props))
+         showProps o = do
+            mprops <- graphicsConfig (graphicCardHandle card) <|
+                        evalCatchFlowT (lift . assertShow "Query properties") (getPropertyM o)
+            forM_ mprops <| \props ->
+               writeStrLn term ("  * Properties: " ++ show props)
          
       writeStrLn term "Connectors:"
       mapM_ showProps (Map.elems (graphicsConnectors state))
@@ -32,6 +34,7 @@ main = runSys' <| do
       mapM_ showProps (Map.elems (graphicsControllers state))
       writeStrLn term "Planes:"
       mapM_ showProps (Map.elems (graphicsPlanes state))
+      mapM_ (writeStrLn term . show) (graphicsPlanes state)
 
    sysLogPrint
    powerOff

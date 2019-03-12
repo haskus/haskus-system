@@ -18,26 +18,27 @@ main = runSys' <| do
    -- nullDev <- getDeviceHandle dm (makeDevice CharDevice 1 3)
    -- randDev <- getDeviceHandle dm (makeDevice CharDevice 1 9)
    zeroDev <- getDeviceHandleByName dm "/virtual/mem/zero"
-               >..~!!> sysErrorShow "Cannot get handle for \"zero\" device"
+               |> evalCatchFlowT (sysErrorShow "Cannot get handle for \"zero\" device")
    nullDev <- getDeviceHandleByName dm "/virtual/mem/null"
-               >..~!!> sysErrorShow "Cannot get handle for \"null\" device"
+               |> evalCatchFlowT (sysErrorShow "Cannot get handle for \"null\" device")
    randDev <- getDeviceHandleByName dm "/virtual/mem/urandom"
-               >..~!!> sysErrorShow "Cannot get handle for \"urandom\" device"
+               |> evalCatchFlowT (sysErrorShow "Cannot get handle for \"urandom\" device")
 
    let
       --readWord64 fd = readBuffer fd Nothing 8 --FIXME
       readWord64 fd = readStorable @Word64 fd Nothing
 
-   readWord64 randDev
-      >.~.> (\a -> writeStrLn term ("From urandom device: " ++ show a))
-      >..~!> const (writeStrLn term "Cannot read urandom device")
+   randX <- readWord64 randDev
+            |> evalCatchFlowT (sysErrorShow "Cannot read urandom device")
+   writeStrLn term ("From urandom device: " ++ show randX)
 
-   readWord64 zeroDev
-      >.~.> (\a -> writeStrLn term ("From zero device: "   ++ show a))
-      >..~!> const (writeStrLn term "Cannot read zero device")
+   zeroX <- readWord64 zeroDev
+            |> evalCatchFlowT (sysErrorShow "Cannot read zero device")
+   writeStrLn term ("From zero device: "   ++ show zeroX)
 
+   Raw.writeStrLn nullDev "Discarded string"
+      |> evalCatchFlowT (sysErrorShow "Cannot write NULL device")
 
-   void <| Raw.writeStrLn nullDev "Discarded string"
 
    -- Release the handles
    releaseDeviceHandle zeroDev

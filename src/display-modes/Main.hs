@@ -15,8 +15,8 @@ main = runSys' <| do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards <| \card -> do
-      state <- readGraphicsState (graphicCardHandle card)
-               >..~!!> assertShow "Cannot read graphics state"
+      state <- flowAssertQuiet "Read graphics state"
+                  <| readGraphicsState (graphicCardHandle card)
 
       forM_ (graphicsConnectors state) <| \conn -> do
          
@@ -38,7 +38,7 @@ main = runSys' <| do
 
                   gfb <- initGenericFrameBuffer card mode fmt
 
-                  setController c (SetFB (genericFrameBuffer gfb)) [conn] (Just mode)
+                  setController c (SetSource (genericFrameBuffer gfb)) [conn] (Just mode)
                      |> flowAssert "Set controller"
 
                   freeGenericFrameBuffer card gfb

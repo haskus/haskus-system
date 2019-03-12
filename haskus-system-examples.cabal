@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 94b3411a7fd240480168bc67e680d5237aefedb0997cd154cdab09940704299c
+-- hash: cd5e7ead6a6402bdbb252b8b08f61a082652219d60046cf0c79c66a360723636
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -16,7 +18,6 @@ maintainer:     sylvain@haskus.fr
 copyright:      Sylvain HENRY 2018
 license:        BSD3
 build-type:     Simple
-cabal-version:  >= 1.10
 extra-source-files:
     README.rst
 
@@ -41,6 +42,9 @@ executable Clock
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
     , lens
     , stm
   other-modules:
@@ -70,6 +74,9 @@ executable Demo
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
     , hsnoise
     , mtl
     , transformers
@@ -91,6 +98,9 @@ executable DisplayModes
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -109,6 +119,9 @@ executable DisplayProperties
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -127,6 +140,9 @@ executable DisplayState
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -145,6 +161,9 @@ executable HelloWorld
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -163,6 +182,9 @@ executable KernelEvent
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -181,6 +203,9 @@ executable ListDevices
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -199,6 +224,9 @@ executable OpenDevice
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -218,6 +246,9 @@ executable Sound
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
@@ -240,14 +271,19 @@ executable Test
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
     , stm
     , transformers
   other-modules:
       Paths_haskus_system_examples
   default-language: Haskell2010
 
-executable VSDO
+executable VDSO
   main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_examples
   hs-source-dirs:
       src/vdso
   ghc-options: -Wall -O2 -static -threaded
@@ -260,8 +296,9 @@ executable VSDO
     , haskus-binary
     , haskus-system
     , haskus-utils
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
     , text
     , vector
-  other-modules:
-      Paths_haskus_system_examples
   default-language: Haskell2010
