@@ -32,35 +32,38 @@ import Haskus.Memory.Utils
 newtype SignalSet = SignalSet (Vector 16 Word64) deriving (Storable)
 
 -- | Pause
-sysPause :: MonadIO m => Flow '[ErrorCode] m ()
+sysPause :: MonadIO m => Excepts '[ErrorCode] m ()
 sysPause = checkErrorCode_ =<< liftIO (syscall_pause)
 
 -- | Alarm
-sysAlarm :: MonadIO m => Word-> Flow '[ErrorCode] m Word
+sysAlarm :: MonadIO m => Word-> Excepts '[ErrorCode] m Word
 sysAlarm seconds = fromIntegral <$> (checkErrorCode =<< liftIO (syscall_alarm seconds))
 
 -- | Kill syscall
-sysSendSignal :: MonadIO m => ProcessID -> Int -> Flow '[ErrorCode] m ()
+sysSendSignal :: MonadIO m => ProcessID -> Int -> Excepts '[ErrorCode] m ()
 sysSendSignal (ProcessID pid) sig =
    checkErrorCode_ =<< liftIO (syscall_kill (fromIntegral pid) sig)
 
 -- | Send a signal to every process in the process group of the calling process
-sysSendSignalGroup :: MonadIO m => Int -> Flow '[ErrorCode] m ()
+sysSendSignalGroup :: MonadIO m => Int -> Excepts '[ErrorCode] m ()
 sysSendSignalGroup sig = checkErrorCode_ =<< liftIO (syscall_kill 0 sig)
 
 -- | Send a signal to every process for which the calling process has permission to send signals, except for process 1 (init)
-sysSendSignalAll :: MonadIO m => Int -> Flow '[ErrorCode] m ()
+sysSendSignalAll :: MonadIO m => Int -> Excepts '[ErrorCode] m ()
 sysSendSignalAll sig = checkErrorCode_ =<< liftIO (syscall_kill (-1) sig)
 
 -- | Check if a given process or process group exists
 --
 -- Send signal "0" to the given process/process group
-sysCheckProcess :: MonadIO m => ProcessID -> Flow '[ErrorCode] m Bool
+sysCheckProcess :: MonadIO m => ProcessID -> Excepts '[ErrorCode] m Bool
 sysCheckProcess pid = 
    (sysSendSignal pid 0 >> return True)
       -- ESRCH indicates that the process wasn't found
       -- Other errors are left unchanged
-      `catchE` (\ESRCH -> success False)
+      `catchE` (\case 
+                  ESRCH -> pure False
+                  e     -> failureE e
+               )
 
 -- | Signal actions
 data ChangeSignals
@@ -70,7 +73,7 @@ data ChangeSignals
    deriving (Show,Eq,Enum)
 
 -- | Change signal mask
-sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> Flow '[ErrorCode] m SignalSet
+sysChangeSignalMask :: MonadInIO m => ChangeSignals -> Maybe SignalSet -> Excepts '[ErrorCode] m SignalSet
 sysChangeSignalMask act set =
    withMaybeOrNull set $ \x ->
       alloca $ \(ret :: Ptr SignalSet) -> do

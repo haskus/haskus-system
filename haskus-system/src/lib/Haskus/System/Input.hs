@@ -127,19 +127,19 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
          eventChannel  <- lift (newEventReader hdl)
          bundleChannel <- lift (newInputEventHandler eventChannel)
          InputDevice devpath dev hdl
-            <$> liftFlow (Input.getDeviceName hdl)
-            <*> liftFlow (Input.getDeviceInfo hdl)
+            <$> liftE (Input.getDeviceName hdl)
+            <*> liftE (Input.getDeviceInfo hdl)
             <*> return eventChannel
             <*> return bundleChannel
 
    forMaybeM devs' <| \(devpath,dev) ->
       readDevInfo devpath dev
          ||> Just
-         |> evalCatchFlow (const (return Nothing))
+         |> catchEvalE (const (return Nothing))
 
 
 -- | Configure auto-repeat delay
-inputSetAutoRepeatDelay :: MonadInIO m => Handle -> Word32 -> Flow '[ErrorCode] m Word64
+inputSetAutoRepeatDelay :: MonadInIO m => Handle -> Word32 -> Excepts '[ErrorCode] m Word64
 inputSetAutoRepeatDelay hdl delay = do
    let
       tv = TimeVal 0 0
@@ -148,7 +148,7 @@ inputSetAutoRepeatDelay hdl delay = do
       sysWrite hdl pev (sizeOfT' @Input.Event)
 
 -- | Configure auto-repeat period
-inputSetAutoRepeatPeriod :: MonadInIO m => Handle -> Word32 -> Flow '[ErrorCode] m Word64
+inputSetAutoRepeatPeriod :: MonadInIO m => Handle -> Word32 -> Excepts '[ErrorCode] m Word64
 inputSetAutoRepeatPeriod hdl period = do
    let
       tv = TimeVal 0 0

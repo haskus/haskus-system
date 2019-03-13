@@ -28,7 +28,7 @@ data SystemInfo = SystemInfo
    } deriving (Show,Generic,Storable)
 
 -- | "uname" syscall
-systemInfo :: MonadInIO m => Flow '[ErrorCode] m SystemInfo
+systemInfo :: MonadInIO m => Excepts '[ErrorCode] m SystemInfo
 systemInfo = alloca $ \(ptr :: Ptr SystemInfo) -> do
    checkErrorCode_ =<< liftIO (syscall_uname (castPtr ptr))
    peek ptr

@@ -193,6 +193,6 @@ data PeekSigInfoFlags
    
    
 -- | Trace a process
-sysTrace :: MonadIO m => TraceRequest -> ProcessID -> Ptr () -> Ptr () -> Flow '[ErrorCode] m Int64
+sysTrace :: MonadIO m => TraceRequest -> ProcessID -> Ptr () -> Ptr () -> Excepts '[ErrorCode] m Int64
 sysTrace req (ProcessID pid) addr dat =
    checkErrorCode =<< liftIO (syscall_ptrace (fromEnum req) pid addr dat)

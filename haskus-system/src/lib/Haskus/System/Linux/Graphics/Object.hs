@@ -98,7 +98,7 @@ instance Object Plane where
 
 
 -- | Get object's number of properties
-getObjectPropertyCount :: (MonadInIO m, Object o) => Handle -> o -> Flow '[ErrorCode] m Word32
+getObjectPropertyCount :: (MonadInIO m, Object o) => Handle -> o -> Excepts '[ErrorCode] m Word32
 getObjectPropertyCount hdl o = ioctlGetObjectProperties s hdl ||> gopCountProps
    where
       s = StructGetObjectProperties 0 0 0
@@ -106,7 +106,7 @@ getObjectPropertyCount hdl o = ioctlGetObjectProperties s hdl ||> gopCountProps
             (fromCEnum (getObjectType o))
 
 -- | Return object properties
-getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Flow '[InvalidParam,ObjectNotFound] m [RawProperty]
+getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Excepts '[InvalidParam,ObjectNotFound] m [RawProperty]
 getObjectProperties hdl o =
        -- we assume 20 entries is usually enough and we adapt if it isn't. By
        -- using an initial value we avoid a syscall in most cases.
@@ -117,7 +117,7 @@ getObjectProperties hdl o =
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      go :: Int -> Flow '[InvalidCount,InvalidParam,ObjectNotFound] m [RawProperty]
+      go :: Int -> Excepts '[InvalidCount,InvalidParam,ObjectNotFound] m [RawProperty]
       go n =
          allocaArray' n $ \(propsPtr :: Ptr Word32) ->
          allocaArray' n $ \(valsPtr :: Ptr Word64) -> do
@@ -128,11 +128,11 @@ getObjectProperties hdl o =
                      (fromIntegral n)
                      (getObjectID o)
                      (fromCEnum (getObjectType o))
-            ps <- liftFlow (getObjectProperties' s)
-            liftFlow (checkCount n ps)
+            ps <- liftE (getObjectProperties' s)
+            liftE (checkCount n ps)
             lift (extractProperties ps)
 
-      getObjectProperties' :: StructGetObjectProperties -> Flow '[InvalidParam,ObjectNotFound] m StructGetObjectProperties
+      getObjectProperties' :: StructGetObjectProperties -> Excepts '[InvalidParam,ObjectNotFound] m StructGetObjectProperties
       getObjectProperties' s = ioctlGetObjectProperties s hdl
                                  `catchLiftLeft` \case
                                     EINVAL -> throwE InvalidParam
@@ -151,25 +151,25 @@ getObjectProperties hdl o =
          return (zipWith RawProperty ps vs)
 
       -- check that we have allocated enough entries to store the properties
-      checkCount :: Int -> StructGetObjectProperties -> Flow '[InvalidCount] m ()
+      checkCount :: Int -> StructGetObjectProperties -> Excepts '[InvalidCount] m ()
       checkCount n s = do
          let n' = fromIntegral (gopCountProps s)
          if n' > n
-            then failure (InvalidCount n)
+            then failureE (InvalidCount n)
             else return ()
 
 -- | Set an object property
 setObjectProperty ::
    ( Object o
    , MonadInIO m
-   ) => Handle -> o -> PropID -> PropValue -> Flow '[InvalidParam,ObjectNotFound] m ()
+   ) => Handle -> o -> PropID -> PropValue -> Excepts '[InvalidParam,ObjectNotFound] m ()
 setObjectProperty hdl o prop val =
    setObjectProperty' hdl (getObjectID o) (getObjectType o) prop val
 
 -- | Set an object property
 setObjectProperty' ::
    ( MonadInIO m
-   ) => Handle -> ObjectID -> ObjectType -> PropID -> PropValue -> Flow '[InvalidParam,ObjectNotFound] m ()
+   ) => Handle -> ObjectID -> ObjectType -> PropID -> PropValue -> Excepts '[InvalidParam,ObjectNotFound] m ()
 setObjectProperty' hdl oid otyp prop val = do
    let s = StructSetObjectProperty val prop oid (fromCEnum otyp)
    void (ioctlSetObjectProperty s hdl)

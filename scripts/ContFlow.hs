@@ -59,7 +59,7 @@ sample6 cs =
       else fret cs "Pif"
 
 -- | Wrap in a newtype
-sample7 :: ContFlow '[Int,Float,String] r
+sample7 :: ContExcepts '[Int,Float,String] r
 sample7 = ContFlow $ \cs -> 
    if (10 :: Int) > 20
       then fret cs (10 :: Int)
@@ -74,7 +74,7 @@ sample8 = sample7 >::>
    )
 
 -- | Example of combined flows
-sample9 :: ContFlow '[Double,Char] (IO r)
+sample9 :: ContExcepts '[Double,Char] (IO r)
 sample9 = ContFlow $ \cs -> do
    putStrLn "Forcing an IO monad"
    sample7 >::>
@@ -83,7 +83,7 @@ sample9 = ContFlow $ \cs -> do
       , \(x :: String) -> fret cs 'b'
       )
 
-sample9' :: ContFlow '[Float,Char] (IO r)
+sample9' :: ContExcepts '[Float,Char] (IO r)
 sample9' = ContFlow $ \cs -> do
    putStrLn "Forcing an IO monad"
    sample7 >::>
@@ -101,7 +101,7 @@ sample10 = do
       )
 
 -- | What we would like to write (made up syntax)
--- sample11 :: ContFlow '[Double,Char] r
+-- sample11 :: ContExcepts '[Double,Char] r
 -- sample11 = cdo
 --    ccase sample7 of
 --       (x :: Int)    -> return 'a'
@@ -113,7 +113,7 @@ sample10 = do
 #define fdo ContFlow $ \__cs -> let ?__cs = __cs in do
 
 -- | Implicit parameters
-sample12 :: MonadIO m => Int -> ContFlow '[Double,Char] (m r)
+sample12 :: MonadIO m => Int -> ContExcepts '[Double,Char] (m r)
 sample12 n = fdo
    liftIO $ putStrLn "Forcing an IO monad"
    sample7 >::>
@@ -132,7 +132,7 @@ sample13 = do
       , \(x :: Char)   -> putStrLn ("Char: " ++ show x)
       )
 
-parseDigit :: String -> ContFlow '[(Int,String), String, ()] r
+parseDigit :: String -> ContExcepts '[(Int,String), String, ()] r
 parseDigit s = fdo
    case s of
       ""       -> freturn ()
@@ -147,7 +147,7 @@ parseDigits s = parseDigit s >::>
    , \()     -> []
    )
 
-parseNum :: forall r. String -> ContFlow '[(Int,String), String, ()] r
+parseNum :: forall r. String -> ContExcepts '[(Int,String), String, ()] r
 parseNum str = fdo
    let
       go :: Bool -> Int -> String -> r
@@ -179,7 +179,7 @@ testIf b = do
       )
 
 {-# NOINLINE testWhile #-}
-testWhile :: ContFlow '[()] (IO r)
+testWhile :: ContExcepts '[()] (IO r)
 testWhile = fdo
    c <- getChar
    if c == 'e'
@@ -190,7 +190,7 @@ testWhile = fdo
          putStrLn "Looping!"
          frec testWhile
 
-ffor :: forall m a r. Monad m => (a -> Bool) -> (a -> a) -> (a -> m r) -> a -> ContFlow '[a] (m r)
+ffor :: forall m a r. Monad m => (a -> Bool) -> (a -> a) -> (a -> m r) -> a -> ContExcepts '[a] (m r)
 ffor test inc f !v = fdo
    let forLoop !x = if test x
                      then freturn x

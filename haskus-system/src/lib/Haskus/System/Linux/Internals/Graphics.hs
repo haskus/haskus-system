@@ -148,8 +148,7 @@ import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String
-import Haskus.Utils.Variant.Flow
-import Haskus.Utils.Monad
+import Haskus.Utils.Flow
 import Haskus.Utils.Types.Generics (Generic)
 
 -- =============================================================
@@ -953,93 +952,93 @@ data StructPrimeHandle = StructPrimeHandle
 -- IOCTLs
 -----------------------------------------------------------------------------
 
-drmIoctl :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m a
+drmIoctl :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m a
 drmIoctl = ioctlWriteRead 0x64
 
 
-ioctlGetCapabilities :: MonadInIO m => StructGetCap -> Handle -> Flow '[ErrorCode] m StructGetCap
+ioctlGetCapabilities :: MonadInIO m => StructGetCap -> Handle -> Excepts '[ErrorCode] m StructGetCap
 ioctlGetCapabilities = drmIoctl 0x0C
 
-ioctlSetClientCapability :: MonadInIO m => StructSetClientCap -> Handle -> Flow '[ErrorCode] m StructSetClientCap
+ioctlSetClientCapability :: MonadInIO m => StructSetClientCap -> Handle -> Excepts '[ErrorCode] m StructSetClientCap
 ioctlSetClientCapability = drmIoctl 0x0D
  
  
-ioctlGetResources :: MonadInIO m => StructCardRes -> Handle -> Flow '[ErrorCode] m StructCardRes
+ioctlGetResources :: MonadInIO m => StructCardRes -> Handle -> Excepts '[ErrorCode] m StructCardRes
 ioctlGetResources = drmIoctl 0xA0
 
-ioctlGetController :: MonadInIO m => StructController -> Handle -> Flow '[ErrorCode] m StructController
+ioctlGetController :: MonadInIO m => StructController -> Handle -> Excepts '[ErrorCode] m StructController
 ioctlGetController = drmIoctl 0xA1
 
-ioctlSetController :: MonadInIO m => StructController -> Handle -> Flow '[ErrorCode] m StructController
+ioctlSetController :: MonadInIO m => StructController -> Handle -> Excepts '[ErrorCode] m StructController
 ioctlSetController = drmIoctl 0xA2
 
-ioctlGetGamma :: MonadInIO m => StructControllerLut -> Handle -> Flow '[ErrorCode] m StructControllerLut
+ioctlGetGamma :: MonadInIO m => StructControllerLut -> Handle -> Excepts '[ErrorCode] m StructControllerLut
 ioctlGetGamma = drmIoctl 0xA4
 
-ioctlSetGamma :: MonadInIO m => StructControllerLut -> Handle -> Flow '[ErrorCode] m StructControllerLut
+ioctlSetGamma :: MonadInIO m => StructControllerLut -> Handle -> Excepts '[ErrorCode] m StructControllerLut
 ioctlSetGamma = drmIoctl 0xA5
 
-ioctlGetEncoder :: MonadInIO m => StructGetEncoder -> Handle -> Flow '[ErrorCode] m StructGetEncoder
+ioctlGetEncoder :: MonadInIO m => StructGetEncoder -> Handle -> Excepts '[ErrorCode] m StructGetEncoder
 ioctlGetEncoder = drmIoctl 0xA6
 
-ioctlGetConnector :: MonadInIO m => StructGetConnector -> Handle -> Flow '[ErrorCode] m StructGetConnector
+ioctlGetConnector :: MonadInIO m => StructGetConnector -> Handle -> Excepts '[ErrorCode] m StructGetConnector
 ioctlGetConnector = drmIoctl 0xA7
 
-ioctlGetProperty :: MonadInIO m => StructGetProperty -> Handle -> Flow '[ErrorCode] m StructGetProperty
+ioctlGetProperty :: MonadInIO m => StructGetProperty -> Handle -> Excepts '[ErrorCode] m StructGetProperty
 ioctlGetProperty = drmIoctl 0xAA
 
-ioctlSetProperty :: MonadInIO m => StructSetProperty -> Handle -> Flow '[ErrorCode] m StructSetProperty
+ioctlSetProperty :: MonadInIO m => StructSetProperty -> Handle -> Excepts '[ErrorCode] m StructSetProperty
 ioctlSetProperty = drmIoctl 0xAB
 
-ioctlGetBlob :: MonadInIO m => StructGetBlob -> Handle -> Flow '[ErrorCode] m StructGetBlob
+ioctlGetBlob :: MonadInIO m => StructGetBlob -> Handle -> Excepts '[ErrorCode] m StructGetBlob
 ioctlGetBlob = drmIoctl 0xAC
 
-ioctlRemoveFrameBuffer :: MonadInIO m => Word32 -> Handle -> Flow '[ErrorCode] m Word32
+ioctlRemoveFrameBuffer :: MonadInIO m => Word32 -> Handle -> Excepts '[ErrorCode] m Word32
 ioctlRemoveFrameBuffer = drmIoctl 0xAF
 
-ioctlPageFlip :: MonadInIO m => StructPageFlip -> Handle -> Flow '[ErrorCode] m StructPageFlip
+ioctlPageFlip :: MonadInIO m => StructPageFlip -> Handle -> Excepts '[ErrorCode] m StructPageFlip
 ioctlPageFlip = drmIoctl 0xB0
 
-ioctlDirtyFrameBuffer :: MonadInIO m => StructFrameBufferDirty -> Handle -> Flow '[ErrorCode] m StructFrameBufferDirty
+ioctlDirtyFrameBuffer :: MonadInIO m => StructFrameBufferDirty -> Handle -> Excepts '[ErrorCode] m StructFrameBufferDirty
 ioctlDirtyFrameBuffer = drmIoctl 0xB1
 
-ioctlCreateHostBuffer :: MonadInIO m => StructCreateDumb -> Handle -> Flow '[ErrorCode] m StructCreateDumb
+ioctlCreateHostBuffer :: MonadInIO m => StructCreateDumb -> Handle -> Excepts '[ErrorCode] m StructCreateDumb
 ioctlCreateHostBuffer = drmIoctl 0xB2
 
-ioctlMapHostBuffer :: MonadInIO m => StructMapDumb -> Handle -> Flow '[ErrorCode] m StructMapDumb
+ioctlMapHostBuffer :: MonadInIO m => StructMapDumb -> Handle -> Excepts '[ErrorCode] m StructMapDumb
 ioctlMapHostBuffer = drmIoctl 0xB3
 
-ioctlDestroyHostBuffer :: MonadInIO m => StructDestroyDumb -> Handle -> Flow '[ErrorCode] m StructDestroyDumb
+ioctlDestroyHostBuffer :: MonadInIO m => StructDestroyDumb -> Handle -> Excepts '[ErrorCode] m StructDestroyDumb
 ioctlDestroyHostBuffer = drmIoctl 0xB4
 
-ioctlGetPlaneResources :: MonadInIO m => StructGetPlaneRes -> Handle -> Flow '[ErrorCode] m StructGetPlaneRes
+ioctlGetPlaneResources :: MonadInIO m => StructGetPlaneRes -> Handle -> Excepts '[ErrorCode] m StructGetPlaneRes
 ioctlGetPlaneResources = drmIoctl 0xB5
 
-ioctlGetPlane :: MonadInIO m => StructGetPlane -> Handle -> Flow '[ErrorCode] m StructGetPlane
+ioctlGetPlane :: MonadInIO m => StructGetPlane -> Handle -> Excepts '[ErrorCode] m StructGetPlane
 ioctlGetPlane = drmIoctl 0xB6
 
-ioctlSetPlane :: MonadInIO m => StructSetPlane -> Handle -> Flow '[ErrorCode] m StructSetPlane
+ioctlSetPlane :: MonadInIO m => StructSetPlane -> Handle -> Excepts '[ErrorCode] m StructSetPlane
 ioctlSetPlane = drmIoctl 0xB7
 
-ioctlAddFrameBuffer :: MonadInIO m => StructFrameBufferCommand -> Handle -> Flow '[ErrorCode] m StructFrameBufferCommand
+ioctlAddFrameBuffer :: MonadInIO m => StructFrameBufferCommand -> Handle -> Excepts '[ErrorCode] m StructFrameBufferCommand
 ioctlAddFrameBuffer = drmIoctl 0xB8
 
-ioctlGetObjectProperties :: MonadInIO m => StructGetObjectProperties -> Handle -> Flow '[ErrorCode] m StructGetObjectProperties
+ioctlGetObjectProperties :: MonadInIO m => StructGetObjectProperties -> Handle -> Excepts '[ErrorCode] m StructGetObjectProperties
 ioctlGetObjectProperties = drmIoctl 0xB9
 
-ioctlSetObjectProperty :: MonadInIO m => StructSetObjectProperty -> Handle -> Flow '[ErrorCode] m StructSetObjectProperty
+ioctlSetObjectProperty :: MonadInIO m => StructSetObjectProperty -> Handle -> Excepts '[ErrorCode] m StructSetObjectProperty
 ioctlSetObjectProperty = drmIoctl 0xBA
 
-ioctlCursor :: MonadInIO m => StructCursor2 -> Handle -> Flow '[ErrorCode] m StructCursor2
+ioctlCursor :: MonadInIO m => StructCursor2 -> Handle -> Excepts '[ErrorCode] m StructCursor2
 ioctlCursor = drmIoctl 0xBB
 
-ioctlAtomic :: MonadInIO m => StructAtomic -> Handle -> Flow '[ErrorCode] m StructAtomic
+ioctlAtomic :: MonadInIO m => StructAtomic -> Handle -> Excepts '[ErrorCode] m StructAtomic
 ioctlAtomic = drmIoctl 0xBC
 
-ioctlCreateBlob :: MonadInIO m => StructCreateBlob -> Handle -> Flow '[ErrorCode] m StructCreateBlob
+ioctlCreateBlob :: MonadInIO m => StructCreateBlob -> Handle -> Excepts '[ErrorCode] m StructCreateBlob
 ioctlCreateBlob = drmIoctl 0xBD
 
-ioctlDestroyBlob :: MonadInIO m => StructDestroyBlob -> Handle -> Flow '[ErrorCode] m StructDestroyBlob
+ioctlDestroyBlob :: MonadInIO m => StructDestroyBlob -> Handle -> Excepts '[ErrorCode] m StructDestroyBlob
 ioctlDestroyBlob = drmIoctl 0xBE
 
 

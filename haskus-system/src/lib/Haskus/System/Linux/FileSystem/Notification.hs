@@ -95,7 +95,7 @@ data PollResult
 -- | Poll a set of file descriptors
 --
 -- Timeout in milliseconds
-sysPoll :: MonadInIO m => [PollEntry] -> Bool -> Maybe Int64 -> Flow '[ErrorCode] m PollResult
+sysPoll :: MonadInIO m => [PollEntry] -> Bool -> Maybe Int64 -> Excepts '[ErrorCode] m PollResult
 sysPoll entries blocking timeout = do
    
    let 

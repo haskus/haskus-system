@@ -93,27 +93,27 @@ instance Enum Clock where
       _  -> error "Unknown clock"
 
 -- | Retrieve clock time
-sysClockGetTime :: MonadInIO m => Clock -> Flow '[ErrorCode] m TimeSpec
+sysClockGetTime :: MonadInIO m => Clock -> Excepts '[ErrorCode] m TimeSpec
 sysClockGetTime clk =
    alloca $ \(t :: Ptr TimeSpec) -> do
       checkErrorCode_ =<< liftIO (syscall_clock_gettime (fromEnum clk) (castPtr t))
       peek t
 
 -- | Set clock time
-sysClockSetTime :: MonadInIO m => Clock -> TimeSpec -> Flow '[ErrorCode] m ()
+sysClockSetTime :: MonadInIO m => Clock -> TimeSpec -> Excepts '[ErrorCode] m ()
 sysClockSetTime clk time =
    with time $ \(t :: Ptr TimeSpec) -> do
       checkErrorCode_ =<< liftIO (syscall_clock_settime (fromEnum clk) (castPtr t))
 
 -- | Retrieve clock resolution
-sysClockGetResolution :: MonadInIO m => Clock -> Flow '[ErrorCode] m TimeSpec
+sysClockGetResolution :: MonadInIO m => Clock -> Excepts '[ErrorCode] m TimeSpec
 sysClockGetResolution clk =
    alloca $ \(t :: Ptr TimeSpec) -> do
       checkErrorCode_ =<< liftIO (syscall_clock_getres (fromEnum clk) (castPtr t))
       peek t
 
 -- | Retrieve time of day
-sysGetTimeOfDay :: MonadInIO m => Flow '[ErrorCode] m TimeVal
+sysGetTimeOfDay :: MonadInIO m => Excepts '[ErrorCode] m TimeVal
 sysGetTimeOfDay =
    alloca $ \(tv :: Ptr TimeVal) -> do
       -- timezone arg is deprecated (NULL passed instead)
@@ -121,7 +121,7 @@ sysGetTimeOfDay =
       peek tv
 
 -- | Set time of day
-sysSetTimeOfDay :: MonadInIO m => TimeVal -> Flow '[ErrorCode] m ()
+sysSetTimeOfDay :: MonadInIO m => TimeVal -> Excepts '[ErrorCode] m ()
 sysSetTimeOfDay tv =
    with tv $ \ptv -> do
       -- timezone arg is deprecated (NULL passed instead)
@@ -136,7 +136,7 @@ data SleepResult
 -- | Suspend the calling thread for the specified amount of time
 --
 -- Can be interrupted by a signal (in this case it returns the remaining time)
-sysNanoSleep :: MonadInIO m => TimeSpec -> Flow '[ErrorCode] m SleepResult
+sysNanoSleep :: MonadInIO m => TimeSpec -> Excepts '[ErrorCode] m SleepResult
 sysNanoSleep ts =
    with ts $ \ts' ->
       alloca $ \(rem' :: Ptr TimeSpec) -> do
@@ -150,7 +150,7 @@ sysNanoSleep ts =
 -- | Suspend the calling thread for the specified amount of time
 --
 -- When interrupted by a signal, suspend again for the remaining amount of time
-nanoSleep :: MonadInIO m => TimeSpec -> Flow '[ErrorCode] m ()
+nanoSleep :: MonadInIO m => TimeSpec -> Excepts '[ErrorCode] m ()
 nanoSleep ts = sysNanoSleep ts >>= \case
       CompleteSleep -> return ()
       WokenUp r     -> nanoSleep r

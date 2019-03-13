@@ -286,22 +286,22 @@ data HwDspImage = HwDspImage
    , hwDspImageDriverData :: Word64           -- ^ W: driver-specific data
    } deriving (Generic, Show, Storable)
 
-hwIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m ()
+hwIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m ()
 hwIoctlW = ioctlWrite 0x48
 
-hwIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Flow '[ErrorCode] m a
+hwIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Excepts '[ErrorCode] m a
 hwIoctlR = ioctlRead 0x48
 
-ioctlHwVersion :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlHwVersion :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlHwVersion = hwIoctlR 0x00
 
-ioctlHwInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m HwInfo
+ioctlHwInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m HwInfo
 ioctlHwInfo = hwIoctlR 0x01
 
-ioctlHwDspStatus :: MonadInIO m => Handle -> Flow '[ErrorCode] m HwDspStatus
+ioctlHwDspStatus :: MonadInIO m => Handle -> Excepts '[ErrorCode] m HwDspStatus
 ioctlHwDspStatus = hwIoctlR 0x02
 
-ioctlHwDspLoad :: MonadInIO m => HwDspImage -> Handle -> Flow '[ErrorCode] m ()
+ioctlHwDspLoad :: MonadInIO m => HwDspImage -> Handle -> Excepts '[ErrorCode] m ()
 ioctlHwDspLoad = hwIoctlW 0x03
 
 -----------------------------------------------------------------------------
@@ -898,106 +898,106 @@ instance Enum ChannelOption where
       17 -> ChannelDriverSpec
       _  -> error "Unknown channel option"        
 
-pcmIoctl :: MonadInIO m => Word8 -> Handle -> Flow '[ErrorCode] m ()
+pcmIoctl :: MonadInIO m => Word8 -> Handle -> Excepts '[ErrorCode] m ()
 pcmIoctl n = ioctlSignal 0x41 n (0 :: Int)
 
-pcmIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m a
+pcmIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m a
 pcmIoctlWR = ioctlWriteRead 0x41
 
-pcmIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m ()
+pcmIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m ()
 pcmIoctlW = ioctlWrite 0x41
 
-pcmIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Flow '[ErrorCode] m a
+pcmIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Excepts '[ErrorCode] m a
 pcmIoctlR = ioctlRead 0x41
 
-ioctlPcmVersion :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlPcmVersion :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlPcmVersion = pcmIoctlR 0x00
 
-ioctlPcmInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m PcmInfo
+ioctlPcmInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m PcmInfo
 ioctlPcmInfo = pcmIoctlR 0x01
 
-ioctlPcmTimeStamp :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmTimeStamp :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmTimeStamp = pcmIoctlW 0x02
 
-ioctlPcmTTimeStamp :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmTTimeStamp :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmTTimeStamp = pcmIoctlW 0x03
 
-ioctlPcmHwRefine :: MonadInIO m => PcmHwParams -> Handle -> Flow '[ErrorCode] m PcmHwParams
+ioctlPcmHwRefine :: MonadInIO m => PcmHwParams -> Handle -> Excepts '[ErrorCode] m PcmHwParams
 ioctlPcmHwRefine = pcmIoctlWR 0x10
 
-ioctlPcmHwParams :: MonadInIO m => PcmHwParams -> Handle -> Flow '[ErrorCode] m PcmHwParams
+ioctlPcmHwParams :: MonadInIO m => PcmHwParams -> Handle -> Excepts '[ErrorCode] m PcmHwParams
 ioctlPcmHwParams = pcmIoctlWR 0x11
 
-ioctlPcmHwFree :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmHwFree :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmHwFree = pcmIoctl 0x12
 
-ioctlPcmSwParams :: MonadInIO m => PcmSwParams -> Handle -> Flow '[ErrorCode] m PcmSwParams
+ioctlPcmSwParams :: MonadInIO m => PcmSwParams -> Handle -> Excepts '[ErrorCode] m PcmSwParams
 ioctlPcmSwParams = pcmIoctlWR 0x13
 
-ioctlPcmStatus :: MonadInIO m => Handle -> Flow '[ErrorCode] m PcmStatus
+ioctlPcmStatus :: MonadInIO m => Handle -> Excepts '[ErrorCode] m PcmStatus
 ioctlPcmStatus = pcmIoctlR 0x20
 
-ioctlPcmDelay :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int64
+ioctlPcmDelay :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int64
 ioctlPcmDelay = pcmIoctlR 0x21
 
-ioctlPcmHwSync :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmHwSync :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmHwSync = pcmIoctl 0x22
 
-ioctlPcmSyncPtr :: MonadInIO m => PcmSyncPtr -> Handle -> Flow '[ErrorCode] m PcmSyncPtr
+ioctlPcmSyncPtr :: MonadInIO m => PcmSyncPtr -> Handle -> Excepts '[ErrorCode] m PcmSyncPtr
 ioctlPcmSyncPtr = pcmIoctlWR 0x23
 
-ioctlPcmStatusExt :: MonadInIO m => PcmStatus -> Handle -> Flow '[ErrorCode] m PcmStatus
+ioctlPcmStatusExt :: MonadInIO m => PcmStatus -> Handle -> Excepts '[ErrorCode] m PcmStatus
 ioctlPcmStatusExt = pcmIoctlWR 0x24
 
-ioctlPcmChannelInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m PcmChannelInfo
+ioctlPcmChannelInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m PcmChannelInfo
 ioctlPcmChannelInfo = pcmIoctlR 0x32
 
-ioctlPcmPrepare :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmPrepare :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmPrepare = pcmIoctl 0x40
 
-ioctlPcmReset :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmReset :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmReset = pcmIoctl 0x41
 
-ioctlPcmStart :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmStart :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmStart = pcmIoctl 0x42
 
-ioctlPcmDrop :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmDrop :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmDrop = pcmIoctl 0x43
 
-ioctlPcmDrain :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmDrain :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmDrain = pcmIoctl 0x44
 
-ioctlPcmPause :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmPause :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmPause = pcmIoctlW 0x45
 
-ioctlPcmRewind :: MonadInIO m => Word64 -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmRewind :: MonadInIO m => Word64 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmRewind = pcmIoctlW 0x46
 
-ioctlPcmResume :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmResume :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmResume = pcmIoctl 0x47
 
-ioctlPcmXRun :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmXRun :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmXRun = pcmIoctl 0x48
 
-ioctlPcmForward :: MonadInIO m => Word64 -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmForward :: MonadInIO m => Word64 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmForward = pcmIoctlW 0x49
 
-ioctlPcmWriteIFrames :: MonadInIO m => XferI -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmWriteIFrames :: MonadInIO m => XferI -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmWriteIFrames = pcmIoctlW 0x50
 
-ioctlPcmReadIFrames :: MonadInIO m => Handle -> Flow '[ErrorCode] m XferI
+ioctlPcmReadIFrames :: MonadInIO m => Handle -> Excepts '[ErrorCode] m XferI
 ioctlPcmReadIFrames = pcmIoctlR 0x51
 
-ioctlPcmWriteNFrames :: MonadInIO m => XferN -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmWriteNFrames :: MonadInIO m => XferN -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmWriteNFrames = pcmIoctlW 0x52
 
-ioctlPcmReadNFrames :: MonadInIO m => Handle -> Flow '[ErrorCode] m XferN
+ioctlPcmReadNFrames :: MonadInIO m => Handle -> Excepts '[ErrorCode] m XferN
 ioctlPcmReadNFrames = pcmIoctlR 0x53
 
-ioctlPcmLink :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlPcmLink :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmLink = pcmIoctlW 0x60
 
-ioctlPcmUnlink :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlPcmUnlink :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmUnlink = pcmIoctl 0x61
 
 
@@ -1052,32 +1052,32 @@ data MidiStatus = MidiStatus
    , midiStatusReserved  :: Vector 16 Word8 -- ^ reserved for future use
    } deriving (Show, Generic, Storable)
 
-midiIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m ()
+midiIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m ()
 midiIoctlW = ioctlWrite 0x57
 
-midiIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Flow '[ErrorCode] m a
+midiIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Excepts '[ErrorCode] m a
 midiIoctlR = ioctlRead 0x57
 
-midiIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m a
+midiIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m a
 midiIoctlWR = ioctlWriteRead 0x57
 
 
-ioctlMidiVersion :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlMidiVersion :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlMidiVersion = midiIoctlR 0x00
 
-ioctlMidiInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m MidiInfo
+ioctlMidiInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m MidiInfo
 ioctlMidiInfo = midiIoctlR 0x01
 
-ioctlMidiParams :: MonadInIO m => MidiParams -> Handle -> Flow '[ErrorCode] m MidiParams
+ioctlMidiParams :: MonadInIO m => MidiParams -> Handle -> Excepts '[ErrorCode] m MidiParams
 ioctlMidiParams = midiIoctlWR 0x10
 
-ioctlMidiStatus :: MonadInIO m => MidiStatus -> Handle -> Flow '[ErrorCode] m MidiStatus
+ioctlMidiStatus :: MonadInIO m => MidiStatus -> Handle -> Excepts '[ErrorCode] m MidiStatus
 ioctlMidiStatus = midiIoctlWR 0x20
 
-ioctlMidiDrop :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlMidiDrop :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlMidiDrop = midiIoctlW 0x30
 
-ioctlMidiDrain :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlMidiDrain :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlMidiDrain = midiIoctlW 0x31
 
 
@@ -1214,58 +1214,58 @@ data TimerStatus = TimerStatus
    , timerStatusReserved   :: Vector 64 Word8 -- ^ reserved
    } deriving (Show,Generic,Storable)
 
-timerIoctl :: MonadInIO m => Word8 -> Handle -> Flow '[ErrorCode] m ()
+timerIoctl :: MonadInIO m => Word8 -> Handle -> Excepts '[ErrorCode] m ()
 timerIoctl n = ioctlSignal 0x54 n (0 :: Int)
 
-timerIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m ()
+timerIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m ()
 timerIoctlW = ioctlWrite 0x54
 
-timerIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Flow '[ErrorCode] m a
+timerIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Excepts '[ErrorCode] m a
 timerIoctlR = ioctlRead 0x54
 
-timerIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m a
+timerIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m a
 timerIoctlWR = ioctlWriteRead 0x54
 
-ioctlTimerVersion :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlTimerVersion :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlTimerVersion = timerIoctlR 0x00
 
-ioctlTimerNextDevice :: MonadInIO m => TimerId -> Handle -> Flow '[ErrorCode] m TimerId
+ioctlTimerNextDevice :: MonadInIO m => TimerId -> Handle -> Excepts '[ErrorCode] m TimerId
 ioctlTimerNextDevice = timerIoctlWR 0x01
 
-ioctlTimerTRead :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlTimerTRead :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerTRead = timerIoctlW 0x02
 
-ioctlTimerGInfo :: MonadInIO m => TimerGInfo -> Handle -> Flow '[ErrorCode] m TimerGInfo
+ioctlTimerGInfo :: MonadInIO m => TimerGInfo -> Handle -> Excepts '[ErrorCode] m TimerGInfo
 ioctlTimerGInfo = timerIoctlWR 0x03
 
-ioctlTimerGParams :: MonadInIO m => TimerGParams -> Handle -> Flow '[ErrorCode] m ()
+ioctlTimerGParams :: MonadInIO m => TimerGParams -> Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerGParams = timerIoctlW 0x04
 
-ioctlTimerGStatus :: MonadInIO m => TimerGStatus -> Handle -> Flow '[ErrorCode] m TimerGStatus
+ioctlTimerGStatus :: MonadInIO m => TimerGStatus -> Handle -> Excepts '[ErrorCode] m TimerGStatus
 ioctlTimerGStatus = timerIoctlWR 0x05
 
-ioctlTimerSelect :: MonadInIO m => TimerSelect -> Handle -> Flow '[ErrorCode] m ()
+ioctlTimerSelect :: MonadInIO m => TimerSelect -> Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerSelect = timerIoctlW 0x10
 
-ioctlTimerInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m TimerInfo
+ioctlTimerInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m TimerInfo
 ioctlTimerInfo = timerIoctlR 0x11
 
-ioctlTimerParams :: MonadInIO m => TimerParams -> Handle -> Flow '[ErrorCode] m ()
+ioctlTimerParams :: MonadInIO m => TimerParams -> Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerParams = timerIoctlW 0x12
 
-ioctlTimerStatus :: MonadInIO m => Handle -> Flow '[ErrorCode] m TimerStatus
+ioctlTimerStatus :: MonadInIO m => Handle -> Excepts '[ErrorCode] m TimerStatus
 ioctlTimerStatus = timerIoctlR 0x14
 
-ioctlTimerStart :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlTimerStart :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerStart = timerIoctl 0xa0
 
-ioctlTimerStop :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlTimerStop :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerStop = timerIoctl 0xa1
 
-ioctlTimerContinue :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlTimerContinue :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerContinue = timerIoctl 0xa2
 
-ioctlTimerPause :: MonadInIO m => Handle -> Flow '[ErrorCode] m ()
+ioctlTimerPause :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlTimerPause = timerIoctl 0xa3
 
 data TimerRead = TimerRead
@@ -1494,88 +1494,88 @@ data ControlTLV = ControlTLV
    -- FIXME: the array is allocated "after" the struct...
    } deriving (Show,Generic,Storable)
 
-controlIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m ()
+controlIoctlW :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m ()
 controlIoctlW = ioctlWrite 0x55
 
-controlIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Flow '[ErrorCode] m a
+controlIoctlR :: (MonadInIO m, Storable a) => Word8 -> Handle -> Excepts '[ErrorCode] m a
 controlIoctlR = ioctlRead 0x55
 
-controlIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Flow '[ErrorCode] m a
+controlIoctlWR :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m a
 controlIoctlWR = ioctlWriteRead 0x55
 
-ioctlControlVersion :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlControlVersion :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlVersion = controlIoctlR 0x00
 
-ioctlControlCardInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m ControlCardInfo
+ioctlControlCardInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ControlCardInfo
 ioctlControlCardInfo = controlIoctlR 0x01
 
-ioctlControlElemList :: MonadInIO m => ControlElementList -> Handle -> Flow '[ErrorCode] m ControlElementList
+ioctlControlElemList :: MonadInIO m => ControlElementList -> Handle -> Excepts '[ErrorCode] m ControlElementList
 ioctlControlElemList = controlIoctlWR 0x10
 
-ioctlControlElemInfo :: MonadInIO m => ControlElementInfo -> Handle -> Flow '[ErrorCode] m ControlElementInfo
+ioctlControlElemInfo :: MonadInIO m => ControlElementInfo -> Handle -> Excepts '[ErrorCode] m ControlElementInfo
 ioctlControlElemInfo = controlIoctlWR 0x11
 
-ioctlControlElemRead :: MonadInIO m => ControlElementValue -> Handle -> Flow '[ErrorCode] m ControlElementValue
+ioctlControlElemRead :: MonadInIO m => ControlElementValue -> Handle -> Excepts '[ErrorCode] m ControlElementValue
 ioctlControlElemRead = controlIoctlWR 0x12
 
-ioctlControlElemWrite :: MonadInIO m => ControlElementValue -> Handle -> Flow '[ErrorCode] m ControlElementValue
+ioctlControlElemWrite :: MonadInIO m => ControlElementValue -> Handle -> Excepts '[ErrorCode] m ControlElementValue
 ioctlControlElemWrite = controlIoctlWR 0x13
 
-ioctlControlElemLock :: MonadInIO m => ControlElementId -> Handle -> Flow '[ErrorCode] m ()
+ioctlControlElemLock :: MonadInIO m => ControlElementId -> Handle -> Excepts '[ErrorCode] m ()
 ioctlControlElemLock = controlIoctlW 0x14
 
-ioctlControlElemUnlock :: MonadInIO m => ControlElementId -> Handle -> Flow '[ErrorCode] m ()
+ioctlControlElemUnlock :: MonadInIO m => ControlElementId -> Handle -> Excepts '[ErrorCode] m ()
 ioctlControlElemUnlock = controlIoctlW 0x15
 
-ioctlControlSubscribeEvents :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m Int32
+ioctlControlSubscribeEvents :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlSubscribeEvents = controlIoctlWR 0x16
 
-ioctlControlElemAdd :: MonadInIO m => ControlElementInfo -> Handle -> Flow '[ErrorCode] m ControlElementInfo
+ioctlControlElemAdd :: MonadInIO m => ControlElementInfo -> Handle -> Excepts '[ErrorCode] m ControlElementInfo
 ioctlControlElemAdd = controlIoctlWR 0x17
 
-ioctlControlElemReplace :: MonadInIO m => ControlElementInfo -> Handle -> Flow '[ErrorCode] m ControlElementInfo
+ioctlControlElemReplace :: MonadInIO m => ControlElementInfo -> Handle -> Excepts '[ErrorCode] m ControlElementInfo
 ioctlControlElemReplace = controlIoctlWR 0x18
 
-ioctlControlElemRemove :: MonadInIO m => ControlElementInfo -> Handle -> Flow '[ErrorCode] m ControlElementInfo
+ioctlControlElemRemove :: MonadInIO m => ControlElementInfo -> Handle -> Excepts '[ErrorCode] m ControlElementInfo
 ioctlControlElemRemove = controlIoctlWR 0x19
 
-ioctlControlTLVRead :: MonadInIO m => ControlTLV -> Handle -> Flow '[ErrorCode] m ControlTLV
+ioctlControlTLVRead :: MonadInIO m => ControlTLV -> Handle -> Excepts '[ErrorCode] m ControlTLV
 ioctlControlTLVRead = controlIoctlWR 0x1a
 
-ioctlControlTLVWrite :: MonadInIO m => ControlTLV -> Handle -> Flow '[ErrorCode] m ControlTLV
+ioctlControlTLVWrite :: MonadInIO m => ControlTLV -> Handle -> Excepts '[ErrorCode] m ControlTLV
 ioctlControlTLVWrite = controlIoctlWR 0x1b
 
-ioctlControlTLVCommand :: MonadInIO m => ControlTLV -> Handle -> Flow '[ErrorCode] m ControlTLV
+ioctlControlTLVCommand :: MonadInIO m => ControlTLV -> Handle -> Excepts '[ErrorCode] m ControlTLV
 ioctlControlTLVCommand = controlIoctlWR 0x1c
 
-ioctlControlHwDepNextDevice :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m Int32
+ioctlControlHwDepNextDevice :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlHwDepNextDevice = controlIoctlWR 0x20
 
-ioctlControlHwInfo :: MonadInIO m => Handle -> Flow '[ErrorCode] m HwInfo
+ioctlControlHwInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m HwInfo
 ioctlControlHwInfo = controlIoctlR 0x21
 
-ioctlControlPcmNextDevice :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlControlPcmNextDevice :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlPcmNextDevice = controlIoctlR 0x30
 
-ioctlControlPcmInfo :: MonadInIO m => PcmInfo -> Handle -> Flow '[ErrorCode] m PcmInfo
+ioctlControlPcmInfo :: MonadInIO m => PcmInfo -> Handle -> Excepts '[ErrorCode] m PcmInfo
 ioctlControlPcmInfo = controlIoctlWR 0x31
 
-ioctlControlPcmPreferSubdevice :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlControlPcmPreferSubdevice :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlControlPcmPreferSubdevice = controlIoctlW 0x32
 
-ioctlControlMidiNextDevice :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m Int32
+ioctlControlMidiNextDevice :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlMidiNextDevice = controlIoctlWR 0x40
 
-ioctlControlMidiInfo :: MonadInIO m => MidiInfo -> Handle -> Flow '[ErrorCode] m MidiInfo
+ioctlControlMidiInfo :: MonadInIO m => MidiInfo -> Handle -> Excepts '[ErrorCode] m MidiInfo
 ioctlControlMidiInfo = controlIoctlWR 0x41
 
-ioctlControlMidiPreferSubdevice :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m ()
+ioctlControlMidiPreferSubdevice :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m ()
 ioctlControlMidiPreferSubdevice = controlIoctlW 0x42
 
-ioctlControlPower :: MonadInIO m => Int32 -> Handle -> Flow '[ErrorCode] m Int32
+ioctlControlPower :: MonadInIO m => Int32 -> Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlPower = controlIoctlWR 0xd0
 
-ioctlControlPowerState :: MonadInIO m => Handle -> Flow '[ErrorCode] m Int32
+ioctlControlPowerState :: MonadInIO m => Handle -> Excepts '[ErrorCode] m Int32
 ioctlControlPowerState = controlIoctlR 0xd1
 
 

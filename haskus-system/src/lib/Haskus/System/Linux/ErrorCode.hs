@@ -6,9 +6,6 @@
 module Haskus.System.Linux.ErrorCode 
    ( ErrorCode (..)
    , unhdlErr
-   , toErrorCode
-   , toErrorCodeVoid
-   , toErrorCodePure
    , checkErrorCode
    , checkErrorCode_
    )
@@ -16,42 +13,24 @@ where
 
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Enum
-import Haskus.Utils.Variant
-import Haskus.Utils.Variant.Flow
+import Haskus.Utils.Flow
 import Haskus.System.Linux.Internals.Error
-
--- | Convert negative values into error codes
-toErrorCode :: Int64 -> V '[Int64,ErrorCode]
-{-# INLINE toErrorCode #-}
-toErrorCode r
-   | r < 0     = toVariantAt @1 (toCEnum (abs r))
-   | otherwise = toVariantAt @0 r
-
--- | Convert negative values into error codes, return () otherwise
-toErrorCodeVoid :: Int64 -> V '[(),ErrorCode]
-{-# INLINE toErrorCodeVoid #-}
-toErrorCodeVoid r
-   | r < 0     = toVariantAt @1 (toCEnum (abs r))
-   | otherwise = toVariantAt @0 ()
-
--- | Convert negative values into error codes, return `f r` otherwise
-toErrorCodePure :: (Int64 -> a) -> Int64 -> V '[a,ErrorCode]
-{-# INLINE toErrorCodePure #-}
-toErrorCodePure f r
-   | r < 0     = toVariantAt @1 (toCEnum (abs r))
-   | otherwise = toVariantAt @0 (f r)
 
 -- | Error to call when a syscall returns an unexpected error value
 unhdlErr :: Show err => String -> err -> a
 unhdlErr str err =
-   error ("Unhandled error "++ show err ++" returned by \""++str++"\". Report this as a Haskus bug.")
+   error ("Unhandled error "++ show err ++" returned by \""++str++"\". Report this as a haskus-system bug.")
 
 -- | Convert negative values into error codes
-checkErrorCode :: Monad m => Int64 -> Flow '[ErrorCode] m Int64
-{-# INLINE checkErrorCode #-}
-checkErrorCode r = variantToFlow (toErrorCode r)
+checkErrorCode :: Monad m => Int64 -> Excepts '[ErrorCode] m Int64
+{-# INLINABLE checkErrorCode #-}
+checkErrorCode r
+   | r < 0     = failureE (toCEnum (abs r))
+   | otherwise = pure r
 
 -- | Convert negative values into error codes, return () otherwise
-checkErrorCode_ :: Monad m => Int64 -> Flow '[ErrorCode] m ()
-{-# INLINE checkErrorCode_ #-}
-checkErrorCode_ r = variantToFlow (toErrorCodeVoid r)
+checkErrorCode_ :: Monad m => Int64 -> Excepts '[ErrorCode] m ()
+{-# INLINABLE checkErrorCode_ #-}
+checkErrorCode_ r
+   | r < 0     = failureE (toCEnum (abs r))
+   | otherwise = pure ()

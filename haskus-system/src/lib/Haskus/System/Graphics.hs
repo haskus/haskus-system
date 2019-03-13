@@ -94,7 +94,7 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
    forMaybeM devs' <| \(devpath,dev) -> do
       readDevInfo devpath dev
          ||> Just
-         |> evalCatchFlow (const (return Nothing))
+         |> catchEvalE (const (return Nothing))
 
 
 -- | Create a new thread reading input events and putting them in a TChan
@@ -105,7 +105,7 @@ newEventWaiterThread h = do
 
    ch <- newBroadcastTChanIO
    sysFork "Graphics event reader" <|
-      allocaBytes bufsz <| \ptr -> forever <| runFlow <| do
+      allocaBytes bufsz <| \ptr -> forever <| runE <| do
          threadWaitRead h
          sz2 <- sysRead h ptr (fromIntegral bufsz)
          -- FIXME: we should somehow signal that an error occured and
@@ -140,12 +140,12 @@ initGenericFrameBuffer card mode pixfmt = do
 
    mappedPlanes <- forM bpps $ \bpp -> do
       buf <- createHostBuffer hdl width height bpp flags
-               |> flowAssert "Create a generic buffer"
+               |> logAssertE "Create a generic buffer"
 
       bufKerMap <- mapHostBuffer hdl buf
-                     |> flowAssert "Map generic buffer"
+                     |> logAssertE "Map generic buffer"
 
-      addr <- flowAssert "Map generic buffer in user space" <|
+      addr <- logAssertE "Map generic buffer in user space" <|
          sysMemMap Nothing
             (cdSize buf)
             (BitSet.fromList [ProtRead,ProtWrite])
@@ -160,7 +160,7 @@ initGenericFrameBuffer card mode pixfmt = do
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
    fb <- addFrameSource hdl width height pixfmt BitSet.empty planes
-         |> flowAssert "Add frame buffer"
+         |> logAssertE "Add frame buffer"
 
    return $ GenericFrame fb mappedPlanes
 
@@ -173,14 +173,14 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
    forM_ mappedBufs $ \(MappedSurface buf _ addr _) -> do
       -- unmap generic buffer from user-space
       sysMemUnmap addr (cdSize buf)
-         |> flowAssert "Unmap generic buffer from user space"
+         |> logAssertE "Unmap generic buffer from user space"
 
       -- destroy the generic buffer
-      flowAssert "Destroy generic buffer" <| destroyHostBuffer hdl buf
+      logAssertE "Destroy generic buffer" <| destroyHostBuffer hdl buf
 
 
    -- remove the framebuffer
-   flowAssert "Remove framebuffer" <| removeFrameSource hdl fb
+   logAssertE "Remove framebuffer" <| removeFrameSource hdl fb
 
 
 -----------------------------------------------------------------------
@@ -226,7 +226,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       let fd    = graphicCardHandle card
       sysLogSequence "Load graphic card" $ do
          cap  <- (fd `supports` CapHostBuffer)
-                  |> flowAssert "Get HostBuffer capability" 
+                  |> logAssertE "Get HostBuffer capability" 
          sysAssert "Generic buffer capability supported" cap
 
       -- TODO: support other formats
@@ -238,7 +238,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       -- perform initial mode-setting
       let initFB = genericFrameBuffer (head bufs)
       setController ctrl (SetSource initFB) [conn] (Just mode)
-         |> flowAssertQuiet "Perform initial mode-setting"
+         |> assertE "Perform initial mode-setting"
 
       -- page flip
       fbState <- newTVarIO (BufferingState
@@ -295,7 +295,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
          switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) ctrlId
-            |> flowAssertQuiet "Switch framebuffer"
+            |> assertE "Switch framebuffer"
             
 
       let
@@ -331,7 +331,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       -- Force the generation of the first page-flip event
       switchFrameSource ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) ctrlId
-         |> flowAssertQuiet "Switch framebuffer"
+         |> assertE "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
          draw mode gfb
@@ -346,4 +346,4 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 setClientCapabilityWarn :: Handle -> ClientCapability -> Bool -> Sys ()
 setClientCapabilityWarn hdl cap b =
    setClientCapability hdl cap b
-      |> warningShow (textFormat ("Set client capability " % shown) cap)
+      |> warningShowE (textFormat ("Set client capability " % shown) cap)

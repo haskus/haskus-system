@@ -18,17 +18,17 @@ import Haskus.Format.Binary.Word
 import Haskus.Utils.Flow
 
 -- | Get a capability
-getCapability :: MonadInIO m => Handle -> Capability -> Flow '[ErrorCode] m Word64
+getCapability :: MonadInIO m => Handle -> Capability -> Excepts '[ErrorCode] m Word64
 getCapability hdl cap = do
    let s = StructGetCap (toEnumField cap) 0
    ioctlGetCapabilities s hdl ||> gcValue
 
 -- | Indicate if a capability is supported
-supports :: MonadInIO m => Handle -> Capability -> Flow '[ErrorCode] m Bool
+supports :: MonadInIO m => Handle -> Capability -> Excepts '[ErrorCode] m Bool
 supports hdl cap = getCapability hdl cap ||> (/= 0)
 
 -- | Set a client capability
-setClientCapability :: MonadInIO m => Handle -> ClientCapability -> Bool -> Flow '[ErrorCode] m ()
+setClientCapability :: MonadInIO m => Handle -> ClientCapability -> Bool -> Excepts '[ErrorCode] m ()
 setClientCapability hdl cap b = do
    let 
       v = if b then 1 else 0

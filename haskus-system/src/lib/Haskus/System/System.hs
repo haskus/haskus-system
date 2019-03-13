@@ -61,31 +61,31 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       devicePath = path </> "dev"
 
    -- create root path (allowed to fail if it already exists)
-   flowAssert "Create root directory" <| do
+   logAssertE "Create root directory" <| do
       createDir path `catchLiftLeft` \case
          EEXIST -> return ()
-         e      -> failure e
+         e      -> failureE e
 
    -- mount a tmpfs in root path
-   flowAssert "Mount tmpfs" <| mountTmpFS sysMount path
+   logAssertE "Mount tmpfs" <| mountTmpFS sysMount path
 
    -- mount sysfs
-   flowAssert "Create sysfs directory" <| createDir sysfsPath
-   flowAssert "Mount sysfs" <| mountSysFS sysMount sysfsPath
+   logAssertE "Create sysfs directory" <| createDir sysfsPath
+   logAssertE "Mount sysfs" <| mountSysFS sysMount sysfsPath
    sysfd <- open Nothing sysfsPath BitSet.empty BitSet.empty
-            |> flowAssert "open sysfs directory"
+            |> logAssertE "open sysfs directory"
 
    -- mount procfs
-   flowAssert "Create procfs directory" <| createDir procfsPath
-   flowAssert "Mount procfs" <| mountProcFS sysMount procfsPath
+   logAssertE "Create procfs directory" <| createDir procfsPath
+   logAssertE "Mount procfs" <| mountProcFS sysMount procfsPath
    procfd <- open Nothing procfsPath BitSet.empty BitSet.empty
-             |> flowAssert "open procfs directory"
+             |> logAssertE "open procfs directory"
 
    -- create device directory
-   flowAssert "Create device directory" <| createDir devicePath
-   flowAssert "Mount tmpfs" <| mountTmpFS sysMount devicePath
+   logAssertE "Create device directory" <| createDir devicePath
+   logAssertE "Mount tmpfs" <| mountTmpFS sysMount devicePath
    devfd <- open Nothing devicePath BitSet.empty BitSet.empty
-            |> flowAssert "open device directory"
+            |> logAssertE "open device directory"
 
    -- init device manager
    dm <- initDeviceManager sysfd devfd
@@ -96,7 +96,7 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       }
 
 -- | Get process memory mappings
-getProcessMemoryMap :: System -> Flow (Union ReadErrors' OpenErrors) Sys [MemoryMapEntry]
+getProcessMemoryMap :: System -> Excepts (Union ReadErrors' OpenErrors) Sys [MemoryMapEntry]
 getProcessMemoryMap sys =
    atomicReadBuffer (systemProcFS sys) "self/maps"
       ||> parseMemoryMap

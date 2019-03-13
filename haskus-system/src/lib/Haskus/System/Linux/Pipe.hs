@@ -16,7 +16,7 @@ import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
 
 -- | Create a pipe
-createPipe :: MonadInIO m => Flow '[ErrorCode] m (Handle, Handle)
+createPipe :: MonadInIO m => Excepts '[ErrorCode] m (Handle, Handle)
 createPipe =
    allocaArray 2 $ \(ptr :: Ptr Word) -> do
       checkErrorCode_ =<< liftIO (syscall_pipe (castPtr ptr))

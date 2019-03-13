@@ -55,8 +55,8 @@ defaultTerminal = do
    let flgs = BitSet.fromList [ HandleNonBlocking
                               , HandleCloseOnExec
                               ]
-   runFlow_ <| setHandleFlags stdin  flgs
-   runFlow_ <| setHandleFlags stdout flgs
+   runE_ <| setHandleFlags stdin  flgs
+   runE_ <| setHandleFlags stdout flgs
 
    -- TODO: set terminal buffering mode?
 
@@ -153,7 +153,7 @@ inputThread s = forever $ do
                else return (after,fromIntegral size,ptr)
                         
    readBytes <- sysRead h ptr sz
-                  |> flowAssert (textFormat ("Read bytes from " % shown) h)
+                  |> logAssertE (textFormat ("Read bytes from " % shown) h)
 
    -- TODO: if readBytes is zero, it's the end of file, etc.
    sysAssert "readBytes /= 0" (readBytes /= 0)
@@ -216,13 +216,13 @@ outputThread s = go [] 0 0
       h = outputHandle s
 
       -- writeMany handling EAGAIN
-      wrt :: [(Ptr a, Word64)] -> Flow '[ErrorCode] Sys Word64
+      wrt :: [(Ptr a, Word64)] -> Excepts '[ErrorCode] Sys Word64
       wrt ps = sysWriteMany h ps
                   `catchLiftLeft` \case
                      -- TODO: we should retry without having to rebuild the
                      -- parameter array (i.e. do it in sysWriteMany)
                      EAGAIN -> threadWaitWrite h >> wrt ps
-                     err    -> failure err
+                     err    -> failureE err
 
 
       go :: [(IOBuffer, FutureSource ())] -> Word -> Word -> Sys ()
@@ -253,7 +253,7 @@ outputThread s = go [] 0 0
 
          -- write the buffers
          size <- wrt ps
-                  |> evalCatchFlow (assertShow (textFormat ("Write bytes to " % shown) h))
+                  |> catchEvalE (assertShowE (textFormat ("Write bytes to " % shown) h))
 
          let
             sig xs nb 0 = go xs nb 0

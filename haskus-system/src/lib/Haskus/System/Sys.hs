@@ -33,11 +33,11 @@ module Haskus.System.Sys
    , sysErrorShow
    , sysWarningShow
    , sysLogInfoShow
-   -- ** Flow helpers
-   , flowAssertQuiet
-   , flowAssert
-   , assertShow
-   , warningShow
+   -- ** Excepts helpers
+   , assertE
+   , logAssertE
+   , assertShowE
+   , warningShowE
    )
 where
 
@@ -331,32 +331,32 @@ sysLogInfoShow :: Show a => Text -> a -> Sys ()
 sysLogInfoShow text a = sysLogInfo (text <> ": " <> pack (show a))
 
 ----------------------
--- Flow helpers
+-- Excepts helpers
 ----------------------
 
 -- | Assert a successful result, and log the error otherwise
-flowAssertQuiet :: (Show (V xs)) => Text -> Flow xs Sys a -> Sys a
-flowAssertQuiet text v = do
-   r <- runFlow v
+assertE :: (Show (V xs)) => Text -> Excepts xs Sys a -> Sys a
+assertE text v = do
+   r <- runE v
    case r of
       VRight a -> return a
       VLeft xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
       
 -- | Assert a successful result, log on error and on success
-flowAssert :: (Show a, Show (V xs)) => Text -> Flow xs Sys a -> Sys a
-flowAssert text v = do
-   r <- runFlow v
+logAssertE :: (Show a, Show (V xs)) => Text -> Excepts xs Sys a -> Sys a
+logAssertE text v = do
+   r <- runE v
    case  r of
       VRight a -> do
          sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a)
          return a
       VLeft xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
      
-assertShow :: Show a => Text -> a -> Sys b
-assertShow text v = do
+assertShowE :: Show a => Text -> a -> Sys b
+assertShowE text v = do
    let msg = textFormat (stext % " (failed with " % shown % ")") text v
    sysError msg
 
-warningShow :: Show (V xs) => Text -> Flow xs Sys a -> Sys ()
-warningShow text f = runFlow_ <|
-   f `onFlowError` (\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))
+warningShowE :: Show (V xs) => Text -> Excepts xs Sys a -> Sys ()
+warningShowE text f = runE_ <|
+   f `onE` (\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))

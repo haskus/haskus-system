@@ -254,7 +254,7 @@ initDeviceManager sysfs devfs = do
       -- recursively from it. The current directory is already opened and the
       -- handle is passed (alongside the name and fullname).
       -- Return Nothing if it fails for any reason.
-      readSysfsDir :: Text -> Handle -> Flow '[] Sys ()
+      readSysfsDir :: Text -> Handle -> Excepts '[] Sys ()
       readSysfsDir path hdl = do
          
          unless (Text.null path) $
@@ -267,20 +267,20 @@ initDeviceManager sysfs devfs = do
                     -- only keep the directory name
                     ||> fmap entryName
                  -- return an empty directory list on error
-                 ) `catchAllE` (\_ -> success [])
+                 ) `catchAllE` (\_ -> successE [])
 
          -- recursively try to create a tree for each sub-dir
          forM_ dirs $ \dir -> do
             let path' = Text.concat [path, Text.pack "/", Text.pack dir]
             withDevDir hdl dir (readSysfsDir path')
-               `catchAllE` (\_ -> success ())
+               `catchAllE` (\_ -> successE ())
 
          return ()
 
 
    -- list devices in /devices
    withDevDir sysfs "devices" (readSysfsDir Text.empty)
-      |> evalCatchFlow (\err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err))
+      |> catchEvalE (\err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err))
       |> void
 
    -- launch handling thread
@@ -606,7 +606,7 @@ newKernelEventReader = do
 
 
 -- | Get device handle by name (i.e., sysfs path)
-getDeviceHandleByName :: DeviceManager -> String -> Flow (ErrorCode ': OpenErrors) Sys Handle
+getDeviceHandleByName :: DeviceManager -> String -> Excepts (ErrorCode ': OpenErrors) Sys Handle
 getDeviceHandleByName dm path = do
    dev <- lift <| deviceLookup dm (Text.pack path)
    case dev >>= deviceDevice of
@@ -619,7 +619,7 @@ getDeviceHandleByName dm path = do
 -- minor numbers. Instead we must create a special device file with mknod in
 -- the VFS and open it. This is what this function does. Additionally, we
 -- remove the file once it is opened.
-getDeviceHandle :: DeviceManager -> Device -> Flow (ErrorCode ': OpenErrors) Sys Handle
+getDeviceHandle :: DeviceManager -> Device -> Excepts (ErrorCode ': OpenErrors) Sys Handle
 getDeviceHandle dm dev = do
 
    -- get a fresh device number
@@ -636,24 +636,24 @@ getDeviceHandle dm dev = do
 
    sysLogSequenceL logS <| do
       -- create special file in device fs
-      liftFlow <| createDeviceFile (Just devfd) devname dev BitSet.empty
+      liftE <| createDeviceFile (Just devfd) devname dev BitSet.empty
       -- on success, try to open it
       let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
-      hdl <- liftFlow <| open (Just devfd) devname flgs BitSet.empty
+      hdl <- liftE <| open (Just devfd) devname flgs BitSet.empty
       -- then remove it
-      liftFlow <| sysUnlinkAt devfd devname False
-         `onFlowError` sysWarningShow "Unlinking special device file failed"
+      liftE <| sysUnlinkAt devfd devname False
+         `onE` sysWarningShow "Unlinking special device file failed"
       return hdl
 
 -- | Release a device handle
 releaseDeviceHandle :: Handle -> Sys ()
 releaseDeviceHandle fd = close fd
-   |> evalCatchFlow (\err -> do
+   |> catchEvalE (\err -> do
       let msg = textFormat ("close (failed with " % shown % ")") err
       sysLog LogWarning msg)
 
 -- | Find device path by number (major, minor)
-openDeviceDir :: DeviceManager -> Device -> Flow OpenErrors Sys Handle
+openDeviceDir :: DeviceManager -> Device -> Excepts OpenErrors Sys Handle
 openDeviceDir dm dev = open (Just (dmDevFS dm)) path (BitSet.fromList [HandleDirectory]) BitSet.empty
    where
       path = "./dev/" ++ typ' ++ "/" ++ ids

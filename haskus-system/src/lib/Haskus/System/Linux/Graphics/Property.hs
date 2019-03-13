@@ -78,14 +78,14 @@ type AtomicErrors = '[InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryN
 
 
 -- | Return meta-information from a property type ID
-getPropertyMeta :: forall m. MonadInIO m => Handle -> PropertyMetaID -> Flow '[InvalidParam,InvalidProperty] m PropertyMeta
+getPropertyMeta :: forall m. MonadInIO m => Handle -> PropertyMetaID -> Excepts '[InvalidParam,InvalidProperty] m PropertyMeta
 getPropertyMeta fd pid = do
       -- get value size/number of elements/etc.
       g <- getProperty' gp
       getValues (gpsCountValues g) (gpsCountEnum g) (getPropertyTypeType g)
          ||> PropertyMeta pid (isImmutable g) (isPending g) (fromCStringBuffer (gpsName g))
    where
-      getProperty' :: StructGetProperty -> Flow '[InvalidParam,InvalidProperty] m StructGetProperty
+      getProperty' :: StructGetProperty -> Excepts '[InvalidParam,InvalidProperty] m StructGetProperty
       getProperty' r = ioctlGetProperty r fd
                         `catchLiftLeft` \case
                            EINVAL -> throwE InvalidParam
@@ -106,7 +106,7 @@ getPropertyMeta fd pid = do
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
 
-      getBlobStruct :: StructGetBlob -> Flow '[InvalidParam,InvalidProperty] m StructGetBlob
+      getBlobStruct :: StructGetBlob -> Excepts '[InvalidParam,InvalidProperty] m StructGetBlob
       getBlobStruct r = ioctlGetBlob r fd
                            `catchLiftLeft` \case
                               EINVAL -> throwE InvalidParam
@@ -114,7 +114,7 @@ getPropertyMeta fd pid = do
                               e      -> unhdlErr "getBlobStruct" e
 
       -- | Get a blob
-      getBlob :: Word32 -> Flow '[InvalidParam,InvalidProperty] m Buffer
+      getBlob :: Word32 -> Excepts '[InvalidParam,InvalidProperty] m Buffer
       getBlob bid = do
          let gb = StructGetBlob
                      { gbBlobId = bid
@@ -126,12 +126,12 @@ getPropertyMeta fd pid = do
          ptr <- liftIO . mallocBytes . fromIntegral . gbLength $ gb'
          void (getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) }))
             -- free ptr on error
-            `onFlowError_` liftIO (free ptr)
+            `onE_` liftIO (free ptr)
          -- otherwise return a bytestring
          bufferPackPtr (fromIntegral (gbLength gb')) ptr
 
 
-      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Flow '[InvalidParam,InvalidProperty] m c) -> Flow '[InvalidParam,InvalidProperty] m c
+      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Excepts '[InvalidParam,InvalidProperty] m c) -> Excepts '[InvalidParam,InvalidProperty] m c
       withBuffers valueCount blobCount f =
          liftWith (allocaArray' valueCount) $ \valuePtr ->
             liftWith (allocaArray' blobCount) $ \blobPtr -> do
@@ -148,7 +148,7 @@ getPropertyMeta fd pid = do
                _ <- getProperty' gp'
                f valuePtr blobPtr
 
-      withValueBuffer :: Storable a => Word32 -> ([a] -> Flow '[InvalidParam,InvalidProperty] m c) -> Flow '[InvalidParam,InvalidProperty] m c
+      withValueBuffer :: Storable a => Word32 -> ([a] -> Excepts '[InvalidParam,InvalidProperty] m c) -> Excepts '[InvalidParam,InvalidProperty] m c
       withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr Word) ->
          f =<< peekArray (fromIntegral n) ptr
       withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr Word) ptr ->
@@ -158,7 +158,7 @@ getPropertyMeta fd pid = do
          bs <- peekArray (fromIntegral m) p2
          f vs bs
          
-      getValues :: Word32 -> Word32 -> PropertyTypeType -> Flow '[InvalidParam,InvalidProperty] m PropertyType
+      getValues :: Word32 -> Word32 -> PropertyTypeType -> Excepts '[InvalidParam,InvalidProperty] m PropertyType
       getValues nval nblob ttype = case ttype of
          PropTypeObject      -> return PropObject
          PropTypeRange       -> withValueBuffer nval (return . PropRange)
@@ -174,7 +174,7 @@ getPropertyMeta fd pid = do
 
 
 -- | Set object properties atomically
-setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Flow AtomicErrors m ()
+setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Excepts AtomicErrors m ()
 setAtomic hdl flags objProps = do
 
    let

@@ -23,7 +23,7 @@ main = runSys' <| do
    case args of
       (devpath:_) -> do
          let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
-         hdl <- flowAssert "Open devices" <| open Nothing devpath flgs BitSet.empty
+         hdl <- logAssertE "Open devices" <| open Nothing devpath flgs BitSet.empty
 
          eventChannel  <- newEventReader hdl
 
