@@ -72,7 +72,7 @@ main = runSys' <| do
    sys  <- defaultSystemInit
    let dm = systemDeviceManager sys
 
-   info <- runFlow systemInfo
+   info <- runE systemInfo
 
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
@@ -283,7 +283,7 @@ main = runSys' <| do
 
    forM_ cards <| \card -> do
 
-      state <- flowAssertQuiet "Read graphics state"
+      state <- assertE "Read graphics state"
                   <| readGraphicsState (graphicCardHandle card)
 
       -- get connectors
@@ -347,7 +347,7 @@ main = runSys' <| do
          infoPage = makeInfoPage <$> info
 
       dpmsProp <- graphicsConfig (graphicCardHandle card) <| do
-         evalCatchFlow (const (return []))
+         catchEvalE (const (return []))
             <|  filter (\p -> propertyName (propertyMeta p) == "DPMS")
             <|| getPropertyM conn
 
@@ -366,7 +366,7 @@ main = runSys' <| do
             forM_ dpmsProp $ \prop -> do
                setPropertyM conn (propertyID (propertyMeta prop)) s
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
-               |> evalCatchFlow (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
+               |> catchEvalE (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
 
 
       initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
@@ -397,7 +397,7 @@ main = runSys' <| do
                   VRight d -> liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
                   VLeft _  -> return ()
 
-               PageGraphics -> runFlow_ <| do
+               PageGraphics -> runE_ <| do
                   diag <- graphicsPage card
                   let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
                   liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)

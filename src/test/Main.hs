@@ -108,10 +108,10 @@ main = runSys' <| do
 
       sysLogSequence "Load graphic card" <| do
          cap  <- fd `supports` CapHostBuffer
-                  |> flowAssert "Get generic buffer capability"
+                  |> logAssertE "Get generic buffer capability"
          sysAssert "Generic buffer capability supported" cap
          
-         state <- flowAssertQuiet "Read graphics state"
+         state <- assertE "Read graphics state"
                      <| readGraphicsState fd
 
          conns <- if Map.null (graphicsConnectors state)
@@ -149,7 +149,7 @@ main = runSys' <| do
 
          -- set mode and connectors
          setController ctrl (SetSource fb1) [conn] (Just mode)
-            |> flowAssertQuiet "Set controller"
+            |> assertE "Set controller"
 
          -- let 
          --    gamma' = replicate (fromIntegral (controllerGammaTableSize ctrl)) 0x0000
@@ -160,7 +160,7 @@ main = runSys' <| do
 
          -- page flip
          let setFb fb = switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0
-                        |> flowAssertQuiet "Switch framebuffer"
+                        |> assertE "Switch framebuffer"
 
          setFb fb1
 
@@ -267,9 +267,9 @@ main = runSys' <| do
 
 listDir :: Terminal -> FilePath -> Sys ()
 listDir term path = do
-   dls <- flowAssertQuiet @(ErrorCode : OpenErrors) "List directory" <| do
-      rt <- liftFlow <| open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
-      ls <- liftFlow <| listDirectory rt
-      void <| liftFlow (close rt)
+   dls <- assertE @(ErrorCode : OpenErrors) "List directory" <| do
+      rt <- liftE <| open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
+      ls <- liftE <| listDirectory rt
+      void <| liftE (close rt)
       return ls
    writeStrLn term (concat . intersperse "\n" . fmap entryName <| dls)

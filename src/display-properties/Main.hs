@@ -16,13 +16,13 @@ main = runSys' <| do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards <| \card -> do
-      state <- evalCatchFlow (assertShow "Cannot read graphics state")
+      state <- catchEvalE (assertShowE "Cannot read graphics state")
                   <| readGraphicsState (graphicCardHandle card)
 
       let
          showProps o = do
             mprops <- graphicsConfig (graphicCardHandle card) <|
-                        evalCatchFlow (lift . assertShow "Query properties") (getPropertyM o)
+                        catchEvalE (lift . assertShowE "Query properties") (getPropertyM o)
             forM_ mprops <| \props ->
                writeStrLn term ("  * Properties: " ++ show props)
          

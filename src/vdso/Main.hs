@@ -17,7 +17,7 @@ main = runSys' <| do
    term <- defaultTerminal
 
    -- get the list of memory mappings for our own process
-   maps <- evalCatchFlow (\xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs))
+   maps <- catchEvalE (\xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs))
             <| getProcessMemoryMap sys
 
    let 

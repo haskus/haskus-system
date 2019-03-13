@@ -33,7 +33,7 @@ main = runSys' <| do
    sys  <- defaultSystemInit
 
    memMap <- getProcessMemoryMap sys
-               |> flowAssertQuiet  "getProcessMemoryMap"
+               |> assertE  "getProcessMemoryMap"
    showProcessMemoryMap term memMap
 
    cards <- loadGraphicCards (systemDeviceManager sys)
@@ -43,11 +43,11 @@ main = runSys' <| do
 
       sysLogSequence "Load graphic card" <| do
          cap  <- (fd `supports` CapHostBuffer)
-                     |> flowAssertQuiet "Cannot test card capabilities"
+                     |> assertE "Cannot test card capabilities"
          sysAssert "Card supports host buffers" cap
          
          state <- readGraphicsState fd
-                     |> flowAssertQuiet "Cannot read graphics state"
+                     |> assertE "Cannot read graphics state"
 
          conns <- if Map.null (graphicsConnectors state)
             then sysError "No graphics connector found" 
@@ -93,12 +93,12 @@ main = runSys' <| do
 
          -- set mode and connectors
          setController ctrl (SetSource fb1) [conn] (Just mode)
-            |> flowAssertQuiet "Set controller"
+            |> assertE "Set controller"
 
          -- page flip
          let 
             setFb fb = switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0
-                        |> flowAssertQuiet "Switch framebuffer"
+                        |> assertE "Switch framebuffer"
 
             --clp        = Clip 0 0 (modeHorizontalDisplay mode - 1) (modeVerticalDisplay mode - 1)
             --dirtyFb fb = sysCallAssertQuiet "Dirty framebuffer" <|
@@ -110,7 +110,7 @@ main = runSys' <| do
             clockDiagram h m s = rasterizeDiagram (mkWidth width) (clockDiag width height h m s)
 
             mainLoop !b = do
-               tv <- flowAssertQuiet "getTimeOfDay" sysGetTimeOfDay
+               tv <- assertE "getTimeOfDay" sysGetTimeOfDay
                let
                   gfb = if b then gfb1 else gfb2
                   GenericFrame fb _ = gfb
