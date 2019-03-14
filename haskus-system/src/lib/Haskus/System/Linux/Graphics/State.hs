@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | State of the graphics system
 module Haskus.System.Linux.Graphics.State
@@ -106,9 +107,10 @@ readGraphicsState hdl = go 5
          mencs  <- runE <| traverse (getEncoderFromID hdl res) (resEncoderIDs res)
          mctrls <- runE <| traverse (getControllerFromID hdl) (resControllerIDs res)
          -- read planes
-         mplanes <- runE <| (traverse (getPlane hdl) =<< liftE (getPlaneResources hdl))
-                                 -- shouldn't happen, planes are invariant
-                                 `catchDie` (\(InvalidPlane _)  -> error "Invalid plane" )
+         mplanes <- (traverse (getPlane hdl) =<< liftE (getPlaneResources hdl))
+                        -- shouldn't happen, planes are invariant
+                     |> catchDieE (\(InvalidPlane _) -> error "Invalid plane" )
+                     |> runE
 
          case (mconns, mencs, mctrls, mplanes) of
             (VRight conns, VRight encs, VRight ctrls, VRight planes) ->
@@ -146,10 +148,10 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
 getEncoderFromID :: MonadInIO m => Handle -> Resources -> EncoderID -> Excepts '[EntryNotFound,InvalidHandle] m Encoder
 getEncoderFromID hdl res encId =
    (ioctlGetEncoder enc hdl ||> fromStructGetEncoder res hdl)
-      `catchLiftLeft` \case
-         EINVAL -> throwE InvalidHandle
-         ENOENT -> throwE EntryNotFound
-         e      -> unhdlErr "getEncoder" e
+      |> catchLiftLeft \case
+            EINVAL -> throwE InvalidHandle
+            ENOENT -> throwE EntryNotFound
+            e      -> unhdlErr "getEncoder" e
    where
       enc = StructGetEncoder (unEntityID encId) (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
@@ -181,10 +183,10 @@ fromStructController hdl StructController{..} =
 getControllerFromID :: MonadInIO m => Handle -> ControllerID -> Excepts '[EntryNotFound,InvalidHandle] m Controller
 getControllerFromID hdl eid =
    (ioctlGetController crtc hdl ||> fromStructController hdl)
-      `catchLiftLeft` \case
-         EINVAL -> throwE InvalidHandle
-         ENOENT -> throwE EntryNotFound
-         e      -> unhdlErr "getController" e
+      |> catchLiftLeft \case
+            EINVAL -> throwE InvalidHandle
+            ENOENT -> throwE EntryNotFound
+            e      -> unhdlErr "getController" e
    where
       crtc = emptyStructController { contID = unEntityID eid }
 
@@ -266,10 +268,10 @@ setControllerGamma c (rs,gs,bs) = do
 getConnector' :: MonadInIO m => Handle -> StructGetConnector -> Excepts '[EntryNotFound,InvalidParam] m StructGetConnector
 getConnector' hdl r =
    ioctlGetConnector r hdl
-      `catchLiftLeft` \case
-         EINVAL -> throwE InvalidParam
-         ENOENT -> throwE EntryNotFound
-         e      -> unhdlErr "getConnector" e
+      |> catchLiftLeft \case
+            EINVAL -> throwE InvalidParam
+            ENOENT -> throwE EntryNotFound
+            e      -> unhdlErr "getConnector" e
 
 -- | Get connector
 getConnectorFromID :: forall m.
@@ -370,9 +372,9 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
    where 
       getRes :: StructCardRes -> Excepts '[InvalidHandle] m StructCardRes
       getRes r = ioctlGetResources r hdl
-                  `catchLiftLeft` \case
-                     EINVAL -> throwE InvalidHandle
-                     e      -> unhdlErr "getResources" e
+                  |> catchLiftLeft \case
+                        EINVAL -> throwE InvalidHandle
+                        e      -> unhdlErr "getResources" e
 
       extractSize x = [csCountFbs, csCountCrtcs, csCountConns, csCountEncs] <*> [x]
 
@@ -428,8 +430,10 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
 -- | Internal function to retreive card entities from their identifiers
 getEntities :: MonadInIO m => (Resources -> [a]) -> (Handle -> a -> m (Either x b)) -> Handle -> m [b]
 getEntities getIDs getEntityFromID hdl = do
-   res <- evalE <|
-            (getResources hdl `catchDie` (\InvalidHandle -> error "getEntities: invalid handle"))
+   res <- getResources hdl
+            |> catchDieE (\InvalidHandle -> error "getEntities: invalid handle")
+            |> evalE
+            
    let 
       f (Left _)  xs = xs
       f (Right x) xs = x:xs
@@ -471,9 +475,9 @@ getPlaneResources hdl = getCount >>= getIDs
       -- get the number of planes (invariant for a given device)
       getCount :: Excepts '[InvalidHandle] m Word32
       getCount = (gpr (StructGetPlaneRes 0 0) ||> gprsCountPlanes)
-                  `catchLiftLeft` \case
-                     EINVAL -> throwE InvalidHandle
-                     e      -> unhdlErr "getPlaneResources" e
+                  |> catchLiftLeft \case
+                        EINVAL -> throwE InvalidHandle
+                        e      -> unhdlErr "getPlaneResources" e
    
       -- get the plane IDs (invariant for a given device)
       getIDs :: Word32 -> Excepts '[InvalidHandle] m [PlaneID]
@@ -481,9 +485,9 @@ getPlaneResources hdl = getCount >>= getIDs
       getIDs n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let p' = fromIntegral (ptrToWordPtr p)
          void (gpr (StructGetPlaneRes p' n))
-            `catchLiftLeft` \case
-               EINVAL -> throwE InvalidHandle
-               e      -> unhdlErr "getPlaneResources" e
+            |> catchLiftLeft \case
+                  EINVAL -> throwE InvalidHandle
+                  e      -> unhdlErr "getPlaneResources" e
          fmap EntityID <$> peekArray (fromIntegral n) p
 
 -- | Get plane information
@@ -493,10 +497,10 @@ getPlane hdl pid = getCount >>= getInfo
 
       gpr :: StructGetPlane -> Excepts '[InvalidHandle,InvalidPlane] m StructGetPlane
       gpr s = ioctlGetPlane s hdl
-               `catchLiftLeft` \case
-                  EINVAL -> throwE InvalidHandle
-                  ENOENT -> throwE (InvalidPlane (EntityID (gpPlaneId s)))
-                  e      -> unhdlErr "getPlane" e
+               |> catchLiftLeft \case
+                     EINVAL -> throwE InvalidHandle
+                     ENOENT -> throwE (InvalidPlane (EntityID (gpPlaneId s)))
+                     e      -> unhdlErr "getPlane" e
 
       toMaybe _ 0 = Nothing
       toMaybe f x = Just (f x)
@@ -558,16 +562,16 @@ setPlane hdl pid opts = do
                   srcX srcY srcHeight srcWidth
 
    void (ioctlSetPlane s hdl)
-      `catchLiftLeft` \case
-         EINVAL -> throwE InvalidParam
-         ENOENT -> throwE EntryNotFound
-         ERANGE -> throwE InvalidDestRect
-         ENOSPC -> throwE InvalidSrcRect
-         e      -> unhdlErr "setPlane" e
+      |> catchLiftLeft \case
+            EINVAL -> throwE InvalidParam
+            ENOENT -> throwE EntryNotFound
+            ERANGE -> throwE InvalidDestRect
+            ENOSPC -> throwE InvalidSrcRect
+            e      -> unhdlErr "setPlane" e
 
 -- | Disable a plane
 disablePlane :: MonadInIO m => Handle -> PlaneID -> Excepts '[InvalidParam,EntryNotFound] m ()
 disablePlane hdl p = setPlane hdl p Nothing
    -- these errors should not be triggered when we disable a plane
-   `catchDie` (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)
-   `catchDie` (\InvalidSrcRect  -> unhdlErr "disablePlane" InvalidSrcRect)
+   |> catchDieE (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)
+   |> catchDieE (\InvalidSrcRect  -> unhdlErr "disablePlane" InvalidSrcRect)

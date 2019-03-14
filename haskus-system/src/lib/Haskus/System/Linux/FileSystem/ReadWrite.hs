@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Read/write
 module Haskus.System.Linux.FileSystem.ReadWrite
@@ -57,18 +58,19 @@ type ReadErrors
 -- Returns the number of bytes read or 0 if end of file
 sysRead :: MonadIO m => Handle -> Ptr () -> Word64 -> Excepts ReadErrors m Word64
 sysRead (Handle fd) ptr count = do
-   n <- (checkErrorCode =<< liftIO (syscall_read fd ptr count))
-         `catchLiftLeft` \case
-            EAGAIN -> throwE RetryLater
-            EBADF  -> throwE InvalidHandle
-            EFAULT -> throwE MemoryError
-            -- We shouldn't use blocking calls with the primop "read" syscall,
-            -- hence we shouldn't be interrupted
-            EINTR  -> throwE Interrupted
-            EINVAL -> throwE InvalidParam
-            EIO    -> throwE FileSystemIOError
-            EISDIR -> throwE InvalidIsDirectory
-            err    -> throwE err -- other errors may occur, depending on fd
+   r <- liftIO (syscall_read fd ptr count)
+   n <- checkErrorCode r
+         |> catchLiftLeft \case
+               EAGAIN -> throwE RetryLater
+               EBADF  -> throwE InvalidHandle
+               EFAULT -> throwE MemoryError
+               -- We shouldn't use blocking calls with the primop "read" syscall,
+               -- hence we shouldn't be interrupted
+               EINTR  -> throwE Interrupted
+               EINVAL -> throwE InvalidParam
+               EIO    -> throwE FileSystemIOError
+               EISDIR -> throwE InvalidIsDirectory
+               err    -> throwE err -- other errors may occur, depending on fd
    return (fromIntegral n)
 
 type ReadErrors'
@@ -87,21 +89,22 @@ type ReadErrors'
 -- | Read a file descriptor at a given position
 sysReadWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Excepts ReadErrors' m Word64
 sysReadWithOffset (Handle fd) offset ptr count = do
-   n <- (checkErrorCode =<< liftIO (syscall_pread64 fd ptr count offset))
-         `catchLiftLeft` \case
-            EAGAIN    -> throwE RetryLater
-            EBADF     -> throwE InvalidHandle
-            ESPIPE    -> throwE InvalidHandle
-            EFAULT    -> throwE MemoryError
-            -- We shouldn't use blocking calls with the primop "read" syscall,
-            -- hence we shouldn't be interrupted
-            EINTR     -> throwE Interrupted
-            EINVAL    -> throwE InvalidParam
-            EIO       -> throwE FileSystemIOError
-            EISDIR    -> throwE InvalidIsDirectory
-            ENXIO     -> throwE InvalidRange
-            EOVERFLOW -> throwE Overflow
-            err       -> throwE err -- other errors may occur, depending on fd
+   r <- liftIO (syscall_pread64 fd ptr count offset)
+   n <- checkErrorCode r
+         |> catchLiftLeft \case
+               EAGAIN    -> throwE RetryLater
+               EBADF     -> throwE InvalidHandle
+               ESPIPE    -> throwE InvalidHandle
+               EFAULT    -> throwE MemoryError
+               -- We shouldn't use blocking calls with the primop "read" syscall,
+               -- hence we shouldn't be interrupted
+               EINTR     -> throwE Interrupted
+               EINVAL    -> throwE InvalidParam
+               EIO       -> throwE FileSystemIOError
+               EISDIR    -> throwE InvalidIsDirectory
+               ENXIO     -> throwE InvalidRange
+               EOVERFLOW -> throwE Overflow
+               err       -> throwE err -- other errors may occur, depending on fd
    return (fromIntegral n)
 
 -- | Read "count" bytes from a handle (starting at optional "offset") and put
@@ -117,7 +120,7 @@ handleReadBuffer hdl offset size = do
    b <- liftIO <| mallocBytes (fromIntegral size)
    sz <- handleRead hdl offset b (fromIntegral size)
          -- free the pointer on error
-         `onE_` liftIO (free b)
+         |> onE_ (liftIO (free b))
    -- otherwise return the buffer
    bufferUnsafePackPtr (fromIntegral sz) (castPtr b)
 
@@ -130,7 +133,8 @@ sysReadMany (Handle fd) bufs =
       count = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' -> do
-      n <- checkErrorCode =<< liftIO (syscall_readv fd (castPtr bufs') count)
+      r <- liftIO (syscall_readv fd (castPtr bufs') count)
+      n <- checkErrorCode r
       return (fromIntegral n)
 
 -- | Like readMany, with additional offset in file
@@ -144,20 +148,23 @@ sysReadManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' -> do
-      n <- checkErrorCode =<< liftIO (syscall_preadv fd (castPtr bufs') count ol oh)
+      r <- liftIO (syscall_preadv fd (castPtr bufs') count ol oh)
+      n <- checkErrorCode r
       return (fromIntegral n)
 
 -- | Write cound bytes into the given file descriptor from "buf"
 -- Returns the number of bytes written (0 indicates that nothing was written)
 sysWrite :: MonadIO m => Handle -> Ptr a -> Word64 -> Excepts '[ErrorCode] m Word64
 sysWrite (Handle fd) buf count = do
-   n <- checkErrorCode =<< liftIO (syscall_write fd (castPtr buf) count)
+   r <- liftIO (syscall_write fd (castPtr buf) count)
+   n <- checkErrorCode r
    return (fromIntegral n)
 
 -- | Write a file descriptor at a given position
 sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Excepts '[ErrorCode] m Word64
 sysWriteWithOffset (Handle fd) offset buf count = do
-   n <- checkErrorCode =<< liftIO (syscall_pwrite64 fd buf count offset)
+   r <- liftIO (syscall_pwrite64 fd buf count offset)
+   n <- checkErrorCode r
    return (fromIntegral n)
 
 
@@ -169,7 +176,8 @@ sysWriteMany (Handle fd) bufs =
       count       = length bufs
    in
    withArray (fmap toVec bufs) $ \bufs' -> do
-      n <- checkErrorCode =<< liftIO (syscall_writev fd (castPtr bufs') count)
+      r <- liftIO (syscall_writev fd (castPtr bufs') count)
+      n <- checkErrorCode r
       return (fromIntegral n)
 
 -- | Like writeMany, with additional offset in file
@@ -183,7 +191,8 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       oh = fromIntegral (offset `shiftR` 32) :: Word32
    in
    withArray (fmap toVec bufs) $ \bufs' -> do
-      n <- checkErrorCode =<< liftIO (syscall_pwritev fd (castPtr bufs') count ol oh)
+      r <- liftIO (syscall_pwritev fd (castPtr bufs') count ol oh)
+      n <- checkErrorCode r
       return (fromIntegral n)
 
 -- | Write a buffer

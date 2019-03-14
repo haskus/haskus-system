@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Haskus.System.Linux.FileSystem
    ( FilePermission(..)
@@ -145,9 +146,10 @@ sysGetCurrentDirectory = go 128
          allocaArray n $ \ptr -> do
             checkErrorCode_ =<< liftIO (syscall_getcwd ptr (fromIntegral n))
             peekCString ptr
-      go n = tryGetCwd n `catchLiftLeft` \case
-               ERANGE -> go (2 * n)
-               e      -> throwE e
+      go n = tryGetCwd n
+               |> catchLiftLeft \case
+                     ERANGE -> go (2 * n)
+                     e      -> throwE e
 
 data FileLock =
      SharedLock
@@ -422,47 +424,48 @@ open mhdl path flags mode = do
                   Nothing          -> syscall_open
                   Just (Handle fd) -> syscall_openat fd
    withCString path <| \path' -> do
-      n <- (checkErrorCode =<< liftIO (call path' (BitSet.toBits flags) (BitSet.toBits mode)))
-            `catchLiftLeft` \case
-               EACCES       -> throwE NotAllowed
-               EDQUOT       -> throwE ExhaustedQuota
-               EEXIST       -> throwE FileAlreadyExists
-               EFAULT       -> throwE MemoryError
-               EFBIG        -> throwE Overflow
-               EINTR        -> throwE Interrupted
-               EINVAL       -> throwE InvalidParam
-               EISDIR       -> throwE InvalidIsDirectory
-               ELOOP        -> throwE SymbolicLinkLoop
-               EMFILE       -> throwE TooManyProcessHandles
-               ENAMETOOLONG -> throwE TooLongPathName
-               ENFILE       -> throwE TooManySystemHandles
-               ENODEV       -> throwE DeviceNotFound
-               ENOENT       -> throwE InvalidPathComponent
-               ENOMEM       -> throwE OutOfKernelMemory
-               ENOSPC       -> throwE OutOfSpace
-               ENOTDIR      -> throwE NotADirectory
-               ENXIO        -> throwE FileSystemIOError
-               EOPNOTSUPP   -> throwE TempFileNotSupported
-               EPERM        -> throwE NotAllowed
-               EROFS        -> throwE ReadOnlyFileSystem
-               ETXTBSY      -> throwE CannotWriteExecutedImage
-               EAGAIN       -> throwE RetryLater
-               EBADF        -> throwE InvalidHandle
-               EBUSY        -> throwE Busy
-               err          -> unhdlErr "open" err
+      r <- liftIO (call path' (BitSet.toBits flags) (BitSet.toBits mode))
+      n <- checkErrorCode r
+            |> catchLiftLeft \case
+                  EACCES       -> throwE NotAllowed
+                  EDQUOT       -> throwE ExhaustedQuota
+                  EEXIST       -> throwE FileAlreadyExists
+                  EFAULT       -> throwE MemoryError
+                  EFBIG        -> throwE Overflow
+                  EINTR        -> throwE Interrupted
+                  EINVAL       -> throwE InvalidParam
+                  EISDIR       -> throwE InvalidIsDirectory
+                  ELOOP        -> throwE SymbolicLinkLoop
+                  EMFILE       -> throwE TooManyProcessHandles
+                  ENAMETOOLONG -> throwE TooLongPathName
+                  ENFILE       -> throwE TooManySystemHandles
+                  ENODEV       -> throwE DeviceNotFound
+                  ENOENT       -> throwE InvalidPathComponent
+                  ENOMEM       -> throwE OutOfKernelMemory
+                  ENOSPC       -> throwE OutOfSpace
+                  ENOTDIR      -> throwE NotADirectory
+                  ENXIO        -> throwE FileSystemIOError
+                  EOPNOTSUPP   -> throwE TempFileNotSupported
+                  EPERM        -> throwE NotAllowed
+                  EROFS        -> throwE ReadOnlyFileSystem
+                  ETXTBSY      -> throwE CannotWriteExecutedImage
+                  EAGAIN       -> throwE RetryLater
+                  EBADF        -> throwE InvalidHandle
+                  EBUSY        -> throwE Busy
+                  err          -> unhdlErr "open" err
       return (Handle (fromIntegral n))
 
 
 -- | Close a file descriptor
 close :: MonadIO m => Handle -> Excepts '[InvalidHandle,Interrupted,FileSystemIOError] m ()
-close (Handle fd) =
-   (checkErrorCode_ =<< liftIO (syscall_close fd))
-      `catchLiftLeft`\case
-         EBADF -> throwE InvalidHandle
-         EINTR -> throwE Interrupted
-         EIO   -> throwE FileSystemIOError
-         err   -> unhdlErr "close" err
-
+close (Handle fd) = do
+   r <- liftIO (syscall_close fd)
+   checkErrorCode_ r
+      |> catchLiftLeft \case
+            EBADF -> throwE InvalidHandle
+            EINTR -> throwE Interrupted
+            EIO   -> throwE FileSystemIOError
+            err   -> unhdlErr "close" err
 
 -----------------------------------------------------------------------
 -- Synchronization
@@ -471,16 +474,20 @@ close (Handle fd) =
 -- | Causes all pending modifications to file system metadata and cached file
 -- data to be written to the underlying filesystems
 syncAll :: MonadIO m => Excepts '[] m ()
-syncAll = (liftIO (syscall_sync) >>= checkErrorCode_)
-            `catchDie` unhdlErr @ErrorCode "syncAll"
+syncAll = do
+   r <- liftIO (syscall_sync)
+   checkErrorCode_ r
+      |> catchDieE (unhdlErr @ErrorCode "syncAll")
 
 -- | Causes all pending modifications to file system metadata and cached file
 -- data to be written to the underlying filesystem containg the open handle `fd`
 syncAllByHandle :: MonadIO m => Handle -> Excepts '[InvalidHandle] m ()
-syncAllByHandle (Handle fd) = (liftIO (syscall_syncfs fd) >>= checkErrorCode_)
-   `catchLiftLeft` \case
-      EBADF -> throwE InvalidHandle
-      err   -> unhdlErr "syncAllByHandle" err
+syncAllByHandle (Handle fd) = do
+   r <- liftIO (syscall_syncfs fd)
+   checkErrorCode_ r
+      |> catchLiftLeft \case
+            EBADF -> throwE InvalidHandle
+            err   -> unhdlErr "syncAllByHandle" err
 
 -- | Flushes all modified in-core of the file referred by the handle to the disk
 -- device.
@@ -493,18 +500,19 @@ syncAllByHandle (Handle fd) = (liftIO (syscall_syncfs fd) >>= checkErrorCode_)
 -- metadata required to retrieve it (e.g., the file size) are flushed on disk.
 -- Otherwise, all the metadata are flushed.
 syncHandle :: MonadIO m => Bool -> Handle -> Excepts '[InvalidHandle,FileSystemIOError, InvalidParam] m ()
-syncHandle flushMetadata (Handle fd) =
-      (call >>= checkErrorCode_)
-         `catchLiftLeft` \case
-            EBADF  -> throwE InvalidHandle
-            EIO    -> throwE FileSystemIOError
-            EROFS  -> throwE InvalidParam
-            EINVAL -> throwE InvalidParam
-            err    -> unhdlErr "syncHandle" err
-   where
-      call = if flushMetadata
-               then liftIO (syscall_fsync fd)
-               else liftIO (syscall_fdatasync fd)
+syncHandle flushMetadata (Handle fd) = do
+   r <- if flushMetadata
+         then liftIO (syscall_fsync fd)
+         else liftIO (syscall_fdatasync fd)
+
+   checkErrorCode_ r
+      |> catchLiftLeft \case
+               EBADF  -> throwE InvalidHandle
+               EIO    -> throwE FileSystemIOError
+               EROFS  -> throwE InvalidParam
+               EINVAL -> throwE InvalidParam
+               err    -> unhdlErr "syncHandle" err
+            
 
 -----------------------------------------------------------------------
 -- Rename/move
@@ -541,33 +549,30 @@ rename mohdl oldPath mnhdl newPath flags = do
       mnhdl'              = fromMaybe 0xFFFFFFFF (fmap fromHdl mnhdl)
       noreplace           = BitSet.member flags' RenameNoReplace
    withCString oldPath $ \old' ->
-      withCString newPath $ \new' ->
-         (liftIO (syscall_renameat2 mohdl' old' mnhdl' new'
-                                      (BitSet.toBits flags'))
-            >>= checkErrorCode_)
-            `catchLiftLeft` \case
-               EACCES                   -> throwE NotAllowed
-               EBUSY                    -> throwE BusyDirectory
-               EDQUOT                   -> throwE ExhaustedQuota
-               EINVAL                   -> throwE InvalidParam
-               EISDIR                   -> throwE InvalidIsDirectory
-               ELOOP                    -> throwE SymbolicLinkLoop
-               EMLINK                   -> throwE TooManyLinks
-               ENAMETOOLONG             -> throwE TooLongPathName
-               ENOENT                   -> throwE InvalidPathComponent
-               ENOMEM                   -> throwE OutOfKernelMemory
-               ENOSPC                   -> throwE OutOfSpace
-               ENOTDIR                  -> throwE NotADirectory
-               ENOTEMPTY                -> throwE NotEmptyDirectory
-               EEXIST | noreplace       -> throwE FileAlreadyExists
-                      | otherwise       -> throwE NotEmptyDirectory
-               EPERM                    -> throwE NotAllowed
-               EROFS                    -> throwE ReadOnlyFileSystem
-               EXDEV                    -> throwE NotTheSameFileSystem
-               EBADF                    -> throwE InvalidHandle
-               err                      -> unhdlErr "rename" err
-
-
+      withCString newPath $ \new' -> do
+         r <- liftIO (syscall_renameat2 mohdl' old' mnhdl' new' (BitSet.toBits flags'))
+         checkErrorCode_ r
+            |> catchLiftLeft \case
+                  EACCES                   -> throwE NotAllowed
+                  EBUSY                    -> throwE BusyDirectory
+                  EDQUOT                   -> throwE ExhaustedQuota
+                  EINVAL                   -> throwE InvalidParam
+                  EISDIR                   -> throwE InvalidIsDirectory
+                  ELOOP                    -> throwE SymbolicLinkLoop
+                  EMLINK                   -> throwE TooManyLinks
+                  ENAMETOOLONG             -> throwE TooLongPathName
+                  ENOENT                   -> throwE InvalidPathComponent
+                  ENOMEM                   -> throwE OutOfKernelMemory
+                  ENOSPC                   -> throwE OutOfSpace
+                  ENOTDIR                  -> throwE NotADirectory
+                  ENOTEMPTY                -> throwE NotEmptyDirectory
+                  EEXIST | noreplace       -> throwE FileAlreadyExists
+                         | otherwise       -> throwE NotEmptyDirectory
+                  EPERM                    -> throwE NotAllowed
+                  EROFS                    -> throwE ReadOnlyFileSystem
+                  EXDEV                    -> throwE NotTheSameFileSystem
+                  EBADF                    -> throwE InvalidHandle
+                  err                      -> unhdlErr "rename" err
 
 
 -----------------------------------------------------------------------

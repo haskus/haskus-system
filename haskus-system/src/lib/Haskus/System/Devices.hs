@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -freduction-depth=0 #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Devices management
 --
@@ -261,26 +261,26 @@ initDeviceManager sysfs devfs = do
             lift (deviceAdd dm path Nothing)
 
          -- list directories (sub-devices) that are *not* symlinks
-         dirs <- (listDirectory hdl
+         dirs <- listDirectory hdl
                     -- filter to keep only directories (sysfs fills the type field)
                     ||> filter (\entry -> entryType entry == TypeDirectory)
                     -- only keep the directory name
                     ||> fmap entryName
-                 -- return an empty directory list on error
-                 ) `catchAllE` (\_ -> successE [])
+                    -- return an empty directory list on error
+                    |> catchAllE (\_ -> successE [])
 
          -- recursively try to create a tree for each sub-dir
          forM_ dirs $ \dir -> do
             let path' = Text.concat [path, Text.pack "/", Text.pack dir]
             withDevDir hdl dir (readSysfsDir path')
-               `catchAllE` (\_ -> successE ())
+               |> catchAllE (\_ -> successE ())
 
          return ()
 
 
    -- list devices in /devices
    withDevDir sysfs "devices" (readSysfsDir Text.empty)
-      |> catchEvalE (\err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err))
+      |> catchEvalE \err -> sysError (textFormat ("Cannot read /devices in sysfs: " % shown) err)
       |> void
 
    -- launch handling thread
@@ -641,16 +641,17 @@ getDeviceHandle dm dev = do
       let flgs = BitSet.fromList [HandleReadWrite,HandleNonBlocking]
       hdl <- liftE <| open (Just devfd) devname flgs BitSet.empty
       -- then remove it
-      liftE <| sysUnlinkAt devfd devname False
-         `onE` sysWarningShow "Unlinking special device file failed"
+      sysUnlinkAt devfd devname False
+         |> warningShowE "Unlinking special device file"
+         |> liftE
       return hdl
 
 -- | Release a device handle
 releaseDeviceHandle :: Handle -> Sys ()
-releaseDeviceHandle fd = close fd
-   |> catchEvalE (\err -> do
-      let msg = textFormat ("close (failed with " % shown % ")") err
-      sysLog LogWarning msg)
+releaseDeviceHandle fd =
+   close fd
+   |> warningShowE "close"
+   |> runE_
 
 -- | Find device path by number (major, minor)
 openDeviceDir :: DeviceManager -> Device -> Excepts OpenErrors Sys Handle

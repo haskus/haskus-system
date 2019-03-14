@@ -357,6 +357,7 @@ assertShowE text v = do
    let msg = textFormat (stext % " (failed with " % shown % ")") text v
    sysError msg
 
-warningShowE :: Show (V xs) => Text -> Excepts xs Sys a -> Sys ()
-warningShowE text f = runE_ <|
-   f `onE` (\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))
+warningShowE :: Show (V xs) => Text -> Excepts xs Sys a -> Excepts xs Sys a
+warningShowE text action =
+   action
+      |> onE(\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))

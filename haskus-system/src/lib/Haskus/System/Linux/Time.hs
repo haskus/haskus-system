@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Linux time
 module Haskus.System.Linux.Time
@@ -95,37 +96,42 @@ instance Enum Clock where
 -- | Retrieve clock time
 sysClockGetTime :: MonadInIO m => Clock -> Excepts '[ErrorCode] m TimeSpec
 sysClockGetTime clk =
-   alloca $ \(t :: Ptr TimeSpec) -> do
-      checkErrorCode_ =<< liftIO (syscall_clock_gettime (fromEnum clk) (castPtr t))
+   alloca \(t :: Ptr TimeSpec) -> do
+      r <- liftIO (syscall_clock_gettime (fromEnum clk) (castPtr t))
+      checkErrorCode_ r
       peek t
 
 -- | Set clock time
 sysClockSetTime :: MonadInIO m => Clock -> TimeSpec -> Excepts '[ErrorCode] m ()
 sysClockSetTime clk time =
-   with time $ \(t :: Ptr TimeSpec) -> do
-      checkErrorCode_ =<< liftIO (syscall_clock_settime (fromEnum clk) (castPtr t))
+   with time \(t :: Ptr TimeSpec) -> do
+      r <- liftIO (syscall_clock_settime (fromEnum clk) (castPtr t))
+      checkErrorCode_ r
 
 -- | Retrieve clock resolution
 sysClockGetResolution :: MonadInIO m => Clock -> Excepts '[ErrorCode] m TimeSpec
 sysClockGetResolution clk =
-   alloca $ \(t :: Ptr TimeSpec) -> do
-      checkErrorCode_ =<< liftIO (syscall_clock_getres (fromEnum clk) (castPtr t))
+   alloca \(t :: Ptr TimeSpec) -> do
+      r <- liftIO (syscall_clock_getres (fromEnum clk) (castPtr t))
+      checkErrorCode_ r
       peek t
 
 -- | Retrieve time of day
 sysGetTimeOfDay :: MonadInIO m => Excepts '[ErrorCode] m TimeVal
 sysGetTimeOfDay =
-   alloca $ \(tv :: Ptr TimeVal) -> do
+   alloca \(tv :: Ptr TimeVal) -> do
       -- timezone arg is deprecated (NULL passed instead)
-      checkErrorCode_ =<< liftIO (syscall_gettimeofday (castPtr tv) nullPtr)
+      r <- liftIO (syscall_gettimeofday (castPtr tv) nullPtr)
+      checkErrorCode_ r
       peek tv
 
 -- | Set time of day
 sysSetTimeOfDay :: MonadInIO m => TimeVal -> Excepts '[ErrorCode] m ()
 sysSetTimeOfDay tv =
-   with tv $ \ptv -> do
+   with tv \ptv -> do
       -- timezone arg is deprecated (NULL passed instead)
-      checkErrorCode_ =<< liftIO (syscall_settimeofday (castPtr ptv) nullPtr)
+      r <- liftIO (syscall_settimeofday (castPtr ptv) nullPtr)
+      checkErrorCode_ r
 
 -- | Result of a sleep
 data SleepResult
@@ -138,19 +144,18 @@ data SleepResult
 -- Can be interrupted by a signal (in this case it returns the remaining time)
 sysNanoSleep :: MonadInIO m => TimeSpec -> Excepts '[ErrorCode] m SleepResult
 sysNanoSleep ts =
-   with ts $ \ts' ->
-      alloca $ \(rem' :: Ptr TimeSpec) -> do
-         (liftIO (syscall_nanosleep (castPtr ts') (castPtr rem'))
-            >>= checkErrorCode_
-            >> return CompleteSleep)
-               `catchLiftLeft` \case
+   with ts \ts' ->
+      alloca \(rem' :: Ptr TimeSpec) -> do
+         r <- liftIO (syscall_nanosleep (castPtr ts') (castPtr rem'))
+         (checkErrorCode_ r >> pure CompleteSleep)
+            |> catchE \case
                   EINTR -> WokenUp <$> peek rem'
-                  err   -> throwE err
+                  err   -> failureE err
 
 -- | Suspend the calling thread for the specified amount of time
 --
 -- When interrupted by a signal, suspend again for the remaining amount of time
 nanoSleep :: MonadInIO m => TimeSpec -> Excepts '[ErrorCode] m ()
 nanoSleep ts = sysNanoSleep ts >>= \case
-      CompleteSleep -> return ()
-      WokenUp r     -> nanoSleep r
+   CompleteSleep -> return ()
+   WokenUp r     -> nanoSleep r

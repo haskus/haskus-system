@@ -109,8 +109,8 @@ sysReceive (Handle fd) ptr size flags addr = do
 receiveBuffer :: MonadInIO m => Handle -> Int -> SendReceiveFlags -> Excepts '[ErrorCode] m Buffer
 receiveBuffer fd size flags = do
    b <- liftIO <| mallocBytes (fromIntegral size)
-   sz <- (sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int))
+   sz <- sysReceive fd b (fromIntegral size) flags (Nothing :: Maybe Int)
          -- free the buffer on error
-         `onE_` liftIO (free b)
+         |> onE_ (liftIO (free b))
    -- otherwise make a bytestring
    bufferPackPtr (fromIntegral sz) (castPtr b)

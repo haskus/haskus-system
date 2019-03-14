@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Haskus.Arch.X86_64.ISA.Decoder
    ( getInstruction
@@ -475,7 +476,7 @@ readOperands mode ps oc enc = do
       -- reduce operands predicates
       ops = encOperands enc
             ||> reducePredicates oracle
-            ||> (\case
+            ||> \case
                Match a     -> a
                DontMatch x -> error ("Operand doesn't reduce: "
                                  ++ show x
@@ -483,7 +484,6 @@ readOperands mode ps oc enc = do
                                  ++ show (getTerminals x))
 
                e           -> error ("Operand doesn't reduce: "++ show e)
-               )
 
    ----------------------
    -- SIB

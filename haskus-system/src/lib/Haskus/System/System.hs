@@ -3,6 +3,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | System
 module Haskus.System.System
@@ -62,9 +63,10 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 
    -- create root path (allowed to fail if it already exists)
    logAssertE "Create root directory" <| do
-      createDir path `catchLiftLeft` \case
-         EEXIST -> return ()
-         e      -> failureE e
+      createDir path
+         |> catchLiftLeft \case
+               EEXIST -> return ()
+               e      -> failureE e
 
    -- mount a tmpfs in root path
    logAssertE "Mount tmpfs" <| mountTmpFS sysMount path

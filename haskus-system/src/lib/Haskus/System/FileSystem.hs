@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -freduction-depth=0 #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Haskus.System.FileSystem
    ( withOpenAt
@@ -32,7 +33,7 @@ withOpenAt :: forall xs zs m a.
    ) => Handle -> FilePath -> HandleFlags -> FilePermissions -> (Handle -> Excepts xs m a) -> Excepts zs m a
 withOpenAt fd path flags perm act = do
       fd2 <- liftE (open (Just fd) path flags perm)
-      liftE (act fd2) `finallyE` runE_ (close fd2)
+      liftE (act fd2) |> finallyE (runE_ (close fd2))
 
 -- | Read a file with a single "read"
 --
@@ -46,9 +47,9 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
       go sz fd = do
          -- use 0 offset to read from the beginning
          buf <- handleReadBuffer fd (Just 0) sz
-                  `onE` (\err -> do
-                     let msg = textFormat ("Atomic read file (failed with " % shown % ")") err
-                     sysLog LogWarning msg)
+                  |> onE \err -> do
+                        let msg = textFormat ("Atomic read file (failed with " % shown % ")") err
+                        sysLog LogWarning msg
 
          if fromIntegral (bufferSize buf) == sz
             then go (sz*2) fd

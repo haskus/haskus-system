@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Kernel object handle
 --
@@ -29,27 +30,27 @@ import Haskus.Utils.Flow
 
 -- | Fcntl syscall
 sysFcntl :: (MonadIO m, Arg a) => Handle -> FcntlCommand -> a -> Excepts '[ErrorCode] m Int64
-sysFcntl (Handle fd) cmd arg =
-   checkErrorCode =<< liftIO (syscall_fcntl fd (fromCEnum cmd) (toArg arg))
+sysFcntl (Handle fd) cmd arg = do
+   r <- liftIO (syscall_fcntl fd (fromCEnum cmd) (toArg arg))
+   checkErrorCode r
 
 
 -- | Get descriptor flags
 getHandleFlags :: MonadIO m => Handle -> Excepts '[InvalidHandle] m HandleFlags
 getHandleFlags hdl = do
    r <- sysFcntl hdl FcntlGetFlags (0 :: Int)
-         `catchLiftBoth` \case
-            EBADF -> failureE InvalidHandle
-            e     -> unhdlErr "getHandleFlags" e
+         |> catchE \case
+               EBADF -> failureE InvalidHandle
+               e     -> unhdlErr "getHandleFlags" e
    return (BitSet.fromBits (fromIntegral r))
 
 -- | Set descriptor flags
 setHandleFlags :: MonadIO m => Handle -> HandleFlags -> Excepts '[InvalidHandle] m ()
 setHandleFlags hdl flgs =
    void (sysFcntl hdl FcntlSetFlags (BitSet.toBits flgs))
-      `catchLiftBoth` \case
-         EBADF -> failureE InvalidHandle
-         e     -> unhdlErr "setHandleFlags" e
-
+      |> catchE \case
+            EBADF -> failureE InvalidHandle
+            e     -> unhdlErr "setHandleFlags" e
 
 -- | Handle flags 
 data HandleFlag

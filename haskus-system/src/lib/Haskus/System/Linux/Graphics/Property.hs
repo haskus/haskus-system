@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Property
 module Haskus.System.Linux.Graphics.Property
@@ -87,10 +88,10 @@ getPropertyMeta fd pid = do
    where
       getProperty' :: StructGetProperty -> Excepts '[InvalidParam,InvalidProperty] m StructGetProperty
       getProperty' r = ioctlGetProperty r fd
-                        `catchLiftLeft` \case
-                           EINVAL -> throwE InvalidParam
-                           ENOENT -> throwE InvalidProperty
-                           e      -> unhdlErr "getPropertyMeta" e
+                        |> catchLiftLeft \case
+                              EINVAL -> throwE InvalidParam
+                              ENOENT -> throwE InvalidProperty
+                              e      -> unhdlErr "getPropertyMeta" e
 
 
       gp = StructGetProperty
@@ -108,10 +109,10 @@ getPropertyMeta fd pid = do
 
       getBlobStruct :: StructGetBlob -> Excepts '[InvalidParam,InvalidProperty] m StructGetBlob
       getBlobStruct r = ioctlGetBlob r fd
-                           `catchLiftLeft` \case
-                              EINVAL -> throwE InvalidParam
-                              ENOENT -> throwE InvalidProperty
-                              e      -> unhdlErr "getBlobStruct" e
+                           |> catchLiftLeft \case
+                                 EINVAL -> throwE InvalidParam
+                                 ENOENT -> throwE InvalidProperty
+                                 e      -> unhdlErr "getBlobStruct" e
 
       -- | Get a blob
       getBlob :: Word32 -> Excepts '[InvalidParam,InvalidProperty] m Buffer
@@ -126,7 +127,7 @@ getPropertyMeta fd pid = do
          ptr <- liftIO . mallocBytes . fromIntegral . gbLength $ gb'
          void (getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) }))
             -- free ptr on error
-            `onE_` liftIO (free ptr)
+            |> onE_ (liftIO (free ptr))
          -- otherwise return a bytestring
          bufferPackPtr (fromIntegral (gbLength gb')) ptr
 
@@ -203,12 +204,11 @@ setAtomic hdl flags objProps = do
                      , atomUserData      = 0 -- used for event generation
                      }
                void (ioctlAtomic s hdl)
-                  `catchLiftLeft` \case
-                     EBADF  -> throwE InvalidHandle
-                     EINVAL -> throwE InvalidParam
-                     ENOMEM -> throwE MemoryError
-                     ENOENT -> throwE EntryNotFound
-                     ERANGE -> throwE InvalidRange
-                     ENOSPC -> throwE InvalidRange
-                     e      -> unhdlErr "setAtomic" e
-
+                  |> catchLiftLeft \case
+                        EBADF  -> throwE InvalidHandle
+                        EINVAL -> throwE InvalidParam
+                        ENOMEM -> throwE MemoryError
+                        ENOENT -> throwE EntryNotFound
+                        ERANGE -> throwE InvalidRange
+                        ENOSPC -> throwE InvalidRange
+                        e      -> unhdlErr "setAtomic" e

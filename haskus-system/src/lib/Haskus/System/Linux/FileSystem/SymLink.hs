@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Symbolic links
 module Haskus.System.Linux.FileSystem.SymLink
@@ -36,18 +37,18 @@ type ReadSymLinkErrors
 readSymbolicLink :: MonadInIO m => Maybe Handle -> FilePath -> Excepts ReadSymLinkErrors m String
 readSymbolicLink hdl path = do
    sysReadLinkAt hdl path
-      `catchLiftLeft` \case
-         EACCES       -> throwE NotAllowed
-         EINVAL       -> throwE NotSymbolicLink
-         EIO          -> throwE FileSystemIOError
-         ELOOP        -> throwE SymbolicLinkLoop
-         ENAMETOOLONG -> throwE TooLongPathName
-         ENOENT       -> throwE FileNotFound
-         ENOMEM       -> throwE OutOfKernelMemory
-         ENOTDIR      -> throwE InvalidPathComponent
-         EBADF        -> error "readSymbolicLink: invalid handle"
-         -- EFAULT: shouldn't happen (or is a haskus-system bug)
-         e            -> unhdlErr "readSymbolicLink" e
+      |> catchLiftLeft \case
+            EACCES       -> throwE NotAllowed
+            EINVAL       -> throwE NotSymbolicLink
+            EIO          -> throwE FileSystemIOError
+            ELOOP        -> throwE SymbolicLinkLoop
+            ENAMETOOLONG -> throwE TooLongPathName
+            ENOENT       -> throwE FileNotFound
+            ENOMEM       -> throwE OutOfKernelMemory
+            ENOTDIR      -> throwE InvalidPathComponent
+            EBADF        -> error "readSymbolicLink: invalid handle"
+            -- EFAULT: shouldn't happen (or is a haskus-system bug)
+            e            -> unhdlErr "readSymbolicLink" e
 
 
 -- | Wrapper for readlinkat syscall

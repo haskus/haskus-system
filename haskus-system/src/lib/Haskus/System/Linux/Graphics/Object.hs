@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Object
 module Haskus.System.Linux.Graphics.Object
@@ -112,7 +113,7 @@ getObjectProperties hdl o =
        -- using an initial value we avoid a syscall in most cases.
       fixCount go 20
    where
-      fixCount f n = f n `catchRemove` (\(InvalidCount n') -> fixCount f n')
+      fixCount f n = f n |> catchRemove (\(InvalidCount n') -> fixCount f n')
 
       allocaArray' 0 f = f nullPtr
       allocaArray' n f = allocaArray (fromIntegral n) f
@@ -134,10 +135,10 @@ getObjectProperties hdl o =
 
       getObjectProperties' :: StructGetObjectProperties -> Excepts '[InvalidParam,ObjectNotFound] m StructGetObjectProperties
       getObjectProperties' s = ioctlGetObjectProperties s hdl
-                                 `catchLiftLeft` \case
-                                    EINVAL -> throwE InvalidParam
-                                    ENOENT -> throwE ObjectNotFound
-                                    e      -> unhdlErr "getObjectProperties" e
+                                 |> catchLiftLeft \case
+                                       EINVAL -> throwE InvalidParam
+                                       ENOENT -> throwE ObjectNotFound
+                                       e      -> unhdlErr "getObjectProperties" e
 
       extractProperties :: StructGetObjectProperties -> m [RawProperty]
       extractProperties s = do
@@ -173,7 +174,7 @@ setObjectProperty' ::
 setObjectProperty' hdl oid otyp prop val = do
    let s = StructSetObjectProperty val prop oid (fromCEnum otyp)
    void (ioctlSetObjectProperty s hdl)
-      `catchLiftLeft` \case
-         EINVAL -> throwE InvalidParam
-         ENOENT -> throwE ObjectNotFound
-         e      -> unhdlErr "setObjectProperty" e
+      |> catchLiftLeft \case
+            EINVAL -> throwE InvalidParam
+            ENOENT -> throwE ObjectNotFound
+            e      -> unhdlErr "setObjectProperty" e

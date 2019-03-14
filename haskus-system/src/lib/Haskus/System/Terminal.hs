@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Terminal helpers
 module Haskus.System.Terminal
@@ -218,11 +219,11 @@ outputThread s = go [] 0 0
       -- writeMany handling EAGAIN
       wrt :: [(Ptr a, Word64)] -> Excepts '[ErrorCode] Sys Word64
       wrt ps = sysWriteMany h ps
-                  `catchLiftLeft` \case
-                     -- TODO: we should retry without having to rebuild the
-                     -- parameter array (i.e. do it in sysWriteMany)
-                     EAGAIN -> threadWaitWrite h >> wrt ps
-                     err    -> failureE err
+                  |> catchLiftLeft \case
+                        -- TODO: we should retry without having to rebuild the
+                        -- parameter array (i.e. do it in sysWriteMany)
+                        EAGAIN -> threadWaitWrite h >> wrt ps
+                        err    -> failureE err
 
 
       go :: [(IOBuffer, FutureSource ())] -> Word -> Word -> Sys ()

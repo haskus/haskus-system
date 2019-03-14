@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Linux signals
 module Haskus.System.Linux.Signal
@@ -56,14 +57,13 @@ sysSendSignalAll sig = checkErrorCode_ =<< liftIO (syscall_kill (-1) sig)
 --
 -- Send signal "0" to the given process/process group
 sysCheckProcess :: MonadIO m => ProcessID -> Excepts '[ErrorCode] m Bool
-sysCheckProcess pid = 
-   (sysSendSignal pid 0 >> return True)
+sysCheckProcess pid = do
+   (sysSendSignal pid 0 >> pure True)
       -- ESRCH indicates that the process wasn't found
       -- Other errors are left unchanged
-      `catchE` (\case 
-                  ESRCH -> pure False
-                  e     -> failureE e
-               )
+      |> catchE \case 
+            ESRCH -> pure False
+            e     -> failureE e
 
 -- | Signal actions
 data ChangeSignals

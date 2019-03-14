@@ -347,3 +347,4 @@ setClientCapabilityWarn :: Handle -> ClientCapability -> Bool -> Sys ()
 setClientCapabilityWarn hdl cap b =
    setClientCapability hdl cap b
       |> warningShowE (textFormat ("Set client capability " % shown) cap)
+      |> runE_
