@@ -62,32 +62,32 @@ systemInit path = sysLogSequence "Initialize the system" $ do
       devicePath = path </> "dev"
 
    -- create root path (allowed to fail if it already exists)
-   logAssertE "Create root directory" <| do
+   assertLogShowErrorE "Create root directory" <| do
       createDir path
          |> catchLiftLeft \case
                EEXIST -> return ()
                e      -> failureE e
 
    -- mount a tmpfs in root path
-   logAssertE "Mount tmpfs" <| mountTmpFS sysMount path
+   assertLogShowErrorE "Mount tmpfs" <| mountTmpFS sysMount path
 
    -- mount sysfs
-   logAssertE "Create sysfs directory" <| createDir sysfsPath
-   logAssertE "Mount sysfs" <| mountSysFS sysMount sysfsPath
+   assertLogShowErrorE "Create sysfs directory" <| createDir sysfsPath
+   assertLogShowErrorE "Mount sysfs" <| mountSysFS sysMount sysfsPath
    sysfd <- open Nothing sysfsPath BitSet.empty BitSet.empty
-            |> logAssertE "open sysfs directory"
+            |> assertLogShowErrorE "open sysfs directory"
 
    -- mount procfs
-   logAssertE "Create procfs directory" <| createDir procfsPath
-   logAssertE "Mount procfs" <| mountProcFS sysMount procfsPath
+   assertLogShowErrorE "Create procfs directory" <| createDir procfsPath
+   assertLogShowErrorE "Mount procfs" <| mountProcFS sysMount procfsPath
    procfd <- open Nothing procfsPath BitSet.empty BitSet.empty
-             |> logAssertE "open procfs directory"
+             |> assertLogShowErrorE "open procfs directory"
 
    -- create device directory
-   logAssertE "Create device directory" <| createDir devicePath
-   logAssertE "Mount tmpfs" <| mountTmpFS sysMount devicePath
+   assertLogShowErrorE "Create device directory" <| createDir devicePath
+   assertLogShowErrorE "Mount tmpfs" <| mountTmpFS sysMount devicePath
    devfd <- open Nothing devicePath BitSet.empty BitSet.empty
-            |> logAssertE "open device directory"
+            |> assertLogShowErrorE "open device directory"
 
    -- init device manager
    dm <- initDeviceManager sysfd devfd

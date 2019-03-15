@@ -7,11 +7,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 
 -- | Sys monad
 module Haskus.System.Sys
    ( Sys
+   , MonadSys (..)
    , runSys
    , runSys'
    , forkSys
@@ -35,9 +37,15 @@ module Haskus.System.Sys
    , sysLogInfoShow
    -- ** Excepts helpers
    , assertE
-   , logAssertE
+   , warningE
    , assertShowE
    , warningShowE
+   , assertLogShowE
+   , assertLogShowErrorE
+   , logE
+   , logShowE
+   , logShowResultE
+   , logShowErrorE
    )
 where
 
@@ -62,6 +70,12 @@ import qualified Haskus.Format.Text as Text
 newtype Sys a
    = Sys (StateT SysState IO a)
    deriving (Monad, Applicative, Functor, MonadState SysState, MonadIO, MonadInIO)
+
+class Monad m => MonadSys m where
+   liftSys :: Sys a -> m a
+
+instance MonadSys Sys where
+   liftSys = id
 
 data SysState = SysState
    { sysLogRoot    :: Log                    -- ^ Root of the log
@@ -334,30 +348,95 @@ sysLogInfoShow text a = sysLogInfo (text <> ": " <> pack (show a))
 -- Excepts helpers
 ----------------------
 
--- | Assert a successful result, and log the error otherwise
-assertE :: (Show (V xs)) => Text -> Excepts xs Sys a -> Sys a
-assertE text v = do
-   r <- runE v
-   case r of
-      VRight a -> return a
-      VLeft xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
-      
--- | Assert a successful result, log on error and on success
-logAssertE :: (Show a, Show (V xs)) => Text -> Excepts xs Sys a -> Sys a
-logAssertE text v = do
-   r <- runE v
-   case  r of
-      VRight a -> do
-         sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a)
-         return a
-      VLeft xs -> sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
-     
-assertShowE :: Show a => Text -> a -> Sys b
-assertShowE text v = do
-   let msg = textFormat (stext % " (failed with " % shown % ")") text v
-   sysError msg
+-- | Log an error (not shown) on failure and assert a successful result
+assertE ::
+   ( MonadSys m
+   ) => Text -> Excepts xs m a -> m a
+assertE text v = runE v >>= \case
+   VRight a -> return a
+   VLeft _  -> liftSys <| sysError (textFormat (stext % " (failed)") text)
 
-warningShowE :: Show (V xs) => Text -> Excepts xs Sys a -> Excepts xs Sys a
-warningShowE text action =
-   action
-      |> onE(\xs -> sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs))
+-- | Log a warning (not shown) on failure
+warningE ::
+   ( MonadSys m
+   ) => Text -> Excepts xs m a -> Excepts xs m a
+warningE text = withExcepts_ \case
+   VRight _ -> return ()
+   VLeft  _ -> liftSys <| sysWarning (textFormat (stext % " (failed)") text)
+
+-- | Log an error (shown) on failure and assert a successful result
+assertShowE ::
+   ( Show (V xs)
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> m a
+assertShowE text v = runE v >>= \case
+   VRight a -> return a
+   VLeft xs -> liftSys <| sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
+      
+-- | Log error (shown) and success, assert a successful result
+assertLogShowErrorE ::
+   ( Show (V xs)
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> m a
+assertLogShowErrorE text v = runE v >>= \case
+   VRight a -> do
+      liftSys <| sysLog LogInfo    (textFormat (stext % " (succeeded)") text)
+      return a
+   VLeft xs -> liftSys <| sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
+
+-- | Log a warning (shown) on failure
+warningShowE ::
+   ( Show (V xs)
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> Excepts xs m a
+warningShowE text = withExcepts_ \case
+   VRight _ -> return ()
+   VLeft xs -> liftSys <| sysWarning (textFormat (stext % " (failed with " % shown % ")") text xs)
+
+-- | Log on failure AND success, then assert a successful result
+assertLogShowE ::
+   ( Show a
+   , Show (V xs)
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> m a
+assertLogShowE text v = runE v >>= \case
+   VRight a -> do
+      liftSys <| sysLog LogInfo (textFormat (stext % " (succeeded with " % shown % ")") text a)
+      return a
+   VLeft xs -> liftSys <| sysError (textFormat (stext % " (failed with " % shown % ")") text xs)
+     
+-- | Log on failure AND success (error shown)
+logShowErrorE ::
+   ( Show (V xs)
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> Excepts xs m a
+logShowErrorE text = withExcepts_ \case
+   VRight _ -> liftSys <| sysLog LogInfo    (textFormat (stext % " (succeeded)") text)
+   VLeft xs -> liftSys <| sysLog LogWarning (textFormat (stext % " (failed with " % shown % ")") text xs)
+
+-- | Log on failure AND success (results shown)
+logShowResultE ::
+   ( Show a
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> Excepts xs m a
+logShowResultE text = withExcepts_ \case
+   VRight a -> liftSys <| sysLog LogInfo    (textFormat (stext % " (succeeded with " % shown % ")") text a)
+   VLeft  _ -> liftSys <| sysLog LogWarning (textFormat (stext % " (failed)") text)
+
+-- | Log on failure AND success (error and results shown)
+logShowE ::
+   ( Show a
+   , Show (V xs)
+   , MonadSys m
+   ) => Text -> Excepts xs m a -> Excepts xs m a
+logShowE text = withExcepts_ \case
+   VRight a -> liftSys <| sysLog LogInfo    (textFormat (stext % " (succeeded with " % shown % ")") text a)
+   VLeft xs -> liftSys <| sysLog LogWarning (textFormat (stext % " (failed with " % shown % ")") text xs)
+
+-- | Log on failure AND success (error and results not shown)
+logE ::
+   ( MonadSys m
+   ) => Text -> Excepts xs m a -> Excepts xs m a
+logE text = withExcepts_ \case
+   VRight _ -> liftSys <| sysLog LogInfo    (textFormat (stext % " (succeeded)") text)
+   VLeft  _ -> liftSys <| sysLog LogWarning (textFormat (stext % " (failed)") text)

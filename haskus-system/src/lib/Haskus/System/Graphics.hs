@@ -140,12 +140,12 @@ initGenericFrameBuffer card mode pixfmt = do
 
    mappedPlanes <- forM bpps $ \bpp -> do
       buf <- createHostBuffer hdl width height bpp flags
-               |> logAssertE "Create a generic buffer"
+               |> assertLogShowErrorE "Create a generic buffer"
 
       bufKerMap <- mapHostBuffer hdl buf
-                     |> logAssertE "Map generic buffer"
+                     |> assertLogShowErrorE "Map generic buffer"
 
-      addr <- logAssertE "Map generic buffer in user space" <|
+      addr <- assertLogShowErrorE "Map generic buffer in user space" <|
          sysMemMap Nothing
             (cdSize buf)
             (BitSet.fromList [ProtRead,ProtWrite])
@@ -160,7 +160,7 @@ initGenericFrameBuffer card mode pixfmt = do
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
    fb <- addFrameSource hdl width height pixfmt BitSet.empty planes
-         |> logAssertE "Add frame buffer"
+         |> assertLogShowErrorE "Add frame buffer"
 
    return $ GenericFrame fb mappedPlanes
 
@@ -173,14 +173,16 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
    forM_ mappedBufs $ \(MappedSurface buf _ addr _) -> do
       -- unmap generic buffer from user-space
       sysMemUnmap addr (cdSize buf)
-         |> logAssertE "Unmap generic buffer from user space"
+         |> assertLogShowErrorE "Unmap generic buffer from user space"
 
       -- destroy the generic buffer
-      logAssertE "Destroy generic buffer" <| destroyHostBuffer hdl buf
+      destroyHostBuffer hdl buf
+         |> assertLogShowErrorE "Destroy generic buffer"
 
 
    -- remove the framebuffer
-   logAssertE "Remove framebuffer" <| removeFrameSource hdl fb
+   removeFrameSource hdl fb
+      |> assertLogShowErrorE "Remove framebuffer"
 
 
 -----------------------------------------------------------------------
@@ -226,7 +228,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       let fd    = graphicCardHandle card
       sysLogSequence "Load graphic card" $ do
          cap  <- (fd `supports` CapHostBuffer)
-                  |> logAssertE "Get HostBuffer capability" 
+                  |> assertLogShowErrorE "Get HostBuffer capability" 
          sysAssert "Generic buffer capability supported" cap
 
       -- TODO: support other formats

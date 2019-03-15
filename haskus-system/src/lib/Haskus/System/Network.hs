@@ -19,10 +19,10 @@ createKernelEventSocket :: Sys Handle
 createKernelEventSocket = sysLogSequence "Create kernel event socket" $ do
    -- internally the socket is a Netlink socket dedicated to kernel events
    fd <- sysSocket (SockTypeNetlink NetlinkTypeKernelEvent) []
-         |> logAssertE "Create NetLink socket"
+         |> assertLogShowErrorE "Create NetLink socket"
    -- bind the socket to any port (i.e. port 0), listen to all multicast groups
    sysBindNetlink fd 0 0xFFFFFFFF
-      |> logAssertE "Bind NetLink socket"
+      |> assertLogShowErrorE "Bind NetLink socket"
    return fd
 
 
