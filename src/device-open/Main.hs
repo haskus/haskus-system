@@ -29,15 +29,15 @@ main = runSys' <| do
       readWord64 fd = readStorable @Word64 fd Nothing
 
    randX <- readWord64 randDev
-            |> catchEvalE (sysErrorShow "Cannot read urandom device")
+            |> assertE "Read urandom device"
    writeStrLn term ("From urandom device: " ++ show randX)
 
    zeroX <- readWord64 zeroDev
-            |> catchEvalE (sysErrorShow "Cannot read zero device")
+            |> assertE "Read zero device"
    writeStrLn term ("From zero device: "   ++ show zeroX)
 
    Raw.writeStrLn nullDev "Discarded string"
-      |> catchEvalE (sysErrorShow "Cannot write NULL device")
+      |> assertE "Write NULL device"
 
 
    -- Release the handles

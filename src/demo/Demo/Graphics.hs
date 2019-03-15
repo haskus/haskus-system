@@ -20,7 +20,7 @@ data DisconnectedCard = DisconnectedCard
 graphicsPage :: MonadInIO m => GraphicCard -> Excepts '[DisconnectedCard] m VDiagram
 graphicsPage card = do
    diag <- readGraphicsState (graphicCardHandle card)
-            |> (`catchLiftBoth` (\InvalidHandle -> failureE DisconnectedCard))
+            |> catchE (\InvalidHandle -> failureE DisconnectedCard)
    return (drawGraphics diag)
 
 drawGraphics :: GraphicsState -> VDiagram

@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
 
@@ -60,8 +61,8 @@ main = runSys' <| do
       Right fontBoldItalic = loadFont $(embedBSFile "src/demo/VeraMoBI.ttf")
       Right fontItalic     = loadFont $(embedBSFile "src/demo/VeraMoIt.ttf")
    
-   let blackTexture = Just . uniformTexture $ PixelRGBA8 0 0 0 255
-       redTexture   = Just . uniformTexture $ PixelRGBA8 255 0 0 255
+   let blackTexture = Just . uniformTexture <| PixelRGBA8 0 0 0 255
+       redTexture   = Just . uniformTexture <| PixelRGBA8 255 0 0 255
        gradDef      = [ (0  , PixelRGBA8 0 0x86 0xc1 255)
                       , (0.5, PixelRGBA8 0xff 0xf4 0xc1 255)
                       , (1  , PixelRGBA8 0xFF 0x53 0x73 255)
@@ -243,8 +244,8 @@ main = runSys' <| do
 
    writeStrLn term "Loading input devices..."
    inputs <- loadInputDevices dm
-   forM_ inputs <| \inp -> onEvent (inputDeviceBundles inp) <| \(InputEventBundle events) -> do
-      atomically <| forM_ (fmap inputEventType events) <| \case
+   forM_ inputs \inp -> onEvent (inputDeviceBundles inp) \(InputEventBundle events) -> do
+      atomically <| forM_ (fmap inputEventType events) \case
          -- mouse move: using qemu -show-cursor
          InputRelativeEvent RelativeX v -> updateMouseRel v 0
          InputRelativeEvent RelativeY v -> updateMouseRel 0 v
@@ -281,7 +282,7 @@ main = runSys' <| do
 
    cards <- loadGraphicCards dm
 
-   forM_ cards <| \card -> do
+   forM_ cards \card -> do
 
       state <- assertE "Read graphics state"
                   <| readGraphicsState (graphicCardHandle card)
@@ -360,13 +361,13 @@ main = runSys' <| do
                      <| fmap (\(n,lbl) -> show n ++ " - " ++ lbl) xs
                   _           -> customPage ["Invalid DPMS property type"]
 
-      sysFork "DPMS state" <| forever <| do
-         s <- atomically $ takeTMVar dpmsState
-         graphicsConfig (graphicCardHandle card) <| do
-            forM_ dpmsProp $ \prop -> do
+      sysFork "DPMS state" <| forever do
+         s <- atomically <| takeTMVar dpmsState
+         graphicsConfig (graphicCardHandle card) do
+            forM_ dpmsProp \prop ->
                setPropertyM conn (propertyID (propertyMeta prop)) s
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
-               |> catchEvalE (\err -> lift $ sysWarning (textFormat ("Cannot set DPMS: " % shown) err))
+               |> catchEvalE \err -> lift <| sysWarning (textFormat ("Cannot set DPMS: " % shown) err)
 
 
       initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
@@ -397,7 +398,7 @@ main = runSys' <| do
                   VRight d -> liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
                   VLeft _  -> return ()
 
-               PageGraphics -> runE_ <| do
+               PageGraphics -> runE_ do
                   diag <- graphicsPage card
                   let d = rasterizeDiagram (mkWidth (realToFrac width)) diag
                   liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
@@ -426,9 +427,9 @@ main = runSys' <| do
    writeStrLn term "Done."
 
    -- wait for a key in the standard input (in the console) or ESC (in the graphic interface)
-   sysFork "Terminal wait for key" <| do
+   sysFork "Terminal wait for key" do
       waitForKey term
-      atomically <| mustQuit
+      atomically mustQuit
    
    atomically <| do
       q <- quitRequired

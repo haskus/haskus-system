@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
 import Haskus.System.Linux.Graphics.State
@@ -16,14 +17,15 @@ main = runSys' <| do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards <| \card -> do
-      state <- catchEvalE (assertShowE "Cannot read graphics state")
-                  <| readGraphicsState (graphicCardHandle card)
+      state <- readGraphicsState (graphicCardHandle card)
+                  |> assertLogShowErrorE "Read graphics state"
 
       let
          showProps o = do
-            mprops <- graphicsConfig (graphicCardHandle card) <|
-                        catchEvalE (lift . assertShowE "Query properties") (getPropertyM o)
-            forM_ mprops <| \props ->
+            mprops <- graphicsConfig (graphicCardHandle card) do
+                        getPropertyM o
+                           |> runE
+            forM_ mprops \props ->
                writeStrLn term ("  * Properties: " ++ show props)
          
       writeStrLn term "Connectors:"

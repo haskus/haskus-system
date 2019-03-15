@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
 
@@ -47,7 +48,7 @@ main :: IO ()
 main = runSys' <| do
 
    let 
-      logo     = loadPng (B.Buffer rawlogo)
+      logo = loadPng (B.Buffer rawlogo)
 
    term <- defaultTerminal
 
@@ -108,11 +109,11 @@ main = runSys' <| do
 
       sysLogSequence "Load graphic card" <| do
          cap  <- fd `supports` CapHostBuffer
-                  |> logAssertE "Get generic buffer capability"
+                  |> assertLogShowErrorE "Get generic buffer capability"
          sysAssert "Generic buffer capability supported" cap
          
-         state <- assertE "Read graphics state"
-                     <| readGraphicsState fd
+         state <- readGraphicsState fd
+                     |> assertE "Read graphics state"
 
          conns <- if Map.null (graphicsConnectors state)
             then sysError "No graphics connector found" 
@@ -267,8 +268,9 @@ main = runSys' <| do
 
 listDir :: Terminal -> FilePath -> Sys ()
 listDir term path = do
-   dls <- assertE @(ErrorCode : OpenErrors) "List directory" <| do
-      rt <- liftE <| open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
+   dls <- assertE "List directory" do
+      rt <- open Nothing path (BitSet.fromList [HandleDirectory]) BitSet.empty
+               |> liftE @(ErrorCode : OpenErrors)
       ls <- liftE <| listDirectory rt
       void <| liftE (close rt)
       return ls

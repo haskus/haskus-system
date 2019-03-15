@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
 import Clock.Render
@@ -27,27 +28,27 @@ import qualified Haskus.Utils.Map as Map
 import Codec.Picture.Types
 
 main :: IO ()
-main = runSys' <| do
+main = runSys' do
 
    term <- defaultTerminal
    sys  <- defaultSystemInit
 
    memMap <- getProcessMemoryMap sys
-               |> assertE  "getProcessMemoryMap"
+               |> assertE "getProcessMemoryMap"
    showProcessMemoryMap term memMap
 
    cards <- loadGraphicCards (systemDeviceManager sys)
 
-   forM_ cards <| \card -> do
-      let fd    = graphicCardHandle card
+   forM_ cards \card -> do
+      let fd = graphicCardHandle card
 
-      sysLogSequence "Load graphic card" <| do
+      void <| sysLogSequence "Load graphic card" do
          cap  <- (fd `supports` CapHostBuffer)
-                     |> assertE "Cannot test card capabilities"
+                     |> assertE "Test card capabilities"
          sysAssert "Card supports host buffers" cap
          
          state <- readGraphicsState fd
-                     |> assertE "Cannot read graphics state"
+                     |> assertE "Read graphics state"
 
          conns <- if Map.null (graphicsConnectors state)
             then sysError "No graphics connector found" 
@@ -125,12 +126,7 @@ main = runSys' <| do
                setFb fb
                mainLoop (not b)
 
-         sysFork "Main display loop" <| mainLoop False
-
-         return ()
-               
-
-      return ()
+         void <| sysFork "Main display loop" <| mainLoop False
 
    sysLogPrint
 

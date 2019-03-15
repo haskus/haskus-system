@@ -39,7 +39,7 @@ main = runSys' <| do
                   gfb <- initGenericFrameBuffer card mode fmt
 
                   setController c (SetSource (genericFrameBuffer gfb)) [conn] (Just mode)
-                     |> logAssertE "Set controller"
+                     |> assertLogShowErrorE "Set controller"
 
                   freeGenericFrameBuffer card gfb
             _ -> return ()

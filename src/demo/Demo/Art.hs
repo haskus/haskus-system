@@ -90,7 +90,7 @@ genQuadGrid = do
     in Quad v' (v' ^+^ V2 0 1.5) (v' ^+^ V2 1.5 1.5) (v' ^+^ V2 1.5 0)
 
 closedPath :: [V2 Float] -> [Line]
-closedPath [] = []
+closedPath []  = []
 closedPath [p] = [Line p p]
 closedPath qs@(p1:p2:ps) = zipWith Line qs (p2:ps <> [p1])
 

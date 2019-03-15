@@ -17,8 +17,8 @@ main = runSys' <| do
    term <- defaultTerminal
 
    -- get the list of memory mappings for our own process
-   maps <- catchEvalE (\xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs))
-            <| getProcessMemoryMap sys
+   maps <- getProcessMemoryMap sys
+            |> catchEvalE (\xs -> sysError (textFormat ("Cannot retrieve memory map: " % shown) xs))
 
    let 
       isVDSO x = case entryType x of
