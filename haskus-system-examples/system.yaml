@@ -1,0 +1,27 @@
+linux:
+   source: tarball
+   version: "5.0"
+   options:
+      enable:
+         - CONFIG_DRM_BOCHS
+         - CONFIG_DRM_RADEON
+         - CONFIG_DRM_NOUVEAU
+         - CONFIG_DRM_VIRTIO
+         - CONFIG_EXPERT
+         - CONFIG_SOUND
+         - CONFIG_SND
+         - CONFIG_SND_HDA_INTEL
+         - CONFIG_SND_HDA_CODEC_REALTEK
+         - CONFIG_SND_HDA_CODEC_ANALOG
+      disable:
+         - CONFIG_FRAMEBUFFER_CONSOLE
+         - CONFIG_VGA_CONSOLE
+         - CONFIG_VT
+   make-args: "-j16"
+
+ramdisk:
+   init: Demo
+
+qemu:
+   profile: default
+   options: ""

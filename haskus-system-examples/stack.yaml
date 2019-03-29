@@ -1,0 +1,34 @@
+resolver: lts-13.10
+
+flags: {}
+
+packages:
+- '.'
+
+extra-deps:
+   #- haskus-utils-variant-2.6.1
+   #- haskus-utils-1.4
+   #- haskus-utils-data-1.1.1
+   #- haskus-utils-types-1.4.1
+   #- haskus-binary-1.4
+- haskus-utils-compat-1.0
+- stm-containers-1.1.0.2
+- stm-hamt-1.2.0.2
+- primitive-extras-0.7.1
+- hsnoise-0.0.2
+- git: https://github.com/haskus/packages.git
+  commit: 8207fcd771dc7105576e9b8315a22680babc9903
+  subdirs:
+     - haskus-utils-variant
+     - haskus-utils
+     - haskus-utils-types
+     - haskus-utils-data
+     - haskus-binary
+- git: https://github.com/haskus/haskus-system.git
+  commit: e50148444e93ff7ef8e4c183eee7ba53a613c58c
+  subdirs:
+      - haskus-system
+
+ghc-options:
+   "haskus-system": -fobject-code
+   "$locals": -fhide-source-paths -freverse-errors

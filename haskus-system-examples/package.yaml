@@ -1,0 +1,114 @@
+name:                haskus-system-examples
+version:             0.1.0.0
+github:              "haskus/haskus-system-examples"
+license:             BSD3
+author:              "Sylvain HENRY"
+maintainer:          "sylvain@haskus.fr"
+copyright:           "Sylvain HENRY 2018"
+
+extra-source-files:
+- README.rst
+
+# Metadata used when publishing your package
+synopsis:            Examples using haskus-system
+category:            System
+
+description:         Please see the README on Github at <https://github.com/haskus/haskus-system-examples#readme>
+
+dependencies:
+- base >= 4.8 && < 5
+- haskus-system
+- haskus-utils
+- haskus-utils-data
+- haskus-utils-types
+- haskus-utils-variant
+- haskus-utils-compat
+- haskus-binary
+
+ghc-options: -Wall -O2 -static -threaded
+cc-options: -static
+ld-options: -static -pthread
+extra-lib-dirs: ./.system-work/lib
+
+executables:
+   HelloWorld:
+      main: Main.hs
+      source-dirs: src/helloworld
+
+   Demo:
+      main: Main.hs
+      source-dirs: src/demo
+      other-modules:
+         Demo.Diagrams
+         Demo.Graphics
+         Demo.Art
+      dependencies:
+         - bytestring
+         - transformers
+         - JuicyPixels
+         - FontyFruity
+         - diagrams-lib
+         - containers
+         - colour
+         - Rasterific
+         - hsnoise
+         - MonadRandom
+         - mtl
+
+   Sound:
+      main: Main.hs
+      source-dirs: src/sound
+      dependencies:
+         - filepath
+
+   Test:
+      main: Main.hs
+      source-dirs: src/test
+      dependencies:
+         - bytestring
+         - transformers
+         - either
+         - JuicyPixels
+         - stm
+         - colour
+
+   Clock:
+      main: Main.hs
+      source-dirs: src/clock
+      dependencies:
+         - bytestring
+         - JuicyPixels
+         - stm
+         - lens
+         - formatting
+
+   VDSO:
+      main: Main.hs
+      source-dirs: src/vdso
+      dependencies:
+         - text
+         - vector
+
+   KernelEvent:
+      main: Main.hs
+      source-dirs: src/kernel-events
+
+   OpenDevice:
+      main: Main.hs
+      source-dirs: src/device-open
+
+   ListDevices:
+      main: Main.hs
+      source-dirs: src/device-list
+
+   DisplayProperties:
+      main: Main.hs
+      source-dirs: src/display-properties
+
+   DisplayState:
+      main: Main.hs
+      source-dirs: src/display-state
+
+   DisplayModes:
+      main: Main.hs
+      source-dirs: src/display-modes
