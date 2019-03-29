@@ -3,6 +3,7 @@ packages:
 - 'haskus-system'
 - 'haskus-system-build'
 - 'haskus-system-tools'
+- 'haskus-system-examples'
 
 extra-deps:
    # - haskus-utils-variant-2.6.1
@@ -15,6 +16,7 @@ extra-deps:
 - stm-hamt-1.2.0.2
 - primitive-extras-0.7.1
 - happstack-server-7.5.1.3
+- hsnoise-0.0.2
 - git: https://github.com/haskus/packages.git
   commit: 535e208c3e966913aec21017587136a144847857
   subdirs:

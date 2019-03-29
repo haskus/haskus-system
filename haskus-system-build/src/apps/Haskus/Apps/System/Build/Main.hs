@@ -154,13 +154,11 @@ showStatus config = do
                            |> Text.unpack
 
    ghcVersion    <- stackGetGHCVersion
-   stackResolver <- stackGetResolver
 
    putStrLn "==================================================="
    putStrLn "       Haskus system - build config"
    putStrLn "---------------------------------------------------"
    putStrLn ("GHC version:      " ++ ghcVersion)
-   putStrLn ("Stack resolver:   " ++ stackResolver)
    putStrLn ("Linux version:    " ++ linuxVersion')
    putStrLn ("Syslinux version: " ++ syslinuxVersion')
    putStrLn ("Init program:     " ++ initProgram)

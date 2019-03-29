@@ -2,7 +2,6 @@
 
 module Haskus.Apps.System.Build.Stack
    ( stackGetBinPath
-   , stackGetResolver
    , stackGetGHCVersion
    , stackBuild
    )
@@ -20,12 +19,6 @@ stackGetGHCVersion :: IO String
 stackGetGHCVersion =
    -- FIXME
    last . words <$> readProcess "stack" ["exec", "--", "ghc", "--version"] ""
-
--- | Get stack resolver
-stackGetResolver :: IO String
-stackGetResolver =
-   -- FIXME
-   last . words . head . filter ("resolver:" `isPrefixOf`) . lines <$> readFile "stack.yaml"
 
 stackGetBinPath :: FilePath -> IO FilePath
 stackGetBinPath x = do
