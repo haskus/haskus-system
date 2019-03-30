@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Devices management
 --
@@ -22,6 +23,15 @@ module Haskus.System.Devices
    , deviceMove
    , deviceRemove
    , deviceLookup
+   -- * Rules
+   , Rule
+   , ruleDesc
+   , rulePriority
+   , RuleMatch
+   , RuleAction
+   , RuleActionResult (..)
+   , addRule
+   , removeRule
    -- * Device tree
    , DeviceTree (..)
    , DevicePath
@@ -61,6 +71,7 @@ import Haskus.System.Network
 import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
+import Haskus.Utils.List
 import Haskus.Format.Text (textFormat,string,shown,(%))
 
 import Control.Arrow (second)
@@ -207,6 +218,8 @@ data DeviceManager = DeviceManager
    , dmDevices        :: TVar DeviceTree                -- ^ Device hierarchy
    , dmSubsystems     :: TVar (Map Text SubsystemIndex) -- ^ Per-subsystem index
    , dmOnSubsystemAdd :: TChan Text                     -- ^ When a new subsystem appears
+   , dmRules          :: TVar [Rule]                    -- ^ Rules triggered when an event occurs
+   , dmRuleIndex      :: TVar Integer                   -- ^ Rule id generator
    }
 
 -- | Init a device manager
@@ -224,6 +237,8 @@ initDeviceManager sysfs devfs = do
    subIndex' <- newTVarIO Map.empty
    tree'     <- newTVarIO root
    sadd      <- newBroadcastTChanIO
+   rules     <- newTVarIO []
+   ruleIndex <- newTVarIO 0
    let dm = DeviceManager
                { dmDevices        = tree'
                , dmSubsystems     = subIndex'
@@ -232,6 +247,8 @@ initDeviceManager sysfs devfs = do
                , dmDevFS          = devfs
                , dmDevNum         = devNum
                , dmOnSubsystemAdd = sadd
+               , dmRules          = rules
+               , dmRuleIndex      = ruleIndex
                }
 
    -- we enumerate devices from sysfs. Directory listing is non-atomic so
@@ -295,7 +312,6 @@ eventThread ch dm = do
       -- read kernel event
       ev <- atomically (readTChan ch)
 
-
       case Text.unpack (fst (bkPath (kernelEventDevPath ev))) of
          -- TODO: handle module ADD/REMOVE (/module/* path)
          "module" -> sysWarningShow "sysfs event in /module ignored"
@@ -337,9 +353,28 @@ eventThread ch dm = do
                ActionOffline -> do
                   sysLogInfoShow "Device goes offline" path
                   signalEvent deviceNodeOnOffline
-               ActionOther _ -> do
-                  sysLogInfoShow "Unknown device event" path
+               ActionOther x -> do
+                  let info = mconcat
+                        [ "Unknown device action ("
+                        , Text.pack (show x)
+                        , ")"
+                        ]
+                  sysLogInfoShow info path
                   signalEvent deviceNodeOnOther
+
+            -- trigger rules
+            let execRules []     = pure ()
+                execRules (r:rs) = do
+                  doesMatch <- ruleMatch r ev
+                  case doesMatch of
+                     False -> execRules rs
+                     True -> do
+                        ret <- ruleAction r ev
+                        case ret of
+                           Nothing       -> execRules rs
+                           Just LastRule -> pure () -- stop rule matching now
+
+            execRules =<< readTVarIO (dmRules dm)
 
          -- warn on unrecognized event
          str -> sysWarningShow (textFormat ("sysfs event in /" % string % " ignored") str) (kernelEventDevPath ev)
@@ -395,9 +430,9 @@ deviceAdd dm path mev = do
 
                Just index -> do
                   let
-                     devs   = subsystemDevices index
+                     devs   = subsystemDevicePaths index
                      devs'  = Set.insert path devs
-                     index' = index { subsystemDevices = devs' }
+                     index' = index { subsystemDevicePaths = devs' }
                   -- signal the addition
                   writeTChan (subsystemOnAdd index) path
                   -- return the new index
@@ -423,8 +458,8 @@ deviceRemove dm path ev = do
                   subs <- readTVar (dmSubsystems dm)
                   let
                      index  = subs Map.! s
-                     devs   = subsystemDevices index
-                     index' = index { subsystemDevices = Set.delete path devs}
+                     devs   = subsystemDevicePaths index
+                     index' = index { subsystemDevicePaths = Set.delete path devs}
                   writeTVar (dmSubsystems dm) (Map.insert s index' subs)
                   -- signal for index
                   writeTChan (subsystemOnRemove index) path
@@ -465,6 +500,56 @@ deviceMove dm path ev = do
       deviceAdd dm path (Just ev)
 
 -------------------------------------------------------------------------------
+-- Rules
+-------------------------------------------------------------------------------
+
+-- | A rule triggered when a device event occurs
+--
+-- For now `ruleMatch` and `ruleAction` are totally opaque. In the future we may
+-- want to make them more declarative to improve matching and to avoid arbitrary
+-- side-effects
+data Rule = Rule
+   { ruleId       :: Integer    -- ^ Rule unique Id (so that it can be easily removed, sorted, etc.)
+   , ruleDesc     :: Text       -- ^ Rule description
+   , rulePriority :: Float      -- ^ Rule priority
+   , ruleMatch    :: RuleMatch  -- ^ Indicate if a rule matches
+   , ruleAction   :: RuleAction -- ^ Rule action.
+   }
+
+-- | Rule action result
+data RuleActionResult
+   = LastRule -- ^ Ensure that this is the last rule triggered for a given event
+
+type RuleMatch  = KernelEvent -> Sys Bool
+type RuleAction = KernelEvent -> Sys (Maybe RuleActionResult)
+
+-- | Add a rule
+addRule :: MonadIO m => DeviceManager -> Text -> Float -> RuleMatch -> RuleAction -> m Rule
+addRule dm desc prio match act = atomically do
+
+   i <- readTVar (dmRuleIndex dm)
+   modifyTVar' (dmRuleIndex dm) (+1)
+
+   let rule = Rule
+         { ruleId       = i
+         , ruleDesc     = desc
+         , rulePriority = prio
+         , ruleMatch    = match
+         , ruleAction   = act
+         }
+   modifyTVar (dmRules dm) (rule:)
+   return rule
+
+-- | Remove a rule
+removeRule :: MonadIO m => DeviceManager -> Rule -> m ()
+removeRule dm rule = atomically do
+   -- modify strictly to avoid maintaining some objects alive because of a rule
+   modifyTVar' (dmRules dm) <|
+      -- we only delete the first matching because there can only be one rule
+      -- with this Id
+      deleteBy (\x y -> ruleId x /= ruleId y) rule
+
+-------------------------------------------------------------------------------
 -- Device tree & subsystem index
 -------------------------------------------------------------------------------
 
@@ -488,12 +573,10 @@ data DeviceTree = DeviceTree
 
 -- | Per-subsystem events
 data SubsystemIndex = SubsystemIndex
-   { subsystemDevices  :: Set Text   -- ^ Devices in the index
-   , subsystemOnAdd    :: TChan Text -- ^ Signal device addition
-   , subsystemOnRemove :: TChan Text -- ^ Signal device removal
+   { subsystemDevicePaths :: Set Text   -- ^ Devices in the index
+   , subsystemOnAdd       :: TChan Text -- ^ Signal device addition
+   , subsystemOnRemove    :: TChan Text -- ^ Signal device removal
    }
-
-
 
 type DevicePath = Text
 
@@ -691,10 +774,15 @@ listDevicesWithClass dm cls = atomically $ do
    ds <- listDevices' dm
 
    let paths = Map.lookup (Text.pack cls) subs
-               ||> Set.elems . subsystemDevices
+               ||> Set.elems . subsystemDevicePaths
                |> fromMaybe []
        getNode x = case deviceTreeLookup x devs of
-                     Just n  -> n
-                     Nothing -> error ("Mismatch between device tree and device subsystem index! Report this as a Haskus bug. (" ++ show x ++ ") " ++ show ds)
+         Just n  -> n
+         Nothing -> error <| mconcat
+            [ "Mismatch between device tree and device subsystem index! Report this as a haskus-system bug. ("
+            , show x
+            , ") "
+            , show ds
+            ]
        nodes = fmap getNode paths
    return (paths `zip` nodes)
