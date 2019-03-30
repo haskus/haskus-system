@@ -530,14 +530,22 @@ addRule dm desc prio match act = atomically do
    i <- readTVar (dmRuleIndex dm)
    modifyTVar' (dmRuleIndex dm) (+1)
 
-   let rule = Rule
+   let
+      rule = Rule
          { ruleId       = i
          , ruleDesc     = desc
          , rulePriority = prio
          , ruleMatch    = match
          , ruleAction   = act
          }
-   modifyTVar (dmRules dm) (rule:)
+
+      -- insert sorted on priority
+      insertSorted []     = [rule]
+      insertSorted (r:rs)
+         | rulePriority r <= rulePriority rule = r : insertSorted rs
+         | otherwise                           = rule:r:rs
+
+   modifyTVar (dmRules dm) insertSorted
    return rule
 
 -- | Remove a rule
