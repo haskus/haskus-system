@@ -7,7 +7,7 @@
 
 module Main where
 
-import CmdLine (Options(..), getOptions)
+import SystemInfoCmdLine (Options(..), getOptions)
 
 import qualified Haskus.Arch.X86_64.ISA.Insn             as X86
 import qualified Haskus.Arch.X86_64.ISA.Insns            as X86

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import CmdLine (Options(..), getOptions)
+import ElfCmdLine (Options(..), getOptions)
 
 import Haskus.Format.Elf
 import Haskus.Format.Elf.PreHeader

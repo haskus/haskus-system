@@ -39,7 +39,7 @@ executables:
       main: Main
       source-dirs: src/system-info
       other-modules:
-         - CmdLine
+         - SystemInfoCmdLine
       dependencies: 
          - network
          - HTTP
@@ -48,7 +48,7 @@ executables:
       main: Main
       source-dirs: src/elf
       other-modules:       
-         - CmdLine
+         - ElfCmdLine
       dependencies: 
          - text
          - formatting

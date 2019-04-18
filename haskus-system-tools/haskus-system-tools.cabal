@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7d4a54a14fb702cf01a399dfb625454c224565ae977cacd2d4f92b57b8163842
+-- hash: 0de90c83922e46b6072d8a0c225a9df46a62165fa6b758172384e8baee26de2e
 
 name:           haskus-system-tools
 version:        0.8
@@ -53,7 +53,7 @@ executable haskus-disassembler
 executable haskus-elf
   main-is: Main.hs
   other-modules:
-      CmdLine
+      ElfCmdLine
   hs-source-dirs:
       src/elf
   ghc-options: -Wall -O2 -threaded -main-is Main
@@ -156,7 +156,7 @@ executable haskus-keys
 executable haskus-system-info
   main-is: Main.hs
   other-modules:
-      CmdLine
+      SystemInfoCmdLine
   hs-source-dirs:
       src/system-info
   ghc-options: -Wall -O2 -threaded -main-is Main

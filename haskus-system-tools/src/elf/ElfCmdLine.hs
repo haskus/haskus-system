@@ -1,4 +1,4 @@
-module CmdLine
+module ElfCmdLine
    ( Options(..)
    , getOptions
    )
@@ -7,12 +7,17 @@ where
 import Options.Applicative
 
 data Options = Options
-   { optport    :: Int
+   { optpath    :: String
+   , optport    :: Int
    }
 
 options :: Parser Options
 options = Options
-  <$> option auto (
+  <$> argument str (
+        metavar "PATH"
+     <> help "Path to the binary or the project"
+     )
+  <*> option auto (
         long "port"
      <> short 'p'
      <> metavar "PORT"
@@ -26,5 +31,5 @@ getOptions = execParser opts
   where
     opts = info (helper <*> options)
       ( fullDesc
-     <> progDesc "Haskus system info"
-     <> header "Haskus System Info" )
+     <> progDesc "Show information on ELF binary file"
+     <> header "ELF info" )
