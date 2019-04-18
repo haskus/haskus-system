@@ -79,7 +79,7 @@ data InputEventType
    | InputRepeatEvent !Word16 !Int32              -- ^ Repeated event
    | InputForceFeedbackEvent !Word16 !Int32       -- ^ Force feedback event
    | InputPowerEvent !Word16 !Int32               -- ^ Power event
-   | InputForceFeedbackStatusEvent !Word16 !Int32 -- ^ Force feedback statusevent
+   | InputForceFeedbackStatusEvent !Word16 !Int32 -- ^ Force feedback status event
    deriving (Show,Eq)
 
 -- | Bundle of events
@@ -136,7 +136,6 @@ loadInputDevices dm = sysLogSequence "Load input devices" $ do
       readDevInfo devpath dev
          ||> Just
          |> catchEvalE (const (return Nothing))
-
 
 -- | Configure auto-repeat delay
 inputSetAutoRepeatDelay :: MonadInIO m => Handle -> Word32 -> Excepts '[ErrorCode] m Word64
