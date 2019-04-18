@@ -1,5 +1,9 @@
-{-# OPTIONS_GHC -freduction-depth=0 #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Haskus.System.FileSystem
    ( withOpenAt

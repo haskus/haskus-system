@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 -- | Power management
 module Haskus.System.Power
    ( disableRebootKeys

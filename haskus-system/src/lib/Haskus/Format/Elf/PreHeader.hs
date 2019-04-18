@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | ELF preheader: doesn't depend on the arch
 module Haskus.Format.Elf.PreHeader

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | Networking
 module Haskus.System.Network
    ( createKernelEventSocket

@@ -5,6 +5,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Terminal helpers
 module Haskus.System.Terminal

@@ -1,5 +1,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Devices management
 --
@@ -262,6 +266,7 @@ initDeviceManager sysfs devfs = do
    let
 
       withDevDir hdl path f = withOpenAt hdl path flags BitSet.empty f
+      flags :: HandleFlags
       flags = BitSet.fromList [ HandleDirectory
                               , HandleNonBlocking
                               , HandleDontFollowSymLinks

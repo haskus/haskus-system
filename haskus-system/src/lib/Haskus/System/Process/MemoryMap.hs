@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Haskus.System.Process.MemoryMap
    ( module Haskus.System.Linux.Process.MemoryMap
    , showProcessMemoryMap

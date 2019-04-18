@@ -1,8 +1,7 @@
-{-# OPTIONS_GHC -freduction-depth=0 #-}
-
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Manage input devices
 module Haskus.System.Input

@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -freduction-depth=0 #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Linux device handling
 --
