@@ -61,10 +61,6 @@ main = runSys' <| do
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
 
-   writeStrLn term "Enable plug-and-play..."
-   onEvent (dmEvents dm) <| \ev ->
-      writeStrLn term (show ev)
-
    quitKey <- atomically <| newTVar False
 
    mousePos <- newTVarIO (250.0,250.0)
@@ -72,35 +68,36 @@ main = runSys' <| do
    let
       wf = 1024 / 0x7FFF :: Float
       hf = 768  / 0x7FFF :: Float
-      updateMouseRel dx dy = modifyTVar mousePos (\(x,y) -> (x+fromIntegral dx,y+fromIntegral dy))
-      updateMouseAbsX v    = modifyTVar mousePos (\(_,y) -> (fromIntegral v * wf,y))
-      updateMouseAbsY v    = modifyTVar mousePos (\(x,_) -> (x,fromIntegral v * hf))
+      updateMouseRel dx dy = modifyTVar mousePos \(x,y) -> (x+fromIntegral dx,y+fromIntegral dy)
+      updateMouseAbsX v    = modifyTVar mousePos \(_,y) -> (fromIntegral v * wf,y)
+      updateMouseAbsY v    = modifyTVar mousePos \(x,_) -> (x,fromIntegral v * hf)
 
 
    points <- newTVarIO []
 
    writeStrLn term "Loading input devices..."
    inputs <- loadInputDevices dm
-   forM_ inputs <| \inp -> onEvent (inputDeviceBundles inp) <| \(InputEventBundle events) -> do
-      atomically <| forM_ (fmap inputEventType events) <| \case
-         InputKeyEvent KeyPress MouseLeft -> do
-                                                p <- readTVar mousePos
-                                                modifyTVar points (p:)
-         -- mouse move: using qemu -show-cursor
-         InputRelativeEvent RelativeX v -> updateMouseRel v 0
-         InputRelativeEvent RelativeY v -> updateMouseRel 0 v
-         -- mouse move: using qemu -usbdevice tablet
-         InputAbsoluteEvent AbsoluteX v -> updateMouseAbsX v
-         InputAbsoluteEvent AbsoluteY v -> updateMouseAbsY v
-         -- Quit if ESC is pressed
-         InputKeyEvent KeyPress Esc     -> writeTVar quitKey True
-         _                              -> return ()
+   forM_ inputs \inp ->
+      onEvent (inputDeviceBundles inp) \(InputEventBundle events) -> do
+         atomically <| forM_ (fmap inputEventType events) \case
+            InputKeyEvent KeyPress MouseLeft -> do
+                                                   p <- readTVar mousePos
+                                                   modifyTVar points (p:)
+            -- mouse move: using qemu -show-cursor
+            InputRelativeEvent RelativeX v -> updateMouseRel v 0
+            InputRelativeEvent RelativeY v -> updateMouseRel 0 v
+            -- mouse move: using qemu -usbdevice tablet
+            InputAbsoluteEvent AbsoluteX v -> updateMouseAbsX v
+            InputAbsoluteEvent AbsoluteY v -> updateMouseAbsY v
+            -- Quit if ESC is pressed
+            InputKeyEvent KeyPress Esc     -> writeTVar quitKey True
+            _                              -> return ()
 
 
    writeStrLn term "Loading graphic cards..."
    cards <- loadGraphicCards dm
 
-   forM_ cards <| \card -> do
+   forM_ cards \card -> do
       let fd    = graphicCardHandle card
 
       -- onEvent (graphicCardChan card) <| \ev -> do
