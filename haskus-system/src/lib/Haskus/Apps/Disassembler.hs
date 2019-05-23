@@ -5,6 +5,7 @@ module Haskus.Apps.Disassembler
    )
 where
 
+import Prelude hiding (replicate,length)
 
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text)

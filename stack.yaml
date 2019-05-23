@@ -18,7 +18,7 @@ extra-deps:
 - happstack-server-7.5.1.3
 - hsnoise-0.0.2
 - git: https://github.com/haskus/packages.git
-  commit: 8207fcd771dc7105576e9b8315a22680babc9903
+  commit: 6ed2dc303b9b77b1539c5c554f194aa18358277f
   subdirs:
      - haskus-utils-variant
      - haskus-utils
