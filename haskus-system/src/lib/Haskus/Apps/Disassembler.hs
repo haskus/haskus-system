@@ -10,7 +10,6 @@ import Prelude hiding (replicate,length)
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text)
 import Haskus.Format.Binary.Buffer
-import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Insn
@@ -26,6 +25,7 @@ import Haskus.Utils.Maybe
 
 import Data.Text.Lazy.Builder
 import qualified Data.Text.Lazy as LT
+import qualified Data.Set       as Set
 import Numeric (showHex)
 
 -- | Disassemble a buffer containing X86-64 assembly.
@@ -65,8 +65,8 @@ disassX86_64 initOffset buffer = LT.toStrict (toLazyText bld)
       showDisass = \case
          RawBytes    offset buf _   -> showInsn offset buf "; raw bytes"
          Instruction offset buf ins -> showInsn offset buf $
-            (if not (BitSet.null (insnVariant ins))
-               then show (BitSet.toList (insnVariant ins)) ++ " "
+            (if not (Set.null (insnVariant ins))
+               then show (Set.toList (insnVariant ins)) ++ " "
                else ""
             )
             ++ insnMnemonic (insnSpec ins)

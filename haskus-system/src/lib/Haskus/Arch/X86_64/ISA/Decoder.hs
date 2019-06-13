@@ -28,13 +28,13 @@ import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.BitField
-import qualified Haskus.Format.Binary.BitSet as BitSet
 
 import Haskus.Utils.Solver
 import Haskus.Utils.List (nub, (\\))
 import Haskus.Utils.Maybe
 import Haskus.Utils.Flow
 
+import qualified Data.Set        as Set
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector as V
 import Control.Applicative
@@ -48,7 +48,7 @@ getInstruction :: ExecMode -> Get Insn
 getInstruction mode = consumeAtMost 15 $ do
    -- An instruction is at most 15 bytes long
 
-   ps  <- readLegacyPrefixes
+   ps  <- readLegacyPrefixes False -- don't fail on redundant prefixes
    rex <- readRexPrefix mode
 
    -- read opcode
@@ -70,7 +70,7 @@ getInstruction mode = consumeAtMost 15 $ do
                 ops
                 amd3DNowEncoding
                 (error "3DNow! instructions not supported") -- TODO
-                BitSet.empty
+                Set.empty
 
       ocmap              -> do
          -- get candidate instructions for the opcode
@@ -91,7 +91,7 @@ getInstruction mode = consumeAtMost 15 $ do
                (Just mp, OpLegacy {}) -> mp `elem` ps
                (Nothing, _          ) -> True
 
-         when (null cs2) $ fail "No candidate instruction found (invalid mandatory prefixes)"
+         when (null cs2) $ fail "No candidate instruction found (invalid prefix?)"
 
          -- try to read ModRM
          modrm <- lookAhead $ remaining >>= \case
@@ -148,7 +148,9 @@ getInstruction mode = consumeAtMost 15 $ do
             -- encoding
             let es = nub (concatMap (encRequiredExtensions . entryEncoding) cs4) \\ extensions mode
 
-            fail ("No candidate instruction found, try enabling one of: "++ show es)
+            if null es
+               then fail ("No candidate instruction found.")
+               else fail ("No candidate instruction found, try enabling one of: "++ show es)
 
          -- If there are more than one instruction left, signal a bug
          MapEntry spec enc <- case cs5 of
@@ -162,34 +164,34 @@ getInstruction mode = consumeAtMost 15 $ do
          let
             -- lock prefix
             vlocked  = if encLockable enc && LegacyPrefixF0 `elem` ps
-                        then BitSet.singleton Locked
-                        else BitSet.empty
+                        then Set.singleton Locked
+                        else Set.empty
 
             -- repeat prefixes
             vrepeat  = if encRepeatable enc
                         then if LegacyPrefixF3 `elem` ps
-                           then BitSet.singleton RepeatZero
+                           then Set.singleton RepeatZero
                            else if LegacyPrefixF2 `elem` ps
-                              then BitSet.singleton RepeatNonZero
-                              else BitSet.empty
-                        else BitSet.empty
+                              then Set.singleton RepeatNonZero
+                              else Set.empty
+                        else Set.empty
 
             -- hardware lock elision (HLE)
             vacquire  = if encSupportHLE XAcquire enc && LegacyPrefixF2 `elem` ps
-                           then BitSet.singleton LockElisionAcquire
-                           else BitSet.empty
+                           then Set.singleton LockElisionAcquire
+                           else Set.empty
             vrelease  = if encSupportHLE XRelease enc && LegacyPrefixF3 `elem` ps
-                           then BitSet.singleton LockElisionRelease
-                           else BitSet.empty
+                           then Set.singleton LockElisionRelease
+                           else Set.empty
 
             -- branch hint prefixes
             vbranchhint = if encBranchHintable enc
                         then if LegacyPrefix3E `elem` ps
-                           then BitSet.singleton BranchHintTaken
+                           then Set.singleton BranchHintTaken
                            else if LegacyPrefix2E `elem` ps
-                              then BitSet.singleton BranchHintNotTaken
-                              else BitSet.empty
-                        else BitSet.empty
+                              then Set.singleton BranchHintNotTaken
+                              else Set.empty
+                        else Set.empty
 
             -- check if insn is reversable, if the reversable bit is set
             -- and if there are only registers operands (because it is the only
@@ -205,19 +207,21 @@ getInstruction mode = consumeAtMost 15 $ do
                Nothing -> False
 
             vreverse = if reversed && onlyRegOps
-               then BitSet.singleton Reversed
-               else BitSet.empty
+               then Set.singleton Reversed
+               else Set.empty
 
             -- TODO: superfluous segment override
             -- TODO: explicit param variant
+            -- TODO: useless Rex prefix
+            -- TODO: legacy prefix order
 
-            variants = BitSet.unions [ vlocked
-                                     , vreverse 
-                                     , vrepeat
-                                     , vbranchhint
-                                     , vacquire
-                                     , vrelease
-                                     ]
+            variants = Set.unions [ vlocked
+                                  , vreverse
+                                  , vrepeat
+                                  , vbranchhint
+                                  , vacquire
+                                  , vrelease
+                                  ]
 
          return $ Insn oc ops enc spec variants
 
@@ -226,8 +230,8 @@ getInstruction mode = consumeAtMost 15 $ do
 -- ===========================================================================
 
 -- | Read legacy prefixes (up to 5)
-readLegacyPrefixes :: Get [LegacyPrefix]
-readLegacyPrefixes = do
+readLegacyPrefixes :: Bool -> Get [LegacyPrefix]
+readLegacyPrefixes failOnRedundantPrefixes = do
    let
       readLegacyPrefix :: Get (Maybe LegacyPrefix)
       readLegacyPrefix = lookAheadM (toLegacyPrefix <$> getWord8)
@@ -241,7 +245,7 @@ readLegacyPrefixes = do
    ws <- getManyAtMost 5 readLegacyPrefix
 
    -- check that legacy prefixes are valid (group-wise)
-   if checkLegacyPrefixes ws
+   if not failOnRedundantPrefixes || checkLegacyPrefixes ws
       then return ws
       else fail ("Invalid legacy prefixes: " ++ show ws)
    

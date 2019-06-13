@@ -11,17 +11,17 @@ module Haskus.Arch.X86_64.ISA.Insn
    )
 where
 
-import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
-import Haskus.Format.Binary.Word
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Operand
+import Data.Set (Set)
 
+-- | A fully defined instruction (isomorphic to its binary representation)
 data Insn = Insn
    { insnOpcode   :: Opcode
    , insnOperands :: [Operand]
    , insnEncoding :: Encoding
    , insnSpec     :: X86Insn
-   , insnVariant  :: BitSet Word16 EncodingVariant
+   , insnVariant  :: Set EncodingVariant
    }
    deriving (Show)
 
@@ -37,7 +37,9 @@ data EncodingVariant
    | BranchHintTaken            -- ^ Branch hint (branch taken)
    | BranchHintNotTaken         -- ^ Branch hint (not taken)
    | SuperfluousSegmentOverride -- ^ Segment override equal to default segment
-   deriving (Show,Eq,Enum,BitOffset)
+   | UselessRex Rex             -- ^ Additional useless Rex prefix
+   -- TODO: legacy prefix order, superfluous prefixes
+   deriving (Show,Eq,Ord)
 
 
 -- | X86 instruction

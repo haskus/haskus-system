@@ -45,6 +45,7 @@ import Data.List (intersperse)
 import Data.Tree (drawTree)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
+import qualified Data.Set as Set
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
 
@@ -447,8 +448,8 @@ showSectionAsm elf s = do
                td_ (toHtml (show offset))
                td_ (toHtml (show buf))
                td_ $ do
-                  when (not (BitSet.null (insnVariant ins))) $ do
-                     toHtml (show (BitSet.toList (insnVariant ins)))
+                  when (not (Set.null (insnVariant ins))) $ do
+                     toHtml (show (Set.toList (insnVariant ins)))
                      " "
                   toHtml (insnMnemonic (insnSpec ins))
                   " "

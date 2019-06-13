@@ -6,10 +6,10 @@ import System.Environment
 import Control.Monad (forM_)
 
 import Haskus.Format.Binary.Buffer
-import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.Disassembler
+import qualified Data.Set as Set
 
 main :: IO ()
 main = do
@@ -43,7 +43,7 @@ main = do
             where
                d = insnMnemonic (insnSpec ins)
                     ++ " " ++ show (insnOperands ins)
-                    ++ " " ++ show (BitSet.toList (insnVariant ins))
+                    ++ " " ++ show (Set.toList (insnVariant ins))
 
 
    forM_ ds showDisass

@@ -105,6 +105,7 @@ import Haskus.Arch.X86_64.ISA.Register
 import Haskus.Arch.X86_64.ISA.Memory
 import Haskus.Arch.X86_64.ISA.Operand
 import Haskus.Arch.Common.Register
+import Haskus.Utils.Flow
 
 import Haskus.Utils.List ((\\))
 import Control.Applicative
@@ -255,11 +256,19 @@ encValidModRMMode e = case ots of
 
 -- | Indicate if a memory operand may be encoded
 encMayHaveMemoryOperand :: Encoding -> Bool
-encMayHaveMemoryOperand e = case encValidModRMMode e of
-   ModeNone    -> False
-   ModeOnlyReg -> False
-   ModeOnlyMem -> True
-   ModeBoth    -> True
+encMayHaveMemoryOperand e = memRm || memOp
+   where
+      memRm = case encValidModRMMode e of
+         ModeNone    -> False
+         ModeOnlyReg -> False
+         ModeOnlyMem -> True
+         ModeBoth    -> True
+      memOp = encOperands e
+         ||> (\(OperandSpec _ x _) -> x)
+         |> concatMap getTerminals
+         |> any isTMem
+      isTMem (T_Mem _) = True
+      isTMem _         = False
 
 -- | Return predicates of the encoding
 encPredicates :: Encoding -> [X86Pred]
@@ -577,7 +586,7 @@ legacyPrefixGroup = \case
 -------------------------------------------------------------------
 
 -- | Rex prefix
-newtype Rex = Rex Word8 deriving (Show,Eq)
+newtype Rex = Rex Word8 deriving (Show,Eq,Ord)
 
 -- | Test W bit of REX prefix
 rexW :: Rex -> Bool
