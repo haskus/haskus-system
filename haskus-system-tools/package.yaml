@@ -21,6 +21,7 @@ dependencies:
 - haskus-utils
 - haskus-utils-data
 - haskus-utils-compat
+- haskus-web
 - haskus-binary
 - optparse-applicative
 - happstack-server

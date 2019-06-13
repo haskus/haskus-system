@@ -36,10 +36,11 @@ import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
 import Haskus.Utils.Embed.ByteString
+import Haskus.Web.Html
+import Haskus.Utils.Flow
 
 import Control.Monad
 import Happstack.Server
-import Lucid
 import Data.Maybe
 import Data.List (intersperse)
 import Data.Tree (drawTree)
@@ -443,7 +444,9 @@ showSectionAsm elf s = do
                td_ (toHtml (show offset))
                td_ (toHtml (show buf))
                td_ ""
-               td_ (toHtml ("; Failed: " ++ show errs))
+               td_ <| do
+                  "Failed with: "
+                  uls_ <| fmap toHtml errs
             Instruction offset buf ins  -> do
                td_ (toHtml (show offset))
                td_ (toHtml (show buf))

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0de90c83922e46b6072d8a0c225a9df46a62165fa6b758172384e8baee26de2e
+-- hash: 3c02c4ce0f70b653dcba3f8c79a700cc9e6f1567847a9f97b57466a8ee7e3511
 
 name:           haskus-system-tools
 version:        0.8
@@ -44,6 +44,7 @@ executable haskus-disassembler
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , optparse-applicative
     , transformers
@@ -70,6 +71,7 @@ executable haskus-elf
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , optparse-applicative
     , text
@@ -97,6 +99,7 @@ executable haskus-gunzip
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , optparse-applicative
     , transformers
@@ -122,6 +125,7 @@ executable haskus-huffman
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , optparse-applicative
     , transformers
@@ -147,6 +151,7 @@ executable haskus-keys
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , optparse-applicative
     , transformers
@@ -173,6 +178,7 @@ executable haskus-system-info
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , network
     , optparse-applicative
@@ -199,6 +205,7 @@ executable haskus-udev
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
+    , haskus-web
     , lucid
     , optparse-applicative
     , transformers
