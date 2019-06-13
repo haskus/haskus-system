@@ -32,8 +32,8 @@ data EncodingVariant
    | ExplicitParam              -- ^ A variant exists with an implicit parameter, but the explicit variant is used
    | RepeatZero                 -- ^ REP(Z) prefix
    | RepeatNonZero              -- ^ REPNZ prefix
-   | LockEllisionAcquire        -- ^ XACQUIRE prefix
-   | LockEllisionRelease        -- ^ XRELEASE prefix
+   | LockElisionAcquire         -- ^ XACQUIRE prefix
+   | LockElisionRelease         -- ^ XRELEASE prefix
    | BranchHintTaken            -- ^ Branch hint (branch taken)
    | BranchHintNotTaken         -- ^ Branch hint (not taken)
    | SuperfluousSegmentOverride -- ^ Segment override equal to default segment

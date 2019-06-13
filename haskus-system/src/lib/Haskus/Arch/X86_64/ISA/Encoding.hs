@@ -273,7 +273,7 @@ encAllowPrefix66 e =
    encMandatoryPrefix e == Just LegacyPrefix66
    || PrefixPred Prefix66 `elem` encPredicates e
 
--- | Test if an encoding support the given Hardware-Lock Ellision prefix
+-- | Test if an encoding support the given Hardware-Lock Elision prefix
 encSupportHLE :: HLEAction -> Encoding -> Bool
 encSupportHLE a e = case filter isHLE (encProperties e) of
       []       -> False

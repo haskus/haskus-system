@@ -174,6 +174,14 @@ getInstruction mode = consumeAtMost 15 $ do
                               else BitSet.empty
                         else BitSet.empty
 
+            -- hardware lock elision (HLE)
+            vacquire  = if encSupportHLE XAcquire enc && LegacyPrefixF2 `elem` ps
+                           then BitSet.singleton LockElisionAcquire
+                           else BitSet.empty
+            vrelease  = if encSupportHLE XRelease enc && LegacyPrefixF3 `elem` ps
+                           then BitSet.singleton LockElisionRelease
+                           else BitSet.empty
+
             -- branch hint prefixes
             vbranchhint = if encBranchHintable enc
                         then if LegacyPrefix3E `elem` ps
@@ -207,6 +215,8 @@ getInstruction mode = consumeAtMost 15 $ do
                                      , vreverse 
                                      , vrepeat
                                      , vbranchhint
+                                     , vacquire
+                                     , vrelease
                                      ]
 
          return $ Insn oc ops enc spec variants
