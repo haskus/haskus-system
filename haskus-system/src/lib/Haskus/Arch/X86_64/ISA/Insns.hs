@@ -1291,6 +1291,7 @@ i_aaa :: X86Insn
 i_aaa = insn
    { insnDesc        = "ASCII adjust AL after addition"
    , insnMnemonic    = "AAA"
+   , insnFamilies    = [DecimalArithmetic]
    , insnFlags       = [ Modified  [AF,CF]
                        , Undefined [OF,SF,ZF,PF]
                        ]
@@ -1307,6 +1308,7 @@ i_aad :: X86Insn
 i_aad = insn
    { insnDesc        = "ASCII adjust AX before division"
    , insnMnemonic    = "AAD"
+   , insnFamilies    = [DecimalArithmetic]
    , insnFlags       = [ Modified  [SF,ZF,PF]
                        , Undefined [OF,AF,CF]
                        ]
@@ -1325,6 +1327,7 @@ i_aam :: X86Insn
 i_aam = insn
    { insnDesc        = "ASCII adjust AX after multiply"
    , insnMnemonic    = "AAM"
+   , insnFamilies    = [DecimalArithmetic]
    , insnProperties  = [FailOnZero 0]
    , insnFlags       = [ Modified  [SF,ZF,PF]
                        , Undefined [OF,AF,CF]
@@ -1345,6 +1348,7 @@ i_aas :: X86Insn
 i_aas = insn
    { insnDesc        = "ASCII adjust AL after subtraction"
    , insnMnemonic    = "AAS"
+   , insnFamilies    = [DecimalArithmetic]
    , insnFlags       = [ Modified  [AF,CF]
                        , Undefined [OF,SF,ZF,PF]
                        ]
@@ -1361,6 +1365,7 @@ i_adc :: X86Insn
 i_adc = insn
    { insnDesc        = "Add with carry"
    , insnMnemonic    = "ADC"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [ Read     [CF]
                        , Modified [OF,SF,ZF,AF,CF,PF]
                        ]
@@ -1411,6 +1416,7 @@ i_adcx :: X86Insn
 i_adcx = insn
    { insnDesc        = "Unsigned integer addition with carry flags"
    , insnMnemonic    = "ADCX"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [ Read     [CF]
                        , Modified [CF]
                        ]
@@ -1430,6 +1436,7 @@ i_add :: X86Insn
 i_add = insn
    { insnDesc        = "Add"
    , insnMnemonic    = "ADD"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -1710,6 +1717,7 @@ i_adox :: X86Insn
 i_adox = insn
    { insnDesc        = "Unsigned integer addition of two operands with overflow flag"
    , insnMnemonic    = "ADOX"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [ Read     [OF]
                        , Modified [OF]
                        ]
@@ -1972,6 +1980,7 @@ i_and :: X86Insn
 i_and = insn
    { insnDesc        = "Logical AND"
    , insnMnemonic    = "AND"
+   , insnFamilies    = [Logical]
    , insnFlags       = [ Unset     [OF,CF]
                        , Modified  [SF,ZF,PF]
                        , Undefined [AF]
@@ -2023,6 +2032,7 @@ i_andn :: X86Insn
 i_andn = insn
    { insnDesc        = "Logical AND NOT"
    , insnMnemonic    = "ANDN"
+   , insnFamilies    = [Logical]
    , insnFlags       = [ Modified  [SF,ZF]
                        , Unset     [OF,CF]
                        , Undefined [AF,PF]
@@ -2047,6 +2057,7 @@ i_andpd :: X86Insn
 i_andpd = insn
    { insnDesc        = "Bitwise logical AND of packed double-precision floating-point values"
    , insnMnemonic    = "ANDPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -2066,6 +2077,7 @@ i_vandpd :: X86Insn
 i_vandpd = insn
    { insnDesc        = "Bitwise logical AND of packed double-precision floating-point values"
    , insnMnemonic    = "VANDPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
@@ -2086,6 +2098,7 @@ i_andps :: X86Insn
 i_andps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "ANDPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
                            ,    encOpcode       = 0x54
@@ -2104,6 +2117,7 @@ i_vandps :: X86Insn
 i_vandps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "VANDPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x54
@@ -2123,6 +2137,7 @@ i_andnpd :: X86Insn
 i_andnpd = insn
    { insnDesc        = "Bitwise logical AND NOT of packed double-precision floating-point values"
    , insnMnemonic    = "ANDNPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -2142,6 +2157,7 @@ i_vandnpd :: X86Insn
 i_vandnpd = insn
    { insnDesc        = "Bitwise logical AND NOT of packed double-precision floating-point values"
    , insnMnemonic    = "VANDNPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
@@ -2162,6 +2178,7 @@ i_andnps :: X86Insn
 i_andnps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "ANDNPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
                            ,    encOpcode       = 0x55
@@ -2180,6 +2197,7 @@ i_vandnps :: X86Insn
 i_vandnps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "VANDNPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x55
@@ -2532,6 +2550,7 @@ i_bswap :: X86Insn
 i_bswap = insn
    { insnDesc        = "Byte swap"
    , insnMnemonic    = "BSWAP"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
                            ,    encOpcode       = 0xC8
@@ -2789,6 +2808,7 @@ i_clc :: X86Insn
 i_clc = insn
    { insnDesc        = "Clear carry flag"
    , insnMnemonic    = "CLC"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [Unset [CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -2804,6 +2824,7 @@ i_cld :: X86Insn
 i_cld = insn
    { insnDesc        = "Clear direction flag"
    , insnMnemonic    = "CLD"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [Unset [DF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -2837,6 +2858,7 @@ i_cli :: X86Insn
 i_cli = insn
    { insnDesc        = "Clear interrupt flag"
    , insnMnemonic    = "CLI"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [Unset [IF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -2866,6 +2888,7 @@ i_cmc :: X86Insn
 i_cmc = insn
    { insnDesc        = "Complement carry flag"
    , insnMnemonic    = "CMC"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [Modified [CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -2881,6 +2904,7 @@ i_cmovo :: X86Insn
 i_cmovo = insn
    { insnDesc        = "Move if overflow (OF=1)"
    , insnMnemonic    = "CMOVO"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -2899,6 +2923,7 @@ i_cmovno :: X86Insn
 i_cmovno = insn
    { insnDesc        = "Move if not overflow (OF=0)"
    , insnMnemonic    = "CMOVNO"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -2917,6 +2942,7 @@ i_cmovc :: X86Insn
 i_cmovc = insn
    { insnDesc        = "Move if carry (CF=1)"
    , insnMnemonic    = "CMOVC"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -2935,6 +2961,7 @@ i_cmovnc :: X86Insn
 i_cmovnc = insn
    { insnDesc        = "Move if not carry (CF=0)"
    , insnMnemonic    = "CMOVNC"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -2953,6 +2980,7 @@ i_cmovz :: X86Insn
 i_cmovz = insn
    { insnDesc        = "Move if zero (ZF=1)"
    , insnMnemonic    = "CMOVZ"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [ZF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -2971,6 +2999,7 @@ i_cmovnz :: X86Insn
 i_cmovnz = insn
    { insnDesc        = "Move if not zero (ZF=0)"
    , insnMnemonic    = "CMOVNZ"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [ZF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -2989,6 +3018,7 @@ i_cmovbe :: X86Insn
 i_cmovbe = insn
    { insnDesc        = "Move if below or equal (CF=1, ZF=1)"
    , insnMnemonic    = "CMOVBE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [ZF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3007,6 +3037,7 @@ i_cmova :: X86Insn
 i_cmova = insn
    { insnDesc        = "Move if above (CF=0, ZF=0)"
    , insnMnemonic    = "CMOVA"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [ZF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3025,6 +3056,7 @@ i_cmovs :: X86Insn
 i_cmovs = insn
    { insnDesc        = "Move if sign (SF=1)"
    , insnMnemonic    = "CMOVS"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [SF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3043,6 +3075,7 @@ i_cmovns :: X86Insn
 i_cmovns = insn
    { insnDesc        = "Move if not sign (SF=0)"
    , insnMnemonic    = "CMOVNS"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [SF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3061,6 +3094,7 @@ i_cmovp :: X86Insn
 i_cmovp = insn
    { insnDesc        = "Move if parity even (PF=1)"
    , insnMnemonic    = "CMOVP"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3079,6 +3113,7 @@ i_cmovnp :: X86Insn
 i_cmovnp = insn
    { insnDesc        = "Move if parity odd (PF=0)"
    , insnMnemonic    = "CMOVNP"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3097,6 +3132,7 @@ i_cmovl :: X86Insn
 i_cmovl = insn
    { insnDesc        = "Move if less (SF /= OF)"
    , insnMnemonic    = "CMOVL"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [SF,OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3115,6 +3151,7 @@ i_cmovge :: X86Insn
 i_cmovge = insn
    { insnDesc        = "Move if greater or equal (SF = OF)"
    , insnMnemonic    = "CMOVGE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [SF,OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3133,6 +3170,7 @@ i_cmovle :: X86Insn
 i_cmovle = insn
    { insnDesc        = "Move if less or equal (ZF = 1 or SF <> OF)"
    , insnMnemonic    = "CMOVLE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [ZF,SF,OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3151,6 +3189,7 @@ i_cmovg :: X86Insn
 i_cmovg = insn
    { insnDesc        = "Move if greater (ZF = 0 or SF = OF)"
    , insnMnemonic    = "CMOVG"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [Read [ZF,SF,OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3170,6 +3209,7 @@ i_cmp :: X86Insn
 i_cmp = insn
    { insnDesc        = "Compare"
    , insnMnemonic    = "CMP"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -3296,6 +3336,7 @@ i_cmps :: X86Insn
 i_cmps = insn
    { insnDesc        = "Compare string operands"
    , insnMnemonic    = "CMPS"
+   , insnFamilies    = [String]
    , insnFlags       = [Modified [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -3398,6 +3439,7 @@ i_cmpxchg :: X86Insn
 i_cmpxchg = insn
    { insnDesc        = "Compare and exchange"
    , insnMnemonic    = "CMPXCHG"
+   , insnFamilies    = [DataTransfer,Arithmetic]
    , insnFlags       = [Modified [ZF,CF,PF,AF,SF,OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -3417,11 +3459,12 @@ i_cmpxchg = insn
                        ]
    }
 
--- TODO: CMPXCHG16B require 16-byte alignment
 i_cmpxch8b :: X86Insn
 i_cmpxch8b = insn
    { insnDesc        = "Compare and exchange bytes"
    , insnMnemonic    = "CMPXCHG8B/CMPXCHG16B"
+   , insnProperties  = [MemAlignDefault]
+   , insnFamilies    = [DataTransfer,Arithmetic]
    , insnFlags       = [Modified [ZF,CF,PF,AF,SF,OF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
@@ -4281,6 +4324,7 @@ i_daa :: X86Insn
 i_daa = insn
    { insnDesc        = "Decimal adjust AL after addition"
    , insnMnemonic    = "DAA"
+   , insnFamilies    = [DecimalArithmetic]
    , insnFlags       = [ Modified  [AF,CF,SF,ZF,PF]
                        , Undefined [OF]
                        ]
@@ -4297,6 +4341,7 @@ i_das :: X86Insn
 i_das = insn
    { insnDesc        = "Decimal adjust AL after subtraction"
    , insnMnemonic    = "DAS"
+   , insnFamilies    = [DecimalArithmetic]
    , insnFlags       = [ Modified  [AF,CF,SF,ZF,PF]
                        , Undefined [OF]
                        ]
@@ -4314,6 +4359,7 @@ i_dec :: X86Insn
 i_dec = insn
    { insnDesc        = "Decrement by 1"
    , insnMnemonic    = "DEC"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [Modified [OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -4342,6 +4388,7 @@ i_div :: X86Insn
 i_div = insn
    { insnDesc        = "Unsigned divide"
    , insnMnemonic    = "DIV"
+   , insnFamilies    = [Arithmetic]
    , insnProperties  = [FailOnZero 0]
    , insnFlags       = [Undefined [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
@@ -4818,6 +4865,7 @@ i_fcmovb :: X86Insn
 i_fcmovb = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVB"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4838,6 +4886,7 @@ i_fcmove :: X86Insn
 i_fcmove = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [ZF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4859,6 +4908,7 @@ i_fcmovbe :: X86Insn
 i_fcmovbe = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVBE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [ZF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4880,6 +4930,7 @@ i_fcmovu :: X86Insn
 i_fcmovu = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVU"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4901,6 +4952,7 @@ i_fcmovnb :: X86Insn
 i_fcmovnb = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVNB"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4922,6 +4974,7 @@ i_fcmovne :: X86Insn
 i_fcmovne = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVNE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [ZF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4943,6 +4996,7 @@ i_fcmovnbe :: X86Insn
 i_fcmovnbe = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVNBE"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [ZF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -4964,6 +5018,7 @@ i_fcmovnu :: X86Insn
 i_fcmovnu = insn
    { insnDesc        = "Floating-point conditional move"
    , insnMnemonic    = "FCMOVNU"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Read [PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap     = MapLegacy MapPrimary
@@ -6466,6 +6521,7 @@ i_idiv :: X86Insn
 i_idiv = insn
    { insnDesc        = "Signed divide"
    , insnMnemonic    = "IDIV"
+   , insnFamilies    = [Arithmetic]
    , insnProperties  = [FailOnZero 0]
    , insnFlags       = [Undefined [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
@@ -6487,6 +6543,7 @@ i_imul :: X86Insn
 i_imul = insn
    { insnDesc        = "Signed multiply"
    , insnMnemonic    = "IMUL"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [ Modified  [OF,CF]
                        , Undefined [SF,ZF,AF,PF]
                        ]
@@ -6532,6 +6589,7 @@ i_in :: X86Insn
 i_in = insn
    { insnDesc        = "Input from port"
    , insnMnemonic    = "IN"
+   , insnFamilies    = [PortIO]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xE4
@@ -6564,6 +6622,7 @@ i_inc :: X86Insn
 i_inc = insn
    { insnDesc        = "Increment by 1"
    , insnMnemonic    = "INC"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [ Modified [OF,SF,ZF,AF,PF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -6592,6 +6651,7 @@ i_ins :: X86Insn
 i_ins = insn
    { insnDesc        = "Input from port to string"
    , insnMnemonic    = "INS"
+   , insnFamilies    = [PortIO,String]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x6C
@@ -7259,6 +7319,7 @@ i_lahf :: X86Insn
 i_lahf = insn
    { insnDesc        = "Load status flags into AH register"
    , insnMnemonic    = "LAHF"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [ Read [SF,ZF,AF,PF,CF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -7361,6 +7422,7 @@ i_ldfarptr :: X86Insn
 i_ldfarptr = insn
    { insnDesc        = "Load far pointer"
    , insnMnemonic    = "LDS/LES/LFS/LGS/LSS"
+   , insnFamilies    = [SegmentLoad]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xC5
@@ -7536,6 +7598,7 @@ i_lods :: X86Insn
 i_lods = insn
    { insnDesc        = "Load string"
    , insnMnemonic    = "LODS"
+   , insnFamilies    = [DataTransfer,String]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xAC
@@ -7649,6 +7712,7 @@ i_maskmovdqu :: X86Insn
 i_maskmovdqu = insn
    { insnDesc        = "Store selected bytes of double quadword"
    , insnMnemonic    = "MASKMOVDQU"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -7669,6 +7733,7 @@ i_vmaskmovdqu :: X86Insn
 i_vmaskmovdqu = insn
    { insnDesc        = "Store selected bytes of double quadword"
    , insnMnemonic    = "VMASKMOVDQU"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
@@ -7690,6 +7755,7 @@ i_maskmovq :: X86Insn
 i_maskmovq = insn
    { insnDesc        = "Store selected bytes of quadword"
    , insnMnemonic    = "MASKMOVQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xF7
@@ -8052,6 +8118,7 @@ i_mov :: X86Insn
 i_mov = insn
    { insnDesc        = "Move"
    , insnMnemonic    = "MOV"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xA0
@@ -8119,6 +8186,7 @@ i_movcr :: X86Insn
 i_movcr = insn
    { insnDesc        = "Move control register"
    , insnMnemonic    = "MOV"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Undefined [OF,SF,ZF,AF,PF,CF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
@@ -8139,6 +8207,7 @@ i_movdr :: X86Insn
 i_movdr = insn
    { insnDesc        = "Move debug register"
    , insnMnemonic    = "MOV"
+   , insnFamilies    = [DataTransfer]
    , insnFlags       = [ Undefined [OF,SF,ZF,AF,PF,CF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
@@ -8160,6 +8229,7 @@ i_movapd :: X86Insn
 i_movapd = insn
    { insnDesc        = "Move aligned packed double-precision floating-point values"
    , insnMnemonic    = "MOVAPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8180,6 +8250,7 @@ i_vmovapd :: X86Insn
 i_vmovapd = insn
    { insnDesc        = "Move aligned packed double-precision floating-point values"
    , insnMnemonic    = "VMOVAPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
@@ -8200,6 +8271,7 @@ i_movaps :: X86Insn
 i_movaps = insn
    { insnDesc        = "Move aligned packed single-precision floating-point values"
    , insnMnemonic    = "MOVAPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x28
@@ -8219,6 +8291,7 @@ i_vmovaps :: X86Insn
 i_vmovaps = insn
    { insnDesc        = "Move aligned packed single-precision floating-point values"
    , insnMnemonic    = "VMOVAPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x28
@@ -8238,6 +8311,7 @@ i_movbe :: X86Insn
 i_movbe = insn
    { insnDesc        = "Move data after swapping bytes"
    , insnMnemonic    = "MOVBE"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0xF0
@@ -8256,6 +8330,7 @@ i_movdq :: X86Insn
 i_movdq = insn
    { insnDesc        = "Move doubleword/quadword"
    , insnMnemonic    = "MOVD/MOVQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x6E
@@ -8302,6 +8377,7 @@ i_movddup :: X86Insn
 i_movddup = insn
    { insnDesc        = "Move one double-FP and duplicate"
    , insnMnemonic    = "MOVDDUP"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefixF2
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8333,6 +8409,7 @@ i_movdqa :: X86Insn
 i_movdqa = insn
    { insnDesc        = "Move aligned doubleword/quadword"
    , insnMnemonic    = "MOVDQA/VMOVDQA"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8366,6 +8443,7 @@ i_movdqu :: X86Insn
 i_movdqu = insn
    { insnDesc        = "Move unaligned doubleword/quadword"
    , insnMnemonic    = "MOVDQU/VMOVDQU"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefixF3
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8399,6 +8477,7 @@ i_movdq2q :: X86Insn
 i_movdq2q = insn
    { insnDesc        = "Move quadword from XMM to MMX register"
    , insnMnemonic    = "MOVDQ2Q"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefixF2
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8418,6 +8497,7 @@ i_movhlps :: X86Insn
 i_movhlps = insn
    { insnDesc        = "Move packed single-precision FP values high to low"
    , insnMnemonic    = "MOVHLPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x12
@@ -8436,6 +8516,7 @@ i_vmovhlps :: X86Insn
 i_vmovhlps = insn
    { insnDesc        = "Move packed single-precision FP values high to low"
    , insnMnemonic    = "VMOVHLPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
@@ -8458,6 +8539,7 @@ i_movhpd :: X86Insn
 i_movhpd = insn
    { insnDesc        = "Move high packed double-precision FP value"
    , insnMnemonic    = "MOVHPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8491,6 +8573,7 @@ i_vmovhpd :: X86Insn
 i_vmovhpd = insn
    { insnDesc        = "Move high packed double-precision FP value"
    , insnMnemonic    = "VMOVHPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
@@ -8513,6 +8596,7 @@ i_movhps :: X86Insn
 i_movhps = insn
    { insnDesc        = "Move high packed single-precision FP values"
    , insnMnemonic    = "MOVHPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x16
@@ -8542,8 +8626,9 @@ i_movhps = insn
 
 i_vmovhps :: X86Insn
 i_vmovhps = insn
-   { insnDesc        = "Move high packed singke-precision FP values"
+   { insnDesc        = "Move high packed single-precision FP values"
    , insnMnemonic    = "VMOVHPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x16
@@ -8565,6 +8650,7 @@ i_movlpd :: X86Insn
 i_movlpd = insn
    { insnDesc        = "Move low packed double-precision FP value"
    , insnMnemonic    = "MOVLPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8598,6 +8684,7 @@ i_vmovlpd :: X86Insn
 i_vmovlpd = insn
    { insnDesc        = "Move low packed double-precision FP value"
    , insnMnemonic    = "VMOVLPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
@@ -8620,6 +8707,7 @@ i_movlps :: X86Insn
 i_movlps = insn
    { insnDesc        = "Move low packed single-precision FP values"
    , insnMnemonic    = "MOVLPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x12
@@ -8649,8 +8737,9 @@ i_movlps = insn
 
 i_vmovlps :: X86Insn
 i_vmovlps = insn
-   { insnDesc        = "Move low packed singke-precision FP values"
+   { insnDesc        = "Move low packed single-precision FP values"
    , insnMnemonic    = "VMOVLPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
@@ -8669,8 +8758,9 @@ i_vmovlps = insn
 
 i_movlhps :: X86Insn
 i_movlhps = insn
-   { insnDesc        = "Move packed single-precision FP values low ti high"
+   { insnDesc        = "Move packed single-precision FP values low to high"
    , insnMnemonic    = "MOVLHPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x16
@@ -8689,6 +8779,7 @@ i_vmovlhps :: X86Insn
 i_vmovlhps = insn
    { insnDesc        = "Move packed single-precision FP values low to high"
    , insnMnemonic    = "VMOVLHPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x16
@@ -8710,6 +8801,7 @@ i_movmskpd :: X86Insn
 i_movmskpd = insn
    { insnDesc        = "Move packed double-precision FP sign mask"
    , insnMnemonic    = "MOVMSKPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -8730,6 +8822,7 @@ i_vmovmskpd :: X86Insn
 i_vmovmskpd = insn
    { insnDesc        = "Move packed double-precision FP sign mask"
    , insnMnemonic    = "VMOVMSKPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
@@ -8751,6 +8844,7 @@ i_movmskps :: X86Insn
 i_movmskps = insn
    { insnDesc        = "Move packed single-precision FP sign mask"
    , insnMnemonic    = "MOVMSKPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x50
@@ -8770,6 +8864,7 @@ i_vmovmskps :: X86Insn
 i_vmovmskps = insn
    { insnDesc        = "Move packed single-precision FP sign mask"
    , insnMnemonic    = "VMOVMSKPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x50
@@ -8789,6 +8884,7 @@ i_movntdqa :: X86Insn
 i_movntdqa = insn
    { insnDesc        = "Move aligned doubleword/quadword non temporal"
    , insnMnemonic    = "MOVNTDQA/VMOVNTDQA"
+   , insnFamilies    = [DataTransfer]
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
@@ -8836,6 +8932,7 @@ i_movntdq :: X86Insn
 i_movntdq = insn
    { insnDesc        = "Store double quadword non temporal"
    , insnMnemonic    = "MOVNTDQ/VMOVNTDQ"
+   , insnFamilies    = [DataTransfer]
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
@@ -8869,6 +8966,7 @@ i_movnti :: X86Insn
 i_movnti = insn
    { insnDesc        = "Store doubleword non temporal"
    , insnMnemonic    = "MOVNTI"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xC3
@@ -8886,6 +8984,7 @@ i_movntpd :: X86Insn
 i_movntpd = insn
    { insnDesc        = "Move aligned packed double-precision FP values non temporal"
    , insnMnemonic    = "(V)MOVNTPD"
+   , insnFamilies    = [DataTransfer]
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
@@ -8918,6 +9017,7 @@ i_movntps :: X86Insn
 i_movntps = insn
    { insnDesc        = "Move aligned packed single-precision FP values non temporal"
    , insnMnemonic    = "MOVNTPS"
+   , insnFamilies    = [DataTransfer]
    , insnProperties  = [ MemAlignDefault ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
@@ -8949,6 +9049,7 @@ i_movntq :: X86Insn
 i_movntq = insn
    { insnDesc        = "Store quadword non temporal"
    , insnMnemonic    = "MOVNTQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xE7
@@ -8967,6 +9068,7 @@ i_movq :: X86Insn
 i_movq = insn
    { insnDesc        = "Move quadword"
    , insnMnemonic    = "MOVQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x6F
@@ -9036,6 +9138,7 @@ i_movq2dq :: X86Insn
 i_movq2dq = insn
    { insnDesc        = "Move quadword from MMX to XMM register"
    , insnMnemonic    = "MOVQ2DQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefixF3
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -9055,6 +9158,7 @@ i_movs :: X86Insn
 i_movs = insn
    { insnDesc        = "Move string"
    , insnMnemonic    = "MOVS"
+   , insnFamilies    = [DataTransfer,String]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
                            ,    encOpcode       = 0xA4
@@ -9074,6 +9178,7 @@ i_movsd :: X86Insn
 i_movsd = insn
    { insnDesc        = "Move scalar double-precision floating-point values"
    , insnMnemonic    = "MOVSD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix    = Just LegacyPrefixF2
                            ,    encOpcodeMap          = MapLegacy Map0F
@@ -9094,6 +9199,7 @@ i_vmovsd :: X86Insn
 i_vmovsd = insn
    { insnDesc        = "Move scalar double-precision floating-point values"
    , insnMnemonic    = "VMOVSD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
@@ -9140,6 +9246,7 @@ i_movshdup :: X86Insn
 i_movshdup = insn
    { insnDesc        = "Move packed single-FP high and duplicate"
    , insnMnemonic    = "MOVSHDUP"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefixF3
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -9172,6 +9279,7 @@ i_movsldup :: X86Insn
 i_movsldup = insn
    { insnDesc        = "Move packed single-FP low and duplicate"
    , insnMnemonic    = "MOVSLDUP"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefixF3
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -9203,6 +9311,7 @@ i_movss :: X86Insn
 i_movss = insn
    { insnDesc        = "Move scalar single-precision floating-point values"
    , insnMnemonic    = "MOVSS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix    = Just LegacyPrefixF3
                            ,    encOpcodeMap          = MapLegacy Map0F
@@ -9223,6 +9332,7 @@ i_vmovss :: X86Insn
 i_vmovss = insn
    { insnDesc        = "Move scalar single-precision floating-point values"
    , insnMnemonic    = "VMOVSS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
@@ -9269,6 +9379,7 @@ i_movsx :: X86Insn
 i_movsx = insn
    { insnDesc        = "Move with sign-extension"
    , insnMnemonic    = "MOVSX"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap          = MapLegacy Map0F
                            ,    encOpcode             = 0xBE
@@ -9307,6 +9418,7 @@ i_movupd :: X86Insn
 i_movupd = insn
    { insnDesc        = "Move unaligned packed double-precision floating-point values"
    , insnMnemonic    = "MOVUPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -9327,6 +9439,7 @@ i_vmovupd :: X86Insn
 i_vmovupd = insn
    { insnDesc        = "Move unaligned packed double-precision floating-point values"
    , insnMnemonic    = "VMOVUPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
@@ -9347,6 +9460,7 @@ i_movups :: X86Insn
 i_movups = insn
    { insnDesc        = "Move unaligned packed single-precision floating-point values"
    , insnMnemonic    = "MOVUPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x10
@@ -9366,6 +9480,7 @@ i_vmovups :: X86Insn
 i_vmovups = insn
    { insnDesc        = "Move unaligned packed single-precision floating-point values"
    , insnMnemonic    = "VMOVUPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x10
@@ -9385,6 +9500,7 @@ i_movzx :: X86Insn
 i_movzx = insn
    { insnDesc        = "Move with zerp-extend"
    , insnMnemonic    = "MOVZX"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap          = MapLegacy Map0F
                            ,    encOpcode             = 0xB6
@@ -9680,6 +9796,7 @@ i_neg :: X86Insn
 i_neg = insn
    { insnDesc        = "Two's complement negation"
    , insnMnemonic    = "NEG"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [ Modified [CF,OF,SF,ZF,AF,PF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -9717,6 +9834,7 @@ i_not :: X86Insn
 i_not = insn
    { insnDesc        = "One's complement negation"
    , insnMnemonic    = "NOT"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
                            ,    encOpcode       = 0xF6
@@ -9737,6 +9855,7 @@ i_or :: X86Insn
 i_or = insn
    { insnDesc        = "Logical inclusive OR"
    , insnMnemonic    = "OR"
+   , insnFamilies    = [Logical]
    , insnFlags       = [ Unset     [OF,CF]
                        , Modified  [SF,ZF,PF]
                        , Undefined [AF]
@@ -9788,6 +9907,7 @@ i_orpd :: X86Insn
 i_orpd = insn
    { insnDesc        = "Bitwise logical OR of packed double-precision floating-point values"
    , insnMnemonic    = "ORPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -9807,6 +9927,7 @@ i_vorpd :: X86Insn
 i_vorpd = insn
    { insnDesc        = "Bitwise logical OR of packed double-precision floating-point values"
    , insnMnemonic    = "VORPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
@@ -9827,6 +9948,7 @@ i_orps :: X86Insn
 i_orps = insn
    { insnDesc        = "Bitwise logical OR of packed float-precision floating-point values"
    , insnMnemonic    = "ORPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
                            ,    encOpcode       = 0x56
@@ -9845,6 +9967,7 @@ i_vorps :: X86Insn
 i_vorps = insn
    { insnDesc        = "Bitwise logical OR of packed float-precision floating-point values"
    , insnMnemonic    = "VORPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x56
@@ -9864,6 +9987,7 @@ i_out :: X86Insn
 i_out = insn
    { insnDesc        = "Output to port"
    , insnMnemonic    = "OUT"
+   , insnFamilies    = [PortIO]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xE6
@@ -9896,6 +10020,7 @@ i_outs :: X86Insn
 i_outs = insn
    { insnDesc        = "Output string to port"
    , insnMnemonic    = "OUTS"
+   , insnFamilies    = [PortIO,String]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x6E
@@ -10314,6 +10439,7 @@ i_paddb :: X86Insn
 i_paddb = insn
    { insnDesc        = "Add packed integers"
    , insnMnemonic    = "PADDB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xFC
@@ -10375,6 +10501,7 @@ i_paddw :: X86Insn
 i_paddw = insn
    { insnDesc        = "Add packed integers"
    , insnMnemonic    = "PADDW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xFD
@@ -10435,6 +10562,7 @@ i_paddd :: X86Insn
 i_paddd = insn
    { insnDesc        = "Add packed integers"
    , insnMnemonic    = "PADDD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xFE
@@ -10496,6 +10624,7 @@ i_paddq :: X86Insn
 i_paddq = insn
    { insnDesc        = "Add packed quadword integers"
    , insnMnemonic    = "PADDQ"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xD4
@@ -10557,6 +10686,7 @@ i_paddsb :: X86Insn
 i_paddsb = insn
    { insnDesc        = "Add packed signed integers with signed saturation"
    , insnMnemonic    = "PADDSB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xEC
@@ -10617,6 +10747,7 @@ i_paddsw :: X86Insn
 i_paddsw = insn
    { insnDesc        = "Add packed signed integers with signed saturation"
    , insnMnemonic    = "PADDSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xED
@@ -10677,6 +10808,7 @@ i_paddusb :: X86Insn
 i_paddusb = insn
    { insnDesc        = "Add packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PADDUSB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xDC
@@ -10737,6 +10869,7 @@ i_paddusw :: X86Insn
 i_paddusw = insn
    { insnDesc        = "Add packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PADDUSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xDD
@@ -10859,6 +10992,7 @@ i_pand :: X86Insn
 i_pand = insn
    { insnDesc        = "Logical AND"
    , insnMnemonic    = "PAND"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xDB
@@ -10919,6 +11053,7 @@ i_pandn :: X86Insn
 i_pandn = insn
    { insnDesc        = "Logical AND NOT"
    , insnMnemonic    = "PANDN"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xDF
@@ -11258,6 +11393,7 @@ i_pcmpeqb :: X86Insn
 i_pcmpeqb = insn
    { insnDesc        = "Compare packed data for equality"
    , insnMnemonic    = "PCMPEQB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x74
@@ -11317,6 +11453,7 @@ i_pcmpeqw :: X86Insn
 i_pcmpeqw = insn
    { insnDesc        = "Compare packed data for equality"
    , insnMnemonic    = "PCMPEQW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x75
@@ -11376,6 +11513,7 @@ i_pcmpeqd :: X86Insn
 i_pcmpeqd = insn
    { insnDesc        = "Compare packed data for equality"
    , insnMnemonic    = "PCMPEQD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x76
@@ -11435,6 +11573,7 @@ i_pcmpeqq :: X86Insn
 i_pcmpeqq = insn
    { insnDesc        = "Compare packed quadword data for equality"
    , insnMnemonic    = "PCMPEQQ"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -11570,6 +11709,7 @@ i_pcmpgtb :: X86Insn
 i_pcmpgtb = insn
    { insnDesc        = "Compare packed data for greater than"
    , insnMnemonic    = "PCMPGTB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x64
@@ -11629,6 +11769,7 @@ i_pcmpgtw :: X86Insn
 i_pcmpgtw = insn
    { insnDesc        = "Compare packed data for greater than"
    , insnMnemonic    = "PCMPGTW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x65
@@ -11688,6 +11829,7 @@ i_pcmpgtd :: X86Insn
 i_pcmpgtd = insn
    { insnDesc        = "Compare packed data for greater than"
    , insnMnemonic    = "PCMPGTD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0x66
@@ -11747,6 +11889,7 @@ i_pcmpgtq :: X86Insn
 i_pcmpgtq = insn
    { insnDesc        = "Compare packed quadword data for greater than"
    , insnMnemonic    = "PCMPGTQ"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -12048,6 +12191,7 @@ i_phaddw :: X86Insn
 i_phaddw = insn
    { insnDesc        = "Packed horizontal add"
    , insnMnemonic    = "PHADDW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x01
@@ -12107,6 +12251,7 @@ i_phaddd :: X86Insn
 i_phaddd = insn
    { insnDesc        = "Packed horizontal add"
    , insnMnemonic    = "PHADDD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x02
@@ -12166,6 +12311,7 @@ i_phaddsw :: X86Insn
 i_phaddsw = insn
    { insnDesc        = "Packed horizontal add and saturate"
    , insnMnemonic    = "PHADDSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x03
@@ -12256,6 +12402,7 @@ i_phsubw :: X86Insn
 i_phsubw = insn
    { insnDesc        = "Packed horizontal subtract"
    , insnMnemonic    = "PHSUBW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x05
@@ -12315,6 +12462,7 @@ i_phsubd :: X86Insn
 i_phsubd = insn
    { insnDesc        = "Packed horizontal subtract"
    , insnMnemonic    = "PHSUBD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x06
@@ -12374,6 +12522,7 @@ i_phsubsw :: X86Insn
 i_phsubsw = insn
    { insnDesc        = "Packed horizontal subtract and saturate"
    , insnMnemonic    = "PHSUBSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x07
@@ -12551,6 +12700,7 @@ i_pmaddubsw :: X86Insn
 i_pmaddubsw = insn
    { insnDesc        = "Multiply and add packed signed and unsigned bytes"
    , insnMnemonic    = "PMADDUBSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F38
                            ,    encOpcode          = 0x04
@@ -12609,6 +12759,7 @@ i_pmaddwd :: X86Insn
 i_pmaddwd = insn
    { insnDesc        = "Multiply and add packed integers"
    , insnMnemonic    = "PMADDWD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xF5
@@ -13288,6 +13439,7 @@ i_pmovmskb :: X86Insn
 i_pmovmskb = insn
    { insnDesc        = "Move byte mask"
    , insnMnemonic    = "PMOVMSKB"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xD7
@@ -13347,6 +13499,7 @@ i_pmovsxbw :: X86Insn
 i_pmovsxbw = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXBW"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13393,6 +13546,7 @@ i_pmovsxbd :: X86Insn
 i_pmovsxbd = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXBD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13439,6 +13593,7 @@ i_pmovsxbq :: X86Insn
 i_pmovsxbq = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXBQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13485,6 +13640,7 @@ i_pmovsxwd :: X86Insn
 i_pmovsxwd = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXWD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13531,6 +13687,7 @@ i_pmovsxwq :: X86Insn
 i_pmovsxwq = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXWQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13577,6 +13734,7 @@ i_pmovsxdq :: X86Insn
 i_pmovsxdq = insn
    { insnDesc        = "Packed move with sign extend"
    , insnMnemonic    = "PMOVSXWQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13623,6 +13781,7 @@ i_pmovzxbw :: X86Insn
 i_pmovzxbw = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXBW"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13669,6 +13828,7 @@ i_pmovzxbd :: X86Insn
 i_pmovzxbd = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXBD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13715,6 +13875,7 @@ i_pmovzxbq :: X86Insn
 i_pmovzxbq = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXBQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13761,6 +13922,7 @@ i_pmovzxwd :: X86Insn
 i_pmovzxwd = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXWD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13807,6 +13969,7 @@ i_pmovzxwq :: X86Insn
 i_pmovzxwq = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXWQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -13853,6 +14016,7 @@ i_pmovzxdq :: X86Insn
 i_pmovzxdq = insn
    { insnDesc        = "Packed move with zero extend"
    , insnMnemonic    = "PMOVZXWQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F38
@@ -14289,6 +14453,7 @@ i_pop :: X86Insn
 i_pop = insn
    { insnDesc        = "Pop a value from the stack"
    , insnMnemonic    = "POP"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x8F
@@ -14364,6 +14529,7 @@ i_popa :: X86Insn
 i_popa = insn
    { insnDesc        = "Pop all general-purpose registers"
    , insnMnemonic    = "POPA"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x61
@@ -14407,6 +14573,7 @@ i_popf :: X86Insn
 i_popf = insn
    { insnDesc        = "Pop stack into EFLAGS register"
    , insnMnemonic    = "POPF"
+   , insnFamilies    = [DataTransfer,FlagControl]
    , insnFlags       = [ Modified allFlags ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -14424,6 +14591,7 @@ i_por :: X86Insn
 i_por = insn
    { insnDesc        = "Bitwise logical OR"
    , insnMnemonic    = "POR"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xEB
@@ -16052,6 +16220,7 @@ i_psubb :: X86Insn
 i_psubb = insn
    { insnDesc        = "Subtract packed integers"
    , insnMnemonic    = "PSUBB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xF8
@@ -16113,6 +16282,7 @@ i_psubw :: X86Insn
 i_psubw = insn
    { insnDesc        = "Subtract packed integers"
    , insnMnemonic    = "PSUBW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xF9
@@ -16173,6 +16343,7 @@ i_psubd :: X86Insn
 i_psubd = insn
    { insnDesc        = "Subtract packed integers"
    , insnMnemonic    = "PSUBD"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xFA
@@ -16234,6 +16405,7 @@ i_psubq :: X86Insn
 i_psubq = insn
    { insnDesc        = "Subtract packed quadword integers"
    , insnMnemonic    = "PSUBQ"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xFB
@@ -16295,6 +16467,7 @@ i_psubsb :: X86Insn
 i_psubsb = insn
    { insnDesc        = "Subtract packed signed integers with signed saturation"
    , insnMnemonic    = "PSUBSB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xE8
@@ -16355,6 +16528,7 @@ i_psubsw :: X86Insn
 i_psubsw = insn
    { insnDesc        = "Subtract packed signed integers with signed saturation"
    , insnMnemonic    = "PSUBSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xE9
@@ -16414,6 +16588,7 @@ i_psubusb :: X86Insn
 i_psubusb = insn
    { insnDesc        = "Subtract packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PSUBUSB"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xD8
@@ -16474,6 +16649,7 @@ i_psubusw :: X86Insn
 i_psubusw = insn
    { insnDesc        = "Subtract packed unsigned integers with unsigned saturation"
    , insnMnemonic    = "PSUBUSW"
+   , insnFamilies    = [Arithmetic]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xD9
@@ -17015,6 +17191,7 @@ i_push :: X86Insn
 i_push = insn
    { insnDesc        = "Push a value onto the stack"
    , insnMnemonic    = "PUSH"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xFF
@@ -17120,6 +17297,7 @@ i_pusha :: X86Insn
 i_pusha = insn
    { insnDesc        = "Push all general-purpose registers"
    , insnMnemonic    = "PUSHA"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x60
@@ -17141,6 +17319,7 @@ i_pushf :: X86Insn
 i_pushf = insn
    { insnDesc        = "Push EFLAGS register onto the stack"
    , insnMnemonic    = "PUSHF"
+   , insnFamilies    = [DataTransfer,FlagControl]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x9C
@@ -17157,6 +17336,7 @@ i_pxor :: X86Insn
 i_pxor = insn
    { insnDesc        = "Logical exclusive OR"
    , insnMnemonic    = "PXOR"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
                            ,    encOpcode          = 0xEF
@@ -17215,6 +17395,7 @@ i_rcl :: X86Insn
 i_rcl = insn
    { insnDesc        = "Rotate left"
    , insnMnemonic    = "RCL"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -17260,6 +17441,7 @@ i_rcr :: X86Insn
 i_rcr = insn
    { insnDesc        = "Rotate right"
    , insnMnemonic    = "RCR"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -17303,8 +17485,9 @@ i_rcr = insn
 
 i_rol :: X86Insn
 i_rol = insn
-   { insnDesc        = "Rotate right"
-   , insnMnemonic    = "RCR"
+   { insnDesc        = "Rotate left"
+   , insnMnemonic    = "ROL"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -17350,6 +17533,7 @@ i_ror :: X86Insn
 i_ror = insn
    { insnDesc        = "Rotate right"
    , insnMnemonic    = "ROR"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [Modified [OF,CF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -17691,23 +17875,24 @@ i_retfar = insn
 
 i_rorx :: X86Insn
 i_rorx = insn
-   { insnDesc           = "Rotate right logical without affecting flags"
-   , insnMnemonic       = "RORX"
-   , insnEncodings      = [ vex
-                              { encMandatoryPrefix = Just LegacyPrefixF2
-                              , encOpcodeMap       = MapVex 0x03
-                              , encOpcode          = 0xF0
-                              , encOpcodeLExt      = Just False
-                              , encProperties      = [ LegacyModeSupport
-                                                     , LongModeSupport
-                                                     , Extension BMI2
-                                                     ]
-                              , encOperands        = [ reg32o64 WO S_Reg
-                                                     , reg32o64 RO S_RM
-                                                     , imm8
-                                                     ]
-                              }
-                          ]
+   { insnDesc        = "Rotate right logical without affecting flags"
+   , insnMnemonic    = "RORX"
+   , insnFamilies    = [ShiftRotate]
+   , insnEncodings   = [ vex
+                           { encMandatoryPrefix = Just LegacyPrefixF2
+                           , encOpcodeMap       = MapVex 0x03
+                           , encOpcode          = 0xF0
+                           , encOpcodeLExt      = Just False
+                           , encProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension BMI2
+                                                  ]
+                           , encOperands        = [ reg32o64 WO S_Reg
+                                                  , reg32o64 RO S_RM
+                                                  , imm8
+                                                  ]
+                           }
+                       ]
    }
 
 i_roundpd :: X86Insn
@@ -17925,6 +18110,7 @@ i_sahf :: X86Insn
 i_sahf = insn
    { insnDesc        = "Store AH into flags"
    , insnMnemonic    = "SAHF"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [ Modified allFlags ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -17941,6 +18127,7 @@ i_shl :: X86Insn
 i_shl = insn
    { insnDesc        = "Shift left"
    , insnMnemonic    = "SHL/SAL"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
@@ -17987,6 +18174,7 @@ i_sar :: X86Insn
 i_sar = insn
    { insnDesc        = "Arithmetic shift right"
    , insnMnemonic    = "SAR"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
@@ -18033,6 +18221,7 @@ i_shr :: X86Insn
 i_shr = insn
    { insnDesc        = "Shift right"
    , insnMnemonic    = "SHR"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
@@ -18076,72 +18265,76 @@ i_shr = insn
 
 i_sarx :: X86Insn
 i_sarx = insn
-   { insnDesc           = "Arithmetic shift right without affecting flags"
-   , insnMnemonic       = "SARX"
-   , insnEncodings      = [ vex
-                              { encMandatoryPrefix = Just LegacyPrefixF3
-                              , encOpcodeMap       = MapVex 0x02
-                              , encOpcode          = 0xF7
-                              , encOpcodeLExt      = Just False
-                              , encProperties      = [ LegacyModeSupport
-                                                     , LongModeSupport
-                                                     , Extension BMI2
-                                                     ]
-                              , encOperands        = [ reg32o64 WO S_Reg
-                                                     , rm32o64 RO
-                                                     , reg32o64 RO S_Vvvv
-                                                     ]
-                              }
-                          ]
+   { insnDesc        = "Arithmetic shift right without affecting flags"
+   , insnMnemonic    = "SARX"
+   , insnFamilies    = [ShiftRotate]
+   , insnEncodings   = [ vex
+                           { encMandatoryPrefix = Just LegacyPrefixF3
+                           , encOpcodeMap       = MapVex 0x02
+                           , encOpcode          = 0xF7
+                           , encOpcodeLExt      = Just False
+                           , encProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension BMI2
+                                                  ]
+                           , encOperands        = [ reg32o64 WO S_Reg
+                                                  , rm32o64 RO
+                                                  , reg32o64 RO S_Vvvv
+                                                  ]
+                           }
+                       ]
    }
 
 i_shlx :: X86Insn
 i_shlx = insn
-   { insnDesc           = "Shift left without affecting flags"
-   , insnMnemonic       = "SHLX"
-   , insnEncodings      = [ vex
-                              { encMandatoryPrefix = Just LegacyPrefix66
-                              , encOpcodeMap       = MapVex 0x02
-                              , encOpcode          = 0xF7
-                              , encOpcodeLExt      = Just False
-                              , encProperties      = [ LegacyModeSupport
-                                                     , LongModeSupport
-                                                     , Extension BMI2
-                                                     ]
-                              , encOperands        = [ reg32o64 WO S_Reg
-                                                     , rm32o64 RO
-                                                     , reg32o64 RO S_Vvvv
-                                                     ]
-                              }
-                          ]
+   { insnDesc        = "Shift left without affecting flags"
+   , insnMnemonic    = "SHLX"
+   , insnFamilies    = [ShiftRotate]
+   , insnEncodings   = [ vex
+                           { encMandatoryPrefix = Just LegacyPrefix66
+                           , encOpcodeMap       = MapVex 0x02
+                           , encOpcode          = 0xF7
+                           , encOpcodeLExt      = Just False
+                           , encProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension BMI2
+                                                  ]
+                           , encOperands        = [ reg32o64 WO S_Reg
+                                                  , rm32o64 RO
+                                                  , reg32o64 RO S_Vvvv
+                                                  ]
+                           }
+                       ]
    }
 
 
 i_shrx :: X86Insn
 i_shrx = insn
-   { insnDesc           = "Shift right without affecting flags"
-   , insnMnemonic       = "SHRX"
-   , insnEncodings      = [ vex
-                              { encMandatoryPrefix = Just LegacyPrefixF2
-                              , encOpcodeMap       = MapVex 0x02
-                              , encOpcode          = 0xF7
-                              , encOpcodeLExt      = Just False
-                              , encProperties      = [ LegacyModeSupport
-                                                     , LongModeSupport
-                                                     , Extension BMI2
-                                                     ]
-                              , encOperands        = [ reg32o64 WO S_Reg
-                                                     , rm32o64 RO
-                                                     , reg32o64 RO S_Vvvv
-                                                     ]
-                              }
-                          ]
+   { insnDesc        = "Shift right without affecting flags"
+   , insnMnemonic    = "SHRX"
+   , insnFamilies    = [ShiftRotate]
+   , insnEncodings   = [ vex
+                           { encMandatoryPrefix = Just LegacyPrefixF2
+                           , encOpcodeMap       = MapVex 0x02
+                           , encOpcode          = 0xF7
+                           , encOpcodeLExt      = Just False
+                           , encProperties      = [ LegacyModeSupport
+                                                  , LongModeSupport
+                                                  , Extension BMI2
+                                                  ]
+                           , encOperands        = [ reg32o64 WO S_Reg
+                                                  , rm32o64 RO
+                                                  , reg32o64 RO S_Vvvv
+                                                  ]
+                           }
+                       ]
    }
 
 i_sbb :: X86Insn
 i_sbb = insn
    { insnDesc        = "Integer subtraction with borrow"
    , insnMnemonic    = "SBB"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -18190,6 +18383,7 @@ i_scas :: X86Insn
 i_scas = insn
    { insnDesc        = "Scan string"
    , insnMnemonic    = "SCAS"
+   , insnFamilies    = [String]
    , insnFlags       = [Modified [CF,OF,SF,ZF,AF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy MapPrimary
@@ -18498,6 +18692,7 @@ i_shld :: X86Insn
 i_shld = insn
    { insnDesc        = "Double precision shift left"
    , insnMnemonic    = "SHLD"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
@@ -18530,6 +18725,7 @@ i_shrd :: X86Insn
 i_shrd = insn
    { insnDesc        = "Double precision shift right"
    , insnMnemonic    = "SHRD"
+   , insnFamilies    = [ShiftRotate]
    , insnFlags       = [ Modified [OF,CF,SF,ZF,PF]
                        , Undefined [AF] ]
    , insnEncodings   = [ leg
@@ -18835,6 +19031,7 @@ i_stc :: X86Insn
 i_stc = insn
    { insnDesc        = "Set carry flag"
    , insnMnemonic    = "STC"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [ St [CF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -18851,6 +19048,7 @@ i_std :: X86Insn
 i_std = insn
    { insnDesc        = "Set direction flag"
    , insnMnemonic    = "STD"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [ St [DF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -18867,6 +19065,7 @@ i_sti :: X86Insn
 i_sti = insn
    { insnDesc        = "Set interrupt flag"
    , insnMnemonic    = "STI"
+   , insnFamilies    = [FlagControl]
    , insnFlags       = [ St [IF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -18910,6 +19109,7 @@ i_stos :: X86Insn
 i_stos = insn
    { insnDesc        = "Store string"
    , insnMnemonic    = "STOS"
+   , insnFamilies    = [DataTransfer,String]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0xAA
@@ -18947,6 +19147,7 @@ i_sub :: X86Insn
 i_sub = insn
    { insnDesc        = "Subtract"
    , insnMnemonic    = "SUB"
+   , insnFamilies    = [Arithmetic]
    , insnFlags       = [Modified [OF,SF,ZF,AF,CF,PF]]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
@@ -21289,6 +21490,7 @@ i_vmaskmovps :: X86Insn
 i_vmaskmovps = insn
    { insnDesc        = "Conditional SIMD packed SP FP values loads and stores"
    , insnMnemonic    = "VMASKMOVPS"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
@@ -21325,6 +21527,7 @@ i_vmaskmovpd :: X86Insn
 i_vmaskmovpd = insn
    { insnDesc        = "Conditional SIMD packed DP FP values loads and stores"
    , insnMnemonic    = "VMASKMOVPD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
@@ -21698,6 +21901,7 @@ i_vpmaskmovd :: X86Insn
 i_vpmaskmovd = insn
    { insnDesc        = "Conditional SIMD integer packed loads and stores"
    , insnMnemonic    = "VPMASKMOVD"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
@@ -21734,6 +21938,7 @@ i_vpmaskmovq :: X86Insn
 i_vpmaskmovq = insn
    { insnDesc        = "Conditional SIMD integer packed loads and stores"
    , insnMnemonic    = "VPMASKMOVQ"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
@@ -22088,6 +22293,7 @@ i_xadd :: X86Insn
 i_xadd = insn
    { insnDesc        = "Exchange and add"
    , insnMnemonic    = "XADD"
+   , insnFamilies    = [DataTransfer,Arithmetic]
    , insnFlags       = [ Modified [CF,PF,AF,SF,ZF,OF] ]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy Map0F
@@ -22126,6 +22332,7 @@ i_xchg :: X86Insn
 i_xchg = insn
    { insnDesc        = "Exchange"
    , insnMnemonic    = "XCHG"
+   , insnFamilies    = [DataTransfer]
    , insnEncodings   = [ leg
                            {    encOpcodeMap       = MapLegacy MapPrimary
                            ,    encOpcode          = 0x90
@@ -22215,6 +22422,7 @@ i_xor :: X86Insn
 i_xor = insn
    { insnDesc        = "Logical exclusive OR"
    , insnMnemonic    = "XOR"
+   , insnFamilies    = [Logical]
    , insnFlags       = [ Unset     [OF,CF]
                        , Modified  [SF,ZF,PF]
                        , Undefined [AF]
@@ -22266,6 +22474,7 @@ i_xorpd :: X86Insn
 i_xorpd = insn
    { insnDesc        = "Bitwise logical XOR of packed double-precision floating-point values"
    , insnMnemonic    = "XORPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encMandatoryPrefix = Just LegacyPrefix66
                            ,    encOpcodeMap       = MapLegacy Map0F
@@ -22285,6 +22494,7 @@ i_vxorpd :: X86Insn
 i_vxorpd = insn
    { insnDesc        = "Bitwise logical XOR of packed double-precision floating-point values"
    , insnMnemonic    = "VXORPD"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
@@ -22305,6 +22515,7 @@ i_xorps :: X86Insn
 i_xorps = insn
    { insnDesc        = "Bitwise logical XOR of packed float-precision floating-point values"
    , insnMnemonic    = "XORPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ leg
                            {    encOpcodeMap    = MapLegacy Map0F
                            ,    encOpcode       = 0x57
@@ -22323,6 +22534,7 @@ i_vxorps :: X86Insn
 i_vxorps = insn
    { insnDesc        = "Bitwise logical XOR of packed float-precision floating-point values"
    , insnMnemonic    = "VXORPS"
+   , insnFamilies    = [Logical]
    , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x57

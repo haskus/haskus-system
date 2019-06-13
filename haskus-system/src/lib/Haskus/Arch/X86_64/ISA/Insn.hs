@@ -70,6 +70,15 @@ data InsnFamily
    | Return            -- ^ Return from a call, an interruption, etc.
    | Branch            -- ^ Unconditional branch instruction
    | ConditionalBranch -- ^ Conditional branch instruction
+   | DataTransfer      -- ^ Data transfer instructions
+   | Arithmetic        -- ^ Binary arithmetic
+   | DecimalArithmetic -- ^ Decimal arithmetic
+   | Logical           -- ^ Logical instructions
+   | ShiftRotate       -- ^ Binary shift/rotate
+   | String            -- ^ String instructions
+   | PortIO            -- ^ Port I/O
+   | FlagControl       -- ^ Flag control
+   | SegmentLoad       -- ^ Load into segment registers
    deriving (Show,Eq)
 
 -- | Flag state modification
