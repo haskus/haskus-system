@@ -54,7 +54,7 @@ getInstruction mode = consumeAtMost 15 $ do
    -- read opcode
    oc <- readVexXopOpcode mode ps rex >>= \case
       Just op -> return op
-      Nothing -> readLegacyOpcode mode ps rex
+      Nothing -> readLegacyOpcode mode rex
 
    case opcodeMap oc of
 
@@ -64,8 +64,8 @@ getInstruction mode = consumeAtMost 15 $ do
       MapLegacy Map3DNow -> do
          ops <- readOperands mode ps oc amd3DNowEncoding
          -- read opcode byte
-         let OpLegacy ps' rx ocm _ = oc
-         oc' <- OpLegacy ps' rx ocm <$> getWord8
+         let OpLegacy rx ocm _ = oc
+         oc' <- OpLegacy rx ocm <$> getWord8
          return $ Insn oc'
                 ops
                 Set.empty -- modifiers
@@ -211,12 +211,15 @@ getInstruction mode = consumeAtMost 15 $ do
                then Set.singleton Reversed
                else Set.empty
 
+            vlegprefixes = if null ps
+               then Set.empty
+               else Set.singleton (LegacyPrefixes ps)
+
             variants = Set.unions
                [ vreverse
-                  -- TODO: superfluous segment override
+               , vlegprefixes
                   -- TODO: explicit param variant
                   -- TODO: useless Rex prefix
-                  -- TODO: legacy prefix order
                ]
 
             modifiers = Set.unions
@@ -320,12 +323,12 @@ readRexPrefix mode =
 ---------------------------------------------------------------------------
 
 -- | Read legacy opcode
-readLegacyOpcode :: ExecMode -> [LegacyPrefix] -> Maybe Rex -> Get Opcode
-readLegacyOpcode mode ps rex = do
+readLegacyOpcode :: ExecMode -> Maybe Rex -> Get Opcode
+readLegacyOpcode mode rex = do
 
    let
       is3DNowAllowed = mode `hasExtension` AMD3DNow
-      ret m x = return (OpLegacy ps rex m x)
+      ret m x = return (OpLegacy rex m x)
 
    getWord8 >>= \case
       0x0F -> getWord8 >>= \case
@@ -482,8 +485,8 @@ readOperands mode ps oc enc = do
          , (InsnPred RegModRM        , if | isRegModRM             -> SetPred
                                           | otherwise              -> UnsetPred)
          , (EncodingPred PRexEncoding, case oc of
-               (OpLegacy _ (Just _) _ _) -> SetPred
-               (OpLegacy _ Nothing _ _)  -> UnsetPred
+               (OpLegacy (Just _) _ _) -> SetPred
+               (OpLegacy Nothing _ _)  -> UnsetPred
                _                         -> UndefPred)
          , (EncodingPred (case oc of
                OpLegacy {} -> PLegacyEncoding
@@ -639,8 +642,8 @@ readOperands mode ps oc enc = do
       
       -- when a REX prefix is used, some 8-bit registers cannot be encoded
       useExtRegs = case oc of
-         OpLegacy _ Nothing _ _  -> False
-         OpLegacy _ (Just _) _ _ -> True
+         OpLegacy Nothing _ _  -> False
+         OpLegacy (Just _) _ _ -> True
          _ -> error ("useExtRegs: we shouldn't check for 8-bit registers with non-legacy opcode: " ++ show oc)
 
          

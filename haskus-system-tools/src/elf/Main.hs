@@ -451,8 +451,8 @@ showSectionAsm elf s = do
                td_ (toHtml (show offset))
                td_ (toHtml (show buf))
                td_ $ do
-                  when (not (Set.null (insnVariant ins))) $ do
-                     toHtml (show (Set.toList (insnVariant ins)))
+                  when (not (Set.null (insnModifiers ins))) $ do
+                     toHtml (show (Set.toList (insnModifiers ins)))
                      " "
                   toHtml (insnMnemonic (insnSpec ins))
                   " "

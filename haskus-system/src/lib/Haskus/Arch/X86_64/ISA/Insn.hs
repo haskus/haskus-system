@@ -41,12 +41,9 @@ data Modifier
 -- | Encoding variant: the encoding changes but not the behavior of the
 -- instruction
 data EncodingVariant
-   = Reversed                 -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
-   | ExplicitParam            -- ^ A variant exists with an implicit parameter, but the explicit variant is used
-   | RedundantSegmentOverride -- ^ Segment override equal to default segment
-   | RedundantRex Rex         -- ^ Useless Rex prefix
-   | RedundantLock            -- ^ Useless lock prefix
-   -- TODO: legacy prefix order, superfluous prefixes
+   = Reversed                      -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   | ExplicitParam                 -- ^ A variant exists with an implicit parameter, but the explicit variant is used (FIXME: redundant with the associated encoding and we need to know all the other encodings... Not great. We could store if params are implicit or explicit instead)
+   | LegacyPrefixes [LegacyPrefix] -- ^ Legacy prefixes in front position
    deriving (Show,Eq,Ord)
 
 

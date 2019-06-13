@@ -397,7 +397,7 @@ encSupportPrefix e x =
 
 -- | Generic opcode
 data Opcode
-   = OpLegacy [LegacyPrefix] (Maybe Rex) LegacyMap !Word8 --TODO: remove legacy prefixes?
+   = OpLegacy (Maybe Rex) LegacyMap !Word8
    | OpVex    Vex  !Word8
    | OpXop    Vex  !Word8
    deriving (Show,Eq)
@@ -421,48 +421,48 @@ data LegacyMap
 
 -- | Opcode byte
 opcodeByte :: Opcode -> Word8
-opcodeByte (OpLegacy _ _ _ x) = x
-opcodeByte (OpVex _ x)        = x
-opcodeByte (OpXop _ x)        = x
+opcodeByte (OpLegacy _ _ x) = x
+opcodeByte (OpVex _ x)      = x
+opcodeByte (OpXop _ x)      = x
 
 -- | Get the opcode map
 opcodeMap :: Opcode -> OpcodeMap
 opcodeMap = \case
-   OpLegacy _ _ t _ -> MapLegacy t
-   OpVex  v    _    -> vexMapSelect v
-   OpXop  v    _    -> vexMapSelect v
+   OpLegacy _ t _ -> MapLegacy t
+   OpVex  v     _ -> vexMapSelect v
+   OpXop  v     _ -> vexMapSelect v
 
 -- | Base extension
 opcodeB :: Opcode -> Word8
 opcodeB = \case
-   OpVex v _                 -> if vexB v then 1 else 0
-   OpXop v _                 -> if vexB v then 1 else 0
-   OpLegacy _ (Just rex) _ _ -> rexB rex
-   OpLegacy _ Nothing    _ _ -> 0
+   OpVex v _               -> if vexB v then 1 else 0
+   OpXop v _               -> if vexB v then 1 else 0
+   OpLegacy (Just rex) _ _ -> rexB rex
+   OpLegacy Nothing    _ _ -> 0
 
 -- | Reg extension
 opcodeR :: Opcode -> Word8
 opcodeR = \case
-   OpVex v _                 -> if vexR v then 1 else 0
-   OpXop v _                 -> if vexR v then 1 else 0
-   OpLegacy _ (Just rex) _ _ -> rexR rex
-   OpLegacy _ Nothing    _ _ -> 0
+   OpVex v _               -> if vexR v then 1 else 0
+   OpXop v _               -> if vexR v then 1 else 0
+   OpLegacy (Just rex) _ _ -> rexR rex
+   OpLegacy Nothing    _ _ -> 0
 
 -- | Index extension
 opcodeX :: Opcode -> Word8
 opcodeX = \case
-   OpVex v _                 -> if vexX v then 1 else 0
-   OpXop v _                 -> if vexX v then 1 else 0
-   OpLegacy _ (Just rex) _ _ -> rexX rex
-   OpLegacy _ Nothing    _ _ -> 0
+   OpVex v _               -> if vexX v then 1 else 0
+   OpXop v _               -> if vexX v then 1 else 0
+   OpLegacy (Just rex) _ _ -> rexX rex
+   OpLegacy Nothing    _ _ -> 0
 
 -- | W (64-bit operand size)
 opcodeW :: Opcode -> Bool
 opcodeW = \case
-   OpVex v _                 -> vexW v
-   OpXop v _                 -> vexW v
-   OpLegacy _ (Just rex) _ _ -> rexW rex
-   OpLegacy _ Nothing    _ _ -> False
+   OpVex v _               -> vexW v
+   OpXop v _               -> vexW v
+   OpLegacy (Just rex) _ _ -> rexW rex
+   OpLegacy Nothing    _ _ -> False
 
 -- | Get vector length (stored in VEX.L, XOP.L, etc.)
 opcodeL :: Opcode -> Maybe Bool
@@ -535,7 +535,7 @@ data LegacyPrefix
    | LegacyPrefixF0
    | LegacyPrefixF3
    | LegacyPrefixF2
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 toLegacyPrefix :: Word8 -> Maybe LegacyPrefix
 toLegacyPrefix = \case
