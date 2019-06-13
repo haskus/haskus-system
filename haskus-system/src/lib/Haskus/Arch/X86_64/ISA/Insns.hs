@@ -83,8 +83,8 @@ leg = Encoding
    }
 
 -- | Vex encoding
-enc :: Encoding
-enc = Encoding
+vex :: Encoding
+vex = Encoding
    { encOpcodeEncoding   = EncVEX
    , encMandatoryPrefix  = Nothing
    , encOpcodeMap        = MapVex 0
@@ -1495,7 +1495,7 @@ i_vaddpd :: X86Insn
 i_vaddpd = insn
    { insnDesc        = "Add packed double-precision floating-point values"
    , insnMnemonic    = "VADDPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x58
@@ -1533,7 +1533,7 @@ i_vaddps :: X86Insn
 i_vaddps = insn
    { insnDesc        = "Add packed single-precision floating-point values"
    , insnMnemonic    = "VADDPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x58
                            , encProperties      = [ LegacyModeSupport
@@ -1571,7 +1571,7 @@ i_vaddsd :: X86Insn
 i_vaddsd = insn
    { insnDesc        = "Add scalar double-precision floating-point values"
    , insnMnemonic    = "VADDSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x58
@@ -1610,7 +1610,7 @@ i_vaddss :: X86Insn
 i_vaddss = insn
    { insnDesc        = "Add scalar single-precision floating-point values"
    , insnMnemonic    = "VADDSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x58
@@ -1649,7 +1649,7 @@ i_vaddsubpd :: X86Insn
 i_vaddsubpd = insn
    { insnDesc        = "Packed double-FP add/subtract"
    , insnMnemonic    = "VADDSUBPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xD0
@@ -1688,7 +1688,7 @@ i_vaddsubps :: X86Insn
 i_vaddsubps = insn
    { insnDesc        = "Packed single-FP add/subtract"
    , insnMnemonic    = "VADDSUBPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD0
@@ -1749,7 +1749,7 @@ i_vaesdec :: X86Insn
 i_vaesdec = insn
    { insnDesc        = "Perform one round of an AES decryption flow"
    , insnMnemonic    = "VAESDEC"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xDE
@@ -1789,7 +1789,7 @@ i_vaesdeclast :: X86Insn
 i_vaesdeclast = insn
    { insnDesc        = "Perform last round of an AES decryption flow"
    , insnMnemonic    = "VAESDECLAST"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xDF
@@ -1829,7 +1829,7 @@ i_vaesenc :: X86Insn
 i_vaesenc = insn
    { insnDesc        = "Perform one round of an AES encryption flow"
    , insnMnemonic    = "VAESENC"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xDC
@@ -1869,7 +1869,7 @@ i_vaesenclast :: X86Insn
 i_vaesenclast = insn
    { insnDesc        = "Perform last round of an AES encryption flow"
    , insnMnemonic    = "VAESENCLAST"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xDD
@@ -1909,7 +1909,7 @@ i_vaesimc :: X86Insn
 i_vaesimc = insn
    { insnDesc        = "Perform the AES InvMixColumn transformation"
    , insnMnemonic    = "VAESIMC"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xDB
@@ -1949,7 +1949,7 @@ i_vaeskeygenassist :: X86Insn
 i_vaeskeygenassist = insn
    { insnDesc        = "AES round key generation assist"
    , insnMnemonic    = "VAESKEYGENASSIST"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0xDF
@@ -2025,7 +2025,7 @@ i_andn = insn
                        , Unset     [OF,CF]
                        , Undefined [AF,PF]
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x02
                            , encOpcode       = 0xF2
                            , encOpcodeLExt   = Just False
@@ -2064,7 +2064,7 @@ i_vandpd :: X86Insn
 i_vandpd = insn
    { insnDesc        = "Bitwise logical AND of packed double-precision floating-point values"
    , insnMnemonic    = "VANDPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x54
@@ -2102,7 +2102,7 @@ i_vandps :: X86Insn
 i_vandps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "VANDPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x54
                            , encProperties   = [ LegacyModeSupport
@@ -2140,7 +2140,7 @@ i_vandnpd :: X86Insn
 i_vandnpd = insn
    { insnDesc        = "Bitwise logical AND NOT of packed double-precision floating-point values"
    , insnMnemonic    = "VANDNPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x55
@@ -2178,7 +2178,7 @@ i_vandnps :: X86Insn
 i_vandnps = insn
    { insnDesc        = "Bitwise logical AND of packed float-precision floating-point values"
    , insnMnemonic    = "VANDNPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x55
                            , encProperties   = [ LegacyModeSupport
@@ -2233,7 +2233,7 @@ i_vblendpd :: X86Insn
 i_vblendpd = insn
    { insnDesc        = "Blend packed double-precision floating-point values"
    , insnMnemonic    = "VBLENDPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x0D
@@ -2258,7 +2258,7 @@ i_bextr = insn
                        , Undefined [AF,SF,PF]
                        , Unset (allFlags \\ [ZF,AF,SF,PF])
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x02
                            , encOpcode       = 0xF7
                            , encOpcodeLExt   = Just False
@@ -2298,7 +2298,7 @@ i_vblendps :: X86Insn
 i_vblendps = insn
    { insnDesc        = "Blend packed single-precision floating-point values"
    , insnMnemonic    = "VBLENDPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x0C
@@ -2339,7 +2339,7 @@ i_vblendvpd :: X86Insn
 i_vblendvpd = insn
    { insnDesc        = "Variable blend packed double-precision floating-point values"
    , insnMnemonic    = "VBLENDVPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x4B
@@ -2381,7 +2381,7 @@ i_vblendvps :: X86Insn
 i_vblendvps = insn
    { insnDesc        = "Variable blend packed single-precision floating-point values"
    , insnMnemonic    = "VBLENDVPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x4A
@@ -2407,7 +2407,7 @@ i_blsi = insn
                        , Unset     [OF]
                        , Undefined [AF,PF]
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x02
                            , encOpcode       = 0xF3
                            , encOpcodeExt    = Just 3
@@ -2431,7 +2431,7 @@ i_blsmsk = insn
                        , Unset     [ZF,OF]
                        , Undefined [AF,PF]
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x02
                            , encOpcode       = 0xF3
                            , encOpcodeExt    = Just 2
@@ -2455,7 +2455,7 @@ i_blsr = insn
                        , Unset     [OF]
                        , Undefined [AF,PF]
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x02
                            , encOpcode       = 0xF3
                            , encOpcodeExt    = Just 1
@@ -2686,7 +2686,7 @@ i_bzhi = insn
                           , Unset     [OF]
                           , Undefined [AF,PF]
                           ]
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encOpcodeMap    = MapVex 0x02
                               , encOpcode       = 0xF5
                               , encOpcodeLExt   = Just False
@@ -3234,7 +3234,7 @@ i_vcmppd :: X86Insn
 i_vcmppd = insn
    { insnDesc        = "Compare packed double-precision floating-point values"
    , insnMnemonic    = "VCMPPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xC2
@@ -3274,7 +3274,7 @@ i_vcmpps :: X86Insn
 i_vcmpps = insn
    { insnDesc        = "Compare packed single-precision floating-point values"
    , insnMnemonic    = "VCMPPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0xC2
                            , encProperties   = [ LegacyModeSupport
@@ -3334,7 +3334,7 @@ i_vcmpsd :: X86Insn
 i_vcmpsd = insn
    { insnDesc        = "Compare scalar double-precision floating-point values"
    , insnMnemonic    = "VCMPSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xC2
@@ -3375,7 +3375,7 @@ i_vcmpss :: X86Insn
 i_vcmpss = insn
    { insnDesc        = "Compare scalar single-precision floating-point values"
    , insnMnemonic    = "VCMPSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xC2
@@ -3459,7 +3459,7 @@ i_comisd = insn
                                                         , mvec128low64 RO
                                                         ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2F
@@ -3492,7 +3492,7 @@ i_comiss = insn
                                                   , mvec128low32 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x2F
                            , encProperties   = [ LegacyModeSupport
@@ -3567,7 +3567,7 @@ i_vcvtdq2pd :: X86Insn
 i_vcvtdq2pd = insn
    { insnDesc        = "Convert packed Int32 to packed double-precision floating-point values"
    , insnMnemonic    = "VCVTDQ2PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xE6
@@ -3604,7 +3604,7 @@ i_vcvtdq2ps :: X86Insn
 i_vcvtdq2ps = insn
    { insnDesc        = "Convert packed Int32 to packed single-precision floating-point values"
    , insnMnemonic    = "VCVTDQ2PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x5B
                            , encProperties   = [ LegacyModeSupport
@@ -3641,7 +3641,7 @@ i_vcvtpd2dq :: X86Insn
 i_vcvtpd2dq = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTPD2DQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xE6
@@ -3697,7 +3697,7 @@ i_vcvtpd2ps :: X86Insn
 i_vcvtpd2ps = insn
    { insnDesc        = "Convert packed double-precision floating-point values to packed single-precision floating-point values"
    , insnMnemonic    = "VCVTPD2PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5A
@@ -3770,7 +3770,7 @@ i_vcvtps2dq :: X86Insn
 i_vcvtps2dq = insn
    { insnDesc        = "Convert packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTPS2DQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5B
@@ -3807,7 +3807,7 @@ i_vcvtps2pd :: X86Insn
 i_vcvtps2pd = insn
    { insnDesc        = "Convert packed single-precision floating-point values to packed double-precision floating-point values"
    , insnMnemonic    = "VCVTPS2PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x5A
                            , encProperties   = [ LegacyModeSupport
@@ -3861,7 +3861,7 @@ i_vcvtsd2si :: X86Insn
 i_vcvtsd2si = insn
    { insnDesc        = "Convert scalar double-precision floating-point value to integer"
    , insnMnemonic    = "VCVTSD2SI"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2D
@@ -3899,7 +3899,7 @@ i_vcvtsd2ss :: X86Insn
 i_vcvtsd2ss = insn
    { insnDesc        = "Convert scalar double-precision floating-point value to scalar single-precision floating-point value"
    , insnMnemonic    = "VCVTSD2SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5A
@@ -3938,7 +3938,7 @@ i_vcvtsi2sd :: X86Insn
 i_vcvtsi2sd = insn
    { insnDesc        = "Convert Int32 to scalar double-precision floating-point value"
    , insnMnemonic    = "VCVTSI2SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2A
@@ -3978,7 +3978,7 @@ i_vcvtsi2ss :: X86Insn
 i_vcvtsi2ss = insn
    { insnDesc        = "Convert Int32 to scalar single-precision floating-point value"
    , insnMnemonic    = "VCVTSI2SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2A
@@ -4017,7 +4017,7 @@ i_vcvtss2sd :: X86Insn
 i_vcvtss2sd = insn
    { insnDesc        = "Convert scalar single-precision floating-point value to scalar double-precision floating-point value"
    , insnMnemonic    = "VCVTSS2SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5A
@@ -4056,7 +4056,7 @@ i_vcvtss2si :: X86Insn
 i_vcvtss2si = insn
    { insnDesc        = "Convert scalar single-precision floating-point value to Int32"
    , insnMnemonic    = "VCVTSS2SI"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2D
@@ -4094,7 +4094,7 @@ i_vcvttpd2dq :: X86Insn
 i_vcvttpd2dq = insn
    { insnDesc        = "Convert with truncation packed double-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTTPD2DQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xE6
@@ -4150,7 +4150,7 @@ i_vcvttps2dq :: X86Insn
 i_vcvttps2dq = insn
    { insnDesc        = "Convert with truncation packed single-precision floating-point values to packed Int32"
    , insnMnemonic    = "VCVTTPS2DQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5B
@@ -4205,7 +4205,7 @@ i_vcvttsd2si :: X86Insn
 i_vcvttsd2si = insn
    { insnDesc        = "Convert with truncation scalar double-precision floating-point value to integer"
    , insnMnemonic    = "VCVTTSD2SI"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2C
@@ -4243,7 +4243,7 @@ i_vcvttss2si :: X86Insn
 i_vcvttss2si = insn
    { insnDesc        = "Convert with truncation scalar single-precision floating-point value to Int32"
    , insnMnemonic    = "VCVTTSS2SI"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2C
@@ -4380,7 +4380,7 @@ i_vdivpd :: X86Insn
 i_vdivpd = insn
    { insnDesc        = "Divide packed double-precision floating-point values"
    , insnMnemonic    = "VDIVPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5E
@@ -4418,7 +4418,7 @@ i_vdivps :: X86Insn
 i_vdivps = insn
    { insnDesc        = "Divide packed float-precision floating-point values"
    , insnMnemonic    = "VDIVPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x5E
                            , encProperties   = [ LegacyModeSupport
@@ -4456,7 +4456,7 @@ i_vdivsd :: X86Insn
 i_vdivsd = insn
    { insnDesc        = "Divide scalar double-precision floating-point values"
    , insnMnemonic    = "VDIVSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5E
@@ -4495,7 +4495,7 @@ i_vdivss :: X86Insn
 i_vdivss = insn
    { insnDesc        = "Divide scalar single-precision floating-point values"
    , insnMnemonic    = "VDIVSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5E
@@ -4535,7 +4535,7 @@ i_vdppd :: X86Insn
 i_vdppd = insn
    { insnDesc        = "Dot product of packed double precision floating-point values"
    , insnMnemonic    = "VDPPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x41
@@ -4576,7 +4576,7 @@ i_vdpps :: X86Insn
 i_vdpps = insn
    { insnDesc        = "Dot product of packed single precision floating-point values"
    , insnMnemonic    = "VDPPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x40
@@ -4648,7 +4648,7 @@ i_enctractps :: X86Insn
 i_enctractps = insn
    { insnDesc        = "Extract packed single precision floating-point value"
    , insnMnemonic    = "VEXTRACTPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x17
@@ -6308,7 +6308,7 @@ i_vhaddpd = insn
    { insnDesc        = "Packed double-FP horizontal add"
    , insnMnemonic    = "VHADDPD"
    , insnProperties  = [ MemAlign 16 ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x7C
@@ -6349,7 +6349,7 @@ i_vhaddps = insn
    { insnDesc        = "Packed single-FP horizontal add"
    , insnMnemonic    = "VHADDPS"
    , insnProperties  = [ MemAlign 16 ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x7C
@@ -6403,7 +6403,7 @@ i_vhsubpd = insn
    { insnDesc        = "Packed double-FP horizontal subtract"
    , insnMnemonic    = "VHSUBPD"
    , insnProperties  = [ MemAlign 16 ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x7D
@@ -6444,7 +6444,7 @@ i_vhsubps = insn
    { insnDesc        = "Packed single-FP horizontal subtract"
    , insnMnemonic    = "VHSUBPS"
    , insnProperties  = [ MemAlign 16 ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x7D
@@ -6630,7 +6630,7 @@ i_vinsertps :: X86Insn
 i_vinsertps = insn
    { insnDesc        = "Insert packed single precision floating-point value"
    , insnMnemonic    = "VINSERTPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x21
@@ -7311,7 +7311,7 @@ i_vlddqu :: X86Insn
 i_vlddqu = insn
    { insnDesc        = "Load unaligned integer 128 bits"
    , insnMnemonic    = "VLDDQU"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xF0
@@ -7340,7 +7340,7 @@ i_ldmxcsr = insn
                                                      ]
                            ,    encOperands        = [ mem32 RO ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xAE
                            , encOpcodeExt       = Just 2
@@ -7667,7 +7667,7 @@ i_vmaskmovdqu :: X86Insn
 i_vmaskmovdqu = insn
    { insnDesc        = "Store selected bytes of double quadword"
    , insnMnemonic    = "VMASKMOVDQU"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF7
@@ -7726,7 +7726,7 @@ i_vmaxpd :: X86Insn
 i_vmaxpd = insn
    { insnDesc        = "Return maximum packed double-precision floating-point values"
    , insnMnemonic    = "VMAXPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x5F
@@ -7764,7 +7764,7 @@ i_vmaxps :: X86Insn
 i_vmaxps = insn
    { insnDesc        = "Return maximum packed single-precision floating-point values"
    , insnMnemonic    = "VMAXPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5F
                            , encProperties      = [ LegacyModeSupport
@@ -7802,7 +7802,7 @@ i_vmaxsd :: X86Insn
 i_vmaxsd = insn
    { insnDesc        = "Return maximum scalar double-precision floating-point values"
    , insnMnemonic    = "VMAXSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5F
@@ -7841,7 +7841,7 @@ i_vmaxss :: X86Insn
 i_vmaxss = insn
    { insnDesc        = "Return maximum scalar single-precision floating-point values"
    , insnMnemonic    = "VMAXSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5F
@@ -7895,7 +7895,7 @@ i_vminpd :: X86Insn
 i_vminpd = insn
    { insnDesc        = "Return minimum packed double-precision floating-point values"
    , insnMnemonic    = "VMINPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x5D
@@ -7933,7 +7933,7 @@ i_vminps :: X86Insn
 i_vminps = insn
    { insnDesc        = "Return minimum packed single-precision floating-point values"
    , insnMnemonic    = "VMINPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5D
                            , encProperties      = [ LegacyModeSupport
@@ -7971,7 +7971,7 @@ i_vminsd :: X86Insn
 i_vminsd = insn
    { insnDesc        = "Return minimum scalar double-precision floating-point values"
    , insnMnemonic    = "VMINSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5D
@@ -8010,7 +8010,7 @@ i_vminss :: X86Insn
 i_vminss = insn
    { insnDesc        = "Return minimum scalar single-precision floating-point values"
    , insnMnemonic    = "VMINSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5D
@@ -8178,7 +8178,7 @@ i_vmovapd :: X86Insn
 i_vmovapd = insn
    { insnDesc        = "Move aligned packed double-precision floating-point values"
    , insnMnemonic    = "VMOVAPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x28
@@ -8217,7 +8217,7 @@ i_vmovaps :: X86Insn
 i_vmovaps = insn
    { insnDesc        = "Move aligned packed single-precision floating-point values"
    , insnMnemonic    = "VMOVAPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x28
                            , encReversableBit   = Just 0
@@ -8279,7 +8279,7 @@ i_movdq = insn
                                                      , rm32o64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x6E
@@ -8312,7 +8312,7 @@ i_movddup = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
@@ -8344,7 +8344,7 @@ i_movdqa = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x6F
@@ -8377,7 +8377,7 @@ i_movdqu = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x6F
@@ -8434,7 +8434,7 @@ i_vmovhlps :: X86Insn
 i_vmovhlps = insn
    { insnDesc        = "Move packed single-precision FP values high to low"
    , insnMnemonic    = "VMOVHLPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
                            , encOpcodeLExt         = Just False
@@ -8469,7 +8469,7 @@ i_movhpd = insn
                                                      , mem64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x17
@@ -8489,7 +8489,7 @@ i_vmovhpd :: X86Insn
 i_vmovhpd = insn
    { insnDesc        = "Move high packed double-precision FP value"
    , insnMnemonic    = "VMOVHPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x16
@@ -8523,7 +8523,7 @@ i_movhps = insn
                                                      , mem64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x17
                            , encOpcodeLExt         = Just False
@@ -8542,7 +8542,7 @@ i_vmovhps :: X86Insn
 i_vmovhps = insn
    { insnDesc        = "Move high packed singke-precision FP values"
    , insnMnemonic    = "VMOVHPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x16
                            , encOpcodeLExt         = Just False
@@ -8576,7 +8576,7 @@ i_movlpd = insn
                                                      , mem64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x13
@@ -8596,7 +8596,7 @@ i_vmovlpd :: X86Insn
 i_vmovlpd = insn
    { insnDesc        = "Move low packed double-precision FP value"
    , insnMnemonic    = "VMOVLPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
@@ -8630,7 +8630,7 @@ i_movlps = insn
                                                      , mem64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x13
                            , encOpcodeLExt         = Just False
@@ -8649,7 +8649,7 @@ i_vmovlps :: X86Insn
 i_vmovlps = insn
    { insnDesc        = "Move low packed singke-precision FP values"
    , insnMnemonic    = "VMOVLPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
                            , encOpcodeLExt         = Just False
@@ -8687,7 +8687,7 @@ i_vmovlhps :: X86Insn
 i_vmovlhps = insn
    { insnDesc        = "Move packed single-precision FP values low to high"
    , insnMnemonic    = "VMOVLHPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x16
                            , encOpcodeLExt         = Just False
@@ -8728,7 +8728,7 @@ i_vmovmskpd :: X86Insn
 i_vmovmskpd = insn
    { insnDesc        = "Move packed double-precision FP sign mask"
    , insnMnemonic    = "VMOVMSKPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x50
@@ -8768,7 +8768,7 @@ i_vmovmskps :: X86Insn
 i_vmovmskps = insn
    { insnDesc        = "Move packed single-precision FP sign mask"
    , insnMnemonic    = "VMOVMSKPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x50
                            , encProperties         = [ LegacyModeSupport
@@ -8800,7 +8800,7 @@ i_movntdqa = insn
                                                      , mem128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 2
                            , encOpcode             = 0x2A
@@ -8813,7 +8813,7 @@ i_movntdqa = insn
                                                      , mem128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 2
                            , encOpcode             = 0x2A
@@ -8847,7 +8847,7 @@ i_movntdq = insn
                                                      , vec128 RO S_Reg
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0xE7
@@ -8897,7 +8897,7 @@ i_movntpd = insn
                                                      , vec128 RO S_Reg
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x2B
@@ -8928,7 +8928,7 @@ i_movntps = insn
                                                      , vec128 RO S_Reg
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2B
                            , encReversableBit   = Just 0
@@ -9001,7 +9001,7 @@ i_movq = insn
                                                      , vec128low64 RO S_Reg
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x7E
@@ -9014,7 +9014,7 @@ i_movq = insn
                                                   , mvec128low64 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xD6
@@ -9092,7 +9092,7 @@ i_vmovsd :: X86Insn
 i_vmovsd = insn
    { insnDesc        = "Move scalar double-precision floating-point values"
    , insnMnemonic    = "VMOVSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x10
@@ -9105,7 +9105,7 @@ i_vmovsd = insn
                                                      , vec128o256 RO S_RM
                                                      ]
                            }
-                       ,  enc
+                       ,  vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x11
@@ -9118,7 +9118,7 @@ i_vmovsd = insn
                                                      , vec128low64 RO S_RM
                                                      ]
                            }
-                       ,  enc
+                       ,  vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x10
@@ -9150,7 +9150,7 @@ i_movshdup = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x16
@@ -9182,7 +9182,7 @@ i_movsldup = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 1
                            , encOpcode             = 0x12
@@ -9221,7 +9221,7 @@ i_vmovss :: X86Insn
 i_vmovss = insn
    { insnDesc        = "Move scalar single-precision floating-point values"
    , insnMnemonic    = "VMOVSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x10
@@ -9234,7 +9234,7 @@ i_vmovss = insn
                                                      , vec128o256 RO S_RM
                                                      ]
                            }
-                       ,  enc
+                       ,  vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x11
@@ -9247,7 +9247,7 @@ i_vmovss = insn
                                                      , vec128low64 RO S_RM
                                                      ]
                            }
-                       ,  enc
+                       ,  vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x10
@@ -9325,7 +9325,7 @@ i_vmovupd :: X86Insn
 i_vmovupd = insn
    { insnDesc        = "Move unaligned packed double-precision floating-point values"
    , insnMnemonic    = "VMOVUPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x10
@@ -9364,7 +9364,7 @@ i_vmovups :: X86Insn
 i_vmovups = insn
    { insnDesc        = "Move unaligned packed single-precision floating-point values"
    , insnMnemonic    = "VMOVUPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x10
                            , encReversableBit   = Just 0
@@ -9423,7 +9423,7 @@ i_mpsadbw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x42
@@ -9438,7 +9438,7 @@ i_mpsadbw = insn
                                                   , imm8
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x42
@@ -9502,7 +9502,7 @@ i_vmulpd :: X86Insn
 i_vmulpd = insn
    { insnDesc        = "Multiply packed double-precision floating-point values"
    , insnMnemonic    = "VMULPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x59
@@ -9540,7 +9540,7 @@ i_vmulps :: X86Insn
 i_vmulps = insn
    { insnDesc        = "Multiply packed single-precision floating-point values"
    , insnMnemonic    = "VMULPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x59
                            , encProperties      = [ LegacyModeSupport
@@ -9578,7 +9578,7 @@ i_vmulsd :: X86Insn
 i_vmulsd = insn
    { insnDesc        = "Multiply scalar double-precision floating-point values"
    , insnMnemonic    = "VMULSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x59
@@ -9617,7 +9617,7 @@ i_vmulss :: X86Insn
 i_vmulss = insn
    { insnDesc        = "Multiply scalar single-precision floating-point values"
    , insnMnemonic    = "VMULSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x59
@@ -9637,7 +9637,7 @@ i_mulx :: X86Insn
 i_mulx = insn
    { insnDesc           = "Unsigned multiply without affecting flags"
    , insnMnemonic       = "MULX"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefixF2
                               , encOpcodeMap       = MapVex 0x02
                               , encOpcode          = 0xF6
@@ -9805,7 +9805,7 @@ i_vorpd :: X86Insn
 i_vorpd = insn
    { insnDesc        = "Bitwise logical OR of packed double-precision floating-point values"
    , insnMnemonic    = "VORPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x56
@@ -9843,7 +9843,7 @@ i_vorps :: X86Insn
 i_vorps = insn
    { insnDesc        = "Bitwise logical OR of packed float-precision floating-point values"
    , insnMnemonic    = "VORPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x56
                            , encProperties   = [ LegacyModeSupport
@@ -9937,7 +9937,7 @@ i_pabsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1C
@@ -9950,7 +9950,7 @@ i_pabsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1C
@@ -9995,7 +9995,7 @@ i_pabsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1D
@@ -10008,7 +10008,7 @@ i_pabsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1D
@@ -10053,7 +10053,7 @@ i_pabsd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1E
@@ -10066,7 +10066,7 @@ i_pabsd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1E
@@ -10110,7 +10110,7 @@ i_packsswb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x63
@@ -10124,7 +10124,7 @@ i_packsswb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x63
@@ -10170,7 +10170,7 @@ i_packssdw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6B
@@ -10184,7 +10184,7 @@ i_packssdw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6B
@@ -10218,7 +10218,7 @@ i_packusdw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x2B
@@ -10232,7 +10232,7 @@ i_packusdw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x2B
@@ -10276,7 +10276,7 @@ i_packuswb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x67
@@ -10290,7 +10290,7 @@ i_packuswb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x67
@@ -10335,7 +10335,7 @@ i_paddb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFC
@@ -10349,7 +10349,7 @@ i_paddb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFC
@@ -10396,7 +10396,7 @@ i_paddw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFD
@@ -10410,7 +10410,7 @@ i_paddw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFD
@@ -10456,7 +10456,7 @@ i_paddd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFE
@@ -10470,7 +10470,7 @@ i_paddd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFE
@@ -10517,7 +10517,7 @@ i_paddq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD4
@@ -10531,7 +10531,7 @@ i_paddq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD4
@@ -10578,7 +10578,7 @@ i_paddsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEC
@@ -10592,7 +10592,7 @@ i_paddsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEC
@@ -10638,7 +10638,7 @@ i_paddsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xED
@@ -10652,7 +10652,7 @@ i_paddsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xED
@@ -10698,7 +10698,7 @@ i_paddusb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDC
@@ -10712,7 +10712,7 @@ i_paddusb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDC
@@ -10758,7 +10758,7 @@ i_paddusw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDD
@@ -10772,7 +10772,7 @@ i_paddusw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDD
@@ -10819,7 +10819,7 @@ i_palignr = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x0F
@@ -10834,7 +10834,7 @@ i_palignr = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x0F
@@ -10880,7 +10880,7 @@ i_pand = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDB
@@ -10894,7 +10894,7 @@ i_pand = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDB
@@ -10940,7 +10940,7 @@ i_pandn = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDF
@@ -10954,7 +10954,7 @@ i_pandn = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDF
@@ -11014,7 +11014,7 @@ i_pavgb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE0
@@ -11028,7 +11028,7 @@ i_pavgb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE0
@@ -11075,7 +11075,7 @@ i_pavgw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE3
@@ -11089,7 +11089,7 @@ i_pavgw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE3
@@ -11126,7 +11126,7 @@ i_pblendvb = insn
                                                      , xmm0 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x4C
@@ -11142,7 +11142,7 @@ i_pblendvb = insn
                                                      , vec128 RO S_Imm8h
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x4C
@@ -11180,7 +11180,7 @@ i_pblendw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x0E
@@ -11195,7 +11195,7 @@ i_pblendw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x0E
@@ -11232,7 +11232,7 @@ i_pclmulqdq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x44
@@ -11279,7 +11279,7 @@ i_pcmpeqb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x74
@@ -11293,7 +11293,7 @@ i_pcmpeqb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x74
@@ -11338,7 +11338,7 @@ i_pcmpeqw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x75
@@ -11352,7 +11352,7 @@ i_pcmpeqw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x75
@@ -11397,7 +11397,7 @@ i_pcmpeqd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x76
@@ -11411,7 +11411,7 @@ i_pcmpeqd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x76
@@ -11445,7 +11445,7 @@ i_pcmpeqq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x29
@@ -11459,7 +11459,7 @@ i_pcmpeqq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x29
@@ -11500,7 +11500,7 @@ i_pcmpestri = insn
                                                      , rDX RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x61
@@ -11544,7 +11544,7 @@ i_pcmpestrm = insn
                                                      , rDX RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x60
@@ -11591,7 +11591,7 @@ i_pcmpgtb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x64
@@ -11605,7 +11605,7 @@ i_pcmpgtb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x64
@@ -11650,7 +11650,7 @@ i_pcmpgtw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x65
@@ -11664,7 +11664,7 @@ i_pcmpgtw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x65
@@ -11709,7 +11709,7 @@ i_pcmpgtd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x66
@@ -11723,7 +11723,7 @@ i_pcmpgtd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x66
@@ -11757,7 +11757,7 @@ i_pcmpgtq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x37
@@ -11771,7 +11771,7 @@ i_pcmpgtq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x37
@@ -11809,7 +11809,7 @@ i_pcmpistri = insn
                                                      , rCX WO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x63
@@ -11849,7 +11849,7 @@ i_pcmpistrm = insn
                                                      , xmm0 WO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x62
@@ -11871,7 +11871,7 @@ i_pdep :: X86Insn
 i_pdep = insn
    { insnDesc           = "Parallel bits deposit"
    , insnMnemonic       = "PDEP"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefixF2
                               , encOpcodeMap       = MapVex 0x02
                               , encOpcode          = 0xF5
@@ -11892,7 +11892,7 @@ i_pext :: X86Insn
 i_pext = insn
    { insnDesc           = "Parallel bits extract"
    , insnMnemonic       = "PEXT"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefixF3
                               , encOpcodeMap       = MapVex 0x02
                               , encOpcode          = 0xF5
@@ -11927,7 +11927,7 @@ i_pextrb = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x14
@@ -11962,7 +11962,7 @@ i_pextrd = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x16
@@ -12008,7 +12008,7 @@ i_pextrw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xC5
@@ -12023,7 +12023,7 @@ i_pextrw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x15
@@ -12069,7 +12069,7 @@ i_phaddw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x01
@@ -12083,7 +12083,7 @@ i_phaddw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x01
@@ -12128,7 +12128,7 @@ i_phaddd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x02
@@ -12142,7 +12142,7 @@ i_phaddd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x02
@@ -12187,7 +12187,7 @@ i_phaddsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x03
@@ -12201,7 +12201,7 @@ i_phaddsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x03
@@ -12234,7 +12234,7 @@ i_phminposuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x41
@@ -12277,7 +12277,7 @@ i_phsubw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x05
@@ -12291,7 +12291,7 @@ i_phsubw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x05
@@ -12336,7 +12336,7 @@ i_phsubd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x06
@@ -12350,7 +12350,7 @@ i_phsubd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x06
@@ -12395,7 +12395,7 @@ i_phsubsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x07
@@ -12409,7 +12409,7 @@ i_phsubsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x07
@@ -12443,7 +12443,7 @@ i_pinsrb = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x20
@@ -12479,7 +12479,7 @@ i_pinsrd = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x22
@@ -12526,7 +12526,7 @@ i_pinsrw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xC4
@@ -12572,7 +12572,7 @@ i_pmaddubsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x04
@@ -12586,7 +12586,7 @@ i_pmaddubsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x04
@@ -12630,7 +12630,7 @@ i_pmaddwd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF5
@@ -12644,7 +12644,7 @@ i_pmaddwd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF5
@@ -12678,7 +12678,7 @@ i_pmaxsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3C
@@ -12692,7 +12692,7 @@ i_pmaxsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3C
@@ -12726,7 +12726,7 @@ i_pmaxsd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3D
@@ -12740,7 +12740,7 @@ i_pmaxsd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3D
@@ -12784,7 +12784,7 @@ i_pmaxsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEE
@@ -12798,7 +12798,7 @@ i_pmaxsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEE
@@ -12843,7 +12843,7 @@ i_pmaxub = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDE
@@ -12857,7 +12857,7 @@ i_pmaxub = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDE
@@ -12890,7 +12890,7 @@ i_pmaxud = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3F
@@ -12904,7 +12904,7 @@ i_pmaxud = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3F
@@ -12939,7 +12939,7 @@ i_pmaxuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3E
@@ -12953,7 +12953,7 @@ i_pmaxuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3E
@@ -12989,7 +12989,7 @@ i_pminsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x38
@@ -13003,7 +13003,7 @@ i_pminsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x38
@@ -13037,7 +13037,7 @@ i_pminsd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x39
@@ -13051,7 +13051,7 @@ i_pminsd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x39
@@ -13095,7 +13095,7 @@ i_pminsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEA
@@ -13109,7 +13109,7 @@ i_pminsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEA
@@ -13154,7 +13154,7 @@ i_pminub = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDA
@@ -13168,7 +13168,7 @@ i_pminub = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xDA
@@ -13201,7 +13201,7 @@ i_pminud = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3B
@@ -13215,7 +13215,7 @@ i_pminud = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3B
@@ -13250,7 +13250,7 @@ i_pminuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3A
@@ -13264,7 +13264,7 @@ i_pminuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x3A
@@ -13310,7 +13310,7 @@ i_pmovmskb = insn
                                                      , vec128 RO S_RM
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD7
@@ -13324,7 +13324,7 @@ i_pmovmskb = insn
                                                      , vec128 RO S_RM
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD7
@@ -13357,7 +13357,7 @@ i_pmovsxbw = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x20
@@ -13370,7 +13370,7 @@ i_pmovsxbw = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x20
@@ -13403,7 +13403,7 @@ i_pmovsxbd = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x21
@@ -13416,7 +13416,7 @@ i_pmovsxbd = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x21
@@ -13449,7 +13449,7 @@ i_pmovsxbq = insn
                                                      , mvec128low16 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x22
@@ -13462,7 +13462,7 @@ i_pmovsxbq = insn
                                                      , mvec128low16 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x22
@@ -13495,7 +13495,7 @@ i_pmovsxwd = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x23
@@ -13508,7 +13508,7 @@ i_pmovsxwd = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x23
@@ -13541,7 +13541,7 @@ i_pmovsxwq = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x24
@@ -13554,7 +13554,7 @@ i_pmovsxwq = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x24
@@ -13587,7 +13587,7 @@ i_pmovsxdq = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x25
@@ -13600,7 +13600,7 @@ i_pmovsxdq = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x25
@@ -13633,7 +13633,7 @@ i_pmovzxbw = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x30
@@ -13646,7 +13646,7 @@ i_pmovzxbw = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x30
@@ -13679,7 +13679,7 @@ i_pmovzxbd = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x31
@@ -13692,7 +13692,7 @@ i_pmovzxbd = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x31
@@ -13725,7 +13725,7 @@ i_pmovzxbq = insn
                                                      , mvec128low16 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x32
@@ -13738,7 +13738,7 @@ i_pmovzxbq = insn
                                                      , mvec128low16 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x32
@@ -13771,7 +13771,7 @@ i_pmovzxwd = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x33
@@ -13784,7 +13784,7 @@ i_pmovzxwd = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x33
@@ -13817,7 +13817,7 @@ i_pmovzxwq = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x34
@@ -13830,7 +13830,7 @@ i_pmovzxwq = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x34
@@ -13863,7 +13863,7 @@ i_pmovzxdq = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x35
@@ -13876,7 +13876,7 @@ i_pmovzxdq = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x35
@@ -13909,7 +13909,7 @@ i_pmuldq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x28
@@ -13923,7 +13923,7 @@ i_pmuldq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x28
@@ -13969,7 +13969,7 @@ i_pmulhrsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x0B
@@ -13983,7 +13983,7 @@ i_pmulhrsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x0B
@@ -14029,7 +14029,7 @@ i_pmulhuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE4
@@ -14043,7 +14043,7 @@ i_pmulhuw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE4
@@ -14088,7 +14088,7 @@ i_pmulhw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE5
@@ -14102,7 +14102,7 @@ i_pmulhw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE5
@@ -14135,7 +14135,7 @@ i_pmulld = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x40
@@ -14149,7 +14149,7 @@ i_pmulld = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x40
@@ -14194,7 +14194,7 @@ i_pmullw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD5
@@ -14208,7 +14208,7 @@ i_pmullw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD5
@@ -14252,7 +14252,7 @@ i_pmuludq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF4
@@ -14266,7 +14266,7 @@ i_pmuludq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF4
@@ -14445,7 +14445,7 @@ i_por = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEB
@@ -14459,7 +14459,7 @@ i_por = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEB
@@ -14608,7 +14608,7 @@ i_psadbw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF6
@@ -14622,7 +14622,7 @@ i_psadbw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF6
@@ -14667,7 +14667,7 @@ i_pshufb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x00
@@ -14681,7 +14681,7 @@ i_pshufb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x00
@@ -14715,7 +14715,7 @@ i_pshufd = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x70
@@ -14729,7 +14729,7 @@ i_pshufd = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x70
@@ -14763,7 +14763,7 @@ i_pshufhw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x70
@@ -14777,7 +14777,7 @@ i_pshufhw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x70
@@ -14812,7 +14812,7 @@ i_pshuflw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x70
@@ -14826,7 +14826,7 @@ i_pshuflw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x70
@@ -14888,7 +14888,7 @@ i_psignb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x08
@@ -14902,7 +14902,7 @@ i_psignb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x08
@@ -14947,7 +14947,7 @@ i_psignw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x09
@@ -14961,7 +14961,7 @@ i_psignw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x09
@@ -15006,7 +15006,7 @@ i_psignd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x0A
@@ -15020,7 +15020,7 @@ i_psignd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x0A
@@ -15054,7 +15054,7 @@ i_pslldq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -15069,7 +15069,7 @@ i_pslldq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -15140,7 +15140,7 @@ i_psllw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF1
@@ -15154,7 +15154,7 @@ i_psllw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF1
@@ -15168,7 +15168,7 @@ i_psllw = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x71
@@ -15183,7 +15183,7 @@ i_psllw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x71
@@ -15254,7 +15254,7 @@ i_pslld = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF2
@@ -15268,7 +15268,7 @@ i_pslld = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF2
@@ -15282,7 +15282,7 @@ i_pslld = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x72
@@ -15297,7 +15297,7 @@ i_pslld = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x72
@@ -15368,7 +15368,7 @@ i_psllq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF3
@@ -15382,7 +15382,7 @@ i_psllq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF3
@@ -15396,7 +15396,7 @@ i_psllq = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -15411,7 +15411,7 @@ i_psllq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -15481,7 +15481,7 @@ i_psraw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE1
@@ -15495,7 +15495,7 @@ i_psraw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE1
@@ -15509,7 +15509,7 @@ i_psraw = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x71
@@ -15524,7 +15524,7 @@ i_psraw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x71
@@ -15595,7 +15595,7 @@ i_psrad = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE2
@@ -15609,7 +15609,7 @@ i_psrad = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE2
@@ -15623,7 +15623,7 @@ i_psrad = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x72
@@ -15638,7 +15638,7 @@ i_psrad = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x72
@@ -15673,7 +15673,7 @@ i_psrldq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -15688,7 +15688,7 @@ i_psrldq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -15758,7 +15758,7 @@ i_psrlw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD1
@@ -15772,7 +15772,7 @@ i_psrlw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD1
@@ -15786,7 +15786,7 @@ i_psrlw = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x71
@@ -15801,7 +15801,7 @@ i_psrlw = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x71
@@ -15871,7 +15871,7 @@ i_psrld = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD2
@@ -15885,7 +15885,7 @@ i_psrld = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD2
@@ -15899,7 +15899,7 @@ i_psrld = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x72
@@ -15914,7 +15914,7 @@ i_psrld = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x72
@@ -15985,7 +15985,7 @@ i_psrlq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD3
@@ -15999,7 +15999,7 @@ i_psrlq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD3
@@ -16013,7 +16013,7 @@ i_psrlq = insn
                                                      , mvec256 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -16028,7 +16028,7 @@ i_psrlq = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x73
@@ -16073,7 +16073,7 @@ i_psubb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF8
@@ -16087,7 +16087,7 @@ i_psubb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF8
@@ -16134,7 +16134,7 @@ i_psubw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF9
@@ -16148,7 +16148,7 @@ i_psubw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xF9
@@ -16194,7 +16194,7 @@ i_psubd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFA
@@ -16208,7 +16208,7 @@ i_psubd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFA
@@ -16255,7 +16255,7 @@ i_psubq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFB
@@ -16269,7 +16269,7 @@ i_psubq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xFB
@@ -16316,7 +16316,7 @@ i_psubsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE8
@@ -16330,7 +16330,7 @@ i_psubsb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE8
@@ -16376,7 +16376,7 @@ i_psubsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE9
@@ -16390,7 +16390,7 @@ i_psubsw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xE9
@@ -16435,7 +16435,7 @@ i_psubusb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD8
@@ -16449,7 +16449,7 @@ i_psubusb = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD8
@@ -16495,7 +16495,7 @@ i_psubusw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD9
@@ -16509,7 +16509,7 @@ i_psubusw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xD9
@@ -16545,7 +16545,7 @@ i_ptest = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x17
@@ -16587,7 +16587,7 @@ i_punpckhbw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x68
@@ -16601,7 +16601,7 @@ i_punpckhbw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x68
@@ -16646,7 +16646,7 @@ i_punpckhwd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x69
@@ -16660,7 +16660,7 @@ i_punpckhwd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x69
@@ -16705,7 +16705,7 @@ i_punpckhdq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6A
@@ -16719,7 +16719,7 @@ i_punpckhdq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6A
@@ -16753,7 +16753,7 @@ i_punpckhqdq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6D
@@ -16767,7 +16767,7 @@ i_punpckhqdq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6D
@@ -16812,7 +16812,7 @@ i_punpcklbw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x60
@@ -16826,7 +16826,7 @@ i_punpcklbw = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x60
@@ -16871,7 +16871,7 @@ i_punpcklwd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x61
@@ -16885,7 +16885,7 @@ i_punpcklwd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x61
@@ -16930,7 +16930,7 @@ i_punpckldq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x62
@@ -16944,7 +16944,7 @@ i_punpckldq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x62
@@ -16978,7 +16978,7 @@ i_punpcklqdq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6C
@@ -16992,7 +16992,7 @@ i_punpcklqdq = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x6C
@@ -17178,7 +17178,7 @@ i_pxor = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEF
@@ -17192,7 +17192,7 @@ i_pxor = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xEF
@@ -17403,7 +17403,7 @@ i_rcpps = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x53
                            , encProperties      = [ LegacyModeSupport
@@ -17434,7 +17434,7 @@ i_rcpss = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x53
@@ -17691,7 +17691,7 @@ i_rorx :: X86Insn
 i_rorx = insn
    { insnDesc           = "Rotate right logical without affecting flags"
    , insnMnemonic       = "RORX"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefixF2
                               , encOpcodeMap       = MapVex 0x03
                               , encOpcode          = 0xF0
@@ -17725,7 +17725,7 @@ i_roundpd = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x09
@@ -17759,7 +17759,7 @@ i_roundps = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x08
@@ -17793,7 +17793,7 @@ i_roundsd = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x0B
@@ -17827,7 +17827,7 @@ i_roundss = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x0A
@@ -17871,7 +17871,7 @@ i_rsqrtps = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x52
                            , encProperties      = [ LegacyModeSupport
@@ -17902,7 +17902,7 @@ i_rsqrtss = insn
                                                      , mvec128low32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x52
@@ -18076,7 +18076,7 @@ i_sarx :: X86Insn
 i_sarx = insn
    { insnDesc           = "Arithmetic shift right without affecting flags"
    , insnMnemonic       = "SARX"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefixF3
                               , encOpcodeMap       = MapVex 0x02
                               , encOpcode          = 0xF7
@@ -18097,7 +18097,7 @@ i_shlx :: X86Insn
 i_shlx = insn
    { insnDesc           = "Shift left without affecting flags"
    , insnMnemonic       = "SHLX"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefix66
                               , encOpcodeMap       = MapVex 0x02
                               , encOpcode          = 0xF7
@@ -18119,7 +18119,7 @@ i_shrx :: X86Insn
 i_shrx = insn
    { insnDesc           = "Shift right without affecting flags"
    , insnMnemonic       = "SHRX"
-   , insnEncodings      = [ enc
+   , insnEncodings      = [ vex
                               { encMandatoryPrefix = Just LegacyPrefixF2
                               , encOpcodeMap       = MapVex 0x02
                               , encOpcode          = 0xF7
@@ -18579,7 +18579,7 @@ i_vshufpd :: X86Insn
 i_vshufpd = insn
    { insnDesc        = "Shuffle packed double-precision floating-point values"
    , insnMnemonic    = "VSHUFPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0xC6
@@ -18619,7 +18619,7 @@ i_vshufps :: X86Insn
 i_vshufps = insn
    { insnDesc        = "Shuffle packed single-precision floating-point values"
    , insnMnemonic    = "VSHUFPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0xC6
                            , encProperties   = [ LegacyModeSupport
@@ -18701,7 +18701,7 @@ i_sqrtpd = insn
                                                         , mvec128 RO
                                                         ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x51
@@ -18732,7 +18732,7 @@ i_sqrtps = insn
                                                         , mvec128 RO
                                                         ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x51
                            , encProperties         = [ LegacyModeSupport
@@ -18763,7 +18763,7 @@ i_sqrtsd = insn
                                                         , mvec128low64 RO
                                                         ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF2
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x51
@@ -18796,7 +18796,7 @@ i_sqrtss = insn
                                                         , mvec128low32 RO
                                                         ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefixF3
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x51
@@ -18890,7 +18890,7 @@ i_stmxcsr = insn
                                                      ]
                            ,    encOperands        = [ mem32 WO ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0xAE
                            , encOpcodeExt       = Just 3
@@ -19012,7 +19012,7 @@ i_vsubpd :: X86Insn
 i_vsubpd = insn
    { insnDesc        = "Subtract packed double-precision floating-point values"
    , insnMnemonic    = "VSUBPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x5C
@@ -19050,7 +19050,7 @@ i_vsubps :: X86Insn
 i_vsubps = insn
    { insnDesc        = "Subtract packed single-precision floating-point values"
    , insnMnemonic    = "VSUBPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5C
                            , encProperties      = [ LegacyModeSupport
@@ -19088,7 +19088,7 @@ i_vsubsd :: X86Insn
 i_vsubsd = insn
    { insnDesc        = "Subtract scalar double-precision floating-point values"
    , insnMnemonic    = "VSUBSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF2
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5C
@@ -19127,7 +19127,7 @@ i_vsubss :: X86Insn
 i_vsubss = insn
    { insnDesc        = "Subtract scalar single-precision floating-point values"
    , insnMnemonic    = "VSUBSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefixF3
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x5C
@@ -19306,7 +19306,7 @@ i_ucomisd = insn
                                                         , mvec128low64 RO
                                                         ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x2E
@@ -19339,7 +19339,7 @@ i_ucomiss = insn
                                                   , mvec128low32 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x2E
                            , encProperties   = [ LegacyModeSupport
@@ -19384,7 +19384,7 @@ i_unpckhpd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x15
@@ -19416,7 +19416,7 @@ i_unpckhps = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x15
                            , encProperties         = [ LegacyModeSupport
@@ -19448,7 +19448,7 @@ i_unpcklpd = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x14
@@ -19480,7 +19480,7 @@ i_unpcklps = insn
                                                      , mvec128 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encOpcodeMap          = MapVex 0x01
                            , encOpcode             = 0x14
                            , encProperties         = [ LegacyModeSupport
@@ -19500,7 +19500,7 @@ i_vbroadcastss :: X86Insn
 i_vbroadcastss = insn
    { insnDesc        = "Broadcast floating-point data"
    , insnMnemonic    = "VBROADCASTSS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x18
@@ -19513,7 +19513,7 @@ i_vbroadcastss = insn
                                                      , mem32 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x18
@@ -19535,7 +19535,7 @@ i_vbroadcastsd :: X86Insn
 i_vbroadcastsd = insn
    { insnDesc        = "Broadcast floating-point data"
    , insnMnemonic    = "VBROADCASTSD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x19
@@ -19549,7 +19549,7 @@ i_vbroadcastsd = insn
                                                      , mem64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x19
@@ -19572,7 +19572,7 @@ i_vbroadcastf128 :: X86Insn
 i_vbroadcastf128 = insn
    { insnDesc        = "Broadcast floating-point data"
    , insnMnemonic    = "VBROADCASTF128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x1A
@@ -19594,7 +19594,7 @@ i_vcvtph2ps :: X86Insn
 i_vcvtph2ps = insn
    { insnDesc        = "Convert 16-bit FP values to single-precision FP values"
    , insnMnemonic    = "VCVTPH2PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x13
@@ -19608,7 +19608,7 @@ i_vcvtph2ps = insn
                                                      , mvec128low64 RO
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x02
                            , encOpcode             = 0x13
@@ -19631,7 +19631,7 @@ i_vcvtps2ph :: X86Insn
 i_vcvtps2ph = insn
    { insnDesc        = "Convert single-precision FP value to 16-bit FP value"
    , insnMnemonic    = "VCVTPS2PH"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x1D
@@ -19646,7 +19646,7 @@ i_vcvtps2ph = insn
                                                      , imm8
                                                      ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix    = Just LegacyPrefix66
                            , encOpcodeMap          = MapVex 0x03
                            , encOpcode             = 0x1D
@@ -19704,7 +19704,7 @@ i_enctractf128 :: X86Insn
 i_enctractf128 = insn
    { insnDesc        = "Extract packed floating-point values"
    , insnMnemonic    = "VEXTRACTF128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x19
@@ -19727,7 +19727,7 @@ i_enctracti128 :: X86Insn
 i_enctracti128 = insn
    { insnDesc        = "Extract packed integer values"
    , insnMnemonic    = "VEXTRACTI128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x39
@@ -19749,7 +19749,7 @@ i_vfmadd132pd :: X86Insn
 i_vfmadd132pd = insn
    { insnDesc        = "Fused multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFMADD132PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x98
@@ -19771,7 +19771,7 @@ i_vfmadd213pd :: X86Insn
 i_vfmadd213pd = insn
    { insnDesc        = "Fused multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFMADD213PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA8
@@ -19793,7 +19793,7 @@ i_vfmadd231pd :: X86Insn
 i_vfmadd231pd = insn
    { insnDesc        = "Fused multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFMADD231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB8
@@ -19815,7 +19815,7 @@ i_vfmadd132ps :: X86Insn
 i_vfmadd132ps = insn
    { insnDesc        = "Fused multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFMADD132PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x98
@@ -19837,7 +19837,7 @@ i_vfmadd213ps :: X86Insn
 i_vfmadd213ps = insn
    { insnDesc        = "Fused multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFMADD213PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA8
@@ -19859,7 +19859,7 @@ i_vfmadd231ps :: X86Insn
 i_vfmadd231ps = insn
    { insnDesc        = "Fused multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFMADD231PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB8
@@ -19881,7 +19881,7 @@ i_vfmadd132sd :: X86Insn
 i_vfmadd132sd = insn
    { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFMADD132SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x99
@@ -19903,7 +19903,7 @@ i_vfmadd213sd :: X86Insn
 i_vfmadd213sd = insn
    { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFMADD213SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA9
@@ -19925,7 +19925,7 @@ i_vfmadd231sd :: X86Insn
 i_vfmadd231sd = insn
    { insnDesc        = "Fused multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFMADD231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB9
@@ -19947,7 +19947,7 @@ i_vfmadd132ss :: X86Insn
 i_vfmadd132ss = insn
    { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFMADD132SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x99
@@ -19969,7 +19969,7 @@ i_vfmadd213ss :: X86Insn
 i_vfmadd213ss = insn
    { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFMADD213SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA9
@@ -19991,7 +19991,7 @@ i_vfmadd231ss :: X86Insn
 i_vfmadd231ss = insn
    { insnDesc        = "Fused multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFMADD231SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB9
@@ -20013,7 +20013,7 @@ i_vfmaddsub132pd :: X86Insn
 i_vfmaddsub132pd = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMADDSUB132PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x96
@@ -20035,7 +20035,7 @@ i_vfmaddsub213pd :: X86Insn
 i_vfmaddsub213pd = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMADDSUB213PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA6
@@ -20057,7 +20057,7 @@ i_vfmaddsub231pd :: X86Insn
 i_vfmaddsub231pd = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMADDSUB231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB6
@@ -20079,7 +20079,7 @@ i_vfmaddsub132ps :: X86Insn
 i_vfmaddsub132ps = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMADDSUB132PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x96
@@ -20101,7 +20101,7 @@ i_vfmaddsub213ps :: X86Insn
 i_vfmaddsub213ps = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMADDSUB213PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA6
@@ -20123,7 +20123,7 @@ i_vfmaddsub231ps :: X86Insn
 i_vfmaddsub231ps = insn
    { insnDesc        = "Fused multiply-alternating add/subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMADDSUB231PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB6
@@ -20145,7 +20145,7 @@ i_vfmsubadd132pd :: X86Insn
 i_vfmsubadd132pd = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
    , insnMnemonic    = "VFMSUBADD132PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x97
@@ -20167,7 +20167,7 @@ i_vfmsubadd213pd :: X86Insn
 i_vfmsubadd213pd = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
    , insnMnemonic    = "VFMSUBADD213PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA7
@@ -20189,7 +20189,7 @@ i_vfmsubadd231pd :: X86Insn
 i_vfmsubadd231pd = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed double-precision FP values"
    , insnMnemonic    = "VFMSUBADD231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB7
@@ -20211,7 +20211,7 @@ i_vfmsubadd132ps :: X86Insn
 i_vfmsubadd132ps = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
    , insnMnemonic    = "VFMSUBADD132PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x97
@@ -20233,7 +20233,7 @@ i_vfmsubadd213ps :: X86Insn
 i_vfmsubadd213ps = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
    , insnMnemonic    = "VFMSUBADD213PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xA7
@@ -20255,7 +20255,7 @@ i_vfmsubadd231ps :: X86Insn
 i_vfmsubadd231ps = insn
    { insnDesc        = "Fused multiply-alternating subtract/add of packed single-precision FP values"
    , insnMnemonic    = "VFMSUBADD231PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xB7
@@ -20277,7 +20277,7 @@ i_vfmsub132pd :: X86Insn
 i_vfmsub132pd = insn
    { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMSUB132PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9A
@@ -20299,7 +20299,7 @@ i_vfmsub213pd :: X86Insn
 i_vfmsub213pd = insn
    { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMSUB213PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAA
@@ -20321,7 +20321,7 @@ i_vfmsub231pd :: X86Insn
 i_vfmsub231pd = insn
    { insnDesc        = "Fused multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFMSUB231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBA
@@ -20343,7 +20343,7 @@ i_vfmsub132ps :: X86Insn
 i_vfmsub132ps = insn
    { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMSUB132PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9A
@@ -20365,7 +20365,7 @@ i_vfmsub213ps :: X86Insn
 i_vfmsub213ps = insn
    { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMSUB213PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAA
@@ -20387,7 +20387,7 @@ i_vfmsub231ps :: X86Insn
 i_vfmsub231ps = insn
    { insnDesc        = "Fused multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFMSUB231PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBA
@@ -20409,7 +20409,7 @@ i_vfmsub132sd :: X86Insn
 i_vfmsub132sd = insn
    { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFMSUB132SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9A
@@ -20431,7 +20431,7 @@ i_vfmsub213sd :: X86Insn
 i_vfmsub213sd = insn
    { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFMSUB213SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAA
@@ -20453,7 +20453,7 @@ i_vfmsub231sd :: X86Insn
 i_vfmsub231sd = insn
    { insnDesc        = "Fused multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFMSUB231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBA
@@ -20475,7 +20475,7 @@ i_vfmsub132ss :: X86Insn
 i_vfmsub132ss = insn
    { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFMSUB132SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9A
@@ -20497,7 +20497,7 @@ i_vfmsub213ss :: X86Insn
 i_vfmsub213ss = insn
    { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFMSUB213SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAA
@@ -20519,7 +20519,7 @@ i_vfmsub231ss :: X86Insn
 i_vfmsub231ss = insn
    { insnDesc        = "Fused multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFMSUB231SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBA
@@ -20540,7 +20540,7 @@ i_vfnmadd132pd :: X86Insn
 i_vfnmadd132pd = insn
    { insnDesc        = "Fused negative multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFNMADD132PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9C
@@ -20562,7 +20562,7 @@ i_vfnmadd213pd :: X86Insn
 i_vfnmadd213pd = insn
    { insnDesc        = "Fused negative multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFNMADD213PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAC
@@ -20584,7 +20584,7 @@ i_vfnmadd231pd :: X86Insn
 i_vfnmadd231pd = insn
    { insnDesc        = "Fused inegative multiply-add of packed double-precision FP values"
    , insnMnemonic    = "VFNMADD231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBC
@@ -20606,7 +20606,7 @@ i_vfnmadd132ps :: X86Insn
 i_vfnmadd132ps = insn
    { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFNMADD132PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9C
@@ -20628,7 +20628,7 @@ i_vfnmadd213ps :: X86Insn
 i_vfnmadd213ps = insn
    { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFNMADD213PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAC
@@ -20650,7 +20650,7 @@ i_vfnmadd231ps :: X86Insn
 i_vfnmadd231ps = insn
    { insnDesc        = "Fused negative multiply-add of packed single-precision FP values"
    , insnMnemonic    = "VFNMADD231PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBC
@@ -20672,7 +20672,7 @@ i_vfnmadd132sd :: X86Insn
 i_vfnmadd132sd = insn
    { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFNMADD132SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9D
@@ -20694,7 +20694,7 @@ i_vfnmadd213sd :: X86Insn
 i_vfnmadd213sd = insn
    { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFNMADD213SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAD
@@ -20716,7 +20716,7 @@ i_vfnmadd231sd :: X86Insn
 i_vfnmadd231sd = insn
    { insnDesc        = "Fused negative multiply-add of scalar double-precision FP values"
    , insnMnemonic    = "VFNMADD231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBD
@@ -20738,7 +20738,7 @@ i_vfnmadd132ss :: X86Insn
 i_vfnmadd132ss = insn
    { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFNMADD132SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9D
@@ -20760,7 +20760,7 @@ i_vfnmadd213ss :: X86Insn
 i_vfnmadd213ss = insn
    { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFNMADD213SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAD
@@ -20782,7 +20782,7 @@ i_vfnmadd231ss :: X86Insn
 i_vfnmadd231ss = insn
    { insnDesc        = "Fused negative multiply-add of scalar single-precision FP values"
    , insnMnemonic    = "VFNMADD231SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBD
@@ -20803,7 +20803,7 @@ i_vfnmsub132pd :: X86Insn
 i_vfnmsub132pd = insn
    { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFNMSUB132PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9E
@@ -20825,7 +20825,7 @@ i_vfnmsub213pd :: X86Insn
 i_vfnmsub213pd = insn
    { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFNMSUB213PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAE
@@ -20847,7 +20847,7 @@ i_vfnmsub231pd :: X86Insn
 i_vfnmsub231pd = insn
    { insnDesc        = "Fused negative multiply-subtract of packed double-precision FP values"
    , insnMnemonic    = "VFNMSUB231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBE
@@ -20869,7 +20869,7 @@ i_vfnmsub132ps :: X86Insn
 i_vfnmsub132ps = insn
    { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFNMSUB132PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9E
@@ -20891,7 +20891,7 @@ i_vfnmsub213ps :: X86Insn
 i_vfnmsub213ps = insn
    { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFNMSUB213PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAE
@@ -20913,7 +20913,7 @@ i_vfnmsub231ps :: X86Insn
 i_vfnmsub231ps = insn
    { insnDesc        = "Fused negative multiply-subtract of packed single-precision FP values"
    , insnMnemonic    = "VFNMSUB231PS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBE
@@ -20935,7 +20935,7 @@ i_vfnmsub132sd :: X86Insn
 i_vfnmsub132sd = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFNMSUB132SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9F
@@ -20957,7 +20957,7 @@ i_vfnmsub213sd :: X86Insn
 i_vfnmsub213sd = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFNMSUB213SD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAF
@@ -20979,7 +20979,7 @@ i_vfnmsub231sd :: X86Insn
 i_vfnmsub231sd = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar double-precision FP values"
    , insnMnemonic    = "VFNMSUB231PD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBF
@@ -21001,7 +21001,7 @@ i_vfnmsub132ss :: X86Insn
 i_vfnmsub132ss = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFNMSUB132SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x9F
@@ -21023,7 +21023,7 @@ i_vfnmsub213ss :: X86Insn
 i_vfnmsub213ss = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFNMSUB213SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xAF
@@ -21045,7 +21045,7 @@ i_vfnmsub231ss :: X86Insn
 i_vfnmsub231ss = insn
    { insnDesc        = "Fused negative multiply-subtract of scalar single-precision FP values"
    , insnMnemonic    = "VFNMSUB231SS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0xBF
@@ -21067,7 +21067,7 @@ i_vgatherdpd :: X86Insn
 i_vgatherdpd = insn
    { insnDesc        = "Gather packed DP FP values using signed dword indices"
    , insnMnemonic    = "VGATHERDPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x92
@@ -21089,7 +21089,7 @@ i_vgatherqpd :: X86Insn
 i_vgatherqpd = insn
    { insnDesc        = "Gather packed DP FP values using signed qword indices"
    , insnMnemonic    = "VGATHERQPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x93
@@ -21110,7 +21110,7 @@ i_vgatherdps :: X86Insn
 i_vgatherdps = insn
    { insnDesc        = "Gather packed SP FP values using signed dword indices"
    , insnMnemonic    = "VGATHERDPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x92
@@ -21131,7 +21131,7 @@ i_vgatherqps :: X86Insn
 i_vgatherqps = insn
    { insnDesc        = "Gather packed SP FP values using signed qword indices"
    , insnMnemonic    = "VGATHERQPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x93
@@ -21153,7 +21153,7 @@ i_vpgatherdd :: X86Insn
 i_vpgatherdd = insn
    { insnDesc        = "Gather packed dword values using signed dword indices"
    , insnMnemonic    = "VPGATHERDD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x90
@@ -21174,7 +21174,7 @@ i_vpgatherqd :: X86Insn
 i_vpgatherqd = insn
    { insnDesc        = "Gather packed dword values using signed qword indices"
    , insnMnemonic    = "VPGATHERQD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x91
@@ -21196,7 +21196,7 @@ i_vpgatherdq :: X86Insn
 i_vpgatherdq = insn
    { insnDesc        = "Gather packed qword values using signed dword indices"
    , insnMnemonic    = "VGATHERDQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x90
@@ -21217,7 +21217,7 @@ i_vpgatherqq :: X86Insn
 i_vpgatherqq = insn
    { insnDesc        = "Gather packed qword values using signed qword indices"
    , insnMnemonic    = "VPGATHERQQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x91
@@ -21239,7 +21239,7 @@ i_vinsertf128 :: X86Insn
 i_vinsertf128 = insn
    { insnDesc        = "Insert packed floating-point values"
    , insnMnemonic    = "VINSERTF128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x18
@@ -21263,7 +21263,7 @@ i_vinserti128 :: X86Insn
 i_vinserti128 = insn
    { insnDesc        = "Insert packed integer values"
    , insnMnemonic    = "VINSERTI128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x38
@@ -21287,7 +21287,7 @@ i_vmaskmovps :: X86Insn
 i_vmaskmovps = insn
    { insnDesc        = "Conditional SIMD packed SP FP values loads and stores"
    , insnMnemonic    = "VMASKMOVPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x2C
@@ -21301,7 +21301,7 @@ i_vmaskmovps = insn
                                                   , mem128o256 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x2E
@@ -21323,7 +21323,7 @@ i_vmaskmovpd :: X86Insn
 i_vmaskmovpd = insn
    { insnDesc        = "Conditional SIMD packed DP FP values loads and stores"
    , insnMnemonic    = "VMASKMOVPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x2D
@@ -21337,7 +21337,7 @@ i_vmaskmovpd = insn
                                                   , mem128o256 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x2F
@@ -21359,7 +21359,7 @@ i_vblendd :: X86Insn
 i_vblendd = insn
    { insnDesc        = "Blend packed dwords"
    , insnMnemonic    = "VBLENDD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x02
@@ -21382,7 +21382,7 @@ i_vpbroadcastb :: X86Insn
 i_vpbroadcastb = insn
    { insnDesc        = "Broadcast a byte"
    , insnMnemonic    = "VPBROADCASTB"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x78
@@ -21403,7 +21403,7 @@ i_vpbroadcastw :: X86Insn
 i_vpbroadcastw = insn
    { insnDesc        = "Broadcast a word"
    , insnMnemonic    = "VPBROADCASTW"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x79
@@ -21424,7 +21424,7 @@ i_vpbroadcastd :: X86Insn
 i_vpbroadcastd = insn
    { insnDesc        = "Broadcast a dword"
    , insnMnemonic    = "VPBROADCASTD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x58
@@ -21445,7 +21445,7 @@ i_vpbroadcastq :: X86Insn
 i_vpbroadcastq = insn
    { insnDesc        = "Broadcast a qword"
    , insnMnemonic    = "VPBROADCASTQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x59
@@ -21466,7 +21466,7 @@ i_vpbroadcasti128 :: X86Insn
 i_vpbroadcasti128 = insn
    { insnDesc        = "Broadcast a 128-bit integer"
    , insnMnemonic    = "VPBROADCASTI128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x5A
@@ -21487,7 +21487,7 @@ i_vpermd :: X86Insn
 i_vpermd = insn
    { insnDesc        = "Full doublewords element permutation"
    , insnMnemonic    = "VPERMD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x36
@@ -21510,7 +21510,7 @@ i_vpermpd :: X86Insn
 i_vpermpd = insn
    { insnDesc        = "Full DP FP element permutation"
    , insnMnemonic    = "VPERMPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x01
@@ -21533,7 +21533,7 @@ i_vpermps :: X86Insn
 i_vpermps = insn
    { insnDesc        = "Full SP FP element permutation"
    , insnMnemonic    = "VPERMPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x01
@@ -21555,7 +21555,7 @@ i_vpermq :: X86Insn
 i_vpermq = insn
    { insnDesc        = "Full quadwords element permutation"
    , insnMnemonic    = "VPERMQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x00
@@ -21578,7 +21578,7 @@ i_vperm2i128 :: X86Insn
 i_vperm2i128 = insn
    { insnDesc        = "Full 128-bit integer element permutation"
    , insnMnemonic    = "VPERMI128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x46
@@ -21602,7 +21602,7 @@ i_vpermilpd :: X86Insn
 i_vpermilpd = insn
    { insnDesc        = "Permute DP FP values"
    , insnMnemonic    = "VPERMILPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x0D
@@ -21616,7 +21616,7 @@ i_vpermilpd = insn
                                                   , mvec128o256 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x05
@@ -21638,7 +21638,7 @@ i_vpermilps :: X86Insn
 i_vpermilps = insn
    { insnDesc        = "Permute SP FP values"
    , insnMnemonic    = "VPERMILPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x0C
@@ -21652,7 +21652,7 @@ i_vpermilps = insn
                                                   , mvec128o256 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x04
@@ -21673,7 +21673,7 @@ i_vperm2f128 :: X86Insn
 i_vperm2f128 = insn
    { insnDesc        = "Permute FP values"
    , insnMnemonic    = "VPERM2F128"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x03
                            , encOpcode          = 0x06
@@ -21696,7 +21696,7 @@ i_vpmaskmovd :: X86Insn
 i_vpmaskmovd = insn
    { insnDesc        = "Conditional SIMD integer packed loads and stores"
    , insnMnemonic    = "VPMASKMOVD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x8C
@@ -21710,7 +21710,7 @@ i_vpmaskmovd = insn
                                                   , mem128o256 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x8E
@@ -21732,7 +21732,7 @@ i_vpmaskmovq :: X86Insn
 i_vpmaskmovq = insn
    { insnDesc        = "Conditional SIMD integer packed loads and stores"
    , insnMnemonic    = "VPMASKMOVQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x8C
@@ -21746,7 +21746,7 @@ i_vpmaskmovq = insn
                                                   , mem128o256 RO
                                                   ]
                            }
-                       , enc
+                       , vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x8E
@@ -21768,7 +21768,7 @@ i_vpsllvd :: X86Insn
 i_vpsllvd = insn
    { insnDesc        = "Variable bit shift left logical"
    , insnMnemonic    = "VPSLLVD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x47
@@ -21790,7 +21790,7 @@ i_vpsllvq :: X86Insn
 i_vpsllvq = insn
    { insnDesc        = "Variable bit shift left logical"
    , insnMnemonic    = "VPSLLVQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x47
@@ -21812,7 +21812,7 @@ i_vpsravd :: X86Insn
 i_vpsravd = insn
    { insnDesc        = "Variable bit shift right logical"
    , insnMnemonic    = "VPSRAVD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x46
@@ -21834,7 +21834,7 @@ i_vpsrlvd :: X86Insn
 i_vpsrlvd = insn
    { insnDesc        = "Variable bit shift right logical"
    , insnMnemonic    = "VPSRLVD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x45
@@ -21856,7 +21856,7 @@ i_vpsrlvq :: X86Insn
 i_vpsrlvq = insn
    { insnDesc        = "Variable bit shift right logical"
    , insnMnemonic    = "VPSRLVQ"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x45
@@ -21881,7 +21881,7 @@ i_vtestpd = insn
    , insnFlags       = [ Modified [ZF,CF]
                        , Unset [OF,AF,PF,SF]
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x0E
@@ -21905,7 +21905,7 @@ i_vtestps = insn
    , insnFlags       = [ Modified [ZF,CF]
                        , Unset [OF,AF,PF,SF]
                        ]
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x02
                            , encOpcode          = 0x0F
@@ -21926,7 +21926,7 @@ i_vzeroall :: X86Insn
 i_vzeroall = insn
    { insnDesc        = "Zero all YMM registers"
    , insnMnemonic    = "VZEROALL"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x77
                            , encOpcodeLExt      = Just True
@@ -21943,7 +21943,7 @@ i_vzeroupper :: X86Insn
 i_vzeroupper = insn
    { insnDesc        = "Zero upper bits YMM registers"
    , insnMnemonic    = "VZEROUPPER"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x77
                            , encOpcodeLExt      = Just False
@@ -22283,7 +22283,7 @@ i_vxorpd :: X86Insn
 i_vxorpd = insn
    { insnDesc        = "Bitwise logical XOR of packed double-precision floating-point values"
    , insnMnemonic    = "VXORPD"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encMandatoryPrefix = Just LegacyPrefix66
                            , encOpcodeMap       = MapVex 0x01
                            , encOpcode          = 0x57
@@ -22321,7 +22321,7 @@ i_vxorps :: X86Insn
 i_vxorps = insn
    { insnDesc        = "Bitwise logical XOR of packed float-precision floating-point values"
    , insnMnemonic    = "VXORPS"
-   , insnEncodings   = [ enc
+   , insnEncodings   = [ vex
                            { encOpcodeMap    = MapVex 0x01
                            , encOpcode       = 0x57
                            , encProperties   = [ LegacyModeSupport
