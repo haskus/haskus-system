@@ -3,6 +3,7 @@
 module Haskus.Arch.X86_64.ISA.Insn
    ( EncodingVariant(..)
    , Insn (..)
+   , Modifier (..)
    , X86Insn(..)
    , Properties (..)
    , FlagOp(..)
@@ -17,27 +18,34 @@ import Data.Set (Set)
 
 -- | A fully defined instruction (isomorphic to its binary representation)
 data Insn = Insn
-   { insnOpcode   :: Opcode
-   , insnOperands :: [Operand]
-   , insnEncoding :: Encoding
-   , insnSpec     :: X86Insn
-   , insnVariant  :: Set EncodingVariant
+   { insnOpcode    :: Opcode
+   , insnOperands  :: [Operand]
+   , insnModifiers :: Set Modifier
+   , insnSpec      :: X86Insn
+   , insnEncoding  :: Encoding
+   , insnVariant   :: Set EncodingVariant
    }
    deriving (Show)
 
--- | Instruction variant encoding
+-- | Instruction behavior modifier
+data Modifier
+   = Locked                   -- ^ Locked memory access
+   | RepeatZero               -- ^ REP(Z) prefix
+   | RepeatNonZero            -- ^ REPNZ prefix
+   | LockElisionAcquire       -- ^ XACQUIRE prefix
+   | LockElisionRelease       -- ^ XRELEASE prefix
+   | BranchHintTaken          -- ^ Branch hint (branch taken)
+   | BranchHintNotTaken       -- ^ Branch hint (not taken)
+   deriving (Show,Eq,Ord)
+
+-- | Encoding variant: the encoding changes but not the behavior of the
+-- instruction
 data EncodingVariant
-   = Locked                     -- ^ Locked memory access
-   | Reversed                   -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
-   | ExplicitParam              -- ^ A variant exists with an implicit parameter, but the explicit variant is used
-   | RepeatZero                 -- ^ REP(Z) prefix
-   | RepeatNonZero              -- ^ REPNZ prefix
-   | LockElisionAcquire         -- ^ XACQUIRE prefix
-   | LockElisionRelease         -- ^ XRELEASE prefix
-   | BranchHintTaken            -- ^ Branch hint (branch taken)
-   | BranchHintNotTaken         -- ^ Branch hint (not taken)
-   | SuperfluousSegmentOverride -- ^ Segment override equal to default segment
-   | UselessRex Rex             -- ^ Additional useless Rex prefix
+   = Reversed                 -- ^ Parameters are reversed (useful when some instructions have two valid encodings, e.g. CMP reg8, reg8)
+   | ExplicitParam            -- ^ A variant exists with an implicit parameter, but the explicit variant is used
+   | RedundantSegmentOverride -- ^ Segment override equal to default segment
+   | RedundantRex Rex         -- ^ Useless Rex prefix
+   | RedundantLock            -- ^ Useless lock prefix
    -- TODO: legacy prefix order, superfluous prefixes
    deriving (Show,Eq,Ord)
 

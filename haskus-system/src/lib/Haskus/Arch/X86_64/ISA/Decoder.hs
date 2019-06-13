@@ -68,9 +68,10 @@ getInstruction mode = consumeAtMost 15 $ do
          oc' <- OpLegacy ps' rx ocm <$> getWord8
          return $ Insn oc'
                 ops
+                Set.empty -- modifiers
+                (error "3DNow! instructions not supported") -- spec TODO
                 amd3DNowEncoding
-                (error "3DNow! instructions not supported") -- TODO
-                Set.empty
+                Set.empty -- variants
 
       ocmap              -> do
          -- get candidate instructions for the opcode
@@ -210,20 +211,23 @@ getInstruction mode = consumeAtMost 15 $ do
                then Set.singleton Reversed
                else Set.empty
 
-            -- TODO: superfluous segment override
-            -- TODO: explicit param variant
-            -- TODO: useless Rex prefix
-            -- TODO: legacy prefix order
+            variants = Set.unions
+               [ vreverse
+                  -- TODO: superfluous segment override
+                  -- TODO: explicit param variant
+                  -- TODO: useless Rex prefix
+                  -- TODO: legacy prefix order
+               ]
 
-            variants = Set.unions [ vlocked
-                                  , vreverse
-                                  , vrepeat
-                                  , vbranchhint
-                                  , vacquire
-                                  , vrelease
-                                  ]
+            modifiers = Set.unions
+               [ vlocked
+               , vrepeat
+               , vbranchhint
+               , vacquire
+               , vrelease
+               ]
 
-         return $ Insn oc ops enc spec variants
+         return $ Insn oc ops modifiers spec enc variants
 
 -- ===========================================================================
 -- Legacy encoding
