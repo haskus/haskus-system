@@ -33,7 +33,7 @@ data UnmountFlag
    | UnmountDetach      -- ^ Just detach from the tree
    | UnmountExpire      -- ^ Mark for expiry
    | UnmountDontFollow  -- ^ Don't follow symlink on unmount
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 -- | Unmount flags
 type UnmountFlags = BitSet Word64 UnmountFlag

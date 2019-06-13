@@ -1038,7 +1038,7 @@ data KeymapEntry = KeymapEntry
 
 data KeymapFlag
    = KeymapByIndex
-   deriving (Eq,Show,Enum,CBitSet)
+   deriving (Eq,Show,Enum,BitOffset)
 
 -- | Mask of events that are supported by the device
 data EventMask = EventMask

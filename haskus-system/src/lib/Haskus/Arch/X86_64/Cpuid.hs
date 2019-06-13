@@ -214,7 +214,7 @@ data Feature
    | FeatureF16C
    | FeatureRDRND
    | FeatureHypervisor
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 -- | Processor info and feature bits
 procInfo :: (ProcInfo, BitSet Word64 Feature)
@@ -259,7 +259,7 @@ data ExtendedFeature
    | FeatureAVX512VL
    | FeaturePREFETCHWT1
    | FeatureAVX512VBMI
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 -- | Processor info and feature bits
 procExtFeatures :: BitSet Word64 ExtendedFeature

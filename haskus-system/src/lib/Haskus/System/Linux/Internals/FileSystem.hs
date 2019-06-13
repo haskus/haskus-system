@@ -118,7 +118,7 @@ data RenameFlag
    = RenameNoReplace
    | RenameExchange
    | RenameWhiteout
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 
 -- | struct file_clone_range
@@ -219,7 +219,7 @@ data MountFlag
    | MountUpdateInodeVersion     -- ^ Update inode I_version field
    | MountStrictAccessTime       -- ^ Always perform atime updates
    | MountLazyTime               -- ^ Update the on-disk [acm]times lazily
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type MountFlags = BitSet Word64 MountFlag
 
@@ -267,7 +267,7 @@ data XFlag
    | XFlagHasAttr          -- ^ no DIFLAG for this   
    deriving (Show,Eq,Enum)
 
-instance CBitSet XFlag where
+instance BitOffset XFlag where
    toBitOffset x = case x of
       XFlagRealTime       -> 0
       XFlagPrealloc       -> 1
@@ -583,7 +583,7 @@ data InodeFlag
    | InodeFlagReserved              -- ^ reserved for ext2 lib 
    deriving (Show,Eq,Enum)
 
-instance CBitSet InodeFlag where
+instance BitOffset InodeFlag where
    toBitOffset x = case x of
       InodeFlagSecureDeletion        -> 0
       InodeFlagUndelete              -> 1
@@ -654,11 +654,11 @@ data SyncFileRangeFlag
    = SyncFileRangeWaitBefore
    | SyncFileRangeWrite
    | SyncFileRangeWaitAfter
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 -- | Flags for preadv2/pwritev2
 data RWF
    = RWFHiPri  -- ^ High priority request, poll if possible
    | RWFDSync  -- ^ per-IO O_DSYNC
    | RWFSync   -- ^ per-IO O_SYNC
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)

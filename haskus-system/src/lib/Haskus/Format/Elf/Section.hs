@@ -207,7 +207,7 @@ data SectionFlag
    | SectionFlagOther Word        -- ^ Other flags
    deriving (Show,Eq)
 
-instance CBitSet SectionFlag where
+instance BitOffset SectionFlag where
    toBitOffset x = case x of
       SectionFlagWritable           -> 0
       SectionFlagAlloc              -> 1

@@ -77,7 +77,7 @@ data HandleFlag
 -- | Handle flags
 type HandleFlags = BitSet Int HandleFlag
 
-instance CBitSet HandleFlag where
+instance BitOffset HandleFlag where
    toBitOffset x = case x of
       HandleWriteOnly          -> 0
       HandleReadWrite          -> 1

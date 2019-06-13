@@ -141,7 +141,7 @@ data TraceOption
    | OptTraceExitKill   -- ^ When set, tracee processes will receive a KILL signal when the tracer process exits
    deriving (Eq,Show,Enum)
 
-instance CBitSet TraceOption where
+instance BitOffset TraceOption where
    toBitOffset x = case x of
       OptTraceExitKill   -> 20
       _                  -> fromIntegral (fromEnum x)
@@ -189,7 +189,7 @@ data PeekSigInfoArgs = PeekSigInfoArgs
 -- | Peek signals flags
 data PeekSigInfoFlags
    = PeekSigInfoShared
-   deriving (Enum,CBitSet)
+   deriving (Enum,BitOffset)
    
    
 -- | Trace a process

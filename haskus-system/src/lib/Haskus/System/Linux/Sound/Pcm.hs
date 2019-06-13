@@ -12,7 +12,7 @@ where
 
 import Haskus.System.Linux.Internals.Sound
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.BitSet (CBitSet)
+import Haskus.Format.Binary.BitSet (BitOffset)
 import qualified Haskus.Format.Binary.Vector as Vector
 import Haskus.Format.Binary.Bits (complement,zeroBits)
 
@@ -80,7 +80,7 @@ toConfig params = PcmConfig
    , pcmConfigSubFormat = fromMask m3
    }
    where
-      fromMask :: forall a. (Ord a, Bounded a, Enum a, CBitSet a) => Mask -> Set a
+      fromMask :: forall a. (Ord a, Bounded a, Enum a, BitOffset a) => Mask -> Set a
       fromMask (Mask v) = Set.fromList (BitSet.enumerateSetBits v)
 
       m1:m2:m3:_ = Vector.toList (pcmHwParamsMasks params)

@@ -63,7 +63,7 @@ data MemProtectFlag
    | ProtGrowsUp
    deriving (Eq,Show,Enum)
 
-instance CBitSet MemProtectFlag where
+instance BitOffset MemProtectFlag where
    toBitOffset x = case x of
       ProtExec       -> 2
       ProtRead       -> 0
@@ -99,7 +99,7 @@ data MapFlag
    | MapHugeTLB
    deriving (Eq,Show)
 
-instance CBitSet MapFlag where
+instance BitOffset MapFlag where
    toBitOffset x = case x of
       MapShared         -> 0
       MapPrivate        -> 1
@@ -237,7 +237,7 @@ data MemSync
    = MemAsync
    | MemInvalidate
    | MemSync
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type MemSyncFlags = BitSet Word32 MemSync
 
@@ -263,7 +263,7 @@ sysMemUnlock addr len = checkErrorCode_ =<< liftIO (syscall_munlock addr len)
 data MemLockFlag
    = LockCurrentPages
    | LockFuturePages
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type MemLockFlags = BitSet Word64 MemLockFlag
 

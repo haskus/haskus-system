@@ -195,7 +195,7 @@ data InputFlag
    | IFIXOff
    | IFIMaxBel
    | IFUtf8
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type InputFlags = BitSet Word32 InputFlag
 
@@ -217,7 +217,7 @@ data OutputFlag
    | OFBSDLY
    | OFVTDLY
    | OFFFDLY
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type OutputFlags = BitSet Word32 OutputFlag
 
@@ -278,7 +278,7 @@ data ControlFlag
    | CFParodd
    | CFHupCl
    | CFLocal
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type ControlFlags = BitFields Word32
             '[ BitField 1 "CRTSCTS"  Bool          -- Flow control
@@ -337,7 +337,7 @@ data LocalFlag
    | LFPending
    | LFIExtend
    | LFExtProc
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 
 type LocalFlags = BitSet Word32 LocalFlag
@@ -797,6 +797,6 @@ data PacketControlFlag
    | PacketNoStop
    | PacketDoStop
    | PacketIOCTL
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type PacketControlFlags = BitSet Word8 PacketControlFlag

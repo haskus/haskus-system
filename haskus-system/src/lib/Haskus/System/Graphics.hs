@@ -27,7 +27,7 @@ import Haskus.System.Sys
 import Haskus.System.Devices
 import Haskus.System.Process
 import Haskus.System.Event
-import Haskus.Format.Binary.BitSet (CBitSet(..), BitSet)
+import Haskus.Format.Binary.BitSet (BitOffset(..), BitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (textFormat,shown,(%))
@@ -209,7 +209,7 @@ data BufferingState a = BufferingState
 data FrameWait
    = WaitPending  -- ^ Wait if there is a pending frame (that will be displayed asap)
    | WaitDrawn    -- ^ wait if there is already a rendered frame
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 
 -- | Init the rendering engine

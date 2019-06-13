@@ -49,7 +49,7 @@ data VersionDefinitionVersion
 data VersionDefinitionFlag
    = VersionFlagBase    -- ^ Version definition of file itself
    | VersionFlagWeak    -- ^ Weak version identifier
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type VersionDefinitionFlags = BitSet Word16 VersionDefinitionFlag
 

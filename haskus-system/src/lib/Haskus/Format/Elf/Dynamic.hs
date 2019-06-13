@@ -19,7 +19,7 @@ where
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.BitSet (CBitSet,BitSet)
+import Haskus.Format.Binary.BitSet (BitOffset,BitSet)
 import Haskus.Format.Elf.PreHeader
 
 data RawDynamicEntry = RawDynamicEntry
@@ -275,7 +275,7 @@ data DynamicEntryFlag
    | DynFlagHasTextRelocation -- ^ Object contains text relocations
    | DynFlagBindNow           -- ^ No lazy binding for this object
    | DynFlagStaticTLS         -- ^ Module uses the static TLS model
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type DynamicEntryFlags = BitSet Word64 DynamicEntryFlag
 
@@ -307,7 +307,7 @@ data DynamicStateFlag
    | DynStateFlagSymbolInterposers          -- ^ Object has individual interposers.  
    | DynStateFlagGlobalAudit                -- ^ Global auditing required.  
    | DynStateFlagSingletonSymbols           -- ^ Singleton symbols are used.  
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 
@@ -315,7 +315,7 @@ type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 data DynamicFeature
    = DynFeatureParInit
    | DynFeatureConfExp
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type DynamicFeatures = BitSet Word64 DynamicFeature
 
@@ -323,6 +323,6 @@ type DynamicFeatures = BitSet Word64 DynamicFeature
 data DynamicPositionalFlag
    = DynPositionalFlagLazyLoad   -- ^ Lazyload following object
    | DynPositionalFlagGroupPerm  -- ^ Symbols from next object are not generally available
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type DynamicPositionalFlags = BitSet Word64 DynamicPositionalFlag

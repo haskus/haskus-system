@@ -32,7 +32,7 @@ import Haskus.Arch.X86_64.Disassembler
 import Haskus.Format.Binary.Buffer
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text,textFormat,int,stext,hex,(%))
-import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
+import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
 import Haskus.Utils.Embed.ByteString
@@ -762,7 +762,7 @@ showDebugInfo dis = do
 showDynamicEntries :: [DynamicEntry] -> Html ()
 showDynamicEntries es = do
    let
-      showFlags :: (Show a, CBitSet a) => BitSet Word64 a -> Html ()
+      showFlags :: (Show a, BitOffset a) => BitSet Word64 a -> Html ()
       showFlags = toHtml . concat . List.intersperse ", " . fmap show . BitSet.toList
 
    table_ $ do

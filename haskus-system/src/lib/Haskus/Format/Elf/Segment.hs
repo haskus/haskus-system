@@ -60,7 +60,7 @@ data SegmentFlag
    = SegmentFlagExecutable
    | SegmentFlagWritable
    | SegmentFlagReadable
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type SegmentFlags = BitSet Word32 SegmentFlag
 

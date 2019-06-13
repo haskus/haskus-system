@@ -26,7 +26,7 @@ import Haskus.Utils.Flow
 data LoadModuleFlag
    = IgnoreSymbolVersions
    | IgnoreKernelVersion
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 -- | Load module flags
 type LoadModuleFlags = BitSet Word LoadModuleFlag

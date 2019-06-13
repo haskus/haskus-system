@@ -20,7 +20,7 @@ import Haskus.Utils.Flow
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Foreign.Ptr
-import Haskus.Format.Binary.BitSet (CBitSet, BitSet, fromBits, toBits)
+import Haskus.Format.Binary.BitSet (BitOffset, BitSet, fromBits, toBits)
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
@@ -47,7 +47,7 @@ data PollEvent
    | PollWriteNormal
    | PollReadBand
    | PollWriteBand
-   deriving (Show,Eq,CBitSet)
+   deriving (Show,Eq,BitOffset)
 
 instance Enum PollEvent where
    fromEnum x = case x of

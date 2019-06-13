@@ -19,7 +19,7 @@ import Haskus.Format.Binary.Get as Get
 import Haskus.Format.Binary.Bits.Order
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
+import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Format.Text as Text
 import Haskus.Format.Text (Text,getTextUtf8Nul,unpack)
@@ -106,7 +106,7 @@ data Flag
    | FlagExtra
    | FlagName
    | FlagComment
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 -- | Flags
 type Flags = BitSet Word8 Flag

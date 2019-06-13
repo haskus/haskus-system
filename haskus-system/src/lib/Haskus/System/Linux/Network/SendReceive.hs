@@ -44,7 +44,7 @@ data SendReceiveFlag
    | FlagWaitForOne        -- ^ Wait for at least one packet to return
    | FlagFastOpen          -- ^ Send data in TCP SYN
    | FlagCloseOnExec       -- ^ Set close_on_exit for file descriptor received through SCM_RIGHTS
-   deriving (Show,Eq,CBitSet)
+   deriving (Show,Eq,BitOffset)
 
 instance Enum SendReceiveFlag where
    fromEnum x = case x of

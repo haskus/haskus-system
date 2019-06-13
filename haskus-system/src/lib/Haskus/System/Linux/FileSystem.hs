@@ -91,7 +91,7 @@ data FilePermission
    | PermUserExecute
    | PermUserWrite
    | PermUserRead
-   deriving (Eq,Show,Enum,CBitSet)
+   deriving (Eq,Show,Enum,BitOffset)
 
 type FilePermissions = BitSet Word FilePermission
 
@@ -112,7 +112,7 @@ data AccessMode
    = AccessExecute
    | AccessWrite
    | AccessRead
-   deriving (Eq,Show,Enum,CBitSet)
+   deriving (Eq,Show,Enum,BitOffset)
 
 type AccessModes = BitSet Word64 AccessMode
 
@@ -269,7 +269,7 @@ data FileOption
    = FileOptSticky
    | FileOptSetGID
    | FileOptSetUID
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type FileOptions = BitSet Word64 FileOption
 

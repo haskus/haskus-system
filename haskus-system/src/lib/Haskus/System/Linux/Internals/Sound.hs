@@ -335,7 +335,7 @@ data PcmAccess
    | PcmAccessMmapComplex         -- ^ complex mmap
    | PcmAccessRwInterleaved       -- ^ readi/writei
    | PcmAccessRwNonInterleaved    -- ^ readn/writen
-   deriving (Show,Eq,Enum,Ord,CBitSet,Bounded)
+   deriving (Show,Eq,Enum,Ord,BitOffset,Bounded)
 
 data PcmFormat
    = PcmFormatS8
@@ -385,7 +385,7 @@ data PcmFormat
    | PcmFormatDSD_U32_LE         -- ^ DSD, 4-byte samples DSD (x32), little endian
    | PcmFormatDSD_U16_BE         -- ^ DSD, 2-byte samples DSD (x16), big endian
    | PcmFormatDSD_U32_BE         -- ^ DSD, 4-byte samples DSD (x32), big endian
-   deriving (Show,Eq,Ord,CBitSet,Bounded)
+   deriving (Show,Eq,Ord,BitOffset,Bounded)
 
 instance Enum PcmFormat where
    fromEnum x = case x of
@@ -489,7 +489,7 @@ instance Enum PcmFormat where
 
 data PcmSubFormat
    = PcmSubFormatStd
-   deriving (Show,Eq,Enum,Ord,CBitSet,Bounded)
+   deriving (Show,Eq,Enum,Ord,BitOffset,Bounded)
 
 data PcmInfoFlag
    = PcmInfoMmap                     -- ^ hardware supports mmap
@@ -515,7 +515,7 @@ data PcmInfoFlag
    | PcmInfoFifoInFrames             -- ^ internal kernel flag - FIFO size is in frames
    deriving (Show,Eq,Enum,Ord,Bounded)
 
-instance CBitSet PcmInfoFlag where
+instance BitOffset PcmInfoFlag where
    toBitOffset x = case x of
       PcmInfoMmap                     -> 0
       PcmInfoMmapValid                -> 1
@@ -691,7 +691,7 @@ data IntervalOption
    | IntervalOpenMax -- ^ Is interval upper bound excluded?
    | IntervalInteger -- ^ Does the interval contain only integer values?
    | IntervalEmpty   -- ^ Is the interval empty?
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type IntervalOptions = BitSet Word32 IntervalOption
 
@@ -699,7 +699,7 @@ data PcmHwParamsFlag
    = PcmHwParamsNoResample     -- ^ avoid rate resampling
    | PcmHwParamsExportBuffer   -- ^ export buffer
    | PcmHwParamsNoPeriodWakeUp -- ^ disable period wakeups
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type PcmHwParamsFlags = BitSet Word32 PcmHwParamsFlag
 
@@ -813,7 +813,7 @@ data PcmSyncFlag
    = PcmSyncFlagHwSync        -- ^ execute hwsync 
    | PcmSyncFlagPtrAppl       -- ^ get appl_ptr from driver (r/w op) 
    | PcmSyncFlagPtrAvailMin   -- ^ get avail_min from driver 
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type PcmSyncFlags = BitSet Word32 PcmSyncFlag
 
@@ -887,7 +887,7 @@ data ChannelPosition
 data ChannelOption
    = ChannelPhaseInverse
    | ChannelDriverSpec
-   deriving (Show,Eq,CBitSet)
+   deriving (Show,Eq,BitOffset)
 
 instance Enum ChannelOption where
    fromEnum x = case x of
@@ -1018,7 +1018,7 @@ data MidiFlag
    = MidiFlagOutput
    | MidiFlagInput
    | MidiFlagDuplex
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type MidiFlags = BitSet Word32 MidiFlag
 
@@ -1131,7 +1131,7 @@ data TimerGlobal
 -- | Timer info flags
 data TimerFlag
    = TimerFlagSlave  -- ^ Cannot be controlled
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type TimerFlags = BitSet Word32 TimerFlag
 
@@ -1192,7 +1192,7 @@ data TimerParamsFlag
    = TimerParamFlagAuto       -- ^ auto start, otherwise one-shot 
    | TimerParamFlagExclusive  -- ^ exclusive use, precise start/stop/pause/continue 
    | TimerParamFlagEarlyEvent -- ^ write early event to the poll queue 
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type TimerParamsFlags = BitSet Word32 TimerParamsFlag
 
@@ -1388,7 +1388,7 @@ data ControlElementAccess
    | ControlElemAccessUser        -- ^ user space element 
    deriving (Show,Eq,Enum)
 
-instance CBitSet ControlElementAccess where
+instance BitOffset ControlElementAccess where
    toBitOffset x = case x of
       ControlElemAccessInactive     -> 8
       ControlElemAccessLock         -> 9

@@ -11,7 +11,7 @@ module Haskus.Arch.X86_64.ISA.Insn
    )
 where
 
-import Haskus.Format.Binary.BitSet (BitSet,CBitSet)
+import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
 import Haskus.Format.Binary.Word
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Operand
@@ -37,7 +37,7 @@ data EncodingVariant
    | BranchHintTaken            -- ^ Branch hint (branch taken)
    | BranchHintNotTaken         -- ^ Branch hint (not taken)
    | SuperfluousSegmentOverride -- ^ Segment override equal to default segment
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 
 -- | X86 instruction

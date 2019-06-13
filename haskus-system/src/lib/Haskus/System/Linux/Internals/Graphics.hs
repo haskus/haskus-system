@@ -168,7 +168,7 @@ data ModeType
    | ModeTypeDefault
    | ModeTypeUserDef
    | ModeTypeDriver
-   deriving (Show,Enum,CBitSet)
+   deriving (Show,Enum,BitOffset)
 
 type ModeTypes = BitSet Word32 ModeType
 
@@ -189,7 +189,7 @@ data ModeFlag
    | ModeFlagPixMux
    | ModeFlagDoubleClock
    | ModeFlagClockDiv2
-   deriving (Show,Enum,CBitSet)
+   deriving (Show,Enum,BitOffset)
 
 type ModeFlags = BitSet Word32 ModeFlag
 
@@ -317,7 +317,7 @@ data StructController = StructController
 data ModeFieldPresent
    = PresentTopField
    | PresentBottomField
-   deriving (Show,Enum,CBitSet)
+   deriving (Show,Enum,BitOffset)
 
 type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 
@@ -571,7 +571,7 @@ data StructGetBlob = StructGetBlob
 data FrameBufferFlag
    = FrameBufferInterlaced    -- ^ Interlaced frame buffer
    | FrameBufferUseModifiers  -- ^ Enable modifiers
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type FrameBufferFlags = BitSet Word32 FrameBufferFlag
 
@@ -652,7 +652,7 @@ data StructModeCommand = StructModeCommand
 data CursorFlag
    = CursorFlagBO
    | CursorFlagMove
-   deriving (Eq,Enum,Show,CBitSet)
+   deriving (Eq,Enum,Show,BitOffset)
 
 type CursorFlags = BitSet Word32 CursorFlag
 
@@ -703,7 +703,7 @@ data PageFlipFlag
    | PageFlipAsync
    | PageFlipTargetAbsolute
    | PageFlipTargetRelative
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type PageFlipFlags = BitSet Word32 PageFlipFlag
 
@@ -808,7 +808,7 @@ data AtomicFlag
    | AtomicFlagAllowModeset   -- ^ Allow full mode-setting. This flag is useful for devices such as tablets whose screen is often shutdown: we can use a degraded mode (scaled, etc.) for a while to save power and only perform the full modeset when the screen is reactivated.
    deriving (Show,Eq,Enum)
 
-instance CBitSet AtomicFlag where
+instance BitOffset AtomicFlag where
    toBitOffset x = case x of
       AtomicFlagPageFlipEvent -> 0
       AtomicFlagPageFlipAsync -> 1
@@ -930,7 +930,7 @@ data StructSetClientCap = StructSetClientCap
 data PrimeFlag
    = PrimeFlagReadWrite
    | PrimeFlagCloseOnExec
-   deriving (Show,Eq,CBitSet)
+   deriving (Show,Eq,BitOffset)
 
 instance Enum PrimeFlag where
    fromEnum PrimeFlagReadWrite   = fromEnum HandleReadWrite
@@ -1106,7 +1106,7 @@ data Rotation
 data Reflection
    = ReflectX
    | ReflectY
-   deriving (Show,Eq,Enum,CBitSet)
+   deriving (Show,Eq,Enum,BitOffset)
 
 type RotateReflect = BitFields Word8
    '[ BitField 2 "padding"    Word8
