@@ -1283,6 +1283,8 @@ instructions =
    , i_xsaves
    , i_xsetbv
    , i_xtest
+   , i_endbr64
+   , i_endbr32
    ]
 
 i_aaa :: X86Insn
@@ -22484,6 +22486,41 @@ i_xtest = insn
                            ,    encProperties      = [ LegacyModeSupport
                                                      , LongModeSupport
                                                      , Extension RTM
+                                                     ]
+                           }
+                       ]
+   }
+
+i_endbr64 :: X86Insn
+i_endbr64 = insn
+   { insnDesc        = "Terminate an indirect branch in 64-bit mode"
+   , insnMnemonic    = "ENDBR64"
+   , insnFlags       = []
+   , insnEncodings   = [ leg
+                           {    encOpcodeMap       = MapLegacy Map0F
+                           ,    encOpcode          = 0x1E
+                           ,    encOpcodeFullExt   = Just 0xFA
+                           ,    encMandatoryPrefix = Just LegacyPrefixF3
+                           ,    encProperties      = [ LongModeSupport
+                                                     , Extension CET
+                                                     ]
+                           }
+                       ]
+   }
+
+i_endbr32 :: X86Insn
+i_endbr32 = insn
+   { insnDesc        = "Terminate an indirect branch in 32-bit mode"
+   , insnMnemonic    = "ENDBR32"
+   , insnFlags       = []
+   , insnEncodings   = [ leg
+                           {    encOpcodeMap       = MapLegacy Map0F
+                           ,    encOpcode          = 0x1E
+                           ,    encOpcodeFullExt   = Just 0xFB
+                           ,    encMandatoryPrefix = Just LegacyPrefixF3
+                           ,    encProperties      = [ LegacyModeSupport
+                                                     , LongModeSupport
+                                                     , Extension CET
                                                      ]
                            }
                        ]

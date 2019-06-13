@@ -99,6 +99,7 @@ data X86Extension
    | FMA             -- ^ Fused multiply-add extension
    | RTM             -- ^ Transactional memory
    | AMD3DNow        -- ^ AMD 3DNow! instructions
+   | CET             -- ^ Control-flow enforcement technology
    deriving (Show,Eq,Enum,Bounded)
 
 -- | All the X86 extensions
