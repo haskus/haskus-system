@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -17,6 +18,7 @@ import qualified Haskus.Arch.X86_64.ISA.Encoding         as X86
 import qualified Haskus.Arch.X86_64.ISA.Register         as X86
 import qualified Haskus.Arch.X86_64.ISA.Operand          as X86
 import qualified Haskus.Arch.X86_64.ISA.Memory           as X86
+import qualified Haskus.Arch.X86_64.ISA.Size             as X86
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.Common.Register
@@ -27,7 +29,7 @@ import Haskus.Format.Binary.Bits
 import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
-import Haskus.Format.Text (textFormat, (%), shown, string)
+import Haskus.Format.Text (tshow)
 import qualified Haskus.Utils.List as List
 
 import qualified Haskus.Format.Text as Text
@@ -226,7 +228,7 @@ showEnc oc rv e = tr_ $ do
                      _           -> error "Invalid predicated value"
 
             showOpFam = \case
-               X86.T_Reg fam  -> showPredTable showReg (preReduce fam)
+               X86.T_Reg fam  -> showPredTable showRegFam (preReduce fam)
                X86.T_Mem fam  -> showPredTable showMemFam (preReduce fam)
                X86.T_Imm fam  -> showPredTable (toHtml . show) (preReduce fam)
                t              -> toHtml (show t)
@@ -246,14 +248,64 @@ showEnc oc rv e = tr_ $ do
          X86.S_OpcodeLow3  -> "Opcode [2:0]"
 
 showMemFam :: X86.X86MemFamT -> Html ()
-showMemFam (MemFam maddr ty msz) =
-   toHtml <| textFormat (shown % "@[" % string % "] {" % string % " bits}")
-      ty
-      (fromMaybe "?" (fmap show maddr))
-      (fromMaybe "?" (fmap show msz))
+showMemFam (MemFam maddr _ty msz) = do
+   -- toHtml (tshow ty) --TODO: show memory type?
+   -- "@"
+   fromMaybe "?" (fmap showAddrFam maddr)
+   " { "
+   fromMaybe "?" (fmap (toHtml . tshow) msz)
+   " bits }"
+
+showAddrFam :: X86.AddrFam -> Html ()
+showAddrFam X86.AddrFam{..} = do
+   forM_ addrFamSeg \seg -> do
+      showSegFam seg
+      ":"
+   "["
+   forM_ addrFamBase \r -> showReg r
+
+   forM_ addrFamIndex \ifam -> do
+      when (isJust addrFamBase) " + "
+      showRegFam ifam
+      forM_ addrFamIndexSize \sz -> do
+         "["
+         toHtml (tshow sz)
+         "]"
+
+   forM_ addrFamScale \case
+      X86.Scale1 -> pure ()
+      X86.Scale2 -> " * 2"
+      X86.Scale4 -> " * 4"
+      X86.Scale8 -> " * 8"
+
+   forM_ addrFamDisp \dsp -> do
+      when (isJust addrFamBase || isJust addrFamScale)
+         " + "
+      toHtml (tshow dsp)
+
+   forM_ addrFamDispSize \dsz -> do
+      when (isJust addrFamBase || isJust addrFamScale || isJust addrFamDisp)
+         " + "
+      "DISP"
+      toHtml (tshow (X86.sizeInBits dsz))
+   "]"
+
+   forM_ addrFamAlign \al -> do
+      " @ "
+      toHtml (tshow al)
+   
+
+
+-- | Show segment family
+showSegFam :: X86.SegFam -> Html ()
+showSegFam (X86.FixedSeg r)       = span_ (showReg r)
+showSegFam (X86.OverridableSeg r) = span_ [style_ "font-style: italic"] (showReg r)
+
+showReg :: X86.X86Reg -> Html ()
+showReg r = toHtml (X86.registerName r)
          
-showReg :: X86.X86RegFamT -> Html ()
-showReg r = case r of
+showRegFam :: X86.X86RegFamT -> Html ()
+showRegFam r = case r of
    RegFam (Singleton b)
           (Singleton i)
           (Singleton s)
