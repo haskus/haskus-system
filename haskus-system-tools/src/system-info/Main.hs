@@ -366,7 +366,7 @@ showRegs = do
             regs' = List.groupBy f regs
 
          ul_ $ forM_ regs' $ \rs -> li_ $
-            toHtml (concat (List.intersperse "," (fmap X86.registerName rs)))
+            toHtml (mconcat (List.intersperse "," (fmap X86.registerName rs)))
 
    showMode (LongMode Long64bitMode)
    showMode (LongMode CompatibilityMode)

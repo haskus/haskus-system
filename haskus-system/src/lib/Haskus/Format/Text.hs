@@ -16,6 +16,7 @@ module Haskus.Format.Text
    , putTextUtf8
    , getTextUtf8
    , getTextUtf8Nul
+   , tshow
    -- * IO
    , T.putStrLn
    )
@@ -66,3 +67,6 @@ getTextUtf8 sz = bufferDecodeUtf8 <$> getBuffer sz
 getTextUtf8Nul :: Get Text
 getTextUtf8Nul = bufferDecodeUtf8 <$> getBufferNul
 
+-- | Show as Text
+tshow :: Show a => a -> Text
+tshow = pack . show

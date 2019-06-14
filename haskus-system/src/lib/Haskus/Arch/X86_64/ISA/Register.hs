@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 -- | X86 registers
@@ -157,7 +158,8 @@ import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Utils.Solver
-import Haskus.Utils.List (intersperse)
+import qualified Haskus.Utils.List as List
+import Haskus.Format.Text (Text,tshow)
 
 import Data.Set as Set
 
@@ -821,7 +823,7 @@ pattern R_R15 = R_GPR 15 64
 ---------------------------------------------------------------------
 
 -- | Register names
-registerName :: X86Reg -> String
+registerName :: X86Reg -> Text
 registerName = \case
    R_AL          -> "al"
    R_BL          -> "bl"
@@ -891,14 +893,14 @@ registerName = \case
    R_R13D        -> "r13d"
    R_R14D        -> "r14d"
    R_R15D        -> "r15d"
-   R_ST w        -> "st" ++ show w
-   R_CR32 w      -> "cr" ++ show w
-   R_CR64 w      -> "cr" ++ show w
-   R_DR64 w      -> "dr" ++ show w
-   R_MMX w       -> "mm" ++ show w
-   R_XMM w       -> "xmm" ++ show w
-   R_YMM w       -> "ymm" ++ show w
-   R_ZMM w       -> "zmm" ++ show w
+   R_ST w        -> "st"  <> tshow w
+   R_CR32 w      -> "cr"  <> tshow w
+   R_CR64 w      -> "cr"  <> tshow w
+   R_DR64 w      -> "dr"  <> tshow w
+   R_MMX w       -> "mm"  <> tshow w
+   R_XMM w       -> "xmm" <> tshow w
+   R_YMM w       -> "ymm" <> tshow w
+   R_ZMM w       -> "zmm" <> tshow w
    R_CS          -> "cs"
    R_DS          -> "ds"
    R_ES          -> "es"
@@ -913,16 +915,16 @@ registerName = \case
    R_Flags64     -> "rflags"
    Reg b i s o t ->
       let n      = registerName (Reg b i s o FullReg)
-          s2 :: Word -> Word -> String
-          s2 x y = n ++ "[" ++ show x ++":"++show y ++"]"
-          sn :: [(Word,Word)] -> String
-          sn xs  = n ++ "[" ++ concat (intersperse "," (fmap (\(x,y) -> show x ++":"++show y) xs)) ++"]"
+          s2 :: Word -> Word -> Text
+          s2 x y = n <> "[" <> tshow x <>":"<>tshow y <>"]"
+          sn :: [(Word,Word)] -> Text
+          sn xs  = n <> "[" <> mconcat (List.intersperse "," (fmap (\(x,y) -> tshow x <>":"<>tshow y) xs)) <>"]"
       in case t of
          SubReg (SubLow c)  -> s2 c 0
          SubReg (SubHigh c) -> s2 (s-1) (s-1-c)
          SubReg (SubEven c) -> sn [(x+c-1,x) | x <- reverse [0,2*c..s-1]]
          SubReg (SubOdd c)  -> sn [(x+c-1,x) | x <- reverse [c,3*c..s-1]]
-         FullReg            -> "Unknown reg: "++show (b,i,s,o)
+         FullReg            -> "Unknown reg: "<>tshow (b,i,s,o)
 
 
 

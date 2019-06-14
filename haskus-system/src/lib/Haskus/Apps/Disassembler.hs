@@ -107,4 +107,4 @@ showAsmImm :: X86Imm -> String
 showAsmImm = show . immValue
 
 showAsmReg :: X86Reg -> String
-showAsmReg reg = registerName reg
+showAsmReg reg = Text.unpack (registerName reg)
