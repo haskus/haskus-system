@@ -71,6 +71,12 @@ instance (Ord p, Eq e, Eq i, Eq s, Eq p) => Predicated (ImmFam (NT p e) i s) whe
          |> (`applyP` reducePredicates oracle t)
          |> resultP
 
+   simplifyPredicates oracle (ImmFam s e v t) =
+      ImmFam (simplifyPredicates oracle s)
+             (simplifyPredicates oracle e)
+             (simplifyPredicates oracle v)
+             (simplifyPredicates oracle t)
+
    getTerminals (ImmFam ss es vs ts) =
       [ ImmFam s e v t | s <- getTerminals ss
                        , e <- getTerminals es

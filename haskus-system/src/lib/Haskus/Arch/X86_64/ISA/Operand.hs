@@ -170,6 +170,13 @@ instance Predicated (OperandFam (NT X86Pred X86Err)) where
                         |> (`applyP` reducePredicates oracle x)
                         |> resultP
 
+   simplifyPredicates oracle = \case
+      T_Pair x y   -> T_Pair (simplifyPredicates oracle x)
+                             (simplifyPredicates oracle y)
+      T_Mem x      -> T_Mem (simplifyPredicates oracle x)
+      T_Reg x      -> T_Reg (simplifyPredicates oracle x)
+      T_Imm x      -> T_Imm (simplifyPredicates oracle x)
+
    getTerminals = \case
       T_Pair xs ys  -> [ T_Pair x y   | x <- getTerminals xs
                                       , y <- getTerminals ys
@@ -235,6 +242,9 @@ instance Predicated (OperandSpec (NT X86Pred X86Err)) where
             MatchFail es    -> MatchFail es
             DontMatch b     -> DontMatch (OperandSpec m (liftTerminal b) s)
             Match b         -> Match (OperandSpec m b s)
+
+   simplifyPredicates oracle (OperandSpec m t s) =
+      OperandSpec m (simplifyPredicates oracle t) s
 
    getTerminals (OperandSpec m ts s) =
       [ OperandSpec m t s | os <- getTerminals ts

@@ -19,6 +19,7 @@ module Haskus.Arch.X86_64.ISA.Solver
    , pRegModRM
    , sRegModRM
    , pMode
+   , isModePredicate
    , pMode64bit
    , pCS_D
    , pLegacy8bitRegs
@@ -198,7 +199,11 @@ pMode64bit = pMode (LongMode Long64bitMode)
 -- | Exclusive mode predicate
 pMode :: X86Mode -> X86Constraint
 pMode = Predicate . ContextPred . Mode
-         
+
+-- | Check if a predicate is a Mode predicate
+isModePredicate :: X86Pred -> Bool
+isModePredicate (ContextPred (Mode _)) = True
+isModePredicate _ = False
 
 -- | CS.D flag
 pCS_D :: X86Constraint

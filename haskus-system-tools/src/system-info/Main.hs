@@ -6,6 +6,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main where
 
@@ -19,10 +23,13 @@ import qualified Haskus.Arch.X86_64.ISA.Register         as X86
 import qualified Haskus.Arch.X86_64.ISA.Operand          as X86
 import qualified Haskus.Arch.X86_64.ISA.Memory           as X86
 import qualified Haskus.Arch.X86_64.ISA.Size             as X86
+import qualified Haskus.Arch.X86_64.ISA.Solver           as X86
+import qualified Haskus.Arch.X86_64.ISA.Immediate        as X86
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.Common.Register
 import Haskus.Arch.Common.Memory
+import Haskus.Arch.Common.Immediate
 
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
@@ -230,7 +237,7 @@ showEnc oc rv e = tr_ $ do
             showOpFam = \case
                X86.T_Reg fam  -> showPredTable showRegFam (preReduce fam)
                X86.T_Mem fam  -> showPredTable showMemFam (preReduce fam)
-               X86.T_Imm fam  -> showPredTable (toHtml . show) (preReduce fam)
+               X86.T_Imm fam  -> showPredTable showImmFam (preReduce fam)
                t              -> toHtml (show t)
 
          showPredTable showOpFam (preReduce (X86.opFam o))
@@ -303,6 +310,12 @@ showSegFam (X86.OverridableSeg r) = span_ [style_ "font-style: italic"] (showReg
 
 showReg :: X86.X86Reg -> Html ()
 showReg r = toHtml (X86.registerName r)
+
+showImmFam :: X86.X86ImmFamT -> Html ()
+showImmFam i = toHtml case i of
+   ImmFam sz Nothing    Nothing _  -> tshow (X86.opSizeInBits sz) <> "-bit immediate"
+   ImmFam sz (Just sz2) Nothing _  -> tshow (X86.opSizeInBits sz) <> "-bit immediate (sign-extended to " <> tshow (X86.opSizeInBits sz2) <> "-bit)"
+   _ -> tshow i
          
 showRegFam :: X86.X86RegFamT -> Html ()
 showRegFam r = case r of
@@ -324,6 +337,12 @@ showRegFam r = case r of
           (Singleton 0)
           _
       -> toHtml ("Any " ++ show s ++ "-bit GPR")
+   RegFam (Singleton X86.Seg)
+          (Any)
+          (Singleton 16)
+          (Singleton 0)
+          _
+      -> "Any segment register"
    RegFam (Singleton X86.GPR)
           (NoneOf [4,5,6,7])
           (Singleton 8)
@@ -332,7 +351,7 @@ showRegFam r = case r of
       -> "Any legacy 8-bit GPR"
    r' -> toHtml (show r')
 
-showPredTable ::
+showPredTable :: forall a.
    ( Pred a ~ X86Pred
    , Eq (PredTerm a)
    , Ord (PredTerm a)
@@ -344,18 +363,51 @@ showPredTable showValue a =
    case createPredicateTable a (null . checkOracle False) True of
       Left r   -> showValue r
       Right [] -> toHtml ("Error: empty table! " ++ show a)
-      Right rs -> table_ $ do
-         let ps = List.sort (getPredicates a)
-         tr_ $ do
-            forM_ ps $ \p -> th_ $ toHtml (showPredicate p)
-            th_ "Value"
-         forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
-            forM_ ws $ \(oracle,v) -> tr_ $ do
-               forM_ ps $ \p -> case predState oracle p of
-                  UnsetPred -> td_ "0"
-                  SetPred   -> td_ "1"
-                  UndefPred -> td_ "X"
-               td_ $ showValue v
+      Right rs -> do
+         let modePreds = filter X86.isModePredicate (getPredicates a)
+         if not (null modePreds)
+            then do
+               let
+                  pickModes _  []     = []
+                  pickModes ms (x:xs) = (x,ms++xs) : pickModes (x:ms) xs
+               forM_ (pickModes [] modePreds) \(mode,nonModes) -> div_ do
+                  let oracle = makeOracle ((mode,SetPred) : fmap (,UnsetPred) nonModes)
+                  do
+                     case mode of
+                        ContextPred (Mode m) -> case m of
+                           LongMode x -> case x of
+                              Long64bitMode     -> "64-bit mode"
+                              CompatibilityMode -> "Compat mode"
+                           LegacyMode x -> case x of
+                              ProtectedMode     -> "Protected mode"
+                              Virtual8086Mode   -> "Virtual 8086 mode"
+                              RealMode          -> "Real mode"
+                        _ -> pure ()
+                     showPredTable showValue (simplifyPredicates oracle a)
+            else showPredicateTable @a showValue (getPredicates a) rs
+
+showPredicateTable :: forall a.
+   ( Pred a ~ X86Pred
+   , Ord (PredTerm a)
+   , Eq (PredTerm a)
+   , Predicated a
+   ) => (PredTerm a -> Html ())
+     -> [Pred a]
+     -> [(PredOracle (Pred a),PredTerm a)]
+     -> Html ()
+showPredicateTable showValue preds rs = table_ $ do
+   let ps = List.sort preds
+   tr_ $ do
+      forM_ ps $ \p -> th_ $ toHtml (showPredicate p)
+      th_ "Value"
+   forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
+      forM_ ws $ \(oracle,v) -> tr_ $ do
+         forM_ ps $ \p -> case predState oracle p of
+            UnsetPred -> td_ "0"
+            SetPred   -> td_ "1"
+            UndefPred -> td_ "X"
+         td_ $ showValue v
+
 
 
 showMaps :: Html ()

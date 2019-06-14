@@ -136,6 +136,13 @@ instance (Ord p, Eq e, Eq b, Eq p, Eq rt) => Predicated (RegFam (NT p e) b rt) w
          |> (`applyP` reducePredicates oracle t)
          |> resultP
 
+   simplifyPredicates oracle (RegFam b i s o t) =
+      RegFam (simplifyPredicates oracle b)
+             (simplifyPredicates oracle i)
+             (simplifyPredicates oracle s)
+             (simplifyPredicates oracle o)
+             (simplifyPredicates oracle t)
+
    getTerminals (RegFam bs is ss os ts) =
       [ RegFam b i s o t | b <- getTerminals bs
                          , i <- getTerminals is
