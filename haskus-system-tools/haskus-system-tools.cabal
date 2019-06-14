@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3c02c4ce0f70b653dcba3f8c79a700cc9e6f1567847a9f97b57466a8ee7e3511
+-- hash: 1569d6864f5174c09a726a841ff33be49c1aa2c93c7105de49cad27a018e03bc
 
 name:           haskus-system-tools
 version:        0.8
@@ -34,8 +34,6 @@ executable haskus-disassembler
   ghc-options: -Wall -O2 -threaded -main-is Main
   build-depends:
       base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , happstack-server
@@ -60,8 +58,6 @@ executable haskus-elf
   ghc-options: -Wall -O2 -threaded -main-is Main
   build-depends:
       base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , formatting
@@ -88,8 +84,6 @@ executable haskus-gunzip
   ghc-options: -Wall -O2 -threaded -main-is Main
   build-depends:
       base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , filepath
@@ -115,8 +109,6 @@ executable haskus-huffman
   ghc-options: -Wall -O2 -threaded -main-is Main
   build-depends:
       base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , happstack-server
@@ -141,8 +133,6 @@ executable haskus-keys
   ghc-options: -Wall -O2 -threaded -main-is Main
   build-depends:
       base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , happstack-server
@@ -168,8 +158,6 @@ executable haskus-system-info
   build-depends:
       HTTP
     , base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , happstack-server
@@ -195,8 +183,6 @@ executable haskus-udev
   ghc-options: -Wall -O2 -threaded -main-is Main
   build-depends:
       base >=4.8 && <5
-    , blaze-html
-    , blaze-markup
     , bytestring
     , containers
     , happstack-server

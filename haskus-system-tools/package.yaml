@@ -26,8 +26,6 @@ dependencies:
 - optparse-applicative
 - happstack-server
 - lucid
-- blaze-markup
-- blaze-html
 - containers
 - bytestring
 - vector

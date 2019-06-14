@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Main where
 
@@ -29,6 +30,7 @@ import Haskus.Utils.Flow
 import Haskus.Format.Text (textFormat, (%), shown, string)
 import qualified Haskus.Utils.List as List
 
+import qualified Haskus.Format.Text as Text
 import Paths_haskus_system
 import Data.Version
 import Control.Monad
@@ -43,9 +45,8 @@ import qualified Data.Map    as Map
 import qualified Data.Set    as Set
 import qualified Data.Vector as V
 
-import Text.Blaze.Html5 ((!), toHtml, docTypeHtml, Html, toValue)
-import qualified Text.Blaze.Html5.Attributes as A
-import qualified Text.Blaze.Html5 as H
+import Haskus.Web.Html
+import Haskus.Web.Page
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 
@@ -61,85 +62,85 @@ server :: Conf -> IO ()
 server conf = do
    putStrLn (printf "Starting Web server at localhost:%d" (port conf))
    let
-      defaultRep t = ok . toResponse . appTemplate t
+      defaultRep t = ok . toResponse . renderBS . tmplPage t
    simpleHTTP conf $ msum
       [ dir "css"  $ dir "style.css" $ ok css
       , dir "all"  $ nullDir >> defaultRep "List all" showAll
       , dir "maps" $ nullDir >> defaultRep "Maps"     showMaps
       , dir "insn" $ path $ \mnemo -> defaultRep mnemo (showInsnByMnemo mnemo)
       , dir "regs" $ nullDir >> defaultRep "Registers" showRegs
-      , nullDir >> (ok . toResponse . appTemplate "System info" $ showWelcome)
+      , nullDir >> defaultRep "System info" showWelcome
       ]
 
 css :: Response
 css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedBSFile "src/system-info/style.css"))
 
--- | Template of all pages
-appTemplate :: String -> Html -> Html
-appTemplate title bdy = docTypeHtml $ do
-   H.head $ do
-      H.title "haskus-system info"
-      H.meta ! A.httpEquiv "Content-Type"
-             ! A.content   "text/html;charset=utf-8"
-      H.link ! A.rel       "stylesheet"
-             ! A.type_     "text/css"
-             ! A.href      "/css/style.css"
-   H.body $ do
-      H.div (toHtml $ "haskus-system " ++ showVersion version ++ " - " ++ title)
-         ! A.class_ "headtitle"
-      bdy
+tmplPage :: String -> Html () -> Html ()
+tmplPage title bdy = htmlPage opts bdy
+   where
+      opts = HtmlPageOpts
+         { pageTitle      = toHtml <| "haskus-system " <> showVersion version <> (if null title then "" else " - " <> title)
+         , pageIsWebApp   = False
+         , pageOpenGraph  = Nothing
+         , pageThemeColor = Nothing
+         , pageCss        = [ "/css/style.css" ]
+         , pageJquery     = True
+         , pageScripts    = []
+         , pageManifest   = Nothing
+         , pageIcon       = Nothing
+         , pageCustomHead = mempty
+         }
 
 -- | Welcoming screen
-showWelcome :: Html
+showWelcome :: Html ()
 showWelcome = do
-   H.h2 "X86 Instructions"
-   H.ul $ do
-      H.li $ H.a "List all" ! A.href "/all"
-      H.li $ H.a "Tables"   ! A.href "/maps"
-   H.h2 "X86 Registers"
-   H.ul $ do
-      H.li $ H.a "List all" ! A.href "/regs"
+   h2_ "X86 Instructions"
+   ul_ $ do
+      li_ $ a_ [href_ "/all" ] "List all"
+      li_ $ a_ [href_ "/maps"] "Tables"
+   h2_ "X86 Registers"
+   ul_ $ do
+      li_ $ a_ [href_ "/regs"] "List all"
 
-showInsnByMnemo :: String -> Html
+showInsnByMnemo :: String -> Html ()
 showInsnByMnemo mnemo = do
    let is = filter (\i -> X86.insnMnemonic i == mnemo) X86.instructions
    forM_ is showInsn
 
 -- | List all instructions
-showAll :: Html
+showAll :: Html ()
 showAll = do
    let is = List.nub . fmap X86.insnMnemonic $ X86.instructions
-   H.ul $ forM_ is $ \i ->
-      H.li $ showMnemo i
+   ul_ $ forM_ is $ \i ->
+      li_ $ showMnemo i
 
 -- | Show an instruction
-showInsn :: X86.X86Insn -> Html
+showInsn :: X86.X86Insn -> Html ()
 showInsn i = do
-   H.h2 $ toHtml $ X86.insnMnemonic i ++ " - " ++ X86.insnDesc i
-   H.h3 "Properties"
-   H.ul $ forM_ (X86.insnProperties i) $ \p -> H.li (toHtml (show p))
-   H.h3 "Flags"
-   H.ul $ forM_ (X86.insnFlags i) $ \f -> H.li (toHtml (show f))
-   H.h3 "Encodings"
+   h2_ $ toHtml $ X86.insnMnemonic i ++ " - " ++ X86.insnDesc i
+   h3_ "Properties"
+   ul_ $ forM_ (X86.insnProperties i) $ \p -> li_ (toHtml (show p))
+   h3_ "Flags"
+   ul_ $ forM_ (X86.insnFlags i) $ \f -> li_ (toHtml (show f))
+   h3_ "Encodings"
    forM_ (X86.insnEncodings i) $ \e -> do
          case X86.encOpcodeEncoding e of
-            X86.EncLegacy -> H.h4 "Legacy encoding"
-            X86.EncVEX    -> H.h4 "VEX encoding"
-         H.table ( do
-            H.tr $ do
-               H.th "Mandatory prefix"
-               H.th "Opcode map"
-               H.th "Opcode"
-               H.th "Properties"
-               H.th "Operands"
+            X86.EncLegacy -> h4_ "Legacy encoding"
+            X86.EncVEX    -> h4_ "VEX encoding"
+         table_ [class_ "insn_table"] do
+            tr_ $ do
+               th_ "Mandatory prefix"
+               th_ "Opcode map"
+               th_ "Opcode"
+               th_ "Properties"
+               th_ "Operands"
                forM_ [1.. length(X86.encOperands e)] $ \x ->
-                  H.th (toHtml (show x))
+                  th_ (toHtml (show x))
             forM_ (X86.encGenerateOpcodes e) $ \x -> do
                let
                   rev = fromMaybe False (testBit x <$> X86.encReversableBit e)
                showEnc x rev e
-            ) ! A.class_ "insn_table"
-   H.hr
+   hr_ []
 
 
 myShowHex :: (Show a,Integral a) => Bool -> a -> String
@@ -147,7 +148,7 @@ myShowHex usePad x = pad ++ fmap toUpper (showHex x "")
    where
       pad = if usePad && x <= 0xF then "0" else ""
 
-showPredicate :: X86Pred -> Html
+showPredicate :: X86Pred -> Html ()
 showPredicate x = toHtml $ case x of
    ContextPred (Mode m)         -> modeName m
    ContextPred CS_D             -> "CS.D"
@@ -168,14 +169,14 @@ showPredicate x = toHtml $ case x of
    EncodingPred PEvexEncoding   -> "EVEX encoding"
    EncodingPred PMvexEncoding   -> "MVEX encoding"
 
-showEnc :: Word8 -> Bool -> X86.Encoding -> Html
-showEnc oc rv e = H.tr $ do
-   let rowsp3 x = x ! A.rowspan (toValue (3 :: Int))
+showEnc :: Word8 -> Bool -> X86.Encoding -> Html ()
+showEnc oc rv e = tr_ $ do
+   let rowsp3 x = x `with` [rowspan_ "3"]
    rowsp3 $ case X86.encMandatoryPrefix e of
-      Nothing -> H.td " "
-      Just p  -> H.td (toHtml (show p))
-   rowsp3 $ H.td (toHtml (show (X86.encOpcodeMap e)))
-   rowsp3 $ H.td $ do
+      Nothing -> td_ " "
+      Just p  -> td_ (toHtml (show p))
+   rowsp3 $ td_ (toHtml (show (X86.encOpcodeMap e)))
+   rowsp3 $ td_ $ do
       toHtml (myShowHex True oc)
       case X86.encOpcodeFullExt e of
          Nothing -> return ()
@@ -192,16 +193,16 @@ showEnc oc rv e = H.tr $ do
          Just True  -> " W1"
          Just False -> " W0"
 
-   rowsp3 $ H.td (H.ul $ forM_ (X86.encProperties e) $ \p -> H.li (toHtml (show p)))
-      ! A.style "text-align:left; padding-right:1em;"
+   rowsp3 $ td_ [ style_ "text-align:left; padding-right:1em;" ] do
+      ul_ $ forM_ (X86.encProperties e) $ \p -> li_ (toHtml (show p))
    let 
       ops = X86.encOperands e
       rev = if rv then reverse else id
-   H.th "Mode"
-   forM_ ops $ \o -> H.td (toHtml (show (X86.opMode o)))
-   H.tr $ do
-      H.th "Type"
-      forM_ (rev ops) $ \o -> H.td $ do
+   th_ "Mode"
+   forM_ ops $ \o -> td_ (toHtml (show (X86.opMode o)))
+   tr_ $ do
+      th_ "Type"
+      forM_ (rev ops) $ \o -> td_ $ do
          let
             oracle :: PredOracle X86Pred
             oracle = makeOracle
@@ -232,9 +233,9 @@ showEnc oc rv e = H.tr $ do
 
          showPredTable showOpFam (preReduce (X86.opFam o))
 
-   H.tr $ do
-      H.th "Encoding"
-      forM_ (rev ops) $ \o -> H.td <| case X86.opStore o of
+   tr_ $ do
+      th_ "Encoding"
+      forM_ (rev ops) $ \o -> td_ <| case X86.opStore o of
          X86.S_RM          -> "ModRM.rm"
          X86.S_Reg         -> "ModRM.reg"
          X86.S_Imm         -> "Immediate"
@@ -244,17 +245,14 @@ showEnc oc rv e = H.tr $ do
          X86.S_Vvvv        -> "VEX.vvvv"
          X86.S_OpcodeLow3  -> "Opcode [2:0]"
 
-showMemFam :: X86.X86MemFamT -> Html
+showMemFam :: X86.X86MemFamT -> Html ()
 showMemFam (MemFam maddr ty msz) =
    toHtml <| textFormat (shown % "@[" % string % "] {" % string % " bits}")
       ty
       (fromMaybe "?" (fmap show maddr))
       (fromMaybe "?" (fmap show msz))
          
-      
-   
-
-showReg :: X86.X86RegFamT -> Html
+showReg :: X86.X86RegFamT -> Html ()
 showReg r = case r of
    RegFam (Singleton b)
           (Singleton i)
@@ -289,84 +287,85 @@ showPredTable ::
    , Show a
    , Eq a
    , Predicated a
-   ) => (PredTerm a -> Html) -> a -> Html
+   ) => (PredTerm a -> Html ()) -> a -> Html ()
 showPredTable showValue a =
    case createPredicateTable a (null . checkOracle False) True of
       Left r   -> showValue r
       Right [] -> toHtml ("Error: empty table! " ++ show a)
-      Right rs -> H.table $ do
+      Right rs -> table_ $ do
          let ps = List.sort (getPredicates a)
-         H.tr $ do
-            forM_ ps $ \p -> H.th $ toHtml (showPredicate p)
-            H.th "Value"
+         tr_ $ do
+            forM_ ps $ \p -> th_ $ toHtml (showPredicate p)
+            th_ "Value"
          forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
-            forM_ ws $ \(oracle,v) -> H.tr $ do
+            forM_ ws $ \(oracle,v) -> tr_ $ do
                forM_ ps $ \p -> case predState oracle p of
-                  UnsetPred -> H.td "0"
-                  SetPred   -> H.td "1"
-                  UndefPred -> H.td "X"
-               H.td $ showValue v
+                  UnsetPred -> td_ "0"
+                  SetPred   -> td_ "1"
+                  UndefPred -> td_ "X"
+               td_ $ showValue v
 
 
-showMaps :: Html
+showMaps :: Html ()
 showMaps = do
-   H.h1 "Legacy encodings"
+   h1_ "Legacy encodings"
    showOpcodeMap "Primary opcode map"   (X86.MapLegacy X86.MapPrimary)
    showOpcodeMap "Secondary opcode map" (X86.MapLegacy X86.Map0F)
    showOpcodeMap "0F38 opcode map"      (X86.MapLegacy X86.Map0F38)
    showOpcodeMap "0F3A opcode map"      (X86.MapLegacy X86.Map0F3A)
    showOpcodeMap "3DNow! opcode map"    (X86.MapLegacy X86.Map3DNow)
 
-   H.h1 "VEX encodings"
+   h1_ "VEX encodings"
    showOpcodeMap "VEX 1 opcode map" (X86.MapVex 1)
    showOpcodeMap "VEX 2 opcode map" (X86.MapVex 2)
    showOpcodeMap "VEX 3 opcode map" (X86.MapVex 3)
 
-showOpcodeMap :: String -> X86.OpcodeMap -> Html
+showOpcodeMap :: String -> X86.OpcodeMap -> Html ()
 showOpcodeMap s ocm = do
    case Map.lookup ocm X86.opcodeMaps of
       Just m -> do
-         H.h2 (toHtml s)
+         h2_ (toHtml s)
          showMap m
       Nothing -> return ()
 
 
-showMap :: V.Vector [X86.MapEntry] -> Html
-showMap v = (H.table $ do
-   H.tr $ do
-      H.th "Nibble"
-      forM_ [0..15] $ \x -> H.th (toHtml (myShowHex False (x :: Int)))
-   forM_ [0..15] $ \l -> H.tr $ do
-      H.th (toHtml (myShowHex False l))
-      forM_ [0..15] $ \h -> do
-         let is = fmap X86.entryInsn $ v V.! (l `shiftL` 4 + h)
-         H.td $ sequence_
-            $ List.intersperse ", "
-            $ fmap showMnemo 
-            $ List.nub
-            $ fmap X86.insnMnemonic is
-   ) ! A.class_ "opcode_map"
+showMap :: V.Vector [X86.MapEntry] -> Html ()
+showMap v =
+   table_ [class_ "opcode_map"] do
+      tr_ $ do
+         th_ "Nibble"
+         forM_ [0..15] $ \x -> th_ (toHtml (myShowHex False (x :: Int)))
+      forM_ [0..15] $ \l -> tr_ $ do
+         th_ (toHtml (myShowHex False l))
+         forM_ [0..15] $ \h -> do
+            let is = fmap X86.entryInsn $ v V.! (l `shiftL` 4 + h)
+            td_ $ sequence_
+               $ List.intersperse ", "
+               $ fmap showMnemo 
+               $ List.nub
+               $ fmap X86.insnMnemonic is
 
-showMnemo :: String -> Html
+showMnemo :: String -> Html ()
 showMnemo mnemo = do
-   H.a (toHtml mnemo)
-      ! A.href (toValue ("/insn/" ++ urlEncode mnemo))
+   a_ [ href_ <| "/insn/" <> Text.pack (urlEncode mnemo)
+      ] (toHtml mnemo)
 
 -- | Show registers
-showRegs :: Html
+showRegs :: Html ()
 showRegs = do
 
-   H.h1 "Registers"
+   h1_ "Registers"
 
    let
+      showMode :: X86Mode -> Html ()
       showMode mode = do
-         H.h2 (toHtml (show mode))
+         h2_ (toHtml (show mode))
          let
             regs  = Set.toList $ X86.getModeRegisters mode
             f x y = registerBank x == registerBank y
             regs' = List.groupBy f regs
 
-         H.ul $ forM_ regs' $ \rs -> H.li $
+         ul_ $ forM_ regs' $ \rs -> li_ $
             toHtml (concat (List.intersperse "," (fmap X86.registerName rs)))
 
    showMode (LongMode Long64bitMode)

@@ -38,6 +38,7 @@ h1 {
 .insn_table td, th{
    border: 1px solid black;
    text-align: center;
+   font-size: 0.8em;
 }
 
 .opcode_map {
@@ -49,5 +50,6 @@ h1 {
    border: 1px solid black;
    text-align: center;
    min-width: 5em;
+   font-size: 0.6em;
 }
 
