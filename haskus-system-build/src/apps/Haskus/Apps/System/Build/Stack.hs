@@ -9,7 +9,6 @@ where
 
 import System.Process
 import System.FilePath
-import Data.List
 
 import Haskus.Apps.System.Build.Utils
 import Haskus.Utils.Flow
