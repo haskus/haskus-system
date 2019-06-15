@@ -53,3 +53,7 @@ h1 {
    font-size: 0.6em;
 }
 
+.predicatetable {
+   border-collapse: collapse;
+   margin:auto;
+}

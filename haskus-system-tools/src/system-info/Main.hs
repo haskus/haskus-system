@@ -258,7 +258,7 @@ showMemFam :: X86.X86MemFamT -> Html ()
 showMemFam (MemFam maddr _ty msz) = do
    -- toHtml (tshow ty) --TODO: show memory type?
    -- "@"
-   fromMaybe "?" (fmap showAddrFam maddr)
+   fromMaybe "Memory" (fmap showAddrFam maddr)
    " { "
    fromMaybe "?" (fmap (toHtml . tshow) msz)
    " bits }"
@@ -370,20 +370,27 @@ showPredTable showValue a =
                let
                   pickModes _  []     = []
                   pickModes ms (x:xs) = (x,ms++xs) : pickModes (x:ms) xs
-               forM_ (pickModes [] modePreds) \(mode,nonModes) -> div_ do
-                  let oracle = makeOracle ((mode,SetPred) : fmap (,UnsetPred) nonModes)
-                  do
-                     case mode of
-                        ContextPred (Mode m) -> case m of
-                           LongMode x -> case x of
-                              Long64bitMode     -> "64-bit mode"
-                              CompatibilityMode -> "Compat mode"
-                           LegacyMode x -> case x of
-                              ProtectedMode     -> "Protected mode"
-                              Virtual8086Mode   -> "Virtual 8086 mode"
-                              RealMode          -> "Real mode"
-                        _ -> pure ()
-                     showPredTable showValue (simplifyPredicates oracle a)
+                  -- simplified predicated value for each mode
+                  modeValues = [ (mode,value)
+                               | (mode,nonModes) <- pickModes [] modePreds
+                               , let oracle = makeOracle ((mode,SetPred) : fmap (,UnsetPred) nonModes)
+                               , let value = simplifyPredicates oracle a
+                               ]
+                  -- group modes having the same predicated value
+                  groupedModes = List.groupOn snd modeValues
+                                 ||> \x -> (fmap fst x, snd (head x))
+               forM_ groupedModes \(modes,val) -> div_ do
+                  intersperseM_ " / " modes \mode -> case mode of
+                     ContextPred (Mode m) -> case m of
+                        LongMode x -> case x of
+                           Long64bitMode     -> "64-bit mode"
+                           CompatibilityMode -> "Compat mode"
+                        LegacyMode x -> case x of
+                           ProtectedMode     -> "Protected mode"
+                           Virtual8086Mode   -> "Virtual 8086 mode"
+                           RealMode          -> "Real mode"
+                     _ -> pure ()
+                  showPredTable showValue val
             else showPredicateTable @a showValue (getPredicates a) rs
 
 showPredicateTable :: forall a.
@@ -395,18 +402,19 @@ showPredicateTable :: forall a.
      -> [Pred a]
      -> [(PredOracle (Pred a),PredTerm a)]
      -> Html ()
-showPredicateTable showValue preds rs = table_ $ do
-   let ps = List.sort preds
-   tr_ $ do
-      forM_ ps $ \p -> th_ $ toHtml (showPredicate p)
-      th_ "Value"
-   forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
-      forM_ ws $ \(oracle,v) -> tr_ $ do
-         forM_ ps $ \p -> case predState oracle p of
-            UnsetPred -> td_ "0"
-            SetPred   -> td_ "1"
-            UndefPred -> td_ "X"
-         td_ $ showValue v
+showPredicateTable showValue preds rs =
+   table_ [class_ "predicatetable"] do
+      let ps = List.sort preds
+      tr_ $ do
+         forM_ ps $ \p -> th_ $ toHtml (showPredicate p)
+         th_ "Value"
+      forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
+         forM_ ws $ \(oracle,v) -> tr_ $ do
+            forM_ ps $ \p -> case predState oracle p of
+               UnsetPred -> td_ "0"
+               SetPred   -> td_ "1"
+               UndefPred -> td_ "X"
+            td_ $ showValue v
 
 
 
