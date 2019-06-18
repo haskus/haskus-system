@@ -53,8 +53,8 @@ import Haskus.Format.Binary.Bits
 import Haskus.Format.Binary.Bits.Put
 import Haskus.Format.Binary.Bits.Get as BitGet
 import Haskus.Format.Binary.Bits.Order
-import Haskus.Format.Text (Text)
-import qualified Haskus.Format.Text as Text
+import Haskus.Utils.Text (Text)
+import qualified Haskus.Utils.Text as Text
 
 -- | Priority (number of occurences)
 type Priority = Word64

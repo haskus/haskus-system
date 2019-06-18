@@ -159,7 +159,7 @@ import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Utils.Solver
 import qualified Haskus.Utils.List as List
-import Haskus.Format.Text (Text,tshow)
+import Haskus.Utils.Text (Text,tshow)
 
 import Data.Set as Set
 

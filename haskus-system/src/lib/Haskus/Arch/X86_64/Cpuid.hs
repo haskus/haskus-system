@@ -41,7 +41,7 @@ import Haskus.Format.Binary.Union
 import Haskus.Format.Binary.Vector as V
 import Haskus.Format.Binary.Bits
 import Haskus.Format.String
-import Haskus.Format.Text as Text
+import Haskus.Utils.Text as Text
 import Haskus.Utils.Tuple (fromTuple4)
 import Haskus.Utils.Types hiding (Union)
 

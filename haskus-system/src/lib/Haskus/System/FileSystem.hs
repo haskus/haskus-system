@@ -26,7 +26,7 @@ import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.System.Sys
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.List
-import Haskus.Format.Text
+import Haskus.Utils.Text
 
 -- | Open at
 withOpenAt :: forall xs zs m a.

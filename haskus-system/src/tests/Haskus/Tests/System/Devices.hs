@@ -7,7 +7,7 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 import Test.QuickCheck.Monadic
 
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 import Haskus.System.Devices
 
 import Data.Maybe

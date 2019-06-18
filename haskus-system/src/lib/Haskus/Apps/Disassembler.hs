@@ -7,8 +7,8 @@ where
 
 import Prelude hiding (replicate,length)
 
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text)
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (Text)
 import Haskus.Format.Binary.Buffer
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size

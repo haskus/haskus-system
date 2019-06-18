@@ -21,7 +21,7 @@ import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Put
 import Haskus.Format.Binary.Endianness
 import Haskus.Utils.Flow (when)
-import Haskus.Format.Text (textFormat,hex,(%),unpack)
+import Haskus.Utils.Text (textFormat,hex,(%),unpack)
 
 -- | Pre-header
 data PreHeader = PreHeader

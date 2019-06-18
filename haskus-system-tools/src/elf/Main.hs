@@ -30,8 +30,8 @@ import Haskus.Arch.X86_64.ISA.Operand
 import Haskus.Arch.X86_64.Disassembler
 
 import Haskus.Format.Binary.Buffer
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text,textFormat,int,stext,hex,(%))
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (Text,textFormat,int,stext,hex,(%))
 import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word

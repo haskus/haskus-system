@@ -138,7 +138,6 @@ library
     Haskus.System.PCI.Types
 
     Haskus.Format.CPIO
-    Haskus.Format.Text
     Haskus.Format.String
 
     Haskus.Format.Elf
@@ -183,6 +182,7 @@ library
       ,  haskus-utils-types        >= 1.3
       ,  haskus-utils-variant      >= 2.4
       ,  haskus-binary             >= 1.1
+      ,  haskus-utils-compat
       ,  containers                >= 0.5
       ,  stm                       >= 2.4
       ,  cereal                    >= 0.5

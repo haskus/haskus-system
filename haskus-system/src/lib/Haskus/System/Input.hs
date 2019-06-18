@@ -40,7 +40,7 @@ import Haskus.System.Linux.Time (TimeVal(..))
 import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.Word
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.List (isPrefixOf)
 import Haskus.Utils.Maybe (mapMaybe)
 import Haskus.Utils.STM

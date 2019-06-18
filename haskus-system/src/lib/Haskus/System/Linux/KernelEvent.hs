@@ -10,8 +10,8 @@ module Haskus.System.Linux.KernelEvent
 where
 
 import Haskus.Format.Binary.Buffer
-import Haskus.Format.Text (Text)
-import qualified Haskus.Format.Text as Text
+import Haskus.Utils.Text (Text)
+import qualified Haskus.Utils.Text as Text
 
 import Data.Map (Map)
 import qualified Data.Map as Map

@@ -36,10 +36,10 @@ import Haskus.Format.Binary.Bits
 import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
-import Haskus.Format.Text (tshow)
+import Haskus.Utils.Text (tshow)
 import qualified Haskus.Utils.List as List
 
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 import Paths_haskus_system
 import Data.Version
 import Control.Monad

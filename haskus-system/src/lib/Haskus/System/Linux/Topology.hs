@@ -29,8 +29,8 @@ import Data.Void
 import Haskus.Format.Binary.Buffer (bufferReadFile)
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text)
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (Text)
 import Haskus.Utils.List (isPrefixOf,stripPrefix)
 import Haskus.Utils.Maybe (fromJust,mapMaybe)
 import Haskus.Utils.Flow

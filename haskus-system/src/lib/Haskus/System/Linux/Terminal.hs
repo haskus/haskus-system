@@ -17,7 +17,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.System.Linux.Handle
 import Haskus.Utils.Flow
-import Haskus.Format.Text
+import Haskus.Utils.Text
 import Haskus.Format.String
 import Haskus.Format.Binary.Buffer
 

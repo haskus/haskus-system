@@ -21,7 +21,7 @@ import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (rasterizeDiagram,mkWidth)
 import Haskus.Utils.Maybe
-import Haskus.Format.Text ((%),left,center,stext,text,hex,textFormat,char)
+import Haskus.Utils.Text ((%),left,center,stext,text,hex,textFormat,char)
 import Formatting ((%.))
 import qualified Haskus.Utils.Map as Map
 

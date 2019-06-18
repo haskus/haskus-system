@@ -2,8 +2,8 @@
 
 import Haskus.System
 import Haskus.Format.Binary.Word
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text ((%),shown,textFormat)
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text ((%),shown,textFormat)
 import Haskus.Format.Elf
 import Haskus.Format.Elf.Symbol
 import Haskus.Utils.Maybe

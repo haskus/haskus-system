@@ -38,7 +38,7 @@ import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Storable
-import Haskus.Format.Text
+import Haskus.Utils.Text
 import Haskus.Format.String (withCStringLen)
 
 import Foreign.Ptr

@@ -56,8 +56,8 @@ import Haskus.Utils.Monad
 import Haskus.Utils.STM
 import Haskus.Utils.STM.Future
 import Haskus.Utils.Flow
-import Haskus.Format.Text ((%),stext, textFormat,Text,pack,shown)
-import qualified Haskus.Format.Text as Text
+import Haskus.Utils.Text ((%),stext, textFormat,Text,pack,shown)
+import qualified Haskus.Utils.Text as Text
 
 ------------------------------------------------
 -- Sys monad

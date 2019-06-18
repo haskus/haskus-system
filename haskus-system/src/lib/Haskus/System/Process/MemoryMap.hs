@@ -9,7 +9,7 @@ where
 import Haskus.System.Linux.Process.MemoryMap
 import Haskus.System.Terminal
 import Haskus.System.Sys
-import Haskus.Format.Text
+import Haskus.Utils.Text
 import Haskus.Utils.Flow
 
 showProcessMemoryMap :: Terminal -> [MemoryMapEntry] -> Sys ()

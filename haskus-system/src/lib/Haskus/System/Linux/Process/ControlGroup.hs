@@ -14,9 +14,9 @@ import Text.Megaparsec.Char.Lexer hiding (space)
 import Data.Void
 
 import Haskus.Format.Binary.Buffer (bufferReadFile)
-import Haskus.Format.Text (Text)
+import Haskus.Utils.Text (Text)
 import Haskus.Utils.Flow
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 
 type Parser = Parsec Void Text
 

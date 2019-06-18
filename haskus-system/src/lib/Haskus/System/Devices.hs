@@ -60,8 +60,8 @@ import Prelude hiding (lookup)
 
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
-import Haskus.Format.Text (Text)
-import qualified Haskus.Format.Text as Text
+import Haskus.Utils.Text (Text)
+import qualified Haskus.Utils.Text as Text
 import Haskus.System.Linux.Error
 import Haskus.System.Linux.Devices
 import Haskus.System.Linux.Handle
@@ -76,7 +76,7 @@ import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
 import Haskus.Utils.List
-import Haskus.Format.Text (textFormat,string,shown,(%))
+import Haskus.Utils.Text (textFormat,string,shown,(%))
 
 import Control.Arrow (second)
 import qualified Data.Map as Map

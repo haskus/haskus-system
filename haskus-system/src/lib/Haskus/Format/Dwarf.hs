@@ -79,8 +79,8 @@ where
 
 import Data.Tree (Tree(..))
 
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text)
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (Text)
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Get
 import Haskus.Format.Binary.Put

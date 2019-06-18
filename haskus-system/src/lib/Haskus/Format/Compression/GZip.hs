@@ -21,9 +21,9 @@ import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text,getTextUtf8Nul,unpack)
-import Haskus.Format.Text (textFormat,hex,(%))
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (Text,getTextUtf8Nul,unpack)
+import Haskus.Utils.Text (textFormat,hex,(%))
 import Haskus.Utils.Flow (when)
 
 -- | Member file

@@ -8,7 +8,7 @@ import Haskus.Format.CPIO
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Put
 import Haskus.Format.Binary.BitSet as BitSet
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 import Haskus.System.Linux.FileSystem
 import Haskus.Utils.Flow
 

@@ -24,7 +24,7 @@ import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.STM
 import Haskus.Utils.Maybe
 import Haskus.Format.String
-import Haskus.Format.Text (textFormat,(%),shown)
+import Haskus.Utils.Text (textFormat,(%),shown)
 import qualified Haskus.Utils.Map as Map
 
 import Data.Char

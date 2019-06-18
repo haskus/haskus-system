@@ -57,8 +57,8 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Control.Arrow (second)
 
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (Text)
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (Text)
 import Haskus.Format.Binary.Buffer
 import Foreign.Ptr
 import Haskus.Format.Binary.Word

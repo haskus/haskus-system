@@ -3,7 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 
 import Haskus.System
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Maybe
 
 import qualified Haskus.System.Linux.Internals.Sound as Snd

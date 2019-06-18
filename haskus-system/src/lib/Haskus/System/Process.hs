@@ -13,7 +13,7 @@ where
 import Haskus.System.Sys
 import Haskus.System.Linux.Handle
 import Haskus.Utils.Flow
-import Haskus.Format.Text (Text)
+import Haskus.Utils.Text (Text)
 
 import System.Posix.Types (Fd(..))
 import qualified Control.Concurrent as CC

@@ -29,8 +29,8 @@ import Haskus.System.Process
 import Haskus.System.Event
 import Haskus.Format.Binary.BitSet (BitOffset(..), BitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import qualified Haskus.Format.Text as Text
-import Haskus.Format.Text (textFormat,shown,(%))
+import qualified Haskus.Utils.Text as Text
+import Haskus.Utils.Text (textFormat,shown,(%))
 import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow

@@ -7,7 +7,7 @@ import Haskus.Utils.List (isSuffixOf)
 import Haskus.Utils.Flow (forM_,when)
 import qualified Haskus.Format.Compression.GZip as GZip
 import Haskus.Format.Binary.Buffer
-import qualified Haskus.Format.Text as Text
+import qualified Haskus.Utils.Text as Text
 
 main :: IO ()
 main = do
