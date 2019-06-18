@@ -16,7 +16,9 @@ module Haskus.Arch.X86_64.ISA.Solver
    , makeOracleX86
    , checkOracle
    , pPrefix
+   , pNotPrefix
    , sPrefix
+   , sPrefixDefault
    , pRegModRM
    , sRegModRM
    , pMode
@@ -138,10 +140,10 @@ oracleImplications =
 
    , -- W doesn't make sense in real-mode and virtual 8086 mode
       ( [ (PrefixPred PrefixW                             , SetPred)]
-      , [ (ContextPred (Mode (LegacyMode RealMode))       , InvalidPred)]
+      , [ (ContextPred (Mode (LegacyMode RealMode))       , UnsetPred)]
       )
    ,  ( [ (PrefixPred PrefixW                             , SetPred)]
-      , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), InvalidPred)]
+      , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), UnsetPred)]
       )
    ,  ( [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
       , [ (PrefixPred PrefixW                             , InvalidPred)]
@@ -152,10 +154,10 @@ oracleImplications =
 
    , -- L doesn't make sense in real-mode and virtual 8086 mode
       ( [ (PrefixPred PrefixL                             , SetPred)]
-      , [ (ContextPred (Mode (LegacyMode RealMode))       , InvalidPred)]
+      , [ (ContextPred (Mode (LegacyMode RealMode))       , UnsetPred)]
       )
    ,  ( [ (PrefixPred PrefixL                             , SetPred)]
-      , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), InvalidPred)]
+      , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), UnsetPred)]
       )
    ,  ( [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
       , [ (PrefixPred PrefixL                             , InvalidPred)]
@@ -249,17 +251,29 @@ isModePredicate _ = False
 
 -- | CS.D flag
 pCS_D :: X86Constraint
-pCS_D = And [IsValid (ContextPred CS_D), Predicate (ContextPred CS_D)]
+pCS_D = Predicate (ContextPred CS_D)
 
 -- | Prefix predicate
 pPrefix :: PrefixPred -> X86Constraint
 pPrefix = Predicate . PrefixPred
 
+-- | Prefix absence predicate
+pNotPrefix :: PrefixPred -> X86Constraint
+pNotPrefix = Not . pPrefix
+
 -- | Select using a prefix
 sPrefix :: PrefixPred -> X86Rule a -> X86Rule a -> X86Rule a
-sPrefix p a b = NonTerminal
-   [ (And [IsValid (PrefixPred p), Not (pPrefix p)], a)
-   , (And [IsValid (PrefixPred p),      pPrefix p],  b)
+sPrefix p a b = OrderedNonTerminal
+   [ (pNotPrefix p, a)
+   , (pPrefix p   , b)
+   ]
+
+-- | Select using a prefix and default value for invalid prefix predicate
+sPrefixDefault :: PrefixPred -> X86Rule a -> X86Rule a -> X86Rule a -> X86Rule a
+sPrefixDefault p d a b = OrderedNonTerminal
+   [ (Not (IsValid (PrefixPred p)), d)
+   , (pNotPrefix p, a)
+   , (pPrefix p   , b)
    ]
 
 -- | ModRM.mod = 11 predicate
@@ -268,7 +282,7 @@ pRegModRM = Predicate (InsnPred RegModRM)
 
 -- | Select using a prefix
 sRegModRM :: X86Rule a -> X86Rule a -> X86Rule a
-sRegModRM a b = NonTerminal
+sRegModRM a b = OrderedNonTerminal
    [ (Not $ pRegModRM, a)
    , (      pRegModRM, b)
    ]
@@ -304,7 +318,7 @@ pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` t
 
 -- | Default operation size (DOS)
 rDefaultOperationSize :: X86Rule OperandSize
-rDefaultOperationSize = NonTerminal
+rDefaultOperationSize = OrderedNonTerminal
       [ (pMode (LegacyMode RealMode)           , Terminal OpSize16)
       , (pMode (LegacyMode Virtual8086Mode)    , Terminal OpSize16)
       , (pMode (LegacyMode ProtectedMode)      , s16o32)
@@ -322,7 +336,7 @@ rDefaultOperationSize = NonTerminal
 
 -- | Default address size (DAS)
 rDefaultAddressSize :: X86Rule AddressSize
-rDefaultAddressSize = NonTerminal
+rDefaultAddressSize = OrderedNonTerminal
       [ (pMode (LegacyMode RealMode)           , Terminal AddrSize16)
       , (pMode (LegacyMode Virtual8086Mode)    , Terminal AddrSize16)
       , (pMode (LegacyMode ProtectedMode)      , s16o32)
@@ -340,9 +354,9 @@ rDefaultAddressSize = NonTerminal
 
 -- | Overridden operation size (OOS)
 rOverriddenOperationSize :: X86Rule OperandSize
-rOverriddenOperationSize = NonTerminal
-      [ ((pPrefix Prefix66)      , NonTerminal p66)
-      , ((Not (pPrefix Prefix66)), rDefaultOperationSize)
+rOverriddenOperationSize = OrderedNonTerminal
+      [ (pPrefix Prefix66, NonTerminal p66)
+      , (CBool True      , rDefaultOperationSize)
       ]
    where
       p66 = [ (rDefaultOperationSize `evalsTo` OpSize16, Terminal OpSize32)
@@ -351,9 +365,9 @@ rOverriddenOperationSize = NonTerminal
 
 -- | Overridden address size (OAS)
 rOverriddenAddressSize :: X86Rule AddressSize
-rOverriddenAddressSize = NonTerminal
-      [ ((pPrefix Prefix67)      , NonTerminal p67)
-      , ((Not (pPrefix Prefix67)), rDefaultAddressSize)
+rOverriddenAddressSize = OrderedNonTerminal
+      [ (pPrefix Prefix67, NonTerminal p67)
+      , (CBool True      , rDefaultAddressSize)
       ]
    where
       p67 = [ (rDefaultAddressSize `evalsTo` AddrSize16, Terminal AddrSize32)
@@ -365,21 +379,24 @@ rOverriddenAddressSize = NonTerminal
 --
 -- Support W prefix and default operation size set to 64-bit in 64-bit mode.
 rOverriddenOperationSize64 :: X86Rule OperandSize
-rOverriddenOperationSize64 = orderedNonTerminal
-      [ (And 
-         [ pMode64bit
-         , Or [ Predicate (InsnPred Default64OpSize)
-              , Predicate (PrefixPred PrefixW)
-              ]
-         ], Terminal OpSize64)
+rOverriddenOperationSize64 = OrderedNonTerminal
+      [ (pMode64bit, OrderedNonTerminal
+            [ (Or [ Predicate (InsnPred Default64OpSize)
+                  , pPrefix PrefixW
+                  ]
+              , Terminal OpSize64
+              )
+            , (CBool True, rOverriddenOperationSize)
+            ]
+        )
       , (CBool True, rOverriddenOperationSize)
       ]
 
 -- | Operand size predicate
 pOpSize64 :: a -> a -> a -> a -> X86Rule a
-pOpSize64 a b c d = NonTerminal
-   [ (pForce8bit                                               , Terminal a)
-   , (And [Not pForce8bit, pOverriddenOperationSize64 OpSize16], Terminal b)
-   , (And [Not pForce8bit, pOverriddenOperationSize64 OpSize32], Terminal c)
-   , (And [Not pForce8bit, pOverriddenOperationSize64 OpSize64], Terminal d)
+pOpSize64 a b c d = OrderedNonTerminal
+   [ (pForce8bit                         , Terminal a)
+   , (pOverriddenOperationSize64 OpSize16, Terminal b)
+   , (pOverriddenOperationSize64 OpSize32, Terminal c)
+   , (pOverriddenOperationSize64 OpSize64, Terminal d)
    ]

@@ -986,7 +986,7 @@ regFamDebug = (pRegFamFromReg (R_DR32 0))
 regFamGPR8 :: X86RegFamP
 regFamGPR8 = (pRegFamFromReg R_AL)
    { regFamId     = Terminal Any
-   , regFamOffset = NonTerminal
+   , regFamOffset = OrderedNonTerminal
       [ (pLegacy8bitRegs    , Terminal (OneOf [0,8]))
       , (Not pLegacy8bitRegs, Terminal (Singleton 0))
       ]
@@ -1012,15 +1012,21 @@ regFamGPR64 = (pRegFamFromReg R_RAX)
 
 
 -- | Allow 32 or 64 size (depending on W)
+-- Default to 32 when W isn't a valid predicate
 regFam32o64W :: X86RegFamP -> X86RegFamP
 regFam32o64W r = r
-   { regFamSize   = sPrefix PrefixW (Terminal (Singleton 32)) (Terminal (Singleton 64))
+   { regFamSize   = sPrefixDefault PrefixW
+                     (Terminal (Singleton 32))
+                     (Terminal (Singleton 32))
+                     (Terminal (Singleton 64))
    }
 
 -- | Allow 128 or 256 size (depending on L)
 regFam128o256L :: X86RegFamP -> X86RegFamP
 regFam128o256L r = r
-   { regFamSize   = sPrefix PrefixL (Terminal (Singleton 128)) (Terminal (Singleton 256))
+   { regFamSize   = sPrefix PrefixL
+                     (Terminal (Singleton 128))
+                     (Terminal (Singleton 256))
    }
 
 -- | General purpose 32-bit register in legacy mode,
@@ -1028,7 +1034,7 @@ regFam128o256L r = r
 regFamGPR32o64 :: X86RegFamP
 regFamGPR32o64 = (pRegFamFromReg R_RAX)
    { regFamId     = Terminal Any
-   , regFamSize   = NonTerminal
+   , regFamSize   = OrderedNonTerminal
       [ (pMode64bit    , Terminal (Singleton 64))
       , (Not pMode64bit, Terminal (Singleton 32))
       ]
@@ -1037,14 +1043,14 @@ regFamGPR32o64 = (pRegFamFromReg R_RAX)
 -- | General purpose register (size = operand-size)
 regFamGPR :: X86RegFamP
 regFamGPR = (pRegFamFromReg R_RAX)
-   { regFamId     = orderedNonTerminal
+   { regFamId     = OrderedNonTerminal
       [ (Not pForce8bit                            , Terminal Any)
       , (Not pLegacy8bitRegs                       , Terminal Any)
                                                    -- disable SIL,DIL,etc.
       , (pLegacy8bitRegs                           , Terminal (NoneOf [4,5,6,7]))
       ]
    , regFamSize   = pOpSize64 (Singleton 8) (Singleton 16) (Singleton 32) (Singleton 64)
-   , regFamOffset = orderedNonTerminal
+   , regFamOffset = OrderedNonTerminal
       [ (Not pForce8bit                          , Terminal (Singleton 0))
                                                    -- disable AH,BH,CH,DH
                                                    -- (offset = 8)
@@ -1064,7 +1070,7 @@ regFamGPRh = (pRegFamFromReg R_AH)
 -- | CX,ECX,RCX depending on the address-size
 regFamCounter :: X86RegFamP
 regFamCounter = (pRegFamFromReg R_CX)
-   { regFamSize   = orderedNonTerminal
+   { regFamSize   = OrderedNonTerminal
       [ (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
       , (pOverriddenAddressSize AddrSize64, Terminal (Singleton 64))
@@ -1082,7 +1088,7 @@ regFamAccu = (pRegFamFromReg R_AX)
 -- Use RSP in 64-bit mode, otherwise use address-size
 regFamStackPtr :: X86RegFamP
 regFamStackPtr = (pRegFamFromReg R_SP)
-   { regFamSize     = orderedNonTerminal
+   { regFamSize     = OrderedNonTerminal
       [ (pMode64bit                       , Terminal (Singleton 64))
       , (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
@@ -1095,7 +1101,7 @@ regFamStackPtr = (pRegFamFromReg R_SP)
 -- Use RBP in 64-bit mode, otherwise use address-size
 regFamStackBase :: X86RegFamP
 regFamStackBase = (pRegFamFromReg R_BP)
-   { regFamSize     = orderedNonTerminal
+   { regFamSize     = OrderedNonTerminal
       [ (pMode64bit                       , Terminal (Singleton 64))
       , (pOverriddenAddressSize AddrSize16, Terminal (Singleton 16))
       , (pOverriddenAddressSize AddrSize32, Terminal (Singleton 32))
@@ -1106,7 +1112,7 @@ regFamStackBase = (pRegFamFromReg R_BP)
 
 -- | Helper for families
 famSizes :: X86Rule (CSet Word)
-famSizes = orderedNonTerminal
+famSizes = OrderedNonTerminal
    [ (pOverriddenOperationSize64 OpSize16, Terminal (Singleton 16))
    , (pOverriddenOperationSize64 OpSize32, Terminal (Singleton 32))
    , (pOverriddenOperationSize64 OpSize64, Terminal (Singleton 64))

@@ -216,14 +216,15 @@ memFamOpSize = MemFam
    }
 
 -- | Generic depending on REX.W
+-- Defaults to the first one in contexts where W isn't a valid predicate
 memFamW :: Word -> Word -> X86MemFamP
 memFamW s1 s2 = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = NonTerminal
-      [ (Not (Predicate (PrefixPred PrefixW)), Terminal $ Just s1)
-      , (    (Predicate (PrefixPred PrefixW)), Terminal $ Just s2)
-      ]
+   , memFamSize = sPrefixDefault PrefixW
+                     (Terminal (Just s1))
+                     (Terminal (Just s1))
+                     (Terminal (Just s2))
    }
 
 -- | Generic depending on L
@@ -231,10 +232,9 @@ memFamL :: Word -> Word -> X86MemFamP
 memFamL s1 s2 = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemGeneric
-   , memFamSize = NonTerminal
-      [ (Not (Predicate (PrefixPred PrefixL)), Terminal $ Just s1)
-      , (    (Predicate (PrefixPred PrefixL)), Terminal $ Just s2)
-      ]
+   , memFamSize = sPrefix PrefixL
+                     (Terminal (Just s1))
+                     (Terminal (Just s2))
    }
 
 -- | Pair of operand-sized
@@ -250,7 +250,7 @@ memFamPair16o32 :: X86MemFamP
 memFamPair16o32 = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal (T_MemPair T_MemGeneric)
-   , memFamSize = NonTerminal
+   , memFamSize = OrderedNonTerminal
       [ (pOverriddenOperationSize64 OpSize16, Terminal $ Just 32)
       , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 64)
       ]
@@ -270,7 +270,7 @@ memFamPtr :: X86MemFamP
 memFamPtr = MemFam
    { memFamAddr = Terminal Nothing
    , memFamType = Terminal T_MemPtr
-   , memFamSize = NonTerminal
+   , memFamSize = OrderedNonTerminal
       [ (pOverriddenOperationSize64 OpSize16, Terminal $ Just 16)
       , (pOverriddenOperationSize64 OpSize32, Terminal $ Just 32)
       , (pOverriddenOperationSize64 OpSize64, Terminal $ Just 64)
@@ -490,7 +490,7 @@ memFamDSrAX = MemFam
 -- | Mem relative code
 memFamRelCode8 :: X86MemFamP
 memFamRelCode8 = MemFam
-   { memFamAddr = orderedNonTerminal
+   { memFamAddr = OrderedNonTerminal
       [ (pMode64bit, Terminal $ Just $ emptyAddrFam
             { addrFamSeg      = Just (FixedSeg R_CS)
             , addrFamBase     = Just R_RIP
@@ -515,7 +515,7 @@ memFamRelCode8 = MemFam
 -- | Mem relative code
 memFamRelCode16o32 :: X86MemFamP
 memFamRelCode16o32 = MemFam
-   { memFamAddr = orderedNonTerminal
+   { memFamAddr = OrderedNonTerminal
       [ (pMode64bit, Terminal $ Just $ emptyAddrFam
             { addrFamSeg      = Just (FixedSeg R_CS)
             , addrFamBase     = Just R_RIP

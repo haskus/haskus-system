@@ -49,14 +49,14 @@ immFamOpSize = ImmFam
 -- mode)
 immFamOpSizeSE :: X86ImmFamP
 immFamOpSizeSE = ImmFam
-   { immFamSize = orderedNonTerminal
+   { immFamSize = OrderedNonTerminal
       [ (pForce8bit                         , Terminal OpSize8)
       , (pSignExtendBit                     , Terminal OpSize8)
       , (pOverriddenOperationSize64 OpSize16, Terminal OpSize16)
       , (pOverriddenOperationSize64 OpSize32, Terminal OpSize32)
       , (pOverriddenOperationSize64 OpSize64, Terminal OpSize32) -- sign-extend
       ]
-   , immFamSignExtended = orderedNonTerminal
+   , immFamSignExtended = OrderedNonTerminal
       [ (pOverriddenOperationSize64 OpSize64, Terminal $ Just OpSize64)
       , (pSignExtendBit                     , NonTerminal
          [ (pOverriddenOperationSize64 OpSize16, Terminal $ Just OpSize16)
