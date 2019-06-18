@@ -235,12 +235,12 @@ showEnc oc rv e = tr_ $ do
                      _           -> error "Invalid predicated value"
 
             showOpFam = \case
-               X86.T_Reg fam  -> showPredTable showRegFam (preReduce fam)
-               X86.T_Mem fam  -> showPredTable showMemFam (preReduce fam)
-               X86.T_Imm fam  -> showPredTable showImmFam (preReduce fam)
+               X86.T_Reg fam  -> showPredTable (Just oracle) showRegFam (preReduce fam)
+               X86.T_Mem fam  -> showPredTable (Just oracle) showMemFam (preReduce fam)
+               X86.T_Imm fam  -> showPredTable (Just oracle) showImmFam (preReduce fam)
                t              -> toHtml (show t)
 
-         showPredTable showOpFam (preReduce (X86.opFam o))
+         showPredTable (Just oracle) showOpFam (preReduce (X86.opFam o))
 
    tr_ $ do
       th_ "Encoding"
@@ -358,9 +358,17 @@ showPredTable :: forall a.
    , Show a
    , Eq a
    , Predicated a
-   ) => (PredTerm a -> Html ()) -> a -> Html ()
-showPredTable showValue a = do
-   case createPredicateTable a (null . checkOracle False) True of
+   ) => Maybe (PredOracle X86Pred)
+     -> (PredTerm a -> Html ())
+     -> a -> Html ()
+showPredTable moracle showValue a = do
+   let prevOracle = fromMaybe emptyOracle moracle
+   let checkOrcl = null
+                   . checkOracle False
+                   -- append the already applied oracle (if any)
+                   -- to filter invalid predicate combinations
+                   . oracleUnion prevOracle
+   case createPredicateTable a checkOrcl of
       Left r   -> showValue r
       Right [] -> toHtml ("Error: empty table! " ++ show a)
       Right rs -> do
@@ -369,15 +377,17 @@ showPredTable showValue a = do
             then do
                let
                   -- simplified predicated value for each mode
-                  modeValues = [ (mode,value)
+                  modeValues = [ (mode,value,oracle)
                                | mode <- modePreds
                                , let oracle = makeOracleX86 [(mode,SetPred)]
                                , let value = simplifyPredicates oracle a
                                ]
                   -- group modes having the same predicated value
-                  groupedModes = List.groupOn snd modeValues
-                                 ||> \x -> (fmap fst x, snd (head x))
-               forM_ groupedModes \(modes,val) -> div_ do
+                  groupedModes = List.groupOn (\(_,x,_) -> x) modeValues
+               forM_ groupedModes \group -> div_ do
+                  let modes = group ||> \(m,_,_) -> m
+                      (val,oracle) = case head group of
+                        (_,v,o) -> (v,o)
                   intersperseM_ " / " modes \mode -> case mode of
                      ContextPred (Mode m) -> case m of
                         LongMode x -> case x of
@@ -388,7 +398,7 @@ showPredTable showValue a = do
                            Virtual8086Mode   -> "Virtual 8086 mode"
                            RealMode          -> "Real mode"
                      _ -> pure ()
-                  showPredTable showValue val
+                  showPredTable (Just oracle) showValue val
             else showPredicateTable @a showValue (getPredicates a) rs
 
 showPredicateTable :: forall a.

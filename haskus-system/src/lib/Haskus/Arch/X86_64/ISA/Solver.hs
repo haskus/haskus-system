@@ -188,6 +188,20 @@ oracleIncompatibilities =
 
       -- encodings are incompatible
       ++ exclusive (fmap EncodingPred encodings)
+
+      -- W isn't invalid in 64-bit/protected/compat modes
+      ++ [[(PrefixPred PrefixW, InvalidPred)
+          ,(ContextPred (Mode (LongMode Long64bitMode)), SetPred)
+          ]
+         ,[(PrefixPred PrefixW, InvalidPred)
+          ,(ContextPred (Mode (LongMode CompatibilityMode)), SetPred)
+          ]
+         ,[(PrefixPred PrefixW, InvalidPred)
+          ,(ContextPred (Mode (LegacyMode ProtectedMode)), SetPred)
+          ]
+         ]
+
+
    where
       exclusive []     = []
       exclusive [_]    = []
@@ -318,7 +332,7 @@ pOverriddenAddressSize t = rOverriddenAddressSize `evalsTo` t
 
 -- | Default operation size (DOS)
 rDefaultOperationSize :: X86Rule OperandSize
-rDefaultOperationSize = OrderedNonTerminal
+rDefaultOperationSize = NonTerminal
       [ (pMode (LegacyMode RealMode)           , Terminal OpSize16)
       , (pMode (LegacyMode Virtual8086Mode)    , Terminal OpSize16)
       , (pMode (LegacyMode ProtectedMode)      , s16o32)
@@ -336,7 +350,7 @@ rDefaultOperationSize = OrderedNonTerminal
 
 -- | Default address size (DAS)
 rDefaultAddressSize :: X86Rule AddressSize
-rDefaultAddressSize = OrderedNonTerminal
+rDefaultAddressSize = NonTerminal
       [ (pMode (LegacyMode RealMode)           , Terminal AddrSize16)
       , (pMode (LegacyMode Virtual8086Mode)    , Terminal AddrSize16)
       , (pMode (LegacyMode ProtectedMode)      , s16o32)
