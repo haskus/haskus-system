@@ -238,7 +238,7 @@ showEnc oc rv e = tr_ $ do
                X86.T_Reg fam  -> showPredTable (Just oracle) showRegFam (preReduce fam)
                X86.T_Mem fam  -> showPredTable (Just oracle) showMemFam (preReduce fam)
                X86.T_Imm fam  -> showPredTable (Just oracle) showImmFam (preReduce fam)
-               t              -> toHtml (show t)
+               X86.T_Pair x y -> showPredTable (Just oracle) showPairFam (preReduce x, preReduce y)
 
          showPredTable (Just oracle) showOpFam (preReduce (X86.opFam o))
 
@@ -316,6 +316,17 @@ showImmFam i = toHtml case i of
    ImmFam sz Nothing    Nothing _  -> tshow (X86.opSizeInBits sz) <> "-bit immediate"
    ImmFam sz (Just sz2) Nothing _  -> tshow (X86.opSizeInBits sz) <> "-bit immediate (sign-extended to " <> tshow (X86.opSizeInBits sz2) <> "-bit)"
    _ -> tshow i
+
+showPairFam :: (X86.OperandFamT,X86.OperandFamT) -> Html ()
+showPairFam (x,y) = do
+   let showPairElem = \case
+         X86.T_Mem m    -> showMemFam m
+         X86.T_Reg r    -> showRegFam r
+         X86.T_Imm i    -> showImmFam i
+         X86.T_Pair u v -> showPairFam (u,v)
+   showPairElem x
+   ":"
+   showPairElem y
          
 showRegFam :: X86.X86RegFamT -> Html ()
 showRegFam r = case r of
