@@ -359,7 +359,7 @@ showPredTable :: forall a.
    , Eq a
    , Predicated a
    ) => (PredTerm a -> Html ()) -> a -> Html ()
-showPredTable showValue a =
+showPredTable showValue a = do
    case createPredicateTable a (null . checkOracle False) True of
       Left r   -> showValue r
       Right [] -> toHtml ("Error: empty table! " ++ show a)
@@ -368,12 +368,10 @@ showPredTable showValue a =
          if not (null modePreds)
             then do
                let
-                  pickModes _  []     = []
-                  pickModes ms (x:xs) = (x,ms++xs) : pickModes (x:ms) xs
                   -- simplified predicated value for each mode
                   modeValues = [ (mode,value)
-                               | (mode,nonModes) <- pickModes [] modePreds
-                               , let oracle = makeOracle ((mode,SetPred) : fmap (,UnsetPred) nonModes)
+                               | mode <- modePreds
+                               , let oracle = makeOracleX86 [(mode,SetPred)]
                                , let value = simplifyPredicates oracle a
                                ]
                   -- group modes having the same predicated value
@@ -411,9 +409,10 @@ showPredicateTable showValue preds rs =
       forM_ (List.groupOn snd (List.sortOn snd rs)) $ \ws ->
          forM_ ws $ \(oracle,v) -> tr_ $ do
             forM_ ps $ \p -> case predState oracle p of
-               UnsetPred -> td_ "0"
-               SetPred   -> td_ "1"
-               UndefPred -> td_ "X"
+               UnsetPred   -> td_ "0"
+               SetPred     -> td_ "1"
+               UndefPred   -> td_ "*"
+               InvalidPred -> td_ "X"
             td_ $ showValue v
 
 

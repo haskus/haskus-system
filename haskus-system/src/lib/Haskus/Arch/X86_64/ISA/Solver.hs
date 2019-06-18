@@ -13,6 +13,7 @@ module Haskus.Arch.X86_64.ISA.Solver
    , EncodingPred (..)
    , X86PredOracle
    , PredError (..)
+   , makeOracleX86
    , checkOracle
    , pPrefix
    , sPrefix
@@ -43,6 +44,7 @@ import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Utils.Solver
 import Haskus.Utils.Maybe
+import qualified Haskus.Utils.List as List
 
 -- | Context predicate
 data ContextPred
@@ -76,7 +78,7 @@ data EncodingPred
    | PXopEncoding    -- ^ XOP encoding
    | PEvexEncoding   -- ^ EVEX encoding
    | PMvexEncoding   -- ^ MVEX encoding
-   deriving (Show,Eq,Ord)
+   deriving (Show,Eq,Ord,Enum)
 
 -- | All the predicats
 data X86Pred
@@ -102,13 +104,111 @@ data PredError
    | PredIncompatible [(X86Pred,PredState)]
    deriving (Show)
 
+-- | Implied constraints on x86 arch
+--
+-- For each tuple (cs,rs), if all the constraints in cs match, then all the
+-- constraints in rs must match.
+oracleImplications :: [([(X86Pred,PredState)],[(X86Pred,PredState)])]
+oracleImplications =
+   -- modes are mutually exclusive
+   [ ( [ (ContextPred (Mode m) , SetPred) ]
+     , [ (ContextPred (Mode m'), UnsetPred) | m' <- ms ]
+     )
+   | (m,ms) <- List.pick1 allModes
+   ]
+   ++
+   [
+     -- CS.D doesn't make sense in real-mode and virtual 8086 mode
+      (  [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
+      ,  [ (ContextPred CS_D                               , InvalidPred)]
+      )
+   ,  (  [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), SetPred)]
+      ,  [ (ContextPred CS_D                               , InvalidPred)]
+      )
+
+   , -- CS.D can't be 1 in long 64-bit mode.
+      (  [ (ContextPred (Mode (LongMode Long64bitMode)), SetPred)]
+      ,  [ (ContextPred CS_D                           , UnsetPred)]
+      )
+
+   ,  -- REX prefix only valid with a legacy encoding
+      (  [(EncodingPred PRexEncoding   , SetPred)]
+      ,  [(EncodingPred PLegacyEncoding, SetPred)]
+      )
+
+   , -- W doesn't make sense in real-mode and virtual 8086 mode
+      ( [ (PrefixPred PrefixW                             , SetPred)]
+      , [ (ContextPred (Mode (LegacyMode RealMode))       , InvalidPred)]
+      )
+   ,  ( [ (PrefixPred PrefixW                             , SetPred)]
+      , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), InvalidPred)]
+      )
+   ,  ( [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
+      , [ (PrefixPred PrefixW                             , InvalidPred)]
+      )
+   ,  ( [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), SetPred)]
+      , [ (PrefixPred PrefixW                             , InvalidPred)]
+      )
+
+   , -- L doesn't make sense in real-mode and virtual 8086 mode
+      ( [ (PrefixPred PrefixL                             , SetPred)]
+      , [ (ContextPred (Mode (LegacyMode RealMode))       , InvalidPred)]
+      )
+   ,  ( [ (PrefixPred PrefixL                             , SetPred)]
+      , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), InvalidPred)]
+      )
+   ,  ( [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
+      , [ (PrefixPred PrefixL                             , InvalidPred)]
+      )
+   ,  ( [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), SetPred)]
+      , [ (PrefixPred PrefixL                             , InvalidPred)]
+      )
+
+   ]
+
+
+-- | Make an oracle for the X86. Add implied constraints
+makeOracleX86 :: [(X86Pred,PredState)] -> X86PredOracle
+makeOracleX86 xs = go (makeOracle xs) oracleImplications
+   where
+      -- test matching constraints and add implied constraints
+      go oracle []           = oracle
+      go oracle ((cs,rs):is)
+         | predAll oracle cs = go (predAdd rs oracle) is
+         | otherwise         = go oracle is
+
+
+-- | List of incompatible predicates
+oracleIncompatibilities :: [[(X86Pred, PredState)]]
+oracleIncompatibilities =
+      -- all modes can't be unset
+      [[(ContextPred (Mode m),UnsetPred) | m <- allModes]]
+
+      -- encodings are incompatible
+      ++ exclusive (fmap EncodingPred encodings)
+   where
+      exclusive []     = []
+      exclusive [_]    = []
+      exclusive (x:xs) = [[(x,SetPred),(y,SetPred)] | y <- xs] ++ exclusive xs
+
+      encodings =   [ PLegacyEncoding
+                    -- , PRexEncoding
+                    , PVexEncoding
+                    , PXopEncoding
+                    , PEvexEncoding
+                    , PMvexEncoding
+                    ]
+
+
+predAll :: X86PredOracle -> [(X86Pred,PredState)] -> Bool
+predAll oracle is = all (\(p,s) -> predIs oracle p s) is
+
 -- | Check an oracle, return a list of incompatible predicates
 checkOracle :: Bool -> X86PredOracle -> [PredError]
 checkOracle strict oracle =
-      (fmap PredIncompatible (mapMaybe checkCompat incompatible))
-      ++ (fmap (uncurry PredImply) (mapMaybe checkImply implies))
+      (fmap PredIncompatible (mapMaybe checkCompat oracleIncompatibilities))
+      ++ (fmap (uncurry PredImply) (mapMaybe checkImply oracleImplications))
    where
-      predAll is        = all (\(p,s) -> predIs oracle p s) is
       predAllOrUndef is = all (\(p,s) -> case (s,predState oracle p) of
                                           (UndefPred,_)
                                              | not strict -> True
@@ -117,73 +217,15 @@ checkOracle strict oracle =
                              ) is
 
       checkCompat is = 
-         if predAll is
+         if predAll oracle is
             then Just is
             else Nothing
 
       checkImply (cs,rs) =
-         if predAll cs && not (predAllOrUndef rs)
+         if predAll oracle cs && not (predAllOrUndef rs)
             then Just (cs,rs)
             else Nothing
 
-      implies =
-         [
-           -- CS.D doesn't make sense in real-mode and virtual 8086 mode
-            (  [ (ContextPred (Mode (LegacyMode RealMode))       , SetPred)]
-            ,  [ (ContextPred CS_D                               , UndefPred)]
-            )
-         ,  (  [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), SetPred)]
-            ,  [ (ContextPred CS_D                               , UndefPred)]
-            )
-
-         ,  -- REX prefix only valid with a legacy encoding
-            (  [(EncodingPred PRexEncoding   , SetPred)]
-            ,  [(EncodingPred PLegacyEncoding, SetPred)]
-            )
-
-         , -- CS.D can't be 1 in long 64-bit mode.
-            (  [ (ContextPred (Mode (LongMode Long64bitMode)), SetPred)]
-            ,  [ (ContextPred CS_D                           , UnsetPred)]
-            )
-
-         , -- W doesn't make sense in real-mode and virtual 8086 mode
-            ( [ (PrefixPred PrefixW                             , SetPred)]
-            , [ (ContextPred (Mode (LegacyMode RealMode))       , UndefPred)]
-            )
-         ,  ( [ (PrefixPred PrefixW                             , SetPred)]
-            , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), UndefPred)]
-            )
-
-         , -- L doesn't make sense in real-mode and virtual 8086 mode
-            ( [ (PrefixPred PrefixL                             , SetPred)]
-            , [ (ContextPred (Mode (LegacyMode RealMode))       , UndefPred)]
-            )
-         ,  ( [ (PrefixPred PrefixL                             , SetPred)]
-            , [ (ContextPred (Mode (LegacyMode Virtual8086Mode)), UndefPred)]
-            )
-
-         ]
-
-      incompatible =
-         -- execution modes are incompatible
-         exclusive (fmap (ContextPred . Mode) allModes)
-
-         -- all modes can't be unset
-         ++ [[(ContextPred (Mode m),UnsetPred) | m <- allModes]]
-
-         -- encodings are incompatible
-         ++ exclusive (fmap EncodingPred encodings)
-
-      exclusive []     = []
-      exclusive [_]    = []
-      exclusive (x:xs) = [[(x,SetPred),(y,SetPred)] | y <- xs] ++ exclusive xs
-
-      encodings =   [ PLegacyEncoding
-                    , PVexEncoding
-                    , PXopEncoding
-                    , PEvexEncoding
-                    , PMvexEncoding
-                    ]
 
 
 -- | Allow the use of legacy 8-bit AH,BH,CH,DH registers
@@ -207,7 +249,7 @@ isModePredicate _ = False
 
 -- | CS.D flag
 pCS_D :: X86Constraint
-pCS_D = Predicate (ContextPred CS_D)
+pCS_D = And [IsValid (ContextPred CS_D), Predicate (ContextPred CS_D)]
 
 -- | Prefix predicate
 pPrefix :: PrefixPred -> X86Constraint
@@ -216,8 +258,8 @@ pPrefix = Predicate . PrefixPred
 -- | Select using a prefix
 sPrefix :: PrefixPred -> X86Rule a -> X86Rule a -> X86Rule a
 sPrefix p a b = NonTerminal
-   [ (Not $ pPrefix p, a)
-   , (      pPrefix p, b)
+   [ (And [IsValid (PrefixPred p), Not (pPrefix p)], a)
+   , (And [IsValid (PrefixPred p),      pPrefix p],  b)
    ]
 
 -- | ModRM.mod = 11 predicate
