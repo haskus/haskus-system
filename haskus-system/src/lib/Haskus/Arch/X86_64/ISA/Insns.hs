@@ -1132,7 +1132,7 @@ rDXrAX m = op m
 
 -- | AX, DX:AX, EDX:EAX, RDX:RAX
 rDXAX :: AccessMode -> OperandSpecP
-rDXAX m = op m (T_Pair (T_Reg regFamDX) (T_Reg regFamAX')) S_Implicit
+rDXAX m = op m (T_Pair (T_Reg regFamDXNo8) (T_Reg regFamAX')) S_Implicit
 
 
 -- | EDX:EAX

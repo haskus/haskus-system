@@ -244,7 +244,9 @@ instance Predicated (OperandSpec (NT X86Pred X86Err)) where
             Match b         -> Match (OperandSpec m b s)
 
    simplifyPredicates oracle (OperandSpec m t s) =
-      OperandSpec m (simplifyPredicates oracle t) s
+      -- the terminals of the opFam rule are themselves non terminals! So we
+      -- need to fmap "simplifyPredicates"
+      OperandSpec m (simplifyPredicates oracle (fmap (simplifyPredicates oracle) t)) s
 
    getTerminals (OperandSpec m ts s) =
       [ OperandSpec m t s | os <- getTerminals ts
@@ -278,8 +280,11 @@ opFamToOp op = case op of
    T_Mem m    -> OpMem <$> x86memFamToMem m
    T_Imm i    -> OpImm <$> immFamToImm i
    T_Pair x y -> case (x,y) of
-      (T_Reg r1,T_Reg r2) -> OpRegPair <$> regFamToReg r1
-                                       <*> regFamToReg r2
+      -- we allow the first register of the pair to be not reducible
+      -- to encode pair families such as AX, DX:AX, EDX:EAX
+      (T_Reg r1,T_Reg r2) -> case regFamToReg r1 of
+         Nothing  -> OpReg         <$> regFamToReg r2
+         Just r1' -> OpRegPair r1' <$> regFamToReg r2
       (T_Imm i1,T_Imm i2) -> OpImmPair <$> immFamToImm i1
                                        <*> immFamToImm i2
       _ -> error ("opFamToOp: invalid pair: " ++ show (x,y))

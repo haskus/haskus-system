@@ -204,7 +204,8 @@ regFamToReg :: (Eq b, Eq rt) => RegFamT b rt -> Maybe (Reg b rt)
 regFamToReg (RegFam a b c d e) =
    case (simplifySet a, simplifySet b, simplifySet c, simplifySet d) of
       (Singleton u, Singleton v, Singleton w, Singleton x)
-         -> Just (Reg u v w x e)
+         | w == 0    -> Nothing -- we use a size of zero to encode pairs of registers where a register may not be present (e.g. AX, DX:AX, EDX:EAX)
+         | otherwise -> Just (Reg u v w x e)
       _  -> Nothing
 
 -- | Try to fixup a family (all fields must reduce to Set qualifier)

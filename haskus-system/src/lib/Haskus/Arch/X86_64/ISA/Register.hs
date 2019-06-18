@@ -147,6 +147,7 @@ module Haskus.Arch.X86_64.ISA.Register
    , regFamBX
    , regFamCX
    , regFamDX
+   , regFamDXNo8
    , regFamSI
    , regFamDI
    , setRegFamType
@@ -1148,6 +1149,13 @@ regFamCX = (pRegFamFromReg R_CX)
 regFamDX :: X86RegFamP
 regFamDX = (pRegFamFromReg R_DX)
    { regFamSize   = famSizes
+   }
+
+-- | None,DX,EDX,RDX depending on the operand-size
+-- (used to encode AX, DX:AX, EDX:EAX, RDX:RAX)
+regFamDXNo8 :: X86RegFamP
+regFamDXNo8 = (pRegFamFromReg R_DX)
+   { regFamSize   = pOpSize64 (Singleton 0) (Singleton 16) (Singleton 32) (Singleton 64)
    }
 
 -- | SI,ESI,RSI depending on the operand-size
