@@ -78,6 +78,17 @@ main = runSys' <| do
    -- wait for mouse driver to be loaded (FIXME: use plug-and-play detection)
    threadDelaySec 2
 
+   -- Terminal writer thread (can be used to print things into STM context)
+   (termBufWrite,termBufRead) <- atomically do
+      w <- newBroadcastTChan
+      r <- dupTChan w
+      return (w,r)
+   sysFork "Terminal write thread" <| do
+      forever (writeStrLn term =<< atomically (readTChan termBufRead))
+
+   -- write on the terminal in STM context
+   let termWriteSTM x = writeTChan termBufWrite x
+
    -------------------------------------------------
    -- redrawing management
    -------------------------------------------------
@@ -263,6 +274,9 @@ main = runSys' <| do
                F3  -> changePage PageDPMS
                F4  -> changePage PageTerminal
                F5  -> changePage PageArt
+               MouseLeft   -> termWriteSTM "Left click!"
+               MouseRight  -> termWriteSTM "Right click!"
+               MouseMiddle -> termWriteSTM "Middle click!"
                x   -> case p of
                   PageDPMS -> do
                      void (tryTakeTMVar dpmsState)
