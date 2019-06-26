@@ -18,7 +18,7 @@ extra-deps:
 - happstack-server-tls-7.1.6.7
 - hsnoise-0.0.2
 - git: https://github.com/haskus/packages.git
-  commit: 9c756451044896a9ab94ea0f34d15fea52d430bb
+  commit: e31781e0b54081243aa4fc965b292327186eea38
   subdirs:
      - haskus-utils-variant
      - haskus-utils
@@ -27,6 +27,7 @@ extra-deps:
      - haskus-utils-compat
      - haskus-binary
      - haskus-web
+     - haskus-ui
 
 flags:
    diagrams:

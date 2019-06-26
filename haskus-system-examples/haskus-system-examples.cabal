@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.31.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 667a0354d3315988f6aea05976bb67c16dd38b30fa399acdd394e9b7c92f5e9e
+-- hash: dc06123e2b75c54f0d0a4eda0d324d484c0971b93c1ffc7fa9e672330f082359
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -41,6 +41,7 @@ executable Clock
     , formatting
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -74,6 +75,7 @@ executable Demo
     , diagrams-lib
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -99,6 +101,7 @@ executable DisplayModes
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -121,6 +124,7 @@ executable DisplayProperties
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -143,6 +147,7 @@ executable DisplayState
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -165,6 +170,7 @@ executable HelloWorld
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -187,6 +193,7 @@ executable KernelEvent
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -209,6 +216,7 @@ executable ListDevices
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -231,6 +239,7 @@ executable OpenDevice
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -254,6 +263,7 @@ executable Sound
     , filepath
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -280,6 +290,7 @@ executable Test
     , either
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data
@@ -306,6 +317,7 @@ executable VDSO
       base >=4.8 && <5
     , haskus-binary
     , haskus-system
+    , haskus-ui
     , haskus-utils
     , haskus-utils-compat
     , haskus-utils-data

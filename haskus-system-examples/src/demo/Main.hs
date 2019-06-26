@@ -7,6 +7,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 
 import Haskus.System
 
@@ -22,10 +23,15 @@ import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
 import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.STM
+import Haskus.Utils.EADT
 import Haskus.Utils.Maybe
 import Haskus.Format.String
 import Haskus.Utils.Text (textFormat,(%),shown)
 import qualified Haskus.Utils.Map as Map
+
+import Haskus.UI.RayTracer
+import Haskus.UI.Canvas
+import Haskus.UI.Color
 
 import Data.Char
 import Codec.Picture.Types
@@ -46,6 +52,7 @@ data Page
    | PageDPMS
    | PageTerminal
    | PageArt
+   | PageCanvas
    deriving (Show,Eq)
 
 main :: IO ()
@@ -274,6 +281,7 @@ main = runSys' <| do
                F3  -> changePage PageDPMS
                F4  -> changePage PageTerminal
                F5  -> changePage PageArt
+               F6  -> changePage PageCanvas
                MouseLeft   -> termWriteSTM "Left click!"
                MouseRight  -> termWriteSTM "Right click!"
                MouseMiddle -> termWriteSTM "Middle click!"
@@ -375,6 +383,44 @@ main = runSys' <| do
                      <| fmap (\(n,lbl) -> show n ++ " - " ++ lbl) xs
                   _           -> customPage ["Invalid DPMS property type"]
 
+      canvasPage <- do
+         let
+            sceneGraph :: SceneGraph Dist Color NodeName
+            sceneGraph = defaultSceneGraph
+               |> sceneInsertNode (NodeName "Clipper")
+                     (Colorize yellow <| NodeObject (Disc 8))
+               |> sceneInsertNode RootNode
+                     (NodeGroup
+                        [NodeClip (NodeRef (NodeName "Clipper"))
+                           <| Colorize red  <| NodeObject (Rectangle 10 5)
+                        , Colorize blue <| NodeTransform (Translate (-5) (-2) 1) <| NodeObject (Rectangle 10 5)
+                        , Colorize yellow
+                           -- <| NodeTransform (Translate 10 10 2)
+                           <| NodeRef (NodeName "Clipper")
+                        ])
+
+            rectWorld :: World PixelRGB8 (EADT '[CanvasF Dist Color NodeName, ColoredF, PlaneF, SphereF])
+            rectWorld = defaultWorld
+               { worldObjects         = [Canvas sceneGraph]
+               , worldBackgroundColor = toPixelRGB8 black
+               }
+
+            sceneRenderer = defaultRenderer
+                     { rendererSquareSampler = hammersleySquareSampler 4
+                     }
+            viewport = Viewport
+               { viewportCenter      = V3 0 0 100
+               , viewportNormal      = V3 0 0 (-1)
+               , viewportResolutionX = 200
+               , viewportResolutionY = 200
+               , viewportPixelSize   = 1.0
+               }
+
+
+         renderScene sceneRenderer rectWorld viewport Nothing
+            ||> promoteImage -- convert RGB8 into RGBA8
+            |> liftIO
+
       sysFork "DPMS state" <| forever do
          s <- atomically <| takeTMVar dpmsState
          graphicsConfig (graphicCardHandle card) do
@@ -432,6 +478,10 @@ main = runSys' <| do
                                     printTextRanges (V2 20 (20*i + 20)) rs
 
                   liftIO <| blendImage gfb abcd BlendAlpha (10,50) (fullImg abcd)
+
+               PageCanvas -> do
+                  liftIO <| blendImage gfb canvasPage BlendAlpha (10,50) (fullImg canvasPage)
+
 
             liftIO <| blendImage gfb topBarDiagram BlendAlpha (0,0) (fullImg topBarDiagram)
             liftIO <| blendImage gfb ptr BlendAlpha (floor mx-ptrLen,floor my-ptrLen) (fullImg ptr)
