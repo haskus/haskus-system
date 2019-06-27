@@ -7,12 +7,12 @@ import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Object
 
 main :: IO ()
-main = runSys' <| do
+main = runSys' do
    sys   <- defaultSystemInit
    term  <- defaultTerminal
    cards <- loadGraphicCards (systemDeviceManager sys)
    
-   forM_ cards <| \card -> do
+   forM_ cards \card -> do
       state <- assertE "Read graphics state"
                   <| readGraphicsState (graphicCardHandle card)
 
@@ -30,6 +30,4 @@ main = runSys' <| do
                forM_ (connectedDeviceModes dev) \mode ->
                   writeStrLn term (show mode)
 
-   writeStrLn term "Log:"
-   sysLogPrint
    powerOff
