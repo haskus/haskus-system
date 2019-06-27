@@ -88,6 +88,7 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          lift <| setClientCapabilityWarn hdl ClientCapStereo3D        True
          lift <| setClientCapabilityWarn hdl ClientCapUniversalPlanes True
          lift <| setClientCapabilityWarn hdl ClientCapAtomic          True
+         lift <| setClientCapabilityWarn hdl ClientCapAspectRatio     True
          -- Create the DRM event reader thread
          GraphicCard devpath dev cardID hdl
             <$> lift (newEventWaiterThread hdl)
