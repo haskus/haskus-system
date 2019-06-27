@@ -134,10 +134,11 @@ module Haskus.System.Linux.Internals.Graphics
    , ioctlCreateBlob
    , ioctlDestroyBlob
    -- * Events
-   , DRMEventHeader (..)
+   , EventHeader (..)
    , EventType (..)
    , toEventType
-   , DRMEvent (..)
+   , VBlankEventData (..)
+   , SequenceEventData (..)
    -- * SubPixel order
    , SubPixel (..)
    )
@@ -1206,33 +1207,50 @@ ioctlDestroyBlob = drmIoctl 0xBE
 -- up are chipset specific.
 
 -- | drm_event
-data DRMEventHeader = DRMEventHeader
+data EventHeader = EventHeader
    { eventType     :: {-# UNPACK #-} !Word32
    , eventLength   :: {-# UNPACK #-} !Word32
-   } deriving (Generic,Storable)
+   } deriving (Show,Generic,Storable)
 
 -- | Event type
 data EventType
-   = VBlank           -- ^ Beginning of the VBlank period
-   | PageFlipComplete -- ^ Page flipping complete
-   deriving (Show)
+   = VBlankEventType         -- ^ Beginning of the VBlank period
+   | FlipCompleteEventType   -- ^ Page flipping complete
+   | SequenceEventType       -- ^ Controller sequence event
+   | CustomEventType Word32  -- ^ Custom event
+   deriving (Eq,Ord,Show)
 
 -- | Try to recognize the event type
-toEventType :: Word32 -> Maybe EventType
+toEventType :: Word32 -> EventType
 toEventType v = case v of
-   0x01 -> Just VBlank
-   0x02 -> Just PageFlipComplete
-   _    -> Nothing
+   0x01 -> VBlankEventType
+   0x02 -> FlipCompleteEventType
+   0x03 -> SequenceEventType
+   _    -> CustomEventType v
 
--- | drm_event_vblank
-data DRMEvent = DRMEvent
-   { drmEventType         :: {-# UNPACK #-} !Word32
-   , drmEventSize         :: {-# UNPACK #-} !Word32
-   , drmEventUserData     :: {-# UNPACK #-} !Word64
-   , drmEventSeconds      :: {-# UNPACK #-} !Word32
-   , drmEventMicroseconds :: {-# UNPACK #-} !Word32
-   , drmEventSequence     :: {-# UNPACK #-} !Word32
-   , drmEventReserved     :: {-# UNPACK #-} !Word32
+-- | VBlank event data
+--
+-- This is used both for VBlank and FlipComplete events
+--
+-- drm_event_vblank (without the header)
+data VBlankEventData = VBlankEventData
+   { vblankEventUserData     :: {-# UNPACK #-} !Word64
+   , vblankEventSeconds      :: {-# UNPACK #-} !Word32
+   , vblankEventMicroseconds :: {-# UNPACK #-} !Word32
+   , vblankEventSequence     :: {-# UNPACK #-} !Word32
+   , vblankEventControllerId :: {-# UNPACK #-} !Word32
+   } deriving (Show,Generic,Storable)
+
+-- | Sequence event data
+--
+-- Event delivered at sequence. Time stamp marks when the first pixel
+-- of the refresh cycle leaves the display engine for the display
+--
+-- drm_event_crtc_sequence (withtout the header)
+data SequenceEventData = SequenceEventData
+   { sequenceEventUserData     :: {-# UNPACK #-} !Word64
+   , sequenceEventTimestampNS  :: {-# UNPACK #-} !Int64 -- ^ Timestamp: first pixel leaves the display engine for the display (in nanoseconsd)
+   , sequenceEventSequence     :: {-# UNPACK #-} !Word64
    } deriving (Show,Generic,Storable)
 
 -- =============================================================

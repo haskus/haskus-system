@@ -253,14 +253,13 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       fps <- newTVarIO (0 :: Word)
 
-      -- get controller ID as Word64, used as user_data with the page flip event
-      let ctrlId = fromIntegral (getObjectID ctrl)
-
       -- on page flip complete
       onEvent (graphicCardChan card) $ \case
-         Event PageFlipComplete drmEvent
-            -- we use user data to know which controller has flipped
-            | drmEventUserData drmEvent == ctrlId ->
+         FlipCompleteEvent evData
+            -- we used to use user_data field to know which controller has
+            -- flipped but in later kernel versions (5.1?) a reserved field has
+            -- been dedicated to this in the event payload
+            | vblankEventControllerId evData == fromIntegral (getObjectID ctrl) ->
                atomically $ do
                   s <- readTVar fbState
                   case fbPending s of
@@ -297,7 +296,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
-         switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) ctrlId
+         switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
             |> assertE "Switch framebuffer"
             
 
@@ -333,7 +332,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             yield
 
       -- Force the generation of the first page-flip event
-      switchFrameSource ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) ctrlId
+      switchFrameSource ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
          |> assertE "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
