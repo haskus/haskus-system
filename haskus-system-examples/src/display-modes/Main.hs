@@ -1,12 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
 
-import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.PixelFormat
-import qualified Haskus.Utils.Map as Map
+import Haskus.System.Linux.Graphics.Object
 
 main :: IO ()
 main = runSys' <| do
@@ -18,31 +16,20 @@ main = runSys' <| do
       state <- assertE "Read graphics state"
                   <| readGraphicsState (graphicCardHandle card)
 
-      forM_ (graphicsConnectors state) <| \conn -> do
-         
-         let ctrl = do
-               encId  <- connectorEncoderID conn
-               enc    <- Map.lookup encId (graphicsEncoders state)
-               ctrlId <- encoderControllerID enc
-               Map.lookup ctrlId (graphicsControllers state)
+      let conns = graphicsConnectors state
+      when (null conns) do
+         writeStrLn term "No connector found"
 
-         case (ctrl, connectorState conn) of
-            (Just c, Connected dev) -> do
-               let
-                  modes  = connectedDeviceModes dev 
-                  fmt    = makePixelFormat XRGB8888 LittleEndian
+      forM_ conns \conn -> do
+         writeStrLn term ("Probing " ++ getObjectQualifiedID conn)
 
-               forM_ modes <| \mode -> do
-                  threadDelaySec 4
-                  writeStrLn term (modeName mode)
+         case connectorState conn of
+            Disconnected      -> writeStrLn term " -> disconnected"
+            ConnectionUnknown -> writeStrLn term " -> unknown connection"
+            Connected dev -> do
+               forM_ (connectedDeviceModes dev) \mode ->
+                  writeStrLn term (show mode)
 
-                  gfb <- initGenericFrameBuffer card mode fmt
-
-                  setController c (SetSource (genericFrameBuffer gfb)) [conn] (Just mode)
-                     |> assertLogShowErrorE "Set controller"
-
-                  freeGenericFrameBuffer card gfb
-            _ -> return ()
-
-
+   writeStrLn term "Log:"
+   sysLogPrint
    powerOff
