@@ -1032,10 +1032,13 @@ data Capability
    | CapPrime
    | CapTimestampMonotonic
    | CapAsyncPageFlip         -- ^ Support asynchronous page-flipping
-   | CapCursorWidth
-   | CapCursorHeight
+   | CapCursorWidth           -- ^ Return a valid width plane size to use (may be the maximum, depending on the driver)
+   | CapCursorHeight          -- ^ Ditto cursor plane height
    | CapAddFrameBufferModifiers
    | CapPageFlipTarget
+   | CapControllerInVBlankEvent -- ^ Indicate that the vblank event contains a crtc_id field (always true since Linux 5.1)
+   | CapSyncObject
+   | CapSyncObjectTimeline
    deriving (Show,Eq,Enum)
 
 -- Add 1 to the enum number to get the valid value
@@ -1060,9 +1063,11 @@ data StructGetCap = StructGetCap
 
 -- | Client capabilities
 data ClientCapability
-   = ClientCapStereo3D        -- ^ if set, the DRM core will expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Stereo3D)
-   | ClientCapUniversalPlanes -- ^ If set, the DRM core will expose all planes (overlay, primary, and cursor) to userspace.
-   | ClientCapAtomic          -- ^ If set, the DRM core will expose atomic properties to userspace
+   = ClientCapStereo3D            -- ^ expose the stereo 3D capabilities of the monitor by advertising the supported 3D layouts in the flags of struct drm_mode_modeinfo (cf Stereo3D)
+   | ClientCapUniversalPlanes     -- ^ expose all planes (overlay, primary, and cursor) to userspace.
+   | ClientCapAtomic              -- ^ expose atomic properties to userspace
+   | ClientCapAspectRatio         -- ^ provide apect ratio information in modes
+   | ClientCapWritebackConnectors -- ^ expose special connectors to be used for writing back to memory the scene setup in the commit. Depends on client also supporting `ClientCapAtomic`
    deriving (Show,Eq,Enum)
 
 -- Add 1 to the enum number to get the valid value
