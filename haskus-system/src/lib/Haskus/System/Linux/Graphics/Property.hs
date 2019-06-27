@@ -5,6 +5,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Property
 module Haskus.System.Linux.Graphics.Property
@@ -75,17 +77,35 @@ showProperty (Property meta value) = mconcat
    , propertyName meta
    , " = "
    , case propertyType meta of
+      PropRange [0,1]   -> if value == 0 then "False" else "True"
       PropSignedRange _ -> show (fromIntegral value :: Int64)
       PropEnum xs       -> Map.fromList xs Map.! value
       _                 -> show value
    , " :: "
    , case propertyType meta of
       PropObject         -> "Object"
-      PropRange xs       -> "Range " ++ show xs
-      PropSignedRange xs -> "Range " ++ show xs
+      PropRange xs
+         | xs == [0,1]            -> "Bool"
+         | checkBounds @Word8  xs -> "Word8"
+         | checkBounds @Word16 xs -> "Word16"
+         | checkBounds @Word32 xs -> "Word32"
+         | checkBounds @Word64 xs -> "Word64"
+         | otherwise              -> "Range " ++ show xs
+      PropSignedRange xs
+         | checkBounds @Int8  xs -> "Int8"
+         | checkBounds @Int16 xs -> "Int16"
+         | checkBounds @Int32 xs -> "Int32"
+         | checkBounds @Int64 xs -> "Int64"
+         | otherwise             -> "Range " ++ show xs
       PropEnum xs        -> "Enum [" ++ mconcat (List.intersperse "," (fmap snd xs)) ++ "]"
       t                  -> show t
    ]
+
+   where
+      checkBounds :: forall b a. (Num a, Integral b, Bounded b, Eq a) => [a] -> Bool
+      checkBounds [mi,ma] = mi == fromIntegral (minBound @b) && ma == fromIntegral (maxBound @b)
+      checkBounds _ = False
+
 
 data InvalidProperty = InvalidProperty deriving (Show,Eq)
 

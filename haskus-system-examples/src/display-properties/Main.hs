@@ -37,5 +37,4 @@ main = runSys' <| do
       mapM_ showProps (Map.elems (graphicsControllers state))
       mapM_ showProps (Map.elems (graphicsPlanes state))
 
-   sysLogPrint
    powerOff
