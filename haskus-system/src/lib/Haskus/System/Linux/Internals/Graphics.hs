@@ -46,7 +46,6 @@ module Haskus.System.Linux.Internals.Graphics
    -- * Properties
    , PropertyTypeType (..)
    , getPropertyTypeType
-   , isPending
    , isImmutable
    , isAtomic
    , StructPropertyEnum (..)
@@ -563,9 +562,6 @@ getPropertyTypeType x =
       64  -> PropTypeObject
       128 -> PropTypeSignedRange
       _   -> error "Unknown property type"
-
-isPending :: StructGetProperty -> Bool
-isPending x = testBit (gpsFlags x) 0
 
 isImmutable :: StructGetProperty -> Bool
 isImmutable x = testBit (gpsFlags x) 2

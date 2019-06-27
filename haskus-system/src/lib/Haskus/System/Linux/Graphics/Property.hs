@@ -42,7 +42,6 @@ import Data.Map as Map
 data PropertyMeta = PropertyMeta
    { propertyID        :: Word32       -- ^ ID of the property type
    , propertyImmutable :: Bool         -- ^ The value won't change
-   , propertyPending   :: Bool         -- ^ The value is pending
    , propertyName      :: String       -- ^ Property name
    , propertyType      :: PropertyType -- ^ Type of the property
    } deriving (Show,Eq)
@@ -84,7 +83,7 @@ getPropertyMeta fd pid = do
       -- get value size/number of elements/etc.
       g <- getProperty' gp
       getValues (gpsCountValues g) (gpsCountEnum g) (getPropertyTypeType g)
-         ||> PropertyMeta pid (isImmutable g) (isPending g) (fromCStringBuffer (gpsName g))
+         ||> PropertyMeta pid (isImmutable g) (fromCStringBuffer (gpsName g))
    where
       getProperty' :: StructGetProperty -> Excepts '[InvalidParam,InvalidProperty] m StructGetProperty
       getProperty' r = ioctlGetProperty r fd
