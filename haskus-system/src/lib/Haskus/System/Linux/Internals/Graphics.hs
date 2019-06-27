@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | DRM/KMS Internals
 --
@@ -161,14 +162,23 @@ import Haskus.Utils.Types.Generics (Generic)
 
 -- | Mode type
 data ModeType
-   = ModeTypeBuiltin
-   | ModeTypeClockC
-   | ModeTypeControllerC
-   | ModeTypePreferred
-   | ModeTypeDefault
+   = ModeTypePreferred
    | ModeTypeUserDef
    | ModeTypeDriver
-   deriving (Show,Enum,BitOffset)
+   deriving (Show,Enum)
+
+instance BitOffset ModeType where
+   -- DRM used to have more mode types (BUILTIN, CLOCK_C, CRTC_C, DEFAULT) but
+   -- they have been deprecated. Hence the gaps in the bitset
+   toBitOffset = \case
+      ModeTypePreferred -> 3
+      ModeTypeUserDef   -> 5
+      ModeTypeDriver    -> 6
+   fromBitOffset = \case
+      3 -> ModeTypePreferred
+      5 -> ModeTypeUserDef
+      6 -> ModeTypeDriver
+      n -> error ("Invalid DRM mode type: " <> show n)
 
 type ModeTypes = BitSet Word32 ModeType
 
