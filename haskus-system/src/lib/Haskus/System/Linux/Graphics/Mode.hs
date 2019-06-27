@@ -40,8 +40,9 @@ data Mode = Mode
    , modeVerticalScan        :: !Word16
 
    , modeVerticalRefresh     :: !Word32
-   , modeFlags               :: !ModeFlags
+   , modeFlags               :: !BasicModeFlags
    , modeStereo3D            :: !Stereo3D
+   , modeRatio               :: !AspectRatio
    , modeType                :: !ModeTypes
    , modeName                :: !String
    } deriving (Show)
@@ -58,6 +59,7 @@ fromStructMode StructMode {..} =
    let
       flgs  = extractField @"flags" miFlags
       flg3d = fromEnumField $ extractField @"stereo3d" miFlags
+      ratio = fromEnumField $ extractField @"aspect_ratio" miFlags
    in Mode
       { modeClock               = miClock
       , modeHorizontalDisplay   = miHDisplay
@@ -73,6 +75,7 @@ fromStructMode StructMode {..} =
       , modeVerticalRefresh     = miVRefresh
       , modeFlags               = flgs
       , modeStereo3D            = flg3d
+      , modeRatio               = ratio
       , modeType                = miType
       , modeName                = fromCStringBuffer miName
       }

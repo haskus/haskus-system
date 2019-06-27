@@ -12,12 +12,13 @@ module Haskus.System.Linux.Internals.Graphics
      ModeType (..)
    , ModeTypes
    , ModeFlag (..)
-   , ModeFlags
+   , BasicModeFlags
    , Stereo3D (..)
-   , ModeFlagsStereo3D
+   , ModeFlags
+   , ContentType (..)
    , PowerState(..)
    , ScalingMode(..)
-   , AspectMode(..)
+   , AspectRatio(..)
    , DitheringMode(..)
    , DirtyMode(..)
    , StructMode (..)
@@ -195,13 +196,12 @@ data ModeFlag
    | ModeFlagPCSync
    | ModeFlagNCSync
    | ModeFlagHSkew
-   | ModeFlagBroadCast
-   | ModeFlagPixMux
+   | ModeFlagBroadCast -- ^ Deprecated
+   | ModeFlagPixMux    -- ^ Deprecated
    | ModeFlagDoubleClock
    | ModeFlagClockDiv2
    deriving (Show,Enum,BitOffset)
 
-type ModeFlags = BitSet Word32 ModeFlag
 
 -- | 3D mode
 data Stereo3D
@@ -216,10 +216,33 @@ data Stereo3D
    | Stereo3DSideBySideHalf
    deriving (Show,Enum,CEnum)
 
-type ModeFlagsStereo3D = BitFields Word32
-   '[ BitField 18 "stereo3d" (EnumField Word32 Stereo3D)
-    , BitField 14 "flags"    ModeFlags
+-- | Aspect ratio
+data AspectRatio
+   = RatioNone
+   | Ratio4_3
+   | Ratio16_9
+   | Ratio64_27
+   | Ratio256_135
+   deriving(Show,Eq,Enum,CEnum)
+
+type ModeFlags = BitFields Word32
+   '[ BitField 9 ""              Word32
+    , BitField 4  "aspect_ratio" (EnumField Word32 AspectRatio)
+    , BitField 5  "stereo3d"     (EnumField Word8 Stereo3D)
+    , BitField 14 "flags"        BasicModeFlags
     ]
+
+type BasicModeFlags = BitSet Word32 ModeFlag
+
+-- | Content type
+data ContentType
+   = ContentTypeNoData
+   | ContentTypeGraphics
+   | ContentTypePhoto
+   | ContentTypeCinema
+   | ContentTypeGame
+   deriving (Show,Eq,Enum)
+
 
 -- | DPMS flags
 data PowerState 
@@ -236,13 +259,6 @@ data ScalingMode
    | ScaleCenter       -- ^ Centered, no scaling
    | ScaleAspect       -- ^ Full screen, preserve aspect
    deriving (Show,Eq,Enum)
-
--- | Aspect mode
-data AspectMode
-   = AspectNone
-   | Aspect4_3
-   | Aspect16_9
-   deriving(Show,Eq,Enum)
 
 -- | Dithering mode
 data DitheringMode
@@ -273,7 +289,7 @@ data StructMode = StructMode
    , miVTotal     :: {-# UNPACK #-} !Word16
    , miVScan      :: {-# UNPACK #-} !Word16
    , miVRefresh   :: {-# UNPACK #-} !Word32
-   , miFlags      :: {-# UNPACK #-} !ModeFlagsStereo3D
+   , miFlags      :: {-# UNPACK #-} !ModeFlags
    , miType       :: {-# UNPACK #-} !ModeTypes
    , miName       :: {-# UNPACK #-} !(CStringBuffer 32)
    } deriving (Generic)
