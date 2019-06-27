@@ -10,6 +10,8 @@ module Haskus.System.Linux.Graphics.Object
    ( Object(..)
    , ObjectType(..)
    , ObjectNotFound
+   , getObjectQualifiedID
+   , showObjectType
    , getObjectPropertyCount
    , getObjectProperties
    , setObjectProperty
@@ -64,6 +66,22 @@ instance Object Plane where
    getObjectType _ = ObjectPlane
    getObjectID     = unEntityID . planeID
 
+
+-- | Get a string with object type and ID
+getObjectQualifiedID :: Object a => a -> String
+getObjectQualifiedID a = showObjectType (getObjectType a) ++ " " ++ show (getObjectID a)
+
+-- | Show object type string
+showObjectType :: ObjectType -> String
+showObjectType = \case
+   ObjectController  -> "Controller"
+   ObjectConnector   -> "Connector"
+   ObjectEncoder     -> "Encoder"
+   ObjectMode        -> "Mode"
+   ObjectProperty    -> "Property"
+   ObjectFrameSource -> "FrameSource"
+   ObjectBlob        -> "Blob"
+   ObjectPlane       -> "Plane"
 
 -- | Get object's number of properties
 getObjectPropertyCount :: (MonadInIO m, Object o) => Handle -> o -> Excepts '[ErrorCode] m Word32

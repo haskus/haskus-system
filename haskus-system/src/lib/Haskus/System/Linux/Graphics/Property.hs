@@ -18,6 +18,7 @@ module Haskus.System.Linux.Graphics.Property
    , ObjectID
    , PropID
    , PropertyMetaID
+   , showProperty
    -- * Atomic properties
    , setAtomic
    , AtomicErrors
@@ -33,6 +34,7 @@ import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String 
+import qualified Haskus.Utils.List as List
 
 import Foreign.Ptr
 import Foreign.Marshal.Alloc(free,mallocBytes)
@@ -66,6 +68,24 @@ data Property = Property
    , propertyValue      :: Word64       -- ^ Value of the property
    } deriving (Show,Eq)
 
+-- | Display a property in a user readable way
+showProperty :: Property -> String
+showProperty (Property meta value) = mconcat
+   [ if propertyImmutable meta then "val " else "var "
+   , propertyName meta
+   , " = "
+   , case propertyType meta of
+      PropSignedRange _ -> show (fromIntegral value :: Int64)
+      PropEnum xs       -> Map.fromList xs Map.! value
+      _                 -> show value
+   , " :: "
+   , case propertyType meta of
+      PropObject         -> "Object"
+      PropRange xs       -> "Range " ++ show xs
+      PropSignedRange xs -> "Range " ++ show xs
+      PropEnum xs        -> "Enum [" ++ mconcat (List.intersperse "," (fmap snd xs)) ++ "]"
+      t                  -> show t
+   ]
 
 data InvalidProperty = InvalidProperty deriving (Show,Eq)
 

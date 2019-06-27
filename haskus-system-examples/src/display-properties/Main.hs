@@ -3,6 +3,8 @@
 
 import Haskus.System
 import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.Property
+import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.AtomicConfig
 import qualified Haskus.Utils.Map as Map
 
@@ -25,18 +27,15 @@ main = runSys' <| do
             mprops <- graphicsConfig (graphicCardHandle card) do
                         getPropertyM o
                            |> runE
-            forM_ mprops \props ->
-               writeStrLn term ("  * Properties: " ++ show props)
-         
-      writeStrLn term "Connectors:"
+            forM_ mprops \props -> do
+               writeStrLn term ("* " ++ getObjectQualifiedID o)
+               forM_ props \prop ->
+                  writeStrLn term ("    " ++ showProperty prop)
+
       mapM_ showProps (Map.elems (graphicsConnectors state))
-      writeStrLn term "Encoders:"
       mapM_ showProps (Map.elems (graphicsEncoders state))
-      writeStrLn term "Controllers:"
       mapM_ showProps (Map.elems (graphicsControllers state))
-      writeStrLn term "Planes:"
       mapM_ showProps (Map.elems (graphicsPlanes state))
-      mapM_ (writeStrLn term . show) (graphicsPlanes state)
 
    sysLogPrint
    powerOff
