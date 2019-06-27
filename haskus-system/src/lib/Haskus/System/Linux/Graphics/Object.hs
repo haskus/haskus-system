@@ -35,39 +35,6 @@ import Haskus.Utils.Flow
 data InvalidCount   = InvalidCount Int
 data ObjectNotFound = ObjectNotFound deriving (Show,Eq)
 
-data ObjectType
-   = ObjectController
-   | ObjectConnector
-   | ObjectEncoder
-   | ObjectMode
-   | ObjectProperty
-   | ObjectFrameSource
-   | ObjectBlob
-   | ObjectPlane
-   deriving (Show,Eq,Ord,Enum)
-
-instance CEnum ObjectType where
-   toCEnum x = case x of
-      0xcccccccc -> ObjectController
-      0xc0c0c0c0 -> ObjectConnector
-      0xe0e0e0e0 -> ObjectEncoder
-      0xdededede -> ObjectMode
-      0xb0b0b0b0 -> ObjectProperty
-      0xfbfbfbfb -> ObjectFrameSource
-      0xbbbbbbbb -> ObjectBlob
-      0xeeeeeeee -> ObjectPlane
-      _          -> error "Invalid object type"
-
-   fromCEnum x = case x of
-      ObjectController   -> 0xcccccccc 
-      ObjectConnector    -> 0xc0c0c0c0 
-      ObjectEncoder      -> 0xe0e0e0e0 
-      ObjectMode         -> 0xdededede 
-      ObjectProperty     -> 0xb0b0b0b0 
-      ObjectFrameSource  -> 0xfbfbfbfb 
-      ObjectBlob         -> 0xbbbbbbbb 
-      ObjectPlane        -> 0xeeeeeeee 
-
 
 class Object a where
    getObjectType :: a -> ObjectType

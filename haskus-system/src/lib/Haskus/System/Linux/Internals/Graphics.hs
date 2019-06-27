@@ -54,6 +54,7 @@ module Haskus.System.Linux.Internals.Graphics
    , StructGetObjectProperties (..)
    , StructSetObjectProperty (..)
    , StructGetBlob (..)
+   , ObjectType (..)
    -- * Framebuffer
    , FrameBufferFlag (..)
    , FrameBufferFlags
@@ -69,6 +70,8 @@ module Haskus.System.Linux.Internals.Graphics
    , StructCursor2 (..)
    -- * Gamma look-up table
    , StructControllerLut (..)
+   , StructColorCtm (..)
+   , StructColorLut (..)
    -- * Page flipping
    , PageFlipFlag (..)
    , PageFlipFlags
@@ -85,6 +88,12 @@ module Haskus.System.Linux.Internals.Graphics
    -- * Blob
    , StructCreateBlob (..)
    , StructDestroyBlob (..)
+   , Rect (..)
+   -- * Leases
+   , StructCreateLease (..)
+   , StructRevokeLease (..)
+   , StructGetLease (..)
+   , StructListLessees (..)
    -- * Generic
    , Clip (..)
    -- * Capabilities
@@ -575,6 +584,39 @@ data StructPropertyEnum = StructPropertyEnum
    , peName        :: {-# UNPACK #-} !(CStringBuffer 32)
    } deriving (Generic,Storable)
 
+data ObjectType
+   = ObjectController
+   | ObjectConnector
+   | ObjectEncoder
+   | ObjectMode
+   | ObjectProperty
+   | ObjectFrameSource
+   | ObjectBlob
+   | ObjectPlane
+   deriving (Show,Eq,Ord,Enum)
+
+instance CEnum ObjectType where
+   toCEnum x = case x of
+      0xcccccccc -> ObjectController
+      0xc0c0c0c0 -> ObjectConnector
+      0xe0e0e0e0 -> ObjectEncoder
+      0xdededede -> ObjectMode
+      0xb0b0b0b0 -> ObjectProperty
+      0xfbfbfbfb -> ObjectFrameSource
+      0xbbbbbbbb -> ObjectBlob
+      0xeeeeeeee -> ObjectPlane
+      _          -> error "Invalid object type"
+
+   fromCEnum x = case x of
+      ObjectController   -> 0xcccccccc
+      ObjectConnector    -> 0xc0c0c0c0
+      ObjectEncoder      -> 0xe0e0e0e0
+      ObjectMode         -> 0xdededede
+      ObjectProperty     -> 0xb0b0b0b0
+      ObjectFrameSource  -> 0xfbfbfbfb
+      ObjectBlob         -> 0xbbbbbbbb
+      ObjectPlane        -> 0xeeeeeeee
+
 -- | drm_mode_get_property
 data StructGetProperty = StructGetProperty
    { gpsValuesPtr      :: {-# UNPACK #-} !Word64 -- ^ Values or blob lengths
@@ -708,6 +750,7 @@ data StructModeCommand = StructModeCommand
 data CursorFlag
    = CursorFlagBO
    | CursorFlagMove
+   | CursorFlagFlags
    deriving (Eq,Enum,Show,BitOffset)
 
 type CursorFlags = BitSet Word32 CursorFlag
@@ -720,7 +763,7 @@ data StructCursor = StructCursor
    , curY         :: {-# UNPACK #-} !Int32
    , curWidth     :: {-# UNPACK #-} !Word32
    , curHeight    :: {-# UNPACK #-} !Word32
-   , curHandle    :: {-# UNPACK #-} !Word32
+   , curHandle    :: {-# UNPACK #-} !Word32 -- ^ Driver specific handle
    } deriving (Generic,Storable)
 
 -- | drm_mode_cursor2
@@ -731,7 +774,7 @@ data StructCursor2 = StructCursor2
    , cur2Y         :: {-# UNPACK #-} !Int32
    , cur2Width     :: {-# UNPACK #-} !Word32
    , cur2Height    :: {-# UNPACK #-} !Word32
-   , cur2Handle    :: {-# UNPACK #-} !Word32
+   , cur2Handle    :: {-# UNPACK #-} !Word32 -- ^ Driver specific handle
    , cur2HotX      :: {-# UNPACK #-} !Int32
    , cur2HotY      :: {-# UNPACK #-} !Int32
    } deriving (Generic,Storable)
@@ -744,10 +787,22 @@ data StructCursor2 = StructCursor2
 data StructControllerLut = StructControllerLut
    { clsCrtcId       :: {-# UNPACK #-} !Word32
    , clsGammaSize    :: {-# UNPACK #-} !Word32
-   , clsRed          :: {-# UNPACK #-} !Word64
+   , clsRed          :: {-# UNPACK #-} !Word64 -- ^ Pointers to arrays
    , clsGreen        :: {-# UNPACK #-} !Word64
    , clsBlue         :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
+
+newtype StructColorCtm = StructColorCtm
+   { colorCtmMatrix :: Vector 9 Word64 -- ^ Conversion matrix in S31.32 sign-magnitude (not two's complement!) format.
+   }
+
+-- | Values are mapped linearly to 0.0 - 1.0 range, with 0x0 == 0.0 and 0xffff == 1.0.
+data StructColorLut = StructColorLut
+   { colorLutRed      :: !Word16
+   , colorLutGreen    :: !Word16
+   , colorLutBlue     :: !Word16
+   , colorLutReserved :: !Word16
+   }
 
 -----------------------------------------------------------------------------
 -- Page flipping
@@ -910,6 +965,42 @@ data StructCreateBlob = StructCreateBlob
 newtype StructDestroyBlob = StructDestroyBlob
    { dbBlobId :: Word32 -- ^ blob identifier
    } deriving (Generic,Storable)
+
+-- | Lease mode resources, creating another drm_master.
+data StructCreateLease = StructCreateLease
+   { clObjectIds   :: !Word64 -- ^ Pointer to array of object ids (Word32s)
+   , clObjectCount :: !Word32 -- ^ Number of object ids
+   , clFlags       :: !Word32 -- ^ Flags for new FD (O_CLOEXEC, etc.)
+   , clLesseeId    :: !Word32 -- ^ Returned unique identifier for lessee
+   , clLesseeFd    :: !Word32 -- ^ Returned file descriptor to new drm_amster file
+   }
+
+-- | List lesses from a drm_master
+data StructListLessees = StructListLessees
+   { llCountLessees :: !Word32 -- ^ Input: length of the array. Output: total number of objects
+   , llReserved     :: !Word32
+   , llObjectsPtr   :: !Word64 -- ^ Pointer to object ids (Word32)
+   }
+
+-- | Get leased objects
+data StructGetLease = StructGetLease
+   { glCountObjects :: !Word32 -- ^ Input: length of the array. Output: total number of leesses
+   , glReserved     :: !Word32
+   , glLesseesPtr   :: !Word64 -- ^ Pointer to lessee ids (Word64)
+   }
+
+-- | Revoke lease
+newtype StructRevokeLease = StructRevokeLease
+   { rlLesseeId :: Word32 -- ^ Unique ID of lessee
+   }
+
+-- | Two dimensional rectangle (used by FB_DAMAGE_CLIPS property of atomic blobs)
+data Rect = Rect
+   { rectX1 :: {-# UNPACK #-} !Int32 -- ^ Horizontal starting coordinate (inclusive)
+   , rectY1 :: {-# UNPACK #-} !Int32 -- ^ Vertical starting coordinate (inclusive)
+   , rectX2 :: {-# UNPACK #-} !Int32 -- ^ Horizontal ending coordinate (exclusive)
+   , rectY2 :: {-# UNPACK #-} !Int32 -- ^ Vertical ending coordinate (exclusive)
+   } deriving (Show,Eq,Generic,Storable)
 
 -- =============================================================
 --    From linux/include/uapi/drm/drm.h
