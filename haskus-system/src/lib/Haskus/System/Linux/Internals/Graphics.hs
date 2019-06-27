@@ -21,6 +21,9 @@ module Haskus.System.Linux.Internals.Graphics
    , AspectRatio(..)
    , DitheringMode(..)
    , DirtyMode(..)
+   , LinkStatus (..)
+   , ContentProtection (..)
+   , RotateReflect (..)
    , StructMode (..)
    , emptyStructMode
    -- * Resources
@@ -127,10 +130,6 @@ module Haskus.System.Linux.Internals.Graphics
    , EventType (..)
    , toEventType
    , DRMEvent (..)
-   -- * Rotation/reflection
-   , Rotation (..)
-   , Reflection (..)
-   , RotateReflect
    -- * SubPixel order
    , SubPixel (..)
    )
@@ -274,6 +273,36 @@ data DirtyMode
    | DirtyAnnotate
    deriving (Show,Eq,Enum)
 
+-- | Link status
+data LinkStatus
+   = LinkStatusGood
+   | LinkStatusBad
+   deriving (Show,Eq,Enum,CEnum)
+
+-- | Signals that a drm plane is been rotated <degrees> degrees in counter
+-- clockwise direction and/or that the contents of a drm plane is reflected
+-- along the <axis> axis, in the same way as mirroring.
+--
+-- See kerneldoc chapter "Plane Composition Properties" for more details.
+--
+-- This is provided as a convenience, looking up the property id using the
+-- name->prop id lookup is the preferred method.
+data RotateReflect
+   = Rotate0
+   | Rotate90
+   | Rotate180
+   | Rotate270
+   | ReflectX
+   | ReflectY
+   deriving (Show,Eq,Enum,BitOffset)
+
+
+-- | Content protection
+data ContentProtection
+   = ProtectionUndesired
+   | ProtectionDesired
+   | ProtectionEnabled
+   deriving (Show,Eq,Enum,CEnum)
 
 -- | drm_mode_modeinfo
 data StructMode = StructMode
@@ -398,6 +427,7 @@ data EncoderType
    | EncoderTypeVirtual -- ^ for virtual machine display
    | EncoderTypeDSI
    | EncoderTypeDPMST
+   | EncoderTypeDPI
    deriving (Eq,Ord,Show,Enum,CEnum)
 
 -- | drm_mode_get_encoder
@@ -459,6 +489,8 @@ data ConnectorType
    | ConnectorTypeeDP
    | ConnectorTypeVirtual
    | ConnectorTypeDSI
+   | ConnectorTypeDPI
+   | ConnectorTypeWriteback   -- ^ CRTC output is written back into memory (connector always appears disconnected)
    deriving (Eq, Ord, Enum, CEnum)
 
 instance Show ConnectorType where
@@ -480,6 +512,8 @@ instance Show ConnectorType where
       ConnectorTypeeDP           -> "eDP"
       ConnectorTypeVirtual       -> "Virtual"
       ConnectorTypeDSI           -> "DSI"
+      ConnectorTypeDPI           -> "DPI"
+      ConnectorTypeWriteback     -> "Writeback"
 
 -- | drm_mode_get_connector
 data StructGetConnector = StructGetConnector
@@ -1117,28 +1151,6 @@ data DRMEvent = DRMEvent
 -- =============================================================
 --    From linux/include/uapi/drm/drm_crtc.h
 -- =============================================================
-
------------------------------------------------------------------------------
--- Rotation/reflection
------------------------------------------------------------------------------
-
-data Rotation
-   = RotateNone
-   | Rotate90
-   | Rotate180
-   | Rotate270
-   deriving (Show,Eq,Enum)
-
-data Reflection
-   = ReflectX
-   | ReflectY
-   deriving (Show,Eq,Enum,BitOffset)
-
-type RotateReflect = BitFields Word8
-   '[ BitField 2 "padding"    Word8
-    , BitField 2 "reflection" (BitSet Word8 Reflection)
-    , BitField 4 "rotation"   (EnumField Word8 Rotation)
-    ]
 
 -----------------------------------------------------------------------------
 -- SubPixel order
