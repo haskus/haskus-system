@@ -85,10 +85,11 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          let cardID = read (drop 4 (takeBaseName (Text.unpack devpath)))
          hdl <- getDeviceHandle dm dev
          -- We support these capabilities
-         lift <| setClientCapabilityWarn hdl ClientCapStereo3D        True
-         lift <| setClientCapabilityWarn hdl ClientCapUniversalPlanes True
-         lift <| setClientCapabilityWarn hdl ClientCapAtomic          True
-         lift <| setClientCapabilityWarn hdl ClientCapAspectRatio     True
+         lift <| setClientCapabilityWarn hdl ClientCapStereo3D            True
+         lift <| setClientCapabilityWarn hdl ClientCapUniversalPlanes     True
+         lift <| setClientCapabilityWarn hdl ClientCapAtomic              True
+         lift <| setClientCapabilityWarn hdl ClientCapAspectRatio         True
+         lift <| setClientCapabilityWarn hdl ClientCapWritebackConnectors True
          -- Create the DRM event reader thread
          GraphicCard devpath dev cardID hdl
             <$> lift (newEventWaiterThread hdl)
