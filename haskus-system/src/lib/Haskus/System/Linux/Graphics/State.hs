@@ -65,7 +65,6 @@ import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.BitField
 import Haskus.Format.Binary.FixedPoint
-import Control.Monad (liftM2)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Foreign.Ptr
@@ -334,9 +333,9 @@ parseRes hdl res2 res4 = do
    state <- case connConnection_ res4 of
       1 -> do
             -- properties
-            rawProps <- liftM2 RawProperty
-                        <$> peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
-                        <*> peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
+            ptrs <- peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
+            vals <- peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
+            let rawProps = zipWith RawProperty ptrs vals
             props <- forM rawProps $ \raw -> do
                --FIXME: store property meta in the card
                getPropertyMeta hdl (rawPropertyMetaID raw)
