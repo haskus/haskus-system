@@ -37,7 +37,7 @@ module Haskus.System.Linux.Graphics.State
    , getEntities
    , pickEncoders
    , pickControllers
-   , getPlaneResources
+   , getPlaneIDs
    , InvalidPlane (..)
    , Plane (..)
    , getPlane
@@ -106,7 +106,7 @@ readGraphicsState hdl = go 5
          mencs  <- runE <| traverse (getEncoderFromID hdl res) (resEncoderIDs res)
          mctrls <- runE <| traverse (getControllerFromID hdl) (resControllerIDs res)
          -- read planes
-         mplanes <- (traverse (getPlane hdl) =<< liftE (getPlaneResources hdl))
+         mplanes <- (traverse (getPlane hdl) =<< liftE (getPlaneIDs hdl))
                         -- shouldn't happen, planes are invariant
                      |> catchDieE (\(InvalidPlane _) -> error "Invalid plane" )
                      |> runE
@@ -466,8 +466,8 @@ pickEncoders res = pickResources (resEncoderIDs res)
 data InvalidPlane = InvalidPlane PlaneID deriving (Show)
 
 -- | Get the IDs of the supported planes
-getPlaneResources :: forall m. MonadInIO m => Handle -> Excepts '[InvalidHandle] m [PlaneID]
-getPlaneResources hdl = getCount >>= getIDs
+getPlaneIDs :: forall m. MonadInIO m => Handle -> Excepts '[InvalidHandle] m [PlaneID]
+getPlaneIDs hdl = getCount >>= getIDs
    where
       gpr s = ioctlGetPlaneResources s hdl
 
@@ -476,7 +476,7 @@ getPlaneResources hdl = getCount >>= getIDs
       getCount = (gpr (StructGetPlaneRes 0 0) ||> gprsCountPlanes)
                   |> catchLiftLeft \case
                         EINVAL -> throwE InvalidHandle
-                        e      -> unhdlErr "getPlaneResources" e
+                        e      -> unhdlErr "getPlaneIDs" e
    
       -- get the plane IDs (invariant for a given device)
       getIDs :: Word32 -> Excepts '[InvalidHandle] m [PlaneID]
@@ -486,7 +486,7 @@ getPlaneResources hdl = getCount >>= getIDs
          void (gpr (StructGetPlaneRes p' n))
             |> catchLiftLeft \case
                   EINVAL -> throwE InvalidHandle
-                  e      -> unhdlErr "getPlaneResources" e
+                  e      -> unhdlErr "getPlaneIDs" e
          fmap EntityID <$> peekArray (fromIntegral n) p
 
 -- | Get plane information

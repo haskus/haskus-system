@@ -4,13 +4,15 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 -- | Object
 module Haskus.System.Linux.Graphics.Object
    ( Object(..)
    , ObjectType(..)
    , ObjectNotFound
-   , getObjectQualifiedID
+   , showObjectQualifiedID
    , showObjectType
    , getObjectPropertyCount
    , getObjectProperties
@@ -66,10 +68,29 @@ instance Object Plane where
    getObjectType _ = ObjectPlane
    getObjectID     = unEntityID . planeID
 
+instance Object ControllerID where
+   getObjectType _ = ObjectController
+   getObjectID     = unEntityID
+
+instance Object ConnectorID where
+   getObjectType _ = ObjectConnector
+   getObjectID     = unEntityID
+
+instance Object EncoderID where
+   getObjectType _ = ObjectEncoder
+   getObjectID     = unEntityID
+
+instance Object FrameSourceID where
+   getObjectType _ = ObjectFrameSource
+   getObjectID     = unEntityID
+
+instance Object PlaneID where
+   getObjectType _ = ObjectPlane
+   getObjectID     = unEntityID
 
 -- | Get a string with object type and ID
-getObjectQualifiedID :: Object a => a -> String
-getObjectQualifiedID a = showObjectType (getObjectType a) ++ " " ++ show (getObjectID a)
+showObjectQualifiedID :: Object a => a -> String
+showObjectQualifiedID a = showObjectType (getObjectType a) ++ " " ++ show (getObjectID a)
 
 -- | Show object type string
 showObjectType :: ObjectType -> String

@@ -25,7 +25,7 @@ main = runSys' do
          writeStrLn term "No connector found"
 
       forM_ conns \conn -> do
-         writeStrLn term ("Probing " ++ getObjectQualifiedID conn)
+         writeStrLn term ("Probing " ++ showObjectQualifiedID conn)
 
          case connectorState conn of
             Disconnected      -> writeStrLn term " -> disconnected"

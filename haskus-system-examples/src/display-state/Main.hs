@@ -1,15 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
 import Haskus.System.Linux.Graphics.State
 
 main :: IO ()
-main = runSys <| do
+main = runSys do
    sys   <- defaultSystemInit
    term  <- defaultTerminal
    cards <- loadGraphicCards (systemDeviceManager sys)
    
-   forM_ cards <| \card -> do
+   forM_ cards \card -> do
       state <- readGraphicsState (graphicCardHandle card)
                   |> assertE "Read graphics state"
 

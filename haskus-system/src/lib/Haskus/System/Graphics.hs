@@ -8,7 +8,10 @@
 -- | Manage graphics devices
 module Haskus.System.Graphics
    ( GraphicCard (..)
+   , InvalidCard (..)
+   , EntitiesIDs (..)
    , loadGraphicCards
+   , getEntitiesIDs
    , MappedSurface (..)
    , GenericFrame (..)
    , initGenericFrameBuffer
@@ -64,8 +67,21 @@ data GraphicCard = GraphicCard
    , graphicCardChan    :: TChan Graphics.Event -- ^ Event stream
    }
 
+-- - Invalid card error
+data InvalidCard
+   = InvalidCardHandle -- ^ The card handle is invalid
+   deriving (Show,Eq)
 
--- | Return detected graphic cards
+-- | Entities (only IDs)
+data EntitiesIDs = EntitiesIDs
+   { entitiesConnectorsIDs   :: [ConnectorID]   -- ^ Connectors
+   , entitiesControllersIDs  :: [ControllerID]  -- ^ Controllers
+   , entitiesPlanesIDs       :: [PlaneID]       -- ^ Planes
+   , entitiesFrameSourcesIDs :: [FrameSourceID] -- ^ Frame pixel sources
+   }
+   deriving (Show,Eq)
+
+-- | Return detected graphics devices
 --
 -- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
 -- identifier. In this directory, the dev file contains device major/minor to
@@ -98,6 +114,24 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
       readDevInfo devpath dev
          ||> Just
          |> catchEvalE (const (return Nothing))
+
+
+-- | Get card entities
+getEntitiesIDs :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m EntitiesIDs
+getEntitiesIDs card = do
+   res <- getResources (graphicCardHandle card)
+      |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+   planeIDs <- getPlaneIDs (graphicCardHandle card)
+      |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+   -- Read Note [Avoiding Encoders] to understand why we don't return Encoder IDs
+   pure <| EntitiesIDs
+      { entitiesConnectorsIDs   = resConnectorIDs res
+      , entitiesControllersIDs  = resControllerIDs res
+      , entitiesFrameSourcesIDs = resFrameSourceIDs res
+      , entitiesPlanesIDs       = planeIDs
+      }
 
 
 -- | Create a new thread reading input events and putting them in a TChan

@@ -113,3 +113,7 @@ executables:
    DisplayConnectors:
       main: Main.hs
       source-dirs: src/display-connectors
+
+   TutEntitiesIDs:
+      main: TutEntitiesIDs.hs
+      source-dirs: src/tutorial

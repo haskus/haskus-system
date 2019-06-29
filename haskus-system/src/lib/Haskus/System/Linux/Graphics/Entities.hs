@@ -88,12 +88,27 @@ data ConnectedDevice = ConnectedDevice
 -- Encoder
 -------------------------------------------------------------------------------
 
+-- Note [Avoiding Encoders]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~
+--
+-- Linux documentation recommends AGAINST using `encoderPossibleControllers` and
+-- `encoderPossibleClones` because the drivers often report bad information.
+-- Moreover it seems like the `Encoder` abstraction shouldn't have been exposed
+-- to user-space because it isn't always meaningful. Moreover in the API the
+-- encoder is chosen implicitly when we connect a connector to a controller.
+--
+-- In conclusion: we won't expose encoders in haskus-system to avoid all this
+-- mess and because we don't really need them. The recommend Linux way to test
+-- output cloning and other stuff is to use the Atomic API and to test the
+-- different configurations until we find a suitable one.
+
 -- | An encoder
 --
 -- An encoder converts data obtained from the controller (i.e. from the frame
 -- buffer associated with the controller) into suitable data for the connector
 -- (i.e. for the device connected to the connector). Hence it only supports a
 -- set of connectors. In addition, it may not work with all controllers.
+--
 data Encoder = Encoder
    { encoderID                  :: EncoderID          -- ^ Encoder identifier
    , encoderType                :: EncoderType        -- ^ Type of the encoder

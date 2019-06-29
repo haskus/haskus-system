@@ -28,7 +28,7 @@ main = runSys' <| do
                         getPropertyM o
                            |> runE
             forM_ mprops \props -> do
-               writeStrLn term ("* " ++ getObjectQualifiedID o)
+               writeStrLn term ("* " ++ showObjectQualifiedID o)
                forM_ props \prop ->
                   writeStrLn term ("    " ++ showProperty prop)
 
