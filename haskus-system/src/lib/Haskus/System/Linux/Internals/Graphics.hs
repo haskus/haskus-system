@@ -72,7 +72,7 @@ module Haskus.System.Linux.Internals.Graphics
    , StructControllerLut (..)
    , StructColorCtm (..)
    , StructColorLut (..)
-   -- * Page flipping
+   -- * Frame switching
    , SwitchFrameFlag (..)
    , SwitchFrameFlags
    , StructSwitchFrame (..)
@@ -806,7 +806,7 @@ data StructColorLut = StructColorLut
    }
 
 -----------------------------------------------------------------------------
--- Frame switching (Page flipping)
+-- Frame switching
 -----------------------------------------------------------------------------
 
 -- | Frame switching flags
@@ -820,27 +820,24 @@ data SwitchFrameFlag
 type SwitchFrameFlags = BitSet Word32 SwitchFrameFlag
 
 -- 
--- Request a page flip on the specified crtc.
+-- Request a frame switch on the specified controller.
 -- 
--- This ioctl will ask KMS to schedule a page flip for the specified
--- crtc.  Once any pending rendering targeting the specified fb (as of
--- ioctl time) has completed, the crtc will be reprogrammed to display
--- that fb after the next vertical refresh.  The ioctl returns
--- immediately, but subsequent rendering to the current fb will block
--- in the execbuffer ioctl until the page flip happens.  If a page
--- flip is already pending as the ioctl is called, EBUSY will be
--- returned.
+-- This ioctl will ask KMS to schedule a frame switch for the specified
+-- controller. Once any pending rendering targeting the specified frame (as of
+-- ioctl time) has completed, the controller will be reprogrammed to display
+-- that frame after the next vertical refresh. The ioctl returns immediately,
+-- but subsequent rendering to the current frame will block in the execbuffer
+-- ioctl until the frame switch happens. If a frame switch is already pending as
+-- the ioctl is called, EBUSY will be returned.
 -- 
--- Flag DRM_MODE_PAGE_FLIP_EVENT requests that drm sends back a vblank
--- event (see drm.h: struct drm_event_vblank) when the page flip is
--- done.  The user_data field passed in with this ioctl will be
--- returned as the user_data field in the vblank event struct.
+-- `SwitchFrameGenerateEvent` flag requests that drm sends back an event when
+-- the frame switch done. The user_data field passed in with this ioctl will be
+-- returned as the user_data field in the event.
 -- 
--- Flag DRM_MODE_PAGE_FLIP_ASYNC requests that the flip happen
--- 'as soon as possible', meaning that it not delay waiting for vblank.
+-- `SwitchFrameAsync` flag requests that the switch happen 'as soon as
+-- possible', meaning that it not delay waiting for vblank.
 -- This may cause tearing on the screen.
 -- 
--- The reserved field must be zero.
 
 -- | drm_mode_crtc_page_flip
 data StructSwitchFrame = StructSwitchFrame
@@ -852,29 +849,31 @@ data StructSwitchFrame = StructSwitchFrame
    } deriving (Generic,Storable)
 
 --
--- Request a page flip on the specified crtc.
+-- Request a frame switch on the specified controller.
 --
--- Same as struct drm_mode_crtc_page_flip, but supports new flags and
--- re-purposes the reserved field:
+-- Same as StructSwitchFrame, but supports new flags and re-purposes the
+-- reserved field:
 --
 -- The sequence field must be zero unless either of the
--- DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE/RELATIVE flags is specified. When
--- the ABSOLUTE flag is specified, the sequence field denotes the absolute
--- vblank sequence when the flip should take effect. When the RELATIVE
--- flag is specified, the sequence field denotes the relative (to the
--- current one when the ioctl is called) vblank sequence when the flip
--- should take effect. NOTE: DRM_IOCTL_WAIT_VBLANK must still be used to
--- make sure the vblank sequence before the target one has passed before
--- calling this ioctl. The purpose of the
--- DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE/RELATIVE flags is merely to clarify
--- the target for when code dealing with a page flip runs during a
+-- `SwitchFrameTargetAbsolute` or `SwitchFrameTargetRelative` flags is
+-- specified.
+--    * When the ABSOLUTE flag is specified, the sequence field denotes the
+--    absolute vblank sequence when the frame switch should take effect.
+--    * When the RELATIVE flag is specified, the sequence field denotes the
+--    relative (to the current one when the ioctl is called) vblank sequence
+--    when the frame switch should take effect.
+--
+-- NOTE: DRM_IOCTL_WAIT_VBLANK must still be used to make sure the
+-- vblank sequence before the target one has passed before calling this ioctl.
+-- The purpose of the SwitchFrameTargetAbsolute/Relative flags is merely to
+-- clarify the target for when code dealing with a frame switch runs during a
 -- vertical blank period.
 
 -- drm_mode_crtc_page_flip_target
 data StructSwitchFrameTarget = StructSwitchFrameTarget
    { pftCrtcId   :: {-# UNPACK #-} !Word32
    , pftFrameId  :: {-# UNPACK #-} !Word32
-   , pftFlags    :: {-# UNPACK #-} !Word32
+   , pftFlags    :: {-# UNPACK #-} !SwitchFrameFlags
    , pftSequence :: {-# UNPACK #-} !Word32
    , pftUserData :: {-# UNPACK #-} !Word64
    } deriving (Show,Generic,Storable)
@@ -1035,7 +1034,7 @@ data Capability
    | CapGenericPreferShadow
    | CapPrime
    | CapTimestampMonotonic
-   | CapAsyncSwitchFrame      -- ^ Support asynchronous page-flipping
+   | CapAsyncFrameSwitch      -- ^ Support asynchronous frame switching
    | CapCursorWidth           -- ^ Return a valid width plane size to use (may be the maximum, depending on the driver)
    | CapCursorHeight          -- ^ Ditto cursor plane height
    | CapAddFrameModifiers
@@ -1054,7 +1053,7 @@ instance CEnum Capability where
       CapGenericPreferShadow     -> 0x4
       CapPrime                   -> 0x5
       CapTimestampMonotonic      -> 0x6
-      CapAsyncSwitchFrame        -> 0x7
+      CapAsyncFrameSwitch        -> 0x7
       CapCursorWidth             -> 0x8
       CapCursorHeight            -> 0x9
       CapAddFrameModifiers       -> 0x10 -- there is no reason for this gap, except if they forgot that it was hexadecimal...
@@ -1069,7 +1068,7 @@ instance CEnum Capability where
       0x4  -> CapGenericPreferShadow
       0x5  -> CapPrime
       0x6  -> CapTimestampMonotonic
-      0x7  -> CapAsyncSwitchFrame
+      0x7  -> CapAsyncFrameSwitch
       0x8  -> CapCursorWidth
       0x9  -> CapCursorHeight
       0x10 -> CapAddFrameModifiers

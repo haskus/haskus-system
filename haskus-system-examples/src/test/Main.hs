@@ -159,9 +159,9 @@ main = runSys' <| do
          -- ga <- getControllerGamma ctrl
          -- writeStrLn term (show ga)
 
-         -- page flip
+         -- frame switch
          let setFb fb = switchFrame ctrl fb (BitSet.fromList [SwitchFrameGenerateEvent]) 0
-                        |> assertE "Switch framebuffer"
+                        |> assertE "Switch frame"
 
          setFb fb1
 

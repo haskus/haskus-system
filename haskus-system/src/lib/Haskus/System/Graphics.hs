@@ -198,7 +198,7 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
    -- remove the frame
    removeFrame hdl fb
-      |> assertLogShowErrorE "Remove framebuffer"
+      |> assertLogShowErrorE "Remove frame"
 
 
 -----------------------------------------------------------------------
@@ -214,10 +214,10 @@ data RenderingEngine = RenderingEngine
 
 -- | Multi-buffering state
 data BufferingState a = BufferingState
-   { fbShown    :: a          -- ^ Framebuffer currently displayed
-   , fbPending  :: Maybe a    -- ^ Framebuffer being flipped
-   , fbDrawn    :: Maybe a    -- ^ Framebuffer drawn but not yet submitted to be flipped
-   , fbDrawable :: [a]        -- ^ Framebuffers free to be drawed on
+   { fbShown    :: a          -- ^ Frame currently displayed
+   , fbPending  :: Maybe a    -- ^ Frame pending for being displayed
+   , fbDrawn    :: Maybe a    -- ^ Frame drawn but not yet submitted to be displayed
+   , fbDrawable :: [a]        -- ^ Frames free to be drawed on
    }
 
 -- | Rendering wait
@@ -229,7 +229,7 @@ data FrameWait
 
 -- | Init the rendering engine
 --
--- TODO: indicate failure (HostBuffer not supported, framebuffer allocation
+-- TODO: indicate failure (HostBuffer not supported, frame allocation
 -- error, etc.)
 -- TODO: support multiple controllers/connectors
 -- TODO: support connections/disconnections
@@ -262,7 +262,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       setController ctrl (SetSource initFB) [conn] (Just mode)
          |> assertE "Perform initial mode-setting"
 
-      -- page flip
+      -- frame switching
       fbState <- newTVarIO (BufferingState
                   { fbShown    = head bufs
                   , fbPending  = Nothing
@@ -272,12 +272,14 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       fps <- newTVarIO (0 :: Word)
 
-      -- on page flip complete
       onEvent (graphicCardChan card) $ \case
+         -- on frame switch complete
          FrameSwitched evData
             -- we used to use user_data field to know which controller has
-            -- flipped but in later kernel versions (5.1?) a reserved field has
-            -- been dedicated to this in the event payload
+            -- switched its frame but in later kernel versions (5.1?) a reserved
+            -- field has been dedicated to this in the event payload.
+            -- We check that it is supported with `CapControllerInVBlankEvent`
+            -- capability.
             | eventControllerId evData == fromIntegral (getObjectID ctrl) ->
                atomically $ do
                   s <- readTVar fbState
@@ -300,7 +302,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       sysFork "Multi-buffering manager" $ forever $ do
          gfb <- atomically $ do
             s <- readTVar fbState
-            -- check that the previous frame is flipped
+            -- check that the previous frame has switched
             -- and that we have a frame to draw
             case (fbPending s, fbDrawn s) of
                (Nothing, Just d) -> do
@@ -313,10 +315,10 @@ initRenderingEngine card ctrl mode conn nfb flags draw
                -- otherwise retry
                _ -> retry
 
-         -- flip the pending frame
+         -- switch to the pending frame
          let (GenericFrame fb _) = gfb
          switchFrame ctrl fb (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
-            |> assertE "Switch framebuffer"
+            |> assertE "Switch frame"
             
 
       let
@@ -350,9 +352,9 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             -- switch to another thread
             yield
 
-      -- Force the generation of the first page-flip event
+      -- Force the generation of the first frame-switch event
       switchFrame ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
-         |> assertE "Switch framebuffer"
+         |> assertE "Switch frame"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do
          draw mode gfb

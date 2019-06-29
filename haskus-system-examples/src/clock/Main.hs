@@ -100,13 +100,13 @@ main = runSys' do
          setController ctrl (SetSource fb1) [conn] (Just mode)
             |> assertE "Set controller"
 
-         -- page flip
+         -- frame switch
          let 
             setFb fb = switchFrame ctrl fb (BitSet.fromList [SwitchFrameGenerateEvent]) 0
-                        |> assertE "Switch framebuffer"
+                        |> assertE "Switch frame"
 
             --clp        = Clip 0 0 (modeHorizontalDisplay mode - 1) (modeVerticalDisplay mode - 1)
-            --dirtyFb fb = sysCallAssertQuiet "Dirty framebuffer" <|
+            --dirtyFb fb = sysCallAssertQuiet "Dirty frame" <|
             --               dirtyFrameBuffer fd fb (Dirty [clp])
 
          setFb fb1
