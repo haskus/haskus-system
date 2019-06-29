@@ -19,21 +19,23 @@ data DisconnectedCard = DisconnectedCard
 
 graphicsPage :: MonadInIO m => GraphicCard -> Excepts '[DisconnectedCard] m VDiagram
 graphicsPage card = do
-   diag <- readGraphicsState (graphicCardHandle card)
+   state <- readGraphicsState (graphicCardHandle card)
             |> catchE (\InvalidHandle -> failureE DisconnectedCard)
-   return (drawGraphics diag)
+   encs <- getHandleEncoders (graphicCardHandle card)
+            |> catchE (\InvalidHandle -> failureE DisconnectedCard)
+   return (drawGraphics state encs)
 
-drawGraphics :: GraphicsState -> VDiagram
-drawGraphics state = diag
+drawGraphics :: GraphicsState -> [Encoder] -> VDiagram
+drawGraphics state encoders = diag
    where
       planesIds = Map.keys (graphicsPlanes      state)
       ctrlsIds  = Map.keys (graphicsControllers state)
-      encsIds   = Map.keys (graphicsEncoders    state)
+      encsIds   = fmap encoderID encoders
       connsIds  = Map.keys (graphicsConnectors  state)
       fbIds     = graphicsFrameBuffers  state
 
       possibleClones = nub [(encoderID enc, c)
-                           | enc <- Map.elems (graphicsEncoders state)
+                           | enc <- encoders
                            , c <- encoderPossibleClones enc
                            ]
 
@@ -64,7 +66,7 @@ drawGraphics state = diag
                                    , let c = connectorID conn
                                    ]
            -- encoder --> controller arrows
-           |> encCtrlArrows [(e,c) | enc <- Map.elems (graphicsEncoders state)
+           |> encCtrlArrows [(e,c) | enc <- encoders
                                    , let c = encoderControllerID enc
                                    , let e = encoderID enc
                                    ]

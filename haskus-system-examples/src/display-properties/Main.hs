@@ -33,7 +33,6 @@ main = runSys' <| do
                   writeStrLn term ("    " ++ showProperty prop)
 
       mapM_ showProps (Map.elems (graphicsConnectors state))
-      mapM_ showProps (Map.elems (graphicsEncoders state))
       mapM_ showProps (Map.elems (graphicsControllers state))
       mapM_ showProps (Map.elems (graphicsPlanes state))
 

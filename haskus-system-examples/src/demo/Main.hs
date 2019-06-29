@@ -309,6 +309,10 @@ main = runSys' <| do
       state <- assertE "Read graphics state"
                   <| readGraphicsState (graphicCardHandle card)
 
+      encoders <- assertE "Read encoders"
+                  <| getHandleEncoders (graphicCardHandle card)
+      let encoderMap = Map.fromList (fmap encoderID encoders `zip` encoders)
+
       -- get connectors
       conns <- if Map.null (graphicsConnectors state)
          then sysError "No graphics connector found" 
@@ -333,7 +337,7 @@ main = runSys' <| do
 
       let defaultCtrl = do
             encId  <- connectorEncoderID conn
-            enc    <- Map.lookup encId (graphicsEncoders state)
+            enc    <- Map.lookup encId encoderMap
             ctrlId <- encoderControllerID enc
             Map.lookup ctrlId (graphicsControllers state)
 
@@ -343,7 +347,7 @@ main = runSys' <| do
             -- we need to select a controller and an encoder
             Nothing -> do
                encId  <- headMaybe (connectorPossibleEncoderIDs conn)
-               enc    <- Map.lookup encId (graphicsEncoders state)
+               enc    <- Map.lookup encId encoderMap
                ctrlId <- headMaybe (encoderPossibleControllers enc)
                Map.lookup ctrlId (graphicsControllers state)
             

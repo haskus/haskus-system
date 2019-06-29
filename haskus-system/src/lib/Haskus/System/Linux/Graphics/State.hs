@@ -7,12 +7,15 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | State of the graphics system
 module Haskus.System.Linux.Graphics.State
    ( GraphicsState (..)
    , readGraphicsState
    -- ** Entities
+   , EntitiesIDs (..)
    , Controller (..)
    , Encoder(..)
    , EncoderType(..)
@@ -23,12 +26,13 @@ module Haskus.System.Linux.Graphics.State
    , ConnectorType(..)
    , SubPixel(..)
    , Resources(..)
+   , getHandleEntitiesIDs
    , setController'
    , switchFrameBuffer'
    , getControllers
    , getControllerGamma
    , setControllerGamma
-   , getEncoders
+   , getHandleEncoders
    , getEncoderFromID
    , getControllerFromID
    , fromStructController
@@ -38,9 +42,12 @@ module Haskus.System.Linux.Graphics.State
    , pickEncoders
    , pickControllers
    , getPlaneIDs
-   , InvalidPlane (..)
+   , InvalidPlaneID (..)
+   , InvalidControllerID (..)
+   , InvalidConnectorID (..)
+   , InvalidEncoderID (..)
    , Plane (..)
-   , getPlane
+   , getPlaneFromID
    , setPlane
    , disablePlane
    , InvalidDestRect (..)
@@ -73,7 +80,6 @@ import Foreign.Ptr
 -- | Graph of graphics entities
 data GraphicsState = GraphicsState
    { graphicsConnectors   :: Map ConnectorID   Connector  -- ^ Connectors
-   , graphicsEncoders     :: Map EncoderID     Encoder    -- ^ Encoders
    , graphicsControllers  :: Map ControllerID  Controller -- ^ Controllers
    , graphicsPlanes       :: Map PlaneID       Plane      -- ^ Planes
    , graphicsFrameBuffers :: [FrameSourceID]              -- ^ Frame sources
@@ -91,29 +97,58 @@ data Resources = Resources
    , resMaxHeight       :: Word32            -- ^ Maximal height
    } deriving (Show)
 
+-- | Entities (only IDs)
+data EntitiesIDs = EntitiesIDs
+   { entitiesConnectorsIDs   :: [ConnectorID]   -- ^ Connectors
+   , entitiesControllersIDs  :: [ControllerID]  -- ^ Controllers
+   , entitiesPlanesIDs       :: [PlaneID]       -- ^ Planes
+   , entitiesFrameSourcesIDs :: [FrameSourceID] -- ^ Frame pixel sources
+   }
+   deriving (Show,Eq)
 
+
+-- | Get card entities
+getHandleEntitiesIDs :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m EntitiesIDs
+getHandleEntitiesIDs hdl = do
+   res <- getResources hdl
+   planeIDs <- getPlaneIDs hdl
+
+   -- Read Note [Avoiding Encoders] to understand why we don't return Encoder IDs
+   pure <| EntitiesIDs
+      { entitiesConnectorsIDs   = resConnectorIDs res
+      , entitiesControllersIDs  = resControllerIDs res
+      , entitiesFrameSourcesIDs = resFrameSourceIDs res
+      , entitiesPlanesIDs       = planeIDs
+      }
 
 -- | Get the current graphics state from the kernel
 readGraphicsState :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m GraphicsState
 readGraphicsState hdl = go 5
    where
-      go n = do
-         -- get resource IDs
-         res <- getResources hdl
-         let fbs = resFrameSourceIDs res
-         -- read connectors, encoders and controllers
-         mconns <- runE <| traverse (getConnectorFromID hdl) (resConnectorIDs res)
-         mencs  <- runE <| traverse (getEncoderFromID hdl res) (resEncoderIDs res)
-         mctrls <- runE <| traverse (getControllerFromID hdl) (resControllerIDs res)
-         -- read planes
-         mplanes <- (traverse (getPlane hdl) =<< liftE (getPlaneIDs hdl))
-                        -- shouldn't happen, planes are invariant
-                     |> catchDieE (\(InvalidPlane _) -> error "Invalid plane" )
-                     |> runE
+      getPlaneFromID' i
+         = getPlaneFromID hdl i
+            -- shouldn't happen, planes are invariant
+            |> catchDieE (\(InvalidPlaneID _) -> error "readGraphicsState: unexpected invalid plane ID" )
 
-         case (mconns, mencs, mctrls, mplanes) of
-            (VRight conns, VRight encs, VRight ctrls, VRight planes) ->
-               return (buildGraphicsState conns encs ctrls planes fbs)
+      getControllerFromID' i
+         = getControllerFromID hdl i
+            -- shouldn't happen, controllers are invariant
+            |> catchDieE (\(InvalidControllerID _) -> error "readGraphicsState: unexpected invalid controller ID" )
+
+
+      go n = do
+         ids <- getHandleEntitiesIDs hdl
+         -- Read connectors, controllers and planes.
+         -- Connectors may fail as they can be removed between the time we get
+         -- the ID and the time we get the details from the ID. Controllers and
+         -- planes IDs are invariant for a given device.
+         mconns  <- runE <| traverse (getConnectorFromID hdl)   (entitiesConnectorsIDs  ids)
+         mctrls  <- runE <| traverse getControllerFromID'       (entitiesControllersIDs ids)
+         mplanes <- runE <| traverse getPlaneFromID'            (entitiesPlanesIDs      ids)
+
+         case (mconns, mctrls, mplanes) of
+            (VRight conns, VRight ctrls, VRight planes) ->
+               return <| buildGraphicsState conns ctrls planes (entitiesFrameSourcesIDs ids)
             -- on failure we restart the process
             -- (we check that we don't loop indefinitely)
             _ -> if n > (0 :: Word)
@@ -122,10 +157,9 @@ readGraphicsState hdl = go 5
 
 
 -- | Build GraphicsState
-buildGraphicsState :: [Connector] -> [Encoder] -> [Controller] -> [Plane] -> [FrameSourceID] -> GraphicsState
-buildGraphicsState conns encs ctrls planes fbs = GraphicsState conns' encs' ctrls' planes' fbs
+buildGraphicsState :: [Connector] -> [Controller] -> [Plane] -> [FrameSourceID] -> GraphicsState
+buildGraphicsState conns ctrls planes fbs = GraphicsState conns' ctrls' planes' fbs
    where
-      encs'   = Map.fromList <| fmap (\e -> (encoderID e, e))    encs
       conns'  = Map.fromList <| fmap (\c -> (connectorID c, c))  conns
       ctrls'  = Map.fromList <| fmap (\c -> (controllerID c, c)) ctrls
       planes' = Map.fromList <| fmap (\p -> (planeID p, p))      planes
@@ -144,22 +178,26 @@ fromStructGetEncoder res hdl StructGetEncoder{..} =
          hdl
 
 -- | Get an encoder from its ID
-getEncoderFromID :: MonadInIO m => Handle -> Resources -> EncoderID -> Excepts '[EntryNotFound,InvalidHandle] m Encoder
+getEncoderFromID :: MonadInIO m => Handle -> Resources -> EncoderID -> Excepts '[InvalidHandle,InvalidEncoderID] m Encoder
 getEncoderFromID hdl res encId =
    (ioctlGetEncoder enc hdl ||> fromStructGetEncoder res hdl)
       |> catchLiftLeft \case
             EINVAL -> throwE InvalidHandle
-            ENOENT -> throwE EntryNotFound
-            e      -> unhdlErr "getEncoder" e
+            ENOENT -> throwE (InvalidEncoderID encId)
+            e      -> unhdlErr "getEncoderFromID" e
    where
       enc = StructGetEncoder (unEntityID encId) (toEnumField EncoderTypeNone)
                0 BitSet.empty BitSet.empty
 
--- | Get encoders (discard errors)
-getEncoders :: MonadInIO m => Handle -> Excepts '[EntryNotFound,InvalidHandle] m [Encoder]
-getEncoders hdl = do
+-- | Get encoders
+getHandleEncoders :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m [Encoder]
+getHandleEncoders hdl = do
    res <- liftE <| getResources hdl
-   traverse (getEncoderFromID hdl res) (resEncoderIDs res)
+   let
+      getEncoderFromID' i = getEncoderFromID hdl res i
+         -- shouldn't happen, encoders are invariant
+         |> catchDieE (\(InvalidEncoderID _) -> error "getHandleEncoders: unexpected invalid encoder ID" )
+   traverse getEncoderFromID' (resEncoderIDs res)
 
 emptyStructController :: StructController
 emptyStructController = StructController 0 0 0 0 0 0 0 0 emptyStructMode
@@ -179,13 +217,14 @@ fromStructController hdl StructController{..} =
 
       
 -- | Get Controller
-getControllerFromID :: MonadInIO m => Handle -> ControllerID -> Excepts '[EntryNotFound,InvalidHandle] m Controller
+getControllerFromID :: MonadInIO m => Handle -> ControllerID -> Excepts '[InvalidHandle,InvalidControllerID] m Controller
 getControllerFromID hdl eid =
-   (ioctlGetController crtc hdl ||> fromStructController hdl)
+   ioctlGetController crtc hdl
+      ||> fromStructController hdl
       |> catchLiftLeft \case
             EINVAL -> throwE InvalidHandle
-            ENOENT -> throwE EntryNotFound
-            e      -> unhdlErr "getController" e
+            ENOENT -> throwE (InvalidControllerID eid)
+            e      -> unhdlErr "getControllerFromID" e
    where
       crtc = emptyStructController { contID = unEntityID eid }
 
@@ -231,7 +270,7 @@ switchFrameBuffer' hdl cid fsid flags udata = do
    void <| ioctlPageFlip s hdl
 
 -- | Get controllers
-getControllers :: MonadInIO m => Handle -> Excepts '[EntryNotFound,InvalidHandle] m [Controller]
+getControllers :: MonadInIO m => Handle -> Excepts '[InvalidHandle,InvalidControllerID] m [Controller]
 getControllers hdl = do
    res <- liftE <| getResources hdl
    traverse (getControllerFromID hdl) (resControllerIDs res)
@@ -264,27 +303,27 @@ setControllerGamma c (rs,gs,bs) = do
       let f = fromIntegral . ptrToWordPtr
       ioctlSetGamma (s (f r) (f g) (f b)) hdl
 
-getConnector' :: MonadInIO m => Handle -> StructGetConnector -> Excepts '[EntryNotFound,InvalidParam] m StructGetConnector
-getConnector' hdl r =
-   ioctlGetConnector r hdl
-      |> catchLiftLeft \case
-            EINVAL -> throwE InvalidParam
-            ENOENT -> throwE EntryNotFound
-            e      -> unhdlErr "getConnector" e
-
 -- | Get connector
 getConnectorFromID :: forall m.
    ( MonadInIO m
-   ) => Handle -> ConnectorID -> Excepts '[InvalidParam,EntryNotFound,InvalidProperty] m Connector
-getConnectorFromID hdl eid = liftE (getConnector' hdl res) >>= getValues
-   where
+   ) => Handle -> ConnectorID -> Excepts '[InvalidParam,InvalidConnectorID,InvalidProperty] m Connector
+getConnectorFromID hdl eid = do
+   let
       res = StructGetConnector 0 0 0 0 0 0 0 0 (unEntityID eid)
                (toEnumField ConnectorTypeUnknown) 0 0 0 0
                (toEnumField SubPixelNone)
 
-      getValues :: StructGetConnector -> Excepts '[InvalidParam,EntryNotFound,InvalidProperty] m Connector
+      getConnector' :: MonadInIO m => StructGetConnector -> Excepts '[InvalidConnectorID,InvalidParam] m StructGetConnector
+      getConnector' r =
+         ioctlGetConnector r hdl
+            |> catchLiftLeft \case
+                  EINVAL -> throwE InvalidParam
+                  ENOENT -> throwE (InvalidConnectorID eid)
+                  e      -> unhdlErr "getConnectorFromID" e
+
+
       getValues res2 = do
-            (rawRes,conn) <- liftE (rawGet hdl res2)
+            (rawRes,conn) <- liftE (rawGet res2)
             -- we need to check that the number of resources is still the same (as
             -- resources may have appeared between the time we get the number of
             -- resources and the time we get them...)
@@ -295,74 +334,75 @@ getConnectorFromID hdl eid = liftE (getConnector' hdl res) >>= getValues
                then getConnectorFromID hdl eid
                else return conn
 
-rawGet :: MonadInIO m => Handle -> StructGetConnector -> Excepts '[InvalidParam,InvalidProperty,EntryNotFound] m (StructGetConnector,Connector)
-rawGet hdl res2 = do
-
-   let
-      allocaArray' :: (MonadInIO m, Integral c, Storable a) => c -> (Ptr a -> m b) -> m b
+      allocaArray' :: forall n c a b. (MonadInIO n, Integral c, Storable a) => c -> (Ptr a -> n b) -> n b
       allocaArray' n = allocaArray (fromIntegral n)
 
-
-   allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->
-      allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
-         allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
-            allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> do
-               let
-                  cv = fromIntegral . ptrToWordPtr
-                  res3 = res2 { connEncodersPtr   = cv es
-                              , connModesPtr      = cv ms
-                              , connPropsPtr      = cv ps
-                              , connPropValuesPtr = cv pvs
-                              }
-
-               res4 <- liftE <| getConnector' hdl res3 
-               (res4,) <|| liftE <| parseRes hdl res2 res4
-
-
-parseRes :: MonadInIO m => Handle -> StructGetConnector -> StructGetConnector -> Excepts '[InvalidParam,InvalidProperty] m Connector
-parseRes hdl res2 res4 = do
-   let
-      cv = wordPtrToPtr . fromIntegral
-
-      wrapZero 0 = Nothing
-      wrapZero x = Just x
-
-      peekArray' :: (MonadIO m, Storable a, Integral c) => c -> Ptr a -> m [a]
+      peekArray' :: forall n c a. (MonadIO n, Storable a, Integral c) => c -> Ptr a -> n [a]
       peekArray' n ptr = peekArray (fromIntegral n) ptr
 
-   state <- case connConnection_ res4 of
-      1 -> do
-            -- properties
-            ptrs <- peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
-            vals <- peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
-            let rawProps = zipWith RawProperty ptrs vals
-            props <- forM rawProps $ \raw -> do
-               --FIXME: store property meta in the card
-               getPropertyMeta hdl (rawPropertyMetaID raw)
-                  ||> \meta -> Property meta (rawPropertyValue raw)
+      rawGet res2 = do
+         allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->
+            allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
+               allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
+                  allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> do
+                     let
+                        cv = fromIntegral . ptrToWordPtr
+                        res3 = res2 { connEncodersPtr   = cv es
+                                    , connModesPtr      = cv ms
+                                    , connPropsPtr      = cv ps
+                                    , connPropValuesPtr = cv pvs
+                                    }
 
-            modes <- fmap fromStructMode <$> peekArray' (connModesCount res2) (cv (connModesPtr res4))
+                     res4 <- getConnector' res3
+                              |> liftE @'[InvalidParam,InvalidConnectorID,InvalidProperty]
+                     parseRes res2 res4
+                        ||> (res4,)
+                        |> liftE
 
-            return (Connected (ConnectedDevice
-               modes
-               (connWidth_ res4)
-               (connHeight_ res4)
-               (fromEnumField (connSubPixel_ res4))
-               props))
-               
-      2 -> return Disconnected
-      _ -> return ConnectionUnknown
 
-   encs  <- fmap EntityID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
+      parseRes res2 res4 = do
+         let
+            cv = wordPtrToPtr . fromIntegral
 
-   return <| Connector
-               (EntityID (connConnectorID_ res4))
-               (fromEnumField (connConnectorType_ res4))
-               (connConnectorTypeID_ res4)
-               state
-               encs
-               (EntityID <$> wrapZero (connEncoderID_ res4))
-               hdl
+            wrapZero 0 = Nothing
+            wrapZero x = Just x
+
+         state <- case connConnection_ res4 of
+            1 -> do
+                  -- properties
+                  ptrs <- peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
+                  vals <- peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
+                  let rawProps = zipWith RawProperty ptrs vals
+                  props <- forM rawProps $ \raw -> do
+                     getPropertyMeta hdl (rawPropertyMetaID raw)
+                        ||> \meta -> Property meta (rawPropertyValue raw)
+
+                  modes <- fmap fromStructMode <$> peekArray' (connModesCount res2) (cv (connModesPtr res4))
+
+                  return (Connected (ConnectedDevice
+                     modes
+                     (connWidth_ res4)
+                     (connHeight_ res4)
+                     (fromEnumField (connSubPixel_ res4))
+                     props))
+
+            2 -> return Disconnected
+            _ -> return ConnectionUnknown
+
+         encs  <- fmap EntityID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
+
+         return <| Connector
+                     (EntityID (connConnectorID_ res4))
+                     (fromEnumField (connConnectorType_ res4))
+                     (connConnectorTypeID_ res4)
+                     state
+                     encs
+                     (EntityID <$> wrapZero (connEncoderID_ res4))
+                     hdl
+
+   out <- liftE (getConnector' res)
+   getValues out
+
 
 
 -- | Get graphic card resources
@@ -462,8 +502,10 @@ pickEncoders :: Resources -> BitSet Word32 Int -> [EncoderID]
 pickEncoders res = pickResources (resEncoderIDs res)
 
 
--- | Error invalid plane ID
-data InvalidPlane = InvalidPlane PlaneID deriving (Show)
+data InvalidPlaneID      = InvalidPlaneID      PlaneID      deriving (Show)
+data InvalidControllerID = InvalidControllerID ControllerID deriving (Show)
+data InvalidConnectorID  = InvalidConnectorID  ConnectorID  deriving (Show)
+data InvalidEncoderID    = InvalidEncoderID    EncoderID    deriving (Show)
 
 -- | Get the IDs of the supported planes
 getPlaneIDs :: forall m. MonadInIO m => Handle -> Excepts '[InvalidHandle] m [PlaneID]
@@ -490,34 +532,32 @@ getPlaneIDs hdl = getCount >>= getIDs
          fmap EntityID <$> peekArray (fromIntegral n) p
 
 -- | Get plane information
-getPlane :: forall m. MonadInIO m => Handle -> PlaneID -> Excepts '[InvalidHandle,InvalidPlane] m Plane
-getPlane hdl pid = getCount >>= getInfo
+getPlaneFromID :: forall m. MonadInIO m => Handle -> PlaneID -> Excepts '[InvalidHandle,InvalidPlaneID] m Plane
+getPlaneFromID hdl pid = getCount >>= getInfo
    where
 
-      gpr :: StructGetPlane -> Excepts '[InvalidHandle,InvalidPlane] m StructGetPlane
+      gpr :: StructGetPlane -> Excepts '[InvalidHandle,InvalidPlaneID] m StructGetPlane
       gpr s = ioctlGetPlane s hdl
                |> catchLiftLeft \case
                      EINVAL -> throwE InvalidHandle
-                     ENOENT -> throwE (InvalidPlane (EntityID (gpPlaneId s)))
-                     e      -> unhdlErr "getPlane" e
+                     ENOENT -> throwE (InvalidPlaneID pid)
+                     e      -> unhdlErr "getPlaneFromID" e
 
       toMaybe _ 0 = Nothing
       toMaybe f x = Just (f x)
 
       -- get the number of formats (invariant for a given plane)
-      getCount :: Excepts '[InvalidHandle,InvalidPlane] m Word32
+      getCount :: Excepts '[InvalidHandle,InvalidPlaneID] m Word32
       getCount = gpr (StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 0 0)
                   ||> gpCountFmtTypes 
 
-      -- get the plane info (invariant for a given plane)
-      getInfo :: Word32 -> Excepts '[InvalidHandle,InvalidPlane] m Plane
+      -- get the plane info
+      getInfo :: Word32 -> Excepts '[InvalidHandle,InvalidPlaneID] m Plane
       getInfo n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
          let 
             p' = fromIntegral (ptrToWordPtr p)
             si = StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 n p'
          gpr si >>= \StructGetPlane{..} -> liftE (getResources hdl) >>= \res -> do
-               -- TODO: controllers are invariant, we should store them
-               -- somewhere to avoid getResources
                fmts <- fmap (PixelFormat . BitFields) <$> peekArray (fromIntegral n) p
                return <| Plane
                   { planeID                  = pid

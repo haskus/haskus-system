@@ -72,15 +72,6 @@ data InvalidCard
    = InvalidCardHandle -- ^ The card handle is invalid
    deriving (Show,Eq)
 
--- | Entities (only IDs)
-data EntitiesIDs = EntitiesIDs
-   { entitiesConnectorsIDs   :: [ConnectorID]   -- ^ Connectors
-   , entitiesControllersIDs  :: [ControllerID]  -- ^ Controllers
-   , entitiesPlanesIDs       :: [PlaneID]       -- ^ Planes
-   , entitiesFrameSourcesIDs :: [FrameSourceID] -- ^ Frame pixel sources
-   }
-   deriving (Show,Eq)
-
 -- | Return detected graphics devices
 --
 -- Graphic cards are /class/drm/cardN directories in SysFS where N is the card
@@ -118,21 +109,9 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
 
 -- | Get card entities
 getEntitiesIDs :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m EntitiesIDs
-getEntitiesIDs card = do
-   res <- getResources (graphicCardHandle card)
+getEntitiesIDs card =
+   getHandleEntitiesIDs (graphicCardHandle card)
       |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
-
-   planeIDs <- getPlaneIDs (graphicCardHandle card)
-      |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
-
-   -- Read Note [Avoiding Encoders] to understand why we don't return Encoder IDs
-   pure <| EntitiesIDs
-      { entitiesConnectorsIDs   = resConnectorIDs res
-      , entitiesControllersIDs  = resControllerIDs res
-      , entitiesFrameSourcesIDs = resFrameSourceIDs res
-      , entitiesPlanesIDs       = planeIDs
-      }
-
 
 -- | Create a new thread reading input events and putting them in a TChan
 newEventWaiterThread :: Handle -> Sys (TChan Graphics.Event)
