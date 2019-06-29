@@ -37,8 +37,8 @@ setController ctrl frameSourceAction conns mode = do
       hdl  = controllerHandle ctrl
    setController' hdl (controllerID ctrl) mframe (fmap connectorID conns) mode
 
--- | Switch to another frame source for the given controller without doing a
--- full mode change
-switchFrame :: MonadInIO m => Controller -> Frame -> PageFlipFlags -> Word64 -> Excepts '[ErrorCode] m ()
+-- | Switch to another frame for the given controller without doing a full mode
+-- change
+switchFrame :: MonadInIO m => Controller -> Frame -> SwitchFrameFlags -> Word64 -> Excepts '[ErrorCode] m ()
 switchFrame ctrl fs flags udata =
-   switchFrameBuffer' (controllerHandle ctrl) (controllerID ctrl) (frameID fs) flags udata
+   switchFrame' (controllerHandle ctrl) (controllerID ctrl) (frameID fs) flags udata

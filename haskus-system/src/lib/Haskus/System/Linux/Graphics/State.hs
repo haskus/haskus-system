@@ -28,7 +28,7 @@ module Haskus.System.Linux.Graphics.State
    , Resources(..)
    , getHandleEntitiesIDs
    , setController'
-   , switchFrameBuffer'
+   , switchFrame'
    , getControllers
    , getControllerGamma
    , setControllerGamma
@@ -258,16 +258,14 @@ setController' hdl eid fb conns mode = do
 
       ioctlSetController crtc hdl
 
--- | Switch to another framebuffer for the given controller
--- without doing a full mode change
---
--- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: MonadInIO m => Handle -> ControllerID -> FrameID -> PageFlipFlags -> Word64 -> Excepts '[ErrorCode] m ()
-switchFrameBuffer' hdl cid fsid flags udata = do
+-- | Switch to another frame for the given controller without doing a full mode
+-- change
+switchFrame' :: MonadInIO m => Handle -> ControllerID -> FrameID -> SwitchFrameFlags -> Word64 -> Excepts '[ErrorCode] m ()
+switchFrame' hdl cid fsid flags udata = do
    let
-      s = StructPageFlip (unEntityID cid) (unEntityID fsid) flags 0 udata
+      s = StructSwitchFrame (unEntityID cid) (unEntityID fsid) flags 0 udata
 
-   void <| ioctlPageFlip s hdl
+   void <| ioctlSwitchFrame s hdl
 
 -- | Get controllers
 getControllers :: MonadInIO m => Handle -> Excepts '[InvalidHandle,InvalidControllerID] m [Controller]

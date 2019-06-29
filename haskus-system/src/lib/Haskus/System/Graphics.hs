@@ -243,9 +243,13 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       -- Check support for generic buffers
       let fd    = graphicCardHandle card
       sysLogSequence "Load graphic card" $ do
-         cap  <- (fd `supports` CapHostBuffer)
-                  |> assertLogShowErrorE "Get HostBuffer capability" 
-         sysAssert "Generic buffer capability supported" cap
+         let checkCap c t = do
+               cap <- fd `supports` c
+                        |> assertLogShowErrorE t
+               sysAssert (t <> " supported") cap
+
+         checkCap CapHostBuffer              "Generic buffers"
+         checkCap CapControllerInVBlankEvent "Controllers in VBlank events"
 
       -- TODO: support other formats
       let fmt = makePixelFormat XRGB8888 LittleEndian
@@ -270,11 +274,11 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       -- on page flip complete
       onEvent (graphicCardChan card) $ \case
-         FlipCompleteEvent evData
+         FrameSwitched evData
             -- we used to use user_data field to know which controller has
             -- flipped but in later kernel versions (5.1?) a reserved field has
             -- been dedicated to this in the event payload
-            | vblankEventControllerId evData == fromIntegral (getObjectID ctrl) ->
+            | eventControllerId evData == fromIntegral (getObjectID ctrl) ->
                atomically $ do
                   s <- readTVar fbState
                   case fbPending s of
@@ -311,7 +315,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
-         switchFrame ctrl fb (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
+         switchFrame ctrl fb (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
             |> assertE "Switch framebuffer"
             
 
@@ -347,7 +351,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             yield
 
       -- Force the generation of the first page-flip event
-      switchFrame ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
+      switchFrame ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
          |> assertE "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do

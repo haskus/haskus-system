@@ -6,7 +6,7 @@ module Haskus.System.Linux.Graphics.Event
    , peekEvents
    , EventType (..)
    , EventHeader (..)
-   , VBlankEventData (..)
+   , EventData (..)
    , SequenceEventData (..)
    )
 where
@@ -21,10 +21,10 @@ import Haskus.Utils.Flow
 
 -- | Graphics events
 data Event
-   = VBlankEvent   VBlankEventData     -- ^ Beginning of the VBlank perriod
-   | FlipCompleteEvent VBlankEventData -- ^ Page flipping complete
-   | SequenceEvent SequenceEventData   -- ^ Controller sequence event
-   | CustomEvent   EventHeader Buffer  -- ^ Custom event
+   = VBlankStart     EventData          -- ^ Beginning of the VBlank period
+   | FrameSwitched   EventData          -- ^ Frame switching complete
+   | SequenceReached SequenceEventData  -- ^ Controller sequence event
+   | CustomEvent     EventHeader Buffer -- ^ Custom event
    deriving (Show)
 
 
@@ -43,9 +43,9 @@ peekEvents = go
          hdr <- peek (castPtr ptr)
          let payloadPtr = castPtr ptr `plusPtr` 8 -- sizeof event header
          v <- case toEventType (eventType hdr) of
-            VBlankEventType       -> VBlankEvent       <|| peek payloadPtr
-            FlipCompleteEventType -> FlipCompleteEvent <|| peek payloadPtr
-            SequenceEventType     -> SequenceEvent     <|| peek payloadPtr
+            VBlankStartEvent      -> VBlankStart       <|| peek payloadPtr
+            FrameSwitchedEvent    -> FrameSwitched     <|| peek payloadPtr
+            SequenceReachedEvent  -> SequenceReached   <|| peek payloadPtr
             CustomEventType _     -> CustomEvent hdr <||
                bufferPackPtr (fromIntegral (eventLength hdr) - 8) payloadPtr
                                

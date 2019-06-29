@@ -12,8 +12,8 @@ module Haskus.System.Linux.Graphics.Frame
    , removeFrame
    , dirtyFrame
    , PixelSource(..)
-   , PageFlipFlag (..)
-   , PageFlipFlags
+   , SwitchFrameFlag (..)
+   , SwitchFrameFlags
    , DirtyAnnotation (..)
    , Clip (..)
    )

@@ -73,10 +73,10 @@ module Haskus.System.Linux.Internals.Graphics
    , StructColorCtm (..)
    , StructColorLut (..)
    -- * Page flipping
-   , PageFlipFlag (..)
-   , PageFlipFlags
-   , StructPageFlip (..)
-   , StructPageFlipTarget (..)
+   , SwitchFrameFlag (..)
+   , SwitchFrameFlags
+   , StructSwitchFrame (..)
+   , StructSwitchFrameTarget (..)
    -- * Generic (dumb) buffer
    , StructCreateDumb (..)
    , StructMapDumb (..)
@@ -119,7 +119,7 @@ module Haskus.System.Linux.Internals.Graphics
    , ioctlGetObjectProperties
    , ioctlSetObjectProperty
    , ioctlGetBlob
-   , ioctlPageFlip
+   , ioctlSwitchFrame
    , ioctlDirtyFrame
    , ioctlCreateHostBuffer
    , ioctlMapHostBuffer
@@ -137,7 +137,7 @@ module Haskus.System.Linux.Internals.Graphics
    , EventHeader (..)
    , EventType (..)
    , toEventType
-   , VBlankEventData (..)
+   , EventData (..)
    , SequenceEventData (..)
    -- * SubPixel order
    , SubPixel (..)
@@ -806,18 +806,18 @@ data StructColorLut = StructColorLut
    }
 
 -----------------------------------------------------------------------------
--- Page flipping
+-- Frame switching (Page flipping)
 -----------------------------------------------------------------------------
 
--- | Page flip flags
-data PageFlipFlag
-   = PageFlipEvent
-   | PageFlipAsync
-   | PageFlipTargetAbsolute
-   | PageFlipTargetRelative
+-- | Frame switching flags
+data SwitchFrameFlag
+   = SwitchFrameGenerateEvent  -- ^ Generate an event when the frame is switched
+   | SwitchFrameAsync          -- ^ Switch the frame without waiting for VBlank interval (may not be supported)
+   | SwitchFrameTargetAbsolute
+   | SwitchFrameTargetRelative
    deriving (Show,Eq,Enum,BitOffset)
 
-type PageFlipFlags = BitSet Word32 PageFlipFlag
+type SwitchFrameFlags = BitSet Word32 SwitchFrameFlag
 
 -- 
 -- Request a page flip on the specified crtc.
@@ -843,10 +843,10 @@ type PageFlipFlags = BitSet Word32 PageFlipFlag
 -- The reserved field must be zero.
 
 -- | drm_mode_crtc_page_flip
-data StructPageFlip = StructPageFlip
+data StructSwitchFrame = StructSwitchFrame
    { pfCrtcId        :: {-# UNPACK #-} !Word32
-   , pfFbId          :: {-# UNPACK #-} !Word32
-   , pfFlags         :: {-# UNPACK #-} !PageFlipFlags
+   , pfFrameId       :: {-# UNPACK #-} !Word32
+   , pfFlags         :: {-# UNPACK #-} !SwitchFrameFlags
    , pfReserved      :: {-# UNPACK #-} !Word32
    , pfUserData      :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
@@ -871,9 +871,9 @@ data StructPageFlip = StructPageFlip
 -- vertical blank period.
 
 -- drm_mode_crtc_page_flip_target
-data StructPageFlipTarget = StructPageFlipTarget
+data StructSwitchFrameTarget = StructSwitchFrameTarget
    { pftCrtcId   :: {-# UNPACK #-} !Word32
-   , pftFbId     :: {-# UNPACK #-} !Word32
+   , pftFrameId  :: {-# UNPACK #-} !Word32
    , pftFlags    :: {-# UNPACK #-} !Word32
    , pftSequence :: {-# UNPACK #-} !Word32
    , pftUserData :: {-# UNPACK #-} !Word64
@@ -912,24 +912,28 @@ newtype StructDestroyDumb = StructDestroyDumb
 -----------------------------------------------------------------------------
 
 -- | Flags for the atomic state change
+--
+-- `AtomicFlagAllowModeset` is useful for devices such as tablets whose screen is
+-- often shutdown: we can use a degraded mode (scaled, etc.) for a while to save
+-- power and only perform the full modeset when the screen is reactivated.
 data AtomicFlag
-   = AtomicFlagPageFlipEvent  -- ^ Generates a page-flip event
-   | AtomicFlagPageFlipAsync  -- ^ Asynchronous page-flip, i.e. don't wait for v-blank (may not be supported)
-   | AtomicFlagTestOnly       -- ^ Only test the config, don't commit it
-   | AtomicFlagNonBlock       -- ^ Schedule an asynchronous commit (may not be supported)
-   | AtomicFlagAllowModeset   -- ^ Allow full mode-setting. This flag is useful for devices such as tablets whose screen is often shutdown: we can use a degraded mode (scaled, etc.) for a while to save power and only perform the full modeset when the screen is reactivated.
+   = AtomicFlagSwitchFrameGenerateEvent -- ^ Generates an event after a frame switch
+   | AtomicFlagSwitchFrameAsync         -- ^ Asynchronous frame switch, i.e. don't wait for v-blank (may not be supported)
+   | AtomicFlagTestOnly                 -- ^ Only test the config, don't commit it
+   | AtomicFlagNonBlock                 -- ^ Schedule an asynchronous commit (may not be supported)
+   | AtomicFlagAllowModeset             -- ^ Allow full mode-setting
    deriving (Show,Eq,Enum)
 
 instance BitOffset AtomicFlag where
    toBitOffset x = case x of
-      AtomicFlagPageFlipEvent -> 0
-      AtomicFlagPageFlipAsync -> 1
-      AtomicFlagTestOnly      -> 8
-      AtomicFlagNonBlock      -> 9
-      AtomicFlagAllowModeset  -> 10
+      AtomicFlagSwitchFrameGenerateEvent -> 0
+      AtomicFlagSwitchFrameAsync         -> 1
+      AtomicFlagTestOnly                 -> 8
+      AtomicFlagNonBlock                 -> 9
+      AtomicFlagAllowModeset             -> 10
    fromBitOffset x = case x of
-      0  -> AtomicFlagPageFlipEvent
-      1  -> AtomicFlagPageFlipAsync
+      0  -> AtomicFlagSwitchFrameGenerateEvent
+      1  -> AtomicFlagSwitchFrameAsync
       8  -> AtomicFlagTestOnly
       9  -> AtomicFlagNonBlock
       10 -> AtomicFlagAllowModeset
@@ -1031,11 +1035,11 @@ data Capability
    | CapGenericPreferShadow
    | CapPrime
    | CapTimestampMonotonic
-   | CapAsyncPageFlip         -- ^ Support asynchronous page-flipping
+   | CapAsyncSwitchFrame      -- ^ Support asynchronous page-flipping
    | CapCursorWidth           -- ^ Return a valid width plane size to use (may be the maximum, depending on the driver)
    | CapCursorHeight          -- ^ Ditto cursor plane height
    | CapAddFrameModifiers
-   | CapPageFlipTarget
+   | CapSwitchFrameTarget
    | CapControllerInVBlankEvent -- ^ Indicate that the vblank event contains a crtc_id field (always true since Linux 5.1)
    | CapSyncObject
    | CapSyncObjectTimeline
@@ -1043,8 +1047,37 @@ data Capability
 
 -- Add 1 to the enum number to get the valid value
 instance CEnum Capability where
-   fromCEnum = (+1) . fromIntegral . fromEnum
-   toCEnum   = toEnum . (\x -> x-1) . fromIntegral
+   fromCEnum = \case
+      CapHostBuffer              -> 0x1
+      CapVBlankHighController    -> 0x2
+      CapGenericPreferredDepth   -> 0x3
+      CapGenericPreferShadow     -> 0x4
+      CapPrime                   -> 0x5
+      CapTimestampMonotonic      -> 0x6
+      CapAsyncSwitchFrame        -> 0x7
+      CapCursorWidth             -> 0x8
+      CapCursorHeight            -> 0x9
+      CapAddFrameModifiers       -> 0x10 -- there is no reason for this gap, except if they forgot that it was hexadecimal...
+      CapSwitchFrameTarget       -> 0x11
+      CapControllerInVBlankEvent -> 0x12
+      CapSyncObject              -> 0x13
+      CapSyncObjectTimeline      -> 0x14
+   toCEnum = \case
+      0x1  -> CapHostBuffer
+      0x2  -> CapVBlankHighController
+      0x3  -> CapGenericPreferredDepth
+      0x4  -> CapGenericPreferShadow
+      0x5  -> CapPrime
+      0x6  -> CapTimestampMonotonic
+      0x7  -> CapAsyncSwitchFrame
+      0x8  -> CapCursorWidth
+      0x9  -> CapCursorHeight
+      0x10 -> CapAddFrameModifiers
+      0x11 -> CapSwitchFrameTarget
+      0x12 -> CapControllerInVBlankEvent
+      0x13 -> CapSyncObject
+      0x14 -> CapSyncObjectTimeline
+      x    -> error ("Unknown capability flag: " ++ show (fromIntegral x :: Word))
 
 -- | drm_get_cap
 --
@@ -1149,8 +1182,8 @@ ioctlGetBlob = drmIoctl 0xAC
 ioctlRemoveFrame :: MonadInIO m => Word32 -> Handle -> Excepts '[ErrorCode] m Word32
 ioctlRemoveFrame = drmIoctl 0xAF
 
-ioctlPageFlip :: MonadInIO m => StructPageFlip -> Handle -> Excepts '[ErrorCode] m StructPageFlip
-ioctlPageFlip = drmIoctl 0xB0
+ioctlSwitchFrame :: MonadInIO m => StructSwitchFrame -> Handle -> Excepts '[ErrorCode] m StructSwitchFrame
+ioctlSwitchFrame = drmIoctl 0xB0
 
 ioctlDirtyFrame :: MonadInIO m => StructFrameDirty -> Handle -> Excepts '[ErrorCode] m StructFrameDirty
 ioctlDirtyFrame = drmIoctl 0xB1
@@ -1219,31 +1252,31 @@ data EventHeader = EventHeader
 
 -- | Event type
 data EventType
-   = VBlankEventType         -- ^ Beginning of the VBlank period
-   | FlipCompleteEventType   -- ^ Page flipping complete
-   | SequenceEventType       -- ^ Controller sequence event
+   = VBlankStartEvent        -- ^ Beginning of the VBlank period
+   | FrameSwitchedEvent      -- ^ Frame switching complete
+   | SequenceReachedEvent    -- ^ Controller sequence event
    | CustomEventType Word32  -- ^ Custom event
    deriving (Eq,Ord,Show)
 
 -- | Try to recognize the event type
 toEventType :: Word32 -> EventType
 toEventType v = case v of
-   0x01 -> VBlankEventType
-   0x02 -> FlipCompleteEventType
-   0x03 -> SequenceEventType
+   0x01 -> VBlankStartEvent
+   0x02 -> FrameSwitchedEvent
+   0x03 -> SequenceReachedEvent
    _    -> CustomEventType v
 
--- | VBlank event data
+-- | Event data
 --
--- This is used both for VBlank and FlipComplete events
+-- This is used both for VBlankStart and FrameSwitched events
 --
 -- drm_event_vblank (without the header)
-data VBlankEventData = VBlankEventData
-   { vblankEventUserData     :: {-# UNPACK #-} !Word64
-   , vblankEventSeconds      :: {-# UNPACK #-} !Word32
-   , vblankEventMicroseconds :: {-# UNPACK #-} !Word32
-   , vblankEventSequence     :: {-# UNPACK #-} !Word32
-   , vblankEventControllerId :: {-# UNPACK #-} !Word32
+data EventData = EventData
+   { eventUserData     :: {-# UNPACK #-} !Word64
+   , eventSeconds      :: {-# UNPACK #-} !Word32
+   , eventMicroseconds :: {-# UNPACK #-} !Word32
+   , eventSequence     :: {-# UNPACK #-} !Word32
+   , eventControllerId :: {-# UNPACK #-} !Word32
    } deriving (Show,Generic,Storable)
 
 -- | Sequence event data
