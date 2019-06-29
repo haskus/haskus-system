@@ -32,7 +32,7 @@ drawGraphics state encoders = diag
       ctrlsIds  = Map.keys (graphicsControllers state)
       encsIds   = fmap encoderID encoders
       connsIds  = Map.keys (graphicsConnectors  state)
-      fbIds     = graphicsFrameBuffers  state
+      framesIds = graphicsFrames  state
 
       possibleClones = nub [(encoderID enc, c)
                            | enc <- encoders
@@ -75,9 +75,9 @@ drawGraphics state encoders = diag
                                      , let c = planeControllerId pl
                                      , let e = planeID pl
                                      ]
-           -- plane --> framebuffer arrows
-           |> planeFbArrows [(e,c) | pl <- Map.elems (graphicsPlanes state)
-                                   , let c = planeFrameSourceId pl
+           -- plane --> frame arrows
+           |> planeFrameArrows [(e,c) | pl <- Map.elems (graphicsPlanes state)
+                                   , let c = planeFrameId pl
                                    , let e = planeID pl
                                    ]
            -- encoders that can use the same controller at the same time
@@ -103,10 +103,10 @@ drawGraphics state encoders = diag
       planeCtrlArrows ((EntityID pl, Just (EntityID ct)):xs) b =
          planeCtrlArrows xs (arrw ("ctrl"++show ct++":left") ("plane"++show pl++":right") b)
 
-      planeFbArrows [] b = b
-      planeFbArrows ((_, Nothing):xs) b = planeFbArrows xs b
-      planeFbArrows ((EntityID pl, Just (EntityID fb)):xs) b =
-         planeFbArrows xs (arrw ("plane"++show pl++":left") ("fb"++show fb++":right") b)
+      planeFrameArrows [] b = b
+      planeFrameArrows ((_, Nothing):xs) b = planeFrameArrows xs b
+      planeFrameArrows ((EntityID pl, Just (EntityID fb)):xs) b =
+         planeFrameArrows xs (arrw ("plane"++show pl++":left") ("frame"++show fb++":right") b)
 
       cloneArrows [] b           = b
       cloneArrows ((e1,e2):xs) b = cloneArrows xs (arrw ("enc"++show e1++":left") ("enc"++show e2++":left") b)
@@ -123,8 +123,8 @@ drawGraphics state encoders = diag
       planes = boxCol [ ("plane"++show x, "Plane "++show x)
                       | EntityID x <- planesIds
                       ]
-      fbs    = boxCol [ ("fb"++show x, "FrameBuffer "++show x)
-                      | EntityID x <- fbIds
+      fbs    = boxCol [ ("frame"++show x, "Frame "++show x)
+                      | EntityID x <- framesIds
                       ]
 
       arrw dst src = connect' (with |> arrowHead .~ spike) src dst

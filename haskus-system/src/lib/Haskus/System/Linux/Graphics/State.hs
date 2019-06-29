@@ -57,7 +57,7 @@ where
 
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Property
-import Haskus.System.Linux.Graphics.FrameSource
+import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Internals.Graphics
@@ -82,12 +82,12 @@ data GraphicsState = GraphicsState
    { graphicsConnectors   :: Map ConnectorID   Connector  -- ^ Connectors
    , graphicsControllers  :: Map ControllerID  Controller -- ^ Controllers
    , graphicsPlanes       :: Map PlaneID       Plane      -- ^ Planes
-   , graphicsFrameBuffers :: [FrameSourceID]              -- ^ Frame sources
+   , graphicsFrames       :: [FrameID]                    -- ^ Frames
    } deriving (Show)
 
 -- | Graphic card ressources
 data Resources = Resources
-   { resFrameSourceIDs  :: [FrameSourceID]   -- ^ Frame source IDs
+   { resFrameIDs        :: [FrameID]         -- ^ Frame IDs
    , resControllerIDs   :: [ControllerID]    -- ^ Controller IDs
    , resConnectorIDs    :: [ConnectorID]     -- ^ Connector IDs
    , resEncoderIDs      :: [EncoderID]       -- ^ Encoder IDs
@@ -102,7 +102,7 @@ data EntitiesIDs = EntitiesIDs
    { entitiesConnectorsIDs   :: [ConnectorID]   -- ^ Connectors
    , entitiesControllersIDs  :: [ControllerID]  -- ^ Controllers
    , entitiesPlanesIDs       :: [PlaneID]       -- ^ Planes
-   , entitiesFrameSourcesIDs :: [FrameSourceID] -- ^ Frame pixel sources
+   , entitiesFramesIDs       :: [FrameID]       -- ^ Frames
    }
    deriving (Show,Eq)
 
@@ -117,7 +117,7 @@ getHandleEntitiesIDs hdl = do
    pure <| EntitiesIDs
       { entitiesConnectorsIDs   = resConnectorIDs res
       , entitiesControllersIDs  = resControllerIDs res
-      , entitiesFrameSourcesIDs = resFrameSourceIDs res
+      , entitiesFramesIDs       = resFrameIDs res
       , entitiesPlanesIDs       = planeIDs
       }
 
@@ -148,7 +148,7 @@ readGraphicsState hdl = go 5
 
          case (mconns, mctrls, mplanes) of
             (VRight conns, VRight ctrls, VRight planes) ->
-               return <| buildGraphicsState conns ctrls planes (entitiesFrameSourcesIDs ids)
+               return <| buildGraphicsState conns ctrls planes (entitiesFramesIDs ids)
             -- on failure we restart the process
             -- (we check that we don't loop indefinitely)
             _ -> if n > (0 :: Word)
@@ -157,7 +157,7 @@ readGraphicsState hdl = go 5
 
 
 -- | Build GraphicsState
-buildGraphicsState :: [Connector] -> [Controller] -> [Plane] -> [FrameSourceID] -> GraphicsState
+buildGraphicsState :: [Connector] -> [Controller] -> [Plane] -> [FrameID] -> GraphicsState
 buildGraphicsState conns ctrls planes fbs = GraphicsState conns' ctrls' planes' fbs
    where
       conns'  = Map.fromList <| fmap (\c -> (connectorID c, c))  conns
@@ -210,7 +210,7 @@ fromStructController hdl StructController{..} =
          then Just (fromStructMode contModeInfo)
          else Nothing)
       (if contFbID /= 0 
-         then Just (Frame (EntityID contFbID) contFbX contFbY)
+         then Just (FrameView (EntityID contFbID) contFbX contFbY)
          else Nothing)
       contGammaSize
       hdl
@@ -229,14 +229,14 @@ getControllerFromID hdl eid =
       crtc = emptyStructController { contID = unEntityID eid }
 
 
-setController' :: MonadInIO m => Handle -> ControllerID -> Maybe Frame -> [ConnectorID] -> Maybe Mode -> Excepts '[ErrorCode] m ()
+setController' :: MonadInIO m => Handle -> ControllerID -> Maybe FrameView -> [ConnectorID] -> Maybe Mode -> Excepts '[ErrorCode] m ()
 setController' hdl eid fb conns mode = do
    let
       conns' = fmap unEntityID conns
 
       (fbid,fbx,fby) = case fb of
          Nothing -> (0,0,0)
-         Just (Frame (EntityID z) x y) -> (z,x,y)
+         Just (FrameView (EntityID z) x y) -> (z,x,y)
 
    void $ withArray conns' $ \conArray -> do
       let
@@ -262,7 +262,7 @@ setController' hdl eid fb conns mode = do
 -- without doing a full mode change
 --
 -- Called "mode_page_flip" in the original terminology
-switchFrameBuffer' :: MonadInIO m => Handle -> ControllerID -> FrameSourceID -> PageFlipFlags -> Word64 -> Excepts '[ErrorCode] m ()
+switchFrameBuffer' :: MonadInIO m => Handle -> ControllerID -> FrameID -> PageFlipFlags -> Word64 -> Excepts '[ErrorCode] m ()
 switchFrameBuffer' hdl cid fsid flags udata = do
    let
       s = StructPageFlip (unEntityID cid) (unEntityID fsid) flags 0 udata
@@ -562,7 +562,7 @@ getPlaneFromID hdl pid = getCount >>= getInfo
                return <| Plane
                   { planeID                  = pid
                   , planeControllerId        = toMaybe EntityID gpCrtcId
-                  , planeFrameSourceId       = toMaybe EntityID gpFbId
+                  , planeFrameId             = toMaybe EntityID gpFbId
                   , planePossibleControllers = pickControllers res gpPossibleCrtcs
                   , planeGammaSize           = gpGammaSize
                   , planeFormats             = fmts
@@ -581,7 +581,7 @@ data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 --
 -- The fractional part in SrcRect is for devices supporting sub-pixel plane
 -- coordinates.
-setPlane :: MonadInIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameSourceID, SrcRect, DestRect) -> Excepts '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] m ()
+setPlane :: MonadInIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameID, SrcRect, DestRect) -> Excepts '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] m ()
 setPlane hdl pid opts = do
 
    let 

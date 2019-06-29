@@ -21,7 +21,7 @@ module Haskus.System.Linux.Graphics.Object
    )
 where
 
-import Haskus.System.Linux.Graphics.FrameSource
+import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Entities
@@ -60,8 +60,8 @@ instance Object Mode where
    getObjectType _ = ObjectMode
    getObjectID _   = error "getObjectID unsupported for Mode objects"
 
-instance Object FrameSource where
-   getObjectType _ = ObjectFrameSource
+instance Object Frame where
+   getObjectType _ = ObjectFrame
    getObjectID     = unEntityID . frameID
 
 instance Object Plane where
@@ -80,8 +80,8 @@ instance Object EncoderID where
    getObjectType _ = ObjectEncoder
    getObjectID     = unEntityID
 
-instance Object FrameSourceID where
-   getObjectType _ = ObjectFrameSource
+instance Object FrameID where
+   getObjectType _ = ObjectFrame
    getObjectID     = unEntityID
 
 instance Object PlaneID where
@@ -100,7 +100,7 @@ showObjectType = \case
    ObjectEncoder     -> "Encoder"
    ObjectMode        -> "Mode"
    ObjectProperty    -> "Property"
-   ObjectFrameSource -> "FrameSource"
+   ObjectFrame       -> "Frame"
    ObjectBlob        -> "Blob"
    ObjectPlane       -> "Plane"
 

@@ -52,7 +52,7 @@ import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Object
-import Haskus.System.Linux.Graphics.FrameSource
+import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Event as Graphics
 
@@ -139,7 +139,7 @@ data MappedSurface = MappedSurface
    }
 
 data GenericFrame = GenericFrame
-   { genericFrameBuffer  :: FrameSource
+   { genericFrameBuffer  :: Frame
    , genericFrameBuffers :: [MappedSurface]
    }
 
@@ -175,7 +175,7 @@ initGenericFrameBuffer card mode pixfmt = do
    
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
-   fb <- addFrameSource hdl width height pixfmt BitSet.empty planes
+   fb <- addFrame hdl width height pixfmt BitSet.empty planes
          |> assertLogShowErrorE "Add frame buffer"
 
    return $ GenericFrame fb mappedPlanes
@@ -196,8 +196,8 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
          |> assertLogShowErrorE "Destroy generic buffer"
 
 
-   -- remove the framebuffer
-   removeFrameSource hdl fb
+   -- remove the frame
+   removeFrame hdl fb
       |> assertLogShowErrorE "Remove framebuffer"
 
 
@@ -311,7 +311,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
          -- flip the pending frame
          let (GenericFrame fb _) = gfb
-         switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
+         switchFrame ctrl fb (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
             |> assertE "Switch framebuffer"
             
 
@@ -347,7 +347,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             yield
 
       -- Force the generation of the first page-flip event
-      switchFrameSource ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
+      switchFrame ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [PageFlipEvent]) 0 -- empty user data
          |> assertE "Switch framebuffer"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do

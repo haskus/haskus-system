@@ -102,7 +102,7 @@ main = runSys' do
 
          -- page flip
          let 
-            setFb fb = switchFrameSource ctrl fb (BitSet.fromList [PageFlipEvent]) 0
+            setFb fb = switchFrame ctrl fb (BitSet.fromList [PageFlipEvent]) 0
                         |> assertE "Switch framebuffer"
 
             --clp        = Clip 0 0 (modeHorizontalDisplay mode - 1) (modeVerticalDisplay mode - 1)

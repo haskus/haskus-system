@@ -55,13 +55,13 @@ module Haskus.System.Linux.Internals.Graphics
    , StructSetObjectProperty (..)
    , StructGetBlob (..)
    , ObjectType (..)
-   -- * Framebuffer
-   , FrameBufferFlag (..)
-   , FrameBufferFlags
-   , StructFrameBufferCommand (..)
+   -- * Frame
+   , FrameFlag (..)
+   , FrameFlags
+   , StructFrameCommand (..)
    , DirtyAnnotation (..)
    , dirtyMaxClips
-   , StructFrameBufferDirty (..)
+   , StructFrameDirty (..)
    , StructModeCommand (..)   -- move
    -- * Cursor
    , CursorFlag (..)
@@ -120,15 +120,15 @@ module Haskus.System.Linux.Internals.Graphics
    , ioctlSetObjectProperty
    , ioctlGetBlob
    , ioctlPageFlip
-   , ioctlDirtyFrameBuffer
+   , ioctlDirtyFrame
    , ioctlCreateHostBuffer
    , ioctlMapHostBuffer
    , ioctlDestroyHostBuffer
    , ioctlGetPlaneResources
    , ioctlGetPlane
    , ioctlSetPlane
-   , ioctlAddFrameBuffer
-   , ioctlRemoveFrameBuffer
+   , ioctlAddFrame
+   , ioctlRemoveFrame
    , ioctlCursor
    , ioctlAtomic
    , ioctlCreateBlob
@@ -391,7 +391,7 @@ type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 data StructSetPlane = StructSetPlane
    { spPlaneId :: {-# UNPACK #-} !Word32
    , spCrtcId  :: {-# UNPACK #-} !Word32
-   , spFbId    :: {-# UNPACK #-} !Word32 -- ^ Frame buffer contains surface format type
+   , spFrameId :: {-# UNPACK #-} !Word32 -- ^ Frame contains surface format type
    , spFlags   :: {-# UNPACK #-} !ModeFieldPresents
    , spCrtcX   :: {-# UNPACK #-} !Int32 -- ^ Signed dest location allows it to be partially off screen
    , spCrtcY   :: {-# UNPACK #-} !Int32
@@ -591,7 +591,7 @@ data ObjectType
    | ObjectEncoder
    | ObjectMode
    | ObjectProperty
-   | ObjectFrameSource
+   | ObjectFrame
    | ObjectBlob
    | ObjectPlane
    deriving (Show,Eq,Ord,Enum)
@@ -603,7 +603,7 @@ instance CEnum ObjectType where
       0xe0e0e0e0 -> ObjectEncoder
       0xdededede -> ObjectMode
       0xb0b0b0b0 -> ObjectProperty
-      0xfbfbfbfb -> ObjectFrameSource
+      0xfbfbfbfb -> ObjectFrame
       0xbbbbbbbb -> ObjectBlob
       0xeeeeeeee -> ObjectPlane
       _          -> error "Invalid object type"
@@ -614,7 +614,7 @@ instance CEnum ObjectType where
       ObjectEncoder      -> 0xe0e0e0e0
       ObjectMode         -> 0xdededede
       ObjectProperty     -> 0xb0b0b0b0
-      ObjectFrameSource  -> 0xfbfbfbfb
+      ObjectFrame        -> 0xfbfbfbfb
       ObjectBlob         -> 0xbbbbbbbb
       ObjectPlane        -> 0xeeeeeeee
 
@@ -661,26 +661,26 @@ data StructGetBlob = StructGetBlob
    } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
--- Framebuffer
+-- Frame
 -----------------------------------------------------------------------------
 
 -- we don't use drm_mode_fb_cmd as we have drm_mode_fb_cmd2
 
--- | Frame buffer flags
-data FrameBufferFlag
-   = FrameBufferInterlaced    -- ^ Interlaced frame buffer
-   | FrameBufferUseModifiers  -- ^ Enable modifiers
+-- | Frame flags
+data FrameFlag
+   = FrameInterlaced    -- ^ Interlaced frame
+   | FrameUseModifiers  -- ^ Enable modifiers
    deriving (Show,Eq,Enum,BitOffset)
 
-type FrameBufferFlags = BitSet Word32 FrameBufferFlag
+type FrameFlags = BitSet Word32 FrameFlag
 
 -- | Data matching the C structure drm_mode_fb_cmd2
-data StructFrameBufferCommand = StructFrameBufferCommand
+data StructFrameCommand = StructFrameCommand
    { fc2FbId          :: {-# UNPACK #-} !Word32
    , fc2Width         :: {-# UNPACK #-} !Word32
    , fc2Height        :: {-# UNPACK #-} !Word32
    , fc2PixelFormat   :: {-# UNPACK #-} !PixelFormat
-   , fc2Flags         :: {-# UNPACK #-} !FrameBufferFlags
+   , fc2Flags         :: {-# UNPACK #-} !FrameFlags
    , fc2Handles       :: {-# UNPACK #-} !(Vector 4 Word32)
    , fc2Pitches       :: {-# UNPACK #-} !(Vector 4 Word32)  -- ^ Pitch for each plane
    , fc2Offsets       :: {-# UNPACK #-} !(Vector 4 Word32)  -- ^ Offset of each plane
@@ -717,7 +717,7 @@ dirtyMaxClips :: Word32
 dirtyMaxClips = 256
 
 -- | drm_mode_fb_dirty_cmd
-data StructFrameBufferDirty = StructFrameBufferDirty
+data StructFrameDirty = StructFrameDirty
    { fdFbId          :: {-# UNPACK #-} !Word32
    , fdFlags         :: {-# UNPACK #-} !Word32
    , fdColor         :: {-# UNPACK #-} !Word32
@@ -1034,7 +1034,7 @@ data Capability
    | CapAsyncPageFlip         -- ^ Support asynchronous page-flipping
    | CapCursorWidth           -- ^ Return a valid width plane size to use (may be the maximum, depending on the driver)
    | CapCursorHeight          -- ^ Ditto cursor plane height
-   | CapAddFrameBufferModifiers
+   | CapAddFrameModifiers
    | CapPageFlipTarget
    | CapControllerInVBlankEvent -- ^ Indicate that the vblank event contains a crtc_id field (always true since Linux 5.1)
    | CapSyncObject
@@ -1146,14 +1146,14 @@ ioctlSetProperty = drmIoctl 0xAB
 ioctlGetBlob :: MonadInIO m => StructGetBlob -> Handle -> Excepts '[ErrorCode] m StructGetBlob
 ioctlGetBlob = drmIoctl 0xAC
 
-ioctlRemoveFrameBuffer :: MonadInIO m => Word32 -> Handle -> Excepts '[ErrorCode] m Word32
-ioctlRemoveFrameBuffer = drmIoctl 0xAF
+ioctlRemoveFrame :: MonadInIO m => Word32 -> Handle -> Excepts '[ErrorCode] m Word32
+ioctlRemoveFrame = drmIoctl 0xAF
 
 ioctlPageFlip :: MonadInIO m => StructPageFlip -> Handle -> Excepts '[ErrorCode] m StructPageFlip
 ioctlPageFlip = drmIoctl 0xB0
 
-ioctlDirtyFrameBuffer :: MonadInIO m => StructFrameBufferDirty -> Handle -> Excepts '[ErrorCode] m StructFrameBufferDirty
-ioctlDirtyFrameBuffer = drmIoctl 0xB1
+ioctlDirtyFrame :: MonadInIO m => StructFrameDirty -> Handle -> Excepts '[ErrorCode] m StructFrameDirty
+ioctlDirtyFrame = drmIoctl 0xB1
 
 ioctlCreateHostBuffer :: MonadInIO m => StructCreateDumb -> Handle -> Excepts '[ErrorCode] m StructCreateDumb
 ioctlCreateHostBuffer = drmIoctl 0xB2
@@ -1173,8 +1173,8 @@ ioctlGetPlane = drmIoctl 0xB6
 ioctlSetPlane :: MonadInIO m => StructSetPlane -> Handle -> Excepts '[ErrorCode] m StructSetPlane
 ioctlSetPlane = drmIoctl 0xB7
 
-ioctlAddFrameBuffer :: MonadInIO m => StructFrameBufferCommand -> Handle -> Excepts '[ErrorCode] m StructFrameBufferCommand
-ioctlAddFrameBuffer = drmIoctl 0xB8
+ioctlAddFrame :: MonadInIO m => StructFrameCommand -> Handle -> Excepts '[ErrorCode] m StructFrameCommand
+ioctlAddFrame = drmIoctl 0xB8
 
 ioctlGetObjectProperties :: MonadInIO m => StructGetObjectProperties -> Handle -> Excepts '[ErrorCode] m StructGetObjectProperties
 ioctlGetObjectProperties = drmIoctl 0xB9

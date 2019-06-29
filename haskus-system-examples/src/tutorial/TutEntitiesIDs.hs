@@ -22,6 +22,6 @@ main = runSys do
             forM_ (entitiesConnectorsIDs   r) showObj
             forM_ (entitiesControllersIDs  r) showObj
             forM_ (entitiesPlanesIDs       r) showObj
-            forM_ (entitiesFrameSourcesIDs r) showObj
+            forM_ (entitiesFramesIDs       r) showObj
 
    void powerOff

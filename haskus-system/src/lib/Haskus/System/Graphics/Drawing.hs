@@ -28,7 +28,7 @@ import Haskus.Format.Binary.Storable
 import Foreign.Ptr
 import Haskus.Format.Binary.Buffer as B
 import Haskus.System.Graphics
-import Haskus.System.Linux.Graphics.FrameSource
+import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
 
 -- | Blanding method
@@ -59,7 +59,7 @@ loadPng bs = img
 
 
 -- | check framebuffer pixel format
-checkPixelFormat :: FrameSource -> IO ()
+checkPixelFormat :: Frame -> IO ()
 checkPixelFormat fs = do
    let pixFmt = framePixelFormat fs
 

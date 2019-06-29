@@ -22,7 +22,7 @@ import Haskus.Utils.Flow
 -- configuration is valid.
 --
 -- This config is only used to perform mode-setting. It doesn't allocate
--- any resource (FrameSource, PixelSource, Buffer, etc.). This is left for a
+-- any resource (Frame, FrameBuffer, etc.). This is left for a
 -- calling function which would allocate these resources beforehand. The calling
 -- function can choose to allocate accelerated buffers or not, etc.
 data Config = Config
@@ -33,7 +33,7 @@ data Config = Config
    , configPlane      :: [( PlaneID
                           , Maybe
                             ( ControllerID
-                            , FrameSourceID
+                            , FrameID
                             , SrcRect
                             , DestRect
                             )

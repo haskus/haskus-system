@@ -4,7 +4,7 @@
 module Haskus.System.Linux.Graphics.Entities
    ( -- * IDs
      EntityID (..)
-   , FrameSourceID
+   , FrameID
    , ControllerID
    , ConnectorID
    , EncoderID
@@ -18,13 +18,13 @@ module Haskus.System.Linux.Graphics.Entities
    , EncoderType (..)
    -- * Controller
    , Controller (..)
-   , Frame (..)
+   , FrameView (..)
    -- * Plane
    , Plane (..)
    , DestRect (..)
    , SrcRect (..)
    -- * Frame source
-   , FrameSource (..)
+   , Frame (..)
    , PixelSource (..)
    )
 where
@@ -47,7 +47,7 @@ newtype EntityID a = EntityID
    { unEntityID :: Word32
    } deriving (Show,Eq,Storable,Ord)
 
-type FrameSourceID = EntityID FrameSource
+type FrameID = EntityID Frame
 type ConnectorID   = EntityID Connector
 type ControllerID  = EntityID Controller
 type EncoderID     = EntityID Encoder
@@ -129,15 +129,15 @@ data Encoder = Encoder
 data Controller = Controller
    { controllerID             :: ControllerID  -- ^ Controller identifier
    , controllerMode           :: Maybe Mode
-   , controllerFrame          :: Maybe Frame   -- ^ Associated frame source and its position (x,y)
+   , controllerFrame          :: Maybe FrameView   -- ^ Associated frame source and its position (x,y)
    , controllerGammaTableSize :: Word32
    , controllerHandle         :: Handle
    } deriving (Show)
 
-data Frame = Frame
-   { frameBufferPosID :: FrameSourceID        -- ^ Framebuffer identifier
-   , frameBufferPosX  :: Word32
-   , frameBufferPosY  :: Word32
+data FrameView = FrameView
+   { frameViewID :: FrameID        -- ^ Frame identifier
+   , frameViewX  :: Word32         -- ^ Frame X position
+   , frameViewY  :: Word32         -- ^ Frame Y position
    } deriving (Show)
 
 -------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ data Frame = Frame
 data Plane = Plane
    { planeID                  :: PlaneID              -- ^ Plane identifier
    , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
-   , planeFrameSourceId       :: Maybe FrameSourceID  -- ^ Connected frame source
+   , planeFrameId             :: Maybe FrameID        -- ^ Connected frame
    , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
    , planeGammaSize           :: Word32               -- ^ Size of the gamma table
    , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
@@ -181,12 +181,12 @@ data SrcRect = SrcRect
 -------------------------------------------------------------------------------
 
 -- | Abstract frame source
-data FrameSource = FrameSource
-   { frameID          :: FrameSourceID    -- ^ Frame buffer identifier
-   , frameWidth       :: Word32           -- ^ Frame buffer width
-   , frameHeight      :: Word32           -- ^ Frame buffer height
+data Frame = Frame
+   { frameID          :: FrameID          -- ^ Frame identifier
+   , frameWidth       :: Word32           -- ^ Frame width
+   , frameHeight      :: Word32           -- ^ Frame height
    , framePixelFormat :: PixelFormat      -- ^ Pixel format
-   , frameFlags       :: FrameBufferFlags -- ^ Flags
+   , frameFlags       :: FrameFlags       -- ^ Flags
    , frameSources     :: [PixelSource]    -- ^ Data sources (up to four)
    } deriving (Show)
 
