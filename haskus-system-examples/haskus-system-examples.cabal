@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dc06123e2b75c54f0d0a4eda0d324d484c0971b93c1ffc7fa9e672330f082359
+-- hash: 4a0a95a9d1eb0382bac95664c008a026afad25de45456dd0cb90ca9d15ef2649
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -88,10 +88,12 @@ executable Demo
       Demo.Diagrams Demo.Graphics Demo.Art
   default-language: Haskell2010
 
-executable DisplayModes
+executable DisplayConnectors
   main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_examples
   hs-source-dirs:
-      src/display-modes
+      src/display-connectors
   ghc-options: -Wall -O2 -static -threaded
   cc-options: -static
   extra-lib-dirs:
@@ -107,8 +109,6 @@ executable DisplayModes
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
-  other-modules:
-      Paths_haskus_system_examples
   default-language: Haskell2010
 
 executable DisplayProperties

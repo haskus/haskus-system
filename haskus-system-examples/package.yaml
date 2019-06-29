@@ -110,6 +110,6 @@ executables:
       main: Main.hs
       source-dirs: src/display-state
 
-   DisplayModes:
+   DisplayConnectors:
       main: Main.hs
-      source-dirs: src/display-modes
+      source-dirs: src/display-connectors
