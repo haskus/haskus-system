@@ -121,7 +121,7 @@ main = runSys' <| do
 
          let
             isValid x  = case connectorState x of
-               Connected d -> not (null <| connectedDeviceModes d)
+               Connected d -> not (null <| videoModes d)
                _           -> False
             validConns = filter isValid conns
 
@@ -131,7 +131,7 @@ main = runSys' <| do
             Connected connDev = connectorState conn
 
             -- select highest mode
-            mode   = head (connectedDeviceModes connDev)
+            mode   = head (videoModes connDev)
             fmt    = makePixelFormat XRGB8888 LittleEndian
             width  = fromIntegral <| modeHorizontalDisplay mode :: Float
             height = fromIntegral <| modeVerticalDisplay mode :: Float

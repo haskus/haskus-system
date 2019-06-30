@@ -12,7 +12,7 @@ module Haskus.System.Linux.Graphics.Entities
    -- * Connector
    , Connector (..)
    , Connection (..)
-   , ConnectedDevice (..)
+   , VideoDisplay (..)
    -- * Encoder
    , Encoder (..)
    , EncoderType (..)
@@ -70,18 +70,18 @@ data Connector = Connector
 
 -- | Indicate if a cable is plugged in the connector
 data Connection
-   = Connected ConnectedDevice -- ^ The connector is connected to a displaying device
-   | Disconnected              -- ^ The connector is disconnected
-   | ConnectionUnknown         -- ^ The connection state cannot be determined
+   = Connected VideoDisplay -- ^ A video display is connected
+   | Disconnected           -- ^ No video display connected
+   | ConnectionUnknown      -- ^ The connection state cannot be determined
    deriving (Show)
 
--- | Information about the connected device
-data ConnectedDevice = ConnectedDevice
-   { connectedDeviceModes        :: [Mode]     -- ^ Supported modes
-   , connectedDeviceWidth        :: Word32     -- ^ Width (in millimeters)
-   , connectedDeviceHeight       :: Word32     -- ^ Height (in millimeters)
-   , connectedDeviceSubPixel     :: SubPixel   -- ^ Sub-pixel structure
-   , connectedDeviceProperties   :: [Property] -- ^ Properties of the connector
+-- | Information about the connected video display
+data VideoDisplay = VideoDisplay
+   { videoModes        :: [Mode]     -- ^ Supported modes
+   , videoWidth        :: Word32     -- ^ Width (in millimeters)
+   , videoHeight       :: Word32     -- ^ Height (in millimeters)
+   , videoSubPixel     :: SubPixel   -- ^ Sub-pixel structure
+   , videoProperties   :: [Property] -- ^ Properties of the video display
    } deriving (Show)
 
 -------------------------------------------------------------------------------

@@ -32,11 +32,11 @@ main = runSys' do
             ConnectionUnknown -> writeStrLn term " -> unknown connection"
             Connected dev -> do
                writeStrLn term "Modes"
-               forM_ (connectedDeviceModes dev) \mode ->
+               forM_ (videoModes dev) \mode ->
                   writeStrLn term (showMode mode)
 
                writeStrLn term "Properties"
-               forM_ (connectedDeviceProperties dev) \prop ->
+               forM_ (videoProperties dev) \prop ->
                   writeStrLn term ("    " ++ showProperty prop)
 
    powerOff
