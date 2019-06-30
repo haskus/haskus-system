@@ -38,6 +38,14 @@ main = runSys' do
             Disconnected      -> writeStrLn term " -> disconnected"
             ConnectionUnknown -> writeStrLn term " -> unknown connection"
             Connected videoDisplay -> do
+               writeStrLn term <| mconcat
+                  [ "Physical size: "
+                  , show (videoPhysicalWidth videoDisplay)
+                  , "mm X "
+                  , show (videoPhysicalHeight videoDisplay)
+                  , " mm"
+                  ]
+               writeStrLn term ("Sub-pixel layout: " <> show (videoSubPixel videoDisplay))
                writeStrLn term "Modes"
                forM_ (videoModes videoDisplay) \mode ->
                   writeStrLn term (showMode mode)
