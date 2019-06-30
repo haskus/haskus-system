@@ -64,6 +64,10 @@ instance Object Frame where
    getObjectType _ = ObjectFrame
    getObjectID     = unEntityID . frameID
 
+instance Object StructFrameCommand where
+   getObjectType _ = ObjectFrame
+   getObjectID     = fcFbId
+
 instance Object Plane where
    getObjectType _ = ObjectPlane
    getObjectID     = unEntityID . planeID

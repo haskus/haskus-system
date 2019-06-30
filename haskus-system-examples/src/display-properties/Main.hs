@@ -6,7 +6,6 @@ import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.AtomicConfig
-import qualified Haskus.Utils.Map as Map
 
 
 main :: IO ()
@@ -19,8 +18,8 @@ main = runSys' <| do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards <| \card -> do
-      state <- readGraphicsState (graphicCardHandle card)
-                  |> assertLogShowErrorE "Read graphics state"
+      state <- getHandleEntities (graphicCardHandle card)
+                  |> assertLogShowErrorE "Get entities"
 
       let
          showProps o = do
@@ -32,8 +31,9 @@ main = runSys' <| do
                forM_ props \prop ->
                   writeStrLn term ("    " ++ showProperty prop)
 
-      mapM_ showProps (Map.elems (graphicsConnectors state))
-      mapM_ showProps (Map.elems (graphicsControllers state))
-      mapM_ showProps (Map.elems (graphicsPlanes state))
+      mapM_ showProps (entitiesConnectors state)
+      mapM_ showProps (entitiesControllers state)
+      mapM_ showProps (entitiesPlanes state)
+      mapM_ showProps (entitiesFrames state)
 
    powerOff

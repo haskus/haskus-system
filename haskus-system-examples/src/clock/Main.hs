@@ -47,16 +47,16 @@ main = runSys' do
                      |> assertE "Test card capabilities"
          sysAssert "Card supports host buffers" cap
          
-         state <- readGraphicsState fd
-                     |> assertE "Read graphics state"
+         state <- getHandleEntitiesMap fd
+                     |> assertE "Get entities"
 
          encoders <- assertE "Read encoders"
                      <| getHandleEncoders (graphicCardHandle card)
          let encoderMap = Map.fromList (fmap encoderID encoders `zip` encoders)
 
-         conns <- if Map.null (graphicsConnectors state)
+         conns <- if Map.null (entitiesConnectorsMap state)
             then sysError "No graphics connector found" 
-            else return (Map.elems (graphicsConnectors state))
+            else return (Map.elems (entitiesConnectorsMap state))
 
          let
             isValid x  = case connectorState x of
@@ -82,7 +82,7 @@ main = runSys' do
                encId  <- connectorEncoderID conn
                enc    <- Map.lookup encId encoderMap
                ctrlId <- encoderControllerID enc
-               Map.lookup ctrlId (graphicsControllers state)
+               Map.lookup ctrlId (entitiesControllersMap state)
 
              Just ctrl = case defaultCtrl of
                -- we already have a connected controller, use it
@@ -92,7 +92,7 @@ main = runSys' do
                   encId  <- headMaybe (connectorPossibleEncoderIDs conn)
                   enc    <- Map.lookup encId encoderMap
                   ctrlId <- headMaybe (encoderPossibleControllers enc)
-                  Map.lookup ctrlId (graphicsControllers state)
+                  Map.lookup ctrlId (entitiesControllersMap state)
 
          writeStrLn term (show (fbPitch (mappedSurfaceInfo buf)))
 

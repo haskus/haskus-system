@@ -11,8 +11,8 @@ main = runSys do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards \card -> do
-      state <- readGraphicsState (graphicCardHandle card)
-                  |> assertE "Read graphics state"
+      state <- getHandleEntities (graphicCardHandle card)
+                  |> assertE "Get entities"
 
       writeStrLn term (show state)
 

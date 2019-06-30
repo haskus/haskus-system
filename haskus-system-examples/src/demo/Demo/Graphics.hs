@@ -19,20 +19,20 @@ data DisconnectedCard = DisconnectedCard
 
 graphicsPage :: MonadInIO m => GraphicCard -> Excepts '[DisconnectedCard] m VDiagram
 graphicsPage card = do
-   state <- readGraphicsState (graphicCardHandle card)
+   state <- getHandleEntitiesMap (graphicCardHandle card)
             |> catchE (\InvalidHandle -> failureE DisconnectedCard)
    encs <- getHandleEncoders (graphicCardHandle card)
             |> catchE (\InvalidHandle -> failureE DisconnectedCard)
    return (drawGraphics state encs)
 
-drawGraphics :: GraphicsState -> [Encoder] -> VDiagram
+drawGraphics :: EntitiesMap -> [Encoder] -> VDiagram
 drawGraphics state encoders = diag
    where
-      planesIds = Map.keys (graphicsPlanes      state)
-      ctrlsIds  = Map.keys (graphicsControllers state)
+      planesIds = Map.keys (entitiesPlanesMap      state)
+      ctrlsIds  = Map.keys (entitiesControllersMap state)
+      connsIds  = Map.keys (entitiesConnectorsMap  state)
+      framesIds = Map.keys (entitiesFramesMap      state)
       encsIds   = fmap encoderID encoders
-      connsIds  = Map.keys (graphicsConnectors  state)
-      framesIds = graphicsFrames  state
 
       possibleClones = nub [(encoderID enc, c)
                            | enc <- encoders
@@ -61,7 +61,7 @@ drawGraphics state encoders = diag
 
       diag = boxes
            -- connector --> encoder arrows
-           |> connEncArrows [(c,e) | conn <- Map.elems (graphicsConnectors state)
+           |> connEncArrows [(c,e) | conn <- Map.elems (entitiesConnectorsMap state)
                                    , let e = connectorEncoderID conn
                                    , let c = connectorID conn
                                    ]
@@ -71,12 +71,12 @@ drawGraphics state encoders = diag
                                    , let e = encoderID enc
                                    ]
            -- plane --> controller arrows
-           |> planeCtrlArrows [(e,c) | pl <- Map.elems (graphicsPlanes state)
+           |> planeCtrlArrows [(e,c) | pl <- Map.elems (entitiesPlanesMap state)
                                      , let c = planeControllerId pl
                                      , let e = planeID pl
                                      ]
            -- plane --> frame arrows
-           |> planeFrameArrows [(e,c) | pl <- Map.elems (graphicsPlanes state)
+           |> planeFrameArrows [(e,c) | pl <- Map.elems (entitiesPlanesMap state)
                                    , let c = planeFrameId pl
                                    , let e = planeID pl
                                    ]

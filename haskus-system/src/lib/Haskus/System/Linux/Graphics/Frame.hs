@@ -33,18 +33,18 @@ import Haskus.Utils.Flow
 import Haskus.Utils.List (zip4)
 
 
-fromFrame :: Frame -> StructFrameCommand
+fromFrame :: Frame -> StructFrameCommand2
 fromFrame Frame{..} = s
    where
       g :: (Num a,Storable a) => (FrameBuffer -> a) -> Vector 4 a
       g f = Vector.fromFilledList 0 (fmap f frameBuffers)
-      s   = StructFrameCommand (unEntityID frameID)
+      s   = StructFrameCommand2 (unEntityID frameID)
                frameWidth frameHeight framePixelFormat frameFlags
                (g fbBuffer) (g fbPitch)
                (g fbOffset) (g fbModifiers)
 
-toFrame :: StructFrameCommand -> Frame
-toFrame StructFrameCommand{..} = s
+toFrame :: StructFrameCommand2 -> Frame
+toFrame StructFrameCommand2{..} = s
    where
       bufs = uncurry4 FrameBuffer <$> zip4
                (Vector.toList fc2Handles)

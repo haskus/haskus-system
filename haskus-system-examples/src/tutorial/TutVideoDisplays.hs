@@ -16,10 +16,10 @@ main = runSys' do
    
    forM_ cards \card -> do
 
-      state <- readGraphicsState (graphicCardHandle card)
-                  |> assertLogShowErrorE "Read graphics state"
+      state <- getHandleEntities (graphicCardHandle card)
+                  |> assertLogShowErrorE "Get entities"
 
-      let conns = graphicsConnectors state
+      let conns = entitiesConnectors state
 
       when (null conns) do
          writeStrLn term "No connector found"

@@ -110,10 +110,12 @@ executables:
       main: Main.hs
       source-dirs: src/display-state
 
-   DisplayConnectors:
-      main: Main.hs
-      source-dirs: src/display-connectors
-
    TutEntitiesIDs:
       main: TutEntitiesIDs.hs
       source-dirs: src/tutorial
+      other-modules: []
+
+   TutVideoDisplays:
+      main: TutVideoDisplays.hs
+      source-dirs: src/tutorial
+      other-modules: []

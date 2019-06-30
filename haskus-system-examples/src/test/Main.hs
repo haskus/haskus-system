@@ -109,15 +109,15 @@ main = runSys' <| do
                   |> assertLogShowErrorE "Get generic buffer capability"
          sysAssert "Generic buffer capability supported" cap
          
-         state <- readGraphicsState fd
+         state <- getHandleEntitiesMap fd
                      |> assertE "Read graphics state"
          encoders <- assertE "Read encoders"
                      <| getHandleEncoders (graphicCardHandle card)
          let encoderMap = Map.fromList (fmap encoderID encoders `zip` encoders)
 
-         conns <- if Map.null (graphicsConnectors state)
+         conns <- if Map.null (entitiesConnectorsMap state)
             then sysError "No graphics connector found" 
-            else return (Map.elems (graphicsConnectors state))
+            else return (Map.elems (entitiesConnectorsMap state))
 
          let
             isValid x  = case connectorState x of
@@ -145,7 +145,7 @@ main = runSys' <| do
                encId  <- connectorEncoderID conn
                enc    <- Map.lookup encId encoderMap
                ctrlId <- encoderControllerID enc
-               Map.lookup ctrlId (graphicsControllers state)
+               Map.lookup ctrlId (entitiesControllersMap state)
 
 
          -- set mode and connectors

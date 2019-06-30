@@ -59,6 +59,7 @@ module Haskus.System.Linux.Internals.Graphics
    , FrameFlag (..)
    , FrameFlags
    , StructFrameCommand (..)
+   , StructFrameCommand2 (..)
    , DirtyAnnotation (..)
    , dirtyMaxClips
    , StructFrameDirty (..)
@@ -129,6 +130,7 @@ module Haskus.System.Linux.Internals.Graphics
    , ioctlSetPlane
    , ioctlAddFrame
    , ioctlRemoveFrame
+   , ioctlGetFrame
    , ioctlCursor
    , ioctlAtomic
    , ioctlCreateBlob
@@ -674,8 +676,23 @@ data FrameFlag
 
 type FrameFlags = BitSet Word32 FrameFlag
 
--- | Data matching the C structure drm_mode_fb_cmd2
+-- | Frame structure (v1)
+--
+-- drm_mode_fb_cmd
 data StructFrameCommand = StructFrameCommand
+   { fcFbId          :: {-# UNPACK #-} !Word32
+   , fcWidth         :: {-# UNPACK #-} !Word32
+   , fcHeight        :: {-# UNPACK #-} !Word32
+   , fcPitch         :: {-# UNPACK #-} !Word32
+   , fcBPP           :: {-# UNPACK #-} !Word32
+   , fcDepth         :: {-# UNPACK #-} !Word32
+   , fcHandle        :: {-# UNPACK #-} !Word32
+   } deriving (Show,Generic,Storable)
+
+-- | Frame structure (v2)
+--
+-- drm_mode_fb_cmd2
+data StructFrameCommand2 = StructFrameCommand2
    { fc2FbId          :: {-# UNPACK #-} !Word32
    , fc2Width         :: {-# UNPACK #-} !Word32
    , fc2Height        :: {-# UNPACK #-} !Word32
@@ -1178,6 +1195,9 @@ ioctlSetProperty = drmIoctl 0xAB
 ioctlGetBlob :: MonadInIO m => StructGetBlob -> Handle -> Excepts '[ErrorCode] m StructGetBlob
 ioctlGetBlob = drmIoctl 0xAC
 
+ioctlGetFrame :: MonadInIO m => StructFrameCommand -> Handle -> Excepts '[ErrorCode] m StructFrameCommand
+ioctlGetFrame = drmIoctl 0xAD
+
 ioctlRemoveFrame :: MonadInIO m => Word32 -> Handle -> Excepts '[ErrorCode] m Word32
 ioctlRemoveFrame = drmIoctl 0xAF
 
@@ -1205,7 +1225,7 @@ ioctlGetPlane = drmIoctl 0xB6
 ioctlSetPlane :: MonadInIO m => StructSetPlane -> Handle -> Excepts '[ErrorCode] m StructSetPlane
 ioctlSetPlane = drmIoctl 0xB7
 
-ioctlAddFrame :: MonadInIO m => StructFrameCommand -> Handle -> Excepts '[ErrorCode] m StructFrameCommand
+ioctlAddFrame :: MonadInIO m => StructFrameCommand2 -> Handle -> Excepts '[ErrorCode] m StructFrameCommand2
 ioctlAddFrame = drmIoctl 0xB8
 
 ioctlGetObjectProperties :: MonadInIO m => StructGetObjectProperties -> Handle -> Excepts '[ErrorCode] m StructGetObjectProperties

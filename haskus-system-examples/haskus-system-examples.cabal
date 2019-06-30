@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3806346464bcf2ba441028f50e640da6a34e3aac96b5a87ef28ebbdbb8afd2e8
+-- hash: 2115f8a32e58db35568f3d79262ff61088ccfaf71cf80ba80d9430b2d3081980
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -86,29 +86,6 @@ executable Demo
     , transformers
   other-modules:
       Demo.Diagrams Demo.Graphics Demo.Art
-  default-language: Haskell2010
-
-executable DisplayConnectors
-  main-is: Main.hs
-  other-modules:
-      Paths_haskus_system_examples
-  hs-source-dirs:
-      src/display-connectors
-  ghc-options: -Wall -O2 -static -threaded
-  cc-options: -static
-  extra-lib-dirs:
-      ./.system-work/lib
-  ld-options: -static -pthread
-  build-depends:
-      base >=4.8 && <5
-    , haskus-binary
-    , haskus-system
-    , haskus-ui
-    , haskus-utils
-    , haskus-utils-compat
-    , haskus-utils-data
-    , haskus-utils-types
-    , haskus-utils-variant
   default-language: Haskell2010
 
 executable DisplayProperties
@@ -304,8 +281,27 @@ executable Test
 
 executable TutEntitiesIDs
   main-is: TutEntitiesIDs.hs
-  other-modules:
-      Paths_haskus_system_examples
+  hs-source-dirs:
+      src/tutorial
+  ghc-options: -Wall -O2 -static -threaded
+  cc-options: -static
+  extra-lib-dirs:
+      ./.system-work/lib
+  ld-options: -static -pthread
+  build-depends:
+      base >=4.8 && <5
+    , haskus-binary
+    , haskus-system
+    , haskus-ui
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
+  default-language: Haskell2010
+
+executable TutVideoDisplays
+  main-is: TutVideoDisplays.hs
   hs-source-dirs:
       src/tutorial
   ghc-options: -Wall -O2 -static -threaded

@@ -1,6 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
@@ -169,6 +168,9 @@ main = runSys' <| do
       termAppendStyled s = termModifyContents $ \case
             []     -> [[s]]
             (x:xs) -> (x ++ [s]):xs
+      termAppendStyledLn s = do
+         termAppendStyled s
+         termNewLine
       termNewLine = termModifyContents ([]:)
       termPrompt = termAppendStyled (TextRange fontBoldItalic (PointSize 12) "$> " blackTexture)
       termBackErase = termModifyCurrent $ \case
@@ -177,16 +179,13 @@ main = runSys' <| do
          
       termEnter  = do
          s <- readTVar termStr
-         termAppendStyled (TextRange fontNormal (PointSize 12) s blackTexture)
-         termNewLine
+         termAppendStyledLn (TextRange fontNormal (PointSize 12) s blackTexture)
          case s of
             "exit" -> do
-               termAppendStyled (TextRange fontBoldItalic (PointSize 12) "Exiting..." blackTexture)
-               termNewLine
+               termAppendStyledLn (TextRange fontBoldItalic (PointSize 12) "Exiting..." blackTexture)
                mustQuit
             "help" -> do
-               termAppendStyled (TextRange fontBoldItalic (PointSize 16) "You are on your own for now..." rainbowTexture)
-               termNewLine
+               termAppendStyledLn (TextRange fontBoldItalic (PointSize 16) "You are on your own for now..." rainbowTexture)
             "uname" -> do
                
                let res = case info of
@@ -222,6 +221,7 @@ main = runSys' <| do
 
    let dpmsSet = putTMVar dpmsState
    -------------------------------------------------
+
 
    -------------------------------------------------
    -- Char map management
@@ -306,17 +306,17 @@ main = runSys' <| do
 
    forM_ cards \card -> do
 
-      state <- assertE "Read graphics state"
-                  <| readGraphicsState (graphicCardHandle card)
+      state <- assertE "Get entities"
+                  <| getHandleEntitiesMap (graphicCardHandle card)
 
       encoders <- assertE "Read encoders"
                   <| getHandleEncoders (graphicCardHandle card)
       let encoderMap = Map.fromList (fmap encoderID encoders `zip` encoders)
 
       -- get connectors
-      conns <- if Map.null (graphicsConnectors state)
+      conns <- if Map.null (entitiesConnectorsMap state)
          then sysError "No graphics connector found" 
-         else return (Map.elems (graphicsConnectors state))
+         else return (Map.elems (entitiesConnectorsMap state))
 
       let
          isValid x  = case connectorState x of
@@ -339,7 +339,7 @@ main = runSys' <| do
             encId  <- connectorEncoderID conn
             enc    <- Map.lookup encId encoderMap
             ctrlId <- encoderControllerID enc
-            Map.lookup ctrlId (graphicsControllers state)
+            Map.lookup ctrlId (entitiesControllersMap state)
 
           Just ctrl = case defaultCtrl of
             -- we already have a connected controller, use it
@@ -349,7 +349,7 @@ main = runSys' <| do
                encId  <- headMaybe (connectorPossibleEncoderIDs conn)
                enc    <- Map.lookup encId encoderMap
                ctrlId <- headMaybe (encoderPossibleControllers enc)
-               Map.lookup ctrlId (graphicsControllers state)
+               Map.lookup ctrlId (entitiesControllersMap state)
             
 
       let

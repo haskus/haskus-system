@@ -12,10 +12,13 @@
 
 -- | State of the graphics system
 module Haskus.System.Linux.Graphics.State
-   ( GraphicsState (..)
-   , readGraphicsState
-   -- ** Entities
-   , EntitiesIDs (..)
+   ( EntitiesIDs (..)
+   , EntitiesMap (..)
+   , Entities (..)
+   , getHandleEntitiesIDs
+   , getHandleEntities
+   , getHandleEntitiesMap
+   , toEntitiesMap
    , Controller (..)
    , Encoder(..)
    , EncoderType(..)
@@ -26,7 +29,6 @@ module Haskus.System.Linux.Graphics.State
    , ConnectorType(..)
    , SubPixel(..)
    , Resources(..)
-   , getHandleEntitiesIDs
    , setController'
    , switchFrame'
    , getControllers
@@ -66,6 +68,7 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.Handle
 import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
+import Haskus.Utils.List (zipLeftWith)
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.BitSet as BitSet
@@ -77,13 +80,31 @@ import Data.Map (Map)
 import Foreign.Ptr
 
 
--- | Graph of graphics entities
-data GraphicsState = GraphicsState
-   { graphicsConnectors   :: Map ConnectorID   Connector  -- ^ Connectors
-   , graphicsControllers  :: Map ControllerID  Controller -- ^ Controllers
-   , graphicsPlanes       :: Map PlaneID       Plane      -- ^ Planes
-   , graphicsFrames       :: [FrameID]                    -- ^ Frames
+-- | Entities (only IDs)
+data EntitiesIDs = EntitiesIDs
+   { entitiesConnectorsIDs   :: [ConnectorID]   -- ^ Connectors
+   , entitiesControllersIDs  :: [ControllerID]  -- ^ Controllers
+   , entitiesPlanesIDs       :: [PlaneID]       -- ^ Planes
+   , entitiesFramesIDs       :: [FrameID]       -- ^ Frames
+   }
+   deriving (Show,Eq)
+
+-- | Entities map from their ID
+data EntitiesMap = EntitiesMap
+   { entitiesConnectorsMap  :: Map ConnectorID   Connector          -- ^ Connectors
+   , entitiesControllersMap :: Map ControllerID  Controller         -- ^ Controllers
+   , entitiesPlanesMap      :: Map PlaneID       Plane              -- ^ Planes
+   , entitiesFramesMap      :: Map FrameID       StructFrameCommand -- ^ Frames
    } deriving (Show)
+
+-- | Entities
+data Entities = Entities
+   { entitiesConnectors  :: [Connector]          -- ^ Connectors
+   , entitiesControllers :: [Controller]         -- ^ Controllers
+   , entitiesPlanes      :: [Plane]              -- ^ Planes
+   , entitiesFrames      :: [StructFrameCommand] -- ^ Frames
+   } deriving (Show)
+
 
 -- | Graphic card ressources
 data Resources = Resources
@@ -96,15 +117,6 @@ data Resources = Resources
    , resMinHeight       :: Word32            -- ^ Minimal height
    , resMaxHeight       :: Word32            -- ^ Maximal height
    } deriving (Show)
-
--- | Entities (only IDs)
-data EntitiesIDs = EntitiesIDs
-   { entitiesConnectorsIDs   :: [ConnectorID]   -- ^ Connectors
-   , entitiesControllersIDs  :: [ControllerID]  -- ^ Controllers
-   , entitiesPlanesIDs       :: [PlaneID]       -- ^ Planes
-   , entitiesFramesIDs       :: [FrameID]       -- ^ Frames
-   }
-   deriving (Show,Eq)
 
 
 -- | Get card entities
@@ -121,20 +133,19 @@ getHandleEntitiesIDs hdl = do
       , entitiesPlanesIDs       = planeIDs
       }
 
--- | Get the current graphics state from the kernel
-readGraphicsState :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m GraphicsState
-readGraphicsState hdl = go 5
+-- | Get the current entities
+getHandleEntities :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m Entities
+getHandleEntities hdl = go 5
    where
       getPlaneFromID' i
          = getPlaneFromID hdl i
             -- shouldn't happen, planes are invariant
-            |> catchDieE (\(InvalidPlaneID _) -> error "readGraphicsState: unexpected invalid plane ID" )
+            |> catchDieE (\(InvalidPlaneID _) -> error "getHandleEntities: unexpected invalid plane ID" )
 
       getControllerFromID' i
          = getControllerFromID hdl i
             -- shouldn't happen, controllers are invariant
-            |> catchDieE (\(InvalidControllerID _) -> error "readGraphicsState: unexpected invalid controller ID" )
-
+            |> catchDieE (\(InvalidControllerID _) -> error "getHandleEntities: unexpected invalid controller ID" )
 
       go n = do
          ids <- getHandleEntitiesIDs hdl
@@ -142,13 +153,14 @@ readGraphicsState hdl = go 5
          -- Connectors may fail as they can be removed between the time we get
          -- the ID and the time we get the details from the ID. Controllers and
          -- planes IDs are invariant for a given device.
+         mframes <- runE <| traverse (getFrameFromID hdl)       (entitiesFramesIDs      ids)
          mconns  <- runE <| traverse (getConnectorFromID hdl)   (entitiesConnectorsIDs  ids)
          mctrls  <- runE <| traverse getControllerFromID'       (entitiesControllersIDs ids)
          mplanes <- runE <| traverse getPlaneFromID'            (entitiesPlanesIDs      ids)
 
-         case (mconns, mctrls, mplanes) of
-            (VRight conns, VRight ctrls, VRight planes) ->
-               return <| buildGraphicsState conns ctrls planes (entitiesFramesIDs ids)
+         case (mconns, mctrls, mplanes, mframes) of
+            (VRight conns, VRight ctrls, VRight planes, VRight frames) ->
+               return <| Entities conns ctrls planes frames
             -- on failure we restart the process
             -- (we check that we don't loop indefinitely)
             _ -> if n > (0 :: Word)
@@ -156,14 +168,18 @@ readGraphicsState hdl = go 5
                   else throwE InvalidHandle
 
 
--- | Build GraphicsState
-buildGraphicsState :: [Connector] -> [Controller] -> [Plane] -> [FrameID] -> GraphicsState
-buildGraphicsState conns ctrls planes fbs = GraphicsState conns' ctrls' planes' fbs
-   where
-      conns'  = Map.fromList <| fmap (\c -> (connectorID c, c))  conns
-      ctrls'  = Map.fromList <| fmap (\c -> (controllerID c, c)) ctrls
-      planes' = Map.fromList <| fmap (\p -> (planeID p, p))      planes
+-- | Make a Map for each kind of entity with their IDs as keys
+toEntitiesMap :: Entities -> EntitiesMap
+toEntitiesMap Entities{..} = EntitiesMap
+   { entitiesConnectorsMap  = Map.fromList (zipLeftWith connectorID        entitiesConnectors)
+   , entitiesControllersMap = Map.fromList (zipLeftWith controllerID       entitiesControllers)
+   , entitiesPlanesMap      = Map.fromList (zipLeftWith planeID            entitiesPlanes)
+   , entitiesFramesMap      = Map.fromList (zipLeftWith (EntityID. fcFbId) entitiesFrames)
+   }
 
+-- | Get entities Map with their IDs as keys
+getHandleEntitiesMap :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m EntitiesMap
+getHandleEntitiesMap hdl = getHandleEntities hdl ||> toEntitiesMap
 
 fromStructGetEncoder :: Resources -> Handle -> StructGetEncoder -> Encoder
 fromStructGetEncoder res hdl StructGetEncoder{..} =
@@ -218,16 +234,42 @@ fromStructController hdl StructController{..} =
       
 -- | Get Controller
 getControllerFromID :: MonadInIO m => Handle -> ControllerID -> Excepts '[InvalidHandle,InvalidControllerID] m Controller
-getControllerFromID hdl eid =
-   ioctlGetController crtc hdl
+getControllerFromID hdl eid = do
+   let
+      controllerStruct = emptyStructController { contID = unEntityID eid }
+   ioctlGetController controllerStruct hdl
       ||> fromStructController hdl
       |> catchLiftLeft \case
             EINVAL -> throwE InvalidHandle
             ENOENT -> throwE (InvalidControllerID eid)
             e      -> unhdlErr "getControllerFromID" e
-   where
-      crtc = emptyStructController { contID = unEntityID eid }
 
+-- | Get Frame info
+--
+-- WARNING: if the Frame uses several buffers there is no Linux API yet to
+-- retrieve information from it (we miss drm_mode_getfb2 IOCTL).
+getFrameFromID :: MonadInIO m => Handle -> FrameID -> Excepts '[InvalidHandle,InvalidFrameID] m StructFrameCommand
+getFrameFromID hdl eid = do
+   let
+      frameStruct = StructFrameCommand
+         { fcFbId   = unEntityID eid
+         , fcWidth  = 0
+         , fcHeight = 0
+         , fcPitch  = 0
+         , fcBPP    = 0
+         , fcDepth  = 0
+         , fcHandle = 0
+         }
+   ioctlGetFrame frameStruct hdl
+      |> catchLiftLeft \case
+            EINVAL -> -- TODO: we can't know if it failed because of an invalid
+                      -- handle or because the frame usees several buffers.
+                      -- We would need drm_mode_getfb2 which doesn't exist
+                      -- yet...
+                      -- For now we return a mostly empty struct. In the future: throwE InvalidHandle
+                      pure frameStruct
+            ENOENT -> throwE (InvalidFrameID eid)
+            e      -> unhdlErr "getFrameFromID" e
 
 setController' :: MonadInIO m => Handle -> ControllerID -> Maybe FrameView -> [ConnectorID] -> Maybe Mode -> Excepts '[ErrorCode] m ()
 setController' hdl eid fb conns mode = do
@@ -504,6 +546,7 @@ data InvalidPlaneID      = InvalidPlaneID      PlaneID      deriving (Show)
 data InvalidControllerID = InvalidControllerID ControllerID deriving (Show)
 data InvalidConnectorID  = InvalidConnectorID  ConnectorID  deriving (Show)
 data InvalidEncoderID    = InvalidEncoderID    EncoderID    deriving (Show)
+data InvalidFrameID      = InvalidFrameID      FrameID      deriving (Show)
 
 -- | Get the IDs of the supported planes
 getPlaneIDs :: forall m. MonadInIO m => Handle -> Excepts '[InvalidHandle] m [PlaneID]
