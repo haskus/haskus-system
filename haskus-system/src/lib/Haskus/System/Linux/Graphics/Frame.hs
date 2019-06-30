@@ -8,10 +8,10 @@
 -- different frame buffers though.
 module Haskus.System.Linux.Graphics.Frame
    ( Frame(..)
-   , addFrame
-   , removeFrame
+   , FrameBuffer (..)
+   , createFrame
+   , freeFrame
    , dirtyFrame
-   , PixelSource(..)
    , SwitchFrameFlag (..)
    , SwitchFrameFlags
    , DirtyAnnotation (..)
@@ -36,17 +36,17 @@ import Haskus.Utils.List (zip4)
 fromFrame :: Frame -> StructFrameCommand
 fromFrame Frame{..} = s
    where
-      g :: (Num a,Storable a) => (PixelSource -> a) -> Vector 4 a
-      g f = Vector.fromFilledList 0 (fmap f frameSources)
+      g :: (Num a,Storable a) => (FrameBuffer -> a) -> Vector 4 a
+      g f = Vector.fromFilledList 0 (fmap f frameBuffers)
       s   = StructFrameCommand (unEntityID frameID)
                frameWidth frameHeight framePixelFormat frameFlags
-               (g surfaceHandle) (g surfacePitch)
-               (g surfaceOffset) (g surfaceModifiers)
+               (g fbBuffer) (g fbPitch)
+               (g fbOffset) (g fbModifiers)
 
 toFrame :: StructFrameCommand -> Frame
 toFrame StructFrameCommand{..} = s
    where
-      bufs = uncurry4 PixelSource <$> zip4
+      bufs = uncurry4 FrameBuffer <$> zip4
                (Vector.toList fc2Handles)
                (Vector.toList fc2Pitches)
                (Vector.toList fc2Offsets)
@@ -55,9 +55,9 @@ toFrame StructFrameCommand{..} = s
             fc2Width fc2Height fc2PixelFormat fc2Flags bufs
 
 
--- | Create a framebuffer
-addFrame :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [PixelSource] -> Excepts '[ErrorCode] m Frame
-addFrame hdl width height fmt flags buffers = do
+-- | Create a frame
+createFrame :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer] -> Excepts '[ErrorCode] m Frame
+createFrame hdl width height fmt flags buffers = do
    
    let s = Frame (EntityID 0) width height
                fmt flags buffers
@@ -65,9 +65,9 @@ addFrame hdl width height fmt flags buffers = do
    ioctlAddFrame (fromFrame s) hdl
       ||> toFrame
 
--- | Release a frame buffer
-removeFrame :: MonadInIO m => Handle -> Frame -> Excepts '[ErrorCode] m ()
-removeFrame hdl fs = do
+-- | Release a frame
+freeFrame :: MonadInIO m => Handle -> Frame -> Excepts '[ErrorCode] m ()
+freeFrame hdl fs = do
    void (ioctlRemoveFrame (unEntityID (frameID fs)) hdl)
 
 

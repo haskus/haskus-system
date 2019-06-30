@@ -25,7 +25,7 @@ module Haskus.System.Linux.Graphics.Entities
    , SrcRect (..)
    -- * Frame source
    , Frame (..)
-   , PixelSource (..)
+   , FrameBuffer (..)
    )
 where
 
@@ -186,15 +186,15 @@ data Frame = Frame
    , frameWidth       :: Word32           -- ^ Frame width
    , frameHeight      :: Word32           -- ^ Frame height
    , framePixelFormat :: PixelFormat      -- ^ Pixel format
-   , frameFlags       :: FrameFlags       -- ^ Flags
-   , frameSources     :: [PixelSource]    -- ^ Data sources (up to four)
+   , frameFlags       :: FrameFlags       -- ^ Frame flags
+   , frameBuffers     :: [FrameBuffer]    -- ^ Data sources (up to four)
    } deriving (Show)
 
--- | Pixel source
-data PixelSource = PixelSource
-   { surfaceHandle    :: Word32 -- ^ Handle of the surface
-   , surfacePitch     :: Word32 -- ^ Pitch of the surface
-   , surfaceOffset    :: Word32 -- ^ Offset of the surface
-   , surfaceModifiers :: Word64 -- ^ Modifiers for the surface
+-- | Frame buffer (contains components of the pixel colors)
+data FrameBuffer = FrameBuffer
+   { fbBuffer    :: Word32 -- ^ Raw buffer handle
+   , fbPitch     :: Word32 -- ^ Pitch of the frame in the buffer
+   , fbOffset    :: Word32 -- ^ Offset of the frame in the buffer
+   , fbModifiers :: Word64 -- ^ Modifiers for the frame buffer
    } deriving (Show)
 

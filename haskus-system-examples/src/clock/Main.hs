@@ -94,7 +94,7 @@ main = runSys' do
                   ctrlId <- headMaybe (encoderPossibleControllers enc)
                   Map.lookup ctrlId (graphicsControllers state)
 
-         writeStrLn term (show (surfacePitch (mappedSurfaceInfo buf)))
+         writeStrLn term (show (fbPitch (mappedSurfaceInfo buf)))
 
          -- set mode and connectors
          setController ctrl (SetSource fb1) [conn] (Just mode)

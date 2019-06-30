@@ -135,7 +135,7 @@ data MappedSurface = MappedSurface
    { mappedSurfaceBuffer  :: HostBuffer
    , mappedSurfaceMapping :: HostBufferMap
    , mappedSurfacePointer :: Ptr ()
-   , mappedSurfaceInfo    :: PixelSource
+   , mappedSurfaceInfo    :: FrameBuffer
    }
 
 data GenericFrame = GenericFrame
@@ -169,14 +169,14 @@ initGenericFrameBuffer card mode pixfmt = do
             Nothing
             (Just (hdl, mdOffset bufKerMap))
 
-      let plane = PixelSource (cdHandle buf) (cdPitch buf) 0 0
+      let plane = FrameBuffer (cdHandle buf) (cdPitch buf) 0 0
 
       return (MappedSurface buf bufKerMap addr plane)
    
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
-   fb <- addFrame hdl width height pixfmt BitSet.empty planes
-         |> assertLogShowErrorE "Add frame buffer"
+   fb <- createFrame hdl width height pixfmt BitSet.empty planes
+         |> assertLogShowErrorE "Create frame"
 
    return $ GenericFrame fb mappedPlanes
 
@@ -191,14 +191,11 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
       sysMemUnmap addr (cdSize buf)
          |> assertLogShowErrorE "Unmap generic buffer from user space"
 
-      -- destroy the generic buffer
       destroyHostBuffer hdl buf
          |> assertLogShowErrorE "Destroy generic buffer"
 
-
-   -- remove the frame
-   removeFrame hdl fb
-      |> assertLogShowErrorE "Remove frame"
+   freeFrame hdl fb
+      |> assertLogShowErrorE "Free frame"
 
 
 -----------------------------------------------------------------------
