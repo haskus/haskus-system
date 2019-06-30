@@ -7,22 +7,28 @@
 
 -- | Manage graphics devices
 module Haskus.System.Graphics
-   ( GraphicCard (..)
+   ( -- * DRM Client
+     setClientCapabilityWarn
+     -- * Card
+   , GraphicCard (..)
    , InvalidCard (..)
-   , EntitiesIDs (..)
    , loadGraphicCards
+     -- * Entities
+   , EntitiesIDs (..)
+   , EntitiesMap (..)
+   , Entities (..)
+   , getEntities
+   , getEntitiesMap
    , getEntitiesIDs
+     -- * Generic rendering engine
    , MappedSurface (..)
    , GenericFrame (..)
    , initGenericFrameBuffer
    , freeGenericFrameBuffer
-   -- * Multi-buffering
    , RenderingEngine (..)
    , BufferingState (..)
    , FrameWait (..)
    , initRenderingEngine
-   -- * Capability
-   , setClientCapabilityWarn
    )
 where
 
@@ -57,6 +63,10 @@ import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Event as Graphics
 
 import System.FilePath (takeBaseName)
+
+-------------------------------------------------------------
+-- Card
+-------------------------------------------------------------
 
 -- | Graphic card
 data GraphicCard = GraphicCard
@@ -106,12 +116,34 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          ||> Just
          |> catchEvalE (const (return Nothing))
 
+-------------------------------------------------------------
+-- Entities
+-------------------------------------------------------------
 
--- | Get card entities
+
+-- | Get card entities IDs
 getEntitiesIDs :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m EntitiesIDs
 getEntitiesIDs card =
    getHandleEntitiesIDs (graphicCardHandle card)
       |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+-- | Get card entities
+getEntities :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m Entities
+getEntities card =
+   getHandleEntities (graphicCardHandle card)
+      |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+-- | Get card entities as Maps (EntitiyID -> EntityInfo)
+getEntitiesMap :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m EntitiesMap
+getEntitiesMap card =
+   getHandleEntitiesMap (graphicCardHandle card)
+      |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+
+-------------------------------------------------------------
+-- Generic rendering engine
+-------------------------------------------------------------
+
 
 -- | Create a new thread reading input events and putting them in a TChan
 newEventWaiterThread :: Handle -> Sys (TChan Graphics.Event)

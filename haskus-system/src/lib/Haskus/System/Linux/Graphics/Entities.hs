@@ -155,7 +155,7 @@ data Plane = Plane
    }
    deriving (Show)
 
-type FP16 = FixedPoint Word32 16 16
+type FP16_16 = FixedPoint Word32 16 16
 
 -- | Destination rectangle
 data DestRect = DestRect
@@ -168,10 +168,10 @@ data DestRect = DestRect
 
 -- | Source rectangle
 data SrcRect = SrcRect
-   { srcX      :: FP16
-   , srcY      :: FP16
-   , srcWidth  :: FP16
-   , srcHeight :: FP16
+   { srcX      :: FP16_16
+   , srcY      :: FP16_16
+   , srcWidth  :: FP16_16
+   , srcHeight :: FP16_16
    }
    deriving (Show,Eq)
 

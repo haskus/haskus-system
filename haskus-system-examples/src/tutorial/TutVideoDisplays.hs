@@ -16,27 +16,34 @@ main = runSys' do
    
    forM_ cards \card -> do
 
-      state <- getHandleEntities (graphicCardHandle card)
+      entities <- getEntities card
                   |> assertLogShowErrorE "Get entities"
 
-      let conns = entitiesConnectors state
+      let conns = entitiesConnectors entities
 
       when (null conns) do
          writeStrLn term "No connector found"
 
       forM_ conns \conn -> do
-         writeStrLn term ("Probing " ++ showObjectQualifiedID conn)
+         writeStrLn term <| mconcat
+            [ "Probing "
+            , showObjectQualifiedID conn
+            , ": "
+            , show (connectorType conn)
+            , "-"
+            , show (connectorByTypeIndex conn)
+            ]
 
          case connectorState conn of
             Disconnected      -> writeStrLn term " -> disconnected"
             ConnectionUnknown -> writeStrLn term " -> unknown connection"
-            Connected dev -> do
+            Connected videoDisplay -> do
                writeStrLn term "Modes"
-               forM_ (videoModes dev) \mode ->
+               forM_ (videoModes videoDisplay) \mode ->
                   writeStrLn term (showMode mode)
 
                writeStrLn term "Properties"
-               forM_ (videoProperties dev) \prop ->
+               forM_ (videoProperties videoDisplay) \prop ->
                   writeStrLn term ("    " ++ showProperty prop)
 
    powerOff

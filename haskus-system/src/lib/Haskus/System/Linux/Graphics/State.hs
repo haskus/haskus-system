@@ -40,7 +40,6 @@ module Haskus.System.Linux.Graphics.State
    , fromStructController
    , getConnectorFromID
    , getResources
-   , getEntities
    , pickEncoders
    , pickControllers
    , getPlaneIDs
@@ -504,22 +503,6 @@ getResources hdl = getValues [10,10,10,10] -- try with default values
                (csMaxWidth  r)
                (csMinHeight r)
                (csMaxHeight r)
-
-
--- | Internal function to retreive card entities from their identifiers
-getEntities :: MonadInIO m => (Resources -> [a]) -> (Handle -> a -> m (Either x b)) -> Handle -> m [b]
-getEntities getIDs getEntityFromID hdl = do
-   res <- getResources hdl
-            |> catchDieE (\InvalidHandle -> error "getEntities: invalid handle")
-            |> evalE
-            
-   let 
-      f (Left _)  xs = xs
-      f (Right x) xs = x:xs
-      ids            = getIDs res
-
-   xs <- traverse (getEntityFromID hdl) ids
-   return (foldr f [] xs)
 
 
 -- | Pick the elements in es whose indexes are in bs
