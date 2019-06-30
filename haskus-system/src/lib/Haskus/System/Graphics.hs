@@ -47,7 +47,7 @@ import Haskus.System.Linux.Memory
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Capability
-import Haskus.System.Linux.Graphics.HostBuffer
+import Haskus.System.Linux.Graphics.GenericBuffer
 import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Entities
@@ -132,8 +132,8 @@ newEventWaiterThread h = do
 
 
 data MappedSurface = MappedSurface
-   { mappedSurfaceBuffer  :: HostBuffer
-   , mappedSurfaceMapping :: HostBufferMap
+   { mappedSurfaceBuffer  :: GenericBuffer
+   , mappedSurfaceMapping :: GenericBufferMap
    , mappedSurfacePointer :: Ptr ()
    , mappedSurfaceInfo    :: FrameBuffer
    }
@@ -155,10 +155,10 @@ initGenericFrameBuffer card mode pixfmt = do
       flags  = 0
 
    mappedPlanes <- forM bpps $ \bpp -> do
-      buf <- createHostBuffer hdl width height bpp flags
+      buf <- createGenericBuffer hdl width height bpp flags
                |> assertLogShowErrorE "Create a generic buffer"
 
-      bufKerMap <- mapHostBuffer hdl buf
+      bufKerMap <- mapGenericBuffer hdl buf
                      |> assertLogShowErrorE "Map generic buffer"
 
       addr <- assertLogShowErrorE "Map generic buffer in user space" <|
@@ -191,8 +191,8 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
       sysMemUnmap addr (cdSize buf)
          |> assertLogShowErrorE "Unmap generic buffer from user space"
 
-      destroyHostBuffer hdl buf
-         |> assertLogShowErrorE "Destroy generic buffer"
+      freeGenericBuffer hdl buf
+         |> assertLogShowErrorE "Free generic buffer"
 
    freeFrame hdl fb
       |> assertLogShowErrorE "Free frame"
@@ -226,7 +226,7 @@ data FrameWait
 
 -- | Init the rendering engine
 --
--- TODO: indicate failure (HostBuffer not supported, frame allocation
+-- TODO: indicate failure (GenericBuffer not supported, frame allocation
 -- error, etc.)
 -- TODO: support multiple controllers/connectors
 -- TODO: support connections/disconnections
@@ -245,7 +245,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
                         |> assertLogShowErrorE t
                sysAssert (t <> " supported") cap
 
-         checkCap CapHostBuffer              "Generic buffers"
+         checkCap CapGenericBuffer              "Generic buffers"
          checkCap CapControllerInVBlankEvent "Controllers in VBlank events"
 
       -- TODO: support other formats

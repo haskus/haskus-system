@@ -105,7 +105,7 @@ main = runSys' <| do
          
 
       sysLogSequence "Load graphic card" <| do
-         cap  <- fd `supports` CapHostBuffer
+         cap  <- fd `supports` CapGenericBuffer
                   |> assertLogShowErrorE "Get generic buffer capability"
          sysAssert "Generic buffer capability supported" cap
          

@@ -121,9 +121,9 @@ module Haskus.System.Linux.Internals.Graphics
    , ioctlGetBlob
    , ioctlSwitchFrame
    , ioctlDirtyFrame
-   , ioctlCreateHostBuffer
-   , ioctlMapHostBuffer
-   , ioctlDestroyHostBuffer
+   , ioctlCreateGenericBuffer
+   , ioctlMapGenericBuffer
+   , ioctlDestroyGenericBuffer
    , ioctlGetPlaneResources
    , ioctlGetPlane
    , ioctlSetPlane
@@ -391,7 +391,7 @@ type ModeFieldPresents = BitSet Word32 ModeFieldPresent
 data StructSetPlane = StructSetPlane
    { spPlaneId :: {-# UNPACK #-} !Word32
    , spCrtcId  :: {-# UNPACK #-} !Word32
-   , spFrameId :: {-# UNPACK #-} !Word32 -- ^ Frame contains surface format type
+   , spFrameId :: {-# UNPACK #-} !Word32 -- ^ Source Frame
    , spFlags   :: {-# UNPACK #-} !ModeFieldPresents
    , spCrtcX   :: {-# UNPACK #-} !Int32 -- ^ Signed dest location allows it to be partially off screen
    , spCrtcY   :: {-# UNPACK #-} !Int32
@@ -1028,7 +1028,7 @@ data Clip = Clip
 
 -- | Capability
 data Capability
-   = CapHostBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
+   = CapGenericBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
    | CapVBlankHighController
    | CapGenericPreferredDepth
    | CapGenericPreferShadow
@@ -1047,7 +1047,7 @@ data Capability
 -- Add 1 to the enum number to get the valid value
 instance CEnum Capability where
    fromCEnum = \case
-      CapHostBuffer              -> 0x1
+      CapGenericBuffer              -> 0x1
       CapVBlankHighController    -> 0x2
       CapGenericPreferredDepth   -> 0x3
       CapGenericPreferShadow     -> 0x4
@@ -1062,7 +1062,7 @@ instance CEnum Capability where
       CapSyncObject              -> 0x13
       CapSyncObjectTimeline      -> 0x14
    toCEnum = \case
-      0x1  -> CapHostBuffer
+      0x1  -> CapGenericBuffer
       0x2  -> CapVBlankHighController
       0x3  -> CapGenericPreferredDepth
       0x4  -> CapGenericPreferShadow
@@ -1187,14 +1187,14 @@ ioctlSwitchFrame = drmIoctl 0xB0
 ioctlDirtyFrame :: MonadInIO m => StructFrameDirty -> Handle -> Excepts '[ErrorCode] m StructFrameDirty
 ioctlDirtyFrame = drmIoctl 0xB1
 
-ioctlCreateHostBuffer :: MonadInIO m => StructCreateDumb -> Handle -> Excepts '[ErrorCode] m StructCreateDumb
-ioctlCreateHostBuffer = drmIoctl 0xB2
+ioctlCreateGenericBuffer :: MonadInIO m => StructCreateDumb -> Handle -> Excepts '[ErrorCode] m StructCreateDumb
+ioctlCreateGenericBuffer = drmIoctl 0xB2
 
-ioctlMapHostBuffer :: MonadInIO m => StructMapDumb -> Handle -> Excepts '[ErrorCode] m StructMapDumb
-ioctlMapHostBuffer = drmIoctl 0xB3
+ioctlMapGenericBuffer :: MonadInIO m => StructMapDumb -> Handle -> Excepts '[ErrorCode] m StructMapDumb
+ioctlMapGenericBuffer = drmIoctl 0xB3
 
-ioctlDestroyHostBuffer :: MonadInIO m => StructDestroyDumb -> Handle -> Excepts '[ErrorCode] m StructDestroyDumb
-ioctlDestroyHostBuffer = drmIoctl 0xB4
+ioctlDestroyGenericBuffer :: MonadInIO m => StructDestroyDumb -> Handle -> Excepts '[ErrorCode] m StructDestroyDumb
+ioctlDestroyGenericBuffer = drmIoctl 0xB4
 
 ioctlGetPlaneResources :: MonadInIO m => StructGetPlaneRes -> Handle -> Excepts '[ErrorCode] m StructGetPlaneRes
 ioctlGetPlaneResources = drmIoctl 0xB5

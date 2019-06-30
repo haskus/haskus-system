@@ -43,7 +43,7 @@ main = runSys' do
       let fd = graphicCardHandle card
 
       void <| sysLogSequence "Load graphic card" do
-         cap  <- (fd `supports` CapHostBuffer)
+         cap  <- (fd `supports` CapGenericBuffer)
                      |> assertE "Test card capabilities"
          sysAssert "Card supports host buffers" cap
          
