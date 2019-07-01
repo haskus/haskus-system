@@ -5,7 +5,9 @@
 -- | Generic buffers
 --
 -- Generic buffers are unaccelerated buffers that can be used with all devices
--- that support them with the same API (contrary to hardware specific buffers)
+-- that support them with the same API (contrary to hardware specific buffers).
+-- They are mappable into memory (we handle the mapping directly and
+-- automatically after the buffer creation to make them even simplier to use).
 --
 -- Generic buffers are called "dumb buffers" in original terminology
 --

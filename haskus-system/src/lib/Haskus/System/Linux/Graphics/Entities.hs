@@ -188,6 +188,7 @@ data Frame = Frame
    , framePixelFormat :: PixelFormat      -- ^ Pixel format
    , frameFlags       :: FrameFlags       -- ^ Frame flags
    , frameBuffers     :: [FrameBuffer]    -- ^ Data sources (up to four)
+   , frameCardHandle  :: Handle           -- ^ Card handle
    } deriving (Show)
 
 -- | Frame buffer (contains components of the pixel colors)

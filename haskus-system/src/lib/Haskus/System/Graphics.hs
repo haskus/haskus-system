@@ -25,6 +25,10 @@ module Haskus.System.Graphics
    , createGenericBuffer
    , freeGenericBuffer
    , withGenericBufferPtr
+   -- * Frames
+   , createFrame
+   , freeFrame
+   , dirtyFrame
      -- * Generic rendering engine
    , MappedSurface (..)
    , GenericFrame (..)
@@ -156,6 +160,14 @@ createGenericBuffer card width height bpp flags = do
    handleCreateGenericBuffer (graphicCardHandle card) width height bpp flags
 
 -------------------------------------------------------------
+-- Frames
+-------------------------------------------------------------
+
+-- | Create a frame
+createFrame :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer] -> Excepts '[ErrorCode] m Frame
+createFrame card width height fmt flags fbs = handleCreateFrame (graphicCardHandle card) width height fmt flags fbs
+
+-------------------------------------------------------------
 -- Generic rendering engine
 -------------------------------------------------------------
 
@@ -193,7 +205,6 @@ initGenericFrameBuffer :: GraphicCard -> Mode -> PixelFormat -> Sys GenericFrame
 initGenericFrameBuffer card mode pixfmt = do
    let
       fmt    = formatFormat pixfmt
-      hdl    = graphicCardHandle card
       width  = fromIntegral $ modeHorizontalDisplay mode
       height = fromIntegral $ modeVerticalDisplay mode
       bpps   = formatBitDepth fmt
@@ -209,22 +220,20 @@ initGenericFrameBuffer card mode pixfmt = do
    
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
-   fb <- createFrame hdl width height pixfmt BitSet.empty planes
+   fb <- createFrame card width height pixfmt BitSet.empty planes
          |> assertLogShowErrorE "Create frame"
 
    return $ GenericFrame fb mappedPlanes
 
 
-freeGenericFrameBuffer :: GraphicCard -> GenericFrame -> Sys ()
-freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
-
-   let hdl = graphicCardHandle card
+freeGenericFrameBuffer :: GenericFrame -> Sys ()
+freeGenericFrameBuffer (GenericFrame fb mappedBufs) = do
 
    forM_ mappedBufs $ \(MappedSurface buf _) -> do
       freeGenericBuffer buf
          |> assertLogShowErrorE "Free generic buffer"
 
-   freeFrame hdl fb
+   freeFrame fb
       |> assertLogShowErrorE "Free frame"
 
 

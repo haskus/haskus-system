@@ -9,7 +9,7 @@
 module Haskus.System.Linux.Graphics.Frame
    ( Frame(..)
    , FrameBuffer (..)
-   , createFrame
+   , handleCreateFrame
    , freeFrame
    , dirtyFrame
    , SwitchFrameFlag (..)
@@ -43,8 +43,8 @@ fromFrame Frame{..} = s
                (g fbBuffer) (g fbPitch)
                (g fbOffset) (g fbModifiers)
 
-toFrame :: StructFrameCommand2 -> Frame
-toFrame StructFrameCommand2{..} = s
+toFrame :: Handle -> StructFrameCommand2 -> Frame
+toFrame hdl StructFrameCommand2{..} = s
    where
       bufs = uncurry4 FrameBuffer <$> zip4
                (Vector.toList fc2Handles)
@@ -52,28 +52,30 @@ toFrame StructFrameCommand2{..} = s
                (Vector.toList fc2Offsets)
                (Vector.toList fc2Modifiers)
       s = Frame (EntityID fc2FbId)
-            fc2Width fc2Height fc2PixelFormat fc2Flags bufs
+            fc2Width fc2Height fc2PixelFormat fc2Flags bufs hdl
 
 
 -- | Create a frame
-createFrame :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer] -> Excepts '[ErrorCode] m Frame
-createFrame hdl width height fmt flags buffers = do
+handleCreateFrame :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer] -> Excepts '[ErrorCode] m Frame
+handleCreateFrame hdl width height fmt flags frameBuffers = do
    
    let s = Frame (EntityID 0) width height
-               fmt flags buffers
+               fmt flags frameBuffers hdl
 
    ioctlAddFrame (fromFrame s) hdl
-      ||> toFrame
+      ||> toFrame hdl
 
 -- | Release a frame
-freeFrame :: MonadInIO m => Handle -> Frame -> Excepts '[ErrorCode] m ()
-freeFrame hdl fs = do
-   void (ioctlRemoveFrame (unEntityID (frameID fs)) hdl)
+freeFrame :: MonadInIO m => Frame -> Excepts '[ErrorCode] m ()
+freeFrame frame = do
+   void <| ioctlRemoveFrame
+               (unEntityID (frameID frame))
+               (frameCardHandle frame)
 
 
 -- | Indicate dirty parts of a frame source
-dirtyFrame :: MonadInIO m => Handle -> Frame -> DirtyAnnotation -> Excepts '[ErrorCode] m ()
-dirtyFrame hdl fs mode = do
+dirtyFrame :: MonadInIO m => Frame -> DirtyAnnotation -> Excepts '[ErrorCode] m ()
+dirtyFrame frame mode = do
    let
       (color,flags,clips) = case mode of
          Dirty     cs   -> (0,0,cs)
@@ -82,12 +84,12 @@ dirtyFrame hdl fs mode = do
 
    void $ withArray clips $ \clipPtr -> do
       let s = StructFrameDirty
-               { fdFbId     = unEntityID (frameID fs)
+               { fdFbId     = unEntityID (frameID frame)
                , fdFlags    = flags
                , fdColor    = color
                , fdNumClips = fromIntegral (length clips)
                , fdClipsPtr = fromIntegral (ptrToWordPtr clipPtr)
                }
-      ioctlDirtyFrame s hdl
+      ioctlDirtyFrame s (frameCardHandle frame)
 
 
