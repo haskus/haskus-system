@@ -28,7 +28,9 @@ import Haskus.System.Linux.Memory
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
-import Foreign.ForeignPtr
+-- required to use a finalizer calling back into Haskell (sysMemUnmap)
+import Foreign.Concurrent (newForeignPtr)
+import Foreign.ForeignPtr hiding (newForeignPtr)
 import Foreign.Ptr
 
 -- | A generic buffer
@@ -63,9 +65,8 @@ handleCreateGenericBuffer hdl width height bpp flags = do
                -- free buffer on mapping error
                |> onE_ (runE_ (handleFreeGenericBuffer hdl (cdHandle r)))
    -- create a foreign pointer that automatically unmaps the buffer
-   let finalizer _ = runE_ (sysMemUnmap addr (cdSize r))
-   finalizerPtr <- liftIO (mkFinalizerPtr finalizer)
-   fptr <- liftIO (newForeignPtr finalizerPtr addr)
+   let finalizer = runE_ (sysMemUnmap addr (cdSize r))
+   fptr <- liftIO (newForeignPtr addr finalizer)
    pure <| GenericBuffer
      { genericBufferHeight       = cdHeight r
      , genericBufferWidth        = cdWidth r
@@ -77,9 +78,6 @@ handleCreateGenericBuffer hdl width height bpp flags = do
      , genericBufferCardHandle   = hdl
      , genericBufferPtr          = fptr
      }
-
-foreign import ccall "wrapper"
-   mkFinalizerPtr :: (Ptr () -> IO ()) -> IO (FinalizerPtr ())
 
 -- | Free a generic buffer
 handleFreeGenericBuffer :: MonadInIO m => Handle -> Word32 -> Excepts '[ErrorCode] m ()
