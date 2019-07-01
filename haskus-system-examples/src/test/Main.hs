@@ -136,8 +136,8 @@ main = runSys' <| do
             width  = fromIntegral <| modeHorizontalDisplay mode :: Float
             height = fromIntegral <| modeVerticalDisplay mode :: Float
 
-         frame1 <- initGenericFrame card mode fmt
-         frame2 <- initGenericFrame card mode fmt
+         frame1 <- createGenericFrame card mode fmt
+         frame2 <- createGenericFrame card mode fmt
 
          let Just ctrl = do
                encId  <- connectorEncoderID conn

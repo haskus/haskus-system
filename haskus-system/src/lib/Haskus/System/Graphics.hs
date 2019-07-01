@@ -21,18 +21,18 @@ module Haskus.System.Graphics
    , getEntities
    , getEntitiesMap
    , getEntitiesIDs
-   -- * Generic buffers
+   -- * Generic buffers and frames
    , GenericBuffer (..)
    , createGenericBuffer
    , freeGenericBuffer
    , withGenericBufferPtr
+   , createGenericFrame
+   , freeGenericFrame
    -- * Frames
    , createFrame
    , freeFrame
    , dirtyFrame
      -- * Generic rendering engine
-   , initGenericFrame
-   , freeGenericFrame
    , RenderingEngine (..)
    , BufferingState (..)
    , FrameWait (..)
@@ -148,7 +148,15 @@ getEntitiesMap card =
       |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
 
 -------------------------------------------------------------
--- Generic buffers
+-- Frames
+-------------------------------------------------------------
+
+-- | Create a frame
+createFrame :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer b] -> Excepts '[ErrorCode] m (Frame b)
+createFrame card width height fmt flags fbs = handleCreateFrame (graphicCardHandle card) width height fmt flags fbs
+
+-------------------------------------------------------------
+-- Generic buffers and frames
 -------------------------------------------------------------
 
 -- | Create a generic buffer and map it in user memory.
@@ -158,40 +166,9 @@ createGenericBuffer :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> Word32 
 createGenericBuffer card width height bpp flags = do
    handleCreateGenericBuffer (graphicCardHandle card) width height bpp flags
 
--------------------------------------------------------------
--- Frames
--------------------------------------------------------------
-
--- | Create a frame
-createFrame :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer b] -> Excepts '[ErrorCode] m (Frame b)
-createFrame card width height fmt flags fbs = handleCreateFrame (graphicCardHandle card) width height fmt flags fbs
-
--------------------------------------------------------------
--- Generic rendering engine
--------------------------------------------------------------
-
-
--- | Create a new thread reading input events and putting them in a TChan
-newEventWaiterThread :: Handle -> Sys (TChan Graphics.Event)
-newEventWaiterThread h = do
-   let
-      bufsz = 1000 -- buffer size
-
-   ch <- newBroadcastTChanIO
-   sysFork "Graphics event reader" <|
-      allocaBytes bufsz <| \ptr -> forever <| runE <| do
-         threadWaitRead h
-         sz2 <- sysRead h ptr (fromIntegral bufsz)
-         -- FIXME: we should somehow signal that an error occured and
-         -- that we won't report future events (if any)
-         evs <- peekEvents ptr (fromIntegral sz2)
-         atomically $ mapM_ (writeTChan ch) evs
-   return ch
-
-
 -- | Allocate and map fullscreen planes for the given format and mode
-initGenericFrame :: GraphicCard -> Mode -> PixelFormat -> Sys (Frame GenericBuffer)
-initGenericFrame card mode pixfmt = do
+createGenericFrame :: GraphicCard -> Mode -> PixelFormat -> Sys (Frame GenericBuffer)
+createGenericFrame card mode pixfmt = do
    let
       fmt    = formatFormat pixfmt
       width  = fromIntegral $ modeHorizontalDisplay mode
@@ -223,6 +200,30 @@ freeGenericFrame frame = do
    forM_ (frameBuffers frame) \fb -> do
       freeGenericBuffer (fbBuffer fb)
          |> assertLogShowErrorE "Free generic buffer"
+
+-------------------------------------------------------------
+-- Generic rendering engine
+-------------------------------------------------------------
+
+
+-- | Create a new thread reading input events and putting them in a TChan
+newEventWaiterThread :: Handle -> Sys (TChan Graphics.Event)
+newEventWaiterThread h = do
+   let
+      bufsz = 1000 -- buffer size
+
+   ch <- newBroadcastTChanIO
+   sysFork "Graphics event reader" <|
+      allocaBytes bufsz <| \ptr -> forever <| runE <| do
+         threadWaitRead h
+         sz2 <- sysRead h ptr (fromIntegral bufsz)
+         -- FIXME: we should somehow signal that an error occured and
+         -- that we won't report future events (if any)
+         evs <- peekEvents ptr (fromIntegral sz2)
+         atomically $ mapM_ (writeTChan ch) evs
+   return ch
+
+
 
 
 
@@ -280,7 +281,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       let fmt = makePixelFormat XRGB8888 LittleEndian
 
       -- initialize generic frames
-      frames <- forM [1..nfb] (const (initGenericFrame card mode fmt))
+      frames <- forM [1..nfb] (const (createGenericFrame card mode fmt))
       let (initFrame:otherFrames) = frames
 
       -- perform initial mode-setting
