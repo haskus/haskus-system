@@ -25,7 +25,7 @@ module Haskus.System.Linux.Graphics.State
    , Frame (..)
    , Connector (..)
    , Connection (..)
-   , VideoDisplay (..)
+   , Display (..)
    , ConnectorType(..)
    , SubPixel(..)
    , Resources(..)
@@ -418,7 +418,7 @@ getConnectorFromID hdl eid = do
 
                   modes <- fmap fromStructMode <$> peekArray' (connModesCount res2) (cv (connModesPtr res4))
 
-                  return (Connected (VideoDisplay
+                  return (Connected (Display
                      modes
                      (connWidth_ res4)
                      (connHeight_ res4)

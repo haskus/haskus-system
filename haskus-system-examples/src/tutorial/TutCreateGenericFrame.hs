@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
@@ -15,8 +14,8 @@ main = runSys' do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards \card -> do
-      forEachConnectedDisplay card \_conn videoDisplay -> do
-         let mode        = head (videoModes videoDisplay)
+      forEachConnectedDisplay card \_conn display -> do
+         let mode        = head (displayModes display)
              pixelFormat = makePixelFormat XRGB8888 LittleEndian
 
 

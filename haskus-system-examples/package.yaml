@@ -115,8 +115,8 @@ executables:
       source-dirs: src/tutorial
       other-modules: []
 
-   TutVideoDisplays:
-      main: TutVideoDisplays.hs
+   TutDisplays:
+      main: TutDisplays.hs
       source-dirs: src/tutorial
       other-modules: []
 

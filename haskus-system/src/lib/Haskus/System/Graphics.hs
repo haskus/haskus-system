@@ -154,7 +154,7 @@ getEntitiesMap card =
 forEachConnectedDisplay ::
    ( Monad m
    , MonadInIO m
-   ) => GraphicCard -> (Connector -> VideoDisplay -> m a) -> m [a]
+   ) => GraphicCard -> (Connector -> Display -> m a) -> m [a]
 forEachConnectedDisplay card action = do
    mentities <- runE (getEntities card)
    case mentities of
@@ -170,7 +170,7 @@ forEachConnectedDisplay card action = do
 forEachConnectedDisplay_ ::
    ( Monad m
    , MonadInIO m
-   ) => GraphicCard -> (Connector -> VideoDisplay -> m a) -> m ()
+   ) => GraphicCard -> (Connector -> Display -> m a) -> m ()
 forEachConnectedDisplay_ card action = void (forEachConnectedDisplay card action)
 
 -------------------------------------------------------------

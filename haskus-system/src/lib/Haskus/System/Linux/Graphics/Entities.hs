@@ -14,7 +14,7 @@ module Haskus.System.Linux.Graphics.Entities
    -- * Connector
    , Connector (..)
    , Connection (..)
-   , VideoDisplay (..)
+   , Display (..)
    -- * Encoder
    , Encoder (..)
    , EncoderType (..)
@@ -36,6 +36,7 @@ where
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.FixedPoint
+import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.Mode
@@ -74,18 +75,18 @@ data Connector = Connector
 
 -- | Indicate if a cable is plugged in the connector
 data Connection
-   = Connected VideoDisplay -- ^ A video display is connected
+   = Connected Display -- ^ A video display is connected
    | Disconnected           -- ^ No video display connected
    | ConnectionUnknown      -- ^ The connection state cannot be determined
    deriving (Show)
 
 -- | Information about the connected video display
-data VideoDisplay = VideoDisplay
-   { videoModes          :: [Mode]     -- ^ Supported modes
-   , videoPhysicalWidth  :: Word32     -- ^ Width (in millimeters)
-   , videoPhysicalHeight :: Word32     -- ^ Height (in millimeters)
-   , videoSubPixel       :: SubPixel   -- ^ Sub-pixel structure
-   , videoProperties     :: [Property] -- ^ Properties of the video display
+data Display = Display
+   { displayModes          :: [Mode]     -- ^ Supported modes
+   , displayPhysicalWidth  :: Word32     -- ^ Width (in millimeters)
+   , displayPhysicalHeight :: Word32     -- ^ Height (in millimeters)
+   , displaySubPixel       :: SubPixel   -- ^ Sub-pixel structure
+   , displayProperties     :: [Property] -- ^ Properties of the video display
    } deriving (Show)
 
 -------------------------------------------------------------------------------
@@ -211,7 +212,7 @@ showFrame Frame{..} = mconcat
    , "  Width:  ", show frameWidth, " pixels\n"
    , "  Height: ", show frameHeight, " pixels\n"
    , "  Pixel format: ", show framePixelFormat, "\n"
-   , "  Flags: ", show frameFlags, "\n"
+   , "  Flags: ", show (BitSet.toList frameFlags), "\n"
    , "  Buffers:\n"
    , mconcat (fmap (("    - "<>). showFrameBuffer) frameBuffers)
    ]

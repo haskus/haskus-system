@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 import Haskus.System
 
@@ -35,23 +36,23 @@ main = runSys' do
             ]
 
          case connectorState conn of
-            Disconnected      -> writeStrLn term " -> disconnected"
-            ConnectionUnknown -> writeStrLn term " -> unknown connection"
-            Connected videoDisplay -> do
+            Disconnected          -> writeStrLn term " -> disconnected"
+            ConnectionUnknown     -> writeStrLn term " -> unknown connection"
+            Connected Display{..} -> do
                writeStrLn term <| mconcat
                   [ "Physical size: "
-                  , show (videoPhysicalWidth videoDisplay)
+                  , show displayPhysicalWidth
                   , "mm X "
-                  , show (videoPhysicalHeight videoDisplay)
+                  , show displayPhysicalHeight
                   , " mm"
                   ]
-               writeStrLn term ("Sub-pixel layout: " <> show (videoSubPixel videoDisplay))
+               writeStrLn term ("Sub-pixel layout: " <> show displaySubPixel)
                writeStrLn term "Modes"
-               forM_ (videoModes videoDisplay) \mode ->
+               forM_ displayModes \mode ->
                   writeStrLn term (showMode mode)
 
                writeStrLn term "Properties"
-               forM_ (videoProperties videoDisplay) \prop ->
+               forM_ displayProperties \prop ->
                   writeStrLn term ("    " ++ showProperty prop)
 
    powerOff
