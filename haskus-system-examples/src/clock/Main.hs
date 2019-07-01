@@ -16,7 +16,6 @@ import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Helper
-import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (rasterizeDiagram,mkWidth)
@@ -75,8 +74,8 @@ main = runSys' do
             width  = fromIntegral <| modeHorizontalDisplay mode
             height = fromIntegral <| modeVerticalDisplay mode
 
-         ~gfb1@(GenericFrame fb1 [buf]) <- initGenericFrameBuffer card mode fmt
-         ~gfb2@(GenericFrame _ [_])     <- initGenericFrameBuffer card mode fmt
+         frame1 <- initGenericFrame card mode fmt
+         frame2 <- initGenericFrame card mode fmt
 
          let defaultCtrl = do
                encId  <- connectorEncoderID conn
@@ -94,10 +93,8 @@ main = runSys' do
                   ctrlId <- headMaybe (encoderPossibleControllers enc)
                   Map.lookup ctrlId (entitiesControllersMap state)
 
-         writeStrLn term (show (fbPitch (mappedSurfaceInfo buf)))
-
          -- set mode and connectors
-         setController ctrl (SetSource fb1) [conn] (Just mode)
+         setController ctrl (SetSource frame1) [conn] (Just mode)
             |> assertE "Set controller"
 
          -- frame switch
@@ -109,7 +106,7 @@ main = runSys' do
             --dirtyFb fb = sysCallAssertQuiet "Dirty frame" <|
             --               dirtyFrameBuffer fd fb (Dirty [clp])
 
-         setFb fb1
+         setFb frame1
 
          let
             clockDiagram h m s = rasterizeDiagram (mkWidth width) (clockDiag width height h m s)
@@ -117,17 +114,16 @@ main = runSys' do
             mainLoop !b = do
                tv <- assertE "getTimeOfDay" sysGetTimeOfDay
                let
-                  gfb = if b then gfb1 else gfb2
-                  GenericFrame fb _ = gfb
+                  frame = if b then frame1 else frame2
                   ts  = tvSeconds tv `mod` (12*60*60)
                   tus = tvMicroSeconds tv
                   h   = fromIntegral ts / 3600
                   m   = fromIntegral (ts - (floor h * 3600)) / 60
                   s   = fromIntegral (ts - (floor h * 3600) - (floor m * 60)) + (fromIntegral tus / 1000000)
                   img = clockDiagram h m s
-               liftIO <| blendImage gfb img BlendCopy (0,0) (0,0,imageWidth img, imageHeight img)
+               liftIO <| blendImage frame img BlendCopy (0,0) (0,0,imageWidth img, imageHeight img)
                --dirtyFb fb
-               setFb fb
+               setFb frame
                mainLoop (not b)
 
          void <| sysFork "Main display loop" <| mainLoop False

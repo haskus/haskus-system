@@ -60,7 +60,7 @@ instance Object Mode where
    getObjectType _ = ObjectMode
    getObjectID _   = error "getObjectID unsupported for Mode objects"
 
-instance Object Frame where
+instance Object (Frame b) where
    getObjectType _ = ObjectFrame
    getObjectID     = unEntityID . frameID
 

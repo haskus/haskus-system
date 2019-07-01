@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Manage graphics devices
 module Haskus.System.Graphics
@@ -30,10 +31,8 @@ module Haskus.System.Graphics
    , freeFrame
    , dirtyFrame
      -- * Generic rendering engine
-   , MappedSurface (..)
-   , GenericFrame (..)
-   , initGenericFrameBuffer
-   , freeGenericFrameBuffer
+   , initGenericFrame
+   , freeGenericFrame
    , RenderingEngine (..)
    , BufferingState (..)
    , FrameWait (..)
@@ -164,7 +163,7 @@ createGenericBuffer card width height bpp flags = do
 -------------------------------------------------------------
 
 -- | Create a frame
-createFrame :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer] -> Excepts '[ErrorCode] m Frame
+createFrame :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer b] -> Excepts '[ErrorCode] m (Frame b)
 createFrame card width height fmt flags fbs = handleCreateFrame (graphicCardHandle card) width height fmt flags fbs
 
 -------------------------------------------------------------
@@ -190,19 +189,9 @@ newEventWaiterThread h = do
    return ch
 
 
-data MappedSurface = MappedSurface
-   { mappedSurfaceBuffer  :: GenericBuffer
-   , mappedSurfaceInfo    :: FrameBuffer
-   }
-
-data GenericFrame = GenericFrame
-   { genericFrameBuffer  :: Frame
-   , genericFrameBuffers :: [MappedSurface]
-   }
-
 -- | Allocate and map fullscreen planes for the given format and mode
-initGenericFrameBuffer :: GraphicCard -> Mode -> PixelFormat -> Sys GenericFrame
-initGenericFrameBuffer card mode pixfmt = do
+initGenericFrame :: GraphicCard -> Mode -> PixelFormat -> Sys (Frame GenericBuffer)
+initGenericFrame card mode pixfmt = do
    let
       fmt    = formatFormat pixfmt
       width  = fromIntegral $ modeHorizontalDisplay mode
@@ -210,31 +199,31 @@ initGenericFrameBuffer card mode pixfmt = do
       bpps   = formatBitDepth fmt
       flags  = 0
 
-   mappedPlanes <- forM bpps $ \bpp -> do
+   fbs <- forM bpps $ \bpp -> do
       buf <- createGenericBuffer card width height bpp flags
                |> assertLogShowErrorE "Create a generic buffer"
 
-      let plane = FrameBuffer (genericBufferHandle buf) (genericBufferPitch buf) 0 0
-
-      return (MappedSurface buf plane)
+      return <| FrameBuffer buf (genericBufferHandle buf) (genericBufferPitch buf) 0 0
    
-   let planes = fmap mappedSurfaceInfo mappedPlanes
-
-   fb <- createFrame card width height pixfmt BitSet.empty planes
-         |> assertLogShowErrorE "Create frame"
-
-   return $ GenericFrame fb mappedPlanes
+   createFrame card width height pixfmt BitSet.empty fbs
+      |> assertLogShowErrorE "Create frame"
 
 
-freeGenericFrameBuffer :: GenericFrame -> Sys ()
-freeGenericFrameBuffer (GenericFrame fb mappedBufs) = do
+-- | Free the generic buffers, the frame buffers and the frame
+freeGenericFrame :: Frame GenericBuffer -> Sys ()
+freeGenericFrame frame = do
 
-   forM_ mappedBufs $ \(MappedSurface buf _) -> do
-      freeGenericBuffer buf
+   -- free the frame
+   freeFrame frame
+      |> assertLogShowErrorE "Free generic frame"
+
+   -- frame buffers don't old any kernel entity
+
+   -- free the generic buffers
+   forM_ (frameBuffers frame) \fb -> do
+      freeGenericBuffer (fbBuffer fb)
          |> assertLogShowErrorE "Free generic buffer"
 
-   freeFrame fb
-      |> assertLogShowErrorE "Free frame"
 
 
 -----------------------------------------------------------------------
@@ -245,7 +234,7 @@ freeGenericFrameBuffer (GenericFrame fb mappedBufs) = do
 --
 -- Manage multi-buffering
 data RenderingEngine = RenderingEngine
-   { engineBuffereringState :: TVar (BufferingState GenericFrame) -- ^ Multi-buffering state
+   { engineBuffereringState :: TVar (BufferingState (Frame GenericBuffer)) -- ^ Multi-buffering state
    }
 
 -- | Multi-buffering state
@@ -271,7 +260,7 @@ data FrameWait
 -- TODO: support connections/disconnections
 -- TODO: better support for mode setting (change during rendering, etc.)
 -- TODO: support accelerated buffers
-initRenderingEngine :: GraphicCard -> Controller -> Mode -> Connector -> Word -> [FrameWait] -> (Mode -> GenericFrame -> Sys ()) -> Sys RenderingEngine
+initRenderingEngine :: GraphicCard -> Controller -> Mode -> Connector -> Word -> [FrameWait] -> (Mode -> Frame GenericBuffer -> Sys ()) -> Sys RenderingEngine
 initRenderingEngine card ctrl mode conn nfb flags draw
    | nfb <= 2  = error "initRenderingEngine: require at least 2 buffers"
    | otherwise = do
@@ -290,20 +279,20 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       -- TODO: support other formats
       let fmt = makePixelFormat XRGB8888 LittleEndian
 
-      -- initialize generic framebuffers
-      bufs <- forM [1..nfb] (const (initGenericFrameBuffer card mode fmt))
+      -- initialize generic frames
+      frames <- forM [1..nfb] (const (initGenericFrame card mode fmt))
+      let (initFrame:otherFrames) = frames
 
       -- perform initial mode-setting
-      let initFB = genericFrameBuffer (head bufs)
-      setController ctrl (SetSource initFB) [conn] (Just mode)
+      setController ctrl (SetSource initFrame) [conn] (Just mode)
          |> assertE "Perform initial mode-setting"
 
       -- frame switching
       fbState <- newTVarIO (BufferingState
-                  { fbShown    = head bufs
+                  { fbShown    = initFrame
                   , fbPending  = Nothing
                   , fbDrawn    = Nothing
-                  , fbDrawable = tail bufs
+                  , fbDrawable = otherFrames
                   })
 
       fps <- newTVarIO (0 :: Word)
@@ -336,7 +325,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       -- on drawn frame
       sysFork "Multi-buffering manager" $ forever $ do
-         gfb <- atomically $ do
+         frame <- atomically $ do
             s <- readTVar fbState
             -- check that the previous frame has switched
             -- and that we have a frame to draw
@@ -352,17 +341,16 @@ initRenderingEngine card ctrl mode conn nfb flags draw
                _ -> retry
 
          -- switch to the pending frame
-         let (GenericFrame fb _) = gfb
-         switchFrame ctrl fb (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
+         switchFrame ctrl frame (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
             |> assertE "Switch frame"
             
 
       let
          -- draw the next frame
-         drawNext :: BitSet Word FrameWait -> (GenericFrame -> Sys ()) -> Sys ()
+         drawNext :: BitSet Word FrameWait -> (Frame GenericBuffer -> Sys ()) -> Sys ()
          drawNext wait f = do
             -- reserve next frame
-            gfb <- atomically $ do
+            frame <- atomically $ do
                      s <- readTVar fbState
                      when (BitSet.member wait WaitPending && isJust (fbPending s)) retry
                      when (BitSet.member wait WaitDrawn   && isJust (fbDrawn   s)) retry
@@ -373,23 +361,23 @@ initRenderingEngine card ctrl mode conn nfb flags draw
                            writeTVar fbState (s { fbDrawable = xs })
                            return x
             -- draw it
-            f gfb
+            f frame
             -- indicate it is drawn
             atomically $ do
                s <- readTVar fbState
                case fbDrawn s of
-                  Nothing -> writeTVar fbState (s { fbDrawn = Just gfb })
+                  Nothing -> writeTVar fbState (s { fbDrawn = Just frame })
                   Just d  -> do
                      -- drop the alreay drawn frame and set the newer
                      writeTVar fbState $ s
-                        { fbDrawn    = Just gfb
+                        { fbDrawn    = Just frame
                         , fbDrawable = d : fbDrawable s
                         }
             -- switch to another thread
             yield
 
       -- Force the generation of the first frame-switch event
-      switchFrame ctrl (genericFrameBuffer (head bufs)) (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
+      switchFrame ctrl initFrame (BitSet.fromList [SwitchFrameGenerateEvent]) 0 -- empty user data
          |> assertE "Switch frame"
 
       sysFork "Display rendering loop" $ forever $ drawNext (BitSet.fromList flags) $ \gfb -> do

@@ -47,7 +47,7 @@ newtype EntityID a = EntityID
    { unEntityID :: Word32
    } deriving (Show,Eq,Storable,Ord)
 
-type FrameID = EntityID Frame
+type FrameID = EntityID (Frame ())
 type ConnectorID   = EntityID Connector
 type ControllerID  = EntityID Controller
 type EncoderID     = EntityID Encoder
@@ -181,21 +181,22 @@ data SrcRect = SrcRect
 -------------------------------------------------------------------------------
 
 -- | Abstract frame source
-data Frame = Frame
-   { frameID          :: FrameID          -- ^ Frame identifier
-   , frameWidth       :: Word32           -- ^ Frame width
-   , frameHeight      :: Word32           -- ^ Frame height
-   , framePixelFormat :: PixelFormat      -- ^ Pixel format
-   , frameFlags       :: FrameFlags       -- ^ Frame flags
-   , frameBuffers     :: [FrameBuffer]    -- ^ Data sources (up to four)
-   , frameCardHandle  :: Handle           -- ^ Card handle
+data Frame b = Frame
+   { frameID          :: FrameID         -- ^ Frame identifier
+   , frameWidth       :: Word32          -- ^ Frame width
+   , frameHeight      :: Word32          -- ^ Frame height
+   , framePixelFormat :: PixelFormat     -- ^ Pixel format
+   , frameFlags       :: FrameFlags      -- ^ Frame flags
+   , frameBuffers     :: [FrameBuffer b] -- ^ Frame components buffers (up to four depending of pixel format)
+   , frameCardHandle  :: Handle          -- ^ Card handle
    } deriving (Show)
 
 -- | Frame buffer (contains components of the pixel colors)
-data FrameBuffer = FrameBuffer
-   { fbBuffer    :: Word32 -- ^ Raw buffer handle
-   , fbPitch     :: Word32 -- ^ Pitch of the frame in the buffer
-   , fbOffset    :: Word32 -- ^ Offset of the frame in the buffer
-   , fbModifiers :: Word64 -- ^ Modifiers for the frame buffer
+data FrameBuffer b = FrameBuffer
+   { fbBuffer       :: b      -- ^ Buffer
+   , fbBufferHandle :: Word32 -- ^ Raw buffer handle
+   , fbPitch        :: Word32 -- ^ Pitch of the frame in the buffer
+   , fbOffset       :: Word32 -- ^ Offset of the frame in the buffer
+   , fbModifiers    :: Word64 -- ^ Modifiers for the frame buffer
    } deriving (Show)
 

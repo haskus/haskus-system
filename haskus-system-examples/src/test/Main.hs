@@ -136,10 +136,8 @@ main = runSys' <| do
             width  = fromIntegral <| modeHorizontalDisplay mode :: Float
             height = fromIntegral <| modeVerticalDisplay mode :: Float
 
-         gfb1@(GenericFrame fb1 _) <- initGenericFrameBuffer card mode fmt
-         gfb2@(GenericFrame {})    <- initGenericFrameBuffer card mode fmt
-
-         writeStrLn term (show fb1)
+         frame1 <- initGenericFrame card mode fmt
+         frame2 <- initGenericFrame card mode fmt
 
          let Just ctrl = do
                encId  <- connectorEncoderID conn
@@ -149,7 +147,7 @@ main = runSys' <| do
 
 
          -- set mode and connectors
-         setController ctrl (SetSource fb1) [conn] (Just mode)
+         setController ctrl (SetSource frame1) [conn] (Just mode)
             |> assertE "Set controller"
 
          -- let 
@@ -163,7 +161,7 @@ main = runSys' <| do
          let setFb fb = switchFrame ctrl fb (BitSet.fromList [SwitchFrameGenerateEvent]) 0
                         |> assertE "Switch frame"
 
-         setFb fb1
+         setFb frame1
 
          writeStrLn term "Drawing..."
 
@@ -176,8 +174,7 @@ main = runSys' <| do
                (mx,my) <- readTVarIO mousePos
                ps <- readTVarIO points
                let
-                  gfb = if b then gfb1 else gfb2
-                  GenericFrame fb [_] = gfb
+                  frame = if b then frame1 else frame2
                   drawColor = PixelRGBA8 0 0x86 0xc1 255
                   ptrColor = PixelRGBA8 0x50 0x50 0x50 255
                   redColor = PixelRGBA8 0x86 0xc1 0 255
@@ -211,11 +208,11 @@ main = runSys' <| do
                         spot = D.circle 5 # fc blue # lw none
 
                liftIO <| do
-                  fillFrame gfb color
-                  blendImage gfb img BlendAlpha (0,0) (0,0,imageWidth img, imageHeight img)
-                  blendImage gfb img2 BlendAlpha (0,0) (0,0,imageWidth img2, imageHeight img2)
-                  blendImage gfb logo BlendAlpha (20,20) (0,0,imageWidth logo,imageHeight logo)
-               setFb fb
+                  fillFrame frame color
+                  blendImage frame img BlendAlpha (0,0) (0,0,imageWidth img, imageHeight img)
+                  blendImage frame img2 BlendAlpha (0,0) (0,0,imageWidth img2, imageHeight img2)
+                  blendImage frame logo BlendAlpha (20,20) (0,0,imageWidth logo,imageHeight logo)
+               setFb frame
                atomically <| modifyTVar' fps (+1)
                --threadDelayMilliSec 100
                yield -- switch to another thread

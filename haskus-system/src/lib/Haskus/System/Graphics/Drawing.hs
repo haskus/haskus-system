@@ -60,7 +60,7 @@ loadPng bs = img
 
 
 -- | check framebuffer pixel format
-checkPixelFormat :: Frame -> IO ()
+checkPixelFormat :: Frame b -> IO ()
 checkPixelFormat fs = do
    let pixFmt = framePixelFormat fs
 
@@ -71,48 +71,35 @@ checkPixelFormat fs = do
 
 
 -- | Fill with a color
-fillFrame :: GenericFrame -> Word32 -> IO ()
-fillFrame gfb color = do
-   let
-      fb     = genericFrameBuffer gfb
-
-   checkPixelFormat fb
+fillFrame :: Frame GenericBuffer -> Word32 -> IO ()
+fillFrame frame color = do
+   checkPixelFormat frame
       
-   let
-      [buf] = genericFrameBuffers gfb
-      gbuf  = mappedSurfaceBuffer buf
-      pitch = fbPitch (mappedSurfaceInfo buf)
+   let [fb]  = frameBuffers frame
 
-   withGenericBufferPtr gbuf \addr ->
-      forLoop 0 (< fromIntegral (frameHeight fb)) (+1) $ \y ->
-         forLoop 0 (< fromIntegral (frameWidth fb)) (+1) $ \x -> do
-            let !off = x*4 + y*fromIntegral pitch
+   withGenericBufferPtr (fbBuffer fb) \addr ->
+      forLoop 0 (< fromIntegral (frameHeight frame)) (+1) $ \y ->
+         forLoop 0 (< fromIntegral (frameWidth frame)) (+1) $ \x -> do
+            let !off = x*4 + y*fromIntegral (fbPitch fb)
             pokeByteOff (castPtr addr) off (color :: Word32)
 
 
 -- | Display an image
-blendImage :: GenericFrame -> Image PixelRGBA8 -> BlendOp -> (Int,Int) -> (Int,Int,Int,Int) -> IO ()
-blendImage gfb img op pos clp = do
+blendImage :: Frame GenericBuffer -> Image PixelRGBA8 -> BlendOp -> (Int,Int) -> (Int,Int,Int,Int) -> IO ()
+blendImage frame img op pos clp = do
+   checkPixelFormat frame
 
-   let
-      fb     = genericFrameBuffer gfb
-
-   checkPixelFormat fb
-
-   let
-      [buf] = genericFrameBuffers gfb
-      gbuf  = mappedSurfaceBuffer buf
-
+   let [fb]  = frameBuffers frame
 
    -- compute drawing rect
    let
-      (w,h)         = (frameWidth fb, frameHeight fb)
-      pitch         = fbPitch (mappedSurfaceInfo buf)
+      (w,h)         = (frameWidth frame, frameHeight frame)
+      pitch'        = fromIntegral (fbPitch fb)
       (cx,cy,cw,ch) = clp
       clip'         = (cx,cy, min (imageWidth img - cx) cw, min (imageHeight img - cy) ch)
       (px,py)       = pos
-      frame         = (0,0,fromIntegral w, fromIntegral h)
-      dstRect       = translate clip' pos `intersect` frame
+      frameRect     = (0,0,fromIntegral w, fromIntegral h)
+      dstRect       = translate clip' pos `intersect` frameRect
       srcRect       = translate dstRect (-1 * px, -1 * py)
 
       (sx,sy,sw,sh) = srcRect
@@ -138,9 +125,7 @@ blendImage gfb img op pos clp = do
            low = fromIntegral . (.&. 0xFF)
            bitCount = 8
 
-      pitch' = fromIntegral pitch
-
-   withGenericBufferPtr gbuf \addr ->
+   withGenericBufferPtr (fbBuffer fb) \addr ->
       case op of
          BlendAlpha -> 
             forLoop 0 (< sh) (+1) $! \y ->

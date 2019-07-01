@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Frame
 --
@@ -30,23 +31,25 @@ import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Tuple
 import Haskus.Utils.Flow
-import Haskus.Utils.List (zip4)
+import Haskus.Utils.List (zip5)
 
 
-fromFrame :: Frame -> StructFrameCommand2
-fromFrame Frame{..} = s
+fromFrame :: forall b. Frame b -> StructFrameCommand2
+fromFrame Frame{..} =
+   StructFrameCommand2 (unEntityID frameID)
+      frameWidth frameHeight framePixelFormat frameFlags
+      (g fbBufferHandle) (g fbPitch)
+      (g fbOffset) (g fbModifiers)
    where
-      g :: (Num a,Storable a) => (FrameBuffer -> a) -> Vector 4 a
+      g :: (Num a,Storable a) => (FrameBuffer b -> a) -> Vector 4 a
       g f = Vector.fromFilledList 0 (fmap f frameBuffers)
-      s   = StructFrameCommand2 (unEntityID frameID)
-               frameWidth frameHeight framePixelFormat frameFlags
-               (g fbBuffer) (g fbPitch)
-               (g fbOffset) (g fbModifiers)
 
-toFrame :: Handle -> StructFrameCommand2 -> Frame
-toFrame hdl StructFrameCommand2{..} = s
+
+toFrame :: Handle -> [FrameBuffer b] -> StructFrameCommand2 -> Frame b
+toFrame hdl fbs StructFrameCommand2{..} = s
    where
-      bufs = uncurry4 FrameBuffer <$> zip4
+      bufs = uncurry5 FrameBuffer <$> zip5
+               (fmap fbBuffer fbs)
                (Vector.toList fc2Handles)
                (Vector.toList fc2Pitches)
                (Vector.toList fc2Offsets)
@@ -56,17 +59,17 @@ toFrame hdl StructFrameCommand2{..} = s
 
 
 -- | Create a frame
-handleCreateFrame :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer] -> Excepts '[ErrorCode] m Frame
+handleCreateFrame :: MonadInIO m => Handle -> Word32 -> Word32 -> PixelFormat -> FrameFlags -> [FrameBuffer b] -> Excepts '[ErrorCode] m (Frame b)
 handleCreateFrame hdl width height fmt flags frameBuffers = do
    
    let s = Frame (EntityID 0) width height
                fmt flags frameBuffers hdl
 
    ioctlAddFrame (fromFrame s) hdl
-      ||> toFrame hdl
+      ||> toFrame hdl frameBuffers
 
 -- | Release a frame
-freeFrame :: MonadInIO m => Frame -> Excepts '[ErrorCode] m ()
+freeFrame :: MonadInIO m => Frame b -> Excepts '[ErrorCode] m ()
 freeFrame frame = do
    void <| ioctlRemoveFrame
                (unEntityID (frameID frame))
@@ -74,7 +77,7 @@ freeFrame frame = do
 
 
 -- | Indicate dirty parts of a frame source
-dirtyFrame :: MonadInIO m => Frame -> DirtyAnnotation -> Excepts '[ErrorCode] m ()
+dirtyFrame :: MonadInIO m => Frame b -> DirtyAnnotation -> Excepts '[ErrorCode] m ()
 dirtyFrame frame mode = do
    let
       (color,flags,clips) = case mode of

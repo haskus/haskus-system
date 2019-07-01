@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- | Helpers for the graphics API
 module Haskus.System.Linux.Graphics.Helper
@@ -17,17 +18,16 @@ import Haskus.Format.Binary.Word
 import Haskus.Utils.Flow
 
 -- | How to configure frame source with setController
-data FrameAction
-   = SetSource Frame -- ^ Use this given source
-   | ReuseSource     -- ^ Use the already set one
-   | ReleaseSource   -- ^ Release the set source
-   deriving (Show)
+data FrameAction b
+   = SetSource (Frame b) -- ^ Use this given source
+   | ReuseSource         -- ^ Use the already set one
+   | ReleaseSource       -- ^ Release the set source
 
 -- | Configure a controller
 --
 -- A connected frame source is required to set a mode: if ReuseSource is passed, the
 -- connected one is used.
-setController :: MonadInIO m => Controller -> FrameAction -> [Connector] -> Maybe Mode -> Excepts '[ErrorCode] m ()
+setController :: MonadInIO m => Controller -> FrameAction b -> [Connector] -> Maybe Mode -> Excepts '[ErrorCode] m ()
 setController ctrl frameSourceAction conns mode = do
    let 
       mframe = case frameSourceAction of
@@ -39,6 +39,6 @@ setController ctrl frameSourceAction conns mode = do
 
 -- | Switch to another frame for the given controller without doing a full mode
 -- change
-switchFrame :: MonadInIO m => Controller -> Frame -> SwitchFrameFlags -> Word64 -> Excepts '[ErrorCode] m ()
+switchFrame :: MonadInIO m => Controller -> Frame b -> SwitchFrameFlags -> Word64 -> Excepts '[ErrorCode] m ()
 switchFrame ctrl fs flags udata =
    switchFrame' (controllerHandle ctrl) (controllerID ctrl) (frameID fs) flags udata
