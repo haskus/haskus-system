@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Haskus.System.Linux.Graphics.Entities
    ( -- * IDs
@@ -23,9 +25,11 @@ module Haskus.System.Linux.Graphics.Entities
    , Plane (..)
    , DestRect (..)
    , SrcRect (..)
-   -- * Frame source
+   -- * Frame
    , Frame (..)
    , FrameBuffer (..)
+   , showFrame
+   , showFrameBuffer
    )
 where
 
@@ -200,3 +204,24 @@ data FrameBuffer b = FrameBuffer
    , fbModifiers    :: Word64 -- ^ Modifiers for the frame buffer
    } deriving (Show)
 
+-- | Show Frame fields
+showFrame :: Frame b -> String
+showFrame Frame{..} = mconcat
+   [ "Frame ", show (unEntityID frameID), "\n"
+   , "  Width:  ", show frameWidth, " pixels\n"
+   , "  Height: ", show frameHeight, " pixels\n"
+   , "  Pixel format: ", show framePixelFormat, "\n"
+   , "  Flags: ", show frameFlags, "\n"
+   , "  Buffers:\n"
+   , mconcat (fmap (("    - "<>). showFrameBuffer) frameBuffers)
+   ]
+
+-- | Show FrameBuffer
+showFrameBuffer :: FrameBuffer b -> String
+showFrameBuffer FrameBuffer{..} = mconcat
+   [ "Handle: ", show fbBufferHandle
+   , ", Pitch: ", show fbPitch
+   , ", Offset: ", show fbOffset
+   , ", Modifiers: ", show fbModifiers
+   , "\n"
+   ]

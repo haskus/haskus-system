@@ -5,6 +5,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Manage graphics devices
 module Haskus.System.Graphics
@@ -21,6 +22,8 @@ module Haskus.System.Graphics
    , getEntities
    , getEntitiesMap
    , getEntitiesIDs
+   , forEachConnectedDisplay
+   , forEachConnectedDisplay_
    -- * Generic buffers and frames
    , GenericBuffer (..)
    , createGenericBuffer
@@ -146,6 +149,29 @@ getEntitiesMap :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m Entitie
 getEntitiesMap card =
    getHandleEntitiesMap (graphicCardHandle card)
       |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+-- | Do something for each connected display (ignore errors)
+forEachConnectedDisplay ::
+   ( Monad m
+   , MonadInIO m
+   ) => GraphicCard -> (Connector -> VideoDisplay -> m a) -> m [a]
+forEachConnectedDisplay card action = do
+   mentities <- runE (getEntities card)
+   case mentities of
+      VLeft _         -> pure []
+      VRight entities -> do
+         forMaybeM (entitiesConnectors entities) \conn -> do
+            case connectorState conn of
+               Disconnected           -> pure Nothing
+               ConnectionUnknown      -> pure Nothing
+               Connected videoDisplay -> action conn videoDisplay ||> Just
+
+-- | Do something for each connected display (ignore errors)
+forEachConnectedDisplay_ ::
+   ( Monad m
+   , MonadInIO m
+   ) => GraphicCard -> (Connector -> VideoDisplay -> m a) -> m ()
+forEachConnectedDisplay_ card action = void (forEachConnectedDisplay card action)
 
 -------------------------------------------------------------
 -- Frames

@@ -119,3 +119,8 @@ executables:
       main: TutVideoDisplays.hs
       source-dirs: src/tutorial
       other-modules: []
+
+   TutCreateGenericFrame:
+      main: TutCreateGenericFrame.hs
+      source-dirs: src/tutorial
+      other-modules: []
