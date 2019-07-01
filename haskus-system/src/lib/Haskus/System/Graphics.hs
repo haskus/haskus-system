@@ -30,6 +30,7 @@ module Haskus.System.Graphics
    , freeGenericBuffer
    , withGenericBufferPtr
    , createGenericFrame
+   , createGenericFullScreenFrame
    , freeGenericFrame
    -- * Frames
    , createFrame
@@ -192,13 +193,17 @@ createGenericBuffer :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> Word32 
 createGenericBuffer card width height bpp flags = do
    handleCreateGenericBuffer (graphicCardHandle card) width height bpp flags
 
--- | Allocate and map fullscreen planes for the given format and mode
-createGenericFrame :: GraphicCard -> Mode -> PixelFormat -> Sys (Frame GenericBuffer)
-createGenericFrame card mode pixfmt = do
+-- | Allocate a generic full-screen frame with the pixel format (dimensions are
+-- given by the mode)
+createGenericFullScreenFrame :: GraphicCard -> Mode -> PixelFormat -> Sys (Frame GenericBuffer)
+createGenericFullScreenFrame card mode pixfmt =
+   createGenericFrame card (fromIntegral <| modeHorizontalDisplay mode) (fromIntegral <| modeVerticalDisplay mode) pixfmt
+
+-- | Allocate a generic frame with the given dimensions and pixel format
+createGenericFrame :: GraphicCard -> Word32 -> Word32 -> PixelFormat -> Sys (Frame GenericBuffer)
+createGenericFrame card width height pixfmt = do
    let
       fmt    = formatFormat pixfmt
-      width  = fromIntegral $ modeHorizontalDisplay mode
-      height = fromIntegral $ modeVerticalDisplay mode
       bpps   = formatBitDepth fmt
       flags  = 0
 
@@ -307,7 +312,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       let fmt = makePixelFormat XRGB8888 LittleEndian
 
       -- initialize generic frames
-      frames <- forM [1..nfb] (const (createGenericFrame card mode fmt))
+      frames <- forM [1..nfb] (const (createGenericFullScreenFrame card mode fmt))
       let (initFrame:otherFrames) = frames
 
       -- perform initial mode-setting
