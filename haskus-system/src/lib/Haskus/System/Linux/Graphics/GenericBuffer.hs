@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- | Generic buffers
 --
@@ -13,6 +14,7 @@
 --
 module Haskus.System.Linux.Graphics.GenericBuffer
    ( GenericBuffer (..)
+   , showGenericBuffer
    , freeGenericBuffer
    , withGenericBufferPtr
    , handleCreateGenericBuffer
@@ -25,6 +27,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Memory
+import Haskus.System.Linux.Graphics.Entities
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
@@ -46,6 +49,23 @@ data GenericBuffer = GenericBuffer
    , genericBufferPtr          :: ForeignPtr ()          -- ^ Mapping in host memory
    }
    deriving (Show)
+
+-- | Show a generic buffer
+showGenericBuffer :: GenericBuffer -> String
+showGenericBuffer GenericBuffer{..} = mconcat
+   [ "Type: generic buffer\n"
+   , "Width:  ", show genericBufferWidth, " pixels\n"
+   , "Height: ", show genericBufferHeight, " pixels\n"
+   , "Bits per pixels: ", show genericBufferBitsPerPixel, "\n"
+   , "Flags: ", show genericBufferFlags, "\n"
+   , "Handle: ", show genericBufferHandle, "\n"
+   , "Pitch: ", show genericBufferPitch, " bytes\n"
+   , "Size: ", show genericBufferSize, " bytes\n"
+   , "Address: ", show genericBufferPtr, "\n"
+   ]
+
+instance ShowBuffer GenericBuffer where
+   showBuffer = showGenericBuffer
 
 -- | Create a generic buffer and map it in user memory.
 --

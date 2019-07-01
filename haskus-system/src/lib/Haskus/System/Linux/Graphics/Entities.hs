@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Haskus.System.Linux.Graphics.Entities
    ( -- * IDs
@@ -30,6 +31,7 @@ module Haskus.System.Linux.Graphics.Entities
    , FrameBuffer (..)
    , showFrame
    , showFrameBuffer
+   , ShowBuffer(..)
    )
 where
 
@@ -42,6 +44,7 @@ import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.PixelFormat
+import Haskus.Utils.Flow
 
 -------------------------------------------------------------------------------
 -- IDs
@@ -205,24 +208,39 @@ data FrameBuffer b = FrameBuffer
    , fbModifiers    :: Word64 -- ^ Modifiers for the frame buffer
    } deriving (Show)
 
+class ShowBuffer b where
+   showBuffer :: b -> String
+
+instance ShowBuffer () where
+   showBuffer = const ""
+
 -- | Show Frame fields
-showFrame :: Frame b -> String
+showFrame :: ShowBuffer b => Frame b -> String
 showFrame Frame{..} = mconcat
    [ "Frame ", show (unEntityID frameID), "\n"
    , "  Width:  ", show frameWidth, " pixels\n"
    , "  Height: ", show frameHeight, " pixels\n"
    , "  Pixel format: ", show framePixelFormat, "\n"
    , "  Flags: ", show (BitSet.toList frameFlags), "\n"
-   , "  Buffers:\n"
-   , mconcat (fmap (("    - "<>). showFrameBuffer) frameBuffers)
+   , mconcat (fmap myShowFB ([(0:: Word)..] `zip` frameBuffers))
    ]
+   where
+      myShowB b = showBuffer b
+         |> lines
+         ||> ("       - "<>)
+         |> unlines
+      myShowFB (n,fb) = mconcat
+         [ "  FrameBuffer ", show n, ":\n"
+         , showFrameBuffer fb |> lines ||> ("    - "<>) |> unlines
+         , "    - Buffer specific details:\n", myShowB (fbBuffer fb)
+         ]
 
 -- | Show FrameBuffer
 showFrameBuffer :: FrameBuffer b -> String
 showFrameBuffer FrameBuffer{..} = mconcat
-   [ "Handle: ", show fbBufferHandle
-   , ", Pitch: ", show fbPitch
-   , ", Offset: ", show fbOffset
-   , ", Modifiers: ", show fbModifiers
+   [ "Buffer handle: ", show fbBufferHandle
+   , "\nPitch: ", show fbPitch
+   , "\nOffset: ", show fbOffset
+   , "\nModifiers: ", show fbModifiers
    , "\n"
    ]
