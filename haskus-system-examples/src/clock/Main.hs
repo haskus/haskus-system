@@ -46,7 +46,7 @@ main = runSys' do
                      |> assertE "Test card capabilities"
          sysAssert "Card supports host buffers" cap
          
-         state <- getHandleEntitiesMap fd
+         state <- getEntitiesMap card
                      |> assertE "Get entities"
 
          encoders <- assertE "Read encoders"
@@ -94,7 +94,7 @@ main = runSys' do
                   Map.lookup ctrlId (entitiesControllersMap state)
 
          -- set mode and connectors
-         setController ctrl (SetSource frame1) [conn] (Just mode)
+         setController ctrl (UseFrame frame1) [conn] (Just mode)
             |> assertE "Set controller"
 
          -- frame switch

@@ -67,13 +67,14 @@ type PlaneID       = EntityID Plane
 
 -- | A connector on the graphic card
 data Connector = Connector
-   { connectorID                 :: ConnectorID     -- ^ Connector identifier
-   , connectorType               :: ConnectorType   -- ^ Type of connector
-   , connectorByTypeIndex        :: Word32          -- ^ Identifier within connectors of the same type
-   , connectorState              :: Connection      -- ^ Connection state
-   , connectorPossibleEncoderIDs :: [EncoderID]     -- ^ IDs of the encoders that can work with this connector
-   , connectorEncoderID          :: Maybe EncoderID -- ^ Currently used encoder
-   , connectorHandle             :: Handle          -- ^ Graphic card
+   { connectorID                 :: ConnectorID        -- ^ Connector identifier
+   , connectorType               :: ConnectorType      -- ^ Type of connector
+   , connectorByTypeIndex        :: Word32             -- ^ Identifier within connectors of the same type
+   , connectorState              :: Connection         -- ^ Connection state
+   , connectorPossibleEncoderIDs :: [EncoderID]        -- ^ IDs of the encoders that can work with this connector
+   , connectorEncoderID          :: Maybe EncoderID    -- ^ Currently used encoder
+   , connectorControllerID       :: Maybe ControllerID -- ^ Current driving contrller
+   , connectorHandle             :: Handle             -- ^ Graphic card
    } deriving (Show)
 
 -- | Indicate if a cable is plugged in the connector

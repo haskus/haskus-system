@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 53119b160334ab6e84d417f32aa638c3de8c74a2cf303571275f58f62c57ffde
+-- hash: 1e894461c60be78d90c5c05c0b4f17a82a7e5242009f057c5a5b2b8790e29722
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -323,6 +323,27 @@ executable TutDisplays
 
 executable TutEntitiesIDs
   main-is: TutEntitiesIDs.hs
+  hs-source-dirs:
+      src/tutorial
+  ghc-options: -Wall -O2 -static -threaded
+  cc-options: -static
+  extra-lib-dirs:
+      ./.system-work/lib
+  ld-options: -static -pthread
+  build-depends:
+      base >=4.8 && <5
+    , haskus-binary
+    , haskus-system
+    , haskus-ui
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
+  default-language: Haskell2010
+
+executable TutFirstPipeline
+  main-is: TutFirstPipeline.hs
   hs-source-dirs:
       src/tutorial
   ghc-options: -Wall -O2 -static -threaded

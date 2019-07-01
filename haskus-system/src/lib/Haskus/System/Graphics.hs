@@ -315,7 +315,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       let (initFrame:otherFrames) = frames
 
       -- perform initial mode-setting
-      setController ctrl (SetSource initFrame) [conn] (Just mode)
+      setController ctrl (UseFrame initFrame) [conn] (Just mode)
          |> assertE "Perform initial mode-setting"
 
       -- frame switching
@@ -328,7 +328,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
       fps <- newTVarIO (0 :: Word)
 
-      onEvent (graphicCardChan card) $ \case
+      onEvent (graphicCardChan card) \case
          -- on frame switch complete
          FrameSwitched evData
             -- we used to use user_data field to know which controller has
@@ -337,7 +337,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             -- We check that it is supported with `CapControllerInVBlankEvent`
             -- capability.
             | eventControllerId evData == fromIntegral (getObjectID ctrl) ->
-               atomically $ do
+               atomically do
                   s <- readTVar fbState
                   case fbPending s of
                      -- no pending frame? weird. we do nothing
@@ -355,8 +355,8 @@ initRenderingEngine card ctrl mode conn nfb flags draw
 
 
       -- on drawn frame
-      sysFork "Multi-buffering manager" $ forever $ do
-         frame <- atomically $ do
+      sysFork "Multi-buffering manager" $ forever do
+         frame <- atomically do
             s <- readTVar fbState
             -- check that the previous frame has switched
             -- and that we have a frame to draw
@@ -381,7 +381,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
          drawNext :: BitSet Word FrameWait -> (Frame GenericBuffer -> Sys ()) -> Sys ()
          drawNext wait f = do
             -- reserve next frame
-            frame <- atomically $ do
+            frame <- atomically do
                      s <- readTVar fbState
                      when (BitSet.member wait WaitPending && isJust (fbPending s)) retry
                      when (BitSet.member wait WaitDrawn   && isJust (fbDrawn   s)) retry
@@ -394,7 +394,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
             -- draw it
             f frame
             -- indicate it is drawn
-            atomically $ do
+            atomically do
                s <- readTVar fbState
                case fbDrawn s of
                   Nothing -> writeTVar fbState (s { fbDrawn = Just frame })

@@ -67,6 +67,7 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.Handle
 import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
+import Haskus.Utils.Maybe
 import Haskus.Utils.List (zipLeftWith)
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
@@ -180,22 +181,29 @@ toEntitiesMap Entities{..} = EntitiesMap
 getHandleEntitiesMap :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m EntitiesMap
 getHandleEntitiesMap hdl = getHandleEntities hdl ||> toEntitiesMap
 
-fromStructGetEncoder :: Resources -> Handle -> StructGetEncoder -> Encoder
-fromStructGetEncoder res hdl StructGetEncoder{..} =
+-- | Convert a StructGetEncoder
+--
+-- If you don't pass Resources, you won't get possibleClones and
+-- possibleControllers (which should be avoided anyway)
+fromStructGetEncoder :: Maybe Resources -> Handle -> StructGetEncoder -> Encoder
+fromStructGetEncoder mres hdl StructGetEncoder{..} =
       Encoder
          (EntityID geEncoderId)
          (fromEnumField geEncoderType)
          (if geCrtcId == 0
             then Nothing
             else Just (EntityID geCrtcId))
-         (pickControllers res gePossibleCrtcs)
-         (pickEncoders    res gePossibleClones)
+         (mres ||> (`pickControllers` gePossibleCrtcs)  |> fromMaybe [])
+         (mres ||> (`pickEncoders`    gePossibleClones) |> fromMaybe [])
          hdl
 
 -- | Get an encoder from its ID
-getEncoderFromID :: MonadInIO m => Handle -> Resources -> EncoderID -> Excepts '[InvalidHandle,InvalidEncoderID] m Encoder
-getEncoderFromID hdl res encId =
-   (ioctlGetEncoder enc hdl ||> fromStructGetEncoder res hdl)
+--
+-- If you don't pass Resources, you won't get possibleClones and
+-- possibleControllers (which should be avoided anyway)
+getEncoderFromID :: MonadInIO m => Handle -> Maybe Resources -> EncoderID -> Excepts '[InvalidHandle,InvalidEncoderID] m Encoder
+getEncoderFromID hdl mres encId =
+   (ioctlGetEncoder enc hdl ||> fromStructGetEncoder mres hdl)
       |> catchLiftLeft \case
             EINVAL -> throwE InvalidHandle
             ENOENT -> throwE (InvalidEncoderID encId)
@@ -209,7 +217,7 @@ getHandleEncoders :: MonadInIO m => Handle -> Excepts '[InvalidHandle] m [Encode
 getHandleEncoders hdl = do
    res <- liftE <| getResources hdl
    let
-      getEncoderFromID' i = getEncoderFromID hdl res i
+      getEncoderFromID' i = getEncoderFromID hdl (Just res) i
          -- shouldn't happen, encoders are invariant
          |> catchDieE (\(InvalidEncoderID _) -> error "getHandleEncoders: unexpected invalid encoder ID" )
    traverse getEncoderFromID' (resEncoderIDs res)
@@ -348,9 +356,8 @@ getConnectorFromID :: forall m.
    ) => Handle -> ConnectorID -> Excepts '[InvalidParam,InvalidConnectorID,InvalidProperty] m Connector
 getConnectorFromID hdl eid = do
    let
-      res = StructGetConnector 0 0 0 0 0 0 0 0 (unEntityID eid)
-               (toEnumField ConnectorTypeUnknown) 0 0 0 0
-               (toEnumField SubPixelNone)
+      allocaArray' :: forall n c a b. (MonadInIO n, Integral c, Storable a) => c -> (Ptr a -> n b) -> n b
+      allocaArray' n = allocaArray (fromIntegral n)
 
       getConnector' :: MonadInIO m => StructGetConnector -> Excepts '[InvalidConnectorID,InvalidParam] m StructGetConnector
       getConnector' r =
@@ -360,87 +367,107 @@ getConnectorFromID hdl eid = do
                   ENOENT -> throwE (InvalidConnectorID eid)
                   e      -> unhdlErr "getConnectorFromID" e
 
+      request = StructGetConnector 0 0 0 0 0 0 0 0 (unEntityID eid)
+                  (toEnumField ConnectorTypeUnknown) 0 0 0 0
+                  (toEnumField SubPixelNone)
 
-      getValues res2 = do
-            (rawRes,conn) <- liftE (rawGet res2)
-            -- we need to check that the number of resources is still the same (as
-            -- resources may have appeared between the time we get the number of
-            -- resources and the time we get them...)
-            -- If not, we redo the whole process
-            if   connModesCount    res2 < connModesCount    rawRes
-              || connPropsCount    res2 < connPropsCount    rawRes
-              || connEncodersCount res2 < connEncodersCount rawRes
-               then getConnectorFromID hdl eid
-               else return conn
+   -- request the Connector info array sizes
+   response <- liftE (getConnector' request)
 
-      allocaArray' :: forall n c a b. (MonadInIO n, Integral c, Storable a) => c -> (Ptr a -> n b) -> n b
-      allocaArray' n = allocaArray (fromIntegral n)
+   -- get the full response with arrays filled
+   (fullResponse,conn) <- liftE do
+      allocaArray' (connModesCount response) $ \(ms :: Ptr StructMode) ->
+         allocaArray' (connPropsCount response) $ \(ps :: Ptr Word32) ->
+            allocaArray' (connPropsCount response) $ \(pvs :: Ptr Word64) ->
+               allocaArray' (connEncodersCount response) $ \(es:: Ptr Word32) -> do
+                  -- build a full request this time (with allocated arrays)
+                  let
+                     cv = fromIntegral . ptrToWordPtr
+                     fullRequest = response
+                        { connEncodersPtr   = cv es
+                        , connModesPtr      = cv ms
+                        , connPropsPtr      = cv ps
+                        , connPropValuesPtr = cv pvs
+                        }
+                  fullResponse <- getConnector' fullRequest
+                           |> liftE @'[InvalidParam,InvalidConnectorID,InvalidProperty]
+                  toConnector hdl response fullResponse
+                     ||> (fullResponse,)  -- don't make the recursive call here:
+                     |> liftE             -- it's better to free the arrays before
+
+   -- we need to check that the number of resources is still the same (as
+   -- resources may have appeared between the time we get the number of
+   -- resources and the time we get them...)
+   -- If not, we redo the whole process
+   if   connModesCount    response < connModesCount    fullResponse
+     || connPropsCount    response < connPropsCount    fullResponse
+     || connEncodersCount response < connEncodersCount fullResponse
+      then getConnectorFromID hdl eid
+      else return conn
+
+
+-- | Convert two StructGetConnector into a Connector
+--
+-- * "response" contains the actual array sizes
+-- * "fullResponse" contains the array values and potentially different array
+-- sizes! (checked later by the caller)
+toConnector ::
+   ( Functor m
+   , MonadInIO m
+   ) => Handle -> StructGetConnector -> StructGetConnector -> Excepts '[InvalidParam,InvalidProperty] m Connector
+toConnector hdl response fullResponse = do
+   let
+      cv = wordPtrToPtr . fromIntegral
+   
+      wrapZero 0 = Nothing
+      wrapZero x = Just x
 
       peekArray' :: forall n c a. (MonadIO n, Storable a, Integral c) => c -> Ptr a -> n [a]
       peekArray' n ptr = peekArray (fromIntegral n) ptr
+   
+   -- rad connection state
+   state <- case connConnection_ fullResponse of
+      1 -> do
+            -- properties
+            ptrs <- peekArray' (connPropsCount response) (cv (connPropsPtr      fullResponse))
+            vals <- peekArray' (connPropsCount response) (cv (connPropValuesPtr fullResponse))
+            let rawProps = zipWith RawProperty ptrs vals
+            props <- forM rawProps $ \raw -> do
+               getPropertyMeta hdl (rawPropertyMetaID raw)
+                  ||> \meta -> Property meta (rawPropertyValue raw)
+   
+            modes <- fmap fromStructMode <$> peekArray' (connModesCount response) (cv (connModesPtr fullResponse))
+   
+            return (Connected (Display
+               modes
+               (connWidth_ fullResponse)
+               (connHeight_ fullResponse)
+               (fromEnumField (connSubPixel_ fullResponse))
+               props))
+   
+      2 -> return Disconnected
+      _ -> return ConnectionUnknown
+   
+   encs  <- fmap EntityID <$> peekArray' (connEncodersCount response) (cv (connEncodersPtr fullResponse))
+   
+   let mencID = EntityID <$> wrapZero (connEncoderID_ fullResponse)
 
-      rawGet res2 = do
-         allocaArray' (connModesCount res2) $ \(ms :: Ptr StructMode) ->
-            allocaArray' (connPropsCount res2) $ \(ps :: Ptr Word32) ->
-               allocaArray' (connPropsCount res2) $ \(pvs :: Ptr Word64) ->
-                  allocaArray' (connEncodersCount res2) $ \(es:: Ptr Word32) -> do
-                     let
-                        cv = fromIntegral . ptrToWordPtr
-                        res3 = res2 { connEncodersPtr   = cv es
-                                    , connModesPtr      = cv ms
-                                    , connPropsPtr      = cv ps
-                                    , connPropValuesPtr = cv pvs
-                                    }
+   -- try to get the controller ID through the Encoder
+   mctrlID <- join <|| forM mencID \encId -> do
+      getEncoderFromID hdl Nothing encId
+         ||> encoderControllerID
+         |> catchEvalE (const (pure Nothing))
 
-                     res4 <- getConnector' res3
-                              |> liftE @'[InvalidParam,InvalidConnectorID,InvalidProperty]
-                     parseRes res2 res4
-                        ||> (res4,)
-                        |> liftE
+   return <| Connector
+               (EntityID (connConnectorID_ fullResponse))
+               (fromEnumField (connConnectorType_ fullResponse))
+               (connConnectorTypeID_ fullResponse)
+               state
+               encs
+               mencID
+               mctrlID
+               hdl
 
-
-      parseRes res2 res4 = do
-         let
-            cv = wordPtrToPtr . fromIntegral
-
-            wrapZero 0 = Nothing
-            wrapZero x = Just x
-
-         state <- case connConnection_ res4 of
-            1 -> do
-                  -- properties
-                  ptrs <- peekArray' (connPropsCount res2) (cv (connPropsPtr res4))
-                  vals <- peekArray' (connPropsCount res2) (cv (connPropValuesPtr res4))
-                  let rawProps = zipWith RawProperty ptrs vals
-                  props <- forM rawProps $ \raw -> do
-                     getPropertyMeta hdl (rawPropertyMetaID raw)
-                        ||> \meta -> Property meta (rawPropertyValue raw)
-
-                  modes <- fmap fromStructMode <$> peekArray' (connModesCount res2) (cv (connModesPtr res4))
-
-                  return (Connected (Display
-                     modes
-                     (connWidth_ res4)
-                     (connHeight_ res4)
-                     (fromEnumField (connSubPixel_ res4))
-                     props))
-
-            2 -> return Disconnected
-            _ -> return ConnectionUnknown
-
-         encs  <- fmap EntityID <$> peekArray' (connEncodersCount res2) (cv (connEncodersPtr res4))
-
-         return <| Connector
-                     (EntityID (connConnectorID_ res4))
-                     (fromEnumField (connConnectorType_ res4))
-                     (connConnectorTypeID_ res4)
-                     state
-                     encs
-                     (EntityID <$> wrapZero (connEncoderID_ res4))
-                     hdl
-
-   out <- liftE (getConnector' res)
-   getValues out
 
 
 

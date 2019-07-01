@@ -147,7 +147,7 @@ main = runSys' <| do
 
 
          -- set mode and connectors
-         setController ctrl (SetSource frame1) [conn] (Just mode)
+         setController ctrl (UseFrame frame1) [conn] (Just mode)
             |> assertE "Set controller"
 
          -- let 

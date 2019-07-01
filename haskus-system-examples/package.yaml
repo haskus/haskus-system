@@ -124,3 +124,8 @@ executables:
       main: TutCreateGenericFrame.hs
       source-dirs: src/tutorial
       other-modules: []
+
+   TutFirstPipeline:
+      main: TutFirstPipeline.hs
+      source-dirs: src/tutorial
+      other-modules: []

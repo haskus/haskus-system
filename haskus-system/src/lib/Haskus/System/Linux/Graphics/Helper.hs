@@ -19,21 +19,21 @@ import Haskus.Utils.Flow
 
 -- | How to configure frame source with setController
 data FrameAction b
-   = SetSource (Frame b) -- ^ Use this given source
-   | ReuseSource         -- ^ Use the already set one
-   | ReleaseSource       -- ^ Release the set source
+   = UseFrame (Frame b) -- ^ Use the given Frame
+   | KeepCurrentFrame   -- ^ Use the current Frame (if any)
+   | NoFrame            -- ^ Release the frame
 
 -- | Configure a controller
 --
--- A connected frame source is required to set a mode: if ReuseSource is passed, the
--- connected one is used.
+-- A Frame is required to set a Mode. If KeepCurrentFrame is passed, the current
+-- one is re-used (be sure it is large enough!)
 setController :: MonadInIO m => Controller -> FrameAction b -> [Connector] -> Maybe Mode -> Excepts '[ErrorCode] m ()
 setController ctrl frameSourceAction conns mode = do
    let 
       mframe = case frameSourceAction of
-         SetSource fs  -> Just $ FrameView (frameID fs) 0 0
-         ReuseSource   -> Just $ FrameView (EntityID maxBound) 0 0
-         ReleaseSource -> Nothing
+         UseFrame frame   -> Just $ FrameView (frameID frame) 0 0
+         KeepCurrentFrame -> Just $ FrameView (EntityID maxBound) 0 0
+         NoFrame          -> Nothing
       hdl  = controllerHandle ctrl
    setController' hdl (controllerID ctrl) mframe (fmap connectorID conns) mode
 
