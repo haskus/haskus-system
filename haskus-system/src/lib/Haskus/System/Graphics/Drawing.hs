@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Drawing methods for frame buffers
 -- 
@@ -79,13 +80,14 @@ fillFrame gfb color = do
       
    let
       [buf] = genericFrameBuffers gfb
-      addr  = mappedSurfacePointer buf
+      gbuf  = mappedSurfaceBuffer buf
       pitch = fbPitch (mappedSurfaceInfo buf)
 
-   forLoop 0 (< fromIntegral (frameHeight fb)) (+1) $ \y ->
-      forLoop 0 (< fromIntegral (frameWidth fb)) (+1) $ \x -> do
-         let !off = x*4 + y*fromIntegral pitch
-         pokeByteOff (castPtr addr) off (color :: Word32)
+   withGenericBufferPtr gbuf \addr ->
+      forLoop 0 (< fromIntegral (frameHeight fb)) (+1) $ \y ->
+         forLoop 0 (< fromIntegral (frameWidth fb)) (+1) $ \x -> do
+            let !off = x*4 + y*fromIntegral pitch
+            pokeByteOff (castPtr addr) off (color :: Word32)
 
 
 -- | Display an image
@@ -99,7 +101,7 @@ blendImage gfb img op pos clp = do
 
    let
       [buf] = genericFrameBuffers gfb
-      addr  = mappedSurfacePointer buf
+      gbuf  = mappedSurfaceBuffer buf
 
 
    -- compute drawing rect
@@ -138,31 +140,32 @@ blendImage gfb img op pos clp = do
 
       pitch' = fromIntegral pitch
 
-   case op of
-      BlendAlpha -> 
-         forLoop 0 (< sh) (+1) $! \y ->
-            forLoop 0 (< sw) (+1) $! \x -> do
-               -- dest offset
-               let !doff = (dx+x)*4 + (dy+y)*pitch'
-               -- old value
-               !old <- myUnpackPixel <$> peekByteOff (castPtr addr) doff
-               let
-                  !new  = pixelAt img (sx+x) (y+sy)
-                  !opa  = fromIntegral $ pixelOpacity new
-                  -- clip to 255
-                  bl _ !s !d = if (z `uncheckedShiftR` 8) /= 0
-                        then 255
-                        else fromIntegral (z .&. 0xff)
-                     where
-                        !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `uncheckedShiftR` 8
-                  !v = myPackPixel (mixWith bl new old)
-               pokeByteOff (castPtr addr) doff (v :: Word32)
+   withGenericBufferPtr gbuf \addr ->
+      case op of
+         BlendAlpha -> 
+            forLoop 0 (< sh) (+1) $! \y ->
+               forLoop 0 (< sw) (+1) $! \x -> do
+                  -- dest offset
+                  let !doff = (dx+x)*4 + (dy+y)*pitch'
+                  -- old value
+                  !old <- myUnpackPixel <$> peekByteOff (castPtr addr) doff
+                  let
+                     !new  = pixelAt img (sx+x) (y+sy)
+                     !opa  = fromIntegral $ pixelOpacity new
+                     -- clip to 255
+                     bl _ !s !d = if (z `uncheckedShiftR` 8) /= 0
+                           then 255
+                           else fromIntegral (z .&. 0xff)
+                        where
+                           !z = ((fromIntegral s :: Word32) * opa + (fromIntegral d :: Word32) * (255-opa)) `uncheckedShiftR` 8
+                     !v = myPackPixel (mixWith bl new old)
+                  pokeByteOff (castPtr addr) doff (v :: Word32)
 
-      BlendCopy ->
-         forLoop 0 (< sh) (+1) $ \y ->
-            forLoop 0 (< sw) (+1) $ \x -> do
-               let
-                  !doff = (dx+x)*4 + (dy+y)*pitch'
-                  !new  = pixelAt img (sx+x) (y+sy)
-                  !v = myPackPixel new
-               pokeByteOff (castPtr addr) doff (v :: Word32)
+         BlendCopy ->
+            forLoop 0 (< sh) (+1) $ \y ->
+               forLoop 0 (< sw) (+1) $ \x -> do
+                  let
+                     !doff = (dx+x)*4 + (dy+y)*pitch'
+                     !new  = pixelAt img (sx+x) (y+sy)
+                     !v = myPackPixel new
+                  pokeByteOff (castPtr addr) doff (v :: Word32)

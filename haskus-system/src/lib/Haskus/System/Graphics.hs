@@ -20,6 +20,11 @@ module Haskus.System.Graphics
    , getEntities
    , getEntitiesMap
    , getEntitiesIDs
+   -- * Generic buffers
+   , GenericBuffer (..)
+   , createGenericBuffer
+   , freeGenericBuffer
+   , withGenericBufferPtr
      -- * Generic rendering engine
    , MappedSurface (..)
    , GenericFrame (..)
@@ -40,17 +45,17 @@ import Haskus.Format.Binary.BitSet (BitOffset(..), BitSet)
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (textFormat,shown,(%))
-import Foreign.Ptr
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
 import Haskus.Utils.List (isPrefixOf)
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
+import Haskus.Format.Binary.Word
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem.ReadWrite
-import Haskus.System.Linux.Memory
 
 import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.GenericBuffer
@@ -139,6 +144,16 @@ getEntitiesMap card =
    getHandleEntitiesMap (graphicCardHandle card)
       |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
 
+-------------------------------------------------------------
+-- Generic buffers
+-------------------------------------------------------------
+
+-- | Create a generic buffer and map it in user memory.
+--
+-- The foreign pointer targets the memory mapping and is automatically unmapped.
+createGenericBuffer :: MonadInIO m => GraphicCard -> Word32 -> Word32 -> Word32 -> Word32 -> Excepts '[ErrorCode] m GenericBuffer
+createGenericBuffer card width height bpp flags = do
+   handleCreateGenericBuffer (graphicCardHandle card) width height bpp flags
 
 -------------------------------------------------------------
 -- Generic rendering engine
@@ -165,8 +180,6 @@ newEventWaiterThread h = do
 
 data MappedSurface = MappedSurface
    { mappedSurfaceBuffer  :: GenericBuffer
-   , mappedSurfaceMapping :: GenericBufferMap
-   , mappedSurfacePointer :: Ptr ()
    , mappedSurfaceInfo    :: FrameBuffer
    }
 
@@ -187,23 +200,12 @@ initGenericFrameBuffer card mode pixfmt = do
       flags  = 0
 
    mappedPlanes <- forM bpps $ \bpp -> do
-      buf <- createGenericBuffer hdl width height bpp flags
+      buf <- createGenericBuffer card width height bpp flags
                |> assertLogShowErrorE "Create a generic buffer"
 
-      bufKerMap <- mapGenericBuffer hdl buf
-                     |> assertLogShowErrorE "Map generic buffer"
+      let plane = FrameBuffer (genericBufferHandle buf) (genericBufferPitch buf) 0 0
 
-      addr <- assertLogShowErrorE "Map generic buffer in user space" <|
-         sysMemMap Nothing
-            (cdSize buf)
-            (BitSet.fromList [ProtRead,ProtWrite])
-            (BitSet.fromList [MapShared])
-            Nothing
-            (Just (hdl, mdOffset bufKerMap))
-
-      let plane = FrameBuffer (cdHandle buf) (cdPitch buf) 0 0
-
-      return (MappedSurface buf bufKerMap addr plane)
+      return (MappedSurface buf plane)
    
    let planes = fmap mappedSurfaceInfo mappedPlanes
 
@@ -218,12 +220,8 @@ freeGenericFrameBuffer card (GenericFrame fb mappedBufs) = do
 
    let hdl = graphicCardHandle card
 
-   forM_ mappedBufs $ \(MappedSurface buf _ addr _) -> do
-      -- unmap generic buffer from user-space
-      sysMemUnmap addr (cdSize buf)
-         |> assertLogShowErrorE "Unmap generic buffer from user space"
-
-      freeGenericBuffer hdl buf
+   forM_ mappedBufs $ \(MappedSurface buf _) -> do
+      freeGenericBuffer buf
          |> assertLogShowErrorE "Free generic buffer"
 
    freeFrame hdl fb

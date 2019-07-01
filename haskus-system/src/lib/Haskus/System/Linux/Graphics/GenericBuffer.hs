@@ -10,37 +10,97 @@
 -- Generic buffers are called "dumb buffers" in original terminology
 --
 module Haskus.System.Linux.Graphics.GenericBuffer
-   ( GenericBuffer
-   , GenericBufferMap
-   , createGenericBuffer
+   ( GenericBuffer (..)
    , freeGenericBuffer
-   , mapGenericBuffer
+   , withGenericBufferPtr
+   , handleCreateGenericBuffer
+   , handleFreeGenericBuffer
+   , handleGetGenericBufferMapOffset
    )
 where
 
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Memory
 import Haskus.Utils.Flow
+import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Word
+import Foreign.ForeignPtr
+import Foreign.Ptr
 
-type GenericBuffer = StructCreateDumb
-type GenericBufferMap = StructMapDumb
+-- | A generic buffer
+data GenericBuffer = GenericBuffer
+   { genericBufferHeight       :: {-# UNPACK #-} !Word32 -- ^ Height in pixels
+   , genericBufferWidth        :: {-# UNPACK #-} !Word32 -- ^ Width in pixels
+   , genericBufferBitsPerPixel :: {-# UNPACK #-} !Word32 -- ^ Bits per pixel
+   , genericBufferFlags        :: {-# UNPACK #-} !Word32 -- ^ Flags
+   , genericBufferHandle       :: {-# UNPACK #-} !Word32 -- ^ Handle
+   , genericBufferPitch        :: {-# UNPACK #-} !Word32 -- ^ Pitch in bytes
+   , genericBufferSize         :: {-# UNPACK #-} !Word64 -- ^ Size in bytes
+   , genericBufferCardHandle   :: Handle                 -- ^ Card handle
+   , genericBufferPtr          :: ForeignPtr ()          -- ^ Mapping in host memory
+   }
+   deriving (Show)
 
--- | Create a host buffer
-createGenericBuffer :: MonadInIO m => Handle -> Word32 -> Word32 -> Word32 -> Word32 -> Excepts '[ErrorCode] m GenericBuffer
-createGenericBuffer hdl width height bpp flags = do
+-- | Create a generic buffer and map it in user memory.
+--
+-- The foreign pointer targets the memory mapping and is automatically unmapped.
+handleCreateGenericBuffer :: MonadInIO m => Handle -> Word32 -> Word32 -> Word32 -> Word32 -> Excepts '[ErrorCode] m GenericBuffer
+handleCreateGenericBuffer hdl width height bpp flags = do
    let s = StructCreateDumb height width bpp flags 0 0 0
-   ioctlCreateGenericBuffer s hdl
+   -- allocate the buffer
+   r <- ioctlCreateGenericBuffer s hdl
+   -- map it in user space
+   offset <- handleGetGenericBufferMapOffset hdl (cdHandle r)
+   addr <- sysMemMap Nothing (cdSize r)
+            (BitSet.fromList [ProtRead,ProtWrite])
+            (BitSet.fromList [MapShared])
+            Nothing
+            (Just (hdl, offset))
+               -- free buffer on mapping error
+               |> onE_ (runE_ (handleFreeGenericBuffer hdl (cdHandle r)))
+   -- create a foreign pointer that automatically unmaps the buffer
+   let finalizer _ = runE_ (sysMemUnmap addr (cdSize r))
+   finalizerPtr <- liftIO (mkFinalizerPtr finalizer)
+   fptr <- liftIO (newForeignPtr finalizerPtr addr)
+   pure <| GenericBuffer
+     { genericBufferHeight       = cdHeight r
+     , genericBufferWidth        = cdWidth r
+     , genericBufferBitsPerPixel = cdBPP r
+     , genericBufferFlags        = cdFlags r
+     , genericBufferHandle       = cdHandle r
+     , genericBufferPitch        = cdPitch r
+     , genericBufferSize         = cdSize r
+     , genericBufferCardHandle   = hdl
+     , genericBufferPtr          = fptr
+     }
 
--- | Free a host buffer
-freeGenericBuffer :: MonadInIO m => Handle -> GenericBuffer -> Excepts '[ErrorCode] m ()
-freeGenericBuffer hdl buffer = do
-   let s = StructDestroyDumb (cdHandle buffer)
+foreign import ccall "wrapper"
+   mkFinalizerPtr :: (Ptr () -> IO ()) -> IO (FinalizerPtr ())
+
+-- | Free a generic buffer
+handleFreeGenericBuffer :: MonadInIO m => Handle -> Word32 -> Excepts '[ErrorCode] m ()
+handleFreeGenericBuffer hdl bufferHdl = do
+   let s = StructDestroyDumb bufferHdl
    void (ioctlDestroyGenericBuffer s hdl)
 
--- | Map a host buffer
-mapGenericBuffer :: MonadInIO m => Handle -> GenericBuffer -> Excepts '[ErrorCode] m GenericBufferMap
-mapGenericBuffer hdl buffer = do
-   let s = StructMapDumb (cdHandle buffer) 0 0
+-- | Free a generic buffer
+freeGenericBuffer :: MonadInIO m => GenericBuffer -> Excepts '[ErrorCode] m ()
+freeGenericBuffer buffer = do
+   liftIO <| finalizeForeignPtr (genericBufferPtr buffer)
+   handleFreeGenericBuffer (genericBufferCardHandle buffer) (genericBufferHandle buffer)
+
+-- | Get the map offset of a generic buffer
+--
+-- The offset can be used as an mmap offset (on the card handle)
+handleGetGenericBufferMapOffset :: MonadInIO m => Handle -> Word32 -> Excepts '[ErrorCode] m Word64
+handleGetGenericBufferMapOffset hdl bufferHdl = do
+   let s = StructMapDumb bufferHdl 0 0
    ioctlMapGenericBuffer s hdl
+      ||> mdOffset
+
+-- | Use the generic buffer mapped area
+withGenericBufferPtr :: MonadInIO m => GenericBuffer -> (Ptr () -> m a) -> m a
+withGenericBufferPtr buffer action =
+   liftWith (withForeignPtr (genericBufferPtr buffer)) action
