@@ -74,8 +74,8 @@ main = runSys' do
             width  = fromIntegral <| modeHorizontalDisplay mode
             height = fromIntegral <| modeVerticalDisplay mode
 
-         frame1 <- createGenericFullScreenFrame card mode fmt
-         frame2 <- createGenericFullScreenFrame card mode fmt
+         frame1 <- createGenericFullScreenFrame card mode fmt 0
+         frame2 <- createGenericFullScreenFrame card mode fmt 0
 
          let defaultCtrl = do
                encId  <- connectorEncoderID conn

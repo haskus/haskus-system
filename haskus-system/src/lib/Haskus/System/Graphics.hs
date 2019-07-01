@@ -195,17 +195,16 @@ createGenericBuffer card width height bpp flags = do
 
 -- | Allocate a generic full-screen frame with the pixel format (dimensions are
 -- given by the mode)
-createGenericFullScreenFrame :: GraphicCard -> Mode -> PixelFormat -> Sys (Frame GenericBuffer)
-createGenericFullScreenFrame card mode pixfmt =
-   createGenericFrame card (fromIntegral <| modeHorizontalDisplay mode) (fromIntegral <| modeVerticalDisplay mode) pixfmt
+createGenericFullScreenFrame :: GraphicCard -> Mode -> PixelFormat -> Word32 -> Sys (Frame GenericBuffer)
+createGenericFullScreenFrame card mode pixfmt flags =
+   createGenericFrame card (fromIntegral <| modeHorizontalDisplay mode) (fromIntegral <| modeVerticalDisplay mode) pixfmt flags
 
 -- | Allocate a generic frame with the given dimensions and pixel format
-createGenericFrame :: GraphicCard -> Word32 -> Word32 -> PixelFormat -> Sys (Frame GenericBuffer)
-createGenericFrame card width height pixfmt = do
+createGenericFrame :: GraphicCard -> Word32 -> Word32 -> PixelFormat -> Word32 -> Sys (Frame GenericBuffer)
+createGenericFrame card width height pixfmt flags = do
    let
       fmt    = formatFormat pixfmt
       bpps   = formatBitDepth fmt
-      flags  = 0
 
    fbs <- forM bpps $ \bpp -> do
       buf <- createGenericBuffer card width height bpp flags
@@ -312,7 +311,7 @@ initRenderingEngine card ctrl mode conn nfb flags draw
       let fmt = makePixelFormat XRGB8888 LittleEndian
 
       -- initialize generic frames
-      frames <- forM [1..nfb] (const (createGenericFullScreenFrame card mode fmt))
+      frames <- forM [1..nfb] (const (createGenericFullScreenFrame card mode fmt 0))
       let (initFrame:otherFrames) = frames
 
       -- perform initial mode-setting

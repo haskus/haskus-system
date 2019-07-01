@@ -13,7 +13,7 @@ main = runSys' do
    
    forM_ cards \card -> do
       let pixelFormat = makePixelFormat XRGB8888 LittleEndian
-      frame <- createGenericFrame card 1024 768 pixelFormat
+      frame <- createGenericFrame card 1024 768 pixelFormat 0
       writeStrLn term (showFrame frame)
       freeGenericFrame frame
 
