@@ -60,24 +60,20 @@ loadPng bs = img
 
 
 -- | check framebuffer pixel format
-checkPixelFormat :: Frame b -> IO ()
-checkPixelFormat fs = do
-   let pixFmt = framePixelFormat fs
-
-   case formatFormat pixFmt of
-      ARGB8888 -> return ()
-      XRGB8888 -> return ()
+checkPixelFormat :: Frame b -> IO (FrameBuffer b)
+checkPixelFormat frame = do
+   case formatFormat (framePixelFormat frame) of
+      ARGB8888 -> return (head (frameBuffers frame))
+      XRGB8888 -> return (head (frameBuffers frame))
       _        -> error "Unsupported pixel format"
 
 
 -- | Fill with a color
 fillFrame :: Frame GenericBuffer -> Word32 -> IO ()
 fillFrame frame color = do
-   checkPixelFormat frame
+   fb <- checkPixelFormat frame
       
-   let [fb]  = frameBuffers frame
-
-   withGenericBufferPtr (fbBuffer fb) \addr ->
+   withGenericFrameBufferPtr fb \addr ->
       forLoop 0 (< fromIntegral (frameHeight frame)) (+1) $ \y ->
          forLoop 0 (< fromIntegral (frameWidth frame)) (+1) $ \x -> do
             let !off = x*4 + y*fromIntegral (fbPitch fb)
@@ -87,9 +83,7 @@ fillFrame frame color = do
 -- | Display an image
 blendImage :: Frame GenericBuffer -> Image PixelRGBA8 -> BlendOp -> (Int,Int) -> (Int,Int,Int,Int) -> IO ()
 blendImage frame img op pos clp = do
-   checkPixelFormat frame
-
-   let [fb]  = frameBuffers frame
+   fb <- checkPixelFormat frame
 
    -- compute drawing rect
    let
@@ -125,7 +119,7 @@ blendImage frame img op pos clp = do
            low = fromIntegral . (.&. 0xFF)
            bitCount = 8
 
-   withGenericBufferPtr (fbBuffer fb) \addr ->
+   withGenericFrameBufferPtr fb \addr ->
       case op of
          BlendAlpha -> 
             forLoop 0 (< sh) (+1) $! \y ->

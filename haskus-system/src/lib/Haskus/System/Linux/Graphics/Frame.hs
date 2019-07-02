@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Frame
 --
@@ -17,6 +18,10 @@ module Haskus.System.Linux.Graphics.Frame
    , SwitchFrameFlags
    , DirtyAnnotation (..)
    , Clip (..)
+   , forEachFrameLine
+   , forEachFrameColumn
+   , forEachFramePixel
+   , frameBufferPixelOffset
    )
 where
 
@@ -95,4 +100,28 @@ dirtyFrame frame mode = do
                }
       ioctlDirtyFrame s (frameCardHandle frame)
 
+-- | Do something for each line of the frame (top to bottom)
+forEachFrameLine :: Monad m => Frame b -> (Word32 -> m ()) -> m ()
+{-# INLINABLE forEachFrameLine #-}
+forEachFrameLine frame action = forLoopM_ 0 (< frameHeight frame) (+1) action
 
+
+-- | Do something for each column of the frame (left to right)
+forEachFrameColumn :: Monad m => Frame b -> (Word32 -> m ()) -> m ()
+{-# INLINABLE forEachFrameColumn #-}
+forEachFrameColumn frame action = forLoopM_ 0 (< frameWidth frame) (+1) action
+
+-- | Do something for each pixel (x,y) of the frame
+forEachFramePixel :: Monad m => Frame b -> (Word32 -> Word32 -> m ()) -> m ()
+{-# INLINABLE forEachFramePixel #-}
+forEachFramePixel frame action =
+   forEachFrameLine frame \y ->
+      forEachFrameColumn frame \x ->
+         action x y
+
+-- | Compute an offset in a FrameBuffer from pixel component size in bytes and
+-- pixel coordinates (x,y)
+frameBufferPixelOffset :: FrameBuffer b -> Word32 -> Word32 -> Word32 -> Word32
+{-# INLINABLE frameBufferPixelOffset #-}
+frameBufferPixelOffset fb pixelSize x y =
+   fbOffset fb + x*pixelSize + y*(fbPitch fb)

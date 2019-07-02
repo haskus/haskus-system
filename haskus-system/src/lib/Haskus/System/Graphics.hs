@@ -29,6 +29,7 @@ module Haskus.System.Graphics
    , createGenericBuffer
    , freeGenericBuffer
    , withGenericBufferPtr
+   , withGenericFrameBufferPtr
    , createGenericFrame
    , createGenericFullScreenFrame
    , freeGenericFrame
@@ -36,6 +37,10 @@ module Haskus.System.Graphics
    , createFrame
    , freeFrame
    , dirtyFrame
+   , forEachFrameLine
+   , forEachFrameColumn
+   , forEachFramePixel
+   , frameBufferPixelOffset
      -- * Generic rendering engine
    , RenderingEngine (..)
    , BufferingState (..)
@@ -75,6 +80,7 @@ import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Event as Graphics
 
 import System.FilePath (takeBaseName)
+import Foreign.Ptr
 
 -------------------------------------------------------------
 -- Card
@@ -230,6 +236,10 @@ freeGenericFrame frame = do
    forM_ (frameBuffers frame) \fb -> do
       freeGenericBuffer (fbBuffer fb)
          |> assertLogShowErrorE "Free generic buffer"
+
+-- | Use the pointer of the Generic buffer used as a FrameBuffer
+withGenericFrameBufferPtr :: MonadInIO m => FrameBuffer GenericBuffer -> (Ptr () -> m a) -> m a
+withGenericFrameBufferPtr fb action = withGenericBufferPtr (fbBuffer fb) action
 
 -------------------------------------------------------------
 -- Generic rendering engine
