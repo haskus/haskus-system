@@ -71,13 +71,10 @@ checkPixelFormat frame = do
 -- | Fill with a color
 fillFrame :: Frame GenericBuffer -> Word32 -> IO ()
 fillFrame frame color = do
-   fb <- checkPixelFormat frame
+   _fb <- checkPixelFormat frame
       
-   withGenericFrameBufferPtr fb \addr ->
-      forLoop 0 (< fromIntegral (frameHeight frame)) (+1) $ \y ->
-         forLoop 0 (< fromIntegral (frameWidth frame)) (+1) $ \x -> do
-            let !off = x*4 + y*fromIntegral (fbPitch fb)
-            pokeByteOff (castPtr addr) off (color :: Word32)
+   forEachGenericFramePixel frame 0 \_x _y ptr ->
+      poke ptr color
 
 
 -- | Display an image

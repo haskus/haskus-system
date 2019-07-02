@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | Manage graphics devices
 module Haskus.System.Graphics
@@ -29,10 +30,11 @@ module Haskus.System.Graphics
    , createGenericBuffer
    , freeGenericBuffer
    , withGenericBufferPtr
-   , withGenericFrameBufferPtr
    , createGenericFrame
    , createGenericFullScreenFrame
    , freeGenericFrame
+   , withGenericFrameBufferPtr
+   , forEachGenericFramePixel
    -- * Frames
    , createFrame
    , freeFrame
@@ -59,10 +61,11 @@ import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (textFormat,shown,(%))
 import Haskus.Format.Binary.Storable
 import Haskus.Utils.Flow
-import Haskus.Utils.List (isPrefixOf)
+import Haskus.Utils.List (unsafeAt,isPrefixOf)
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
 import Haskus.Format.Binary.Word
+import Haskus.Format.Binary.Bits
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem.ReadWrite
 
@@ -240,6 +243,27 @@ freeGenericFrame frame = do
 -- | Use the pointer of the Generic buffer used as a FrameBuffer
 withGenericFrameBufferPtr :: MonadInIO m => FrameBuffer GenericBuffer -> (Ptr () -> m a) -> m a
 withGenericFrameBufferPtr fb action = withGenericBufferPtr (fbBuffer fb) action
+
+-- | Iterate on every pixel of the given generic frame.
+--
+-- `fbIndex` selects the frame-buffer by index (for multi-frame pixel formats).
+--
+-- Pixel component sizes are inferred from the pixel format. Beware if you use
+-- frame with modifiers (compression, etc.) that make these sizes invalid.
+forEachGenericFramePixel :: MonadInIO m => Frame GenericBuffer -> Word -> (Word32 -> Word32 -> Ptr a -> m ()) -> m ()
+forEachGenericFramePixel frame fbIndex action = do
+   let
+      fmt   = formatFormat (framePixelFormat frame)
+      depth = formatBitDepth fmt `unsafeAt` fbIndex -- fail with `unsafeAt` for bad indexes
+               |> (`shiftR` 3)   -- convert pixel component size in bits into bytes
+
+      fb = frameBuffers frame `unsafeAt` fbIndex    -- fail with `unsafeAt` for bad indexes
+
+   withGenericFrameBufferPtr fb \fbPtr ->
+      forEachFramePixel frame \x y -> do
+         let !off = frameBufferPixelOffset fb depth x y
+         let !ptr = castPtr fbPtr `plusPtr` fromIntegral off
+         action x y ptr
 
 -------------------------------------------------------------
 -- Generic rendering engine

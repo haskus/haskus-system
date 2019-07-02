@@ -6,7 +6,6 @@ import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Word
-import Foreign.Ptr
 
 main :: IO ()
 main = runSys' do
@@ -19,16 +18,10 @@ main = runSys' do
       frame <- createGenericFrame card 1024 768 pixelFormat 0
       writeStrLn term (showFrame frame)
 
-      let
-         -- we know that XRGB8888 pixel format uses a single (frame)buffers
-         fb    = head (frameBuffers frame)
-         color = 0x316594
-
       -- fill the frame with a color
-      withGenericFrameBufferPtr fb \addr ->
-         forEachFramePixel frame \x y -> do
-            let off = frameBufferPixelOffset fb 4 x y -- 4 is pixel component size in bytes
-            pokeByteOff (castPtr addr) (fromIntegral off) (color :: Word32)
+      -- (0 is the FrameBuffer index)
+      forEachGenericFramePixel frame 0 \_x _y ptr ->
+         poke ptr (0x316594 :: Word32) -- write a XRGB8888 color
 
       freeGenericFrame frame
 
