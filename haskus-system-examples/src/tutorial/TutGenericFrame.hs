@@ -18,7 +18,7 @@ main = runSys' do
       frame <- createGenericFrame card 1024 768 pixelFormat 0
       writeStrLn term (showFrame frame)
 
-      -- fill the frame with a color
+      -- fill the generic frame with a color
       -- (0 is the FrameBuffer index)
       forEachGenericFramePixel frame 0 \_x _y ptr ->
          poke ptr (0x316594 :: Word32) -- write a XRGB8888 color

@@ -102,10 +102,6 @@ executables:
       main: Main.hs
       source-dirs: src/device-list
 
-   DisplayProperties:
-      main: Main.hs
-      source-dirs: src/display-properties
-
    DisplayState:
       main: Main.hs
       source-dirs: src/display-state
@@ -120,8 +116,13 @@ executables:
       source-dirs: src/tutorial
       other-modules: []
 
-   TutCreateGenericFrame:
-      main: TutCreateGenericFrame.hs
+   TutGenericFrame:
+      main: TutGenericFrame.hs
+      source-dirs: src/tutorial
+      other-modules: []
+
+   TutProperties:
+      main: TutProperties.hs
       source-dirs: src/tutorial
       other-modules: []
 
