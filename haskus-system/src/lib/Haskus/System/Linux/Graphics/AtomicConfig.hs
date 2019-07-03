@@ -24,8 +24,8 @@ module Haskus.System.Linux.Graphics.AtomicConfig
    , graphicsConfig
    , commitConfig
    , getPropertyMetaM
-   , setPropertyM
-   , getPropertyM
+   , setObjectPropertyM
+   , getObjectProperties
    )
 where
 
@@ -37,15 +37,16 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Object
 import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Format.Binary.Word
 
 import Data.Map as Map
 import Control.Monad.State
 
 -- | PropertyM state
 data ConfigState = ConfigState
-   { configHandle :: Handle                                     -- ^ Card handle
-   , configProps  :: Map (ObjectType,ObjectID,PropID) PropValue -- ^ Properties to set
-   , configMeta   :: Map PropertyMetaID PropertyMeta            -- ^ Property meta
+   { configHandle :: Handle                                  -- ^ Card handle
+   , configProps  :: Map (ObjectType,ObjectID,Word32) Word64 -- ^ Properties to set
+   , configMeta   :: Map PropertyMetaID PropertyMeta         -- ^ Property meta
    }
 
 -- | Configuration monad
@@ -116,25 +117,25 @@ getPropertyMetaM pid = do
 
 
 -- | Set property
-setPropertyM ::
+setObjectPropertyM ::
    ( MonadInIO m
    , Object o
-   ) => o -> PropID -> PropValue -> ConfigM m ()
-setPropertyM obj prop val = ConfigM $ do
+   ) => o -> RawProperty -> ConfigM m ()
+setObjectPropertyM obj prop = ConfigM $ do
    modify (\s ->
       let
-         key   = (getObjectType obj, getObjectID obj, prop)
-         props = Map.insert key val (configProps s)
+         key   = (getObjectType obj, getObjectID obj, rawPropertyMetaID prop)
+         props = Map.insert key (rawPropertyValue prop) (configProps s)
       in s { configProps = props })
 
 -- | Get properties
-getPropertyM :: forall m o.
+getObjectProperties :: forall m o.
    ( MonadInIO m
    , Object o
    ) => o -> Excepts '[InvalidParam,ObjectNotFound] (ConfigM m) [Property]
-getPropertyM obj = do
+getObjectProperties obj = do
    s <- lift getConfig
-   props <- getObjectProperties (configHandle s) obj
+   props <- getObjectRawProperties (configHandle s) obj
    let
       getPropertyFromRaw :: RawProperty -> Excepts '[InvalidParam,InvalidProperty] (ConfigM m) (Maybe Property)
       getPropertyFromRaw (RawProperty x y) = getPropertyMetaM x ||> (\m -> Just (Property m y))
@@ -171,11 +172,11 @@ commitConfig atomic testMode asyncMode modesetMode = do
                ]
 
             props = Map.toList (configProps s)
-                     ||> (\((_objType,objId,propId),val) -> (objId,[(propId,val)]))
+                     ||> (\((_objType,objId,propId),val) -> (objId,[RawProperty propId val]))
                      |> Map.fromListWith (++)
 
          liftE <| setAtomic hdl flags props
 
       NonAtomic -> do
          forM_ (Map.toList (configProps s)) <| \((objType,objId,propId),val) -> do
-            void (liftE <| setObjectProperty' hdl objId objType propId val)
+            void (liftE <| setObjectIDRawProperty hdl objId objType (RawProperty propId val))

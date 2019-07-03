@@ -12,12 +12,13 @@ module Haskus.System.Linux.Graphics.Object
    ( Object(..)
    , ObjectType(..)
    , ObjectNotFound
+   , RawProperty (..)
    , showObjectQualifiedID
    , showObjectType
    , getObjectPropertyCount
-   , getObjectProperties
-   , setObjectProperty
-   , setObjectProperty'
+   , getObjectRawProperties
+   , setObjectRawProperty
+   , setObjectIDRawProperty
    )
 where
 
@@ -116,9 +117,9 @@ getObjectPropertyCount hdl o = ioctlGetObjectProperties s hdl ||> gopCountProps
             (getObjectID o)
             (fromCEnum (getObjectType o))
 
--- | Return object properties
-getObjectProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Excepts '[InvalidParam,ObjectNotFound] m [RawProperty]
-getObjectProperties hdl o =
+-- | Return object raw properties
+getObjectRawProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Excepts '[InvalidParam,ObjectNotFound] m [RawProperty]
+getObjectRawProperties hdl o =
        -- we assume 20 entries is usually enough and we adapt if it isn't. By
        -- using an initial value we avoid a syscall in most cases.
       fixCount go 20
@@ -169,22 +170,22 @@ getObjectProperties hdl o =
             then failureE (InvalidCount n)
             else return ()
 
--- | Set an object property
-setObjectProperty ::
+-- | Set a raw property of an object
+setObjectRawProperty ::
    ( Object o
    , MonadInIO m
-   ) => Handle -> o -> PropID -> PropValue -> Excepts '[InvalidParam,ObjectNotFound] m ()
-setObjectProperty hdl o prop val =
-   setObjectProperty' hdl (getObjectID o) (getObjectType o) prop val
+   ) => Handle -> o -> RawProperty -> Excepts '[InvalidParam,ObjectNotFound] m ()
+setObjectRawProperty hdl o prop =
+   setObjectIDRawProperty hdl (getObjectID o) (getObjectType o) prop
 
--- | Set an object property
-setObjectProperty' ::
+-- | Set a property of an object identified by object ID and object type
+setObjectIDRawProperty ::
    ( MonadInIO m
-   ) => Handle -> ObjectID -> ObjectType -> PropID -> PropValue -> Excepts '[InvalidParam,ObjectNotFound] m ()
-setObjectProperty' hdl oid otyp prop val = do
-   let s = StructSetObjectProperty val prop oid (fromCEnum otyp)
+   ) => Handle -> ObjectID -> ObjectType -> RawProperty -> Excepts '[InvalidParam,ObjectNotFound] m ()
+setObjectIDRawProperty hdl oid otyp prop = do
+   let s = StructSetObjectProperty (rawPropertyValue prop) (rawPropertyMetaID prop) oid (fromCEnum otyp)
    void (ioctlSetObjectProperty s hdl)
       |> catchLiftLeft \case
             EINVAL -> throwE InvalidParam
             ENOENT -> throwE ObjectNotFound
-            e      -> unhdlErr "setObjectProperty" e
+            e      -> unhdlErr "setObjectIDRawProperty" e

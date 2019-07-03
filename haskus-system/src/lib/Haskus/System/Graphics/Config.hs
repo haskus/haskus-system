@@ -40,8 +40,7 @@ data Config = Config
                           )] -- ^ Plane config
    , configProperties :: [( ObjectID
                           , ObjectType
-                          , PropID
-                          , PropValue
+                          , RawProperty
                           )] -- ^ Set properties
    }
 
@@ -97,8 +96,8 @@ setConfigLegacy card config = do
          _       -> runE_ <| setPlane hdl pid mopts
 
    -- set properties
-   forM_ (configProperties config) <| \(oid,otype,propid,val) ->
-      runE_ <| setObjectProperty' hdl oid otype propid val
+   forM_ (configProperties config) <| \(oid,otype,prop) ->
+      runE_ <| setObjectIDRawProperty hdl oid otype prop
 
 -------------------------------------------------------------------------------
 -- Atomic config

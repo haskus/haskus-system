@@ -376,7 +376,7 @@ main = runSys' <| do
       dpmsProp <- graphicsConfig (graphicCardHandle card) <| do
          catchEvalE (const (return []))
             <|  filter (\p -> propertyName (propertyMeta p) == "DPMS")
-            <|| getPropertyM conn
+            <|| getObjectProperties conn
 
       let 
          dpmsPage = rasterizeDiagram (mkWidth 200)
@@ -429,7 +429,7 @@ main = runSys' <| do
          s <- atomically <| takeTMVar dpmsState
          graphicsConfig (graphicCardHandle card) do
             forM_ dpmsProp \prop ->
-               setPropertyM conn (propertyID (propertyMeta prop)) s
+               setObjectPropertyM conn (RawProperty (propertyID (propertyMeta prop)) s)
             commitConfig NonAtomic Commit Synchronous AllowFullModeset
                |> catchEvalE \err -> lift <| sysWarning (textFormat ("Cannot set DPMS: " % shown) err)
 

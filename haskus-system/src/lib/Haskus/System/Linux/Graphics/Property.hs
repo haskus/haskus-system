@@ -16,9 +16,7 @@ module Haskus.System.Linux.Graphics.Property
    , Property (..)
    , InvalidProperty (..)
    , getPropertyMeta
-   , PropValue
    , ObjectID
-   , PropID
    , PropertyMetaID
    , showProperty
    -- * Atomic properties
@@ -111,8 +109,6 @@ data InvalidProperty = InvalidProperty deriving (Show,Eq)
 
 type PropertyMetaID = Word32
 type ObjectID       = Word32
-type PropID         = Word32
-type PropValue      = Word64
 
 type AtomicErrors = '[InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound]
 
@@ -214,16 +210,16 @@ getPropertyMeta fd pid = do
 
 
 -- | Set object properties atomically
-setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [(PropID,PropValue)] -> Excepts AtomicErrors m ()
-setAtomic hdl flags objProps = do
+setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [RawProperty] -> Excepts AtomicErrors m ()
+setAtomic hdl flags propsmap = do
 
    let
-      kvs    = Map.assocs objProps -- [(Obj,[(Prop,Val)])]
+      kvs    = Map.assocs propsmap -- [(Obj,[(Prop,Val)])]
       objs   = fmap fst    kvs     -- [Obj]
-      pvs    = fmap snd    kvs     -- [[(Prop,Val)]]
+      pvs    = fmap snd    kvs     -- [[RawProperty]]
       nprops = fmap length pvs
-      props  = fmap fst (concat pvs) -- [Prop]
-      vals   = fmap snd (concat pvs) -- [Val]
+      props  = fmap rawPropertyMetaID (concat pvs) -- list of property ID
+      vals   = fmap rawPropertyValue  (concat pvs) -- list of values
 
 
    withArray objs $ \pobjs ->
@@ -234,7 +230,7 @@ setAtomic hdl flags objProps = do
                   toPtr = fromIntegral . ptrToWordPtr
                   s = StructAtomic
                      { atomFlags         = flags
-                     , atomCountObjects  = fromIntegral (length (Map.keys objProps))
+                     , atomCountObjects  = fromIntegral (length (Map.keys propsmap))
                      , atomObjectsPtr    = toPtr pobjs
                      , atomCountPropsPtr = toPtr pnprops
                      , atomPropsPtr      = toPtr pprops

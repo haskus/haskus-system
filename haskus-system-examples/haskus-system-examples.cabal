@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1953b652a6fdd4ca78ab0b0de3a7d0b9764f786920b2833fcaef3a0e338183a6
+-- hash: 893c529effabe4d372bb577597722a4ddd892d82de6dc84eea025d68cff087b6
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -256,27 +256,6 @@ executable Test
       Paths_haskus_system_examples
   default-language: Haskell2010
 
-executable TutCreateGenericFrame
-  main-is: TutCreateGenericFrame.hs
-  hs-source-dirs:
-      src/tutorial
-  ghc-options: -Wall -O2 -static -threaded
-  cc-options: -static
-  extra-lib-dirs:
-      ./.system-work/lib
-  ld-options: -static -pthread
-  build-depends:
-      base >=4.8 && <5
-    , haskus-binary
-    , haskus-system
-    , haskus-ui
-    , haskus-utils
-    , haskus-utils-compat
-    , haskus-utils-data
-    , haskus-utils-types
-    , haskus-utils-variant
-  default-language: Haskell2010
-
 executable TutDisplays
   main-is: TutDisplays.hs
   hs-source-dirs:
@@ -321,6 +300,27 @@ executable TutEntitiesIDs
 
 executable TutFirstPipeline
   main-is: TutFirstPipeline.hs
+  hs-source-dirs:
+      src/tutorial
+  ghc-options: -Wall -O2 -static -threaded
+  cc-options: -static
+  extra-lib-dirs:
+      ./.system-work/lib
+  ld-options: -static -pthread
+  build-depends:
+      base >=4.8 && <5
+    , haskus-binary
+    , haskus-system
+    , haskus-ui
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
+  default-language: Haskell2010
+
+executable TutGenericFrame
+  main-is: TutGenericFrame.hs
   hs-source-dirs:
       src/tutorial
   ghc-options: -Wall -O2 -static -threaded
