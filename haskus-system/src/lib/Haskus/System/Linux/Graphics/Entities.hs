@@ -12,6 +12,7 @@ module Haskus.System.Linux.Graphics.Entities
    , ConnectorID
    , EncoderID
    , PlaneID
+   , BlobID
    -- * Connector
    , Connector (..)
    , Connection (..)
@@ -55,11 +56,12 @@ newtype EntityID a = EntityID
    { unEntityID :: Word32
    } deriving (Show,Eq,Storable,Ord)
 
-type FrameID = EntityID (Frame ())
+type FrameID       = EntityID (Frame ())
 type ConnectorID   = EntityID Connector
 type ControllerID  = EntityID Controller
 type EncoderID     = EntityID Encoder
 type PlaneID       = EntityID Plane
+type BlobID x      = EntityID x
 
 -------------------------------------------------------------------------------
 -- Connector
@@ -193,7 +195,7 @@ data PlaneSource = PlaneSource
 
 
 -------------------------------------------------------------------------------
--- Frame source
+-- Frame and FrameBuffer
 -------------------------------------------------------------------------------
 
 -- | Abstract frame source

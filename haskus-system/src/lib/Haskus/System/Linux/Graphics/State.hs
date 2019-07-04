@@ -9,6 +9,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | State of the graphics system
 module Haskus.System.Linux.Graphics.State
@@ -53,6 +54,10 @@ module Haskus.System.Linux.Graphics.State
    , disablePlane
    , InvalidDestRect (..)
    , InvalidSrcRect (..)
+   -- * Blob
+   , createBlob
+   , destroyBlob
+   , withBlob
    )
 where
 
@@ -67,6 +72,7 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.Handle
 import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
+import Haskus.Utils.Variant.Excepts
 import Haskus.Utils.Maybe
 import Haskus.Utils.List (zipLeftWith)
 import Haskus.Format.Binary.Word
@@ -77,6 +83,7 @@ import Haskus.Format.Binary.BitField
 import Haskus.Format.Binary.FixedPoint
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Haskus.Memory.Ptr
 import Foreign.Ptr
 
 
@@ -659,3 +666,37 @@ disablePlane hdl p = setPlane hdl p Nothing
    -- these errors should not be triggered when we disable a plane
    |> catchDieE (\InvalidDestRect -> unhdlErr "disablePlane" InvalidDestRect)
    |> catchDieE (\InvalidSrcRect  -> unhdlErr "disablePlane" InvalidSrcRect)
+
+-------------------------------------------------------------------------------
+-- Blob
+-------------------------------------------------------------------------------
+
+-- | Create a blob
+createBlob :: MonadInIO m => Handle -> Ptr t -> Word32 -> Excepts '[ErrorCode] m (BlobID t)
+createBlob hdl ptr sz = do
+
+   let req = StructCreateBlob
+               { cbData   = fromIntegral (ptrToWordPtr ptr)
+               , cbLength = sz
+               , cbBlobID = 0
+               }
+   ioctlCreateBlob req hdl
+      ||> cbBlobID
+      ||> EntityID
+
+-- | Destroy a blob
+destroyBlob :: MonadInIO m => Handle -> BlobID t -> Excepts '[ErrorCode] m ()
+destroyBlob hdl blobID = do
+
+   let req = StructDestroyBlob (unEntityID blobID)
+   void (ioctlDestroyBlob req hdl)
+
+-- | Temporarily create a blob
+withBlob :: forall es m a t.
+   ( MonadInIO m
+   ) => Handle -> Ptr t -> Word32 -> (BlobID t -> Excepts es m a) -> Excepts (ErrorCode ': es) m a
+withBlob hdl ptr sz action = do
+   bid <- appendE @es (createBlob hdl ptr sz)
+   r <- prependE @'[ErrorCode] (action bid)
+   appendE @es (destroyBlob hdl bid)
+   pure r

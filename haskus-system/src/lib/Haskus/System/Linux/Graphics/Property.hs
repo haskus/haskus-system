@@ -22,7 +22,6 @@ module Haskus.System.Linux.Graphics.Property
    , showProperty
    , showPropertyEx
    , showPropertyMeta
-   -- * Atomic properties
    , setAtomic
    , AtomicErrors
    )

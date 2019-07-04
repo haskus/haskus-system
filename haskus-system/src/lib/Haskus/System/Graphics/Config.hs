@@ -16,7 +16,6 @@ where
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
@@ -38,7 +37,7 @@ data Command
    | CmdConnectorController            ConnectorID  ControllerID
    | CmdControllerCustom               ControllerID RawProperty
    | CmdControllerActive               ControllerID Bool
-   | CmdControllerMode                 ControllerID Mode
+   | CmdControllerMode                 ControllerID (BlobID Mode)
    | CmdControllerVariableRefreshRate  ControllerID Bool
    | CmdControllerOutFencePtr          ControllerID RawPtr
    | CmdPlaneCustom                    PlaneID      RawProperty
@@ -56,46 +55,49 @@ insertCommand card m cmd = Map.union m propMap
    where
       props = case cmd of
          CmdConnectorCustom cid raw ->
-            [ (getObjectID cid,rawPropertyMetaID raw,rawPropertyValue raw)
+            [ (unEntityID cid,rawPropertyMetaID raw,rawPropertyValue raw)
             ]
          CmdControllerCustom cid raw ->
-            [ (getObjectID cid,rawPropertyMetaID raw,rawPropertyValue raw)
+            [ (unEntityID cid,rawPropertyMetaID raw,rawPropertyValue raw)
             ]
          CmdPlaneCustom pid raw ->
-            [ (getObjectID pid,rawPropertyMetaID raw,rawPropertyValue raw)
+            [ (unEntityID pid,rawPropertyMetaID raw,rawPropertyValue raw)
             ]
          CmdConnectorController cnid ctid ->
-            [ (getObjectID cnid, metaId "CRTC_ID", fromIntegral (getObjectID ctid))
+            [ (unEntityID cnid, metaId "CRTC_ID", fromIntegral (unEntityID ctid))
             ]
          CmdControllerActive cid b ->
-            [ (getObjectID cid, metaId "ACTIVE", fromBool b)
+            [ (unEntityID cid, metaId "ACTIVE", fromBool b)
             ]
          CmdControllerVariableRefreshRate cid b ->
-            [ (getObjectID cid, metaId "VRR_ENABLED", fromBool b)
+            [ (unEntityID cid, metaId "VRR_ENABLED", fromBool b)
+            ]
+         CmdControllerMode cid mid ->
+            [ (unEntityID cid, metaId "MODE_ID", fromIntegral (unEntityID mid))
             ]
          CmdPlaneSource pid fid x y w h ->
-            [ (getObjectID pid, metaId "FB_ID", fromIntegral (getObjectID fid))
-            , (getObjectID pid, metaId "SRC_X", fromIntegral x)
-            , (getObjectID pid, metaId "SRC_Y", fromIntegral y)
-            , (getObjectID pid, metaId "SRC_W", fromIntegral w)
-            , (getObjectID pid, metaId "SRC_H", fromIntegral h)
+            [ (unEntityID pid, metaId "FB_ID", fromIntegral (unEntityID fid))
+            , (unEntityID pid, metaId "SRC_X", fromIntegral x)
+            , (unEntityID pid, metaId "SRC_Y", fromIntegral y)
+            , (unEntityID pid, metaId "SRC_W", fromIntegral w)
+            , (unEntityID pid, metaId "SRC_H", fromIntegral h)
             ]
          CmdPlaneTarget pid cid x y w h ->
-            [ (getObjectID pid, metaId "CRTC_ID", fromIntegral (getObjectID cid))
-            , (getObjectID pid, metaId "CRTC_X", fromIntegral x)
-            , (getObjectID pid, metaId "CRTC_Y", fromIntegral y)
-            , (getObjectID pid, metaId "CRTC_W", fromIntegral w)
-            , (getObjectID pid, metaId "CRTC_H", fromIntegral h)
+            [ (unEntityID pid, metaId "CRTC_ID", fromIntegral (unEntityID cid))
+            , (unEntityID pid, metaId "CRTC_X", fromIntegral x)
+            , (unEntityID pid, metaId "CRTC_Y", fromIntegral y)
+            , (unEntityID pid, metaId "CRTC_W", fromIntegral w)
+            , (unEntityID pid, metaId "CRTC_H", fromIntegral h)
             ]
          CmdControllerOutFencePtr cid ptr ->
-            [ (getObjectID cid, metaId "OUT_FENCE_PTR", fromIntegral (ptrToWordPtr ptr))
+            [ (unEntityID cid, metaId "OUT_FENCE_PTR", fromIntegral (ptrToWordPtr ptr))
             ]
          CmdPlaneInFenceHandle pid mhdl ->
-            [ (getObjectID pid, metaId "IN_FENCE_FD", fromMaybeValue mhdl)
+            [ (unEntityID pid, metaId "IN_FENCE_FD", fromMaybeValue mhdl)
             ]
          CmdPlanePosition pid x y ->
-            [ (getObjectID pid, metaId "CRTC_X", fromIntegral x)
-            , (getObjectID pid, metaId "CRTC_Y", fromIntegral y)
+            [ (unEntityID pid, metaId "CRTC_X", fromIntegral x)
+            , (unEntityID pid, metaId "CRTC_Y", fromIntegral y)
             ]
 
       fromMaybeValue :: forall a. Integral a => Maybe a -> Word64
