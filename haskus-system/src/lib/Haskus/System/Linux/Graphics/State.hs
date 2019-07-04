@@ -32,7 +32,7 @@ module Haskus.System.Linux.Graphics.State
    , Resources(..)
    , setController'
    , switchFrame'
-   , getControllers
+   , getHandleControllers
    , getControllerGamma
    , setControllerGamma
    , getHandleEncoders
@@ -58,7 +58,7 @@ module Haskus.System.Linux.Graphics.State
    , createBlob
    , destroyBlob
    , withBlob
-   , withModeBlob
+   , withHandleModeBlob
    )
 where
 
@@ -325,8 +325,8 @@ switchFrame' hdl cid fsid flags udata = do
    void <| ioctlSwitchFrame s hdl
 
 -- | Get controllers
-getControllers :: MonadInIO m => Handle -> Excepts '[InvalidHandle,InvalidControllerID] m [Controller]
-getControllers hdl = do
+getHandleControllers :: MonadInIO m => Handle -> Excepts '[InvalidHandle,InvalidControllerID] m [Controller]
+getHandleControllers hdl = do
    res <- liftE <| getResources hdl
    traverse (getControllerFromID hdl) (resControllerIDs res)
 
@@ -703,10 +703,10 @@ withBlob hdl ptr sz action = do
    pure r
 
 -- | Temporarily create a Mode blob
-withModeBlob :: forall es m a.
+withHandleModeBlob :: forall es m a.
    ( MonadInIO m
    ) => Handle -> Mode -> (BlobID Mode -> Excepts es m a) -> Excepts (ErrorCode ': es) m a
-withModeBlob hdl mode action = do
+withHandleModeBlob hdl mode action = do
    let struct = toStructMode mode
    with struct \modePtr ->
       withBlob hdl modePtr (sizeOfT' @StructMode) \bid ->

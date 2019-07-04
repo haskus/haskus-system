@@ -131,8 +131,8 @@ data AllowModeSet
    | DisallowFullModeset   -- ^ Don't allow full mode-setting
 
 -- | Convert commands into Object property Map
-makePropertyMap :: GraphicCard -> [Command] -> Map ObjectID [RawProperty]
-makePropertyMap card cmds = props
+makePropertyMap :: GraphicCard -> [Command] -> CmdSet
+makePropertyMap card cmds = CmdSet props
    where
       -- properties:  (object id, property id) -> property value
       -- (used to get unique property assignements)
@@ -163,4 +163,8 @@ configureGraphics card testMode asyncMode modesetMode cmds = do
             DisallowFullModeset -> []
          ]
 
-   setAtomic (graphicCardHandle card) flags (makePropertyMap card cmds)
+   setAtomic (graphicCardHandle card) flags (unCmdSet (makePropertyMap card cmds))
+
+newtype CmdSet = CmdSet
+   { unCmdSet :: (Map ObjectID [RawProperty])
+   }

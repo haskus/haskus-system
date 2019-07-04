@@ -7,6 +7,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Manage graphics devices
 module Haskus.System.Graphics
@@ -46,6 +47,8 @@ module Haskus.System.Graphics
    , forEachFrameColumn
    , forEachFramePixel
    , frameBufferPixelOffset
+   -- * Configuration (mode-setting)
+   , withModeBlob
      -- * Generic rendering engine
    , RenderingEngine (..)
    , BufferingState (..)
@@ -319,6 +322,16 @@ forEachGenericFramePixel frame fbIndex action = do
          let !off = frameBufferPixelOffset fb depth x y
          let !ptr = castPtr fbPtr `plusPtr` fromIntegral off
          action x y ptr
+
+-------------------------------------------------------------
+-- Configuration (mode-setting)
+-------------------------------------------------------------
+
+-- | Temporarily create a Mode blob
+withModeBlob :: forall es m a.
+   ( MonadInIO m
+   ) => GraphicCard -> Mode -> (BlobID Mode -> Excepts es m a) -> Excepts (ErrorCode ': es) m a
+withModeBlob card mode action = withHandleModeBlob (graphicCardHandle card) mode action
 
 -------------------------------------------------------------
 -- Generic rendering engine
