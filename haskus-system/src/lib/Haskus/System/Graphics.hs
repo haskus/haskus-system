@@ -23,6 +23,7 @@ module Haskus.System.Graphics
    , getEntities
    , getEntitiesMap
    , getEntitiesIDs
+   , getObjectProperties
    , forEachConnectedDisplay
    , forEachConnectedDisplay_
    -- * Generic buffers and frames
@@ -71,6 +72,7 @@ import Haskus.System.Linux.FileSystem.ReadWrite
 
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
+import Haskus.System.Linux.Error
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.GenericBuffer
@@ -80,6 +82,7 @@ import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
+import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Event as Graphics
 
 import System.FilePath (takeBaseName)
@@ -91,11 +94,17 @@ import Foreign.Ptr
 
 -- | Graphic card
 data GraphicCard = GraphicCard
-   { graphicCardPath    :: DevicePath           -- ^ Path to the graphic card in SysFS
-   , graphicCardDev     :: Device               -- ^ Device major/minor to create the device file descriptor
-   , graphicCardID      :: Int                  -- ^ Card identifier
-   , graphicCardHandle  :: Handle               -- ^ Device handle
-   , graphicCardChan    :: TChan Graphics.Event -- ^ Event stream
+   { graphicCardPath                       :: !DevicePath           -- ^ Path to the graphic card in SysFS
+   , graphicCardDev                        :: !Device               -- ^ Device major/minor to create the device file descriptor
+   , graphicCardID                         :: !Int                  -- ^ Card identifier
+   , graphicCardHandle                     :: !Handle               -- ^ Device handle
+   , graphicCardChan                       :: !(TChan Graphics.Event) -- ^ Event stream
+   , graphicCardCapGenericBuffers          :: !Bool                 -- ^ Supports generic buffers
+   , graphicCardCapPrime                   :: !Bool                 -- ^ Supports PRIME
+   , graphicCardCapAsyncFrameSwitch        :: !Bool                 -- ^ Supports asynchronous frame switch (i.e. not during VBLANK)
+   , graphicCardCursorHint                 :: !(Word32,Word32)      -- ^ Valid cursor plane size (sometimes the largest)
+   , graphicCardCapFrameSwitchSequence     :: !Bool                 -- ^ Supports frame switch at specific sequence number
+   , graphicCardCapControllerInVBlankEvent :: !Bool                 -- ^ Supports controller field in VBlank event (always true since Linux 5.1)
    }
 
 -- - Invalid card error
@@ -128,9 +137,19 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          lift <| setClientCapabilityWarn hdl ClientCapAtomic              True
          lift <| setClientCapabilityWarn hdl ClientCapAspectRatio         True
          lift <| setClientCapabilityWarn hdl ClientCapWritebackConnectors True
+
          -- Create the DRM event reader thread
          GraphicCard devpath dev cardID hdl
             <$> lift (newEventWaiterThread hdl)
+            -- Retrieve capabilities
+            <*> getBoolCapability hdl CapGenericBuffer
+            <*> getBoolCapability hdl CapPrime
+            <*> getBoolCapability hdl CapAsyncFrameSwitch
+            <*> ((,) <$> (fromIntegral <|| getCapability hdl CapCursorWidth)
+                     <*> (fromIntegral <|| getCapability hdl CapCursorHeight)
+                )
+            <*> getBoolCapability hdl CapSwitchFrameTarget
+            <*> getBoolCapability hdl CapControllerInVBlankEvent
 
    forMaybeM devs' <| \(devpath,dev) -> do
       readDevInfo devpath dev
@@ -182,6 +201,15 @@ forEachConnectedDisplay_ ::
    , MonadInIO m
    ) => GraphicCard -> (Connector -> Display -> m a) -> m ()
 forEachConnectedDisplay_ card action = void (forEachConnectedDisplay card action)
+
+-- | Get object properties
+getObjectProperties ::
+   ( MonadInIO m
+   , Object o
+   ) => GraphicCard -> o -> Excepts '[InvalidCard,ObjectNotFound] m [Property]
+getObjectProperties card obj =
+   getHandleObjectProperties (graphicCardHandle card) obj
+   |> catchE (\InvalidParam -> failureE InvalidCardHandle)
 
 -------------------------------------------------------------
 -- Frames
@@ -330,16 +358,12 @@ initRenderingEngine card ctrl mode conn nfb flags draw
    | nfb <= 2  = error "initRenderingEngine: require at least 2 buffers"
    | otherwise = do
 
-      -- Check support for generic buffers
-      let fd    = graphicCardHandle card
       sysLogSequence "Load graphic card" $ do
-         let checkCap c t = do
-               cap <- fd `supports` c
-                        |> assertLogShowErrorE t
-               sysAssert (t <> " supported") cap
-
-         checkCap CapGenericBuffer              "Generic buffers"
-         checkCap CapControllerInVBlankEvent "Controllers in VBlank events"
+         -- Check required capabilities
+         when (not (graphicCardCapGenericBuffers card)) do
+            sysError "Generic buffers not supported by the graphic card. Aborting."
+         when (not (graphicCardCapControllerInVBlankEvent card)) do
+            sysError "Missing ControllerID field in VBlank events. Use Linux kernel > 5.1. Aborting."
 
       -- TODO: support other formats
       let fmt = makePixelFormat XRGB8888 LittleEndian

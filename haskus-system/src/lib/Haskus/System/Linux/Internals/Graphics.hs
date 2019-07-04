@@ -254,7 +254,7 @@ data ContentType
    deriving (Show,Eq,Enum)
 
 
--- | DPMS flags
+-- | Power state (DPMS)
 data PowerState 
    = PowerOn
    | PowerStandBy
@@ -402,6 +402,7 @@ data StructSetPlane = StructSetPlane
 
    , spSrcX    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
    , spSrcY    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
+   -- yes "height" comes before "width" here...
    , spSrcH    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
    , spSrcW    :: {-# UNPACK #-} !(FixedPoint Word32 16 16)
    } deriving (Generic,Storable)
@@ -1045,17 +1046,17 @@ data Clip = Clip
 
 -- | Capability
 data Capability
-   = CapGenericBuffer         -- ^ Support generic buffers (i.e. not vendor specific)
+   = CapGenericBuffer           -- ^ Support generic buffers (i.e. not vendor specific)
    | CapVBlankHighController
    | CapGenericPreferredDepth
    | CapGenericPreferShadow
-   | CapPrime
+   | CapPrime                   -- ^ Support PRIME
    | CapTimestampMonotonic
-   | CapAsyncFrameSwitch      -- ^ Support asynchronous frame switching
-   | CapCursorWidth           -- ^ Return a valid width plane size to use (may be the maximum, depending on the driver)
-   | CapCursorHeight          -- ^ Ditto cursor plane height
+   | CapAsyncFrameSwitch        -- ^ Support asynchronous frame switching
+   | CapCursorWidth             -- ^ Return a valid width plane size to use (may be the maximum, depending on the driver)
+   | CapCursorHeight            -- ^ Ditto cursor plane height
    | CapAddFrameModifiers
-   | CapSwitchFrameTarget
+   | CapSwitchFrameTarget       -- ^ Frame switch at specific sequence number
    | CapControllerInVBlankEvent -- ^ Indicate that the vblank event contains a crtc_id field (always true since Linux 5.1)
    | CapSyncObject
    | CapSyncObjectTimeline
@@ -1064,7 +1065,7 @@ data Capability
 -- Add 1 to the enum number to get the valid value
 instance CEnum Capability where
    fromCEnum = \case
-      CapGenericBuffer              -> 0x1
+      CapGenericBuffer           -> 0x1
       CapVBlankHighController    -> 0x2
       CapGenericPreferredDepth   -> 0x3
       CapGenericPreferShadow     -> 0x4

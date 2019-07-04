@@ -18,7 +18,6 @@ import qualified Haskus.Format.Binary.Buffer as B
 import Haskus.Format.Binary.Endianness
 import qualified Haskus.Format.Binary.BitSet as BitSet
 
-import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
@@ -98,18 +97,14 @@ main = runSys' <| do
    cards <- loadGraphicCards dm
 
    forM_ cards \card -> do
-      let fd    = graphicCardHandle card
-
       -- onEvent (graphicCardChan card) <| \ev -> do
       --    writeStrLn term (show ev)
          
 
       sysLogSequence "Load graphic card" <| do
-         cap  <- fd `supports` CapGenericBuffer
-                  |> assertLogShowErrorE "Get generic buffer capability"
-         sysAssert "Generic buffer capability supported" cap
+         sysAssert "Generic buffer capability supported" (graphicCardCapGenericBuffers card)
          
-         state <- getHandleEntitiesMap fd
+         state <- getEntitiesMap card
                      |> assertE "Read graphics state"
          encoders <- assertE "Read encoders"
                      <| getHandleEncoders (graphicCardHandle card)

@@ -15,8 +15,6 @@ import qualified Haskus.Format.Binary.Buffer as B
 import Haskus.System.Linux.Info
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.Property
-import Haskus.System.Linux.Graphics.AtomicConfig
 import qualified Haskus.System.Linux.Internals.Input as Key
 import Haskus.System.Graphics.Drawing
 import Haskus.System.Graphics.Diagrams (mkWidth, rasterizeDiagram)
@@ -25,7 +23,6 @@ import Haskus.Utils.STM
 import Haskus.Utils.EADT
 import Haskus.Utils.Maybe
 import Haskus.Format.String
-import Haskus.Utils.Text (textFormat,(%),shown)
 import qualified Haskus.Utils.Map as Map
 
 import Haskus.UI.RayTracer
@@ -48,7 +45,6 @@ data Page
    = PageNone
    | PageInfo
    | PageGraphics
-   | PageDPMS
    | PageTerminal
    | PageArt
    | PageCanvas
@@ -215,15 +211,6 @@ main = runSys' <| do
 
          
    -------------------------------------------------
-   -- DPMS management
-   -------------------------------------------------
-   dpmsState <- atomically $ newEmptyTMVar
-
-   let dpmsSet = putTMVar dpmsState
-   -------------------------------------------------
-
-
-   -------------------------------------------------
    -- Char map management
    -------------------------------------------------
    let
@@ -278,22 +265,13 @@ main = runSys' <| do
                   _        -> changePage PageNone
                F1  -> changePage PageInfo
                F2  -> changePage PageGraphics
-               F3  -> changePage PageDPMS
-               F4  -> changePage PageTerminal
-               F5  -> changePage PageArt
-               F6  -> changePage PageCanvas
+               F3  -> changePage PageTerminal
+               F4  -> changePage PageArt
+               F5  -> changePage PageCanvas
                MouseLeft   -> termWriteSTM "Left click!"
                MouseRight  -> termWriteSTM "Right click!"
                MouseMiddle -> termWriteSTM "Middle click!"
                x   -> case p of
-                  PageDPMS -> do
-                     void (tryTakeTMVar dpmsState)
-                     case x of
-                        Key0 -> dpmsSet 0
-                        Key1 -> dpmsSet 1
-                        Key2 -> dpmsSet 2
-                        Key3 -> dpmsSet 3
-                        _    -> return ()
                   PageTerminal -> do
                      case x of
                         BackSpace -> termBackErase
@@ -373,20 +351,6 @@ main = runSys' <| do
          makeInfoPage i = rasterizeDiagram (mkWidth (realToFrac width)) (infoPageDiag i)
          infoPage = makeInfoPage <$> info
 
-      dpmsProp <- graphicsConfig (graphicCardHandle card) <| do
-         catchEvalE (const (return []))
-            <|  filter (\p -> propertyName (propertyMeta p) == "DPMS")
-            <|| getObjectProperties conn
-
-      let 
-         dpmsPage = rasterizeDiagram (mkWidth 200)
-            <| case dpmsProp of
-               []    -> customPage ["DPMS not found"]
-               (p:_) -> case propertyType (propertyMeta p) of
-                  PropEnum xs -> customPage
-                     <| fmap (\(n,lbl) -> show n ++ " - " ++ lbl) xs
-                  _           -> customPage ["Invalid DPMS property type"]
-
       canvasPage <- do
          let
             sceneGraph :: SceneGraph Dist Color NodeName
@@ -425,15 +389,6 @@ main = runSys' <| do
             ||> promoteImage -- convert RGB8 into RGBA8
             |> liftIO
 
-      sysFork "DPMS state" <| forever do
-         s <- atomically <| takeTMVar dpmsState
-         graphicsConfig (graphicCardHandle card) do
-            forM_ dpmsProp \prop ->
-               setObjectPropertyM conn (RawProperty (propertyID (propertyMeta prop)) s)
-            commitConfig NonAtomic Commit Synchronous AllowFullModeset
-               |> catchEvalE \err -> lift <| sysWarning (textFormat ("Cannot set DPMS: " % shown) err)
-
-
       initRenderingEngine card ctrl mode conn 3 [WaitDrawn,WaitPending] <| \_ gfb -> do
          let
             centerPos x = ( (floor width  - imageWidth x ) `div` 2
@@ -470,9 +425,6 @@ main = runSys' <| do
                PageArt -> do
                   let d = makeArt 1520476193207 60 60 12
                   liftIO <| blendImage gfb d BlendAlpha (centerPos d) (fullImg d)
-
-               PageDPMS -> do
-                  liftIO <| blendImage gfb dpmsPage BlendAlpha (10,50) (fullImg dpmsPage)
 
                PageTerminal -> do
                   termLines <- atomically termGetContents

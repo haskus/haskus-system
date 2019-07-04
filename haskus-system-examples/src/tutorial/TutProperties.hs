@@ -4,7 +4,6 @@
 import Haskus.System
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Object
-import Haskus.System.Linux.Graphics.AtomicConfig
 
 main :: IO ()
 main = runSys' do
@@ -16,8 +15,7 @@ main = runSys' do
       let
          showProps o = do
             -- get properties of object o
-            mprops <- graphicsConfig (graphicCardHandle card) do
-                        runE (getObjectProperties o)
+            mprops <- runE (getObjectProperties card o)
             -- show them
             forM_ mprops \props -> do
                writeStrLn term ("* " ++ showObjectQualifiedID o)

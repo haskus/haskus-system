@@ -11,7 +11,6 @@ import Haskus.Format.Binary.Endianness
 import qualified Haskus.Format.Binary.BitSet as BitSet
 
 import Haskus.System.Linux.Time
-import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
@@ -39,12 +38,8 @@ main = runSys' do
    cards <- loadGraphicCards (systemDeviceManager sys)
 
    forM_ cards \card -> do
-      let fd = graphicCardHandle card
-
       void <| sysLogSequence "Load graphic card" do
-         cap  <- (fd `supports` CapGenericBuffer)
-                     |> assertE "Test card capabilities"
-         sysAssert "Card supports host buffers" cap
+         sysAssert "Card supports host buffers" (graphicCardCapGenericBuffers card)
          
          state <- getEntitiesMap card
                      |> assertE "Get entities"

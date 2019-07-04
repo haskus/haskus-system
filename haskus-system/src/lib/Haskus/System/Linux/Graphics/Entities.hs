@@ -24,8 +24,8 @@ module Haskus.System.Linux.Graphics.Entities
    , FrameView (..)
    -- * Plane
    , Plane (..)
-   , DestRect (..)
-   , SrcRect (..)
+   , PlaneTarget (..)
+   , PlaneSource (..)
    -- * Frame
    , Frame (..)
    , FrameBuffer (..)
@@ -166,21 +166,28 @@ data Plane = Plane
 
 type FP16_16 = FixedPoint Word32 16 16
 
--- | Destination rectangle
-data DestRect = DestRect
-   { destX      :: Int32
-   , destY      :: Int32
-   , destWidth  :: Word32
-   , destHeight :: Word32
+-- | Plane target surface
+--
+-- (X,Y) coordinates can be negative for partial rendering (out-of-screen)
+data PlaneTarget = PlaneTarget
+   { planeTargetControllerID :: ControllerID
+   , planeTargetX            :: Int32
+   , planeTargetY            :: Int32
+   , planeTargetWidth        :: Word32
+   , planeTargetHeight       :: Word32
    }
    deriving (Show,Eq)
 
--- | Source rectangle
-data SrcRect = SrcRect
-   { srcX      :: FP16_16
-   , srcY      :: FP16_16
-   , srcWidth  :: FP16_16
-   , srcHeight :: FP16_16
+-- | Plane source pixel source
+--
+-- The fractional part in the fields is for devices supporting sub-pixel plane
+-- coordinates.
+data PlaneSource = PlaneSource
+   { planeSourceFrameID :: FrameID
+   , planeSourceX       :: FP16_16
+   , planeSourceY       :: FP16_16
+   , planeSourceWidth   :: FP16_16
+   , planeSourceHeight  :: FP16_16
    }
    deriving (Show,Eq)
 
@@ -206,7 +213,7 @@ data FrameBuffer b = FrameBuffer
    , fbBufferHandle :: Word32 -- ^ Raw buffer handle
    , fbPitch        :: Word32 -- ^ Pitch of the frame in the buffer
    , fbOffset       :: Word32 -- ^ Offset of the frame in the buffer
-   , fbModifiers    :: Word64 -- ^ Modifiers for the frame buffer
+   , fbModifiers    :: Word64 -- ^ Modifiers for the frame buffer (e.g. compression, tiling)
    } deriving (Show)
 
 class ShowBuffer b where

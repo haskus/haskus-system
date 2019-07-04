@@ -1,8 +1,13 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BangPatterns #-}
+
 -- | Mode-setting configuration
 module Haskus.System.Graphics.Config
-   ( Config (..)
-   , ConfigError
-   , setConfig
+   ( Command (..)
+   , configureGraphics
+   , CommitOrTest (..)
+   , AsyncMode (..)
+   , AllowModeSet (..)
    )
 where
 
@@ -10,99 +15,93 @@ import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Object
-import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
+import Haskus.Utils.List
+import Haskus.Format.Binary.Word
+import qualified Haskus.Format.Binary.BitSet as BitSet
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 
--- | This datatype represents a declarative mode-setting configuration.
--- It indicates which entities should be connected to which other entities,
--- which properties to set, etc.
--- Then we can use this to perform mode-setting (either with the legacy non-atomic
--- interface or with the atomic interface). We can also use it to check that the
--- configuration is valid.
+-- | Configuration command
 --
--- This config is only used to perform mode-setting. It doesn't allocate
--- any resource (Frame, FrameBuffer, etc.). This is left for a
--- calling function which would allocate these resources beforehand. The calling
--- function can choose to allocate accelerated buffers or not, etc.
-data Config = Config
-   { configController :: [( ControllerID
-                          , Maybe Mode
-                          , [ConnectorID]
-                          )] -- ^ Controller config
-   , configPlane      :: [( PlaneID
-                          , Maybe
-                            ( ControllerID
-                            , FrameID
-                            , SrcRect
-                            , DestRect
-                            )
-                          )] -- ^ Plane config
-   , configProperties :: [( ObjectID
-                          , ObjectType
-                          , RawProperty
-                          )] -- ^ Set properties
-   }
+-- Configuration commands are only used to perform mode-setting (connecting
+-- entities, setting properties). They don't allocate any resource (Frame,
+-- FrameBuffer, etc.). This is left for a calling function which would allocate
+-- these resources beforehand.
+data Command
+   = CmdConnectorCustom                ConnectorID  RawProperty
+   | CmdConnectorController            ConnectorID  ControllerID
+   | CmdControllerCustom               ControllerID RawProperty
+   | CmdControllerActive               ControllerID Bool
+   | CmdControllerMode                 ControllerID Mode
+   | CmdControllerVariableRefreshRate  ControllerID Bool
+   | CmdPlaneCustom                    PlaneID      RawProperty
+   | CmdPlaneSource                    PlaneID      FrameID Word32 Word32 Word32 Word32
+   | CmdPlanePosition                  PlaneID      Int32 Int32
+   | CmdPlaneTarget                    PlaneID      ControllerID Int32 Int32 Word32 Word32
+   | CmdPlaneInFenceHandle             PlaneID      (Maybe Word32)
+   | CmdPlaneOutFencePtr               PlaneID      Word64
+   deriving (Show)
 
--------------------------------------------------------------------------------
--- Generic config
--------------------------------------------------------------------------------
+type PropMap = Map (ObjectID,Word32) Word64
 
-type ConfigError = ()
+-- | Insert a command in the map
+insertCommand :: PropMap -> Command -> PropMap
+insertCommand m = \case
+   CmdConnectorCustom cid raw ->
+      Map.insert (getObjectID cid,rawPropertyMetaID raw) (rawPropertyValue raw) m
+   CmdControllerCustom cid raw ->
+      Map.insert (getObjectID cid,rawPropertyMetaID raw) (rawPropertyValue raw) m
+   CmdPlaneCustom pid raw ->
+      Map.insert (getObjectID pid,rawPropertyMetaID raw) (rawPropertyValue raw) m
+   
+-- | Test the configuration or commit it
+data CommitOrTest
+   = TestOnly  -- ^ Test only
+   | Commit    -- ^ Test and commit
 
--- | Apply the given config
-setConfig :: GraphicCard -> Config -> IO ConfigError
-setConfig card config = do
-   -- TODO: support atomic config
-   let isAtomicSupported _ = False
+-- | Asynchronous commit?
+data AsyncMode
+   = Synchronous   -- ^ Synchronous commit
+   | Asynchronous  -- ^ Asynchronous commit (may not be supported)
 
-   if isAtomicSupported card
-      then setConfigAtomic card config
-      else setConfigLegacy card config
+-- | Do we allow full mode-setting
+-- 
+-- This flag is useful for devices such as tablets whose screen is often
+-- shutdown: we can use a degraded mode (scaled, etc.) for a while to save power
+-- and only perform the full modeset when the screen is reactivated.
+data AllowModeSet
+   = AllowFullModeset      -- ^ Allow full mode-setting
+   | DisallowFullModeset   -- ^ Don't allow full mode-setting
 
--------------------------------------------------------------------------------
--- Legacy config
--------------------------------------------------------------------------------
+-- | Perform mode-setting
+--
+-- We use the "atomic" API which should become the standard
+configureGraphics :: MonadInIO m => GraphicCard -> CommitOrTest -> AsyncMode -> AllowModeSet -> [Command] -> Excepts AtomicErrors m ()
+configureGraphics card testMode asyncMode modesetMode cmds = do
+   let
+      !flags = BitSet.fromList <| concat <|
+         [ case testMode of
+            TestOnly            -> [AtomicFlagTestOnly]
+            Commit              -> []
+         , case asyncMode of
+            Synchronous         -> []
+            Asynchronous        -> [AtomicFlagNonBlock]
+         , case modesetMode of
+            AllowFullModeset    -> [AtomicFlagAllowModeset]
+            DisallowFullModeset -> []
+         ]
 
--- | Apply the given config with the legacy interface
-setConfigLegacy :: GraphicCard -> Config -> IO ConfigError
-setConfigLegacy card config = do
-   let hdl = graphicCardHandle card
+      -- properties:  (object id, property id) -> property value
+      -- (used to get unique property assignements)
+      propMap = foldl' insertCommand Map.empty cmds
 
-   -- FIXME: we should perform error checking and report errors to the caller
+      -- properties: object id -> (property id, property value)
+      props = propMap
+               |> Map.toList
+               ||> (\((objId,propId),val) -> (objId,[RawProperty propId val]))
+               |> Map.fromListWith (++)
 
-   ----------------------------------------------------------------------
-   -- disconnect entities being modified....
-   ----------------------------------------------------------------------
-
-   -- disable planes
-   forM_ (configPlane config) <| \(pid,_) ->
-      runE_ <| setPlane hdl pid Nothing
-
-   ----------------------------------------------------------------------
-   -- ...and then reconnect them in order and set properties
-   ----------------------------------------------------------------------
-
-   -- configure controllers
-   forM_ (configController config) <| \(cid,mmode,conns) ->
-      case (mmode,conns) of
-         (Nothing,[]) -> return () -- nothing to do
-         _            -> runE_ <| setController' hdl cid Nothing conns mmode
-
-   -- attach planes
-   forM_ (configPlane config) <| \(pid,mopts) ->
-      case mopts of
-         Nothing -> return () -- nothing to do
-         _       -> runE_ <| setPlane hdl pid mopts
-
-   -- set properties
-   forM_ (configProperties config) <| \(oid,otype,prop) ->
-      runE_ <| setObjectIDRawProperty hdl oid otype prop
-
--------------------------------------------------------------------------------
--- Atomic config
--------------------------------------------------------------------------------
-
--- | Apply the given config with the atomic interface
-setConfigAtomic :: GraphicCard -> Config -> IO ConfigError
-setConfigAtomic _card _config = undefined
+   setAtomic (graphicCardHandle card) flags props

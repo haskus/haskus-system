@@ -625,14 +625,12 @@ data InvalidDestRect = InvalidDestRect deriving (Show,Eq)
 -- | Invalid source rectangle
 data InvalidSrcRect  = InvalidSrcRect deriving (Show,Eq)
 
+
 -- | Set plane
 --
 -- If the source/destination rectangles are not the same, scaling support is
 -- required. Devices not supporting scaling will fail with InvalidParam.
---
--- The fractional part in SrcRect is for devices supporting sub-pixel plane
--- coordinates.
-setPlane :: MonadInIO m => Handle -> PlaneID -> Maybe (ControllerID, FrameID, SrcRect, DestRect) -> Excepts '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] m ()
+setPlane :: MonadInIO m => Handle -> PlaneID -> Maybe (PlaneSource,PlaneTarget) -> Excepts '[InvalidParam,EntryNotFound,InvalidDestRect,InvalidSrcRect] m ()
 setPlane hdl pid opts = do
 
    let 
@@ -646,10 +644,10 @@ setPlane hdl pid opts = do
                makeS (EntityID 0) (EntityID 0)
                   0 0 0 0 e16 e16 e16 e16
 
-            Just (cid,fbid,SrcRect{..},DestRect{..}) ->
-               makeS cid fbid
-                  destX destY destWidth destHeight
-                  srcX srcY srcHeight srcWidth
+            Just (PlaneSource{..},PlaneTarget{..}) ->
+               makeS planeTargetControllerID planeSourceFrameID
+                  planeTargetX planeTargetY planeTargetWidth planeTargetHeight
+                  planeSourceX planeSourceY planeSourceHeight planeSourceWidth
 
    void (ioctlSetPlane s hdl)
       |> catchLiftLeft \case

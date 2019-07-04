@@ -17,7 +17,7 @@ topBarDiag :: Float -> Float -> VDiagram
 topBarDiag screenWidth _screenHeight = diag
    where
       diag    = mconcat [pbts, bgrect]
-      lbls    = ["Info","Display", "DPMS", "Terminal","Art", "Canvas"]
+      lbls    = ["Info","Display", "Terminal","Art", "Canvas"]
       bts     = [ lbl n t | (t,n) <- lbls `zip` [(1::Int)..]]
       pbts    = position (zip (map mkPoint [0..]) bts)
                    |> translateY 5.0

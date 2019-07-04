@@ -19,6 +19,8 @@ module Haskus.System.Linux.Graphics.Property
    , ObjectID
    , PropertyMetaID
    , showProperty
+   , showPropertyEx
+   , showPropertyMeta
    -- * Atomic properties
    , setAtomic
    , AtomicErrors
@@ -68,17 +70,29 @@ data Property = Property
    , propertyValue      :: Word64       -- ^ Value of the property
    } deriving (Show,Eq)
 
+-- | Show property meta-data
+showPropertyMeta :: PropertyMeta -> String
+showPropertyMeta meta = showPropertyEx meta Nothing
+
 -- | Display a property in a user readable way
 showProperty :: Property -> String
-showProperty (Property meta value) = mconcat
+showProperty (Property meta value) = showPropertyEx meta (Just value)
+
+-- | Display a property-meta in a user readable way (with or withotu value)
+showPropertyEx :: PropertyMeta -> Maybe Word64 -> String
+showPropertyEx meta mvalue = mconcat
    [ if propertyImmutable meta then "val " else "var "
    , propertyName meta
-   , " = "
-   , case propertyType meta of
-      PropRange [0,1]   -> if value == 0 then "False" else "True"
-      PropSignedRange _ -> show (fromIntegral value :: Int64)
-      PropEnum xs       -> Map.fromList xs Map.! value
-      _                 -> show value
+   , case mvalue of
+      Nothing  -> ""
+      Just value -> mconcat
+         [ " = "
+         , case propertyType meta of
+            PropRange [0,1]   -> if value == 0 then "False" else "True"
+            PropSignedRange _ -> show (fromIntegral value :: Int64)
+            PropEnum xs       -> Map.fromList xs Map.! value
+            _                 -> show value
+         ]
    , " :: "
    , case propertyType meta of
       PropObject         -> "Object"
@@ -207,7 +221,6 @@ getPropertyMeta fd pid = do
          PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
             traverse getBlob bids
                ||> (PropBlob . (ids `zip`))
-
 
 -- | Set object properties atomically
 setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [RawProperty] -> Excepts AtomicErrors m ()

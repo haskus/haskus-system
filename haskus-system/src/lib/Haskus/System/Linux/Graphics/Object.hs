@@ -17,6 +17,7 @@ module Haskus.System.Linux.Graphics.Object
    , showObjectType
    , getObjectPropertyCount
    , getObjectRawProperties
+   , getHandleObjectProperties
    , setObjectRawProperty
    , setObjectIDRawProperty
    )
@@ -169,6 +170,21 @@ getObjectRawProperties hdl o =
          if n' > n
             then failureE (InvalidCount n)
             else return ()
+
+-- | Get object properties
+getHandleObjectProperties :: forall m o.
+   ( MonadInIO m
+   , Object o
+   ) => Handle -> o -> Excepts '[InvalidParam,ObjectNotFound] m [Property]
+getHandleObjectProperties hdl obj = do
+   props <- getObjectRawProperties hdl obj
+   forMaybeM props \raw -> do
+      getPropertyMeta hdl (rawPropertyMetaID raw)
+      ||> Just
+      -- we return Nothing in case of error
+      |> catchEvalE (const (pure Nothing))
+      -- wrap it in a Property
+      |||> \meta -> Property meta (rawPropertyValue raw)
 
 -- | Set a raw property of an object
 setObjectRawProperty ::
