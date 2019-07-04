@@ -75,7 +75,7 @@ data Connector = Connector
    , connectorState              :: Connection         -- ^ Connection state
    , connectorPossibleEncoderIDs :: [EncoderID]        -- ^ IDs of the encoders that can work with this connector
    , connectorEncoderID          :: Maybe EncoderID    -- ^ Currently used encoder
-   , connectorControllerID       :: Maybe ControllerID -- ^ Current driving contrller
+   , connectorControllerID       :: Maybe ControllerID -- ^ Current driving controller
    , connectorHandle             :: Handle             -- ^ Graphic card
    } deriving (Show)
 

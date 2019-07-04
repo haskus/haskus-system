@@ -58,6 +58,7 @@ module Haskus.System.Linux.Graphics.State
    , createBlob
    , destroyBlob
    , withBlob
+   , withModeBlob
    )
 where
 
@@ -700,3 +701,13 @@ withBlob hdl ptr sz action = do
    r <- prependE @'[ErrorCode] (action bid)
    appendE @es (destroyBlob hdl bid)
    pure r
+
+-- | Temporarily create a Mode blob
+withModeBlob :: forall es m a.
+   ( MonadInIO m
+   ) => Handle -> Mode -> (BlobID Mode -> Excepts es m a) -> Excepts (ErrorCode ': es) m a
+withModeBlob hdl mode action = do
+   let struct = toStructMode mode
+   with struct \modePtr ->
+      withBlob hdl modePtr (sizeOfT' @StructMode) \bid ->
+         action (EntityID (unEntityID bid))
