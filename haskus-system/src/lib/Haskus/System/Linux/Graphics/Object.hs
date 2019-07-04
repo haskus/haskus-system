@@ -172,6 +172,8 @@ getObjectRawProperties hdl o =
             else return ()
 
 -- | Get object properties
+--
+-- Use `getObjectProperties` instead as it uses the meta-data cache.
 getHandleObjectProperties :: forall m o.
    ( MonadInIO m
    , Object o
