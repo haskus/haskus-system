@@ -425,17 +425,13 @@ toConnector hdl response fullResponse = do
       peekArray' :: forall n c a. (MonadIO n, Storable a, Integral c) => c -> Ptr a -> n [a]
       peekArray' n ptr = peekArray (fromIntegral n) ptr
    
-   -- rad connection state
+   -- read connection state
    state <- case connConnection_ fullResponse of
       1 -> do
             -- properties
             ptrs <- peekArray' (connPropsCount response) (cv (connPropsPtr      fullResponse))
             vals <- peekArray' (connPropsCount response) (cv (connPropValuesPtr fullResponse))
             let rawProps = zipWith RawProperty ptrs vals
-            props <- forM rawProps $ \raw -> do
-               getPropertyMeta hdl (rawPropertyMetaID raw)
-                  ||> \meta -> Property meta (rawPropertyValue raw)
-   
             modes <- fmap fromStructMode <$> peekArray' (connModesCount response) (cv (connModesPtr fullResponse))
    
             return (Connected (Display
@@ -443,7 +439,7 @@ toConnector hdl response fullResponse = do
                (connWidth_ fullResponse)
                (connHeight_ fullResponse)
                (fromEnumField (connSubPixel_ fullResponse))
-               props))
+               rawProps))
    
       2 -> return Disconnected
       _ -> return ConnectionUnknown

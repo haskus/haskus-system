@@ -86,11 +86,11 @@ data Connection
 
 -- | Information about the connected video display
 data Display = Display
-   { displayModes          :: [Mode]     -- ^ Supported modes
-   , displayPhysicalWidth  :: Word32     -- ^ Width (in millimeters)
-   , displayPhysicalHeight :: Word32     -- ^ Height (in millimeters)
-   , displaySubPixel       :: SubPixel   -- ^ Sub-pixel structure
-   , displayProperties     :: [Property] -- ^ Properties of the video display
+   { displayModes          :: [Mode]        -- ^ Supported modes
+   , displayPhysicalWidth  :: Word32        -- ^ Width (in millimeters)
+   , displayPhysicalHeight :: Word32        -- ^ Height (in millimeters)
+   , displaySubPixel       :: SubPixel      -- ^ Sub-pixel structure
+   , displayProperties     :: [RawProperty] -- ^ Properties of the video display
    } deriving (Show)
 
 -------------------------------------------------------------------------------

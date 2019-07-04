@@ -5,7 +5,6 @@
 import Haskus.System
 
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.Mode
 
@@ -53,6 +52,6 @@ main = runSys' do
 
                writeStrLn term "Properties"
                forM_ displayProperties \prop ->
-                  writeStrLn term ("    " ++ showProperty prop)
+                  writeStrLn term ("    " ++ showRawProperty card prop)
 
    powerOff

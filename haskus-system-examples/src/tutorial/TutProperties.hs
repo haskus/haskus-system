@@ -25,6 +25,7 @@ main = runSys' do
       entities <- getEntities card
                      |> assertLogShowErrorE "Get entities"
 
+
       mapM_ showProps (entitiesConnectors entities)
       mapM_ showProps (entitiesControllers entities)
       mapM_ showProps (entitiesPlanes entities)

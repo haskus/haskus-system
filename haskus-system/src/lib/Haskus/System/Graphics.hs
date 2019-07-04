@@ -24,6 +24,8 @@ module Haskus.System.Graphics
    , getEntitiesMap
    , getEntitiesIDs
    , getObjectProperties
+   , fromRawProperty
+   , showRawProperty
    , forEachConnectedDisplay
    , forEachConnectedDisplay_
    -- * Generic buffers and frames
@@ -87,6 +89,8 @@ import Haskus.System.Linux.Graphics.Event as Graphics
 
 import System.FilePath (takeBaseName)
 import Foreign.Ptr
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 
 -------------------------------------------------------------
 -- Card
@@ -105,6 +109,7 @@ data GraphicCard = GraphicCard
    , graphicCardCursorHint                 :: !(Word32,Word32)      -- ^ Valid cursor plane size (sometimes the largest)
    , graphicCardCapFrameSwitchSequence     :: !Bool                 -- ^ Supports frame switch at specific sequence number
    , graphicCardCapControllerInVBlankEvent :: !Bool                 -- ^ Supports controller field in VBlank event (always true since Linux 5.1)
+   , graphicCardMetaProperties             :: Map Word32 PropertyMeta -- ^ Cache for property meta-data
    }
 
 -- - Invalid card error
@@ -150,6 +155,7 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
                 )
             <*> getBoolCapability hdl CapSwitchFrameTarget
             <*> getBoolCapability hdl CapControllerInVBlankEvent
+            <*> getAllPropertyMeta hdl
 
    forMaybeM devs' <| \(devpath,dev) -> do
       readDevInfo devpath dev
@@ -208,8 +214,19 @@ getObjectProperties ::
    , Object o
    ) => GraphicCard -> o -> Excepts '[InvalidCard,ObjectNotFound] m [Property]
 getObjectProperties card obj =
-   getHandleObjectProperties (graphicCardHandle card) obj
-   |> catchE (\InvalidParam -> failureE InvalidCardHandle)
+   getObjectRawProperties (graphicCardHandle card) obj
+    |> catchE (\InvalidParam -> failureE InvalidCardHandle)
+    |||> fromRawProperty card
+
+-- | Get property meta-data from the cache
+fromRawProperty :: GraphicCard -> RawProperty -> Property
+fromRawProperty card raw =
+   Property (graphicCardMetaProperties card Map.! rawPropertyMetaID raw)
+            (rawPropertyValue raw)
+
+-- | Show a raw property
+showRawProperty :: GraphicCard -> RawProperty -> String
+showRawProperty card raw = showProperty (fromRawProperty card raw)
 
 -------------------------------------------------------------
 -- Frames

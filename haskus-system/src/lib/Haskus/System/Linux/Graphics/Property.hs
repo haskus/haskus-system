@@ -16,6 +16,7 @@ module Haskus.System.Linux.Graphics.Property
    , Property (..)
    , InvalidProperty (..)
    , getPropertyMeta
+   , getAllPropertyMeta
    , ObjectID
    , PropertyMetaID
    , showProperty
@@ -40,7 +41,8 @@ import qualified Haskus.Utils.List as List
 
 import Foreign.Ptr
 import Foreign.Marshal.Alloc(free,mallocBytes)
-import Data.Map as Map
+import qualified Data.Map.Strict as Map
+import Data.Map.Strict (Map)
 
 -- | Property meta-information
 data PropertyMeta = PropertyMeta
@@ -78,7 +80,7 @@ showPropertyMeta meta = showPropertyEx meta Nothing
 showProperty :: Property -> String
 showProperty (Property meta value) = showPropertyEx meta (Just value)
 
--- | Display a property-meta in a user readable way (with or withotu value)
+-- | Display a property-meta in a user readable way (with or without value)
 showPropertyEx :: PropertyMeta -> Maybe Word64 -> String
 showPropertyEx meta mvalue = mconcat
    [ if propertyImmutable meta then "val " else "var "
@@ -221,6 +223,18 @@ getPropertyMeta fd pid = do
          PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
             traverse getBlob bids
                ||> (PropBlob . (ids `zip`))
+
+-- | Retrieve all the property meta-data
+getAllPropertyMeta :: forall m. MonadInIO m => Handle -> m (Map Word32 PropertyMeta)
+getAllPropertyMeta hdl = go 1 Map.empty
+   where
+      go n !m = do
+         mmeta <- getPropertyMeta hdl n
+            ||> Just
+            |> catchEvalE (const (pure Nothing))
+         case mmeta of
+            Nothing   -> pure m
+            Just meta -> go (n+1) (Map.insert n meta m)
 
 -- | Set object properties atomically
 setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [RawProperty] -> Excepts AtomicErrors m ()
