@@ -109,7 +109,8 @@ data GraphicCard = GraphicCard
    , graphicCardCursorHint                 :: !(Word32,Word32)      -- ^ Valid cursor plane size (sometimes the largest)
    , graphicCardCapFrameSwitchSequence     :: !Bool                 -- ^ Supports frame switch at specific sequence number
    , graphicCardCapControllerInVBlankEvent :: !Bool                 -- ^ Supports controller field in VBlank event (always true since Linux 5.1)
-   , graphicCardMetaProperties             :: Map Word32 PropertyMeta -- ^ Cache for property meta-data
+   , graphicCardMetaPropertiesById         :: Map Word32 PropertyMeta -- ^ Cache for property meta-data by ID
+   , graphicCardMetaPropertiesByName       :: Map String PropertyMeta -- ^ Cache for property meta-data by name
    }
 
 -- - Invalid card error
@@ -143,6 +144,14 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
          lift <| setClientCapabilityWarn hdl ClientCapAspectRatio         True
          lift <| setClientCapabilityWarn hdl ClientCapWritebackConnectors True
 
+         allMetaById <- getAllPropertyMeta hdl
+         -- hopefully the names are unique?
+         -- Otherwise we would have to query and distinguish the same names for
+         -- different object types...
+         let allMetaByName = Map.elems allMetaById
+                              ||> (\meta -> (propertyName meta,meta))
+                              |> Map.fromList
+
          -- Create the DRM event reader thread
          GraphicCard devpath dev cardID hdl
             <$> lift (newEventWaiterThread hdl)
@@ -155,7 +164,8 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
                 )
             <*> getBoolCapability hdl CapSwitchFrameTarget
             <*> getBoolCapability hdl CapControllerInVBlankEvent
-            <*> getAllPropertyMeta hdl
+            <*> pure allMetaById
+            <*> pure allMetaByName
 
    forMaybeM devs' <| \(devpath,dev) -> do
       readDevInfo devpath dev
@@ -221,7 +231,7 @@ getObjectProperties card obj =
 -- | Get property meta-data from the cache
 fromRawProperty :: GraphicCard -> RawProperty -> Property
 fromRawProperty card raw =
-   Property (graphicCardMetaProperties card Map.! rawPropertyMetaID raw)
+   Property (graphicCardMetaPropertiesById card Map.! rawPropertyMetaID raw)
             (rawPropertyValue raw)
 
 -- | Show a raw property
