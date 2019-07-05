@@ -26,12 +26,14 @@ data KernelEvent = KernelEvent
 
 -- | Kernel event type of action
 data KernelEventAction
-   = ActionAdd             -- ^ A device has been added
-   | ActionRemove          -- ^ A device has been removed
+   = ActionAdd             -- ^ Added device
+   | ActionRemove          -- ^ Removed device
    | ActionChange          -- ^ A device state has been modified
    | ActionOnline          -- ^ A device is now on-line
    | ActionOffline         -- ^ A device is now off-line
-   | ActionMove            -- ^ A device has been moved
+   | ActionMove            -- ^ Moved device
+   | ActionBind            -- ^ Device now bound to a driver
+   | ActionUnBind          -- ^ Device becomes unbound
    | ActionOther Text      -- ^ Other action
    deriving (Show)
 
@@ -68,6 +70,8 @@ parseKernelEvent bs = r
          "online" -> ActionOnline
          "offline"-> ActionOffline
          "move"   -> ActionMove
+         "bind"   -> ActionBind
+         "unbind" -> ActionUnBind
          x        -> ActionOther x
 
       devpath = fields Map.! "DEVPATH"

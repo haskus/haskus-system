@@ -358,6 +358,12 @@ eventThread ch dm = do
                ActionOffline -> do
                   sysLogInfoShow "Device goes offline" path
                   signalEvent deviceNodeOnOffline
+               ActionBind -> do
+                  sysLogInfoShow "Bound device" path
+                  signalEvent deviceNodeOnBind
+               ActionUnBind -> do
+                  sysLogInfoShow "Unbound device" path
+                  signalEvent deviceNodeOnUnBind
                ActionOther x -> do
                   let info = mconcat
                         [ "Unknown device action ("
@@ -573,15 +579,17 @@ removeRule dm rule = atomically do
 -- is an immutable data structure. It is much easier to perform tree traversal
 -- with a single global lock thereafter.
 data DeviceTree = DeviceTree
-   { deviceNodeSubsystem     :: Maybe Text          -- ^ Subsystem
-   , deviceDevice            :: Maybe Device        -- ^ Device identifier
-   , deviceNodeChildren      :: Map Text DeviceTree -- ^ Children devices
-   , deviceNodeOnRemove      :: TChan KernelEvent   -- ^ On "remove" event
-   , deviceNodeOnChange      :: TChan KernelEvent   -- ^ On "change" event
-   , deviceNodeOnMove        :: TChan KernelEvent   -- ^ On "move" event
-   , deviceNodeOnOnline      :: TChan KernelEvent   -- ^ On "online" event
-   , deviceNodeOnOffline     :: TChan KernelEvent   -- ^ On "offline" event
-   , deviceNodeOnOther       :: TChan KernelEvent   -- ^ On other events
+   { deviceNodeSubsystem :: Maybe Text          -- ^ Subsystem
+   , deviceDevice        :: Maybe Device        -- ^ Device identifier
+   , deviceNodeChildren  :: Map Text DeviceTree -- ^ Children devices
+   , deviceNodeOnRemove  :: TChan KernelEvent   -- ^ On "remove" event
+   , deviceNodeOnChange  :: TChan KernelEvent   -- ^ On "change" event
+   , deviceNodeOnMove    :: TChan KernelEvent   -- ^ On "move" event
+   , deviceNodeOnOnline  :: TChan KernelEvent   -- ^ On "online" event
+   , deviceNodeOnOffline :: TChan KernelEvent   -- ^ On "offline" event
+   , deviceNodeOnBind    :: TChan KernelEvent   -- ^ On "bind" event
+   , deviceNodeOnUnBind  :: TChan KernelEvent   -- ^ On "unbind" event
+   , deviceNodeOnOther   :: TChan KernelEvent   -- ^ On other events
    }
 
 -- | Per-subsystem events
@@ -613,6 +621,8 @@ deviceTreeCreate subsystem dev children = atomically (deviceTreeCreate' subsyste
 deviceTreeCreate' :: Maybe Text -> Maybe Device -> Map Text DeviceTree -> STM DeviceTree
 deviceTreeCreate' subsystem dev children = DeviceTree subsystem dev children
    <$> newBroadcastTChan
+   <*> newBroadcastTChan
+   <*> newBroadcastTChan
    <*> newBroadcastTChan
    <*> newBroadcastTChan
    <*> newBroadcastTChan
