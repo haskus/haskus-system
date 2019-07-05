@@ -53,7 +53,6 @@ module Haskus.System.Devices
    , listDevicesWithClass
    , listDeviceClasses
    , listDevices
-   , writeTextAttribute
    )
 where
 
@@ -67,7 +66,6 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.Devices
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem
-import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.System.Linux.FileSystem.Directory
 import Haskus.System.Linux.KernelEvent
 import Haskus.System.Sys
@@ -812,10 +810,3 @@ listDevicesWithClass dm cls = atomically $ do
        nodes = fmap getNode paths
    return (paths `zip` nodes)
 
-
--- | Write a text attribute in sysfs
-writeTextAttribute :: (MonadSys m,MonadInIO m) => DeviceManager -> FilePath -> String -> m ()
-writeTextAttribute sys path value = do
-   withOpenAt (dmSysFS sys) path (BitSet.fromList [HandleWriteOnly]) (BitSet.fromList [PermUserWrite])
-      (\hdl -> handleWriteStrLn hdl value)
-   |> assertLogShowErrorE "Write text attribute"
