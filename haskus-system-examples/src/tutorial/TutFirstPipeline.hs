@@ -6,7 +6,6 @@ import Haskus.System
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Object
-import Haskus.System.Linux.Graphics.State
 import Haskus.System.Graphics.Config
 
 main :: IO ()
@@ -19,34 +18,17 @@ main = runSys' do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards \card -> do
-      entities <- getEntities card
-                     |> assertE "Can't get entities"
-
       forEachConnectedDisplay card \conn display -> do
          let
             mode        = head (displayModes display)
             pixelFormat = makePixelFormat XRGB8888 LittleEndian
-            showProps o = do
-               -- get properties of object o
-               mprops <- runE (getObjectProperties card o)
-               -- show them
-               forM_ mprops \props -> do
-                  writeStrLn term ("* " ++ showObjectQualifiedID o)
-                  forM_ props \prop ->
-                     writeStrLn term ("    " ++ showProperty prop)
 
-            showAllProps = do
-               entities' <- getEntities card
-                              |> assertLogShowErrorE "Get entities"
-
-               mapM_ showProps (entitiesConnectors entities')
-               mapM_ showProps (entitiesControllers entities')
-               mapM_ showProps (entitiesPlanes entities')
-               mapM_ showProps (entitiesFrames entities')
-
-         showAllProps
+         dumpAllEntities card
          -- create a frame
          frame <- createGenericFullScreenFrame card mode pixelFormat 0
+
+         entities <- getEntities card
+                        |> assertE "Can't get entities"
 
          -- get a primary plane
          let planes = entitiesPlanes entities
@@ -65,7 +47,7 @@ main = runSys' do
             , "\n - ", showObjectQualifiedID (frameID frame)
             ]
 
-         showAllProps
+         dumpAllEntities card
 
          -- build the configuration
          assertLogShowErrorE "Config" <| withModeBlob card mode \modeBlob -> do
@@ -73,11 +55,11 @@ main = runSys' do
                   [ CmdConnectorController (connectorID conn) ctrlID
                   , CmdControllerMode      ctrlID modeBlob
                   , CmdControllerActive    ctrlID True
-                  , CmdPlaneSource         plnID (frameID frame) 0 0 (frameWidth frame) (frameHeight frame)
+                  , CmdPlaneSource         plnID (frameID frame) 0 0 (fromIntegral (frameWidth frame)) (fromIntegral (frameHeight frame))
                   , CmdPlaneTarget         plnID ctrlID 0 0 (frameWidth frame) (frameHeight frame)
                   ]
             configureGraphics card Commit Synchronous AllowFullModeset cmds
-         showAllProps
+         dumpAllEntities card
 
 
    waitForKey term

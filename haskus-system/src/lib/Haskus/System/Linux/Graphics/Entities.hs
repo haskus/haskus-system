@@ -40,6 +40,7 @@ module Haskus.System.Linux.Graphics.Entities
    , Property (..)
    , PropertyType (..)
    , RawProperty (..)
+   , FP16_16
    )
 where
 

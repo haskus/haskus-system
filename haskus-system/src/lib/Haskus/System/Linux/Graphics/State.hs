@@ -83,7 +83,6 @@ import Haskus.System.Linux.Error
 import Haskus.System.Linux.Handle
 import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
-import Haskus.Utils.Variant.Excepts
 import Haskus.Utils.Maybe
 import qualified Haskus.Utils.List as List
 import Haskus.Format.Binary.Word
@@ -747,6 +746,7 @@ showPropertyEx meta mvalue = mconcat
       Just value -> mconcat
          [ " = "
          , case propertyType meta of
+            _ | isFP16_16     -> show (fromFixedPointBase (fromIntegral value) :: FP16_16)
             PropRange [0,1]   -> if value == 0 then "False" else "True"
             PropSignedRange _ -> show (fromIntegral value :: Int64)
             PropEnum xs       -> Map.fromList xs Map.! value
@@ -756,6 +756,7 @@ showPropertyEx meta mvalue = mconcat
    , case propertyType meta of
       PropObject         -> "Object"
       PropRange xs
+         | isFP16_16              -> "FP16_16"
          | xs == [0,1]            -> "Bool"
          | checkBounds @Word8  xs -> "Word8"
          | checkBounds @Word16 xs -> "Word16"
@@ -773,6 +774,12 @@ showPropertyEx meta mvalue = mconcat
    ]
 
    where
+      -- some properties are known to be in FP16_16 format
+      isFP16_16 = case propertyType meta of
+         PropRange xs -> checkBounds @Word32 xs
+                          && propertyName meta `List.elem` ["SRC_X","SRC_Y","SRC_W","SRC_H"]
+         _            -> False
+
       checkBounds :: forall b a. (Num a, Integral b, Bounded b, Eq a) => [a] -> Bool
       checkBounds [mi,ma] = mi == fromIntegral (minBound @b) && ma == fromIntegral (maxBound @b)
       checkBounds _ = False

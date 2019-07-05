@@ -29,6 +29,7 @@ module Haskus.System.Graphics
    , showRawProperty
    , forEachConnectedDisplay
    , forEachConnectedDisplay_
+   , dumpAllEntities
    -- * Generic buffers and frames
    , GenericBuffer (..)
    , createGenericBuffer
@@ -239,6 +240,28 @@ fromRawProperty card raw =
 -- | Show a raw property
 showRawProperty :: GraphicCard -> RawProperty -> String
 showRawProperty card raw = showProperty (fromRawProperty card raw)
+
+-- | Show all entities and their properties
+dumpAllEntities :: GraphicCard -> Sys ()
+dumpAllEntities card = do
+      let
+         showProps :: Object o => o -> Sys ()
+         showProps o = do
+            liftIO <| putStrLn ("* " ++ showObjectQualifiedID o)
+            -- get properties of object o
+            mprops <- runE (getObjectProperties card o)
+            -- show them
+            forM_ mprops \props -> do
+               forM_ props \prop -> do
+                  liftIO <| putStrLn ("    " ++ showProperty prop)
+
+      entities <- getEntities card
+                     |> assertLogShowErrorE "Get entities"
+
+      mapM_ showProps (entitiesConnectors entities)
+      mapM_ showProps (entitiesControllers entities)
+      mapM_ showProps (entitiesPlanes entities)
+      mapM_ showProps (entitiesFrames entities)
 
 -------------------------------------------------------------
 -- Frames

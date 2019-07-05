@@ -21,6 +21,7 @@ import Haskus.System.Graphics
 import Haskus.Utils.Flow
 import Haskus.Utils.List
 import Haskus.Format.Binary.Word
+import Haskus.Format.Binary.FixedPoint
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -41,7 +42,7 @@ data Command
    | CmdControllerVariableRefreshRate  ControllerID Bool
    | CmdControllerOutFencePtr          ControllerID RawPtr
    | CmdPlaneCustom                    PlaneID      RawProperty
-   | CmdPlaneSource                    PlaneID      FrameID Word32 Word32 Word32 Word32
+   | CmdPlaneSource                    PlaneID      FrameID FP16_16 FP16_16 FP16_16 FP16_16
    | CmdPlanePosition                  PlaneID      Int32 Int32
    | CmdPlaneTarget                    PlaneID      ControllerID Int32 Int32 Word32 Word32
    | CmdPlaneInFenceHandle             PlaneID      (Maybe Word32)
@@ -76,11 +77,11 @@ insertCommand card m cmd = Map.union m propMap
             [ (unEntityID cid, metaId "MODE_ID", fromIntegral (unEntityID mid))
             ]
          CmdPlaneSource pid fid x y w h ->
-            [ (unEntityID pid, metaId "FB_ID", fromIntegral (unEntityID fid))
-            , (unEntityID pid, metaId "SRC_X", fromIntegral x)
-            , (unEntityID pid, metaId "SRC_Y", fromIntegral y)
-            , (unEntityID pid, metaId "SRC_W", fromIntegral w)
-            , (unEntityID pid, metaId "SRC_H", fromIntegral h)
+            [ (unEntityID pid, metaId "FB_ID", fromIntegral <| unEntityID fid)
+            , (unEntityID pid, metaId "SRC_X", fromIntegral <| getFixedPointBase x)
+            , (unEntityID pid, metaId "SRC_Y", fromIntegral <| getFixedPointBase y)
+            , (unEntityID pid, metaId "SRC_W", fromIntegral <| getFixedPointBase w)
+            , (unEntityID pid, metaId "SRC_H", fromIntegral <| getFixedPointBase h)
             ]
          CmdPlaneTarget pid cid x y w h ->
             [ (unEntityID pid, metaId "CRTC_ID", fromIntegral (unEntityID cid))

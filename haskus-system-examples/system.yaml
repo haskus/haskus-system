@@ -25,3 +25,4 @@ ramdisk:
 qemu:
    profile: default
    options: ""
+   kernel-args: "drm.debug=0xf"
