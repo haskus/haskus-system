@@ -21,12 +21,17 @@ module Haskus.System.Linux.FileSystem.ReadWrite
    , sysReadManyWithOffset
    , handleRead
    , handleReadBuffer
+   , handleReadChar
    -- * Write
    , sysWrite
    , sysWriteWithOffset
    , sysWriteMany
    , sysWriteManyWithOffset
-   , writeBuffer
+   , handleWriteBuffer
+   , handleWrite
+   , handleWriteAll
+   , handleWriteStr
+   , handleWriteStrLn
    )
 where
 
@@ -42,6 +47,8 @@ import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Internals.FileSystem (IOVec (..), maxIOVec)
 import Haskus.Utils.Flow
+import Haskus.Format.String
+import qualified Haskus.Utils.Text as Text
 
 type ReadErrors
    = '[ RetryLater
@@ -124,6 +131,13 @@ handleReadBuffer hdl offset size = do
    -- otherwise return the buffer
    bufferUnsafePackPtr (fromIntegral sz) (castPtr b)
 
+-- | Read a single character
+--
+-- Warning: only the first byte of multi-byte characters (e.g. utf8) will be
+-- read
+handleReadChar :: MonadInIO m => Handle -> Excepts ReadErrors' m Char
+handleReadChar fd = handleReadBuffer fd Nothing 1
+   ||> (castCCharToChar . bufferPeekStorable)
 
 -- | Like read but uses several buffers
 sysReadMany :: MonadInIO m => Handle -> [(Ptr a, Word64)] -> Excepts '[ErrorCode] m Word64
@@ -161,9 +175,9 @@ sysWrite (Handle fd) buf count = do
    return (fromIntegral n)
 
 -- | Write a file descriptor at a given position
-sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr () -> Word64 -> Excepts '[ErrorCode] m Word64
-sysWriteWithOffset (Handle fd) offset buf count = do
-   r <- liftIO (syscall_pwrite64 fd buf count offset)
+sysWriteWithOffset :: MonadIO m => Handle -> Word64 -> Ptr a -> Word64 -> Excepts '[ErrorCode] m Word64
+sysWriteWithOffset (Handle fd) offset ptr count = do
+   r <- liftIO (syscall_pwrite64 fd (castPtr ptr) count offset)
    n <- checkErrorCode r
    return (fromIntegral n)
 
@@ -195,12 +209,34 @@ sysWriteManyWithOffset (Handle fd) offset bufs =
       n <- checkErrorCode r
       return (fromIntegral n)
 
+-- | Write "count" bytes into a handle (starting at optional "offset") from "ptr".
+-- Returns the number of bytes written.
+handleWrite :: MonadIO m => Handle -> Maybe Word64 -> Ptr a -> Word64 -> Excepts '[ErrorCode] m Word64
+handleWrite hdl Nothing ptr sz       = liftE <| sysWrite hdl ptr sz
+handleWrite hdl (Just offset) ptr sz = sysWriteWithOffset hdl offset ptr sz
+
+-- | Retry if the total number a written bytes is different of the input size
+handleWriteAll :: MonadIO m => Handle -> Maybe Word64 -> Ptr a -> Word64 -> Excepts '[ErrorCode] m ()
+handleWriteAll _hdl _moffset _ptr 0   = return ()
+handleWriteAll hdl  moffset  ptr  len = do
+   c <- handleWrite hdl moffset ptr (fromIntegral len)
+   -- if we are interrupted, continue with the remaining bytes to write
+   handleWriteAll hdl
+      (moffset ||> (+c))
+      (ptr `plusPtr` fromIntegral c)
+      (len - fromIntegral c)
+
 -- | Write a buffer
-writeBuffer :: MonadInIO m => Handle -> Buffer -> Excepts '[ErrorCode] m ()
-writeBuffer fd bs = bufferUnsafeUsePtr bs go
-   where
-      go _ 0     = return ()
-      go ptr len = do
-         c <- sysWrite fd ptr (fromIntegral len)
-         -- if we are interrupted, continue with the remaining bytes to write
-         go (ptr `plusPtr` fromIntegral c) (len - fromIntegral c)
+handleWriteBuffer :: MonadInIO m => Handle -> Maybe Word64 -> Buffer -> Excepts '[ErrorCode] m ()
+handleWriteBuffer hdl moffset bs =
+   bufferUnsafeUsePtr bs \ptr len ->
+      handleWriteAll hdl moffset ptr (fromIntegral len)
+
+-- | Write a String in the given file descriptor
+handleWriteStr :: MonadInIO m => Handle -> String -> Excepts '[ErrorCode] m ()
+handleWriteStr fd = handleWriteBuffer fd Nothing . Text.stringEncodeUtf8
+
+-- | Write a String with a newline character in the given
+-- file descriptor
+handleWriteStrLn :: MonadInIO m => Handle -> String -> Excepts '[ErrorCode] m ()
+handleWriteStrLn fd = handleWriteBuffer fd Nothing . Text.stringEncodeUtf8 . (++ "\n")

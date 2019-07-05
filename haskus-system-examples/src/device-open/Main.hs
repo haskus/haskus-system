@@ -3,9 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Haskus.System
+import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Format.Binary.Word
-
-import qualified Haskus.System.Linux.Terminal as Raw
 
 main :: IO ()
 main = runSys' do
@@ -22,7 +21,7 @@ main = runSys' do
                |> catchEvalE (sysErrorShow "Cannot get handle for \"urandom\" device")
 
    let
-      readWord64 fd = readStorable @Word64 fd Nothing
+      readWord64 fd = handleReadStorable @Word64 fd Nothing
 
    randValue <- readWord64 randDev
             |> assertE "Read urandom device"
@@ -32,7 +31,7 @@ main = runSys' do
             |> assertE "Read zero device"
    writeStrLn term ("From zero device: "   ++ show zeroValue)
 
-   Raw.writeStrLn nullDev "Discarded string"
+   handleWriteStrLn nullDev "Discarded string"
       |> assertE "Write NULL device"
 
    -- Release the handles

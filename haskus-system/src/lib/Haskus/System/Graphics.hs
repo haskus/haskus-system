@@ -87,7 +87,6 @@ import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
-import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Event as Graphics
 
 import System.FilePath (takeBaseName)
@@ -101,19 +100,19 @@ import qualified Data.Map.Strict as Map
 
 -- | Graphic card
 data GraphicCard = GraphicCard
-   { graphicCardPath                       :: !DevicePath           -- ^ Path to the graphic card in SysFS
-   , graphicCardDev                        :: !Device               -- ^ Device major/minor to create the device file descriptor
-   , graphicCardID                         :: !Int                  -- ^ Card identifier
-   , graphicCardHandle                     :: !Handle               -- ^ Device handle
-   , graphicCardChan                       :: !(TChan Graphics.Event) -- ^ Event stream
-   , graphicCardCapGenericBuffers          :: !Bool                 -- ^ Supports generic buffers
-   , graphicCardCapPrime                   :: !Bool                 -- ^ Supports PRIME
-   , graphicCardCapAsyncFrameSwitch        :: !Bool                 -- ^ Supports asynchronous frame switch (i.e. not during VBLANK)
-   , graphicCardCursorHint                 :: !(Word32,Word32)      -- ^ Valid cursor plane size (sometimes the largest)
-   , graphicCardCapFrameSwitchSequence     :: !Bool                 -- ^ Supports frame switch at specific sequence number
-   , graphicCardCapControllerInVBlankEvent :: !Bool                 -- ^ Supports controller field in VBlank event (always true since Linux 5.1)
-   , graphicCardMetaPropertiesById         :: Map Word32 PropertyMeta -- ^ Cache for property meta-data by ID
-   , graphicCardMetaPropertiesByName       :: Map String PropertyMeta -- ^ Cache for property meta-data by name
+   { graphicCardPath                       :: !DevicePath                 -- ^ Path to the graphic card in SysFS
+   , graphicCardDev                        :: !Device                     -- ^ Device major/minor to create the device file descriptor
+   , graphicCardID                         :: !Int                        -- ^ Card identifier
+   , graphicCardHandle                     :: !Handle                     -- ^ Device handle
+   , graphicCardChan                       :: !(TChan Graphics.Event)     -- ^ Event stream
+   , graphicCardCapGenericBuffers          :: !Bool                       -- ^ Supports generic buffers
+   , graphicCardCapPrime                   :: !Bool                       -- ^ Supports PRIME
+   , graphicCardCapAsyncFrameSwitch        :: !Bool                       -- ^ Supports asynchronous frame switch (i.e. not during VBLANK)
+   , graphicCardCursorHint                 :: !(Word32,Word32)            -- ^ Valid cursor plane size (sometimes the largest)
+   , graphicCardCapFrameSwitchSequence     :: !Bool                       -- ^ Supports frame switch at specific sequence number
+   , graphicCardCapControllerInVBlankEvent :: !Bool                       -- ^ Supports controller field in VBlank event (always true since Linux 5.1)
+   , graphicCardMetaPropertiesById         :: Map PropertyID PropertyMeta -- ^ Cache for property meta-data by ID
+   , graphicCardMetaPropertiesByName       :: Map String PropertyMeta     -- ^ Cache for property meta-data by name
    }
 
 -- - Invalid card error
@@ -234,7 +233,7 @@ getObjectProperties card obj =
 -- | Get property meta-data from the cache
 fromRawProperty :: GraphicCard -> RawProperty -> Property
 fromRawProperty card raw =
-   Property (graphicCardMetaPropertiesById card Map.! rawPropertyMetaID raw)
+   Property (graphicCardMetaPropertiesById card Map.! rawPropertyID raw)
             (rawPropertyValue raw)
 
 -- | Show a raw property

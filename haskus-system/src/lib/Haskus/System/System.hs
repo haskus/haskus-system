@@ -19,6 +19,8 @@ module Haskus.System.System
    , MappingType (..)
    , Perm (..)
    , Sharing (..)
+   , writeSysTextAttribute
+   , writeProcTextAttribute
    )
 where
 
@@ -36,6 +38,7 @@ import Haskus.System.FileSystem
 import Haskus.System.Devices
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.List
+import qualified Data.Text as Text
 
 import System.FilePath
 
@@ -101,5 +104,19 @@ systemInit path = sysLogSequence "Initialize the system" $ do
 -- | Get process memory mappings
 getProcessMemoryMap :: System -> Excepts (Union ReadErrors' OpenErrors) Sys [MemoryMapEntry]
 getProcessMemoryMap sys =
-   atomicReadBuffer (systemProcFS sys) "self/maps"
+   handleAtomicReadBuffer (systemProcFS sys) "self/maps"
       ||> parseMemoryMap
+
+-- | Write a text attribute in sysfs
+writeSysTextAttribute :: (MonadSys m,MonadInIO m) => System -> FilePath -> String -> m ()
+writeSysTextAttribute sys path value = do
+   withOpenAt (dmSysFS (systemDeviceManager sys)) path (BitSet.fromList [HandleWriteOnly]) (BitSet.fromList [PermUserWrite])
+      (\hdl -> handleWriteStrLn hdl value)
+   |> assertLogShowErrorE ("Write sysfs text attribute: " <> Text.pack path)
+
+-- | Write a text attribute in procfs
+writeProcTextAttribute :: (MonadSys m,MonadInIO m) => System -> FilePath -> String -> m ()
+writeProcTextAttribute sys path value = do
+   withOpenAt (systemProcFS sys) path (BitSet.fromList [HandleWriteOnly]) (BitSet.fromList [PermUserWrite])
+      (\hdl -> handleWriteStrLn hdl value)
+   |> assertLogShowErrorE ("Write procfs text attribute: " <> Text.pack path)

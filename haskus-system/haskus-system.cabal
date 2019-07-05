@@ -108,7 +108,6 @@ library
     Haskus.System.Linux.Graphics.Mode
     Haskus.System.Linux.Graphics.Object
     Haskus.System.Linux.Graphics.PixelFormat
-    Haskus.System.Linux.Graphics.Property
     Haskus.System.Linux.Graphics.Helper
     Haskus.System.Linux.Graphics.State
 

@@ -4,12 +4,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 
 module Haskus.System.FileSystem
    ( withOpenAt
-   , atomicReadBuffer
-   , readBuffer
-   , readStorable
+   , handleAtomicReadBuffer
+   , handleReadBuffer
+   , handleReadStorable
+   , handleWriteBuffer
+   , handleWriteStorable
    , HandleFlag(..)
    , FilePermission(..)
    )
@@ -17,6 +20,7 @@ where
 
 
 import Haskus.System.Linux.Handle
+import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.FileSystem
 import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Format.Binary.Buffer
@@ -44,8 +48,8 @@ withOpenAt fd path flags perm act = do
 -- Some files (e.g., in procfs) need to be read atomically to ensure that their
 -- contents is valid. In this function, we increase the buffer size until we can
 -- read the whole file in it with a single "read" call.
-atomicReadBuffer :: Handle -> FilePath -> Excepts (Union ReadErrors' OpenErrors) Sys Buffer
-atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 2000)
+handleAtomicReadBuffer :: Handle -> FilePath -> Excepts (Union ReadErrors' OpenErrors) Sys Buffer
+handleAtomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 2000)
    where
       go :: Word64 -> Handle -> Excepts ReadErrors' Sys Buffer
       go sz fd = do
@@ -60,11 +64,13 @@ atomicReadBuffer hdl path = withOpenAt hdl path BitSet.empty BitSet.empty (go 20
             else return buf
 
 
--- | Read into a buffer
-readBuffer :: Handle -> Maybe Word64 -> Word64 -> Excepts ReadErrors' Sys Buffer
-readBuffer hdl moffset size = handleReadBuffer hdl moffset size
-
 -- | Read a storable
-readStorable :: forall a. Storable a => Handle -> Maybe Word64 -> Excepts ReadErrors' Sys a
-readStorable hdl moffset = readBuffer hdl moffset (sizeOfT' @a)
+handleReadStorable :: forall a. Storable a => Handle -> Maybe Word64 -> Excepts ReadErrors' Sys a
+handleReadStorable hdl moffset = handleReadBuffer hdl moffset (sizeOfT' @a)
    ||> bufferPeekStorable
+
+-- | Write a storable
+handleWriteStorable :: forall a. Storable a => Handle -> Maybe Word64 -> a -> Excepts '[ErrorCode] Sys ()
+handleWriteStorable hdl moffset value =
+   with value \ptr ->
+      handleWriteAll hdl moffset ptr (sizeOfT' @a)

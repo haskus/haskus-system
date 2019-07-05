@@ -27,7 +27,6 @@ import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Entities
-import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Error
@@ -159,7 +158,7 @@ getObjectRawProperties hdl o =
              propsPtr = wordPtrToPtr (fromIntegral (gopPropsPtr s))
              valsPtr :: Ptr Word64
              valsPtr  = wordPtrToPtr (fromIntegral (gopValuesPtr s))
-         ps <- peekArray n propsPtr
+         ps <- peekArray n propsPtr |||> EntityID
          vs <- peekArray n valsPtr
          return (zipWith RawProperty ps vs)
 
@@ -181,7 +180,7 @@ getHandleObjectProperties :: forall m o.
 getHandleObjectProperties hdl obj = do
    props <- getObjectRawProperties hdl obj
    forMaybeM props \raw -> do
-      getPropertyMeta hdl (rawPropertyMetaID raw)
+      getPropertyMeta hdl (rawPropertyID raw)
       ||> Just
       -- we return Nothing in case of error
       |> catchEvalE (const (pure Nothing))
@@ -201,7 +200,12 @@ setObjectIDRawProperty ::
    ( MonadInIO m
    ) => Handle -> ObjectID -> ObjectType -> RawProperty -> Excepts '[InvalidParam,ObjectNotFound] m ()
 setObjectIDRawProperty hdl oid otyp prop = do
-   let s = StructSetObjectProperty (rawPropertyValue prop) (rawPropertyMetaID prop) oid (fromCEnum otyp)
+   let s = StructSetObjectProperty
+            { sopValue   = rawPropertyValue prop
+            , sopPropId  = unEntityID (rawPropertyID prop)
+            , sopObjId   = oid
+            , sopObjType = fromCEnum otyp
+            }
    void (ioctlSetObjectProperty s hdl)
       |> catchLiftLeft \case
             EINVAL -> throwE InvalidParam

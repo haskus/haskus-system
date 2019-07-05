@@ -14,8 +14,8 @@ module Haskus.System.Graphics.Config
 where
 
 import Haskus.System.Linux.Graphics.Entities
-import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Mode
+import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
@@ -47,7 +47,7 @@ data Command
    | CmdPlaneInFenceHandle             PlaneID      (Maybe Word32)
    deriving (Show)
 
-type PropMap = Map (ObjectID,Word32) Word64
+type PropMap = Map (ObjectID,PropertyID) Word64
 
 -- | Insert a command in the map
 insertCommand :: GraphicCard -> PropMap -> Command -> PropMap
@@ -55,13 +55,13 @@ insertCommand card m cmd = Map.union m propMap
    where
       props = case cmd of
          CmdConnectorCustom cid raw ->
-            [ (unEntityID cid,rawPropertyMetaID raw,rawPropertyValue raw)
+            [ (unEntityID cid,rawPropertyID raw,rawPropertyValue raw)
             ]
          CmdControllerCustom cid raw ->
-            [ (unEntityID cid,rawPropertyMetaID raw,rawPropertyValue raw)
+            [ (unEntityID cid,rawPropertyID raw,rawPropertyValue raw)
             ]
          CmdPlaneCustom pid raw ->
-            [ (unEntityID pid,rawPropertyMetaID raw,rawPropertyValue raw)
+            [ (unEntityID pid,rawPropertyID raw,rawPropertyValue raw)
             ]
          CmdConnectorController cnid ctid ->
             [ (unEntityID cnid, metaId "CRTC_ID", fromIntegral (unEntityID ctid))

@@ -2,7 +2,7 @@
 {-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
-import Haskus.System.Linux.Graphics.Property
+import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Object
 
 main :: IO ()
@@ -24,7 +24,6 @@ main = runSys' do
 
       entities <- getEntities card
                      |> assertLogShowErrorE "Get entities"
-
 
       mapM_ showProps (entitiesConnectors entities)
       mapM_ showProps (entitiesControllers entities)

@@ -28,7 +28,7 @@ import Haskus.System.Process
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Error
 import Haskus.System.Linux.Terminal (stdin,stdout)
-import Haskus.System.Linux.FileSystem.ReadWrite hiding (writeBuffer)
+import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.Utils.STM.TList as TList
 import Haskus.Utils.STM.Future
 import Haskus.Memory.Utils

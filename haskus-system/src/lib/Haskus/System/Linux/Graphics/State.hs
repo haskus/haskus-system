@@ -10,6 +10,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- | State of the graphics system
 module Haskus.System.Linux.Graphics.State
@@ -59,11 +61,19 @@ module Haskus.System.Linux.Graphics.State
    , destroyBlob
    , withBlob
    , withHandleModeBlob
+   -- * Property
+   , getPropertyMeta
+   , getAllPropertyMeta
+   , showProperty
+   , showPropertyEx
+   , showPropertyMeta
+   , setAtomic
+   , AtomicErrors
+   , InvalidProperty (..)
    )
 where
 
 import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
@@ -75,18 +85,21 @@ import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
 import Haskus.Utils.Variant.Excepts
 import Haskus.Utils.Maybe
-import Haskus.Utils.List (zipLeftWith)
+import qualified Haskus.Utils.List as List
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.BitSet as BitSet
 import Haskus.Format.Binary.Enum
 import Haskus.Format.Binary.BitField
 import Haskus.Format.Binary.FixedPoint
-import qualified Data.Map as Map
-import Data.Map (Map)
+import Haskus.Format.Binary.Buffer
+import Haskus.Format.String 
 import Haskus.Memory.Ptr
-import Foreign.Ptr
 
+import Foreign.Ptr
+import Foreign.Marshal.Alloc(free,mallocBytes)
+import qualified Data.Map.Strict as Map
+import Data.Map.Strict (Map)
 
 -- | Entities (only IDs)
 data EntitiesIDs = EntitiesIDs
@@ -179,10 +192,10 @@ getHandleEntities hdl = go 5
 -- | Make a Map for each kind of entity with their IDs as keys
 toEntitiesMap :: Entities -> EntitiesMap
 toEntitiesMap Entities{..} = EntitiesMap
-   { entitiesConnectorsMap  = Map.fromList (zipLeftWith connectorID        entitiesConnectors)
-   , entitiesControllersMap = Map.fromList (zipLeftWith controllerID       entitiesControllers)
-   , entitiesPlanesMap      = Map.fromList (zipLeftWith planeID            entitiesPlanes)
-   , entitiesFramesMap      = Map.fromList (zipLeftWith (EntityID. fcFbId) entitiesFrames)
+   { entitiesConnectorsMap  = Map.fromList (List.zipLeftWith connectorID        entitiesConnectors)
+   , entitiesControllersMap = Map.fromList (List.zipLeftWith controllerID       entitiesControllers)
+   , entitiesPlanesMap      = Map.fromList (List.zipLeftWith planeID            entitiesPlanes)
+   , entitiesFramesMap      = Map.fromList (List.zipLeftWith (EntityID. fcFbId) entitiesFrames)
    }
 
 -- | Get entities Map with their IDs as keys
@@ -711,3 +724,213 @@ withHandleModeBlob hdl mode action = do
    with struct \modePtr ->
       withBlob hdl modePtr (sizeOfT' @StructMode) \bid ->
          action (EntityID (unEntityID bid))
+
+-------------------------------------------------------------------------------
+-- Property
+-------------------------------------------------------------------------------
+
+-- | Show property meta-data
+showPropertyMeta :: PropertyMeta -> String
+showPropertyMeta meta = showPropertyEx meta Nothing
+
+-- | Display a property in a user readable way
+showProperty :: Property -> String
+showProperty (Property meta value) = showPropertyEx meta (Just value)
+
+-- | Display a property-meta in a user readable way (with or without value)
+showPropertyEx :: PropertyMeta -> Maybe Word64 -> String
+showPropertyEx meta mvalue = mconcat
+   [ if propertyImmutable meta then "val " else "var "
+   , propertyName meta
+   , case mvalue of
+      Nothing  -> ""
+      Just value -> mconcat
+         [ " = "
+         , case propertyType meta of
+            PropRange [0,1]   -> if value == 0 then "False" else "True"
+            PropSignedRange _ -> show (fromIntegral value :: Int64)
+            PropEnum xs       -> Map.fromList xs Map.! value
+            _                 -> show value
+         ]
+   , " :: "
+   , case propertyType meta of
+      PropObject         -> "Object"
+      PropRange xs
+         | xs == [0,1]            -> "Bool"
+         | checkBounds @Word8  xs -> "Word8"
+         | checkBounds @Word16 xs -> "Word16"
+         | checkBounds @Word32 xs -> "Word32"
+         | checkBounds @Word64 xs -> "Word64"
+         | otherwise              -> "Range " ++ show xs
+      PropSignedRange xs
+         | checkBounds @Int8  xs -> "Int8"
+         | checkBounds @Int16 xs -> "Int16"
+         | checkBounds @Int32 xs -> "Int32"
+         | checkBounds @Int64 xs -> "Int64"
+         | otherwise             -> "Range " ++ show xs
+      PropEnum xs        -> "Enum [" ++ mconcat (List.intersperse "," (fmap snd xs)) ++ "]"
+      t                  -> show t
+   ]
+
+   where
+      checkBounds :: forall b a. (Num a, Integral b, Bounded b, Eq a) => [a] -> Bool
+      checkBounds [mi,ma] = mi == fromIntegral (minBound @b) && ma == fromIntegral (maxBound @b)
+      checkBounds _ = False
+
+
+data InvalidProperty = InvalidProperty deriving (Show,Eq)
+
+type AtomicErrors = '[InvalidHandle,InvalidParam,MemoryError,InvalidRange,EntryNotFound]
+
+
+-- | Return meta-information from a property type ID
+getPropertyMeta :: forall m. MonadInIO m => Handle -> PropertyID -> Excepts '[InvalidParam,InvalidProperty] m PropertyMeta
+getPropertyMeta fd (EntityID pid) = do
+   let
+      getProperty' :: StructGetProperty -> Excepts '[InvalidParam,InvalidProperty] m StructGetProperty
+      getProperty' r = ioctlGetProperty r fd
+                        |> catchLiftLeft \case
+                              EINVAL -> throwE InvalidParam
+                              ENOENT -> throwE InvalidProperty
+                              e      -> unhdlErr "getPropertyMeta" e
+
+      req = StructGetProperty
+            { gpsValuesPtr   = 0
+            , gpsEnumBlobPtr = 0
+            , gpsPropId      = pid
+            , gpsFlags       = 0
+            , gpsName        = emptyCStringBuffer
+            , gpsCountValues = 0
+            , gpsCountEnum   = 0
+            }
+   
+   -- get value size/number of elements/etc.
+   resp <- getProperty' req
+
+   let
+      allocaArray' 0 f = f nullPtr
+      allocaArray' n f = allocaArray (fromIntegral n) f
+
+      getBlobStruct :: StructGetBlob -> Excepts '[InvalidParam,InvalidProperty] m StructGetBlob
+      getBlobStruct r = ioctlGetBlob r fd
+                           |> catchLiftLeft \case
+                                 EINVAL -> throwE InvalidParam
+                                 ENOENT -> throwE InvalidProperty
+                                 e      -> unhdlErr "getBlobStruct" e
+
+      -- | Get a blob
+      getBlob :: Word32 -> Excepts '[InvalidParam,InvalidProperty] m Buffer
+      getBlob bid = do
+         let gb = StructGetBlob
+                     { gbBlobId = bid
+                     , gbLength = 0
+                     , gbData   = 0
+                     }
+
+         gb' <- getBlobStruct gb
+         ptr <- liftIO . mallocBytes . fromIntegral . gbLength $ gb'
+         void (getBlobStruct (gb' { gbData = fromIntegral (ptrToWordPtr ptr) }))
+            -- free ptr on error
+            |> onE_ (liftIO (free ptr))
+         -- otherwise return a bytestring
+         bufferPackPtr (fromIntegral (gbLength gb')) ptr
+
+
+      withBuffers :: (Storable a, Storable b) => Word32 -> Word32 -> (Ptr a -> Ptr b ->  Excepts '[InvalidParam,InvalidProperty] m c) -> Excepts '[InvalidParam,InvalidProperty] m c
+      withBuffers valueCount blobCount f =
+         liftWith (allocaArray' valueCount) $ \valuePtr ->
+            liftWith (allocaArray' blobCount) $ \blobPtr -> do
+               let gp' = StructGetProperty
+                           { gpsValuesPtr   = fromIntegral (ptrToWordPtr valuePtr)
+                           , gpsEnumBlobPtr = fromIntegral (ptrToWordPtr blobPtr)
+                           , gpsPropId      = pid
+                           , gpsFlags       = 0
+                           , gpsName        = emptyCStringBuffer
+                           , gpsCountValues = valueCount
+                           , gpsCountEnum   = blobCount
+                           }
+               -- nothing changes, except for the two buffers
+               _ <- getProperty' gp'
+               f valuePtr blobPtr
+
+      withValueBuffer :: Storable a => Word32 -> ([a] -> Excepts '[InvalidParam,InvalidProperty] m c) -> Excepts '[InvalidParam,InvalidProperty] m c
+      withValueBuffer n f = withBuffers n 0 $ \ptr (_ :: Ptr Word) ->
+         f =<< peekArray (fromIntegral n) ptr
+      withBlobBuffer  n f = withBuffers 0 n $ \(_ :: Ptr Word) ptr ->
+         f =<< peekArray (fromIntegral n) ptr
+      withBuffers' n m f = withBuffers n m $ \p1 p2 -> do
+         vs <- peekArray (fromIntegral n) p1
+         bs <- peekArray (fromIntegral m) p2
+         f vs bs
+         
+   let
+      nval  = gpsCountValues resp
+      nblob = gpsCountEnum   resp
+
+   typ <- case getPropertyTypeType resp of
+      PropTypeObject      -> return PropObject
+      PropTypeRange       -> withValueBuffer nval (return . PropRange)
+      PropTypeSignedRange -> withValueBuffer nval (return . PropSignedRange)
+      PropTypeEnum        -> withBlobBuffer nblob $ \es ->
+         return (PropEnum [(peValue e, fromCStringBuffer $ peName e) | e <- es])
+      PropTypeBitmask     -> withBlobBuffer nblob $ \es ->
+         return (PropBitmask [(peValue e, fromCStringBuffer $ peName e) | e <- es])
+
+      PropTypeBlob        -> withBuffers' nblob nblob $ \ids bids -> do
+         traverse getBlob bids
+            ||> (PropBlob . (ids `zip`))
+      
+
+   pure (PropertyMeta (EntityID pid) (isImmutable resp) (fromCStringBuffer (gpsName resp)) typ)
+
+
+-- | Retrieve all the property meta-data
+getAllPropertyMeta :: forall m. MonadInIO m => Handle -> m (Map PropertyID PropertyMeta)
+getAllPropertyMeta hdl = go 1 Map.empty
+   where
+      go n !m = do
+         mmeta <- getPropertyMeta hdl (EntityID n)
+            ||> Just
+            |> catchEvalE (const (pure Nothing))
+         case mmeta of
+            Nothing   -> pure m
+            Just meta -> go (n+1) (Map.insert (EntityID n) meta m)
+
+-- | Set object properties atomically
+setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [RawProperty] -> Excepts AtomicErrors m ()
+setAtomic hdl flags propsmap = do
+
+   let
+      kvs    = Map.assocs propsmap -- [(Obj,[(Prop,Val)])]
+      objs   = fmap fst    kvs     -- [Obj]
+      pvs    = fmap snd    kvs     -- [[RawProperty]]
+      nprops = fmap length pvs
+      props  = fmap rawPropertyID (concat pvs)     -- list of property ID
+      vals   = fmap rawPropertyValue  (concat pvs) -- list of values
+
+
+   withArray objs $ \pobjs ->
+      withArray nprops $ \pnprops ->
+         withArray props $ \pprops ->
+            withArray vals $ \pvals -> do
+               let
+                  toPtr = fromIntegral . ptrToWordPtr
+                  s = StructAtomic
+                     { atomFlags         = flags
+                     , atomCountObjects  = fromIntegral (length (Map.keys propsmap))
+                     , atomObjectsPtr    = toPtr pobjs
+                     , atomCountPropsPtr = toPtr pnprops
+                     , atomPropsPtr      = toPtr pprops
+                     , atomPropValuesPtr = toPtr pvals
+                     , atomReserved      = 0 -- must be zero
+                     , atomUserData      = 0 -- used for event generation
+                     }
+               void (ioctlAtomic s hdl)
+                  |> catchLiftLeft \case
+                        EBADF  -> throwE InvalidHandle
+                        EINVAL -> throwE InvalidParam
+                        ENOMEM -> throwE MemoryError
+                        ENOENT -> throwE EntryNotFound
+                        ERANGE -> throwE InvalidRange
+                        ENOSPC -> throwE InvalidRange
+                        e      -> unhdlErr "setAtomic" e

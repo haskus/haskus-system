@@ -13,6 +13,8 @@ module Haskus.System.Linux.Graphics.Entities
    , EncoderID
    , PlaneID
    , BlobID
+   , PropertyID
+   , ObjectID
    -- * Connector
    , Connector (..)
    , Connection (..)
@@ -33,17 +35,22 @@ module Haskus.System.Linux.Graphics.Entities
    , showFrame
    , showFrameBuffer
    , ShowBuffer(..)
+   -- * Property
+   , PropertyMeta (..)
+   , Property (..)
+   , PropertyType (..)
+   , RawProperty (..)
    )
 where
 
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.FixedPoint
+import Haskus.Format.Binary.Buffer
 import qualified Haskus.Format.Binary.BitSet as BitSet
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.Mode
-import Haskus.System.Linux.Graphics.Property
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.Utils.Flow
 
@@ -51,17 +58,20 @@ import Haskus.Utils.Flow
 -- IDs
 -------------------------------------------------------------------------------
 
+type ObjectID = Word32
+
 -- | Entity identifier
 newtype EntityID a = EntityID
-   { unEntityID :: Word32
+   { unEntityID :: ObjectID
    } deriving (Show,Eq,Storable,Ord)
 
-type FrameID       = EntityID (Frame ())
-type ConnectorID   = EntityID Connector
-type ControllerID  = EntityID Controller
-type EncoderID     = EntityID Encoder
-type PlaneID       = EntityID Plane
-type BlobID x      = EntityID x
+type FrameID        = EntityID (Frame ())
+type ConnectorID    = EntityID Connector
+type ControllerID   = EntityID Controller
+type EncoderID      = EntityID Encoder
+type PlaneID        = EntityID Plane
+type PropertyID     = EntityID PropertyMeta
+type BlobID x       = EntityID x
 
 -------------------------------------------------------------------------------
 -- Connector
@@ -254,3 +264,37 @@ showFrameBuffer FrameBuffer{..} = mconcat
    , "\nModifiers: ", show fbModifiers
    , "\n"
    ]
+
+-------------------------------------------------------------------------------
+-- Property
+-------------------------------------------------------------------------------
+
+
+-- | Property meta-information
+data PropertyMeta = PropertyMeta
+   { propertyID        :: PropertyID   -- ^ ID of the property
+   , propertyImmutable :: Bool         -- ^ The value won't change
+   , propertyName      :: String       -- ^ Property name
+   , propertyType      :: PropertyType -- ^ Type of the property
+   } deriving (Show,Eq)
+
+-- | The type of a property
+data PropertyType
+   = PropRange       [Word64]          -- ^ A range
+   | PropSignedRange [Int64]           -- ^ A signed range
+   | PropEnum        [(Word64,String)] -- ^ Value-enum
+   | PropBitmask     [(Word64,String)] -- ^ Bit-enum (bitmask)
+   | PropBlob        [(Word32,Buffer)] -- ^ Blob-enum
+   | PropObject
+   deriving (Show,Eq)
+
+data RawProperty = RawProperty
+   { rawPropertyID    :: PropertyID -- ^ Card-wise property meta-info ID
+   , rawPropertyValue :: Word64     -- ^ Property value
+   } deriving (Show,Eq)
+
+data Property = Property
+   { propertyMeta       :: PropertyMeta -- ^ Meta-information about the property
+   , propertyValue      :: Word64       -- ^ Value of the property
+   } deriving (Show,Eq)
+
