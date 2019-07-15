@@ -11,6 +11,7 @@ module Haskus.Format.String
    , castCCharToChar
    , castCharToCChar
    , peekCStringLen
+   , peekCStringMaxLen
    , peekCString
    -- * Fixed-size CString buffer
    , CStringBuffer
@@ -29,6 +30,7 @@ import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.Vector as Vec
 import Haskus.Utils.Types
 import Haskus.Utils.Monad
+import Haskus.Utils.Flow
 
 -- | Fixed-size buffer containing a CString
 newtype CStringBuffer (n :: Nat)
@@ -49,6 +51,11 @@ castCharToCChar = FS.castCharToCChar
 -- | Peek a CString whose size is known
 peekCStringLen :: MonadIO m => Word -> Ptr CChar -> m String
 peekCStringLen len p = liftIO (FS.peekCStringLen (p, fromIntegral len))
+
+-- | Peek a CString whose maximal size is known
+peekCStringMaxLen :: MonadIO m => Word -> Ptr CChar -> m String
+peekCStringMaxLen len p = peekCStringLen len p
+   ||> takeWhile (/= '\0')
 
 -- | Peek a CString
 peekCString :: MonadIO m => Ptr CChar -> m String
