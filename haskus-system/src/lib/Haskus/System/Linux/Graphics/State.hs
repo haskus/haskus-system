@@ -56,11 +56,14 @@ module Haskus.System.Linux.Graphics.State
    , disablePlane
    , InvalidDestRect (..)
    , InvalidSrcRect (..)
+   , DrmInfo (..)
+   , handleGetInfo
    -- * Blob
    , createBlob
    , destroyBlob
    , withBlob
    , withHandleModeBlob
+   , createHandleModeBlob
    -- * Property
    , getPropertyMeta
    , getAllPropertyMeta
@@ -724,6 +727,16 @@ withHandleModeBlob hdl mode action = do
       withBlob hdl modePtr (sizeOfT' @StructMode) \bid ->
          action (EntityID (unEntityID bid))
 
+-- | Create a Mode blob
+createHandleModeBlob ::
+   ( MonadInIO m
+   ) => Handle -> Mode -> Excepts '[ErrorCode] m (BlobID Mode)
+createHandleModeBlob hdl mode = do
+   let struct = toStructMode mode
+   with struct \modePtr -> do
+      createBlob hdl modePtr (sizeOfT' @StructMode)
+         ||> castEntityID
+
 -------------------------------------------------------------------------------
 -- Property
 -------------------------------------------------------------------------------
@@ -941,3 +954,46 @@ setAtomic hdl flags propsmap = do
                         ERANGE -> throwE InvalidRange
                         ENOSPC -> throwE InvalidRange
                         e      -> unhdlErr "setAtomic" e
+
+-- | Info about the DRM driver
+data DrmInfo = DrmInfo
+   { drmVersionMajor      :: Int32
+   , drmVersionMinor      :: Int32
+   , drmVersionPatchLevel :: Int32
+   , drmDriverName       :: String
+   , drmDriverDate       :: String
+   , drmDriverDesc       :: String
+   } deriving (Show)
+
+-- | Get DRM version
+handleGetInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m DrmInfo
+handleGetInfo hdl = do
+   let
+      nameSz = 200
+      dateSz = 200
+      descSz = 2000
+   allocaArrays [nameSz,dateSz,descSz] \[namePtr,datePtr,descPtr] -> do
+      let req = StructVersion
+                  { verMajor      = 0
+                  , verMinor      = 0
+                  , verPatchLevel = 0
+                  , verNameLen    = nameSz
+                  , verNamePtr    = fromIntegral (ptrToWordPtr namePtr)
+                  , verDateLen    = dateSz
+                  , verDatePtr    = fromIntegral (ptrToWordPtr datePtr)
+                  , verDescLen    = descSz
+                  , verDescPtr    = fromIntegral (ptrToWordPtr descPtr)
+                  }
+      resp <- ioctlGetVersion req hdl
+      nameVal <- peekCStringMaxLen (fromIntegral nameSz) namePtr
+      dateVal <- peekCStringMaxLen (fromIntegral dateSz) datePtr
+      descVal <- peekCStringMaxLen (fromIntegral descSz) descPtr
+      pure <| DrmInfo
+         { drmVersionMajor      = verMajor resp
+         , drmVersionMinor      = verMinor resp
+         , drmVersionPatchLevel = verPatchLevel resp
+         , drmDriverName        = nameVal
+         , drmDriverDate        = dateVal
+         , drmDriverDesc        = descVal
+         }
+

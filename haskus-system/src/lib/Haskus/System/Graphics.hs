@@ -17,6 +17,7 @@ module Haskus.System.Graphics
    , GraphicCard (..)
    , InvalidCard (..)
    , loadGraphicCards
+   , getDriverInfo
      -- * Entities
    , EntitiesIDs (..)
    , EntitiesMap (..)
@@ -50,6 +51,7 @@ module Haskus.System.Graphics
    , frameBufferPixelOffset
    -- * Configuration (mode-setting)
    , withModeBlob
+   , createModeBlob
      -- * Generic rendering engine
    , RenderingEngine (..)
    , BufferingState (..)
@@ -174,6 +176,12 @@ loadGraphicCards dm = sysLogSequence "Load graphic cards" $ do
       readDevInfo devpath dev
          ||> Just
          |> catchEvalE (const (return Nothing))
+
+
+-- | Get driver info
+getDriverInfo :: MonadInIO m => GraphicCard -> Excepts '[ErrorCode] m DrmInfo
+getDriverInfo card = handleGetInfo (graphicCardHandle card)
+
 
 -------------------------------------------------------------
 -- Entities
@@ -354,6 +362,12 @@ withModeBlob :: forall es m a.
    ( MonadInIO m
    ) => GraphicCard -> Mode -> (BlobID Mode -> Excepts es m a) -> Excepts (ErrorCode ': es) m a
 withModeBlob card mode action = withHandleModeBlob (graphicCardHandle card) mode action
+
+-- | Create a Mode blob
+createModeBlob :: forall m.
+   ( MonadInIO m
+   ) => GraphicCard -> Mode -> Excepts '[ErrorCode] m (BlobID Mode)
+createModeBlob card mode = createHandleModeBlob (graphicCardHandle card) mode
 
 -------------------------------------------------------------
 -- Generic rendering engine

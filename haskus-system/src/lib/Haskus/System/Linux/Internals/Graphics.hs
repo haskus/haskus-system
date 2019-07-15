@@ -97,6 +97,7 @@ module Haskus.System.Linux.Internals.Graphics
    , StructListLessees (..)
    -- * Generic
    , Clip (..)
+   , StructVersion(..)
    -- * Capabilities
    , Capability (..)
    , StructGetCap (..)
@@ -106,6 +107,7 @@ module Haskus.System.Linux.Internals.Graphics
    , StructPrimeHandle (..)
    , PrimeFlag (..)
    -- * IOCTLs
+   , ioctlGetVersion
    , ioctlGetCapabilities
    , ioctlSetClientCapability
    , ioctlGetResources
@@ -1146,10 +1148,23 @@ instance Enum PrimeFlag where
 -- | struct drm_prime_handle
 data StructPrimeHandle = StructPrimeHandle
    { sphHandle :: {-# UNPACK #-} !Word32
-   , sphFlags  :: {-# UNPACK #-} !(BitSet Word32 PrimeFlag) -- ^ FD flags: only applciable for handle->fd
+   , sphFlags  :: {-# UNPACK #-} !(BitSet Word32 PrimeFlag) -- ^ FD flags: only applicable for handle->fd
    , sphFD     :: {-# UNPACK #-} !Int32                     -- ^ Returned DMAbuf file descriptor
    }
    deriving (Generic,Storable)
+
+-- | struct drm_version (only 64-bit)
+data StructVersion = StructVersion
+   { verMajor      :: Int32
+   , verMinor      :: Int32
+   , verPatchLevel :: Int32
+   , verNameLen    :: Word64 -- these fields are not ABI compatible on 32-bit archs
+   , verNamePtr    :: Word64 -- (must be 32-bit types)
+   , verDateLen    :: Word64
+   , verDatePtr    :: Word64
+   , verDescLen    :: Word64
+   , verDescPtr    :: Word64
+   } deriving (Generic,Storable)
 
 -----------------------------------------------------------------------------
 -- IOCTLs
@@ -1158,6 +1173,8 @@ data StructPrimeHandle = StructPrimeHandle
 drmIoctl :: (MonadInIO m, Storable a) => Word8 -> a -> Handle -> Excepts '[ErrorCode] m a
 drmIoctl = ioctlWriteRead 0x64
 
+ioctlGetVersion :: MonadInIO m => StructVersion -> Handle -> Excepts '[ErrorCode] m StructVersion
+ioctlGetVersion = drmIoctl 0x00
 
 ioctlGetCapabilities :: MonadInIO m => StructGetCap -> Handle -> Excepts '[ErrorCode] m StructGetCap
 ioctlGetCapabilities = drmIoctl 0x0C

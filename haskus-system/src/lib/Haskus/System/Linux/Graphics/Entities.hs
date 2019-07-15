@@ -15,6 +15,7 @@ module Haskus.System.Linux.Graphics.Entities
    , BlobID
    , PropertyID
    , ObjectID
+   , castEntityID
    -- * Connector
    , Connector (..)
    , Connection (..)
@@ -54,6 +55,7 @@ import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.Utils.Flow
+import Data.Coerce
 
 -------------------------------------------------------------------------------
 -- IDs
@@ -73,6 +75,10 @@ type EncoderID      = EntityID Encoder
 type PlaneID        = EntityID Plane
 type PropertyID     = EntityID PropertyMeta
 type BlobID x       = EntityID x
+
+-- | Cast an entity ID
+castEntityID :: EntityID x -> EntityID y
+castEntityID = coerce
 
 -------------------------------------------------------------------------------
 -- Connector
